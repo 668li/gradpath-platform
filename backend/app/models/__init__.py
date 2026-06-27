@@ -1,3 +1,4 @@
+from app.models.career_event import CareerEvent, EventType
 from app.models.destination_decision import (
     DecisionStatus,
     DestinationDecision,
@@ -5,4 +6,12 @@ from app.models.destination_decision import (
 )
 from app.models.user import User, UserStage
 
-__all__ = ["User", "UserStage", "DestinationDecision", "DestinationType", "DecisionStatus"]
+__all__ = [
+    "User",
+    "UserStage",
+    "DestinationDecision",
+    "DestinationType",
+    "DecisionStatus",
+    "CareerEvent",
+    "EventType",
+]
