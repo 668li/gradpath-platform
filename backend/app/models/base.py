@@ -1,9 +1,23 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, func
+from sqlalchemy import JSON, DateTime, func
+from sqlalchemy.dialects.postgresql import JSONB as _PG_JSONB
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.types import TypeDecorator
+
+
+class JSONB(TypeDecorator):
+    """跨方言 JSON 类型：PostgreSQL 上使用原生 JSONB，其它方言（如 SQLite 测试）回退为 JSON。"""
+
+    impl = JSON
+    cache_ok = True
+
+    def load_dialect_impl(self, dialect):
+        if dialect.name == "postgresql":
+            return dialect.type_descriptor(_PG_JSONB())
+        return dialect.type_descriptor(JSON())
 
 
 class TimestampMixin:
