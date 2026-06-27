@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
 from app.api.auth import router as auth_router
+from app.api.dashboard import router as dashboard_router
 from app.api.decisions import router as decisions_router
 from app.api.events import router as events_router
 from app.api.retrospectives import router as retrospectives_router
@@ -13,6 +14,7 @@ app.include_router(decisions_router)
 app.include_router(events_router)
 app.include_router(skills_router)
 app.include_router(retrospectives_router)
+app.include_router(dashboard_router)
 
 
 @app.get("/health")
