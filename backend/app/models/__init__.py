@@ -4,6 +4,7 @@ from app.models.destination_decision import (
     DestinationDecision,
     DestinationType,
 )
+from app.models.retrospective import PeriodType, Retrospective
 from app.models.skill_node import SkillNode
 from app.models.user import User, UserStage
 
@@ -16,4 +17,6 @@ __all__ = [
     "CareerEvent",
     "EventType",
     "SkillNode",
+    "Retrospective",
+    "PeriodType",
 ]
