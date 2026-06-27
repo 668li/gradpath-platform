@@ -1,8 +1,0 @@
-pyproject.toml
-app/__init__.py
-app/config.py
-gradpath_backend.egg-info/PKG-INFO
-gradpath_backend.egg-info/SOURCES.txt
-gradpath_backend.egg-info/dependency_links.txt
-gradpath_backend.egg-info/requires.txt
-gradpath_backend.egg-info/top_level.txt
