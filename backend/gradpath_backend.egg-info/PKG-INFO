@@ -1,0 +1,20 @@
+Metadata-Version: 2.4
+Name: gradpath-backend
+Version: 0.1.0
+Summary: GradPath personal career trajectory platform backend
+Requires-Python: >=3.10
+Requires-Dist: fastapi>=0.111.0
+Requires-Dist: uvicorn[standard]>=0.30.0
+Requires-Dist: sqlalchemy>=2.0.30
+Requires-Dist: alembic>=1.13.0
+Requires-Dist: psycopg2-binary>=2.9.9
+Requires-Dist: pydantic>=2.7.0
+Requires-Dist: pydantic-settings>=2.2.0
+Requires-Dist: python-jose[cryptography]>=3.3.0
+Requires-Dist: bcrypt>=4.1.0
+Requires-Dist: python-multipart>=0.0.9
+Requires-Dist: email-validator>=2.1.0
+Provides-Extra: dev
+Requires-Dist: pytest>=8.2.0; extra == "dev"
+Requires-Dist: pytest-asyncio>=0.23.0; extra == "dev"
+Requires-Dist: httpx>=0.27.0; extra == "dev"
