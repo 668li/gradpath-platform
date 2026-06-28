@@ -208,10 +208,14 @@ function TimelineList({
             />
             <div className="flex items-baseline justify-between gap-2">
               <p className="text-sm font-medium text-slate-800">
-                {item.title}
+                {isDecision
+                  ? `去向决策: ${DESTINATION_TYPE_LABEL[item.title.replace("去向决策: ", "") as keyof typeof DESTINATION_TYPE_LABEL] ?? item.title.replace("去向决策: ", "")}`
+                  : item.title}
                 {item.subtitle && (
                   <span className="ml-2 text-slate-400 font-normal">
-                    {item.subtitle}
+                    {isDecision
+                      ? item.subtitle
+                      : EVENT_TYPE_LABEL[item.subtitle as keyof typeof EVENT_TYPE_LABEL] ?? item.subtitle}
                   </span>
                 )}
               </p>
