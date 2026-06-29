@@ -15,8 +15,11 @@ function ExploreResultContent() {
   const router = useRouter();
   const toast = useToast();
   const searchParams = useSearchParams();
-  const school = searchParams.get("school") ?? "";
-  const major = searchParams.get("major") ?? "";
+  // 从 URL 读取 Base64 编码的参数并解码为中文
+  const sEncoded = searchParams.get("s") ?? "";
+  const mEncoded = searchParams.get("m") ?? "";
+  const school = sEncoded ? decodeURIComponent(escape(atob(sEncoded))) : "";
+  const major = mEncoded ? decodeURIComponent(escape(atob(mEncoded))) : "";
 
   const [data, setData] = useState<EmploymentSearchResult | null>(null);
   const [loading, setLoading] = useState(true);

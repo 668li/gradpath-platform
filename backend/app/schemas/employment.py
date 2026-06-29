@@ -54,3 +54,9 @@ class SearchBody(BaseModel):
     major: str
     year: int | None = None
     degree: str | None = None
+
+
+class MajorQuery(BaseModel):
+    """POST /api/employment/majors 的请求体。"""
+
+    school: str

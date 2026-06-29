@@ -231,7 +231,10 @@ export const employmentApi = {
   schools: () => request<SchoolInfo[]>("/api/employment/schools"),
 
   majors: (school: string) =>
-    request<string[]>(`/api/employment/majors${buildQuery({ school })}`),
+    request<string[]>("/api/employment/majors", {
+      method: "POST",
+      body: JSON.stringify({ school }),
+    }),
 
   stats: () => request<EmploymentStats>("/api/employment/stats"),
 };

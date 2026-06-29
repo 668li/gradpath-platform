@@ -6,6 +6,7 @@ from app.database import get_db
 from app.schemas.employment import (
     EmploymentSearchResponse,
     EmploymentStatsResponse,
+    MajorQuery,
     SchoolResponse,
     SearchBody,
 )
@@ -38,6 +39,11 @@ def schools(db: Session = Depends(get_db)):
 @router.get("/majors", response_model=list[str])
 def majors(school: str = Query(...), db: Session = Depends(get_db)):
     return list_majors(db, school)
+
+
+@router.post("/majors", response_model=list[str])
+def majors_post(body: MajorQuery, db: Session = Depends(get_db)):
+    return list_majors(db, body.school)
 
 
 @router.get("/stats", response_model=EmploymentStatsResponse)

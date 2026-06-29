@@ -65,11 +65,10 @@ export default function ExplorePage() {
     const school = schoolQuery.trim();
     const major = majorQuery.trim();
     if (!school || !major) return;
-    const params = new URLSearchParams({
-      school,
-      major,
-    });
-    router.push(`/explore/result?${params.toString()}`);
+    // 用 Base64 编码中文参数，避免浏览器代理对 URL 编码中文返回 400
+    const s = btoa(unescape(encodeURIComponent(school)));
+    const m = btoa(unescape(encodeURIComponent(major)));
+    router.push(`/explore/result?s=${s}&m=${m}`);
   };
 
   return (
