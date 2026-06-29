@@ -217,36 +217,21 @@ export const dashboardApi = {
 
 // ===== 就业数据搜索 =====
 export const employmentApi = {
-  async search(params: {
+  search: (params: {
     school: string;
     major: string;
     year?: number;
     degree?: string;
-  }): Promise<EmploymentSearchResult> {
-    const resp = await fetch(`/api/employment/search`, {
+  }) =>
+    request<EmploymentSearchResult>("/api/employment/search", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(params),
-    });
-    if (!resp.ok) throw new Error("搜索失败");
-    return resp.json();
-  },
+    }),
 
-  async schools(): Promise<SchoolInfo[]> {
-    const resp = await fetch(`/api/employment/schools`);
-    if (!resp.ok) throw new Error("获取学校列表失败");
-    return resp.json();
-  },
+  schools: () => request<SchoolInfo[]>("/api/employment/schools"),
 
-  async majors(school: string): Promise<string[]> {
-    const resp = await fetch(`/api/employment/majors?school=${encodeURIComponent(school)}`);
-    if (!resp.ok) throw new Error("获取专业列表失败");
-    return resp.json();
-  },
+  majors: (school: string) =>
+    request<string[]>(`/api/employment/majors${buildQuery({ school })}`),
 
-  async stats(): Promise<EmploymentStats> {
-    const resp = await fetch(`/api/employment/stats`);
-    if (!resp.ok) throw new Error("获取统计失败");
-    return resp.json();
-  },
+  stats: () => request<EmploymentStats>("/api/employment/stats"),
 };

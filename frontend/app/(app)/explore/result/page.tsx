@@ -1,40 +1,56 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Compass } from "lucide-react";
 import { employmentApi } from "@/lib/api";
 import { Button } from "@/components/ui/form-controls";
 import { LoadingState, EmptyState } from "@/components/ui/empty";
+import { useToast } from "@/components/ui/toast";
 import { DestinationPie, RankingBar, TrendLine } from "@/components/employment-charts";
 import type { EmploymentSearchResult } from "@/types";
 
-export default function ExploreResultPage() {
+function ExploreResultContent() {
+  const router = useRouter();
+  const toast = useToast();
+  const searchParams = useSearchParams();
+  const school = searchParams.get("school") ?? "";
+  const major = searchParams.get("major") ?? "";
+
   const [data, setData] = useState<EmploymentSearchResult | null>(null);
   const [loading, setLoading] = useState(true);
-  const [school, setSchool] = useState("");
-  const [major, setMajor] = useState("");
+  const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
-    const raw = sessionStorage.getItem("explore_search");
-    if (!raw) {
-      setLoading(false);
+    // 无参数（直接访问 /explore/result）时重定向回搜索页
+    if (!school || !major) {
+      setRedirecting(true);
+      router.replace("/explore");
       return;
     }
-    const { school: s, major: m } = JSON.parse(raw);
-    setSchool(s);
-    setMajor(m);
+    let cancelled = false;
     (async () => {
       try {
-        const result = await employmentApi.search({ school: s, major: m });
-        setData(result);
+        const result = await employmentApi.search({ school, major });
+        if (!cancelled) setData(result);
+      } catch (err) {
+        if (!cancelled) {
+          toast.push(
+            err instanceof Error ? err.message : "搜索失败",
+            "error",
+          );
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [school, major, router, toast]);
 
-  if (loading) return <LoadingState />;
+  if (redirecting || loading) return <LoadingState />;
 
   if (!data || !data.school || data.records.length === 0) {
     return (
@@ -119,5 +135,14 @@ export default function ExploreResultPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ExploreResultPage() {
+  // useSearchParams 必须包裹在 Suspense 边界中（Next.js 14 要求）
+  return (
+    <Suspense fallback={<LoadingState />}>
+      <ExploreResultContent />
+    </Suspense>
   );
 }

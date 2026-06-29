@@ -6,15 +6,18 @@ import { Search, School as SchoolIcon } from "lucide-react";
 import { employmentApi } from "@/lib/api";
 import { Button } from "@/components/ui/form-controls";
 import { LoadingState, EmptyState } from "@/components/ui/empty";
+import { useToast } from "@/components/ui/toast";
 import type { SchoolInfo, EmploymentStats } from "@/types";
 
 export default function ExplorePage() {
   const router = useRouter();
+  const toast = useToast();
   const [schools, setSchools] = useState<SchoolInfo[]>([]);
   const [stats, setStats] = useState<EmploymentStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [schoolQuery, setSchoolQuery] = useState("");
   const [majorQuery, setMajorQuery] = useState("");
+  const [majorOptions, setMajorOptions] = useState<string[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -25,18 +28,48 @@ export default function ExplorePage() {
         ]);
         setSchools(s);
         setStats(st);
+      } catch (err) {
+        toast.push(
+          err instanceof Error ? err.message : "加载学校与统计数据失败",
+          "error",
+        );
       } finally {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [toast]);
+
+  // 学校输入失焦时拉取对应专业列表，用于专业输入框自动补全
+  const handleSchoolBlur = async () => {
+    const school = schoolQuery.trim();
+    if (!school) {
+      setMajorOptions([]);
+      return;
+    }
+    try {
+      const list = await employmentApi.majors(school);
+      setMajorOptions(list);
+    } catch (err) {
+      // 静默失败：补全不可用不应阻断搜索流程
+      setMajorOptions([]);
+      toast.push(
+        err instanceof Error ? err.message : "获取专业列表失败",
+        "error",
+      );
+    }
+  };
 
   if (loading) return <LoadingState />;
 
   const handleSearch = () => {
-    if (!schoolQuery || !majorQuery) return;
-    sessionStorage.setItem("explore_search", JSON.stringify({ school: schoolQuery, major: majorQuery }));
-    router.push("/explore/result");
+    const school = schoolQuery.trim();
+    const major = majorQuery.trim();
+    if (!school || !major) return;
+    const params = new URLSearchParams({
+      school,
+      major,
+    });
+    router.push(`/explore/result?${params.toString()}`);
   };
 
   return (
@@ -57,6 +90,7 @@ export default function ExplorePage() {
               type="text"
               value={schoolQuery}
               onChange={(e) => setSchoolQuery(e.target.value)}
+              onBlur={handleSchoolBlur}
               placeholder="如：清华大学"
               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none"
               list="school-list"
@@ -73,7 +107,11 @@ export default function ExplorePage() {
               onChange={(e) => setMajorQuery(e.target.value)}
               placeholder="如：机械工程"
               className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none"
+              list="major-list"
             />
+            <datalist id="major-list">
+              {majorOptions.map((m) => <option key={m} value={m} />)}
+            </datalist>
           </div>
           <div className="flex items-end">
             <Button
