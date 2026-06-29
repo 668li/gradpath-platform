@@ -1,7 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Compass } from "lucide-react";
 import { employmentApi } from "@/lib/api";
@@ -10,24 +9,30 @@ import { LoadingState, EmptyState } from "@/components/ui/empty";
 import { DestinationPie, RankingBar, TrendLine } from "@/components/employment-charts";
 import type { EmploymentSearchResult } from "@/types";
 
-function ExploreResultContent() {
-  const params = useSearchParams();
-  const school = params.get("school") ?? "";
-  const major = params.get("major") ?? "";
+export default function ExploreResultPage() {
   const [data, setData] = useState<EmploymentSearchResult | null>(null);
   const [loading, setLoading] = useState(true);
+  const [school, setSchool] = useState("");
+  const [major, setMajor] = useState("");
 
   useEffect(() => {
-    if (!school || !major) return;
+    const raw = sessionStorage.getItem("explore_search");
+    if (!raw) {
+      setLoading(false);
+      return;
+    }
+    const { school: s, major: m } = JSON.parse(raw);
+    setSchool(s);
+    setMajor(m);
     (async () => {
       try {
-        const result = await employmentApi.search({ school, major });
+        const result = await employmentApi.search({ school: s, major: m });
         setData(result);
       } finally {
         setLoading(false);
       }
     })();
-  }, [school, major]);
+  }, []);
 
   if (loading) return <LoadingState />;
 
@@ -106,7 +111,7 @@ function ExploreResultContent() {
             <p className="font-medium text-slate-800">你的去向是什么？</p>
             <p className="text-sm text-slate-500">记录你的去向决策，与同专业数据对比</p>
           </div>
-          <Link href={`/decisions?school=${encodeURIComponent(school)}&major=${encodeURIComponent(major)}`}>
+          <Link href="/decisions">
             <Button>
               <Compass className="h-4 w-4" /> 记录去向决策
             </Button>
@@ -114,14 +119,5 @@ function ExploreResultContent() {
         </div>
       </div>
     </div>
-  );
-}
-
-export default function ExploreResultPage() {
-  // useSearchParams 必须包裹在 Suspense 边界中，否则 next build 会因 CSR bailout 失败
-  return (
-    <Suspense fallback={<LoadingState />}>
-      <ExploreResultContent />
-    </Suspense>
   );
 }

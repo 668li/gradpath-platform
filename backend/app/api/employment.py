@@ -1,11 +1,19 @@
 # backend/app/api/employment.py
 from fastapi import APIRouter, Depends, Query
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.services.employment_service import get_stats, list_majors, list_schools, search_employment
 
 router = APIRouter(prefix="/api/employment", tags=["就业数据"])
+
+
+class SearchBody(BaseModel):
+    school: str
+    major: str
+    year: int | None = None
+    degree: str | None = None
 
 
 @router.get("/search")
@@ -17,6 +25,11 @@ def search(
     db: Session = Depends(get_db),
 ):
     return search_employment(db, school, major, year, degree)
+
+
+@router.post("/search")
+def search_post(body: SearchBody, db: Session = Depends(get_db)):
+    return search_employment(db, body.school, body.major, body.year, body.degree)
 
 
 @router.get("/schools")

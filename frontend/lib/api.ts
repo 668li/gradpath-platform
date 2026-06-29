@@ -223,10 +223,11 @@ export const employmentApi = {
     year?: number;
     degree?: string;
   }): Promise<EmploymentSearchResult> {
-    const qs = new URLSearchParams({ school: params.school, major: params.major });
-    if (params.year) qs.set("year", String(params.year));
-    if (params.degree) qs.set("degree", params.degree);
-    const resp = await fetch(`/api/employment/search?${qs}`);
+    const resp = await fetch(`/api/employment/search`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(params),
+    });
     if (!resp.ok) throw new Error("搜索失败");
     return resp.json();
   },

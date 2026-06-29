@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Search, School as SchoolIcon } from "lucide-react";
 import { employmentApi } from "@/lib/api";
 import { Button } from "@/components/ui/form-controls";
@@ -9,6 +9,7 @@ import { LoadingState, EmptyState } from "@/components/ui/empty";
 import type { SchoolInfo, EmploymentStats } from "@/types";
 
 export default function ExplorePage() {
+  const router = useRouter();
   const [schools, setSchools] = useState<SchoolInfo[]>([]);
   const [stats, setStats] = useState<EmploymentStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,7 +33,11 @@ export default function ExplorePage() {
 
   if (loading) return <LoadingState />;
 
-  const searchUrl = `/explore/result?school=${encodeURIComponent(schoolQuery)}&major=${encodeURIComponent(majorQuery)}`;
+  const handleSearch = () => {
+    if (!schoolQuery || !majorQuery) return;
+    sessionStorage.setItem("explore_search", JSON.stringify({ school: schoolQuery, major: majorQuery }));
+    router.push("/explore/result");
+  };
 
   return (
     <div className="space-y-6">
@@ -71,11 +76,12 @@ export default function ExplorePage() {
             />
           </div>
           <div className="flex items-end">
-            <Link href={searchUrl}>
-              <Button disabled={!schoolQuery || !majorQuery}>
-                <Search className="h-4 w-4" /> 搜索
-              </Button>
-            </Link>
+            <Button
+              disabled={!schoolQuery || !majorQuery}
+              onClick={handleSearch}
+            >
+              <Search className="h-4 w-4" /> 搜索
+            </Button>
           </div>
         </div>
       </div>
