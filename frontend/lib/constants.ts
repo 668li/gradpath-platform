@@ -188,3 +188,22 @@ export const PIE_COLORS = [
   "#db2777",
   "#64748b",
 ];
+
+// ===== 就业去向分布标签 =====
+export const RATE_LABEL: Record<string, string> = {
+  employment: "就业",
+  further_study: "升学",
+  civil_service: "考公",
+  abroad: "出国",
+  startup: "创业",
+  gap_year: "间隔年",
+};
+
+export const RATE_COLORS: Record<string, string> = {
+  employment: "#3377f6",
+  further_study: "#16a34a",
+  civil_service: "#d97706",
+  abroad: "#7c3aed",
+  startup: "#dc2626",
+  gap_year: "#64748b",
+};

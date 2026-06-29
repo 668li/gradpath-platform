@@ -234,3 +234,53 @@ export interface DashboardOverview {
   } | null;
   timeline: TimelineItem[];
 }
+
+// ===== 就业数据搜索 =====
+export interface SchoolInfo {
+  id: string;
+  name: string;
+  slug: string;
+  code: string | null;
+  report_count: number;
+  major_count: number;
+}
+
+export interface EmploymentRecord {
+  year: number;
+  degree: string;
+  total_graduates: number | null;
+  rates: {
+    employment: number | null;
+    further_study: number | null;
+    civil_service: number | null;
+    abroad: number | null;
+    startup: number | null;
+    gap_year: number | null;
+  };
+  employer_ranking: { name: string; count: number }[];
+  industry_distribution: Record<string, number>;
+  destination_region: Record<string, number>;
+  school_for_further_study: { name: string; count: number }[];
+}
+
+export interface EmploymentTrend {
+  years: number[];
+  employment_rate: (number | null)[];
+  further_study_rate: (number | null)[];
+  civil_service_rate: (number | null)[];
+  abroad_rate: (number | null)[];
+}
+
+export interface EmploymentSearchResult {
+  school: SchoolInfo | null;
+  major: string | null;
+  records: EmploymentRecord[];
+  trend: EmploymentTrend | null;
+}
+
+export interface EmploymentStats {
+  school_count: number;
+  report_count: number;
+  major_count: number;
+  year_range: [number | null, number | null];
+}

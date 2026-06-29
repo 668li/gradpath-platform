@@ -6,6 +6,8 @@ import type {
   DecisionResponse,
   DecisionStats,
   DecisionUpdate,
+  EmploymentSearchResult,
+  EmploymentStats,
   EventCreate,
   EventResponse,
   EventUpdate,
@@ -15,6 +17,7 @@ import type {
   RetroDraft,
   RetrospectiveResponse,
   RetroUpdate,
+  SchoolInfo,
   SkillCreate,
   SkillResponse,
   SkillStats,
@@ -210,4 +213,39 @@ export const retrospectivesApi = {
 // ===== Dashboard =====
 export const dashboardApi = {
   overview: () => request<DashboardOverview>("/api/dashboard/overview"),
+};
+
+// ===== 就业数据搜索 =====
+export const employmentApi = {
+  async search(params: {
+    school: string;
+    major: string;
+    year?: number;
+    degree?: string;
+  }): Promise<EmploymentSearchResult> {
+    const qs = new URLSearchParams({ school: params.school, major: params.major });
+    if (params.year) qs.set("year", String(params.year));
+    if (params.degree) qs.set("degree", params.degree);
+    const resp = await fetch(`/api/employment/search?${qs}`);
+    if (!resp.ok) throw new Error("搜索失败");
+    return resp.json();
+  },
+
+  async schools(): Promise<SchoolInfo[]> {
+    const resp = await fetch(`/api/employment/schools`);
+    if (!resp.ok) throw new Error("获取学校列表失败");
+    return resp.json();
+  },
+
+  async majors(school: string): Promise<string[]> {
+    const resp = await fetch(`/api/employment/majors?school=${encodeURIComponent(school)}`);
+    if (!resp.ok) throw new Error("获取专业列表失败");
+    return resp.json();
+  },
+
+  async stats(): Promise<EmploymentStats> {
+    const resp = await fetch(`/api/employment/stats`);
+    if (!resp.ok) throw new Error("获取统计失败");
+    return resp.json();
+  },
 };
