@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
+  Telescope,
   Compass,
   History,
   Network,
@@ -19,6 +20,7 @@ import { useAuthStore } from "@/stores/auth";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "个人看板", icon: LayoutDashboard },
+  { href: "/explore", label: "去向探索", icon: Telescope },
   { href: "/decisions", label: "去向决策", icon: Compass },
   { href: "/timeline", label: "成长时间线", icon: History },
   { href: "/skills", label: "技能树", icon: Network },
