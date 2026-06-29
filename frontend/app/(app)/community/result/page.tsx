@@ -35,17 +35,17 @@ function CommunityDestinationPie({
     return <p className="text-sm text-slate-400">暂无去向分布数据</p>;
   }
 
-  const total = entries.reduce((sum, [, v]) => sum + v, 0);
+  // distribution 的 value 是 0-1 之间的比例值
   const data = entries.map(([key, value]) => ({
     name: RATE_LABEL[key] ?? key,
     value: value,
     key,
   }));
   const summary = data
-    .map((d) => `${d.name}${d.value}人(${((d.value / total) * 100).toFixed(0)}%)`)
+    .map((d) => `${d.name}${(d.value * 100).toFixed(0)}%`)
     .join("，");
   const prefix = contextLabel ? `${contextLabel}社区` : "社区";
-  const ariaLabel = `${prefix}毕业去向分布：共${total}人，${summary}`;
+  const ariaLabel = `${prefix}毕业去向分布：${summary}`;
 
   return (
     <div role="img" aria-label={ariaLabel}>
@@ -59,7 +59,7 @@ function CommunityDestinationPie({
             cy="50%"
             outerRadius={100}
             label={({ name, value }) =>
-              `${name} ${value}(${((value / total) * 100).toFixed(0)}%)`
+              `${name} ${(value * 100).toFixed(0)}%`
             }
           >
             {data.map((d) => (
@@ -67,7 +67,7 @@ function CommunityDestinationPie({
             ))}
           </Pie>
           <Tooltip
-            formatter={(v: number) => `${v}人 (${((v / total) * 100).toFixed(1)}%)`}
+            formatter={(v: number) => `${(v * 100).toFixed(1)}%`}
           />
         </PieChart>
       </ResponsiveContainer>
