@@ -1,6 +1,7 @@
 # backend/pipeline/extractor.py
 """LLM 辅助就业报告解析器"""
 import json
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import UUID
@@ -12,6 +13,8 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.models.employment_data import Degree, EmploymentData
 from app.models.report_record import ParseStatus, ReportRecord
+
+logger = logging.getLogger(__name__)
 
 PROMPT_PATH = Path(__file__).parent / "prompts" / "extract_report.txt"
 MAX_TEXT_LENGTH = 12000  # LLM 输入文本上限
@@ -59,24 +62,37 @@ def extract_report(db: Session, report_id: UUID) -> ReportRecord | None:
 
     # 写入 EmploymentData
     majors = data.get("majors", [])
+    # 解析幂等：先清除该 report 已有的 EmploymentData，避免重复解析产生残留数据
+    db.query(EmploymentData).filter(EmploymentData.report_id == report.id).delete()
     for major_data in majors:
-        emp = EmploymentData(
-            report_id=report.id,
-            major=major_data.get("major", "未知专业"),
-            degree=Degree(major_data.get("degree", "all")),
-            total_graduates=major_data.get("total_graduates"),
-            employment_rate=major_data.get("employment_rate"),
-            further_study_rate=major_data.get("further_study_rate"),
-            civil_service_rate=major_data.get("civil_service_rate"),
-            abroad_rate=major_data.get("abroad_rate"),
-            startup_rate=major_data.get("startup_rate"),
-            gap_year_rate=major_data.get("gap_year_rate"),
-            employer_ranking=major_data.get("employer_ranking", []),
-            industry_distribution=major_data.get("industry_distribution", {}),
-            destination_region=major_data.get("destination_region", {}),
-            school_for_further_study=major_data.get("school_for_further_study", []),
-        )
-        db.add(emp)
+        # 单个专业的解析失败（如非法 degree 值）应跳过该专业并记录警告，
+        # 不影响其他专业与整份报告的解析结果
+        try:
+            emp = EmploymentData(
+                report_id=report.id,
+                major=major_data.get("major", "未知专业"),
+                degree=Degree(major_data.get("degree", "all")),
+                total_graduates=major_data.get("total_graduates"),
+                employment_rate=major_data.get("employment_rate"),
+                further_study_rate=major_data.get("further_study_rate"),
+                civil_service_rate=major_data.get("civil_service_rate"),
+                abroad_rate=major_data.get("abroad_rate"),
+                startup_rate=major_data.get("startup_rate"),
+                gap_year_rate=major_data.get("gap_year_rate"),
+                employer_ranking=major_data.get("employer_ranking", []),
+                industry_distribution=major_data.get("industry_distribution", {}),
+                destination_region=major_data.get("destination_region", {}),
+                school_for_further_study=major_data.get("school_for_further_study", []),
+            )
+            db.add(emp)
+        except Exception as e:
+            logger.warning(
+                "跳过专业 %r 解析（report_id=%s）: %s",
+                major_data.get("major"),
+                report.id,
+                e,
+            )
+            continue
 
     report.parse_status = ParseStatus.parsed
     report.parsed_at = datetime.now(timezone.utc)
@@ -116,7 +132,6 @@ def call_llm(report_text: str) -> str:
             {"role": "user", "content": prompt}
         ],
         "temperature": 0,
-        "timeout": 60,
     }
 
     resp = httpx.post(

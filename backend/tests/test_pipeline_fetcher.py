@@ -5,7 +5,7 @@ from pathlib import Path
 
 from app.models.school import School
 from app.models.report_record import ReportRecord, ParseStatus
-from pipeline.fetcher import fetch_report
+from pipeline.fetcher import fetch_report, check_robots_allowed
 
 
 SAMPLE_HTML = """
@@ -26,7 +26,8 @@ class TestFetcher:
         db_session.add(school)
         db_session.commit()
 
-        with patch("pipeline.fetcher.httpx.get") as mock_get:
+        with patch("pipeline.fetcher.check_robots_allowed", return_value=True), \
+             patch("pipeline.fetcher.httpx.get") as mock_get:
             mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.text = SAMPLE_HTML
@@ -47,7 +48,8 @@ class TestFetcher:
         db_session.add(school)
         db_session.commit()
 
-        with patch("pipeline.fetcher.httpx.get") as mock_get:
+        with patch("pipeline.fetcher.check_robots_allowed", return_value=True), \
+             patch("pipeline.fetcher.httpx.get") as mock_get:
             mock_response = MagicMock()
             mock_response.status_code = 404
             mock_get.return_value = mock_response
@@ -69,7 +71,9 @@ class TestFetcher:
         db_session.add(school)
         db_session.commit()
 
-        with patch("pipeline.fetcher.httpx.get") as mock_get:
+        direct_url = "https://example.com/report.htm"
+        with patch("pipeline.fetcher.check_robots_allowed", return_value=True) as mock_robots, \
+             patch("pipeline.fetcher.httpx.get") as mock_get:
             mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.text = SAMPLE_HTML
@@ -80,8 +84,51 @@ class TestFetcher:
                 db_session,
                 school_slug="tsinghua",
                 year=2024,
-                direct_url="https://example.com/report.htm",
+                direct_url=direct_url,
             )
 
         assert report is not None
         assert report.source_url == "https://example.com/report.htm"
+        # B2: 主流程应调用 robots 校验
+        mock_robots.assert_called_once_with(direct_url)
+
+    def test_fetch_robots_disallowed(self, db_session):
+        """B2: robots.txt 禁止抓取时应返回 failed 状态且不发起 HTTP 请求"""
+        school = School(name="清华大学", slug="tsinghua")
+        db_session.add(school)
+        db_session.commit()
+
+        direct_url = "https://example.com/report.htm"
+        with patch("pipeline.fetcher.check_robots_allowed", return_value=False) as mock_robots, \
+             patch("pipeline.fetcher.httpx.get") as mock_get:
+            # 即便 httpx.get 返回 200，robots 禁止时也不应走到抓取逻辑
+            mock_response = MagicMock()
+            mock_response.status_code = 200
+            mock_response.text = SAMPLE_HTML
+            mock_response.headers = {"content-type": "text/html"}
+            mock_get.return_value = mock_response
+
+            report = fetch_report(
+                db_session,
+                school_slug="tsinghua",
+                year=2024,
+                direct_url=direct_url,
+            )
+
+        assert report is not None
+        assert report.parse_status == ParseStatus.failed
+        assert report.parse_error is not None
+        assert "robots" in report.parse_error.lower()
+        # robots 校验被调用
+        mock_robots.assert_called_once_with(direct_url)
+        # 禁止抓取时不应发起 HTTP 请求
+        mock_get.assert_not_called()
+
+    def test_check_robots_fail_closed(self):
+        """W5: robots.txt 读取异常时应 fail-closed 返回 False（而非默认放行）"""
+        with patch("pipeline.fetcher.RobotFileParser") as MockParser:
+            instance = MockParser.return_value
+            instance.read.side_effect = Exception("network error")
+            result = check_robots_allowed("https://example.com")
+
+        assert result is False

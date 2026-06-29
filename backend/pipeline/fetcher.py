@@ -24,7 +24,8 @@ def check_robots_allowed(url: str) -> bool:
         rp.read()
         return rp.can_fetch(USER_AGENT, url)
     except Exception:
-        return True  # 无法读取 robots.txt 时默认允许
+        # fail-closed：无法读取 robots.txt 时默认禁止抓取，避免误抓取被禁止的内容
+        return False
 
 
 def fetch_report(
@@ -63,6 +64,19 @@ def fetch_report(
             source_url="",
             parse_status=ParseStatus.failed,
             parse_error="学校未配置 report_index_url",
+        )
+        db.add(report)
+        db.commit()
+        return report
+
+    # robots.txt 合规校验：发起 HTTP 请求前检查是否允许抓取
+    if not check_robots_allowed(report_url):
+        report = ReportRecord(
+            school_id=school.id,
+            year=year,
+            source_url=report_url,
+            parse_status=ParseStatus.failed,
+            parse_error="robots.txt 禁止抓取该 URL",
         )
         db.add(report)
         db.commit()
