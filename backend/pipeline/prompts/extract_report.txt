@@ -1,0 +1,32 @@
+你是一个就业质量报告解析助手。请从以下高校就业质量年度报告文本中提取结构化数据。
+
+要求：
+1. 按专业拆分，每个专业一条记录
+2. 所有比例值用 0-1 之间的小数表示（如 45% = 0.45）
+3. 如果某个字段在报告中未提及，设为 null（数字字段）或空数组/空对象
+4. employer_ranking 按人数降序排列
+5. 严格返回 JSON，不要添加任何解释文字
+
+返回格式：
+{
+  "majors": [
+    {
+      "major": "专业名称",
+      "degree": "bachelor|master|phd|all",
+      "total_graduates": 120,
+      "employment_rate": 0.45,
+      "further_study_rate": 0.35,
+      "civil_service_rate": 0.10,
+      "abroad_rate": 0.10,
+      "startup_rate": 0.0,
+      "gap_year_rate": 0.0,
+      "employer_ranking": [{"name": "单位名", "count": 人数}],
+      "industry_distribution": {"行业名": 比例},
+      "destination_region": {"省份/城市": 比例},
+      "school_for_further_study": [{"name": "学校名", "count": 人数}]
+    }
+  ]
+}
+
+报告文本：
+{report_text}
