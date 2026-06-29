@@ -1,22 +1,20 @@
 # backend/app/api/employment.py
 from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.schemas.employment import (
+    EmploymentSearchResponse,
+    EmploymentStatsResponse,
+    SchoolResponse,
+    SearchBody,
+)
 from app.services.employment_service import get_stats, list_majors, list_schools, search_employment
 
 router = APIRouter(prefix="/api/employment", tags=["就业数据"])
 
 
-class SearchBody(BaseModel):
-    school: str
-    major: str
-    year: int | None = None
-    degree: str | None = None
-
-
-@router.get("/search")
+@router.get("/search", response_model=EmploymentSearchResponse)
 def search(
     school: str = Query(..., description="学校名称（模糊匹配）"),
     major: str = Query(..., description="专业名称（模糊匹配）"),
@@ -27,21 +25,21 @@ def search(
     return search_employment(db, school, major, year, degree)
 
 
-@router.post("/search")
+@router.post("/search", response_model=EmploymentSearchResponse)
 def search_post(body: SearchBody, db: Session = Depends(get_db)):
     return search_employment(db, body.school, body.major, body.year, body.degree)
 
 
-@router.get("/schools")
+@router.get("/schools", response_model=list[SchoolResponse])
 def schools(db: Session = Depends(get_db)):
     return list_schools(db)
 
 
-@router.get("/majors")
+@router.get("/majors", response_model=list[str])
 def majors(school: str = Query(...), db: Session = Depends(get_db)):
     return list_majors(db, school)
 
 
-@router.get("/stats")
+@router.get("/stats", response_model=EmploymentStatsResponse)
 def stats(db: Session = Depends(get_db)):
     return get_stats(db)

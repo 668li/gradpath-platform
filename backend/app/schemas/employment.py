@@ -42,3 +42,15 @@ class EmploymentStatsResponse(BaseModel):
     report_count: int
     major_count: int
     year_range: tuple[int | None, int | None]
+
+
+class SearchBody(BaseModel):
+    """POST /api/employment/search 的请求体。
+
+    从 API 路由文件迁移至 schemas，保证请求/响应模型统一在 schemas 层维护。
+    """
+
+    school: str
+    major: str
+    year: int | None = None
+    degree: str | None = None

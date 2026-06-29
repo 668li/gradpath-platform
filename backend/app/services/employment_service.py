@@ -1,10 +1,19 @@
 # backend/app/services/employment_service.py
-from sqlalchemy import func, distinct
+from sqlalchemy import distinct, func
 from sqlalchemy.orm import Session
 
 from app.models.employment_data import EmploymentData
 from app.models.report_record import ParseStatus, ReportRecord
 from app.models.school import School
+
+
+def escape_like(value: str) -> str:
+    """转义 LIKE/ILIKE 通配符（``%`` 与 ``_``），避免用户输入被当作通配符。
+
+    同时转义反斜杠本身，确保其作为字面量参与匹配。配合 ``ilike(..., escape="\\\\")``
+    使用。
+    """
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
 def search_employment(
@@ -15,8 +24,12 @@ def search_employment(
     degree: str | None = None,
 ) -> dict:
     """搜索就业数据"""
-    # 模糊匹配学校
-    school_obj = db.query(School).filter(School.name.ilike(f"%{school}%")).first()
+    # 模糊匹配学校（转义 LIKE 通配符，避免 %/_ 被当作通配符）
+    school_obj = (
+        db.query(School)
+        .filter(School.name.ilike(f"%{escape_like(school)}%", escape="\\"))
+        .first()
+    )
 
     if not school_obj:
         return {"school": None, "major": None, "records": [], "trend": None}
@@ -28,7 +41,7 @@ def search_employment(
         .filter(
             ReportRecord.school_id == school_obj.id,
             ReportRecord.parse_status == ParseStatus.published,
-            EmploymentData.major.ilike(f"%{major}%"),
+            EmploymentData.major.ilike(f"%{escape_like(major)}%", escape="\\"),
         )
     )
     if year:
@@ -88,32 +101,52 @@ def _build_trend(results: list[EmploymentData]) -> dict | None:
 
 
 def list_schools(db: Session) -> list[dict]:
-    """列出已收录学校（含已发布报告数）"""
-    schools = db.query(School).all()
-    result = []
-    for s in schools:
-        report_count = (
-            db.query(func.count(ReportRecord.id))
-            .filter(ReportRecord.school_id == s.id, ReportRecord.parse_status == ParseStatus.published)
-            .scalar() or 0
+    """列出已收录学校（含已发布报告数）。
+
+    使用单条 ``GROUP BY`` 聚合查询一次性获取所有学校的 ``report_count`` 与
+    ``major_count``，避免对每个学校执行 N+1 次查询（原实现为 2N+1 次）。
+
+    - ``ReportRecord`` 使用 INNER JOIN：仅保留有已发布报告的学校（等价于原
+      ``report_count > 0`` 的过滤）。
+    - ``EmploymentData`` 使用 LEFT JOIN：保留有报告但暂无就业明细的学校，
+      此时 ``major_count`` 为 0，与原实现行为一致。
+    - 使用 ``COUNT(DISTINCT ...)`` 避免一对多 JOIN 导致的重复计数。
+    """
+    rows = (
+        db.query(
+            School.id,
+            School.name,
+            School.slug,
+            School.code,
+            func.count(distinct(ReportRecord.id)).label("report_count"),
+            func.count(distinct(EmploymentData.major)).label("major_count"),
         )
-        major_count = (
-            db.query(distinct(EmploymentData.major))
-            .join(ReportRecord)
-            .filter(ReportRecord.school_id == s.id, ReportRecord.parse_status == ParseStatus.published)
-            .count()
-        )
-        if report_count > 0:
-            result.append({
-                "id": str(s.id), "name": s.name, "slug": s.slug, "code": s.code,
-                "report_count": report_count, "major_count": major_count,
-            })
-    return result
+        .join(ReportRecord, ReportRecord.school_id == School.id)
+        .outerjoin(EmploymentData, EmploymentData.report_id == ReportRecord.id)
+        .filter(ReportRecord.parse_status == ParseStatus.published)
+        .group_by(School.id, School.name, School.slug, School.code)
+        .all()
+    )
+    return [
+        {
+            "id": str(row.id),
+            "name": row.name,
+            "slug": row.slug,
+            "code": row.code,
+            "report_count": row.report_count,
+            "major_count": row.major_count,
+        }
+        for row in rows
+    ]
 
 
 def list_majors(db: Session, school: str) -> list[str]:
     """列出某校已收录专业"""
-    school_obj = db.query(School).filter(School.name.ilike(f"%{school}%")).first()
+    school_obj = (
+        db.query(School)
+        .filter(School.name.ilike(f"%{escape_like(school)}%", escape="\\"))
+        .first()
+    )
     if not school_obj:
         return []
     majors = (
@@ -126,23 +159,34 @@ def list_majors(db: Session, school: str) -> list[str]:
 
 
 def get_stats(db: Session) -> dict:
-    """全局统计"""
-    published_reports = (
-        db.query(ReportRecord)
+    """全局统计。
+
+    使用单条聚合查询获取 ``report_count`` / ``school_count`` / ``major_count`` /
+    ``year_range``，避免将整张 ``report_records`` 表载入内存仅为计算 ``len()``、
+    ``min(year)``、``max(year)``。
+
+    - ``COUNT(DISTINCT ReportRecord.id)``：已发布报告数（LEFT JOIN 后需去重，
+      避免一对多复制导致计数膨胀）。
+    - ``COUNT(DISTINCT ReportRecord.school_id)``：覆盖学校数。
+    - ``COUNT(DISTINCT EmploymentData.major)``：覆盖专业数。
+    - ``MIN/MAX(ReportRecord.year)``：年份范围。
+    """
+    row = (
+        db.query(
+            func.count(distinct(ReportRecord.id)).label("report_count"),
+            func.count(distinct(ReportRecord.school_id)).label("school_count"),
+            func.count(distinct(EmploymentData.major)).label("major_count"),
+            func.min(ReportRecord.year).label("min_year"),
+            func.max(ReportRecord.year).label("max_year"),
+        )
+        .select_from(ReportRecord)
+        .outerjoin(EmploymentData, EmploymentData.report_id == ReportRecord.id)
         .filter(ReportRecord.parse_status == ParseStatus.published)
-        .all()
+        .one()
     )
-    school_ids = set(r.school_id for r in published_reports)
-    major_count = (
-        db.query(distinct(EmploymentData.major))
-        .join(ReportRecord)
-        .filter(ReportRecord.parse_status == ParseStatus.published)
-        .count()
-    )
-    years = [r.year for r in published_reports]
     return {
-        "school_count": len(school_ids),
-        "report_count": len(published_reports),
-        "major_count": major_count,
-        "year_range": [min(years) if years else None, max(years) if years else None],
+        "school_count": row.school_count or 0,
+        "report_count": row.report_count or 0,
+        "major_count": row.major_count or 0,
+        "year_range": [row.min_year, row.max_year],
     }
