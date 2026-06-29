@@ -1,6 +1,10 @@
 "use client";
 
 import type {
+  CommunityAggregate,
+  CommunityReport,
+  CommunityStats,
+  CommunitySubmit,
   DashboardOverview,
   DecisionCreate,
   DecisionResponse,
@@ -237,4 +241,22 @@ export const employmentApi = {
     }),
 
   stats: () => request<EmploymentStats>("/api/employment/stats"),
+};
+
+// ===== 社区数据 =====
+export const communityApi = {
+  submit: (body: CommunitySubmit) =>
+    request<CommunityReport>("/api/community/submit", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  myReports: () => request<CommunityReport[]>("/api/community/my-reports"),
+  remove: (id: string) =>
+    request<void>(`/api/community/${id}`, { method: "DELETE" }),
+  aggregate: (body: { school: string; major: string; year?: number }) =>
+    request<CommunityAggregate>("/api/community/aggregate", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  stats: () => request<CommunityStats>("/api/community/stats"),
 };

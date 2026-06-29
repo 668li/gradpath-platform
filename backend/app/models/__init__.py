@@ -1,5 +1,6 @@
 from app.models.career_event import CareerEvent, EventType
-from app.models.destination_decision import DecisionStatus, DestinationDecision, DestinationType
+from app.models.community_report import CommunityReport, DestinationType, SalaryRange
+from app.models.destination_decision import DecisionStatus, DestinationDecision
 from app.models.employment_data import Degree, EmploymentData
 from app.models.reference_snapshot import ReferenceSnapshot, SnapshotSource
 from app.models.report_record import ParseStatus, ReportRecord
@@ -10,7 +11,7 @@ from app.models.user import User, UserStage
 
 __all__ = [
     "User", "UserStage",
-    "DestinationDecision", "DestinationType", "DecisionStatus",
+    "DestinationDecision", "DecisionStatus",
     "CareerEvent", "EventType",
     "SkillNode",
     "Retrospective", "PeriodType",
@@ -18,4 +19,5 @@ __all__ = [
     "School",
     "ReportRecord", "ParseStatus",
     "EmploymentData", "Degree",
+    "CommunityReport", "DestinationType", "SalaryRange",
 ]

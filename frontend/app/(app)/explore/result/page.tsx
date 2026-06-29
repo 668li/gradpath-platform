@@ -3,13 +3,28 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, Compass } from "lucide-react";
-import { employmentApi } from "@/lib/api";
+import { ArrowLeft, Compass, Users } from "lucide-react";
+import { employmentApi, communityApi } from "@/lib/api";
 import { Button } from "@/components/ui/form-controls";
 import { LoadingState, EmptyState } from "@/components/ui/empty";
 import { useToast } from "@/components/ui/toast";
 import { EmploymentDestinationPie, RankingBar, TrendLine } from "@/components/employment-charts";
-import type { EmploymentSearchResult } from "@/types";
+import { RATE_LABEL } from "@/lib/constants";
+import type { CommunityAggregate, EmploymentSearchResult } from "@/types";
+
+const COMMUNITY_COMPARISON_KEYS = [
+  "employment",
+  "further_study",
+  "civil_service",
+  "abroad",
+  "startup",
+  "gap_year",
+];
+
+/** 将中文编码为 Base64（与 explore / community 保持一致），用于跳转聚合结果页 */
+function encodeParam(value: string): string {
+  return btoa(unescape(encodeURIComponent(value)));
+}
 
 function ExploreResultContent() {
   const router = useRouter();
@@ -24,6 +39,10 @@ function ExploreResultContent() {
   const [data, setData] = useState<EmploymentSearchResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [redirecting, setRedirecting] = useState(false);
+
+  // 社区聚合数据（辅助信息，独立加载，失败静默处理）
+  const [communityData, setCommunityData] = useState<CommunityAggregate | null>(null);
+  const [communityLoading, setCommunityLoading] = useState(true);
 
   useEffect(() => {
     // 无参数（直接访问 /explore/result）时重定向回搜索页
@@ -53,6 +72,25 @@ function ExploreResultContent() {
     };
   }, [school, major, router, toast]);
 
+  // 拉取同校同专业的社区聚合数据（静默失败，不阻断官方数据展示）
+  useEffect(() => {
+    if (!school || !major) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const result = await communityApi.aggregate({ school, major });
+        if (!cancelled) setCommunityData(result);
+      } catch {
+        if (!cancelled) setCommunityData(null);
+      } finally {
+        if (!cancelled) setCommunityLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [school, major]);
+
   if (redirecting || loading) return <LoadingState />;
 
   if (!data || !data.school || data.records.length === 0) {
@@ -75,6 +113,36 @@ function ExploreResultContent() {
   }
 
   const latest = data.records[0];
+
+  // 社区数据对比：官方比例（0~1）vs 社区计数（需换算为比例）
+  const communityDist = communityData?.destination_distribution ?? null;
+  const communityTotal = communityDist
+    ? Object.values(communityDist).reduce((a, b) => a + b, 0)
+    : 0;
+  const hasCommunity =
+    !!communityData && communityData.sample_count > 0 && communityTotal > 0;
+
+  // 构造对比行：仅保留官方或社区任一有数据的去向类型
+  const comparisonRows = COMMUNITY_COMPARISON_KEYS.map((key) => {
+    const officialRate = latest.rates[key as keyof typeof latest.rates];
+    const officialPct =
+      officialRate !== null && officialRate !== undefined
+        ? Math.round(officialRate * 100)
+        : null;
+    const communityCount = communityDist?.[key] ?? 0;
+    const communityPct =
+      hasCommunity && communityCount > 0
+        ? Math.round((communityCount / communityTotal) * 100)
+        : null;
+    return {
+      key,
+      label: RATE_LABEL[key] ?? key,
+      officialPct,
+      communityPct,
+    };
+  }).filter(
+    (r) => r.officialPct !== null || r.communityPct !== null,
+  );
 
   return (
     <div className="space-y-6">
@@ -128,6 +196,70 @@ function ExploreResultContent() {
           />
         </div>
       )}
+
+      {/* 社区数据卡片：官方 vs 社区对比 */}
+      <div className="card">
+        <h2 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
+          <Users className="h-4 w-4 text-brand-500" />
+          社区数据
+        </h2>
+        {communityLoading ? (
+          <p className="text-sm text-slate-400">加载社区数据中…</p>
+        ) : hasCommunity ? (
+          <div className="space-y-3">
+            <p className="text-sm text-slate-500">
+              已聚合 <span className="font-semibold text-brand-600">
+                {communityData!.sample_count}
+              </span> 份匿名报告，与官方数据对比：
+            </p>
+            {comparisonRows.length > 0 ? (
+              <div className="overflow-hidden rounded-lg border border-slate-100">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 text-xs text-slate-500">
+                    <tr>
+                      <th className="px-3 py-2 text-left font-medium">去向类型</th>
+                      <th className="px-3 py-2 text-right font-medium">官方</th>
+                      <th className="px-3 py-2 text-right font-medium">社区</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {comparisonRows.map((r) => (
+                      <tr key={r.key}>
+                        <td className="px-3 py-2 text-slate-700">{r.label}</td>
+                        <td className="px-3 py-2 text-right text-slate-600">
+                          {r.officialPct !== null ? `${r.officialPct}%` : "—"}
+                        </td>
+                        <td className="px-3 py-2 text-right text-brand-600">
+                          {r.communityPct !== null ? `${r.communityPct}%` : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-sm text-slate-400">暂无可对比的去向分布数据</p>
+            )}
+            <Link
+              href={`/community/result?s=${encodeParam(school)}&m=${encodeParam(major)}`}
+              className="inline-flex items-center text-sm text-brand-600 hover:underline"
+            >
+              查看完整社区聚合结果 →
+            </Link>
+          </div>
+        ) : (
+          <div className="flex flex-col items-start gap-3">
+            <p className="text-sm text-slate-500">
+              「{school} · {major}」暂无社区数据，官方数据之外的真实去向需要你的分享。
+            </p>
+            <Link href="/community">
+              <Button variant="secondary">
+                <Users className="h-4 w-4" /> 分享你的去向，帮助学弟学妹
+              </Button>
+            </Link>
+          </div>
+        )}
+      </div>
 
       {/* CTA */}
       <div className="card bg-brand-50 border-brand-100">

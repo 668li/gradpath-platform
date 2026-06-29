@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.auth import router as auth_router
+from app.api.community import router as community_router
 from app.api.dashboard import router as dashboard_router
 from app.api.decisions import router as decisions_router
 from app.api.employment import router as employment_router
@@ -31,6 +32,7 @@ app.include_router(skills_router)
 app.include_router(retrospectives_router)
 app.include_router(dashboard_router)
 app.include_router(employment_router)
+app.include_router(community_router)
 
 
 @app.get("/health")

@@ -284,3 +284,47 @@ export interface EmploymentStats {
   major_count: number;
   year_range: [number | null, number | null];
 }
+
+// ===== 社区数据 =====
+export interface CommunityReport {
+  id: string;
+  school_name: string;
+  major: string;
+  graduation_year: number;
+  degree: string;
+  destination_type: string;
+  employer: string | null;
+  city: string | null;
+  industry: string | null;
+  salary_range: string | null;
+}
+
+export interface CommunitySubmit {
+  school_name: string;
+  major: string;
+  graduation_year: number;
+  degree: string;
+  destination_type: string;
+  employer?: string;
+  city?: string;
+  industry?: string;
+  salary_range?: string;
+}
+
+export interface CommunityAggregate {
+  school: string;
+  major: string;
+  sample_count: number;
+  sufficient: boolean;
+  destination_distribution: Record<string, number> | null;
+  top_employers: { name: string; count: number }[] | null;
+  top_cities: { name: string; count: number }[] | null;
+  top_industries: { name: string; count: number }[] | null;
+  salary_distribution: Record<string, number> | null;
+}
+
+export interface CommunityStats {
+  total_reports: number;
+  school_count: number;
+  major_count: number;
+}

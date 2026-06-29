@@ -207,3 +207,44 @@ export const RATE_COLORS: Record<string, string> = {
   startup: "#dc2626",
   gap_year: "#64748b",
 };
+
+// ===== 社区数据 =====
+// 社区去向类型（与 RATE_LABEL 的 key 一致，复用 RATE_LABEL / RATE_COLORS 展示）
+export const COMMUNITY_DESTINATION_TYPES = [
+  "employment",
+  "further_study",
+  "civil_service",
+  "abroad",
+  "startup",
+  "gap_year",
+];
+
+export const DEGREE_OPTIONS = [
+  { value: "bachelor", label: "本科" },
+  { value: "master", label: "硕士" },
+  { value: "phd", label: "博士" },
+];
+
+export const DEGREE_LABEL: Record<string, string> = {
+  bachelor: "本科",
+  master: "硕士",
+  phd: "博士",
+};
+
+export const SALARY_RANGE_OPTIONS = [
+  { value: "below_8k", label: "8k以下" },
+  { value: "8k_15k", label: "8k-15k" },
+  { value: "15k_25k", label: "15k-25k" },
+  { value: "25k_50k", label: "25k-50k" },
+  { value: "above_50k", label: "50k以上" },
+  { value: "prefer_not", label: "不便透露" },
+];
+
+export const SALARY_RANGE_LABEL: Record<string, string> = {
+  below_8k: "8k以下",
+  "8k_15k": "8k-15k",
+  "15k_25k": "15k-25k",
+  "25k_50k": "25k-50k",
+  above_50k: "50k以上",
+  prefer_not: "不便透露",
+};
