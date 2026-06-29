@@ -8,7 +8,7 @@ import { employmentApi } from "@/lib/api";
 import { Button } from "@/components/ui/form-controls";
 import { LoadingState, EmptyState } from "@/components/ui/empty";
 import { useToast } from "@/components/ui/toast";
-import { DestinationPie, RankingBar, TrendLine } from "@/components/employment-charts";
+import { EmploymentDestinationPie, RankingBar, TrendLine } from "@/components/employment-charts";
 import type { EmploymentSearchResult } from "@/types";
 
 function ExploreResultContent() {
@@ -89,7 +89,10 @@ function ExploreResultContent() {
       {/* 卡片一：去向分布 */}
       <div className="card">
         <h2 className="font-semibold text-slate-800 mb-4">毕业去向分布（{latest.year}年）</h2>
-        <DestinationPie record={latest} />
+        <EmploymentDestinationPie
+          record={latest}
+          contextLabel={`${data.school.name}${data.major ?? ""}`}
+        />
         {latest.total_graduates && (
           <p className="text-center text-sm text-slate-400 mt-2">
             毕业总人数：{latest.total_graduates}人
@@ -116,7 +119,10 @@ function ExploreResultContent() {
       {data.trend && data.trend.years.length > 1 && (
         <div className="card">
           <h2 className="font-semibold text-slate-800 mb-4">多年趋势</h2>
-          <TrendLine trend={data.trend} />
+          <TrendLine
+            trend={data.trend}
+            contextLabel={`${data.school.name}${data.major ?? ""}`}
+          />
         </div>
       )}
 

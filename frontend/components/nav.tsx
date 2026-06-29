@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -61,7 +61,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               href={item.href}
               onClick={onNavigate}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                "flex min-h-[44px] items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                 active
                   ? "bg-brand-50 text-brand-700"
                   : "text-slate-600 hover:bg-slate-100 hover:text-slate-800",
@@ -90,7 +90,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </div>
         <button
           onClick={handleLogout}
-          className="mt-1 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-red-50 hover:text-red-600 transition-colors"
+          className="mt-1 flex min-h-[44px] w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-red-50 hover:text-red-600 transition-colors"
         >
           <LogOut className="h-[18px] w-[18px]" />
           退出登录
@@ -102,6 +102,55 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
 export function AppNav() {
   const [open, setOpen] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  // 抽屉打开时：锁定 body 滚动、Escape 关闭、焦点陷阱、关闭后恢复焦点
+  useEffect(() => {
+    if (!open) return;
+
+    const panel = panelRef.current;
+    const prevActive = document.activeElement as HTMLElement | null;
+
+    // 锁定背景滚动，关闭时恢复
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    // 打开时聚焦关闭按钮，便于键盘操作
+    const closeBtn = panel?.querySelector<HTMLButtonElement>("[data-close]");
+    closeBtn?.focus();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setOpen(false);
+        return;
+      }
+      // 焦点陷阱：Tab / Shift+Tab 在抽屉内循环，避免逃逸到背景
+      if (e.key !== "Tab" || !panel) return;
+      const focusable = panel.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+      // 关闭后把焦点还给触发元素
+      prevActive?.focus?.();
+    };
+  }, [open]);
 
   return (
     <>
@@ -120,7 +169,7 @@ export function AppNav() {
         </div>
         <button
           onClick={() => setOpen(true)}
-          className="text-slate-600 hover:text-slate-800"
+          className="flex h-11 w-11 items-center justify-center rounded-md text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors"
           aria-label="打开菜单"
         >
           <Menu className="h-6 w-6" />
@@ -133,11 +182,19 @@ export function AppNav() {
           <div
             className="absolute inset-0 bg-slate-900/40"
             onClick={() => setOpen(false)}
+            aria-hidden="true"
           />
-          <div className="absolute left-0 top-0 h-full w-72 bg-white shadow-xl">
+          <div
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="导航菜单"
+            className="absolute left-0 top-0 h-full w-72 bg-white shadow-xl"
+          >
             <button
               onClick={() => setOpen(false)}
-              className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 z-10"
+              data-close
+              className="absolute right-2 top-2 z-10 flex h-11 w-11 items-center justify-center rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
               aria-label="关闭菜单"
             >
               <X className="h-5 w-5" />
