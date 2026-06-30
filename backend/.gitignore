@@ -11,3 +11,5 @@ htmlcov/
 .venv/
 venv/
 uploads/
+gradpath.db
+*.db-journal
