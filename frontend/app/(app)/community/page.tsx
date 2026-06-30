@@ -26,9 +26,9 @@ import type {
 
 const YEARS = [2019, 2020, 2021, 2022, 2023, 2024, 2025];
 
-/** 将中文编码为 Base64（与 explore 保持一致），用于 URL 参数传递 */
+/** 将中文编码为 Base64 并 URL 编码，用于 URL 参数传递 */
 function encodeParam(value: string): string {
-  return btoa(unescape(encodeURIComponent(value)));
+  return encodeURIComponent(btoa(unescape(encodeURIComponent(value))));
 }
 
 export default function CommunityPage() {

@@ -65,9 +65,9 @@ export default function ExplorePage() {
     const school = schoolQuery.trim();
     const major = majorQuery.trim();
     if (!school || !major) return;
-    // 用 Base64 编码中文参数，避免浏览器代理对 URL 编码中文返回 400
-    const s = btoa(unescape(encodeURIComponent(school)));
-    const m = btoa(unescape(encodeURIComponent(major)));
+    // 用 Base64 编码中文参数并 URL 编码，避免 + / 等 Base64 字符破坏 URL
+    const s = encodeURIComponent(btoa(unescape(encodeURIComponent(school))));
+    const m = encodeURIComponent(btoa(unescape(encodeURIComponent(major))));
     router.push(`/explore/result?s=${s}&m=${m}`);
   };
 

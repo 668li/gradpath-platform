@@ -21,9 +21,9 @@ const COMMUNITY_COMPARISON_KEYS = [
   "gap_year",
 ];
 
-/** 将中文编码为 Base64（与 explore / community 保持一致），用于跳转聚合结果页 */
+/** 将中文编码为 Base64 并 URL 编码，用于跳转聚合结果页 */
 function encodeParam(value: string): string {
-  return btoa(unescape(encodeURIComponent(value)));
+  return encodeURIComponent(btoa(unescape(encodeURIComponent(value))));
 }
 
 function ExploreResultContent() {
