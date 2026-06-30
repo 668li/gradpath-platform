@@ -2,6 +2,7 @@ from app.models.career_event import CareerEvent, EventType
 from app.models.community_report import CommunityReport, DestinationType, SalaryRange
 from app.models.destination_decision import DecisionStatus, DestinationDecision
 from app.models.employment_data import Degree, EmploymentData
+from app.models.interview_report import InterviewDimension, InterviewReport, InterviewResult
 from app.models.reference_snapshot import ReferenceSnapshot, SnapshotSource
 from app.models.report_record import ParseStatus, ReportRecord
 from app.models.retrospective import PeriodType, Retrospective
@@ -20,4 +21,5 @@ __all__ = [
     "ReportRecord", "ParseStatus",
     "EmploymentData", "Degree",
     "CommunityReport", "DestinationType", "SalaryRange",
+    "InterviewReport", "InterviewDimension", "InterviewResult",
 ]
