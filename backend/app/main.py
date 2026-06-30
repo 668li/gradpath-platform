@@ -8,6 +8,7 @@ from app.api.decisions import router as decisions_router
 from app.api.employment import router as employment_router
 from app.api.events import router as events_router
 from app.api.interview import router as interview_router
+from app.api.pipeline import router as pipeline_router
 from app.api.retrospectives import router as retrospectives_router
 from app.api.skills import router as skills_router
 from app.database import Base, engine
@@ -35,6 +36,7 @@ app.include_router(dashboard_router)
 app.include_router(employment_router)
 app.include_router(community_router)
 app.include_router(interview_router)
+app.include_router(pipeline_router)
 
 
 @app.get("/health")
