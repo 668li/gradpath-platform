@@ -45,3 +45,8 @@ class ReportRecord(UUIDMixin, TimestampMixin, Base):
     employment_data: Mapped[list["EmploymentData"]] = relationship(
         back_populates="report", cascade="all, delete-orphan"
     )
+
+    @property
+    def school_name(self) -> str:
+        """学校名称（供 Pydantic from_attributes 序列化使用）。"""
+        return self.school.name if self.school is not None else ""
