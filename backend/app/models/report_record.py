@@ -8,6 +8,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 from app.models.base import UUIDMixin, TimestampMixin
+from app.models.pipeline_enums import ContentType, SourceType
 
 
 class ParseStatus(str, enum.Enum):
@@ -29,6 +30,11 @@ class ReportRecord(UUIDMixin, TimestampMixin, Base):
     source_url: Mapped[str] = mapped_column(Text, nullable=False)
     raw_html: Mapped[str | None] = mapped_column(Text)
     raw_pdf_path: Mapped[str | None] = mapped_column(String(500))
+    source_type: Mapped[SourceType] = mapped_column(
+        Enum(SourceType), default=SourceType.crawl, nullable=False
+    )
+    content_type: Mapped[ContentType | None] = mapped_column(Enum(ContentType))
+    file_path: Mapped[str | None] = mapped_column(String(500))
     parse_status: Mapped[ParseStatus] = mapped_column(
         Enum(ParseStatus), default=ParseStatus.pending, nullable=False
     )

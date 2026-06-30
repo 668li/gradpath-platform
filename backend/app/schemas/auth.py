@@ -31,6 +31,7 @@ class UserResponse(BaseModel):
     school: str | None = None
     major: str | None = None
     graduation_year: int | None = None
+    is_admin: bool = False
     created_at: datetime
 
     model_config = {"from_attributes": True}

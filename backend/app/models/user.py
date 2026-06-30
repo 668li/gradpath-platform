@@ -1,5 +1,5 @@
 import enum
-from sqlalchemy import Enum, Integer, String
+from sqlalchemy import Boolean, Enum, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -23,3 +23,4 @@ class User(UUIDMixin, TimestampMixin, Base):
     school: Mapped[str | None] = mapped_column(String(255), nullable=True)
     major: Mapped[str | None] = mapped_column(String(255), nullable=True)
     graduation_year: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    is_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

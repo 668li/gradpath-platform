@@ -16,26 +16,41 @@ import {
   GraduationCap,
   Briefcase,
   Users,
+  Database,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth";
 
-const NAV_ITEMS = [
-  { href: "/dashboard", label: "个人看板", icon: LayoutDashboard },
-  { href: "/explore", label: "去向探索", icon: Telescope },
-  { href: "/community", label: "社区数据", icon: Users },
-  { href: "/interview", label: "面试经验", icon: Briefcase },
-  { href: "/decisions", label: "去向决策", icon: Compass },
-  { href: "/timeline", label: "成长时间线", icon: History },
-  { href: "/skills", label: "技能树", icon: Network },
-  { href: "/retrospectives", label: "阶段复盘", icon: ClipboardList },
-];
+interface NavItem {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+}
+
+/** 根据是否为管理员生成导航项列表 */
+function getNavItems(isAdmin: boolean = false): NavItem[] {
+  const items: NavItem[] = [
+    { href: "/dashboard", label: "个人看板", icon: LayoutDashboard },
+    { href: "/explore", label: "去向探索", icon: Telescope },
+    { href: "/community", label: "社区数据", icon: Users },
+    { href: "/interview", label: "面试经验", icon: Briefcase },
+    { href: "/decisions", label: "去向决策", icon: Compass },
+    { href: "/timeline", label: "成长时间线", icon: History },
+    { href: "/skills", label: "技能树", icon: Network },
+    { href: "/retrospectives", label: "阶段复盘", icon: ClipboardList },
+  ];
+  if (isAdmin) {
+    items.push({ href: "/pipeline", label: "数据管道", icon: Database });
+  }
+  return items;
+}
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
+  const navItems = getNavItems(user?.is_admin);
 
   const handleLogout = () => {
     logout();
@@ -55,7 +70,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-1">
-        {NAV_ITEMS.map((item) => {
+        {navItems.map((item) => {
           const active =
             pathname === item.href || pathname.startsWith(item.href + "/");
           const Icon = item.icon;
