@@ -328,3 +328,54 @@ export interface CommunityStats {
   school_count: number;
   major_count: number;
 }
+
+// ===== 面试经验 =====
+export interface InterviewReport {
+  id: string;
+  company: string;
+  position: string;
+  interview_year: number;
+  city: string | null;
+  rounds: number | null;
+  result: string;
+  dimensions: string[];
+  difficulty: number | null;
+  summary: string | null;
+  community_report_id: string | null;
+}
+
+export interface InterviewSubmit {
+  company: string;
+  position: string;
+  interview_year: number;
+  city?: string;
+  rounds?: number;
+  result?: string;
+  dimensions?: string[];
+  difficulty?: number;
+  summary?: string;
+  community_report_id?: string;
+}
+
+export interface InterviewAggregate {
+  company: string;
+  position: string | null;
+  sample_count: number;
+  sufficient: boolean;
+  avg_difficulty: number | null;
+  avg_rounds: number | null;
+  result_distribution: Record<string, number> | null;
+  dimension_frequency: Record<string, number> | null;
+  common_positions: { name: string; count: number }[] | null;
+}
+
+export interface InterviewStats {
+  total_reports: number;
+  company_count: number;
+  position_count: number;
+}
+
+export interface CompanyInfo {
+  name: string;
+  count: number;
+}

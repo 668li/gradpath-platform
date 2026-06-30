@@ -5,6 +5,7 @@ import type {
   CommunityReport,
   CommunityStats,
   CommunitySubmit,
+  CompanyInfo,
   DashboardOverview,
   DecisionCreate,
   DecisionResponse,
@@ -15,6 +16,10 @@ import type {
   EventCreate,
   EventResponse,
   EventUpdate,
+  InterviewAggregate,
+  InterviewReport,
+  InterviewStats,
+  InterviewSubmit,
   LoginRequest,
   RegisterRequest,
   RetroCreate,
@@ -259,4 +264,27 @@ export const communityApi = {
       body: JSON.stringify(body),
     }),
   stats: () => request<CommunityStats>("/api/community/stats"),
+};
+
+// ===== 面试经验 =====
+export const interviewApi = {
+  submit: (body: InterviewSubmit) =>
+    request<InterviewReport>("/api/interview/submit", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  myReports: () => request<InterviewReport[]>("/api/interview/my-reports"),
+  remove: (id: string) =>
+    request<void>(`/api/interview/${id}`, { method: "DELETE" }),
+  aggregate: (body: { company: string; position?: string }) =>
+    request<InterviewAggregate>("/api/interview/aggregate", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  stats: () => request<InterviewStats>("/api/interview/stats"),
+  companies: (keyword: string = "") =>
+    request<CompanyInfo[]>("/api/interview/companies", {
+      method: "POST",
+      body: JSON.stringify({ keyword }),
+    }),
 };

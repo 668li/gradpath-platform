@@ -248,3 +248,38 @@ export const SALARY_RANGE_LABEL: Record<string, string> = {
   above_50k: "50k以上",
   prefer_not: "不便透露",
 };
+
+// ===== 面试经验 =====
+export const INTERVIEW_DIMENSION_LABEL: Record<string, string> = {
+  algorithm: "算法/编程",
+  system_design: "系统设计",
+  project_depth: "项目深度",
+  culture_fit: "文化匹配",
+  communication: "沟通表达",
+  domain: "专业知识",
+  behavior: "行为面试",
+};
+
+export const INTERVIEW_DIMENSIONS = [
+  "algorithm",
+  "system_design",
+  "project_depth",
+  "culture_fit",
+  "communication",
+  "domain",
+  "behavior",
+];
+
+export const INTERVIEW_RESULT_LABEL: Record<string, string> = {
+  offer: "拿到 offer",
+  rejected: "未通过",
+  pending: "进行中",
+};
+
+export const INTERVIEW_RESULTS = ["offer", "rejected", "pending"];
+
+export const INTERVIEW_RESULT_COLOR: Record<string, string> = {
+  offer: "#16a34a",
+  rejected: "#dc2626",
+  pending: "#d97706",
+};
