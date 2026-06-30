@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.models.employment_data import Degree, EmploymentData
 from app.models.report_record import ParseStatus, ReportRecord
+from pipeline.extractors.html_extractor import extract_html
 
 logger = logging.getLogger(__name__)
 
@@ -102,16 +103,8 @@ def extract_report(db: Session, report_id: UUID) -> ReportRecord | None:
 
 
 def _clean_html(html: str) -> str:
-    """将 HTML 清洗为纯文本 + 表格结构"""
-    soup = BeautifulSoup(html, "html.parser")
-    # 移除 script/style
-    for tag in soup(["script", "style", "nav", "footer", "header"]):
-        tag.decompose()
-    # 保留表格结构
-    text = soup.get_text(separator="\n", strip=True)
-    # 压缩空行
-    lines = [line.strip() for line in text.split("\n") if line.strip()]
-    return "\n".join(lines)
+    """将 HTML 清洗为纯文本（委托给 html_extractor）。"""
+    return extract_html(html).text
 
 
 def call_llm(report_text: str) -> str:
