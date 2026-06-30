@@ -9,6 +9,7 @@ export interface UserResponse {
   school?: string | null;
   major?: string | null;
   graduation_year?: number | null;
+  is_admin?: boolean;
   created_at: string;
 }
 
@@ -378,4 +379,67 @@ export interface InterviewStats {
 export interface CompanyInfo {
   name: string;
   count: number;
+}
+
+// ===== 数据管道 =====
+export type ParseStatus = "pending" | "parsed" | "failed" | "reviewed" | "published";
+export type SourceType = "crawl" | "upload" | "api";
+export type ContentType = "html" | "pdf" | "excel" | "csv" | "json";
+
+export interface ReportListItem {
+  id: string;
+  school_name: string;
+  year: number;
+  source_type: SourceType;
+  content_type: ContentType | null;
+  parse_status: ParseStatus;
+  parse_error: string | null;
+  parsed_at: string | null;
+  created_at: string;
+}
+
+export interface ReportListResponse {
+  items: ReportListItem[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface EmploymentDataPreview {
+  major: string;
+  degree: string;
+  total_graduates: number | null;
+  employment_rate: number | null;
+  further_study_rate: number | null;
+}
+
+export interface ReportDetail extends ReportListItem {
+  source_url: string;
+  employment_data: EmploymentDataPreview[];
+}
+
+export interface PipelineStats {
+  total_reports: number;
+  published_count: number;
+  pending_count: number;
+  failed_count: number;
+}
+
+export interface DataSourceResponse {
+  id: string;
+  name: string;
+  source_type: string;
+  api_url: string | null;
+  api_key: string | null;
+  data_mapping: Record<string, unknown> | null;
+  is_active: boolean;
+}
+
+export interface DataSourceCreate {
+  name: string;
+  source_type?: string;
+  api_url?: string | null;
+  api_key?: string | null;
+  data_mapping?: Record<string, unknown> | null;
+  is_active?: boolean;
 }

@@ -283,3 +283,34 @@ export const INTERVIEW_RESULT_COLOR: Record<string, string> = {
   rejected: "#dc2626",
   pending: "#d97706",
 };
+
+// ===== 数据管道 =====
+export const PARSE_STATUS_LABEL: Record<string, string> = {
+  pending: "待解析",
+  parsed: "已解析",
+  failed: "失败",
+  reviewed: "已审核",
+  published: "已发布",
+};
+
+export const PARSE_STATUS_COLOR: Record<string, string> = {
+  pending: "#d97706",
+  parsed: "#2563eb",
+  failed: "#dc2626",
+  reviewed: "#7c3aed",
+  published: "#16a34a",
+};
+
+export const SOURCE_TYPE_LABEL: Record<string, string> = {
+  crawl: "爬虫抓取",
+  upload: "文件上传",
+  api: "API对接",
+};
+
+export const CONTENT_TYPE_LABEL: Record<string, string> = {
+  html: "HTML",
+  pdf: "PDF",
+  excel: "Excel",
+  csv: "CSV",
+  json: "JSON",
+};
