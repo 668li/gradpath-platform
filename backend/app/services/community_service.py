@@ -54,6 +54,21 @@ def get_my_reports(db: Session, user_id: UUID) -> list[CommunityReport]:
     )
 
 
+def list_my_reports_paginated(
+    db: Session, user_id: UUID, page: int = 1, page_size: int = 20
+) -> tuple[list[CommunityReport], int]:
+    """分页查询当前用户提交的社区报告（按毕业年份降序）。"""
+    query = db.query(CommunityReport).filter(CommunityReport.user_id == user_id)
+    total = query.count()
+    items = (
+        query.order_by(CommunityReport.graduation_year.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
+    return items, total
+
+
 def delete_report(db: Session, user_id: UUID, report_id: str) -> None:
     """删除当前用户指定的社区报告。"""
     try:

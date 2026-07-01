@@ -12,6 +12,7 @@ import {
 import { Modal } from "@/components/ui/modal";
 import { EmptyState, LoadingState } from "@/components/ui/empty";
 import { Badge, Button } from "@/components/ui/form-controls";
+import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/components/ui/toast";
 import { EventForm } from "@/components/event-form";
 import type { EventResponse, EventType } from "@/types";
@@ -28,22 +29,29 @@ export default function TimelinePage() {
   const [events, setEvents] = useState<EventResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Filter>("all");
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<EventResponse | null>(null);
+
+  const PAGE_SIZE = 20;
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const list = await eventsApi.list({
         event_type: filter === "all" ? undefined : filter,
+        page,
+        page_size: PAGE_SIZE,
       });
-      setEvents(list);
+      setEvents(list.items);
+      setTotal(list.total);
     } catch (err) {
       toast.push(err instanceof Error ? err.message : "加载失败", "error");
     } finally {
       setLoading(false);
     }
-  }, [filter, toast]);
+  }, [filter, page, toast]);
 
   useEffect(() => {
     load();
@@ -95,7 +103,10 @@ export default function TimelinePage() {
         {FILTERS.map((f) => (
           <button
             key={f.key}
-            onClick={() => setFilter(f.key)}
+            onClick={() => {
+              setFilter(f.key);
+              setPage(1);
+            }}
             className={cn(
               "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
               filter === f.key
@@ -216,6 +227,14 @@ export default function TimelinePage() {
             );
           })}
         </ol>
+      )}
+      {!loading && (
+        <Pagination
+          page={page}
+          pageSize={PAGE_SIZE}
+          total={total}
+          onPageChange={setPage}
+        />
       )}
 
       <Modal

@@ -40,7 +40,7 @@ def test_list_events_filtered_by_type(auth_headers, client):
         )
     resp = client.get("/api/events?event_type=onboard", headers=auth_headers)
     assert resp.status_code == 200
-    assert len(resp.json()) == 2
+    assert len(resp.json()["items"]) == 2
 
 
 def test_list_events_filtered_by_date_range(auth_headers, client):
@@ -60,7 +60,7 @@ def test_list_events_filtered_by_date_range(auth_headers, client):
         headers=auth_headers,
     )
     assert resp.status_code == 200
-    assert len(resp.json()) == 1
+    assert len(resp.json()["items"]) == 1
 
 
 def test_update_event(auth_headers, client):

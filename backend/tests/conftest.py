@@ -5,7 +5,18 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.database import Base, get_db
-from app.main import app
+from app.main import app, limiter
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limiter():
+    """每个测试前后重置限流器存储，避免限流计数跨测试累积。
+
+    register/login 等端点已加限流，若不重置，前一个测试消耗的额度会影响后一个测试。
+    """
+    limiter.reset()
+    yield
+    limiter.reset()
 
 
 @pytest.fixture

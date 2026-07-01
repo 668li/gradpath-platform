@@ -7,9 +7,13 @@
 - 支持 system_prompt + context injection
 - ``LLM_API_KEY`` 为空时抛出 ``AIServiceNotConfigured`` 异常，API 层返回 503
 """
+import logging
+
 import httpx
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
 
 
 class AIServiceNotConfigured(Exception):
@@ -59,11 +63,18 @@ class AIService:
             ],
             "temperature": 0.7,
         }
-        resp = httpx.post(
-            f"{self.base_url}chat/completions",
-            headers=headers,
-            json=payload,
-            timeout=timeout,
-        )
-        resp.raise_for_status()
-        return resp.json()["choices"][0]["message"]["content"]
+        logger.info("LLM 调用开始: model=%s", self.model)
+        try:
+            resp = httpx.post(
+                f"{self.base_url}chat/completions",
+                headers=headers,
+                json=payload,
+                timeout=timeout,
+            )
+            resp.raise_for_status()
+            result = resp.json()["choices"][0]["message"]["content"]
+            logger.info("LLM 调用完成: %d 字符", len(result))
+            return result
+        except Exception as e:
+            logger.error("LLM 调用失败: %s", e)
+            raise

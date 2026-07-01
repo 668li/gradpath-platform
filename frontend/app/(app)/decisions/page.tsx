@@ -12,6 +12,7 @@ import {
 import { Modal } from "@/components/ui/modal";
 import { EmptyState, LoadingState } from "@/components/ui/empty";
 import { Badge, Button } from "@/components/ui/form-controls";
+import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/components/ui/toast";
 import { DestinationPie } from "@/components/charts";
 import { DecisionForm } from "@/components/decision-form";
@@ -46,24 +47,29 @@ export default function DecisionsPage() {
   const [decisions, setDecisions] = useState<DecisionResponse[]>([]);
   const [stats, setStats] = useState<DecisionStats>({});
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<DecisionResponse | null>(null);
+
+  const PAGE_SIZE = 20;
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const [list, s] = await Promise.all([
-        decisionsApi.list(),
+        decisionsApi.list({ page, page_size: PAGE_SIZE }),
         decisionsApi.stats(),
       ]);
-      setDecisions(list);
+      setDecisions(list.items);
+      setTotal(list.total);
       setStats(s);
     } catch (err) {
       toast.push(err instanceof Error ? err.message : "加载失败", "error");
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, page]);
 
   useEffect(() => {
     load();
@@ -197,6 +203,14 @@ export default function DecisionsPage() {
                 </div>
               </div>
             ))
+          )}
+          {!loading && (
+            <Pagination
+              page={page}
+              pageSize={PAGE_SIZE}
+              total={total}
+              onPageChange={setPage}
+            />
           )}
         </div>
 

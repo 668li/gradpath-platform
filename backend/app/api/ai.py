@@ -1,11 +1,12 @@
 # backend/app/api/ai.py
 """AI 决策指导与外部数据查询 API 路由。"""
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
 from app.database import get_db
+from app.main import limiter
 from app.models.user import User
 from app.schemas.ai import (
     CompanyResponse,
@@ -39,7 +40,10 @@ router = APIRouter(tags=["AI 与外部数据"])
     "/api/ai/decision-advice",
     response_model=DecisionAdviceResponse,
 )
+@limiter.limit("10/minute")
 def decision_advice(
+    request: Request,
+    response: Response,
     body: DecisionAdviceRequest,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -80,7 +84,10 @@ def decision_advice(
     "/api/ai/growth-insight",
     response_model=GrowthInsightResponse,
 )
+@limiter.limit("10/minute")
 def growth_insight(
+    request: Request,
+    response: Response,
     body: GrowthInsightRequest,
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

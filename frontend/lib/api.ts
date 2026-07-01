@@ -32,6 +32,7 @@ import type {
   InterviewSubmit,
   LoginRequest,
   MarketDataItem,
+  PaginatedResponse,
   ParseStatus,
   PipelineStats,
   PostCreate,
@@ -166,7 +167,10 @@ export const authApi = {
 
 // ===== Decisions =====
 export const decisionsApi = {
-  list: () => request<DecisionResponse[]>("/api/decisions"),
+  list: (params?: { page?: number; page_size?: number }) =>
+    request<PaginatedResponse<DecisionResponse>>(
+      `/api/decisions${buildQuery((params as Record<string, string | undefined | null>) || {})}`,
+    ),
   get: (id: string) => request<DecisionResponse>(`/api/decisions/${id}`),
   create: (body: DecisionCreate) =>
     request<DecisionResponse>("/api/decisions", {
@@ -185,8 +189,16 @@ export const decisionsApi = {
 
 // ===== Events =====
 export const eventsApi = {
-  list: (params?: { event_type?: string; start_date?: string; end_date?: string }) =>
-    request<EventResponse[]>(`/api/events${buildQuery(params || {})}`),
+  list: (params?: {
+    event_type?: string;
+    start_date?: string;
+    end_date?: string;
+    page?: number;
+    page_size?: number;
+  }) =>
+    request<PaginatedResponse<EventResponse>>(
+      `/api/events${buildQuery((params as Record<string, string | undefined | null>) || {})}`,
+    ),
   get: (id: string) => request<EventResponse>(`/api/events/${id}`),
   create: (body: EventCreate) =>
     request<EventResponse>("/api/events", {
@@ -223,7 +235,10 @@ export const skillsApi = {
 
 // ===== Retrospectives =====
 export const retrospectivesApi = {
-  list: () => request<RetrospectiveResponse[]>("/api/retrospectives"),
+  list: (params?: { page?: number; page_size?: number }) =>
+    request<PaginatedResponse<RetrospectiveResponse>>(
+      `/api/retrospectives${buildQuery((params as Record<string, string | undefined | null>) || {})}`,
+    ),
   get: (id: string) => request<RetrospectiveResponse>(`/api/retrospectives/${id}`),
   create: (body: RetroCreate) =>
     request<RetrospectiveResponse>("/api/retrospectives", {
@@ -284,7 +299,10 @@ export const communityApi = {
       method: "POST",
       body: JSON.stringify(body),
     }),
-  myReports: () => request<CommunityReport[]>("/api/community/my-reports"),
+  myReports: (params?: { page?: number; page_size?: number }) =>
+    request<PaginatedResponse<CommunityReport>>(
+      `/api/community/my-reports${buildQuery((params as Record<string, string | undefined | null>) || {})}`,
+    ),
   remove: (id: string) =>
     request<void>(`/api/community/${id}`, { method: "DELETE" }),
   aggregate: (body: { school: string; major: string; year?: number }) =>
@@ -302,7 +320,10 @@ export const interviewApi = {
       method: "POST",
       body: JSON.stringify(body),
     }),
-  myReports: () => request<InterviewReport[]>("/api/interview/my-reports"),
+  myReports: (params?: { page?: number; page_size?: number }) =>
+    request<PaginatedResponse<InterviewReport>>(
+      `/api/interview/my-reports${buildQuery((params as Record<string, string | undefined | null>) || {})}`,
+    ),
   remove: (id: string) =>
     request<void>(`/api/interview/${id}`, { method: "DELETE" }),
   aggregate: (body: { company: string; position?: string }) =>

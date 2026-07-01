@@ -8,12 +8,13 @@ from app.core.deps import get_current_user
 from app.database import get_db
 from app.models.career_event import EventType
 from app.models.user import User
+from app.schemas.common import PaginatedResponse
 from app.schemas.event import EventCreate, EventResponse, EventUpdate
 from app.services.event_service import (
     create_event,
     delete_event,
     get_event,
-    list_events,
+    list_events_paginated,
     update_event,
 )
 
@@ -25,15 +26,20 @@ def create(data: EventCreate, db: Session = Depends(get_db), user: User = Depend
     return create_event(db, user.id, data)
 
 
-@router.get("", response_model=list[EventResponse])
+@router.get("", response_model=PaginatedResponse[EventResponse])
 def list_all(
     event_type: EventType | None = Query(None),
     start_date: date | None = Query(None),
     end_date: date | None = Query(None),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    return list_events(db, user.id, event_type, start_date, end_date)
+    items, total = list_events_paginated(
+        db, user.id, page, page_size, event_type, start_date, end_date
+    )
+    return {"items": items, "total": total, "page": page, "page_size": page_size}
 
 
 @router.get("/{event_id}", response_model=EventResponse)

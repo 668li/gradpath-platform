@@ -1,11 +1,12 @@
 # backend/app/api/interview.py
 """公司面试经验报告 API 路由。"""
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
 from app.database import get_db
 from app.models.user import User
+from app.schemas.common import PaginatedResponse
 from app.schemas.interview import (
     CompanyQuery,
     InterviewAggregateQuery,
@@ -17,9 +18,9 @@ from app.schemas.interview import (
 from app.services.interview_service import (
     aggregate,
     delete_report,
-    get_my_reports,
     get_stats,
     list_companies,
+    list_my_reports_paginated,
     submit_report,
 )
 
@@ -35,12 +36,15 @@ def submit(
     return submit_report(db, user.id, body)
 
 
-@router.get("/my-reports", response_model=list[InterviewReportResponse])
+@router.get("/my-reports", response_model=PaginatedResponse[InterviewReportResponse])
 def my_reports(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    return get_my_reports(db, user.id)
+    items, total = list_my_reports_paginated(db, user.id, page, page_size)
+    return {"items": items, "total": total, "page": page, "page_size": page_size}
 
 
 @router.delete("/{report_id}", status_code=status.HTTP_204_NO_CONTENT)

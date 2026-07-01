@@ -1,5 +1,5 @@
 # backend/app/schemas/employment.py
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class SchoolResponse(BaseModel):
@@ -50,7 +50,7 @@ class SearchBody(BaseModel):
     从 API 路由文件迁移至 schemas，保证请求/响应模型统一在 schemas 层维护。
     """
 
-    school: str
+    school: str = Field(max_length=200)
     major: str
     year: int | None = None
     degree: str | None = None
@@ -59,4 +59,4 @@ class SearchBody(BaseModel):
 class MajorQuery(BaseModel):
     """POST /api/employment/majors 的请求体。"""
 
-    school: str
+    school: str = Field(max_length=200)

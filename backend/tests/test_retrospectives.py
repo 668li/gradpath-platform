@@ -49,7 +49,7 @@ def test_list_retrospectives(auth_headers, client):
         )
     resp = client.get("/api/retrospectives", headers=auth_headers)
     assert resp.status_code == 200
-    assert len(resp.json()) == 3
+    assert len(resp.json()["items"]) == 3
 
 
 def test_retrospective_draft(auth_headers, client):

@@ -2,12 +2,14 @@ from datetime import date
 from uuid import UUID
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
 from app.database import get_db
+from app.main import limiter
 from app.models.user import User
+from app.schemas.common import PaginatedResponse
 from app.schemas.retrospective import (
     AIRetroDraftRequest,
     AIRetroDraftResponse,
@@ -22,7 +24,7 @@ from app.services.retrospective_service import (
     delete_retrospective,
     generate_draft,
     get_retrospective,
-    list_retrospectives,
+    list_retrospectives_paginated,
     update_retrospective,
 )
 
@@ -34,9 +36,15 @@ def create(data: RetroCreate, db: Session = Depends(get_db), user: User = Depend
     return create_retrospective(db, user.id, data)
 
 
-@router.get("", response_model=list[RetroResponse])
-def list_all(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
-    return list_retrospectives(db, user.id)
+@router.get("", response_model=PaginatedResponse[RetroResponse])
+def list_all(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    items, total = list_retrospectives_paginated(db, user.id, page, page_size)
+    return {"items": items, "total": total, "page": page, "page_size": page_size}
 
 
 @router.get("/draft")
@@ -50,7 +58,10 @@ def draft(
 
 
 @router.post("/ai-draft", response_model=AIRetroDraftResponse)
+@limiter.limit("10/minute")
 def ai_draft(
+    request: Request,
+    response: Response,
     body: AIRetroDraftRequest,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),

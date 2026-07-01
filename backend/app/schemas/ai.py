@@ -2,7 +2,7 @@
 """AI 决策指导与外部数据查询的 Pydantic Schema 定义。"""
 from datetime import date
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 # ======================================================================
@@ -13,10 +13,10 @@ class DecisionAdviceRequest(BaseModel):
     """AI 决策指导请求体。"""
 
     destination_type: str = Field(..., description="去向类型（employment/postgrad/...）")
-    company: str | None = Field(None, description="意向公司")
-    position: str | None = Field(None, description="意向岗位")
-    city: str | None = Field(None, description="意向城市")
-    expected_salary: str | None = Field(None, description="期望薪资区间（如 25k_50k）")
+    company: str | None = Field(None, max_length=100, description="意向公司")
+    position: str | None = Field(None, max_length=100, description="意向岗位")
+    city: str | None = Field(None, max_length=100, description="意向城市")
+    expected_salary: str | None = Field(None, max_length=50, description="期望薪资区间（如 25k_50k）")
 
 
 class AlternativeOption(BaseModel):
@@ -48,6 +48,13 @@ class GrowthInsightRequest(BaseModel):
 
     period_start: date = Field(..., description="分析时段开始日期")
     period_end: date = Field(..., description="分析时段结束日期")
+
+    @model_validator(mode="after")
+    def _check_period_order(self):
+        """period_end 不得早于 period_start。"""
+        if self.period_end < self.period_start:
+            raise ValueError("period_end 不能早于 period_start")
+        return self
 
 
 class GrowthInsightResponse(BaseModel):

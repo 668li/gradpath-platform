@@ -1,5 +1,13 @@
 // 与后端 schema 对齐的类型定义
 
+// ===== 通用分页响应 =====
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
 // ===== 认证 =====
 export interface UserResponse {
   id: string;

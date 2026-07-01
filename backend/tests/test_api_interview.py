@@ -76,7 +76,7 @@ class TestSubmitDuplicateUpsert:
 
         resp3 = client.get("/api/interview/my-reports", headers=auth_headers)
         assert resp3.status_code == 200
-        assert len(resp3.json()) == 1
+        assert len(resp3.json()["items"]) == 1
 
 
 class TestMyReports:
@@ -87,7 +87,7 @@ class TestMyReports:
 
         resp = client.get("/api/interview/my-reports", headers=auth_headers)
         assert resp.status_code == 200
-        data = resp.json()
+        data = resp.json()["items"]
         assert len(data) == 3
         years = [r["interview_year"] for r in data]
         assert years == [2024, 2023, 2022]
@@ -96,7 +96,7 @@ class TestMyReports:
         """无报告时返回空列表。"""
         resp = client.get("/api/interview/my-reports", headers=auth_headers)
         assert resp.status_code == 200
-        assert resp.json() == []
+        assert resp.json()["items"] == []
 
 
 class TestDeleteReport:
@@ -111,7 +111,7 @@ class TestDeleteReport:
         assert resp_del.status_code == 204
 
         resp_list = client.get("/api/interview/my-reports", headers=auth_headers)
-        assert len(resp_list.json()) == 0
+        assert len(resp_list.json()["items"]) == 0
 
     def test_delete_nonexistent_report(self, auth_headers, client):
         """删除不存在的报告返回 404。"""

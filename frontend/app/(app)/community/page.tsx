@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Send, Trash2, BarChart3, Users, School as SchoolIcon } from "lucide-react";
 import { employmentApi, communityApi } from "@/lib/api";
 import { Button, Input, Select } from "@/components/ui/form-controls";
 import { LoadingState, EmptyState } from "@/components/ui/empty";
+import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import {
@@ -40,6 +41,40 @@ export default function CommunityPage() {
   const [myReports, setMyReports] = useState<CommunityReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+
+  const PAGE_SIZE = 20;
+
+  // 分页加载“我的提交记录”
+  const loadMyReports = useCallback(
+    async (targetPage: number) => {
+      try {
+        let target = targetPage;
+        let data = await communityApi.myReports({
+          page: target,
+          page_size: PAGE_SIZE,
+        });
+        // 若目标页为空且非首页，回退到首页
+        if (data.items.length === 0 && target > 1) {
+          target = 1;
+          data = await communityApi.myReports({
+            page: 1,
+            page_size: PAGE_SIZE,
+          });
+        }
+        setMyReports(data.items);
+        setTotal(data.total);
+        setPage(target);
+      } catch (err) {
+        toast.push(
+          err instanceof Error ? err.message : "加载失败",
+          "error",
+        );
+      }
+    },
+    [toast],
+  );
 
   // 表单状态
   const [schoolName, setSchoolName] = useState("");
@@ -59,11 +94,12 @@ export default function CommunityPage() {
         const [s, st, mine] = await Promise.all([
           employmentApi.schools(),
           communityApi.stats(),
-          communityApi.myReports(),
+          communityApi.myReports({ page: 1, page_size: PAGE_SIZE }),
         ]);
         setSchools(s);
         setStats(st);
-        setMyReports(mine);
+        setMyReports(mine.items);
+        setTotal(mine.total);
       } catch (err) {
         toast.push(
           err instanceof Error ? err.message : "加载数据失败",
@@ -73,6 +109,7 @@ export default function CommunityPage() {
         setLoading(false);
       }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toast]);
 
   // 学校失焦时拉取对应专业列表，用于专业自动补全（静默失败）
@@ -138,10 +175,10 @@ export default function CommunityPage() {
 
     setSubmitting(true);
     try {
-      const report = await communityApi.submit(body);
+      await communityApi.submit(body);
       toast.push("提交成功，感谢你的分享！", "success");
-      setMyReports((prev) => [report, ...prev]);
       resetDynamicFields();
+      loadMyReports(page);
       refreshStats();
     } catch (err) {
       toast.push(
@@ -156,8 +193,8 @@ export default function CommunityPage() {
   const handleDelete = async (id: string) => {
     try {
       await communityApi.remove(id);
-      setMyReports((prev) => prev.filter((r) => r.id !== id));
       toast.push("已删除该记录", "success");
+      loadMyReports(page);
       refreshStats();
     } catch (err) {
       toast.push(
@@ -479,6 +516,12 @@ export default function CommunityPage() {
             ))}
           </div>
         )}
+        <Pagination
+          page={page}
+          pageSize={PAGE_SIZE}
+          total={total}
+          onPageChange={(p) => loadMyReports(p)}
+        />
       </div>
     </div>
   );

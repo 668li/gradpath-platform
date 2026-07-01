@@ -1,9 +1,13 @@
+import logging
+
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.security import create_access_token, create_refresh_token, hash_password, verify_password
 from app.models.user import User
 from app.schemas.auth import RegisterRequest
+
+logger = logging.getLogger(__name__)
 
 
 def register(db: Session, data: RegisterRequest) -> User:
@@ -18,13 +22,16 @@ def register(db: Session, data: RegisterRequest) -> User:
     db.add(user)
     db.commit()
     db.refresh(user)
+    logger.info("新用户注册: email=%s", data.email)
     return user
 
 
 def login(db: Session, email: str, password: str) -> dict:
     user = db.query(User).filter(User.email == email).first()
     if not user or not verify_password(password, user.password_hash):
+        logger.warning("登录失败: email=%s", email)
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="邮箱或密码错误")
+    logger.info("用户登录: email=%s", email)
     return {
         "access_token": create_access_token(str(user.id)),
         "refresh_token": create_refresh_token(str(user.id)),

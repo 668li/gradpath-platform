@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.models.retrospective import PeriodType
 
@@ -71,6 +71,13 @@ class AIRetroDraftRequest(BaseModel):
 
     period_start: date = Field(..., description="复盘时段开始日期")
     period_end: date = Field(..., description="复盘时段结束日期")
+
+    @model_validator(mode="after")
+    def _check_period_order(self):
+        """period_end 不得早于 period_start。"""
+        if self.period_end < self.period_start:
+            raise ValueError("period_end 不能早于 period_start")
+        return self
 
 
 class AIRetroDraftResponse(BaseModel):

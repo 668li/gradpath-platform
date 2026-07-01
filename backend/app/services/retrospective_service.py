@@ -26,6 +26,21 @@ def list_retrospectives(db: Session, user_id: UUID) -> list[Retrospective]:
     )
 
 
+def list_retrospectives_paginated(
+    db: Session, user_id: UUID, page: int = 1, page_size: int = 20
+) -> tuple[list[Retrospective], int]:
+    """分页查询复盘列表（按复盘时段结束日期降序）。"""
+    query = db.query(Retrospective).filter(Retrospective.user_id == user_id)
+    total = query.count()
+    items = (
+        query.order_by(Retrospective.period_end.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
+    return items, total
+
+
 def get_retrospective(db: Session, user_id: UUID, retro_id: UUID) -> Retrospective:
     retro = (
         db.query(Retrospective)

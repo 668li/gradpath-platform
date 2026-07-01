@@ -24,6 +24,21 @@ def list_decisions(db: Session, user_id: UUID) -> list[DestinationDecision]:
     )
 
 
+def list_decisions_paginated(
+    db: Session, user_id: UUID, page: int = 1, page_size: int = 20
+) -> tuple[list[DestinationDecision], int]:
+    """分页查询去向决策列表（按决策日期降序）。"""
+    query = db.query(DestinationDecision).filter(DestinationDecision.user_id == user_id)
+    total = query.count()
+    items = (
+        query.order_by(DestinationDecision.decision_date.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
+    return items, total
+
+
 def get_decision(db: Session, user_id: UUID, decision_id: UUID) -> DestinationDecision:
     decision = (
         db.query(DestinationDecision)

@@ -57,7 +57,7 @@ def test_list_decisions(auth_headers, client):
         )
     resp = client.get("/api/decisions", headers=auth_headers)
     assert resp.status_code == 200
-    assert len(resp.json()) == 3
+    assert len(resp.json()["items"]) == 3
 
 
 def test_get_decision_by_id(auth_headers, client):

@@ -83,8 +83,9 @@ class TestSubmitDuplicateUpsert:
         # my-reports 应只有 1 条
         resp3 = client.get("/api/community/my-reports", headers=auth_headers)
         assert resp3.status_code == 200
-        assert len(resp3.json()) == 1
-        assert resp3.json()[0]["employer"] == "腾讯"
+        items = resp3.json()["items"]
+        assert len(items) == 1
+        assert items[0]["employer"] == "腾讯"
 
 
 class TestMyReports:
@@ -95,7 +96,7 @@ class TestMyReports:
 
         resp = client.get("/api/community/my-reports", headers=auth_headers)
         assert resp.status_code == 200
-        data = resp.json()
+        data = resp.json()["items"]
         assert len(data) == 3
         # 应按毕业年份降序排列
         years = [r["graduation_year"] for r in data]
@@ -105,7 +106,7 @@ class TestMyReports:
         """无报告时返回空列表。"""
         resp = client.get("/api/community/my-reports", headers=auth_headers)
         assert resp.status_code == 200
-        assert resp.json() == []
+        assert resp.json()["items"] == []
 
 
 class TestDeleteReport:
@@ -123,7 +124,7 @@ class TestDeleteReport:
         # my-reports 应为空
         resp_list = client.get("/api/community/my-reports", headers=auth_headers)
         assert resp_list.status_code == 200
-        assert len(resp_list.json()) == 0
+        assert len(resp_list.json()["items"]) == 0
 
     def test_delete_nonexistent_report(self, auth_headers, client):
         """删除不存在的报告返回 404。"""

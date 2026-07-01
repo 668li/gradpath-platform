@@ -33,6 +33,33 @@ def list_events(
     return query.order_by(CareerEvent.event_date.desc()).all()
 
 
+def list_events_paginated(
+    db: Session,
+    user_id: UUID,
+    page: int = 1,
+    page_size: int = 20,
+    event_type: EventType | None = None,
+    start_date: date | None = None,
+    end_date: date | None = None,
+) -> tuple[list[CareerEvent], int]:
+    """分页查询职业事件列表（按事件日期降序），支持类型与日期范围过滤。"""
+    query = db.query(CareerEvent).filter(CareerEvent.user_id == user_id)
+    if event_type:
+        query = query.filter(CareerEvent.event_type == event_type)
+    if start_date:
+        query = query.filter(CareerEvent.event_date >= start_date)
+    if end_date:
+        query = query.filter(CareerEvent.event_date <= end_date)
+    total = query.count()
+    items = (
+        query.order_by(CareerEvent.event_date.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
+    return items, total
+
+
 def get_event(db: Session, user_id: UUID, event_id: UUID) -> CareerEvent:
     event = (
         db.query(CareerEvent)

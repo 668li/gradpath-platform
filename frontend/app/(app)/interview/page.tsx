@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Send, Trash2, BarChart3, Briefcase, Star } from "lucide-react";
 import { interviewApi } from "@/lib/api";
 import { Button, Input, Select } from "@/components/ui/form-controls";
 import { LoadingState, EmptyState } from "@/components/ui/empty";
+import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import {
@@ -37,6 +38,40 @@ export default function InterviewPage() {
   const [myReports, setMyReports] = useState<InterviewReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+
+  const PAGE_SIZE = 20;
+
+  // 分页加载“我的面试报告”
+  const loadMyReports = useCallback(
+    async (targetPage: number) => {
+      try {
+        let target = targetPage;
+        let data = await interviewApi.myReports({
+          page: target,
+          page_size: PAGE_SIZE,
+        });
+        // 若目标页为空且非首页，回退到首页
+        if (data.items.length === 0 && target > 1) {
+          target = 1;
+          data = await interviewApi.myReports({
+            page: 1,
+            page_size: PAGE_SIZE,
+          });
+        }
+        setMyReports(data.items);
+        setTotal(data.total);
+        setPage(target);
+      } catch (err) {
+        toast.push(
+          err instanceof Error ? err.message : "加载失败",
+          "error",
+        );
+      }
+    },
+    [toast],
+  );
 
   // 表单状态
   const [company, setCompany] = useState("");
@@ -55,11 +90,12 @@ export default function InterviewPage() {
         const [st, comps, mine] = await Promise.all([
           interviewApi.stats(),
           interviewApi.companies(),
-          interviewApi.myReports(),
+          interviewApi.myReports({ page: 1, page_size: PAGE_SIZE }),
         ]);
         setStats(st);
         setCompanies(comps);
-        setMyReports(mine);
+        setMyReports(mine.items);
+        setTotal(mine.total);
       } catch (err) {
         toast.push(
           err instanceof Error ? err.message : "加载数据失败",
@@ -69,6 +105,7 @@ export default function InterviewPage() {
         setLoading(false);
       }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toast]);
 
   const toggleDimension = (dim: string) => {
@@ -108,14 +145,14 @@ export default function InterviewPage() {
 
     setSubmitting(true);
     try {
-      const report = await interviewApi.submit(body);
+      await interviewApi.submit(body);
       toast.push("提交成功，感谢你的分享！", "success");
-      setMyReports((prev) => [report, ...prev]);
       setCompany("");
       setPosition("");
       setCity("");
       setSummary("");
       setDimensions([]);
+      loadMyReports(page);
       refreshStats();
     } catch (err) {
       toast.push(
@@ -130,8 +167,8 @@ export default function InterviewPage() {
   const handleDelete = async (id: string) => {
     try {
       await interviewApi.remove(id);
-      setMyReports((prev) => prev.filter((r) => r.id !== id));
       toast.push("已删除该记录", "success");
+      loadMyReports(page);
       refreshStats();
     } catch (err) {
       toast.push(
@@ -448,6 +485,12 @@ export default function InterviewPage() {
             ))}
           </div>
         )}
+        <Pagination
+          page={page}
+          pageSize={PAGE_SIZE}
+          total={total}
+          onPageChange={(p) => loadMyReports(p)}
+        />
       </div>
     </div>
   );
