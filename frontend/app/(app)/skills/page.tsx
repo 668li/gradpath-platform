@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Plus, Pencil, Trash2, Network, ChevronRight } from "lucide-react";
+import { Plus, Pencil, Trash2, Network, List, ChevronRight } from "lucide-react";
 import { skillsApi } from "@/lib/api";
 import { formatDate, levelStars, cn } from "@/lib/utils";
 import { Modal } from "@/components/ui/modal";
@@ -10,6 +10,7 @@ import { Badge, Button } from "@/components/ui/form-controls";
 import { useToast } from "@/components/ui/toast";
 import { SkillRadar } from "@/components/charts";
 import { SkillForm } from "@/components/skill-form";
+import { SkillTreeGraph } from "@/components/skill-tree-graph";
 import type { SkillResponse, SkillStats } from "@/types";
 
 const LEVEL_COLOR: Record<number, "slate" | "blue" | "purple"> = {
@@ -98,6 +99,7 @@ export default function SkillsPage() {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<SkillResponse | null>(null);
+  const [viewMode, setViewMode] = useState<"tree" | "list">("tree");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -175,9 +177,37 @@ export default function SkillsPage() {
             构建你的个人技能图谱，共 {totalCount} 个技能节点
           </p>
         </div>
-        <Button onClick={openCreate}>
-          <Plus className="h-4 w-4" /> 新建技能
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="inline-flex rounded-lg border border-slate-300 bg-white p-0.5">
+            <button
+              type="button"
+              onClick={() => setViewMode("tree")}
+              className={cn(
+                "inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                viewMode === "tree"
+                  ? "bg-brand-600 text-white"
+                  : "text-slate-600 hover:bg-slate-100",
+              )}
+            >
+              <Network className="h-3.5 w-3.5" /> 树形图
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode("list")}
+              className={cn(
+                "inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                viewMode === "list"
+                  ? "bg-brand-600 text-white"
+                  : "text-slate-600 hover:bg-slate-100",
+              )}
+            >
+              <List className="h-3.5 w-3.5" /> 列表
+            </button>
+          </div>
+          <Button onClick={openCreate}>
+            <Plus className="h-4 w-4" /> 新建技能
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -195,6 +225,10 @@ export default function SkillsPage() {
                 </Button>
               }
             />
+          ) : viewMode === "tree" ? (
+            <div className="card p-4">
+              <SkillTreeGraph skills={tree} onNodeClick={openEdit} />
+            </div>
           ) : (
             Object.entries(grouped).map(([cat, nodes]) => (
               <div key={cat} className="card">

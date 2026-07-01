@@ -4,6 +4,7 @@ from app.models.company import Company, CompanySize
 from app.models.data_source import DataSource
 from app.models.destination_decision import DecisionStatus, DestinationDecision
 from app.models.employment_data import Degree, EmploymentData
+from app.models.growth_insight import GrowthInsight
 from app.models.interview_report import InterviewDimension, InterviewReport, InterviewResult
 from app.models.market_data import MarketData
 from app.models.pipeline_enums import ContentType, SourceType
@@ -15,6 +16,8 @@ from app.models.salary_benchmark import ExperienceLevel, SalaryBenchmark
 from app.models.school import School
 from app.models.skill_node import SkillNode
 from app.models.user import User, UserStage
+from app.models.user_badge import UserBadge
+from app.models.user_setting import UserSetting
 
 __all__ = [
     "User", "UserStage",
@@ -34,4 +37,7 @@ __all__ = [
     "Company", "CompanySize",
     "SalaryBenchmark", "ExperienceLevel",
     "MarketData",
+    "UserBadge",
+    "GrowthInsight",
+    "UserSetting",
 ]

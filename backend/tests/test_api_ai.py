@@ -431,3 +431,230 @@ class TestContextAssembly:
         pos_community = user_content.find("【社区参考】")
         pos_request = user_content.find("【用户决策请求】")
         assert pos_user < pos_market < pos_community < pos_request
+
+
+# ======================================================================
+# AI 成长洞察
+# ======================================================================
+
+MOCK_GROWTH_INSIGHT_RESPONSE = json.dumps(
+    {
+        "growth_score": 78,
+        "trend": "rising",
+        "strengths": ["技术深度持续提升", "项目交付能力强"],
+        "gaps": ["跨团队沟通能力", "系统设计经验"],
+        "recommendations": ["参与架构设计评审", "定期与跨团队对齐目标"],
+        "summary": "该时段成长势头良好，技术能力稳步提升，建议加强系统设计与跨团队协作。",
+    },
+    ensure_ascii=False,
+)
+
+
+def _seed_events_for_growth(db_session, user_id, count=2, base_date=date(2025, 6, 1)):
+    """预置指定数量的职业事件（用于成长洞察 context 与缓存测试）。"""
+    for i in range(count):
+        db_session.add(
+            CareerEvent(
+                user_id=user_id,
+                event_date=base_date,
+                event_type=EventType.project_done,
+                title=f"成长事件_{i + 1}",
+            )
+        )
+    db_session.commit()
+
+
+def _growth_insight_payload(**overrides):
+    """构造成长洞察请求体。"""
+    payload = {
+        "period_start": "2025-01-01",
+        "period_end": "2025-12-31",
+    }
+    payload.update(overrides)
+    return payload
+
+
+class TestGrowthInsightAuth:
+    def test_anonymous_growth_insight_fails(self, client):
+        """未登录不能调用成长洞察。"""
+        resp = client.post("/api/ai/growth-insight", json=_growth_insight_payload())
+        assert resp.status_code == 401
+
+    def test_anonymous_latest_insight_fails(self, client):
+        """未登录不能获取最新洞察。"""
+        resp = client.get("/api/ai/growth-insight/latest")
+        assert resp.status_code == 401
+
+
+class TestGrowthInsightDegradation:
+    def test_no_llm_key_returns_503(self, auth_headers, client, db_session, monkeypatch):
+        """LLM_API_KEY 未配置时返回 503。"""
+        from app.services import ai_service
+
+        monkeypatch.setattr(ai_service.settings, "LLM_API_KEY", "")
+
+        resp = client.post(
+            "/api/ai/growth-insight",
+            headers=auth_headers,
+            json=_growth_insight_payload(),
+        )
+        assert resp.status_code == 503
+        assert "未配置" in resp.json()["detail"]
+
+    def test_llm_timeout_returns_504(self, auth_headers, client, db_session, monkeypatch):
+        """LLM 超时返回 504。"""
+        from app.services import ai_service
+
+        monkeypatch.setattr(ai_service.settings, "LLM_API_KEY", "fake-key-for-test")
+
+        def fake_chat(self, system_prompt, user_content, timeout=30):
+            raise httpx.TimeoutException("request timed out")
+
+        with patch.object(ai_service.AIService, "chat", fake_chat):
+            resp = client.post(
+                "/api/ai/growth-insight",
+                headers=auth_headers,
+                json=_growth_insight_payload(),
+            )
+        assert resp.status_code == 504
+        assert "超时" in resp.json()["detail"]
+
+
+class TestGrowthInsightNormalCall:
+    def test_success_with_mock_llm(self, auth_headers, client, db_session, monkeypatch):
+        """正常调用（mock AIService.chat 返回固定 JSON）。"""
+        from app.models.user import User
+        from app.services import ai_service
+
+        monkeypatch.setattr(ai_service.settings, "LLM_API_KEY", "fake-key-for-test")
+
+        user = db_session.query(User).filter(User.email == "test@example.com").first()
+        _seed_events_for_growth(db_session, user.id, count=2)
+
+        with patch.object(
+            ai_service.AIService,
+            "chat",
+            lambda self, sp, uc, timeout=30: MOCK_GROWTH_INSIGHT_RESPONSE,
+        ):
+            resp = client.post(
+                "/api/ai/growth-insight",
+                headers=auth_headers,
+                json=_growth_insight_payload(),
+            )
+
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["growth_score"] == 78
+        assert data["trend"] == "rising"
+        assert len(data["strengths"]) == 2
+        assert len(data["gaps"]) == 2
+        assert len(data["recommendations"]) == 2
+        assert "成长势头" in data["summary"]
+
+    def test_cache_hit_skips_llm_call(self, auth_headers, client, db_session, monkeypatch):
+        """相同 period + event_count 时命中缓存，不重复调用 LLM。"""
+        from app.models.user import User
+        from app.services import ai_service
+
+        monkeypatch.setattr(ai_service.settings, "LLM_API_KEY", "fake-key-for-test")
+
+        user = db_session.query(User).filter(User.email == "test@example.com").first()
+        _seed_events_for_growth(db_session, user.id, count=2)
+
+        call_count = {"n": 0}
+
+        def fake_chat(self, system_prompt, user_content, timeout=30):
+            call_count["n"] += 1
+            return MOCK_GROWTH_INSIGHT_RESPONSE
+
+        with patch.object(ai_service.AIService, "chat", fake_chat):
+            resp1 = client.post(
+                "/api/ai/growth-insight",
+                headers=auth_headers,
+                json=_growth_insight_payload(),
+            )
+            resp2 = client.post(
+                "/api/ai/growth-insight",
+                headers=auth_headers,
+                json=_growth_insight_payload(),
+            )
+
+        assert resp1.status_code == 200
+        assert resp2.status_code == 200
+        # 缓存命中：LLM 仅调用一次
+        assert call_count["n"] == 1
+        # 两次返回结果一致
+        assert resp1.json() == resp2.json()
+
+    def test_cache_miss_on_event_count_change(self, auth_headers, client, db_session, monkeypatch):
+        """event_count 变化时缓存未命中，重新调用 LLM。"""
+        from app.models.user import User
+        from app.services import ai_service
+
+        monkeypatch.setattr(ai_service.settings, "LLM_API_KEY", "fake-key-for-test")
+
+        user = db_session.query(User).filter(User.email == "test@example.com").first()
+        _seed_events_for_growth(db_session, user.id, count=2)
+
+        call_count = {"n": 0}
+
+        def fake_chat(self, system_prompt, user_content, timeout=30):
+            call_count["n"] += 1
+            return MOCK_GROWTH_INSIGHT_RESPONSE
+
+        with patch.object(ai_service.AIService, "chat", fake_chat):
+            # 第一次调用：2 个事件
+            resp1 = client.post(
+                "/api/ai/growth-insight",
+                headers=auth_headers,
+                json=_growth_insight_payload(),
+            )
+            # 新增一个事件（event_count 变为 3）
+            _seed_events_for_growth(db_session, user.id, count=1)
+            # 第二次调用：缓存未命中，重新调用 LLM
+            resp2 = client.post(
+                "/api/ai/growth-insight",
+                headers=auth_headers,
+                json=_growth_insight_payload(),
+            )
+
+        assert resp1.status_code == 200
+        assert resp2.status_code == 200
+        # 缓存未命中：LLM 调用两次
+        assert call_count["n"] == 2
+
+
+class TestGrowthInsightLatest:
+    def test_latest_returns_404_when_no_insight(self, auth_headers, client):
+        """无洞察记录时返回 404。"""
+        resp = client.get("/api/ai/growth-insight/latest", headers=auth_headers)
+        assert resp.status_code == 404
+
+    def test_latest_returns_cached_insight(self, auth_headers, client, db_session, monkeypatch):
+        """生成洞察后，GET latest 返回缓存结果。"""
+        from app.models.user import User
+        from app.services import ai_service
+
+        monkeypatch.setattr(ai_service.settings, "LLM_API_KEY", "fake-key-for-test")
+
+        user = db_session.query(User).filter(User.email == "test@example.com").first()
+        _seed_events_for_growth(db_session, user.id, count=1)
+
+        with patch.object(
+            ai_service.AIService,
+            "chat",
+            lambda self, sp, uc, timeout=30: MOCK_GROWTH_INSIGHT_RESPONSE,
+        ):
+            # 先生成一次洞察
+            client.post(
+                "/api/ai/growth-insight",
+                headers=auth_headers,
+                json=_growth_insight_payload(),
+            )
+
+        # 查询最新洞察（无需 mock，走缓存 / 直接返回 DB 记录）
+        resp = client.get("/api/ai/growth-insight/latest", headers=auth_headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["growth_score"] == 78
+        assert data["trend"] == "rising"

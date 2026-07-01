@@ -17,6 +17,8 @@ import {
   Briefcase,
   Users,
   Database,
+  TrendingUp,
+  Award,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth";
@@ -38,6 +40,8 @@ function getNavItems(isAdmin: boolean = false): NavItem[] {
     { href: "/timeline", label: "成长时间线", icon: History },
     { href: "/skills", label: "技能树", icon: Network },
     { href: "/retrospectives", label: "阶段复盘", icon: ClipboardList },
+    { href: "/insights", label: "成长洞察", icon: TrendingUp },
+    { href: "/achievements", label: "成就", icon: Award },
   ];
   if (isAdmin) {
     items.push({ href: "/pipeline", label: "数据管道", icon: Database });

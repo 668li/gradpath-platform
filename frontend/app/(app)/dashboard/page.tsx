@@ -11,7 +11,7 @@ import {
   ArrowRight,
   MapPin,
 } from "lucide-react";
-import { dashboardApi } from "@/lib/api";
+import { dashboardApi, gamificationApi } from "@/lib/api";
 import { formatDate, cn } from "@/lib/utils";
 import {
   DESTINATION_TYPE_LABEL,
@@ -19,20 +19,31 @@ import {
 } from "@/lib/constants";
 import { StatCard } from "@/components/stat-card";
 import { SkillRadar } from "@/components/charts";
+import { LevelProgress } from "@/components/gamification/level-progress";
 import { EmptyState, LoadingState } from "@/components/ui/empty";
 import { Button } from "@/components/ui/form-controls";
-import type { DashboardOverview } from "@/types";
+import type { DashboardOverview, GamificationProfile } from "@/types";
 
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardOverview | null>(null);
+  const [gameProfile, setGameProfile] = useState<GamificationProfile | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
-        const overview = await dashboardApi.overview();
-        if (alive) setData(overview);
+        const [overviewRes, profileRes] = await Promise.allSettled([
+          dashboardApi.overview(),
+          gamificationApi.profile(),
+        ]);
+        if (alive) {
+          if (overviewRes.status === "fulfilled") setData(overviewRes.value);
+          if (profileRes.status === "fulfilled")
+            setGameProfile(profileRes.value);
+        }
       } finally {
         if (alive) setLoading(false);
       }
@@ -97,6 +108,25 @@ export default function DashboardPage() {
           hint={data.latest_retrospective?.title ?? "暂无"}
         />
       </div>
+
+      {/* 成长进度预览 */}
+      {gameProfile && (
+        <div className="card flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <LevelProgress
+            xp={gameProfile.xp}
+            level={gameProfile.level}
+            levelName={gameProfile.level_name}
+            progress={gameProfile.progress}
+            compact
+          />
+          <Link
+            href="/achievements"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+          >
+            查看成就 <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      )}
 
       {isEmpty && (
         <EmptyState

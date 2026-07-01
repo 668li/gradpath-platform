@@ -1,13 +1,22 @@
 from datetime import date
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, status
+import httpx
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
 from app.database import get_db
 from app.models.user import User
-from app.schemas.retrospective import RetroCreate, RetroResponse, RetroUpdate
+from app.schemas.retrospective import (
+    AIRetroDraftRequest,
+    AIRetroDraftResponse,
+    RetroCreate,
+    RetroResponse,
+    RetroUpdate,
+)
+from app.services.ai_service import AIServiceNotConfigured
+from app.services.retro_ai_service import generate_ai_retro_draft
 from app.services.retrospective_service import (
     create_retrospective,
     delete_retrospective,
@@ -38,6 +47,45 @@ def draft(
     user: User = Depends(get_current_user),
 ):
     return generate_draft(db, user.id, period_start, period_end)
+
+
+@router.post("/ai-draft", response_model=AIRetroDraftResponse)
+def ai_draft(
+    body: AIRetroDraftRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """AI 复盘草稿 — 需登录。
+
+    基于用户指定时段内的职业事件（含 STAR 细节）调用 LLM 生成结构化复盘草稿。
+    不持久化，由前端决定是否保存为正式复盘。
+
+    降级策略：
+    - LLM_API_KEY 未配置 → 503
+    - LLM 超时 → 504
+    - 其他异常 → 500
+    """
+    try:
+        return generate_ai_retro_draft(
+            db, user.id, body.period_start, body.period_end
+        )
+    except AIServiceNotConfigured:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="AI 服务未配置（LLM_API_KEY 缺失）",
+        )
+    except httpx.TimeoutException:
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail="AI 分析超时，请稍后重试",
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"AI 复盘草稿服务异常: {e}",
+        )
 
 
 @router.get("/{retro_id}", response_model=RetroResponse)

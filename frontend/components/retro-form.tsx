@@ -7,10 +7,15 @@ import { PERIOD_TYPES, PERIOD_TYPE_LABEL } from "@/lib/constants";
 import { todayISO } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
 import { Button, Field, Input, Select, Textarea } from "@/components/ui/form-controls";
-import type { PeriodType, RetrospectiveResponse } from "@/types";
+import type { AIRetroDraft, PeriodType, RetrospectiveResponse } from "@/types";
 
 interface RetroFormProps {
   initial?: RetrospectiveResponse | null;
+  aiDraft?: {
+    draft: AIRetroDraft;
+    periodStart: string;
+    periodEnd: string;
+  } | null;
   onSaved: (retro: RetrospectiveResponse) => void;
   onCancel: () => void;
 }
@@ -69,27 +74,40 @@ function DynamicList({
   );
 }
 
-export function RetroForm({ initial, onSaved, onCancel }: RetroFormProps) {
+export function RetroForm({ initial, aiDraft, onSaved, onCancel }: RetroFormProps) {
   const toast = useToast();
   const isEdit = !!initial;
+
+  // AI 草稿自动生成标题：取摘要前 30 字
+  const aiTitle = aiDraft?.draft.summary
+    ? aiDraft.draft.summary.slice(0, 30)
+    : "";
 
   const [periodType, setPeriodType] = useState<PeriodType>(
     initial?.period_type ?? "annual",
   );
   const [periodStart, setPeriodStart] = useState(
-    initial?.period_start ?? todayISO().slice(0, 8) + "01",
+    initial?.period_start ?? aiDraft?.periodStart ?? todayISO().slice(0, 8) + "01",
   );
-  const [periodEnd, setPeriodEnd] = useState(initial?.period_end ?? todayISO());
-  const [title, setTitle] = useState(initial?.title ?? "");
+  const [periodEnd, setPeriodEnd] = useState(
+    initial?.period_end ?? aiDraft?.periodEnd ?? todayISO(),
+  );
+  const [title, setTitle] = useState(initial?.title ?? aiTitle);
   const [achievements, setAchievements] = useState<string[]>(
-    initial?.achievements ?? [""],
+    initial?.achievements ?? aiDraft?.draft.achievements ?? [""],
   );
-  const [challenges, setChallenges] = useState(initial?.challenges ?? "");
+  const [challenges, setChallenges] = useState(
+    initial?.challenges ?? aiDraft?.draft.challenges ?? "",
+  );
   const [lessonsLearned, setLessonsLearned] = useState(
-    initial?.lessons_learned ?? "",
+    initial?.lessons_learned ?? aiDraft?.draft.lessons_learned ?? "",
   );
-  const [nextSteps, setNextSteps] = useState<string[]>(initial?.next_steps ?? [""]);
-  const [satisfaction, setSatisfaction] = useState(initial?.satisfaction ?? 3);
+  const [nextSteps, setNextSteps] = useState<string[]>(
+    initial?.next_steps ?? aiDraft?.draft.next_steps ?? [""],
+  );
+  const [satisfaction, setSatisfaction] = useState(
+    initial?.satisfaction ?? aiDraft?.draft.suggested_satisfaction ?? 3,
+  );
   const [loading, setLoading] = useState(false);
   const [draftLoading, setDraftLoading] = useState(false);
 

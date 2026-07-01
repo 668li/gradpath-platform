@@ -534,3 +534,76 @@ export interface MarketDataItem {
   year: number;
   source: string;
 }
+
+// ===== 游戏化 =====
+export interface Badge {
+  code: string;
+  name: string;
+  description: string;
+  icon: string;
+}
+
+export interface ProgressInfo {
+  current: number;
+  needed: number;
+  percent: number;
+}
+
+export interface GamificationProfile {
+  xp: number;
+  level: number;
+  level_name: string;
+  progress: ProgressInfo;
+  earned_badges: Badge[];
+  available_badges: Badge[];
+  newly_awarded: Badge[];
+}
+
+export interface UserSetting {
+  share_skills_enabled: boolean;
+  share_token: string | null;
+}
+
+// ===== AI 成长洞察 =====
+export interface GrowthInsightRequest {
+  period_start: string;
+  period_end: string;
+}
+
+export interface GrowthInsight {
+  growth_score: number;
+  trend: string;
+  strengths: string[];
+  gaps: string[];
+  recommendations: string[];
+  summary: string;
+}
+
+// ===== AI 复盘草稿 =====
+export interface AIRetroDraftRequest {
+  period_start: string;
+  period_end: string;
+}
+
+export interface AIRetroDraft {
+  achievements: string[];
+  challenges: string;
+  lessons_learned: string;
+  next_steps: string[];
+  suggested_satisfaction: number;
+  summary: string;
+}
+
+// ===== 分享 =====
+export interface ShareableSkills {
+  user_name: string;
+  skills: {
+    id: string;
+    name: string;
+    category: string;
+    level: number;
+    parent_id: string | null;
+    acquired_date: string | null;
+    notes: string | null;
+  }[];
+}

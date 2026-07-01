@@ -1,5 +1,7 @@
 # backend/app/schemas/ai.py
 """AI 决策指导与外部数据查询的 Pydantic Schema 定义。"""
+from datetime import date
+
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -35,6 +37,28 @@ class DecisionAdviceResponse(BaseModel):
     skill_gap: list[str]
     confidence: int
     advice: str
+
+
+# ======================================================================
+# AI 成长洞察
+# ======================================================================
+
+class GrowthInsightRequest(BaseModel):
+    """成长洞察请求体。"""
+
+    period_start: date = Field(..., description="分析时段开始日期")
+    period_end: date = Field(..., description="分析时段结束日期")
+
+
+class GrowthInsightResponse(BaseModel):
+    """成长洞察响应体（对应 LLM 输出的 JSON 结构）。"""
+
+    growth_score: int
+    trend: str
+    strengths: list[str]
+    gaps: list[str]
+    recommendations: list[str]
+    summary: str
 
 
 # ======================================================================

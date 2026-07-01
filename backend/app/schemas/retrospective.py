@@ -60,3 +60,25 @@ class RetroDraft(BaseModel):
     period_end: date
     event_summaries: list[EventSummary]
     suggested_achievements: list[str]
+
+
+# ======================================================================
+# AI 复盘草稿
+# ======================================================================
+
+class AIRetroDraftRequest(BaseModel):
+    """AI 复盘草稿请求体。"""
+
+    period_start: date = Field(..., description="复盘时段开始日期")
+    period_end: date = Field(..., description="复盘时段结束日期")
+
+
+class AIRetroDraftResponse(BaseModel):
+    """AI 复盘草稿响应体（对应 LLM 输出的 JSON 结构）。"""
+
+    achievements: list[str]
+    challenges: str
+    lessons_learned: str
+    next_steps: list[str]
+    suggested_satisfaction: int
+    summary: str

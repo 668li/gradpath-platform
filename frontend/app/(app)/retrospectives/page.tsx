@@ -17,7 +17,8 @@ import { EmptyState, LoadingState } from "@/components/ui/empty";
 import { Badge, Button } from "@/components/ui/form-controls";
 import { useToast } from "@/components/ui/toast";
 import { RetroForm } from "@/components/retro-form";
-import type { RetrospectiveResponse } from "@/types";
+import { RetroAIPanel } from "@/components/retro-ai-panel";
+import type { AIRetroDraft, RetrospectiveResponse } from "@/types";
 
 export default function RetrospectivesPage() {
   const toast = useToast();
@@ -25,6 +26,11 @@ export default function RetrospectivesPage() {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<RetrospectiveResponse | null>(null);
+  const [aiDraftData, setAiDraftData] = useState<{
+    draft: AIRetroDraft;
+    periodStart: string;
+    periodEnd: string;
+  } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -44,18 +50,34 @@ export default function RetrospectivesPage() {
 
   const openCreate = () => {
     setEditing(null);
+    setAiDraftData(null);
     setModalOpen(true);
   };
 
   const openEdit = (r: RetrospectiveResponse) => {
     setEditing(r);
+    setAiDraftData(null);
     setModalOpen(true);
   };
 
   const handleSaved = () => {
     setModalOpen(false);
     setEditing(null);
+    setAiDraftData(null);
     load();
+  };
+
+  const handleUseDraft = (
+    draft: AIRetroDraft,
+    period: { start: string; end: string },
+  ) => {
+    setAiDraftData({
+      draft,
+      periodStart: period.start,
+      periodEnd: period.end,
+    });
+    setEditing(null);
+    setModalOpen(true);
   };
 
   const handleDelete = async (r: RetrospectiveResponse) => {
@@ -82,6 +104,8 @@ export default function RetrospectivesPage() {
           <Plus className="h-4 w-4" /> 新建复盘
         </Button>
       </div>
+
+      <RetroAIPanel onUseDraft={handleUseDraft} />
 
       {loading ? (
         <LoadingState />
@@ -216,16 +240,19 @@ export default function RetrospectivesPage() {
         onClose={() => {
           setModalOpen(false);
           setEditing(null);
+          setAiDraftData(null);
         }}
         title={editing ? "编辑复盘" : "新建复盘"}
         className="max-w-2xl"
       >
         <RetroForm
           initial={editing}
+          aiDraft={aiDraftData}
           onSaved={handleSaved}
           onCancel={() => {
             setModalOpen(false);
             setEditing(null);
+            setAiDraftData(null);
           }}
         />
       </Modal>

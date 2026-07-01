@@ -4,10 +4,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.ai import router as ai_router
 from app.api.auth import router as auth_router
 from app.api.community import router as community_router
+from app.api.gamification import router as gamification_router
 from app.api.dashboard import router as dashboard_router
 from app.api.decisions import router as decisions_router
 from app.api.employment import router as employment_router
 from app.api.events import router as events_router
+from app.api.export import router as export_router
 from app.api.interview import router as interview_router
 from app.api.pipeline import router as pipeline_router
 from app.api.posts import router as posts_router
@@ -41,6 +43,8 @@ app.include_router(interview_router)
 app.include_router(pipeline_router)
 app.include_router(posts_router)
 app.include_router(ai_router)
+app.include_router(gamification_router)
+app.include_router(export_router)
 
 
 @app.get("/health")

@@ -1,6 +1,8 @@
 "use client";
 
 import type {
+  AIRetroDraft,
+  AIRetroDraftRequest,
   CommunityAggregate,
   CommunityReport,
   CommunityStats,
@@ -21,6 +23,9 @@ import type {
   EventCreate,
   EventResponse,
   EventUpdate,
+  GamificationProfile,
+  GrowthInsight,
+  GrowthInsightRequest,
   InterviewAggregate,
   InterviewReport,
   InterviewStats,
@@ -41,12 +46,14 @@ import type {
   RetroUpdate,
   SalaryBenchmark,
   SchoolInfo,
+  ShareableSkills,
   SkillCreate,
   SkillResponse,
   SkillStats,
   SkillUpdate,
   TokenResponse,
   UserResponse,
+  UserSetting,
 } from "@/types";
 
 const TOKEN_KEY = "gradpath_access_token";
@@ -234,6 +241,11 @@ export const retrospectivesApi = {
     request<RetroDraft>(
       `/api/retrospectives/draft${buildQuery({ period_start, period_end })}`,
     ),
+  aiDraft: (body: AIRetroDraftRequest) =>
+    request<AIRetroDraft>("/api/retrospectives/ai-draft", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
 };
 
 // ===== Dashboard =====
@@ -412,6 +424,13 @@ export const aiApi = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+  growthInsight: (body: GrowthInsightRequest) =>
+    request<GrowthInsight>("/api/ai/growth-insight", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  getLatestInsight: () =>
+    request<GrowthInsight>("/api/ai/growth-insight/latest"),
 };
 
 // ===== 外部数据 =====
@@ -428,4 +447,35 @@ export const externalDataApi = {
     request<MarketDataItem[]>(
       `/api/market-data${buildQuery((params as Record<string, string | undefined | null>) || {})}`,
     ),
+};
+
+// ===== 游戏化 =====
+export const gamificationApi = {
+  profile: () => request<GamificationProfile>("/api/gamification/profile"),
+  getSettings: () => request<UserSetting>("/api/gamification/settings"),
+  updateSettings: (body: { share_skills_enabled: boolean }) =>
+    request<UserSetting>("/api/gamification/settings", {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+};
+
+// ===== 导出 =====
+export const exportApi = {
+  /** PDF 时间线下载地址（需带 Authorization 头，由组件侧 fetch + blob） */
+  timelinePdf: () => "/api/export/timeline.pdf",
+  /** JSON 备份下载地址（需带 Authorization 头，由组件侧 fetch + blob） */
+  profileJson: () => "/api/export/profile.json",
+  /** 公开技能分享地址（无需鉴权） */
+  shareSkills: (token: string) => `/api/share/skills/${token}`,
+  /** 拉取公开技能分享数据；链接无效/已关闭返回 null */
+  fetchShareSkills: async (token: string): Promise<ShareableSkills | null> => {
+    try {
+      const res = await fetch(exportApi.shareSkills(token));
+      if (!res.ok) return null;
+      return (await res.json()) as ShareableSkills;
+    } catch {
+      return null;
+    }
+  },
 };

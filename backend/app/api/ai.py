@@ -11,6 +11,8 @@ from app.schemas.ai import (
     CompanyResponse,
     DecisionAdviceRequest,
     DecisionAdviceResponse,
+    GrowthInsightRequest,
+    GrowthInsightResponse,
     MarketDataResponse,
     SalaryBenchmarkResponse,
 )
@@ -20,6 +22,10 @@ from app.services.external_data_service import (
     list_companies,
     list_market_data,
     list_salary_benchmarks,
+)
+from app.services.growth_insight_service import (
+    generate_growth_insight,
+    get_latest_insight,
 )
 
 router = APIRouter(tags=["AI 与外部数据"])
@@ -64,6 +70,71 @@ def decision_advice(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"AI 决策指导服务异常: {e}",
         )
+
+
+# ======================================================================
+# AI 成长洞察
+# ======================================================================
+
+@router.post(
+    "/api/ai/growth-insight",
+    response_model=GrowthInsightResponse,
+)
+def growth_insight(
+    body: GrowthInsightRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """AI 成长洞察 — 需登录。
+
+    基于用户指定时段内的职业事件、技能、决策、复盘数据生成成长分析，
+    并按 event_count 缓存结果。
+
+    降级策略：
+    - LLM_API_KEY 未配置 → 503
+    - LLM 超时 → 504
+    - 其他异常 → 500
+    """
+    try:
+        return generate_growth_insight(db, user.id, body.period_start, body.period_end)
+    except AIServiceNotConfigured:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="AI 服务未配置（LLM_API_KEY 缺失）",
+        )
+    except httpx.TimeoutException:
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail="AI 分析超时，请稍后重试",
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"成长洞察服务异常: {e}",
+        )
+
+
+@router.get(
+    "/api/ai/growth-insight/latest",
+    response_model=GrowthInsightResponse,
+)
+def latest_growth_insight(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """获取用户最近一次成长洞察（缓存）— 需登录。
+
+    无缓存记录时返回 404。
+    """
+    insight = get_latest_insight(db, user.id)
+    if insight is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="暂无成长洞察记录",
+        )
+    return insight
 
 
 # ======================================================================
