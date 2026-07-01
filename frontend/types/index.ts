@@ -473,3 +473,64 @@ export interface PostCreate {
   content: string;
   parent_id?: string | null;
 }
+
+// ===== AI 决策指导 =====
+export interface DecisionAdviceRequest {
+  destination_type: string;
+  company?: string;
+  position?: string;
+  city?: string;
+  expected_salary?: string;
+}
+
+export interface DecisionAlternative {
+  option: string;
+  reason: string;
+}
+
+export interface DecisionAdviceResponse {
+  summary: string;
+  pros: string[];
+  cons: string[];
+  market_analysis: string;
+  alternatives: DecisionAlternative[];
+  skill_gap: string[];
+  confidence: number;
+  advice: string;
+}
+
+// ===== 外部数据 =====
+export interface Company {
+  id: string;
+  name: string;
+  industry: string;
+  size: string;
+  stage: string | null;
+  headquarters: string | null;
+  description: string | null;
+}
+
+export interface SalaryBenchmark {
+  id: string;
+  company: string;
+  position: string;
+  city: string | null;
+  experience_level: string;
+  salary_min: number;
+  salary_median: number;
+  salary_max: number;
+  source: string;
+  year: number;
+}
+
+export interface MarketDataItem {
+  id: string;
+  indicator: string;
+  category: string;
+  value: number;
+  unit: string;
+  region: string | null;
+  industry: string | null;
+  year: number;
+  source: string;
+}
