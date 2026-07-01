@@ -55,19 +55,21 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-brand-50 to-slate-100 px-4">
-      <div className="w-full max-w-md">
-        <div className="flex flex-col items-center mb-6">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-600 text-white shadow-lg">
-            <GraduationCap className="h-7 w-7" />
+    <div className="min-h-screen flex items-center justify-center bg-paper-100 px-4">
+      <div className="w-full max-w-md animate-slide-up">
+        <div className="flex flex-col items-center mb-8">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-600 text-white shadow-brand">
+            <GraduationCap className="h-7 w-7" strokeWidth={2.2} />
           </div>
-          <h1 className="mt-3 text-2xl font-bold text-slate-800">登录 GradPath</h1>
-          <p className="text-sm text-slate-500">记录你的职业轨迹，规划下一步方向</p>
+          <h1 className="mt-4 font-display text-3xl font-semibold text-ink-800 tracking-tight">
+            登录 GradPath
+          </h1>
+          <p className="mt-1.5 text-sm text-ink-400">记录你的职业轨迹，规划下一步方向</p>
         </div>
 
         <form
           onSubmit={onSubmit}
-          className="card space-y-4"
+          className="card space-y-5"
         >
           <Field label="邮箱" required>
             <Input
@@ -96,9 +98,9 @@ export default function LoginPage() {
           <Button type="submit" loading={loading} className="w-full">
             登录
           </Button>
-          <p className="text-center text-sm text-slate-500">
+          <p className="text-center text-sm text-ink-400">
             还没有账号？{" "}
-            <Link href="/register" className="text-brand-600 hover:underline font-medium">
+            <Link href="/register" className="text-brand-600 hover:text-brand-700 hover:underline font-medium transition-colors">
               立即注册
             </Link>
           </p>

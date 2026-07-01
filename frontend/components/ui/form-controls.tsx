@@ -11,7 +11,7 @@ import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
 
 const fieldBase =
-  "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100 disabled:bg-slate-50 disabled:text-slate-400";
+  "w-full rounded-lg border border-paper-300 bg-white px-3 py-2 text-sm text-ink-800 placeholder:text-ink-300 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100 transition-colors disabled:bg-paper-100 disabled:text-ink-300";
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
   ({ className, ...props }, ref) => (
@@ -51,12 +51,12 @@ export function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-sm font-medium text-slate-700">
+      <span className="mb-1.5 block text-sm font-medium text-ink-700">
         {label}
         {required && <span className="ml-0.5 text-red-500">*</span>}
       </span>
       {children}
-      {hint && <span className="mt-1 block text-xs text-slate-400">{hint}</span>}
+      {hint && <span className="mt-1 block text-xs text-ink-400">{hint}</span>}
     </label>
   );
 }
@@ -66,11 +66,11 @@ type ButtonSize = "sm" | "md";
 
 const variantClass: Record<ButtonVariant, string> = {
   primary:
-    "bg-brand-600 text-white hover:bg-brand-700 disabled:bg-brand-300",
+    "bg-brand-600 text-white hover:bg-brand-700 disabled:bg-brand-300 shadow-brand-sm hover:shadow-brand transition-all",
   secondary:
-    "bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 disabled:text-slate-400",
-  ghost: "text-slate-600 hover:bg-slate-100 disabled:text-slate-400",
-  danger: "bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300",
+    "bg-white text-ink-700 border border-paper-300 hover:bg-paper-100 hover:border-ink-200 disabled:text-ink-300 transition-all",
+  ghost: "text-ink-500 hover:bg-paper-200 hover:text-ink-800 disabled:text-ink-300 transition-all",
+  danger: "bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300 transition-colors",
 };
 
 const sizeClass: Record<ButtonSize, string> = {
@@ -90,7 +90,7 @@ export const Button = forwardRef<
     ref={ref}
     disabled={disabled || loading}
     className={cn(
-      "inline-flex items-center justify-center gap-1.5 rounded-lg font-medium transition-colors disabled:cursor-not-allowed",
+      "inline-flex items-center justify-center gap-1.5 rounded-lg font-medium transition-all disabled:cursor-not-allowed",
       variantClass[variant],
       sizeClass[size],
       className,
@@ -113,8 +113,8 @@ export function Badge({
   color?: "slate" | "green" | "amber" | "red" | "blue" | "purple";
 }) {
   const colors: Record<string, string> = {
-    slate: "bg-slate-100 text-slate-600",
-    green: "bg-green-100 text-green-700",
+    slate: "bg-ink-100 text-ink-600",
+    green: "bg-brand-100 text-brand-700",
     amber: "bg-amber-100 text-amber-700",
     red: "bg-red-100 text-red-700",
     blue: "bg-blue-100 text-blue-700",
