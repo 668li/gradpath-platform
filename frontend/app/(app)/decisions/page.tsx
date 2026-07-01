@@ -15,6 +15,7 @@ import { Badge, Button } from "@/components/ui/form-controls";
 import { useToast } from "@/components/ui/toast";
 import { DestinationPie } from "@/components/charts";
 import { DecisionForm } from "@/components/decision-form";
+import { AIAdvicePanel } from "@/components/ai-advice";
 import type {
   DecisionResponse,
   DecisionStats,
@@ -115,6 +116,8 @@ export default function DecisionsPage() {
           <Plus className="h-4 w-4" /> 新建决策
         </Button>
       </div>
+
+      <AIAdvicePanel />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* 决策列表 */}
