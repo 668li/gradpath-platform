@@ -21,10 +21,6 @@ setup_logging(settings.LOG_LEVEL)
 
 logger = logging.getLogger("gradpath")
 
-# 创建数据库表（仅开发模式；生产环境使用 Alembic 迁移）
-if settings.ENVIRONMENT == "development":
-    Base.metadata.create_all(bind=engine)
-
 app = FastAPI(title="GradPath API", version="0.1.0")
 
 # ----------------------------------------------------------------------
@@ -103,6 +99,12 @@ app.include_router(posts_router)
 app.include_router(ai_router)
 app.include_router(gamification_router)
 app.include_router(export_router)
+
+
+# 创建数据库表（仅开发模式；生产环境使用 Alembic 迁移）
+# 必须在路由导入之后：路由导入触发模型注册到 Base.metadata
+if settings.ENVIRONMENT == "development":
+    Base.metadata.create_all(bind=engine)
 
 
 # ----------------------------------------------------------------------
