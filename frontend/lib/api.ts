@@ -23,7 +23,11 @@ import type {
   InterviewStats,
   InterviewSubmit,
   LoginRequest,
+  ParseStatus,
   PipelineStats,
+  PostCreate,
+  PostItem,
+  PostListResponse,
   RegisterRequest,
   ReportDetail,
   ReportListResponse,
@@ -365,4 +369,32 @@ export const pipelineApi = {
 
   deleteSource: (id: string) =>
     request<void>(`/api/pipeline/sources/${id}`, { method: "DELETE" }),
+};
+
+// ===== 讨论帖 =====
+export const postsApi = {
+  list: (params: {
+    topic_type: string;
+    topic_key: string;
+    page?: number;
+    page_size?: number;
+  }) =>
+    request<PostListResponse>(
+      `/api/posts${buildQuery(params as unknown as Record<string, string | undefined | null>)}`,
+    ),
+
+  create: (body: PostCreate) =>
+    request<PostItem>("/api/posts", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  update: (id: string, content: string) =>
+    request<PostItem>(`/api/posts/${id}`, {
+      method: "PUT",
+      body: JSON.stringify({ content }),
+    }),
+
+  remove: (id: string) =>
+    request<void>(`/api/posts/${id}`, { method: "DELETE" }),
 };
