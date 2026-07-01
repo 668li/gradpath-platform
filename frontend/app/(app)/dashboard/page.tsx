@@ -11,8 +11,22 @@ import {
   ArrowRight,
   MapPin,
   Bot,
+  Flame,
+  Sparkles,
+  Lightbulb,
+  Bell,
+  AlertTriangle,
+  PartyPopper,
+  Search,
 } from "lucide-react";
-import { dashboardApi, gamificationApi, careerPlansApi } from "@/lib/api";
+import {
+  dashboardApi,
+  gamificationApi,
+  careerPlansApi,
+  streaksApi,
+  proactiveInsightsApi,
+  lifeWheelApi,
+} from "@/lib/api";
 import { formatDate, cn } from "@/lib/utils";
 import {
   DESTINATION_TYPE_LABEL,
@@ -23,7 +37,17 @@ import { SkillRadar } from "@/components/charts";
 import { LevelProgress } from "@/components/gamification/level-progress";
 import { EmptyState, LoadingState } from "@/components/ui/empty";
 import { Button } from "@/components/ui/form-controls";
-import type { DashboardOverview, GamificationProfile, ReminderItem, DailyFocusItem, WeeklyRecap } from "@/types";
+import type {
+  DashboardOverview,
+  GamificationProfile,
+  ReminderItem,
+  DailyFocusItem,
+  WeeklyRecap,
+  StreakStats,
+  ProactiveInsight,
+  ProactiveInsightSummary,
+  LifeWheelSnapshot,
+} from "@/types";
 import { AlertCircle, Clock, Target, Zap, CalendarCheck, TrendingUp } from "lucide-react";
 
 export default function DashboardPage() {
@@ -34,18 +58,36 @@ export default function DashboardPage() {
   const [reminders, setReminders] = useState<ReminderItem[]>([]);
   const [dailyFocus, setDailyFocus] = useState<DailyFocusItem[]>([]);
   const [weeklyRecap, setWeeklyRecap] = useState<WeeklyRecap | null>(null);
+  const [streakStats, setStreakStats] = useState<StreakStats | null>(null);
+  const [insights, setInsights] = useState<ProactiveInsight[]>([]);
+  const [insightsSummary, setInsightsSummary] =
+    useState<ProactiveInsightSummary | null>(null);
+  const [lifeWheel, setLifeWheel] = useState<LifeWheelSnapshot | null>(null);
+  const [generating, setGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
-        const [overviewRes, profileRes, remindersRes, focusRes, recapRes] = await Promise.allSettled([
+        const [
+          overviewRes,
+          profileRes,
+          remindersRes,
+          focusRes,
+          recapRes,
+          streakRes,
+          insightsRes,
+          lifeWheelRes,
+        ] = await Promise.allSettled([
           dashboardApi.overview(),
           gamificationApi.profile(),
           careerPlansApi.getReminders(),
           careerPlansApi.getDailyFocus(),
           dashboardApi.weeklyRecap(),
+          streaksApi.getStats(),
+          proactiveInsightsApi.getSummary(),
+          lifeWheelApi.getLatest(),
         ]);
         if (alive) {
           if (overviewRes.status === "fulfilled") setData(overviewRes.value);
@@ -57,6 +99,14 @@ export default function DashboardPage() {
             setDailyFocus(focusRes.value);
           if (recapRes.status === "fulfilled")
             setWeeklyRecap(recapRes.value);
+          if (streakRes.status === "fulfilled")
+            setStreakStats(streakRes.value);
+          if (insightsRes.status === "fulfilled") {
+            setInsightsSummary(insightsRes.value);
+            setInsights(insightsRes.value.latest_insights);
+          }
+          if (lifeWheelRes.status === "fulfilled")
+            setLifeWheel(lifeWheelRes.value);
         }
       } finally {
         if (alive) setLoading(false);
@@ -79,6 +129,42 @@ export default function DashboardPage() {
   const radarData = Object.entries(data.skill_categories).map(
     ([category, count]) => ({ category, count }),
   );
+
+  const unreadInsightCount =
+    insightsSummary?.unread_count ??
+    insights.filter((i) => !i.is_read).length;
+
+  // 点击洞察卡片标记为已读（乐观更新，失败静默）
+  const handleMarkAsRead = async (id: string) => {
+    setInsights((prev) =>
+      prev.map((i) => (i.id === id ? { ...i, is_read: true } : i)),
+    );
+    setInsightsSummary((prev) =>
+      prev
+        ? { ...prev, unread_count: Math.max(0, prev.unread_count - 1) }
+        : prev,
+    );
+    try {
+      await proactiveInsightsApi.markAsRead(id);
+    } catch {
+      // 静默失败：下次进入页面会重新拉取最新状态
+    }
+  };
+
+  // 生成 AI 洞察并刷新列表
+  const handleGenerate = async () => {
+    setGenerating(true);
+    try {
+      await proactiveInsightsApi.generate();
+      const summary = await proactiveInsightsApi.getSummary();
+      setInsightsSummary(summary);
+      setInsights(summary.latest_insights);
+    } catch {
+      // 静默失败
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -121,6 +207,92 @@ export default function DashboardPage() {
           color="purple"
           hint={data.latest_retrospective?.title ?? "暂无"}
         />
+      </div>
+
+      {/* 连续打卡 */}
+      {streakStats && (
+        <div className="card overflow-hidden animate-fade-in">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-orange-500 text-white shadow-lg shadow-orange-500/25">
+              <Flame className="h-8 w-8" strokeWidth={2.2} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-baseline gap-2">
+                <span className="font-display text-4xl font-bold leading-none text-ink-800">
+                  {streakStats.current_streak}
+                </span>
+                <span className="text-sm text-ink-500">天连续打卡</span>
+              </div>
+              {streakStats.today_active ? (
+                <p className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-brand-600">
+                  <Flame className="h-3 w-3" /> 今日已打卡，连胜延续中
+                </p>
+              ) : (
+                <p className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-amber-600">
+                  <Flame className="h-3 w-3" /> 今天还没打卡，别让连胜中断
+                </p>
+              )}
+            </div>
+            <div className="flex gap-6 sm:gap-8 sm:border-l sm:border-paper-200 sm:pl-6">
+              <div>
+                <p className="font-display text-xl font-bold leading-none text-ink-800">
+                  {streakStats.longest_streak}
+                </p>
+                <p className="mt-1 text-xs text-ink-400">最长连胜 / 天</p>
+              </div>
+              <div>
+                <p className="font-display text-xl font-bold leading-none text-ink-800">
+                  {streakStats.total_active_days}
+                </p>
+                <p className="mt-1 text-xs text-ink-400">累计活跃 / 天</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI 主动洞察 */}
+      <div className="space-y-3 animate-fade-in">
+        <div className="flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+            <Sparkles className="h-4 w-4" />
+          </div>
+          <h2 className="font-display font-semibold text-ink-800">AI 洞察</h2>
+          {unreadInsightCount > 0 && (
+            <span className="rounded-full bg-brand-100 px-2 py-0.5 text-xs font-medium text-brand-600">
+              {unreadInsightCount} 条未读
+            </span>
+          )}
+        </div>
+        {insights.length > 0 ? (
+          <div className="space-y-2">
+            {insights.slice(0, 3).map((insight) => (
+              <InsightCard
+                key={insight.id}
+                insight={insight}
+                onRead={handleMarkAsRead}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="card flex flex-col items-center gap-3 py-8 text-center">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="font-display text-sm font-medium text-ink-700">
+                暂无洞察
+              </p>
+              <p className="mt-0.5 text-xs text-ink-400">
+                让 AI 根据你的数据生成个性化洞察与建议
+              </p>
+            </div>
+            <Button onClick={handleGenerate} loading={generating}>
+              {!generating && <Sparkles className="h-4 w-4" />}
+              {generating ? "生成中…" : "生成洞察"}
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* 成长进度预览 */}
@@ -252,6 +424,49 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {/* 人生平衡轮迷你概览 */}
+      {lifeWheel && (
+        <div className="card space-y-3 animate-fade-in">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display font-semibold text-ink-800">
+              人生平衡轮
+            </h2>
+            <Link
+              href="/life-wheel"
+              className="inline-flex items-center text-sm text-brand-600 transition-colors hover:text-brand-700"
+            >
+              完整评估 <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            <div className="flex shrink-0 flex-col items-center justify-center rounded-xl bg-brand-50 px-6 py-3">
+              <p className="font-display text-3xl font-bold leading-none text-brand-700">
+                {lifeWheel.overall_score.toFixed(1)}
+              </p>
+              <p className="mt-1 text-xs text-ink-400">综合得分</p>
+            </div>
+            <div className="grid flex-1 grid-cols-1 gap-x-6 gap-y-2.5 sm:grid-cols-2">
+              {Object.entries(lifeWheel.scores).map(([key, score]) => (
+                <div key={key}>
+                  <div className="mb-1 flex items-center justify-between text-xs">
+                    <span className="text-ink-500">{prettifyKey(key)}</span>
+                    <span className="text-ink-400">{score}</span>
+                  </div>
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-paper-200">
+                    <div
+                      className="h-full rounded-full bg-brand-500 transition-all duration-500"
+                      style={{
+                        width: `${Math.min(100, Math.round((score / 10) * 100))}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 规划提醒 */}
       {reminders.length > 0 && (
@@ -444,5 +659,124 @@ function TimelineList({
         );
       })}
     </ol>
+  );
+}
+
+// ===== AI 主动洞察：辅助函数 =====
+
+/** 洞察类型对应图标 */
+function getInsightIcon(type: ProactiveInsight["insight_type"]) {
+  switch (type) {
+    case "pattern":
+      return <Search className="h-4 w-4" />;
+    case "reminder":
+      return <Bell className="h-4 w-4" />;
+    case "celebration":
+      return <PartyPopper className="h-4 w-4" />;
+    case "warning":
+      return <AlertTriangle className="h-4 w-4" />;
+    case "suggestion":
+      return <Lightbulb className="h-4 w-4" />;
+    default:
+      return <Sparkles className="h-4 w-4" />;
+  }
+}
+
+/** 洞察类型对应的图标背景配色 */
+function getInsightIconBg(type: ProactiveInsight["insight_type"]) {
+  switch (type) {
+    case "pattern":
+      return "bg-blue-50 text-blue-600";
+    case "reminder":
+      return "bg-amber-50 text-amber-600";
+    case "celebration":
+      return "bg-green-50 text-green-600";
+    case "warning":
+      return "bg-red-50 text-red-600";
+    case "suggestion":
+      return "bg-brand-50 text-brand-600";
+    default:
+      return "bg-paper-100 text-ink-500";
+  }
+}
+
+/** 优先级对应的左侧色条：5=红 4=琥珀 3=品牌 2=蓝 1=灰 */
+function getPriorityBorder(priority: number) {
+  switch (priority) {
+    case 5:
+      return "border-l-red-500";
+    case 4:
+      return "border-l-amber-500";
+    case 3:
+      return "border-l-brand-500";
+    case 2:
+      return "border-l-blue-500";
+    default:
+      return "border-l-ink-300";
+  }
+}
+
+/** 将维度 key 转为可读名称（如 career_health -> Career Health） */
+function prettifyKey(key: string): string {
+  return key
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/** 单条 AI 洞察卡片：点击标记已读，未读有品牌色底，按优先级显示左色条 */
+function InsightCard({
+  insight,
+  onRead,
+}: {
+  insight: ProactiveInsight;
+  onRead: (id: string) => void;
+}) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => !insight.is_read && onRead(insight.id)}
+      onKeyDown={(e) => {
+        if ((e.key === "Enter" || e.key === " ") && !insight.is_read) {
+          e.preventDefault();
+          onRead(insight.id);
+        }
+      }}
+      className={cn(
+        "group cursor-pointer rounded-xl border border-l-4 border-paper-200 px-4 py-3 transition-all hover:border-paper-300 hover:shadow-card-hover",
+        getPriorityBorder(insight.priority),
+        insight.is_read ? "bg-white" : "bg-brand-50/60",
+      )}
+    >
+      <div className="flex items-start gap-3">
+        <div
+          className={cn(
+            "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+            getInsightIconBg(insight.insight_type),
+          )}
+        >
+          {getInsightIcon(insight.insight_type)}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-semibold text-ink-800">
+              {insight.title}
+            </p>
+            {!insight.is_read && (
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500" />
+            )}
+          </div>
+          <p className="mt-0.5 text-xs leading-relaxed text-ink-500">
+            {insight.content}
+          </p>
+          {insight.action_suggestion && (
+            <p className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-brand-600 group-hover:underline">
+              {insight.action_suggestion}
+              <ArrowRight className="h-3 w-3" />
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

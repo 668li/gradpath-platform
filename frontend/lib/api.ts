@@ -40,6 +40,9 @@ import type {
   KnowledgeArticle,
   KnowledgeArticleCreate,
   KnowledgeArticleUpdate,
+  LifeWheelDimension,
+  LifeWheelSnapshot,
+  LifeWheelSubmit,
   LoginRequest,
   MarketDataItem,
   Message,
@@ -51,6 +54,8 @@ import type {
   PostCreate,
   PostItem,
   PostListResponse,
+  ProactiveInsight,
+  ProactiveInsightSummary,
   RegisterRequest,
   ReminderItem,
   ReportDetail,
@@ -69,6 +74,7 @@ import type {
   SkillResponse,
   SkillStats,
   SkillUpdate,
+  StreakStats,
   TokenResponse,
   UserResponse,
   UserSetting,
@@ -749,4 +755,54 @@ export const assessmentApi = {
     }),
   getResult: () => request<AssessmentResult | null>("/api/assessment/result"),
   getHistory: () => request<AssessmentResult[]>("/api/assessment/history"),
+};
+
+// ===== 护城河功能：人生平衡轮 =====
+export const lifeWheelApi = {
+  submit: (body: LifeWheelSubmit) =>
+    request<LifeWheelSnapshot>("/api/life-wheel/submit", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  getLatest: () => request<LifeWheelSnapshot | null>("/api/life-wheel/latest"),
+  getHistory: () => request<LifeWheelSnapshot[]>("/api/life-wheel/history"),
+  getDimensions: () => request<LifeWheelDimension[]>("/api/life-wheel/dimensions"),
+  analyze: (snapshotId: string) =>
+    request<{ ai_analysis: string }>("/api/life-wheel/analyze", {
+      method: "POST",
+      body: JSON.stringify({ snapshot_id: snapshotId }),
+    }),
+};
+
+// ===== 护城河功能：连续打卡 =====
+export const streaksApi = {
+  getStats: () => request<StreakStats>("/api/streaks/stats"),
+};
+
+// ===== 护城河功能：AI 主动洞察 =====
+export const proactiveInsightsApi = {
+  getSummary: () => request<ProactiveInsightSummary>("/api/proactive-insights/summary"),
+  list: (params?: { unread_only?: boolean; limit?: number }) =>
+    request<ProactiveInsight[]>(
+      `/api/proactive-insights/list${buildQuery((params as Record<string, string | undefined | null>) || {})}`,
+    ),
+  generate: () =>
+    request<ProactiveInsight[]>("/api/proactive-insights/generate", {
+      method: "POST",
+    }),
+  markAsRead: (id: string) =>
+    request<void>(`/api/proactive-insights/${id}/read`, { method: "PATCH" }),
+};
+
+// ===== 护城河功能：决策日志与回溯 =====
+export const decisionJournalApi = {
+  getPendingReviews: () =>
+    request<DecisionResponse[]>("/api/decision-journal/pending-reviews"),
+  getReviewed: () =>
+    request<DecisionResponse[]>("/api/decision-journal/reviewed"),
+  completeReview: (decisionId: string, body: { actual_outcome: string; review_notes?: string }) =>
+    request<DecisionResponse>(`/api/decision-journal/${decisionId}/review`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
 };

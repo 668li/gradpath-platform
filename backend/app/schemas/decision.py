@@ -13,6 +13,10 @@ class DecisionCreate(BaseModel):
     details: dict = Field(default_factory=dict)
     reasoning: str | None = None
     confidence: int = Field(ge=1, le=5)
+    # 决策日志字段（可选）
+    prediction: str | None = None
+    assumptions: list[str] = Field(default_factory=list)
+    review_date: date | None = None
 
 
 class DecisionUpdate(BaseModel):
@@ -22,6 +26,10 @@ class DecisionUpdate(BaseModel):
     details: dict | None = None
     reasoning: str | None = None
     confidence: int | None = Field(default=None, ge=1, le=5)
+    # 决策日志字段（可选）
+    prediction: str | None = None
+    assumptions: list[str] | None = None
+    review_date: date | None = None
 
 
 class DecisionResponse(BaseModel):
@@ -35,5 +43,13 @@ class DecisionResponse(BaseModel):
     confidence: int
     created_at: datetime
     updated_at: datetime
+    # 决策日志字段
+    prediction: str | None = None
+    assumptions: list = Field(default_factory=list)
+    review_date: date | None = None
+    actual_outcome: str | None = None
+    review_notes: str | None = None
+    review_completed: bool = False
+    ai_analysis: str | None = None
 
     model_config = {"from_attributes": True}

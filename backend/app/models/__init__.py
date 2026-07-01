@@ -15,12 +15,15 @@ from app.models.market_data import MarketData
 from app.models.milestone_log import MilestoneLog
 from app.models.pipeline_enums import ContentType, SourceType
 from app.models.post import Post, PostTopicType
+from app.models.proactive_insight import ProactiveInsight
 from app.models.reference_snapshot import ReferenceSnapshot, SnapshotSource
 from app.models.report_record import ParseStatus, ReportRecord
 from app.models.retrospective import PeriodType, Retrospective
 from app.models.salary_benchmark import ExperienceLevel, SalaryBenchmark
 from app.models.school import School
 from app.models.skill_node import SkillNode
+from app.models.streak import StreakRecord
+from app.models.life_wheel import LifeWheelSnapshot
 from app.models.user import User, UserStage
 from app.models.user_badge import UserBadge
 from app.models.user_setting import UserSetting
@@ -54,4 +57,8 @@ __all__ = [
     "CareerProfile",
     # Phase 12 里程碑执行日志与提醒
     "MilestoneLog",
+    # 护城河功能
+    "LifeWheelSnapshot",
+    "StreakRecord",
+    "ProactiveInsight",
 ]

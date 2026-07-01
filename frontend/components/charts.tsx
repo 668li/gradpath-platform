@@ -123,3 +123,47 @@ export function HollandRadar({
     </ResponsiveContainer>
   );
 }
+
+/** 人生平衡轮 8 维度雷达图 — 品牌色填充，固定 0-10 量程 */
+export function LifeWheelRadar({
+  data,
+  height = 320,
+}: {
+  data: { key: string; name: string; score: number }[];
+  height?: number;
+}) {
+  if (!data.length) return null;
+  const chartData = data.map((d) => ({ dimension: d.name, score: d.score }));
+  return (
+    <ResponsiveContainer width="100%" height={height}>
+      <RadarChart data={chartData} outerRadius="70%">
+        <PolarGrid stroke="#e2e0db" />
+        <PolarAngleAxis
+          dataKey="dimension"
+          tick={{ fill: "#6b6760", fontSize: 12 }}
+        />
+        <PolarRadiusAxis
+          allowDecimals={false}
+          tick={false}
+          axisLine={false}
+          domain={[0, 10]}
+        />
+        <Radar
+          name="满意度"
+          dataKey="score"
+          stroke="#0d9488"
+          fill="#0d9488"
+          fillOpacity={0.35}
+          strokeWidth={2}
+        />
+        <Tooltip
+          contentStyle={{
+            borderRadius: 8,
+            border: "1px solid #e2e0db",
+            fontSize: 13,
+          }}
+        />
+      </RadarChart>
+    </ResponsiveContainer>
+  );
+}

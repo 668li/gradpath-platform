@@ -12,6 +12,10 @@ from app.models.skill_node import SkillNode
 
 
 def get_overview(db: Session, user_id: UUID) -> dict:
+    # 记录每日打卡（打开看板即视为活跃）
+    from app.services.streak_service import record_activity
+    record_activity(db, user_id, "dashboard")
+
     decisions = (
         db.query(DestinationDecision)
         .filter(DestinationDecision.user_id == user_id)

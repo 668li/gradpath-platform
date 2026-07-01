@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { ChevronDown, Plus, Trash2 } from "lucide-react";
 import { decisionsApi } from "@/lib/api";
 import {
   DECISION_STATUSES,
@@ -10,7 +11,7 @@ import {
   DESTINATION_TYPE_LABEL,
 } from "@/lib/constants";
 import { decisionSchema } from "@/lib/validations";
-import { todayISO } from "@/lib/utils";
+import { cn, todayISO } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
 import { Button, Field, FieldError, Input, Select, Textarea } from "@/components/ui/form-controls";
 import type {
@@ -52,6 +53,22 @@ export function DecisionForm({ initial, onSaved, onCancel }: DecisionFormProps) 
   const [confidence, setConfidence] = useState(initial?.confidence ?? 3);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // 决策日志字段（可选）
+  const [prediction, setPrediction] = useState(initial?.prediction ?? "");
+  const [assumptions, setAssumptions] = useState<string[]>(
+    initial?.assumptions && initial.assumptions.length > 0
+      ? [...initial.assumptions]
+      : [""],
+  );
+  const [reviewDate, setReviewDate] = useState(initial?.review_date ?? "");
+  const [journalOpen, setJournalOpen] = useState(
+    !!(
+      initial?.prediction ||
+      initial?.review_date ||
+      (initial?.assumptions && initial.assumptions.length > 0)
+    ),
+  );
 
   const handleTypeChange = (type: DestinationType) => {
     setDestinationType(type);
@@ -97,6 +114,9 @@ export function DecisionForm({ initial, onSaved, onCancel }: DecisionFormProps) 
         details: cleanDetails,
         reasoning: reasoning || null,
         confidence,
+        prediction: prediction.trim() || null,
+        assumptions: assumptions.map((a) => a.trim()).filter(Boolean),
+        review_date: reviewDate || null,
       };
       const saved = isEdit && initial
         ? await decisionsApi.update(initial.id, payload)
@@ -205,6 +225,93 @@ export function DecisionForm({ initial, onSaved, onCancel }: DecisionFormProps) 
           className="w-full accent-brand-600"
         />
       </Field>
+
+      {/* 决策日志（可选） */}
+      <div className="rounded-lg border border-paper-300 bg-paper-50/40">
+        <button
+          type="button"
+          onClick={() => setJournalOpen((v) => !v)}
+          className="flex w-full items-center justify-between px-4 py-3 text-left"
+          aria-expanded={journalOpen}
+        >
+          <span className="flex items-center gap-2 text-sm font-medium text-ink-700">
+            <span className="flex h-5 w-5 items-center justify-center rounded bg-brand-100 text-brand-600">
+              <ChevronDown
+                className={cn(
+                  "h-3.5 w-3.5 transition-transform",
+                  journalOpen ? "" : "-rotate-90",
+                )}
+              />
+            </span>
+            决策日志（可选）
+          </span>
+          <span className="text-xs text-ink-400">
+            {journalOpen ? "收起" : "展开"}
+          </span>
+        </button>
+        {journalOpen && (
+          <div className="space-y-4 border-t border-paper-300 px-4 py-4">
+            <Field label="预测" hint="你预测这个决策会带来什么结果？">
+              <Textarea
+                value={prediction}
+                onChange={(e) => setPrediction(e.target.value)}
+                placeholder="你预测这个决策会带来什么结果？"
+                className="min-h-[80px]"
+              />
+            </Field>
+
+            <div>
+              <span className="mb-1.5 block text-sm font-medium text-ink-700">
+                关键假设
+              </span>
+              <p className="mb-2 text-xs text-ink-400">你的关键假设是什么？</p>
+              <div className="space-y-2">
+                {assumptions.map((a, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <Textarea
+                      value={a}
+                      onChange={(e) =>
+                        setAssumptions((prev) =>
+                          prev.map((x, idx) => (idx === i ? e.target.value : x)),
+                        )
+                      }
+                      placeholder={`假设 ${i + 1}…`}
+                      className="min-h-[56px]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setAssumptions((prev) =>
+                          prev.length === 1 ? [""] : prev.filter((_, idx) => idx !== i),
+                        )
+                      }
+                      className="mt-1 shrink-0 rounded-md p-1.5 text-ink-300 hover:bg-red-50 hover:text-red-500"
+                      aria-label="删除假设"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => setAssumptions((prev) => [...prev, ""])}
+                className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:text-brand-700"
+              >
+                <Plus className="h-3.5 w-3.5" /> 添加假设
+              </button>
+            </div>
+
+            <Field label="计划回溯评估日期" hint="建议1-3个月后">
+              <Input
+                type="date"
+                value={reviewDate}
+                onChange={(e) => setReviewDate(e.target.value)}
+              />
+            </Field>
+          </div>
+        )}
+      </div>
 
       <div className="flex justify-end gap-2 pt-2">
         <Button type="button" variant="secondary" onClick={onCancel} disabled={loading}>

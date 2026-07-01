@@ -65,6 +65,14 @@ export interface DecisionResponse {
   confidence: number;
   created_at: string;
   updated_at: string;
+  // 决策日志字段
+  prediction?: string | null;
+  assumptions?: string[];
+  review_date?: string | null;
+  actual_outcome?: string | null;
+  review_notes?: string | null;
+  review_completed?: boolean;
+  ai_analysis?: string | null;
 }
 
 export interface DecisionCreate {
@@ -74,6 +82,9 @@ export interface DecisionCreate {
   details: DecisionDetails;
   reasoning?: string | null;
   confidence: number;
+  prediction?: string | null;
+  assumptions?: string[];
+  review_date?: string | null;
 }
 
 export interface DecisionUpdate {
@@ -83,6 +94,9 @@ export interface DecisionUpdate {
   details?: DecisionDetails;
   reasoning?: string | null;
   confidence?: number;
+  prediction?: string | null;
+  assumptions?: string[];
+  review_date?: string | null;
 }
 
 export type DecisionStats = Record<string, number>;
@@ -817,4 +831,63 @@ export interface KnowledgeArticleUpdate {
   source?: string | null;
   metadata_?: Record<string, unknown>;
   is_published?: boolean;
+}
+
+// ===== 护城河功能：人生平衡轮 =====
+export interface LifeWheelDimension {
+  key: string;
+  name: string;
+  desc: string;
+}
+
+export interface LifeWheelSnapshot {
+  id: string;
+  snapshot_date: string;
+  scores: Record<string, number>;
+  overall_score: number;
+  ai_analysis: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface LifeWheelSubmit {
+  scores: Record<string, number>;
+  notes?: string | null;
+}
+
+// ===== 护城河功能：连续打卡 =====
+export interface StreakRecord {
+  date: string;
+  streak_count: number;
+  activity_types: string[];
+  xp_earned: number;
+}
+
+export interface StreakStats {
+  current_streak: number;
+  longest_streak: number;
+  total_active_days: number;
+  today_active: boolean;
+  last_active_date: string | null;
+  freeze_available: boolean;
+  recent_records: StreakRecord[];
+}
+
+// ===== 护城河功能：AI 主动洞察 =====
+export interface ProactiveInsight {
+  id: string;
+  insight_type: "pattern" | "reminder" | "celebration" | "warning" | "suggestion";
+  title: string;
+  content: string;
+  action_suggestion: string | null;
+  priority: number;
+  related_data: Record<string, unknown>;
+  is_read: boolean;
+  created_at: string;
+}
+
+export interface ProactiveInsightSummary {
+  unread_count: number;
+  total_count: number;
+  latest_insights: ProactiveInsight[];
 }
