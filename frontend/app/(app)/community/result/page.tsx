@@ -175,6 +175,11 @@ function CommunityResultContent() {
             </Link>
           }
         />
+        <DiscussionSection
+          topicType="school_major"
+          topicKey={`${school}|${major}`}
+          title={`${school} · ${major} 讨论`}
+        />
       </div>
     );
   }

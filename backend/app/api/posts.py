@@ -8,6 +8,7 @@ from app.models.user import User
 from app.schemas.post import (
     PostCreate,
     PostListResponse,
+    PostQuery,
     PostResponse,
     PostUpdate,
 )
@@ -30,6 +31,15 @@ def list(
     db: Session = Depends(get_db),
 ):
     return list_posts(db, topic_type, topic_key, page, page_size)
+
+
+@router.post("/list", response_model=PostListResponse)
+def list_by_body(
+    body: PostQuery,
+    db: Session = Depends(get_db),
+):
+    """POST 方式查询帖子列表（避免 URL 编码中文参数问题）。"""
+    return list_posts(db, body.topic_type, body.topic_key, body.page, body.page_size)
 
 
 @router.post("", response_model=PostResponse, status_code=status.HTTP_201_CREATED)

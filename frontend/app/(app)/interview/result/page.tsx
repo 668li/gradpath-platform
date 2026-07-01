@@ -85,6 +85,11 @@ function InterviewResultContent() {
             </Link>
           }
         />
+        <DiscussionSection
+          topicType="company_position"
+          topicKey={`${company}|`}
+          title={`${company} 面试讨论`}
+        />
       </div>
     );
   }

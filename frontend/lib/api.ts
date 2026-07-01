@@ -379,9 +379,10 @@ export const postsApi = {
     page?: number;
     page_size?: number;
   }) =>
-    request<PostListResponse>(
-      `/api/posts${buildQuery(params as unknown as Record<string, string | undefined | null>)}`,
-    ),
+    request<PostListResponse>("/api/posts/list", {
+      method: "POST",
+      body: JSON.stringify(params),
+    }),
 
   create: (body: PostCreate) =>
     request<PostItem>("/api/posts", {

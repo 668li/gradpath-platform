@@ -5,6 +5,13 @@ from uuid import UUID
 from pydantic import BaseModel, Field, field_validator
 
 
+class PostQuery(BaseModel):
+    topic_type: str
+    topic_key: str
+    page: int = 1
+    page_size: int = 20
+
+
 class PostCreate(BaseModel):
     topic_type: str
     topic_key: str = Field(..., max_length=500)
