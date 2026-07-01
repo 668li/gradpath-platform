@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.ai import router as ai_router
 from app.api.auth import router as auth_router
 from app.api.community import router as community_router
 from app.api.dashboard import router as dashboard_router
@@ -39,6 +40,7 @@ app.include_router(community_router)
 app.include_router(interview_router)
 app.include_router(pipeline_router)
 app.include_router(posts_router)
+app.include_router(ai_router)
 
 
 @app.get("/health")
