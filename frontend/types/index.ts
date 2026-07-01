@@ -677,6 +677,24 @@ export interface CareerPlan {
   updated_at: string;
 }
 
+export interface MilestoneLog {
+  id: string;
+  plan_id: string;
+  milestone_index: number;
+  content: string;
+  created_at: string;
+}
+
+export interface ReminderItem {
+  plan_id: string;
+  plan_goal: string;
+  milestone_title: string;
+  milestone_index: number;
+  target_date: string | null;
+  days_remaining: number | null;
+  type: "overdue" | "upcoming";
+}
+
 // ===== 知识库 =====
 export interface KnowledgeArticle {
   id: string;

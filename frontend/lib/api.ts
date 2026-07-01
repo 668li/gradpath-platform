@@ -38,6 +38,7 @@ import type {
   LoginRequest,
   MarketDataItem,
   Message,
+  MilestoneLog,
   PaginatedResponse,
   ParseStatus,
   PipelineStats,
@@ -45,6 +46,7 @@ import type {
   PostItem,
   PostListResponse,
   RegisterRequest,
+  ReminderItem,
   ReportDetail,
   ReportListResponse,
   RetroCreate,
@@ -691,4 +693,18 @@ export const careerPlansApi = {
       `/api/career-plans/${planId}/milestones/${milestoneIdx}`,
       { method: "PATCH", body: JSON.stringify({ status }) },
     ),
+  addLog: (planId: string, idx: number, content: string) =>
+    request<MilestoneLog>(
+      `/api/career-plans/${planId}/milestones/${idx}/logs`,
+      { method: "POST", body: JSON.stringify({ content }) },
+    ),
+  listLogs: (planId: string, idx: number) =>
+    request<MilestoneLog[]>(
+      `/api/career-plans/${planId}/milestones/${idx}/logs`,
+    ),
+  deleteLog: (planId: string, logId: string) =>
+    request<void>(`/api/career-plans/${planId}/logs/${logId}`, {
+      method: "DELETE",
+    }),
+  getReminders: () => request<ReminderItem[]>("/api/career-plans/reminders"),
 };

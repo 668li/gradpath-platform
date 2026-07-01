@@ -82,3 +82,32 @@ class CareerPlanResponse(BaseModel):
 
 class MilestoneUpdate(BaseModel):
     status: str = Field(..., max_length=20)
+
+
+# ======================================================================
+# 里程碑执行日志与到期提醒 — Phase 12
+# ======================================================================
+
+class MilestoneLogCreate(BaseModel):
+    content: str
+
+
+class MilestoneLogResponse(BaseModel):
+    id: str
+    plan_id: str
+    milestone_index: int
+    content: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ReminderItem(BaseModel):
+    plan_id: str
+    plan_goal: str
+    milestone_title: str
+    milestone_index: int
+    target_date: str | None
+    days_remaining: int | None
+    type: str  # "overdue" | "upcoming"

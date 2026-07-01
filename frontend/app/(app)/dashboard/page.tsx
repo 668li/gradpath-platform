@@ -12,7 +12,7 @@ import {
   MapPin,
   Bot,
 } from "lucide-react";
-import { dashboardApi, gamificationApi } from "@/lib/api";
+import { dashboardApi, gamificationApi, careerPlansApi } from "@/lib/api";
 import { formatDate, cn } from "@/lib/utils";
 import {
   DESTINATION_TYPE_LABEL,
@@ -23,27 +23,32 @@ import { SkillRadar } from "@/components/charts";
 import { LevelProgress } from "@/components/gamification/level-progress";
 import { EmptyState, LoadingState } from "@/components/ui/empty";
 import { Button } from "@/components/ui/form-controls";
-import type { DashboardOverview, GamificationProfile } from "@/types";
+import type { DashboardOverview, GamificationProfile, ReminderItem } from "@/types";
+import { AlertCircle, Clock, Target } from "lucide-react";
 
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardOverview | null>(null);
   const [gameProfile, setGameProfile] = useState<GamificationProfile | null>(
     null,
   );
+  const [reminders, setReminders] = useState<ReminderItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
-        const [overviewRes, profileRes] = await Promise.allSettled([
+        const [overviewRes, profileRes, remindersRes] = await Promise.allSettled([
           dashboardApi.overview(),
           gamificationApi.profile(),
+          careerPlansApi.getReminders(),
         ]);
         if (alive) {
           if (overviewRes.status === "fulfilled") setData(overviewRes.value);
           if (profileRes.status === "fulfilled")
             setGameProfile(profileRes.value);
+          if (remindersRes.status === "fulfilled")
+            setReminders(remindersRes.value);
         }
       } finally {
         if (alive) setLoading(false);
@@ -72,7 +77,7 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="page-title">个人看板</h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-ink-400 mt-1.5">
             一览你的职业轨迹全貌
           </p>
         </div>
@@ -122,7 +127,7 @@ export default function DashboardPage() {
           />
           <Link
             href="/achievements"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-paper-300 bg-white px-4 py-2 text-sm font-medium text-ink-700 transition-all hover:bg-paper-100 hover:border-ink-200"
           >
             查看成就 <ArrowRight className="h-4 w-4" />
           </Link>
@@ -146,25 +151,88 @@ export default function DashboardPage() {
       {/* AI 职业管家入口 */}
       <Link
         href="/chat"
-        className="flex items-center gap-4 rounded-xl border border-brand-200 bg-gradient-to-r from-brand-50 to-slate-50 p-4 transition-all hover:shadow-md hover:border-brand-300"
+        className="flex items-center gap-4 rounded-xl border border-brand-200 bg-gradient-to-r from-brand-50 to-paper-50 p-4 transition-all hover:shadow-card-hover hover:border-brand-300"
       >
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-white">
-          <Bot className="h-6 w-6" />
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-white shadow-brand-sm">
+          <Bot className="h-6 w-6" strokeWidth={2} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-slate-800">与 AI 职业管家对话</p>
-          <p className="text-sm text-slate-500">
+          <p className="font-display font-semibold text-ink-800">与 AI 职业管家对话</p>
+          <p className="text-sm text-ink-400">
             个性化职业规划、简历诊断、面试模拟 — 基于你的数据智能匹配
           </p>
         </div>
         <ArrowRight className="h-5 w-5 shrink-0 text-brand-400" />
       </Link>
 
+      {/* 规划提醒 */}
+      {reminders.length > 0 && (
+        <div className="card space-y-3 animate-fade-in">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display font-semibold text-ink-800 flex items-center gap-2">
+              <Target className="h-4 w-4 text-brand-600" />
+              规划提醒
+            </h2>
+            <Link
+              href="/plans"
+              className="text-sm text-brand-600 hover:text-brand-700 transition-colors inline-flex items-center"
+            >
+              查看全部 <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          <div className="space-y-2">
+            {reminders.slice(0, 5).map((r, i) => (
+              <Link
+                key={`${r.plan_id}-${r.milestone_index}-${i}`}
+                href="/plans"
+                className={cn(
+                  "flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors hover:shadow-card",
+                  r.type === "overdue"
+                    ? "border-red-200 bg-red-50/30 hover:bg-red-50/50"
+                    : "border-amber-200 bg-amber-50/30 hover:bg-amber-50/50",
+                )}
+              >
+                <div
+                  className={cn(
+                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
+                    r.type === "overdue"
+                      ? "bg-red-100 text-red-600"
+                      : "bg-amber-100 text-amber-600",
+                  )}
+                >
+                  {r.type === "overdue" ? (
+                    <AlertCircle className="h-4 w-4" />
+                  ) : (
+                    <Clock className="h-4 w-4" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-ink-700 truncate">
+                    {r.milestone_title}
+                  </p>
+                  <p className="text-xs text-ink-400 truncate">{r.plan_goal}</p>
+                </div>
+                <span
+                  className={cn(
+                    "shrink-0 text-xs font-medium",
+                    r.type === "overdue" ? "text-red-600" : "text-amber-600",
+                  )}
+                >
+                  {r.type === "overdue"
+                    ? `逾期 ${r.days_remaining ?? 0} 天`
+                    : `${r.days_remaining} 天后到期`}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* 职业旅程时间线 */}
         <div className="lg:col-span-2 card">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-slate-800">职业旅程时间线</h2>
+            <h2 className="font-display font-semibold text-ink-800">职业旅程时间线</h2>
             <Link
               href="/timeline"
               className="text-sm text-brand-600 hover:underline inline-flex items-center"
@@ -182,7 +250,7 @@ export default function DashboardPage() {
         {/* 技能分类雷达图 */}
         <div className="card">
           <div className="flex items-center justify-between mb-2">
-            <h2 className="font-semibold text-slate-800">技能分类分布</h2>
+            <h2 className="font-display font-semibold text-ink-800">技能分类分布</h2>
             <Link
               href="/skills"
               className="text-sm text-brand-600 hover:underline"
@@ -201,7 +269,7 @@ export default function DashboardPage() {
       {/* 最近事件 */}
       <div className="card">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold text-slate-800">最近事件</h2>
+          <h2 className="font-display font-semibold text-ink-800">最近事件</h2>
           <Link
             href="/timeline"
             className="text-sm text-brand-600 hover:underline inline-flex items-center"
@@ -212,17 +280,17 @@ export default function DashboardPage() {
         {data.recent_events.length === 0 ? (
           <EmptyState title="暂无事件" description="记录入职、晋升、项目等职业事件" />
         ) : (
-          <ul className="divide-y divide-slate-100">
+          <ul className="divide-y divide-paper-100">
             {data.recent_events.map((e) => (
               <li key={e.id} className="flex items-center gap-3 py-3">
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
                   <TimelineIcon className="h-4 w-4" />
                 </span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-slate-800 truncate">
+                  <p className="text-sm font-medium text-ink-800 truncate">
                     {e.title}
                   </p>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-ink-400">
                     {EVENT_TYPE_LABEL[e.event_type as keyof typeof EVENT_TYPE_LABEL] ?? e.event_type}
                     {" · "}
                     {formatDate(e.event_date)}
@@ -243,7 +311,7 @@ function TimelineList({
   items: DashboardOverview["timeline"];
 }) {
   return (
-    <ol className="relative space-y-4 before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-px before:bg-slate-200">
+    <ol className="relative space-y-4 before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-px before:bg-paper-300">
       {items.map((item) => {
         const isDecision = item.type === "decision";
         return (
@@ -251,27 +319,27 @@ function TimelineList({
             <span
               className={cn(
                 "absolute left-0 top-1.5 flex h-[15px] w-[15px] items-center justify-center rounded-full ring-4 ring-white",
-                isDecision ? "bg-brand-500" : "bg-green-500",
+                isDecision ? "bg-brand-500" : "bg-brand-300",
               )}
             />
             <div className="flex items-baseline justify-between gap-2">
-              <p className="text-sm font-medium text-slate-800">
+              <p className="text-sm font-medium text-ink-800">
                 {isDecision
                   ? `去向决策: ${DESTINATION_TYPE_LABEL[item.title.replace("去向决策: ", "") as keyof typeof DESTINATION_TYPE_LABEL] ?? item.title.replace("去向决策: ", "")}`
                   : item.title}
                 {item.subtitle && (
-                  <span className="ml-2 text-slate-400 font-normal">
+                  <span className="ml-2 text-ink-400 font-normal">
                     {isDecision
                       ? item.subtitle
                       : EVENT_TYPE_LABEL[item.subtitle as keyof typeof EVENT_TYPE_LABEL] ?? item.subtitle}
                   </span>
                 )}
               </p>
-              <span className="text-xs text-slate-400 whitespace-nowrap">
+              <span className="text-xs text-ink-400 whitespace-nowrap">
                 {formatDate(item.date)}
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-1">
+            <p className="text-xs text-ink-400 mt-0.5 flex items-center gap-1">
               <MapPin className="h-3 w-3" />
               {isDecision ? "去向决策" : "成长事件"}
             </p>

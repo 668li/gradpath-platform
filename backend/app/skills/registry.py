@@ -2,13 +2,17 @@
 """Skill 注册表 — 管理所有可用 Skill 的注册与匹配。"""
 from app.skills.base import BaseSkill
 from app.skills.career_planning import CareerPlanningSkill
+from app.skills.career_transition import CareerTransitionSkill
 from app.skills.default_skill import DefaultSkill
+from app.skills.grad_school_planning import GradSchoolPlanningSkill
 from app.skills.interview_simulation import InterviewSimulationSkill
 from app.skills.resume_diagnosis import ResumeDiagnosisSkill
 
 # 注册顺序决定匹配优先级；DefaultSkill 始终最后作为兜底
 SKILL_REGISTRY: list[BaseSkill] = [
     CareerPlanningSkill(),
+    GradSchoolPlanningSkill(),
+    CareerTransitionSkill(),
     ResumeDiagnosisSkill(),
     InterviewSimulationSkill(),
     DefaultSkill(),  # Always last as fallback

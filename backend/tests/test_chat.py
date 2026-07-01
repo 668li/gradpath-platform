@@ -262,14 +262,16 @@ class TestMessageHistory:
 # ======================================================================
 
 class TestSkillsList:
-    def test_list_skills_returns_4(self, auth_headers, client):
-        """列出 4 个 Skill。"""
+    def test_list_skills_returns_all(self, auth_headers, client):
+        """列出全部 Skill（含 Phase 12 新增）。"""
         resp = client.get("/api/chat/skills", headers=auth_headers)
         assert resp.status_code == 200
         skills = resp.json()
-        assert len(skills) == 4
+        assert len(skills) == 6
         codes = [s["code"] for s in skills]
         assert "career_planning" in codes
+        assert "grad_school_planning" in codes
+        assert "career_transition" in codes
         assert "resume_diagnosis" in codes
         assert "interview_simulation" in codes
         assert "default" in codes

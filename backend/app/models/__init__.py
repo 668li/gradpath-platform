@@ -10,6 +10,7 @@ from app.models.growth_insight import GrowthInsight
 from app.models.interview_report import InterviewDimension, InterviewReport, InterviewResult
 from app.models.knowledge_article import KnowledgeArticle
 from app.models.market_data import MarketData
+from app.models.milestone_log import MilestoneLog
 from app.models.pipeline_enums import ContentType, SourceType
 from app.models.post import Post, PostTopicType
 from app.models.reference_snapshot import ReferenceSnapshot, SnapshotSource
@@ -47,4 +48,6 @@ __all__ = [
     "KnowledgeArticle",
     "Conversation", "Message",
     "CareerPlan",
+    # Phase 12 里程碑执行日志与提醒
+    "MilestoneLog",
 ]

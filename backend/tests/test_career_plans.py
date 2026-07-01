@@ -1,12 +1,13 @@
 # backend/tests/test_career_plans.py
-"""职业规划 API 测试 — Phase 11。"""
+"""职业规划 API 测试 — Phase 11 / Phase 12。"""
 import uuid
+from datetime import datetime, timedelta
 
 from app.models.career_plan import CareerPlan
 from app.models.user import User
 
 
-def _seed_plan(db_session, user_id, milestones=None):
+def _seed_plan(db_session, user_id, milestones=None, status="draft"):
     """预置一条职业规划。"""
     if milestones is None:
         milestones = [
@@ -21,7 +22,7 @@ def _seed_plan(db_session, user_id, milestones=None):
         gaps=[{"skill": "Go语言", "current_level": 1, "target_level": 4, "gap": "需系统学习"}],
         milestones=milestones,
         timeline_months=6,
-        status="draft",
+        status=status,
     )
     db_session.add(plan)
     db_session.commit()
@@ -81,3 +82,187 @@ class TestMilestoneUpdate:
             json={"status": "done"},
         )
         assert resp.status_code == 404
+
+
+# ======================================================================
+# Phase 12: 里程碑执行日志
+# ======================================================================
+
+class TestMilestoneLogCreate:
+    def test_add_log_201(self, auth_headers, client, db_session):
+        """添加执行日志返回 201。"""
+        user = db_session.query(User).filter(User.email == "test@example.com").first()
+        plan = _seed_plan(db_session, user.id)
+        resp = client.post(
+            f"/api/career-plans/{plan.id}/milestones/0/logs",
+            headers=auth_headers,
+            json={"content": "今天学习了Go基础语法与并发模型"},
+        )
+        assert resp.status_code == 201
+        data = resp.json()
+        assert data["id"]
+        assert data["plan_id"] == str(plan.id)
+        assert data["milestone_index"] == 0
+        assert "Go基础语法" in data["content"]
+        assert data["created_at"] is not None
+
+    def test_add_log_invalid_index_404(self, auth_headers, client, db_session):
+        """里程碑索引越界返回 404。"""
+        user = db_session.query(User).filter(User.email == "test@example.com").first()
+        plan = _seed_plan(db_session, user.id)
+        resp = client.post(
+            f"/api/career-plans/{plan.id}/milestones/99/logs",
+            headers=auth_headers,
+            json={"content": "无效索引"},
+        )
+        assert resp.status_code == 404
+
+    def test_add_log_plan_not_found_404(self, auth_headers, client):
+        """规划不存在时返回 404。"""
+        resp = client.post(
+            f"/api/career-plans/{uuid.uuid4()}/milestones/0/logs",
+            headers=auth_headers,
+            json={"content": "测试"},
+        )
+        assert resp.status_code == 404
+
+
+class TestMilestoneLogList:
+    def test_list_logs_200(self, auth_headers, client, db_session):
+        """列出执行日志返回 200，且按创建时间倒序。"""
+        user = db_session.query(User).filter(User.email == "test@example.com").first()
+        plan = _seed_plan(db_session, user.id)
+        # 添加两条日志
+        client.post(
+            f"/api/career-plans/{plan.id}/milestones/0/logs",
+            headers=auth_headers,
+            json={"content": "第一条日志"},
+        )
+        client.post(
+            f"/api/career-plans/{plan.id}/milestones/0/logs",
+            headers=auth_headers,
+            json={"content": "第二条日志"},
+        )
+        resp = client.get(
+            f"/api/career-plans/{plan.id}/milestones/0/logs",
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200
+        logs = resp.json()
+        assert len(logs) == 2
+        # 倒序：最新（第二条）在前
+        assert logs[0]["content"] == "第二条日志"
+        assert logs[1]["content"] == "第一条日志"
+        assert all(log["milestone_index"] == 0 for log in logs)
+
+    def test_list_logs_empty(self, auth_headers, client, db_session):
+        """无日志时返回空列表。"""
+        user = db_session.query(User).filter(User.email == "test@example.com").first()
+        plan = _seed_plan(db_session, user.id)
+        resp = client.get(
+            f"/api/career-plans/{plan.id}/milestones/0/logs",
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200
+        assert resp.json() == []
+
+
+class TestMilestoneLogDelete:
+    def test_delete_log_204(self, auth_headers, client, db_session):
+        """删除执行日志返回 204。"""
+        user = db_session.query(User).filter(User.email == "test@example.com").first()
+        plan = _seed_plan(db_session, user.id)
+        create = client.post(
+            f"/api/career-plans/{plan.id}/milestones/0/logs",
+            headers=auth_headers,
+            json={"content": "待删除日志"},
+        )
+        log_id = create.json()["id"]
+        resp = client.delete(
+            f"/api/career-plans/{plan.id}/logs/{log_id}",
+            headers=auth_headers,
+        )
+        assert resp.status_code == 204
+        # 再次查询应不包含该日志
+        logs = client.get(
+            f"/api/career-plans/{plan.id}/milestones/0/logs",
+            headers=auth_headers,
+        ).json()
+        assert all(log["id"] != log_id for log in logs)
+
+    def test_delete_log_not_found_404(self, auth_headers, client, db_session):
+        """删除不存在的日志返回 404。"""
+        user = db_session.query(User).filter(User.email == "test@example.com").first()
+        plan = _seed_plan(db_session, user.id)
+        resp = client.delete(
+            f"/api/career-plans/{plan.id}/logs/{uuid.uuid4()}",
+            headers=auth_headers,
+        )
+        assert resp.status_code == 404
+
+
+# ======================================================================
+# Phase 12: 到期提醒
+# ======================================================================
+
+class TestReminders:
+    def test_reminders_overdue_and_upcoming(self, auth_headers, client, db_session):
+        """到期提醒正确分类 overdue 与 upcoming。"""
+        user = db_session.query(User).filter(User.email == "test@example.com").first()
+        today = datetime.utcnow().date()
+        overdue_date = (today - timedelta(days=3)).strftime("%Y-%m-%d")
+        upcoming_date = (today + timedelta(days=3)).strftime("%Y-%m-%d")
+        far_date = (today + timedelta(days=30)).strftime("%Y-%m-%d")
+        done_date = (today - timedelta(days=5)).strftime("%Y-%m-%d")
+
+        milestones = [
+            {"title": "逾期任务", "description": "已过期", "target_date": overdue_date, "status": "pending"},
+            {"title": "即将到期", "description": "3天后", "target_date": upcoming_date, "status": "pending"},
+            {"title": "远期任务", "description": "30天后", "target_date": far_date, "status": "pending"},
+            {"title": "已完成任务", "description": "已完成不提醒", "target_date": done_date, "status": "done"},
+        ]
+        plan = _seed_plan(db_session, user.id, milestones=milestones, status="active")
+
+        resp = client.get("/api/career-plans/reminders", headers=auth_headers)
+        assert resp.status_code == 200
+        reminders = resp.json()
+        # 仅 overdue + upcoming 共 2 条（远期与已完成不提醒）
+        assert len(reminders) == 2
+
+        types = sorted(r["type"] for r in reminders)
+        assert types == ["overdue", "upcoming"]
+
+        overdue = next(r for r in reminders if r["type"] == "overdue")
+        assert overdue["milestone_title"] == "逾期任务"
+        assert overdue["milestone_index"] == 0
+        assert overdue["target_date"] == overdue_date
+        assert overdue["days_remaining"] == -3
+        assert overdue["plan_id"] == str(plan.id)
+        assert "字节跳动" in overdue["plan_goal"]
+
+        upcoming = next(r for r in reminders if r["type"] == "upcoming")
+        assert upcoming["milestone_title"] == "即将到期"
+        assert upcoming["milestone_index"] == 1
+        assert upcoming["target_date"] == upcoming_date
+        assert upcoming["days_remaining"] == 3
+
+    def test_reminders_excludes_non_active_plans(self, auth_headers, client, db_session):
+        """status != active 的规划不产生提醒。"""
+        user = db_session.query(User).filter(User.email == "test@example.com").first()
+        today = datetime.utcnow().date()
+        overdue_date = (today - timedelta(days=3)).strftime("%Y-%m-%d")
+        milestones = [
+            {"title": "逾期任务", "description": "已过期", "target_date": overdue_date, "status": "pending"},
+        ]
+        # status=draft，不应产生提醒
+        _seed_plan(db_session, user.id, milestones=milestones, status="draft")
+
+        resp = client.get("/api/career-plans/reminders", headers=auth_headers)
+        assert resp.status_code == 200
+        assert resp.json() == []
+
+    def test_reminders_empty(self, auth_headers, client, db_session):
+        """无 active 规划时返回空列表。"""
+        resp = client.get("/api/career-plans/reminders", headers=auth_headers)
+        assert resp.status_code == 200
+        assert resp.json() == []
