@@ -250,11 +250,11 @@ def build_community_context(
                 or 0
             )
             lines.append(f"- 面试经验（共 {total} 条记录，展示前 {len(interviews)} 条）：")
-            offer_count = sum(1 for i in interviews if i.result and i.result.value == "offer")
+            offer_count = sum(1 for it in interviews if it.result and it.result.value == "offer")
             lines.append(f"  Offer 率（展示样本）：{offer_count}/{len(interviews)}")
             for it in interviews:
                 dims = ",".join(it.dimensions) if it.dimensions else "无"
-                diff = f"难度{i.difficulty}" if i.difficulty is not None else "难度未知"
+                diff = f"难度{it.difficulty}" if it.difficulty is not None else "难度未知"
                 lines.append(
                     f"  * {it.company}|{it.position} {it.interview_year}年 "
                     f"{it.result.value if it.result else '未知'} {diff} 维度:{dims}"
