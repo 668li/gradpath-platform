@@ -162,6 +162,46 @@ def build_user_context(db: Session, user_id: UUID) -> str:
         if profile.self_introduction:
             lines.append(f"- 自我介绍：{profile.self_introduction}")
 
+    # 最新职业测评结果（霍兰德）
+    from app.models.assessment import Assessment
+    latest_assessment = (
+        db.query(Assessment)
+        .filter(Assessment.user_id == user_id)
+        .order_by(Assessment.created_at.desc())
+        .first()
+    )
+    if latest_assessment:
+        lines.append("【职业测评】")
+        lines.append(f"- 测评类型：{latest_assessment.assessment_type}")
+        lines.append(f"- 兴趣编码：{latest_assessment.result_code}")
+        lines.append(f"- 结果摘要：{latest_assessment.result_summary}")
+        if latest_assessment.recommended_directions:
+            lines.append(
+                f"- 推荐方向：{', '.join(latest_assessment.recommended_directions)}"
+            )
+
+    # 当前职业规划（active 状态，最多 3 条）
+    active_plans = (
+        db.query(CareerPlan)
+        .filter(CareerPlan.user_id == user_id, CareerPlan.status == "active")
+        .order_by(CareerPlan.created_at.desc())
+        .limit(3)
+        .all()
+    )
+    if active_plans:
+        lines.append("【当前规划】")
+        for p in active_plans:
+            total = len(p.milestones) if p.milestones else 0
+            done = sum(
+                1
+                for m in (p.milestones or [])
+                if isinstance(m, dict) and m.get("status") == "completed"
+            )
+            lines.append(
+                f"- 目标：{p.goal_text} | 进度：{done}/{total} 里程碑 | "
+                f"周期：{p.timeline_months}个月"
+            )
+
     # 技能树（全部，按 level 降序）
     skills = (
         db.query(SkillNode)

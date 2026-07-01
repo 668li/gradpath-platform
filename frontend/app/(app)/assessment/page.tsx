@@ -8,7 +8,18 @@ import { cn } from "@/lib/utils";
 import { LoadingState } from "@/components/ui/empty";
 import { Button } from "@/components/ui/form-controls";
 import { useToast } from "@/components/ui/toast";
+import { HollandRadar } from "@/components/charts";
 import type { AssessmentQuestion, AssessmentResult } from "@/types";
+
+/** 霍兰德 6 维度全量名称表（用于补全 0 分维度） */
+const HOLLAND_DIMS: { code: string; name: string }[] = [
+  { code: "R", name: "实际型" },
+  { code: "I", name: "研究型" },
+  { code: "A", name: "艺术型" },
+  { code: "S", name: "社会型" },
+  { code: "E", name: "企业型" },
+  { code: "C", name: "常规型" },
+];
 
 export default function AssessmentPage() {
   const toast = useToast();
@@ -222,8 +233,15 @@ function ResultView({
 }) {
   const maxScore = Math.max(...Object.values(result.scores), 1);
 
+  // 补全所有 6 维度（0 分维度也要显示）
+  const allDims = HOLLAND_DIMS.map((d) => ({
+    ...d,
+    score: result.scores[d.code] ?? 0,
+  }));
+  const sortedDims = [...allDims].sort((a, b) => b.score - a.score);
+
   return (
-    <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
+    <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
       {/* 结果头部 */}
       <div className="card text-center">
         <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-50 mb-4">
@@ -238,30 +256,40 @@ function ResultView({
         </p>
       </div>
 
-      {/* 维度得分可视化 */}
-      <div className="card space-y-3">
-        <h2 className="font-display font-semibold text-ink-800 mb-2">维度得分</h2>
-        {Object.entries(result.scores)
-          .sort(([, a], [, b]) => b - a)
-          .map(([code, score]) => {
-            const names: Record<string, string> = {
-              R: "实际型", I: "研究型", A: "艺术型",
-              S: "社会型", E: "企业型", C: "常规型",
-            };
+      {/* 雷达图 + 维度得分 双栏 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* 雷达图 */}
+        <div className="card">
+          <h2 className="font-display font-semibold text-ink-800 mb-2">兴趣雷达图</h2>
+          <HollandRadar data={allDims} />
+        </div>
+
+        {/* 维度得分条 */}
+        <div className="card space-y-3">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="font-display font-semibold text-ink-800">维度得分</h2>
+            <span className="text-xs text-ink-400">满分 {maxScore} 分</span>
+          </div>
+          {sortedDims.map(({ code, name, score }) => {
             const pct = (score / maxScore) * 100;
             return (
               <div key={code}>
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-sm text-ink-700">
-                    {code} · {names[code] || code}
+                    {code} · {name}
                   </span>
-                  <span className="text-sm font-medium text-ink-500">{score} 分</span>
+                  <span className={cn(
+                    "text-sm font-medium",
+                    score > 0 ? "text-brand-600" : "text-ink-300",
+                  )}>
+                    {score} 分
+                  </span>
                 </div>
                 <div className="h-2.5 w-full overflow-hidden rounded-full bg-paper-200">
                   <div
                     className={cn(
                       "h-full rounded-full transition-all duration-500",
-                      pct > 66 ? "bg-brand-500" : pct > 33 ? "bg-brand-400" : "bg-brand-300",
+                      pct > 66 ? "bg-brand-500" : pct > 33 ? "bg-brand-400" : pct > 0 ? "bg-brand-300" : "bg-transparent",
                     )}
                     style={{ width: `${pct}%` }}
                   />
@@ -269,6 +297,7 @@ function ResultView({
               </div>
             );
           })}
+        </div>
       </div>
 
       {/* 推荐方向 */}
