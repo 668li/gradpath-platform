@@ -13,6 +13,7 @@ import { LoadingState, EmptyState } from "@/components/ui/empty";
 import { Button } from "@/components/ui/form-controls";
 import { useToast } from "@/components/ui/toast";
 import { RankingBar } from "@/components/employment-charts";
+import { DiscussionSection } from "@/components/discussion-section";
 import {
   RATE_LABEL,
   RATE_COLORS,
@@ -262,6 +263,13 @@ function CommunityResultContent() {
           <p className="text-sm text-slate-400">暂无薪资分布数据</p>
         )}
       </div>
+
+      {/* 讨论区 */}
+      <DiscussionSection
+        topicType="school_major"
+        topicKey={`${school}|${major}`}
+        title={`${school} · ${major} 讨论`}
+      />
 
       {/* CTA */}
       <div className="card bg-brand-50 border-brand-100">

@@ -14,6 +14,7 @@ import { LoadingState, EmptyState } from "@/components/ui/empty";
 import { Button } from "@/components/ui/form-controls";
 import { useToast } from "@/components/ui/toast";
 import { RankingBar } from "@/components/employment-charts";
+import { DiscussionSection } from "@/components/discussion-section";
 import {
   INTERVIEW_DIMENSION_LABEL,
   INTERVIEW_DIMENSIONS,
@@ -244,6 +245,13 @@ function InterviewResultContent() {
           <RankingBar data={data.common_positions} title="常见岗位" />
         </div>
       )}
+
+      {/* 讨论区 */}
+      <DiscussionSection
+        topicType="company_position"
+        topicKey={`${company}|`}
+        title={`${company} 面试讨论`}
+      />
 
       {/* CTA */}
       <div className="card bg-brand-50 border-brand-100">

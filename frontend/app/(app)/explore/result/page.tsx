@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/form-controls";
 import { LoadingState, EmptyState } from "@/components/ui/empty";
 import { useToast } from "@/components/ui/toast";
 import { EmploymentDestinationPie, RankingBar, TrendLine } from "@/components/employment-charts";
+import { DiscussionSection } from "@/components/discussion-section";
 import { RATE_LABEL } from "@/lib/constants";
 import type { CommunityAggregate, EmploymentSearchResult } from "@/types";
 
@@ -260,6 +261,13 @@ function ExploreResultContent() {
           </div>
         )}
       </div>
+
+      {/* 讨论区 */}
+      <DiscussionSection
+        topicType="school_major"
+        topicKey={`${school}|${major}`}
+        title={`${school} · ${major} 讨论`}
+      />
 
       {/* CTA */}
       <div className="card bg-brand-50 border-brand-100">
