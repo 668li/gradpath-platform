@@ -33,6 +33,8 @@ import type {
   InterviewStats,
   InterviewSubmit,
   KnowledgeArticle,
+  KnowledgeArticleCreate,
+  KnowledgeArticleUpdate,
   LoginRequest,
   MarketDataItem,
   Message,
@@ -666,6 +668,18 @@ export const knowledgeApi = {
       method: "POST",
       body: JSON.stringify({ query }),
     }),
+  create: (body: KnowledgeArticleCreate) =>
+    request<KnowledgeArticle>("/api/knowledge", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  update: (id: string, body: KnowledgeArticleUpdate) =>
+    request<KnowledgeArticle>(`/api/knowledge/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
+  delete: (id: string) =>
+    request<void>(`/api/knowledge/${id}`, { method: "DELETE" }),
 };
 
 // ===== 职业规划 =====

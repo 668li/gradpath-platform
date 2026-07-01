@@ -21,6 +21,7 @@ import {
   Award,
   Bot,
   Target,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth";
@@ -48,6 +49,7 @@ function getNavItems(isAdmin: boolean = false): NavItem[] {
     { href: "/achievements", label: "成就", icon: Award },
   ];
   if (isAdmin) {
+    items.push({ href: "/knowledge", label: "知识库", icon: BookOpen });
     items.push({ href: "/pipeline", label: "数据管道", icon: Database });
   }
   return items;

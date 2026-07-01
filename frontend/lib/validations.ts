@@ -56,3 +56,13 @@ export const retroSchema = z
 
 export type LoginForm = z.infer<typeof loginSchema>;
 export type RegisterForm = z.infer<typeof registerSchema>;
+
+export const knowledgeSchema = z.object({
+  category: z.string().min(1, "请选择分类"),
+  title: z.string().min(1, "标题不能为空").max(200, "标题最多 200 字"),
+  content: z.string().min(1, "内容不能为空"),
+  source: z.string().max(200, "来源最多 200 字").optional().nullable(),
+  is_published: z.boolean().default(true),
+});
+
+export type KnowledgeForm = z.infer<typeof knowledgeSchema>;

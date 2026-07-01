@@ -690,3 +690,23 @@ export interface KnowledgeArticle {
   created_at: string;
   updated_at: string;
 }
+
+export interface KnowledgeArticleCreate {
+  category: string;
+  title: string;
+  content: string;
+  tags?: string[];
+  source?: string | null;
+  metadata_?: Record<string, unknown>;
+  is_published?: boolean;
+}
+
+export interface KnowledgeArticleUpdate {
+  category?: string;
+  title?: string;
+  content?: string;
+  tags?: string[];
+  source?: string | null;
+  metadata_?: Record<string, unknown>;
+  is_published?: boolean;
+}
