@@ -15,13 +15,15 @@ import {
   Send,
   Trash2,
   MessageSquare,
+  Sparkles,
+  Check,
 } from "lucide-react";
-import { careerPlansApi } from "@/lib/api";
+import { careerPlansApi, planTemplatesApi } from "@/lib/api";
 import { cn, formatDate } from "@/lib/utils";
 import { LoadingState, EmptyState } from "@/components/ui/empty";
-import { Badge } from "@/components/ui/form-controls";
+import { Badge, Button } from "@/components/ui/form-controls";
 import { useToast } from "@/components/ui/toast";
-import type { CareerPlan, Milestone, MilestoneLog } from "@/types";
+import type { CareerPlan, Milestone, MilestoneLog, PlanTemplate } from "@/types";
 
 const STATUS_CONFIG: Record<
   string,
@@ -84,27 +86,7 @@ export default function PlansPage() {
 
   if (loading) return <LoadingState />;
   if (plans.length === 0) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="page-title">职业规划</h1>
-          <p className="text-sm text-ink-400 mt-1.5">追踪你的职业目标和里程碑进度</p>
-        </div>
-        <EmptyState
-          title="暂无职业规划"
-          description="在与 AI 管家对话时，提到「规划」「路径」等关键词，AI 会自动为你生成结构化的职业规划方案。"
-          action={
-            <Link
-              href="/chat"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-brand-sm transition-all hover:bg-brand-700 hover:shadow-brand"
-            >
-              <Target className="h-4 w-4" />
-              去对话生成规划
-            </Link>
-          }
-        />
-      </div>
-    );
+    return <EmptyPlansState onCreated={loadPlans} toast={toast} />;
   }
 
   return (
@@ -341,6 +323,132 @@ function PlanCard({
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+/** 空状态 + 规划模板选择器 */
+function EmptyPlansState({
+  onCreated,
+  toast,
+}: {
+  onCreated: () => void;
+  toast: ReturnType<typeof useToast>;
+}) {
+  const [templates, setTemplates] = useState<PlanTemplate[]>([]);
+  const [loadingTemplates, setLoadingTemplates] = useState(true);
+  const [creatingId, setCreatingId] = useState<string | null>(null);
+
+  useEffect(() => {
+    planTemplatesApi
+      .list()
+      .then(setTemplates)
+      .catch(() => {})
+      .finally(() => setLoadingTemplates(false));
+  }, []);
+
+  const handleCreateFromTemplate = async (tpl: PlanTemplate) => {
+    setCreatingId(tpl.id);
+    try {
+      // 通过对话 API 创建一个带模板数据的规划
+      // 直接调用 career-plans 的方式不存在，我们通过 chat API 间接创建
+      // 或者直接在前端构造一个请求 — 但后端没有创建 plan 的端点
+      // 使用 chat API: 创建对话 → 发送模板内容 → 获取 plan
+      const { chatApi } = await import("@/lib/api");
+      const conv = await chatApi.createConversation(`规划：${tpl.name}`);
+      // 发送一条消息让 AI 保存这个规划
+      const msg = `请帮我创建一个职业规划：目标 - ${tpl.goal_text}，时间线 - ${tpl.timeline_months}个月。以下是参考里程碑：\n${tpl.milestones.map((m, i) => `${i + 1}. ${m.title}：${m.description}`).join("\n")}`;
+      const res = await chatApi.sendMessage(conv.id, { content: msg });
+      if (res.career_plan) {
+        toast.push("规划已创建", "success");
+        onCreated();
+      } else {
+        // AI 没有自动生成规划，提示用户
+        toast.push("AI 正在生成规划，请稍后到列表查看", "success");
+        onCreated();
+      }
+    } catch {
+      toast.push("创建失败，请重试", "error");
+    } finally {
+      setCreatingId(null);
+    }
+  };
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div>
+        <h1 className="page-title">职业规划</h1>
+        <p className="text-sm text-ink-400 mt-1.5">追踪你的职业目标和里程碑进度</p>
+      </div>
+
+      {/* 规划模板 */}
+      <div className="card">
+        <div className="flex items-center gap-2 mb-1">
+          <Sparkles className="h-5 w-5 text-brand-600" />
+          <h2 className="font-display font-semibold text-ink-800">从模板创建规划</h2>
+        </div>
+        <p className="text-sm text-ink-400 mb-4">
+          选择一个常见职业路径模板，一键生成结构化规划方案
+        </p>
+
+        {loadingTemplates ? (
+          <LoadingState text="加载模板…" />
+        ) : (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {templates.map((tpl) => (
+              <button
+                key={tpl.id}
+                onClick={() => handleCreateFromTemplate(tpl)}
+                disabled={creatingId !== null}
+                className="group relative flex flex-col rounded-xl border border-paper-300 bg-white p-4 text-left transition-all hover:border-brand-300 hover:shadow-card-hover disabled:opacity-50"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-2xl">{tpl.icon}</span>
+                  <h3 className="font-display font-semibold text-ink-800">{tpl.name}</h3>
+                </div>
+                <p className="text-xs text-ink-400 flex-1 line-clamp-2 mb-3">
+                  {tpl.description}
+                </p>
+                <div className="flex items-center gap-3 text-[11px] text-ink-400">
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {tpl.timeline_months} 个月
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Check className="h-3 w-3" />
+                    {tpl.milestones.length} 个里程碑
+                  </span>
+                </div>
+                {creatingId === tpl.id && (
+                  <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-white/80">
+                    <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-brand-200 border-t-brand-500" />
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* AI 对话入口 */}
+      <div className="flex items-center gap-4 rounded-xl border border-brand-200 bg-gradient-to-r from-brand-50 to-paper-50 p-4 transition-all hover:shadow-card-hover">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-white shadow-brand-sm">
+          <Target className="h-6 w-6" strokeWidth={2} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-display font-semibold text-ink-800">与 AI 管家对话生成规划</p>
+          <p className="text-sm text-ink-400">
+            不想用模板？直接和 AI 对话，提到「规划」「路径」等关键词，AI 会根据你的画像个性化生成方案
+          </p>
+        </div>
+        <Link
+          href="/chat"
+          className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-brand-sm transition-all hover:bg-brand-700 hover:shadow-brand"
+        >
+          <Target className="h-4 w-4" />
+          去对话
+        </Link>
+      </div>
     </div>
   );
 }

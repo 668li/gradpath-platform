@@ -1,5 +1,6 @@
 from app.models.career_event import CareerEvent, EventType
 from app.models.career_plan import CareerPlan
+from app.models.career_profile import CareerProfile
 from app.models.community_report import CommunityReport, DestinationType, SalaryRange
 from app.models.company import Company, CompanySize
 from app.models.conversation import Conversation, Message
@@ -48,6 +49,7 @@ __all__ = [
     "KnowledgeArticle",
     "Conversation", "Message",
     "CareerPlan",
+    "CareerProfile",
     # Phase 12 里程碑执行日志与提醒
     "MilestoneLog",
 ]

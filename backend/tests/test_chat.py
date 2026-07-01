@@ -341,3 +341,66 @@ class TestCareerPlanExtraction:
         plans = resp.json()
         assert len(plans) >= 1
         assert "字节跳动" in plans[0]["goal_text"]
+
+
+# ======================================================================
+# 用户上下文构建（build_user_context）
+# ======================================================================
+
+class TestBuildUserContext:
+    def test_career_profile_injected_into_context(self, auth_headers, client, db_session):
+        """CareerProfile 存在时，build_user_context 应注入职业画像信息。"""
+        from app.models.career_profile import CareerProfile
+        from app.models.user import User
+        from app.services.chat_service import build_user_context
+
+        # 查出当前测试用户 id
+        user = db_session.query(User).filter_by(email="test@example.com").first()
+        assert user is not None
+
+        # 直接在 DB 中创建职业画像
+        profile = CareerProfile(
+            user_id=user.id,
+            education_level="bachelor",
+            major="计算机科学",
+            school_name="清华大学",
+            school_tier="985",
+            graduation_year=2025,
+            target_direction="大厂后端开发",
+            target_industry="互联网",
+            technical_skill=4,
+            communication_skill=3,
+            leadership_skill=2,
+            creativity_skill=4,
+            self_introduction="热爱编程的后端开发者",
+        )
+        db_session.add(profile)
+        db_session.commit()
+
+        context = build_user_context(db_session, user.id)
+
+        # 职业画像区块应存在
+        assert "【职业画像】" in context
+        assert "学历：bachelor" in context
+        assert "专业：计算机科学" in context
+        assert "学校：清华大学" in context
+        assert "学校层次：985" in context
+        assert "毕业年份：2025" in context
+        assert "目标方向：大厂后端开发" in context
+        assert "目标行业：互联网" in context
+        assert "自评：技术4/5 沟通3/5 领导2/5 创造4/5" in context
+        assert "自我介绍：热爱编程的后端开发者" in context
+
+    def test_no_career_profile_context_ok(self, auth_headers, client, db_session):
+        """CareerProfile 不存在时，build_user_context 应正常运行且不含职业画像区块。"""
+        from app.models.user import User
+        from app.services.chat_service import build_user_context
+
+        user = db_session.query(User).filter_by(email="test@example.com").first()
+        assert user is not None
+
+        context = build_user_context(db_session, user.id)
+
+        # 无画像时不应出现职业画像区块，但其他区块仍正常
+        assert "【用户画像】" in context
+        assert "【职业画像】" not in context

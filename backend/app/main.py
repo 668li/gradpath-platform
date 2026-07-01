@@ -73,6 +73,7 @@ async def request_logging_middleware(request: Request, call_next):
 from app.api.ai import router as ai_router
 from app.api.auth import router as auth_router
 from app.api.career_plans import router as career_plans_router
+from app.api.career_profile import router as career_profile_router
 from app.api.chat import router as chat_router
 from app.api.community import router as community_router
 from app.api.gamification import router as gamification_router
@@ -84,6 +85,7 @@ from app.api.export import router as export_router
 from app.api.interview import router as interview_router
 from app.api.knowledge import router as knowledge_router
 from app.api.pipeline import router as pipeline_router
+from app.api.plan_templates import router as plan_templates_router
 from app.api.posts import router as posts_router
 from app.api.retrospectives import router as retrospectives_router
 from app.api.skills import router as skills_router
@@ -106,6 +108,8 @@ app.include_router(export_router)
 app.include_router(knowledge_router)
 app.include_router(chat_router)
 app.include_router(career_plans_router)
+app.include_router(career_profile_router)
+app.include_router(plan_templates_router)
 
 
 # 创建数据库表（仅开发模式；生产环境使用 Alembic 迁移）

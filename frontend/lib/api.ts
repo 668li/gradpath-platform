@@ -4,6 +4,8 @@ import type {
   AIRetroDraft,
   AIRetroDraftRequest,
   CareerPlan,
+  CareerProfile,
+  CareerProfileCreate,
   CommunityAggregate,
   CommunityReport,
   CommunityStats,
@@ -42,6 +44,7 @@ import type {
   PaginatedResponse,
   ParseStatus,
   PipelineStats,
+  PlanTemplate,
   PostCreate,
   PostItem,
   PostListResponse,
@@ -707,4 +710,25 @@ export const careerPlansApi = {
       method: "DELETE",
     }),
   getReminders: () => request<ReminderItem[]>("/api/career-plans/reminders"),
+};
+
+// ===== 用户职业画像 =====
+export const careerProfileApi = {
+  get: () => request<CareerProfile | null>("/api/career-profile"),
+  create: (body: CareerProfileCreate) =>
+    request<CareerProfile>("/api/career-profile", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  update: (body: Partial<CareerProfileCreate>) =>
+    request<CareerProfile>("/api/career-profile", {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
+};
+
+// ===== 规划模板 =====
+export const planTemplatesApi = {
+  list: () => request<PlanTemplate[]>("/api/plan-templates"),
+  get: (id: string) => request<PlanTemplate>(`/api/plan-templates/${id}`),
 };

@@ -132,6 +132,36 @@ def build_user_context(db: Session, user_id: UUID) -> str:
     else:
         lines.append("（未找到用户信息）")
 
+    # 职业画像（教育背景 + 目标方向 + 自我评估）
+    from app.models.career_profile import CareerProfile
+    profile = (
+        db.query(CareerProfile)
+        .filter(CareerProfile.user_id == user_id)
+        .first()
+    )
+    if profile:
+        lines.append("【职业画像】")
+        if profile.education_level:
+            lines.append(f"- 学历：{profile.education_level}")
+        if profile.major:
+            lines.append(f"- 专业：{profile.major}")
+        if profile.school_name:
+            lines.append(f"- 学校：{profile.school_name}")
+        if profile.school_tier:
+            lines.append(f"- 学校层次：{profile.school_tier}")
+        if profile.graduation_year:
+            lines.append(f"- 毕业年份：{profile.graduation_year}")
+        if profile.target_direction:
+            lines.append(f"- 目标方向：{profile.target_direction}")
+        if profile.target_industry:
+            lines.append(f"- 目标行业：{profile.target_industry}")
+        lines.append(
+            f"- 自评：技术{profile.technical_skill}/5 沟通{profile.communication_skill}/5 "
+            f"领导{profile.leadership_skill}/5 创造{profile.creativity_skill}/5"
+        )
+        if profile.self_introduction:
+            lines.append(f"- 自我介绍：{profile.self_introduction}")
+
     # 技能树（全部，按 level 降序）
     skills = (
         db.query(SkillNode)

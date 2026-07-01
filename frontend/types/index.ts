@@ -695,6 +695,52 @@ export interface ReminderItem {
   type: "overdue" | "upcoming";
 }
 
+// ===== 用户职业画像 =====
+export interface CareerProfile {
+  id: string;
+  user_id: string;
+  education_level: string | null;
+  major: string | null;
+  school_name: string | null;
+  school_tier: string | null;
+  graduation_year: number | null;
+  target_direction: string | null;
+  target_industry: string | null;
+  technical_skill: number;
+  communication_skill: number;
+  leadership_skill: number;
+  creativity_skill: number;
+  self_introduction: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CareerProfileCreate {
+  education_level?: string | null;
+  major?: string | null;
+  school_name?: string | null;
+  school_tier?: string | null;
+  graduation_year?: number | null;
+  target_direction?: string | null;
+  target_industry?: string | null;
+  technical_skill?: number;
+  communication_skill?: number;
+  leadership_skill?: number;
+  creativity_skill?: number;
+  self_introduction?: string | null;
+}
+
+// ===== 规划模板 =====
+export interface PlanTemplate {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  goal_text: string;
+  timeline_months: number;
+  milestones: Milestone[];
+}
+
 // ===== 知识库 =====
 export interface KnowledgeArticle {
   id: string;

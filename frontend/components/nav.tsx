@@ -22,6 +22,7 @@ import {
   Bot,
   Target,
   BookOpen,
+  UserCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth";
@@ -38,6 +39,7 @@ function getNavItems(isAdmin: boolean = false): NavItem[] {
     { href: "/dashboard", label: "个人看板", icon: LayoutDashboard },
     { href: "/chat", label: "AI 管家", icon: Bot },
     { href: "/plans", label: "职业规划", icon: Target },
+    { href: "/profile", label: "职业画像", icon: UserCircle },
     { href: "/explore", label: "去向探索", icon: Telescope },
     { href: "/community", label: "社区数据", icon: Users },
     { href: "/interview", label: "面试经验", icon: Briefcase },
