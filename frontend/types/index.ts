@@ -443,3 +443,33 @@ export interface DataSourceCreate {
   data_mapping?: Record<string, unknown> | null;
   is_active?: boolean;
 }
+
+// ===== 讨论帖 =====
+export type PostTopicType = "school_major" | "company_position";
+
+export interface PostItem {
+  id: string;
+  topic_type: string;
+  topic_key: string;
+  content: string;
+  author_id: string;
+  author_name: string;
+  parent_id: string | null;
+  created_at: string;
+  updated_at: string;
+  replies: PostItem[];
+}
+
+export interface PostListResponse {
+  items: PostItem[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface PostCreate {
+  topic_type: string;
+  topic_key: string;
+  content: string;
+  parent_id?: string | null;
+}
