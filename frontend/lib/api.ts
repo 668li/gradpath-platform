@@ -5,10 +5,13 @@ import type {
   CommunityReport,
   CommunityStats,
   CommunitySubmit,
+  Company,
   CompanyInfo,
   DashboardOverview,
   DataSourceCreate,
   DataSourceResponse,
+  DecisionAdviceRequest,
+  DecisionAdviceResponse,
   DecisionCreate,
   DecisionResponse,
   DecisionStats,
@@ -23,6 +26,7 @@ import type {
   InterviewStats,
   InterviewSubmit,
   LoginRequest,
+  MarketDataItem,
   ParseStatus,
   PipelineStats,
   PostCreate,
@@ -35,6 +39,7 @@ import type {
   RetroDraft,
   RetrospectiveResponse,
   RetroUpdate,
+  SalaryBenchmark,
   SchoolInfo,
   SkillCreate,
   SkillResponse,
@@ -398,4 +403,29 @@ export const postsApi = {
 
   remove: (id: string) =>
     request<void>(`/api/posts/${id}`, { method: "DELETE" }),
+};
+
+// ===== AI 决策指导 =====
+export const aiApi = {
+  decisionAdvice: (body: DecisionAdviceRequest) =>
+    request<DecisionAdviceResponse>("/api/ai/decision-advice", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+};
+
+// ===== 外部数据 =====
+export const externalDataApi = {
+  companies: (params?: { name?: string; industry?: string }) =>
+    request<Company[]>(
+      `/api/companies${buildQuery((params as Record<string, string | undefined | null>) || {})}`,
+    ),
+  salaryBenchmarks: (params?: { company?: string; position?: string; city?: string }) =>
+    request<SalaryBenchmark[]>(
+      `/api/salary-benchmarks${buildQuery((params as Record<string, string | undefined | null>) || {})}`,
+    ),
+  marketData: (params?: { category?: string; year?: number; industry?: string }) =>
+    request<MarketDataItem[]>(
+      `/api/market-data${buildQuery((params as Record<string, string | undefined | null>) || {})}`,
+    ),
 };
