@@ -615,3 +615,78 @@ export interface ShareableSkills {
     notes: string | null;
   }[];
 }
+
+// ===== AI 职业管家 — 对话 =====
+export interface Conversation {
+  id: string;
+  user_id: string;
+  title: string;
+  active_skills: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Message {
+  id: string;
+  conversation_id: string;
+  role: "user" | "assistant";
+  content: string;
+  skill_used: string | null;
+  context_snapshot: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface SendMessageRequest {
+  content: string;
+  skill_hint?: string | null;
+}
+
+export interface SendMessageResponse {
+  content: string;
+  skill_used: string;
+  career_plan: string | null;
+}
+
+export interface SkillInfo {
+  code: string;
+  name: string;
+  description: string;
+  icon: string;
+}
+
+// ===== AI 职业管家 — 职业规划 =====
+export interface Milestone {
+  title: string;
+  description?: string;
+  status: string;
+  target_date?: string;
+}
+
+export interface CareerPlan {
+  id: string;
+  user_id: string;
+  conversation_id: string | null;
+  goal_text: string;
+  current_state: Record<string, unknown>;
+  target_state: Record<string, unknown>;
+  gaps: string[];
+  milestones: Milestone[];
+  timeline_months: number;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// ===== 知识库 =====
+export interface KnowledgeArticle {
+  id: string;
+  category: string;
+  title: string;
+  content: string;
+  tags: string[];
+  source: string | null;
+  metadata_: Record<string, unknown>;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+}

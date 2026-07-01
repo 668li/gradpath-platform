@@ -1,11 +1,14 @@
 from app.models.career_event import CareerEvent, EventType
+from app.models.career_plan import CareerPlan
 from app.models.community_report import CommunityReport, DestinationType, SalaryRange
 from app.models.company import Company, CompanySize
+from app.models.conversation import Conversation, Message
 from app.models.data_source import DataSource
 from app.models.destination_decision import DecisionStatus, DestinationDecision
 from app.models.employment_data import Degree, EmploymentData
 from app.models.growth_insight import GrowthInsight
 from app.models.interview_report import InterviewDimension, InterviewReport, InterviewResult
+from app.models.knowledge_article import KnowledgeArticle
 from app.models.market_data import MarketData
 from app.models.pipeline_enums import ContentType, SourceType
 from app.models.post import Post, PostTopicType
@@ -40,4 +43,8 @@ __all__ = [
     "UserBadge",
     "GrowthInsight",
     "UserSetting",
+    # Phase 11 AI 职业管家
+    "KnowledgeArticle",
+    "Conversation", "Message",
+    "CareerPlan",
 ]

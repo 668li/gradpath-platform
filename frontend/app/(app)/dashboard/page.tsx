@@ -10,6 +10,7 @@ import {
   Plus,
   ArrowRight,
   MapPin,
+  Bot,
 } from "lucide-react";
 import { dashboardApi, gamificationApi } from "@/lib/api";
 import { formatDate, cn } from "@/lib/utils";
@@ -141,6 +142,23 @@ export default function DashboardPage() {
           }
         />
       )}
+
+      {/* AI 职业管家入口 */}
+      <Link
+        href="/chat"
+        className="flex items-center gap-4 rounded-xl border border-brand-200 bg-gradient-to-r from-brand-50 to-slate-50 p-4 transition-all hover:shadow-md hover:border-brand-300"
+      >
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-white">
+          <Bot className="h-6 w-6" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-slate-800">与 AI 职业管家对话</p>
+          <p className="text-sm text-slate-500">
+            个性化职业规划、简历诊断、面试模拟 — 基于你的数据智能匹配
+          </p>
+        </div>
+        <ArrowRight className="h-5 w-5 shrink-0 text-brand-400" />
+      </Link>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* 职业旅程时间线 */}
