@@ -4,9 +4,10 @@ import { useState, type FormEvent } from "react";
 import { ChevronDown } from "lucide-react";
 import { eventsApi } from "@/lib/api";
 import { EVENT_TYPES, EVENT_TYPE_LABEL } from "@/lib/constants";
+import { eventSchema } from "@/lib/validations";
 import { cn, todayISO } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
-import { Button, Field, Input, Select, Textarea } from "@/components/ui/form-controls";
+import { Button, Field, FieldError, Input, Select, Textarea } from "@/components/ui/form-controls";
 import type { EventResponse, EventType } from "@/types";
 
 interface EventFormProps {
@@ -58,13 +59,26 @@ export function EventForm({ initial, onSaved, onCancel }: EventFormProps) {
   const [mood, setMood] = useState(initial?.mood ?? 0);
   const [starOpen, setStarOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) {
-      toast.push("请填写事件标题", "error");
+    const parsed = eventSchema.safeParse({
+      title: title.trim(),
+      event_type: eventType,
+      event_date: eventDate,
+    });
+    if (!parsed.success) {
+      const fieldErrors: Record<string, string> = {};
+      Object.entries(parsed.error.flatten().fieldErrors).forEach(
+        ([key, msgs]) => {
+          if (msgs && msgs.length > 0) fieldErrors[key] = msgs[0];
+        },
+      );
+      setErrors(fieldErrors);
       return;
     }
+    setErrors({});
     setLoading(true);
     try {
       const skills = skillsText
@@ -115,8 +129,10 @@ export function EventForm({ initial, onSaved, onCancel }: EventFormProps) {
             type="date"
             value={eventDate}
             onChange={(e) => setEventDate(e.target.value)}
+            aria-invalid={!!errors.event_date}
             required
           />
+          <FieldError message={errors.event_date} />
         </Field>
         <Field label="事件类型" required>
           <Select
@@ -137,8 +153,10 @@ export function EventForm({ initial, onSaved, onCancel }: EventFormProps) {
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="如：入职某公司 / 完成核心项目"
+          aria-invalid={!!errors.title}
           required
         />
+        <FieldError message={errors.title} />
       </Field>
 
       <Field label="描述">

@@ -4,10 +4,11 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { GraduationCap } from "lucide-react";
-import { authApi } from "@/lib/api";
+import { authApi, setRefreshToken } from "@/lib/api";
+import { loginSchema } from "@/lib/validations";
 import { useAuthStore } from "@/stores/auth";
 import { useToast } from "@/components/ui/toast";
-import { Button, Field, Input } from "@/components/ui/form-controls";
+import { Button, Field, FieldError, Input } from "@/components/ui/form-controls";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -17,18 +18,28 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      toast.push("请填写邮箱和密码", "error");
+    const result = loginSchema.safeParse({ email, password });
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      Object.entries(result.error.flatten().fieldErrors).forEach(
+        ([key, msgs]) => {
+          if (msgs && msgs.length > 0) fieldErrors[key] = msgs[0];
+        },
+      );
+      setErrors(fieldErrors);
       return;
     }
+    setErrors({});
     setLoading(true);
     try {
       const tokenRes = await authApi.login({ email, password });
       setToken(tokenRes.access_token);
+      setRefreshToken(tokenRes.refresh_token);
       const user = await fetchUser();
       if (!user) {
         toast.push("登录成功但获取用户信息失败", "error");
@@ -65,8 +76,10 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               autoComplete="email"
+              aria-invalid={!!errors.email}
               required
             />
+            <FieldError message={errors.email} />
           </Field>
           <Field label="密码" required>
             <Input
@@ -75,8 +88,10 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="至少 8 位"
               autoComplete="current-password"
+              aria-invalid={!!errors.password}
               required
             />
+            <FieldError message={errors.password} />
           </Field>
           <Button type="submit" loading={loading} className="w-full">
             登录

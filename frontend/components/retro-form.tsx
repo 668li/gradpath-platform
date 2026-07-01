@@ -4,9 +4,10 @@ import { useState, type FormEvent } from "react";
 import { Plus, X, Wand2 } from "lucide-react";
 import { retrospectivesApi } from "@/lib/api";
 import { PERIOD_TYPES, PERIOD_TYPE_LABEL } from "@/lib/constants";
+import { retroSchema } from "@/lib/validations";
 import { todayISO } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
-import { Button, Field, Input, Select, Textarea } from "@/components/ui/form-controls";
+import { Button, Field, FieldError, Input, Select, Textarea } from "@/components/ui/form-controls";
 import type { AIRetroDraft, PeriodType, RetrospectiveResponse } from "@/types";
 
 interface RetroFormProps {
@@ -110,6 +111,7 @@ export function RetroForm({ initial, aiDraft, onSaved, onCancel }: RetroFormProp
   );
   const [loading, setLoading] = useState(false);
   const [draftLoading, setDraftLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const generateDraft = async () => {
     if (!periodStart || !periodEnd) {
@@ -143,14 +145,24 @@ export function RetroForm({ initial, aiDraft, onSaved, onCancel }: RetroFormProp
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) {
-      toast.push("请填写复盘标题", "error");
+    const result = retroSchema.safeParse({
+      title: title.trim(),
+      period_type: periodType,
+      period_start: periodStart,
+      period_end: periodEnd,
+      satisfaction,
+    });
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      Object.entries(result.error.flatten().fieldErrors).forEach(
+        ([key, msgs]) => {
+          if (msgs && msgs.length > 0) fieldErrors[key] = msgs[0];
+        },
+      );
+      setErrors(fieldErrors);
       return;
     }
-    if (!periodStart || !periodEnd) {
-      toast.push("请选择复盘时间段", "error");
-      return;
-    }
+    setErrors({});
     setLoading(true);
     try {
       const cleanArr = (arr: string[]) =>
@@ -198,16 +210,20 @@ export function RetroForm({ initial, aiDraft, onSaved, onCancel }: RetroFormProp
             type="date"
             value={periodStart}
             onChange={(e) => setPeriodStart(e.target.value)}
+            aria-invalid={!!errors.period_start}
             required
           />
+          <FieldError message={errors.period_start} />
         </Field>
         <Field label="结束日期" required>
           <Input
             type="date"
             value={periodEnd}
             onChange={(e) => setPeriodEnd(e.target.value)}
+            aria-invalid={!!errors.period_end}
             required
           />
+          <FieldError message={errors.period_end} />
         </Field>
       </div>
 
@@ -216,8 +232,10 @@ export function RetroForm({ initial, aiDraft, onSaved, onCancel }: RetroFormProp
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="如：2026 年度复盘 / Q2 季度复盘"
+          aria-invalid={!!errors.title}
           required
         />
+        <FieldError message={errors.title} />
       </Field>
 
       {/* 生成草稿 */}

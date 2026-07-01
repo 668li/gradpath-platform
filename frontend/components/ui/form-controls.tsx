@@ -131,3 +131,13 @@ export function Badge({
     </span>
   );
 }
+
+/** 字段内联错误提示，配合 aria-invalid 使用 */
+export function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return (
+    <p className="mt-1 text-xs text-red-500" role="alert">
+      {message}
+    </p>
+  );
+}

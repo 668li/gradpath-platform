@@ -10,8 +10,9 @@ import {
   EVENT_TYPE_LABEL,
 } from "@/lib/constants";
 import { Modal } from "@/components/ui/modal";
-import { EmptyState, LoadingState } from "@/components/ui/empty";
+import { EmptyState } from "@/components/ui/empty";
 import { Badge, Button } from "@/components/ui/form-controls";
+import { ListSkeleton } from "@/components/ui/skeleton";
 import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/components/ui/toast";
 import { EventForm } from "@/components/event-form";
@@ -120,7 +121,7 @@ export default function TimelinePage() {
       </div>
 
       {loading ? (
-        <LoadingState />
+        <ListSkeleton />
       ) : events.length === 0 ? (
         <EmptyState
           title="还没有事件"

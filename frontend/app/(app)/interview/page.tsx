@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { Send, Trash2, BarChart3, Briefcase, Star } from "lucide-react";
 import { interviewApi } from "@/lib/api";
 import { Button, Input, Select } from "@/components/ui/form-controls";
-import { LoadingState, EmptyState } from "@/components/ui/empty";
+import { EmptyState } from "@/components/ui/empty";
+import { ListSkeleton } from "@/components/ui/skeleton";
 import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
@@ -188,7 +189,7 @@ export default function InterviewPage() {
     router.push(`/interview/result?c=${c}`);
   };
 
-  if (loading) return <LoadingState />;
+  if (loading) return <ListSkeleton />;
 
   return (
     <div className="space-y-6">

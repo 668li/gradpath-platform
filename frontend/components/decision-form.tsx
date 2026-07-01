@@ -9,9 +9,10 @@ import {
   DESTINATION_TYPES,
   DESTINATION_TYPE_LABEL,
 } from "@/lib/constants";
+import { decisionSchema } from "@/lib/validations";
 import { todayISO } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
-import { Button, Field, Input, Select, Textarea } from "@/components/ui/form-controls";
+import { Button, Field, FieldError, Input, Select, Textarea } from "@/components/ui/form-controls";
 import type {
   DecisionDetails,
   DecisionResponse,
@@ -50,6 +51,7 @@ export function DecisionForm({ initial, onSaved, onCancel }: DecisionFormProps) 
   const [reasoning, setReasoning] = useState(initial?.reasoning ?? "");
   const [confidence, setConfidence] = useState(initial?.confidence ?? 3);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleTypeChange = (type: DestinationType) => {
     setDestinationType(type);
@@ -63,10 +65,24 @@ export function DecisionForm({ initial, onSaved, onCancel }: DecisionFormProps) 
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!decisionDate) {
-      toast.push("请选择决策日期", "error");
+    const result = decisionSchema.safeParse({
+      decision_date: decisionDate,
+      destination_type: destinationType,
+      status,
+      confidence,
+      reasoning: reasoning || undefined,
+    });
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      Object.entries(result.error.flatten().fieldErrors).forEach(
+        ([key, msgs]) => {
+          if (msgs && msgs.length > 0) fieldErrors[key] = msgs[0];
+        },
+      );
+      setErrors(fieldErrors);
       return;
     }
+    setErrors({});
     setLoading(true);
     try {
       // 过滤掉空字符串的 details 值
@@ -104,8 +120,10 @@ export function DecisionForm({ initial, onSaved, onCancel }: DecisionFormProps) 
             type="date"
             value={decisionDate}
             onChange={(e) => setDecisionDate(e.target.value)}
+            aria-invalid={!!errors.decision_date}
             required
           />
+          <FieldError message={errors.decision_date} />
         </Field>
         <Field label="去向类型" required>
           <Select

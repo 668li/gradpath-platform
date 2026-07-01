@@ -13,8 +13,9 @@ import { retrospectivesApi } from "@/lib/api";
 import { formatDate, levelStars } from "@/lib/utils";
 import { PERIOD_TYPE_LABEL } from "@/lib/constants";
 import { Modal } from "@/components/ui/modal";
-import { EmptyState, LoadingState } from "@/components/ui/empty";
+import { EmptyState } from "@/components/ui/empty";
 import { Badge, Button } from "@/components/ui/form-controls";
+import { ListSkeleton } from "@/components/ui/skeleton";
 import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/components/ui/toast";
 import { RetroForm } from "@/components/retro-form";
@@ -114,7 +115,7 @@ export default function RetrospectivesPage() {
       <RetroAIPanel onUseDraft={handleUseDraft} />
 
       {loading ? (
-        <LoadingState />
+        <ListSkeleton />
       ) : retros.length === 0 ? (
         <EmptyState
           title="还没有复盘记录"

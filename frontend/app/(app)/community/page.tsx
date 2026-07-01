@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 import { Send, Trash2, BarChart3, Users, School as SchoolIcon } from "lucide-react";
 import { employmentApi, communityApi } from "@/lib/api";
 import { Button, Input, Select } from "@/components/ui/form-controls";
-import { LoadingState, EmptyState } from "@/components/ui/empty";
+import { EmptyState } from "@/components/ui/empty";
+import { ListSkeleton } from "@/components/ui/skeleton";
 import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
@@ -217,7 +218,7 @@ export default function CommunityPage() {
     router.push(`/community/result?s=${s}&m=${mm}`);
   };
 
-  if (loading) return <LoadingState />;
+  if (loading) return <ListSkeleton />;
 
   // 动态字段渲染配置
   const showEmployerField =

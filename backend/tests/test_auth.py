@@ -60,3 +60,59 @@ def test_get_me(auth_headers, client):
 def test_get_me_unauthorized(client):
     resp = client.get("/api/auth/me")
     assert resp.status_code == 401
+
+
+def test_refresh_token_success(client):
+    """使用有效的 refresh_token 换取新的 access_token。"""
+    client.post(
+        "/api/auth/register",
+        json={"email": "refresh@example.com", "password": "Pass1234!", "name": "刷新用户"},
+    )
+    resp = client.post(
+        "/api/auth/login",
+        json={"email": "refresh@example.com", "password": "Pass1234!"},
+    )
+    refresh_token = resp.json()["refresh_token"]
+    refresh_resp = client.post(
+        "/api/auth/refresh",
+        json={"refresh_token": refresh_token},
+    )
+    assert refresh_resp.status_code == 200
+    data = refresh_resp.json()
+    assert "access_token" in data
+    assert data["token_type"] == "bearer"
+    # 新 access_token 应可正常访问 /me
+    me_resp = client.get(
+        "/api/auth/me",
+        headers={"Authorization": f"Bearer {data['access_token']}"},
+    )
+    assert me_resp.status_code == 200
+    assert me_resp.json()["email"] == "refresh@example.com"
+
+
+def test_refresh_token_invalid(client):
+    """使用无效的 refresh_token 应返回 401。"""
+    resp = client.post(
+        "/api/auth/refresh",
+        json={"refresh_token": "invalid-token-string"},
+    )
+    assert resp.status_code == 401
+
+
+def test_refresh_token_expired(client):
+    """使用已过期的 refresh_token 应返回 401。"""
+    from datetime import datetime, timedelta, timezone
+    from uuid import uuid4
+
+    from jose import jwt
+
+    from app.config import settings
+
+    expire = datetime.now(timezone.utc) - timedelta(minutes=1)
+    payload = {"sub": str(uuid4()), "exp": expire, "type": "refresh"}
+    expired_token = jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    resp = client.post(
+        "/api/auth/refresh",
+        json={"refresh_token": expired_token},
+    )
+    assert resp.status_code == 401

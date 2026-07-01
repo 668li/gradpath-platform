@@ -5,9 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { GraduationCap } from "lucide-react";
 import { authApi } from "@/lib/api";
+import { registerSchema } from "@/lib/validations";
 import { useAuthStore } from "@/stores/auth";
 import { useToast } from "@/components/ui/toast";
-import { Button, Field, Input } from "@/components/ui/form-controls";
+import { Button, Field, FieldError, Input } from "@/components/ui/form-controls";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -18,18 +19,23 @@ export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!name || !email || !password) {
-      toast.push("请填写完整信息", "error");
+    const result = registerSchema.safeParse({ name, email, password });
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      Object.entries(result.error.flatten().fieldErrors).forEach(
+        ([key, msgs]) => {
+          if (msgs && msgs.length > 0) fieldErrors[key] = msgs[0];
+        },
+      );
+      setErrors(fieldErrors);
       return;
     }
-    if (password.length < 8) {
-      toast.push("密码至少 8 位", "error");
-      return;
-    }
+    setErrors({});
     setLoading(true);
     try {
       // 1. 注册（返回 UserResponse，无 token）
@@ -68,8 +74,10 @@ export default function RegisterPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="你的昵称"
+              aria-invalid={!!errors.name}
               required
             />
+            <FieldError message={errors.name} />
           </Field>
           <Field label="邮箱" required>
             <Input
@@ -78,8 +86,10 @@ export default function RegisterPage() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               autoComplete="email"
+              aria-invalid={!!errors.email}
               required
             />
+            <FieldError message={errors.email} />
           </Field>
           <Field label="密码" required hint="至少 8 位">
             <Input
@@ -88,8 +98,10 @@ export default function RegisterPage() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="至少 8 位"
               autoComplete="new-password"
+              aria-invalid={!!errors.password}
               required
             />
+            <FieldError message={errors.password} />
           </Field>
           <Button type="submit" loading={loading} className="w-full">
             注册并登录

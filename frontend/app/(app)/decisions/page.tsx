@@ -10,8 +10,9 @@ import {
   DESTINATION_TYPE_LABEL,
 } from "@/lib/constants";
 import { Modal } from "@/components/ui/modal";
-import { EmptyState, LoadingState } from "@/components/ui/empty";
+import { EmptyState } from "@/components/ui/empty";
 import { Badge, Button } from "@/components/ui/form-controls";
+import { ListSkeleton } from "@/components/ui/skeleton";
 import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/components/ui/toast";
 import { DestinationPie } from "@/components/charts";
@@ -129,7 +130,7 @@ export default function DecisionsPage() {
         {/* 决策列表 */}
         <div className="lg:col-span-2 space-y-4">
           {loading ? (
-            <LoadingState />
+            <ListSkeleton />
           ) : decisions.length === 0 ? (
             <EmptyState
               title="还没有决策记录"

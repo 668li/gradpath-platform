@@ -2,9 +2,10 @@
 
 import { useMemo, useState, type FormEvent } from "react";
 import { skillsApi } from "@/lib/api";
+import { skillSchema } from "@/lib/validations";
 import { todayISO } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
-import { Button, Field, Input, Select, Textarea } from "@/components/ui/form-controls";
+import { Button, Field, FieldError, Input, Select, Textarea } from "@/components/ui/form-controls";
 import type { SkillResponse } from "@/types";
 
 interface SkillFormProps {
@@ -54,6 +55,7 @@ export function SkillForm({ initial, tree, onSaved, onCancel }: SkillFormProps) 
   const [acquiredDate, setAcquiredDate] = useState(initial?.acquired_date ?? "");
   const [notes, setNotes] = useState(initial?.notes ?? "");
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   // 编辑时排除自身及子孙，避免循环引用
   const excludeIds = useMemo(() => {
@@ -68,10 +70,24 @@ export function SkillForm({ initial, tree, onSaved, onCancel }: SkillFormProps) 
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !category.trim()) {
-      toast.push("请填写技能名和分类", "error");
+    const result = skillSchema.safeParse({
+      name: name.trim(),
+      category: category.trim(),
+      level,
+      parent_id: parentId || undefined,
+      notes: notes || undefined,
+    });
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      Object.entries(result.error.flatten().fieldErrors).forEach(
+        ([key, msgs]) => {
+          if (msgs && msgs.length > 0) fieldErrors[key] = msgs[0];
+        },
+      );
+      setErrors(fieldErrors);
       return;
     }
+    setErrors({});
     setLoading(true);
     try {
       const payload = {
@@ -102,8 +118,10 @@ export function SkillForm({ initial, tree, onSaved, onCancel }: SkillFormProps) 
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="如：React"
+            aria-invalid={!!errors.name}
             required
           />
+          <FieldError message={errors.name} />
         </Field>
         <Field label="分类" required>
           <Input
@@ -111,8 +129,10 @@ export function SkillForm({ initial, tree, onSaved, onCancel }: SkillFormProps) 
             onChange={(e) => setCategory(e.target.value)}
             placeholder="如：前端 / 后端 / 软技能"
             list="skill-categories"
+            aria-invalid={!!errors.category}
             required
           />
+          <FieldError message={errors.category} />
           <datalist id="skill-categories">
             {[...new Set(tree.flatMap((n) => [n.category]))].map((c) => (
               <option key={c} value={c} />

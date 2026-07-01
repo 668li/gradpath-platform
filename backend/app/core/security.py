@@ -1,7 +1,9 @@
 from datetime import datetime, timedelta, timezone
+from uuid import UUID
 
 import bcrypt
 from jose import jwt
+from jose.exceptions import JWTError
 
 from app.config import settings
 
@@ -31,3 +33,19 @@ def create_refresh_token(subject: str) -> str:
 
 def decode_token(token: str) -> dict:
     return jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+
+
+def verify_refresh_token(token: str) -> UUID | None:
+    """验证 refresh_token，返回 user_id 或 None。
+
+    refresh_token 在签发时携带 ``type=refresh`` 声明，此处校验该声明并解析
+    用户 ID；任何解码失败、类型不符或格式异常都返回 None。
+    """
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        if payload.get("type") != "refresh":
+            return None
+        user_id = UUID(payload.get("sub"))
+        return user_id
+    except (JWTError, ValueError):
+        return None
