@@ -1,3 +1,4 @@
+from app.models.assessment import Assessment
 from app.models.career_event import CareerEvent, EventType
 from app.models.career_plan import CareerPlan
 from app.models.career_profile import CareerProfile
@@ -26,6 +27,7 @@ from app.models.user_setting import UserSetting
 
 __all__ = [
     "User", "UserStage",
+    "Assessment",
     "DestinationDecision", "DecisionStatus",
     "CareerEvent", "EventType",
     "SkillNode",

@@ -23,8 +23,8 @@ import { SkillRadar } from "@/components/charts";
 import { LevelProgress } from "@/components/gamification/level-progress";
 import { EmptyState, LoadingState } from "@/components/ui/empty";
 import { Button } from "@/components/ui/form-controls";
-import type { DashboardOverview, GamificationProfile, ReminderItem } from "@/types";
-import { AlertCircle, Clock, Target } from "lucide-react";
+import type { DashboardOverview, GamificationProfile, ReminderItem, DailyFocusItem, WeeklyRecap } from "@/types";
+import { AlertCircle, Clock, Target, Zap, CalendarCheck, TrendingUp } from "lucide-react";
 
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardOverview | null>(null);
@@ -32,16 +32,20 @@ export default function DashboardPage() {
     null,
   );
   const [reminders, setReminders] = useState<ReminderItem[]>([]);
+  const [dailyFocus, setDailyFocus] = useState<DailyFocusItem[]>([]);
+  const [weeklyRecap, setWeeklyRecap] = useState<WeeklyRecap | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
-        const [overviewRes, profileRes, remindersRes] = await Promise.allSettled([
+        const [overviewRes, profileRes, remindersRes, focusRes, recapRes] = await Promise.allSettled([
           dashboardApi.overview(),
           gamificationApi.profile(),
           careerPlansApi.getReminders(),
+          careerPlansApi.getDailyFocus(),
+          dashboardApi.weeklyRecap(),
         ]);
         if (alive) {
           if (overviewRes.status === "fulfilled") setData(overviewRes.value);
@@ -49,6 +53,10 @@ export default function DashboardPage() {
             setGameProfile(profileRes.value);
           if (remindersRes.status === "fulfilled")
             setReminders(remindersRes.value);
+          if (focusRes.status === "fulfilled")
+            setDailyFocus(focusRes.value);
+          if (recapRes.status === "fulfilled")
+            setWeeklyRecap(recapRes.value);
         }
       } finally {
         if (alive) setLoading(false);
@@ -164,6 +172,86 @@ export default function DashboardPage() {
         </div>
         <ArrowRight className="h-5 w-5 shrink-0 text-brand-400" />
       </Link>
+
+      {/* 每日重点 + 周回顾 双栏 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* 每日重点 */}
+        {dailyFocus.length > 0 && (
+          <div className="card space-y-3 animate-fade-in">
+            <div className="flex items-center gap-2">
+              <Zap className="h-4 w-4 text-brand-600" />
+              <h2 className="font-display font-semibold text-ink-800">今日重点</h2>
+            </div>
+            <div className="space-y-2">
+              {dailyFocus.map((item, i) => (
+                <Link
+                  key={`${item.plan_id}-${item.milestone_index}`}
+                  href="/plans"
+                  className="flex items-start gap-3 rounded-lg border border-paper-200 bg-paper-50/50 px-3 py-2.5 transition-colors hover:border-brand-300 hover:bg-brand-50/30"
+                >
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-600">
+                    {i + 1}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-ink-700 truncate">
+                      {item.milestone_title}
+                    </p>
+                    <p className="text-xs text-ink-400 truncate">{item.plan_goal}</p>
+                  </div>
+                  {item.status === "in_progress" ? (
+                    <span className="shrink-0 rounded-full bg-brand-100 px-2 py-0.5 text-[10px] font-medium text-brand-600">
+                      进行中
+                    </span>
+                  ) : (
+                    <span className="shrink-0 rounded-full bg-paper-200 px-2 py-0.5 text-[10px] font-medium text-ink-400">
+                      待开始
+                    </span>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 周回顾 */}
+        {weeklyRecap && (
+          <div className="card space-y-3 animate-fade-in">
+            <div className="flex items-center gap-2">
+              <CalendarCheck className="h-4 w-4 text-brand-600" />
+              <h2 className="font-display font-semibold text-ink-800">本周回顾</h2>
+            </div>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <RecapStat value={weeklyRecap.logs_this_week} label="执行记录" />
+              <RecapStat value={weeklyRecap.completed_this_week} label="完成里程碑" />
+              <RecapStat value={weeklyRecap.active_plans} label="进行中规划" />
+            </div>
+            <div className="rounded-lg bg-brand-50/40 px-3 py-2.5">
+              <p className="flex items-center gap-1.5 text-xs text-brand-700">
+                <TrendingUp className="h-3.5 w-3.5" />
+                {weeklyRecap.encouragement}
+              </p>
+            </div>
+            {weeklyRecap.total_milestones > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-1 text-xs text-ink-400">
+                  <span>总体进度</span>
+                  <span>{weeklyRecap.total_milestones_done}/{weeklyRecap.total_milestones}</span>
+                </div>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-paper-200">
+                  <div
+                    className="h-full rounded-full bg-brand-500 transition-all duration-500"
+                    style={{
+                      width: `${weeklyRecap.total_milestones > 0
+                        ? Math.round((weeklyRecap.total_milestones_done / weeklyRecap.total_milestones) * 100)
+                        : 0}%`,
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* 规划提醒 */}
       {reminders.length > 0 && (
@@ -301,6 +389,15 @@ export default function DashboardPage() {
           </ul>
         )}
       </div>
+    </div>
+  );
+}
+
+function RecapStat({ value, label }: { value: number; label: string }) {
+  return (
+    <div className="rounded-lg bg-paper-50 px-2 py-2.5">
+      <p className="font-display text-xl font-bold text-brand-700">{value}</p>
+      <p className="text-[10px] text-ink-400">{label}</p>
     </div>
   );
 }

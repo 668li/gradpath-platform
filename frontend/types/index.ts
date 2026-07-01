@@ -695,6 +695,50 @@ export interface ReminderItem {
   type: "overdue" | "upcoming";
 }
 
+// ===== 职业测评 =====
+export interface QuestionOption {
+  value: string;
+  label: string;
+}
+
+export interface AssessmentQuestion {
+  id: string;
+  question: string;
+  options: QuestionOption[];
+}
+
+export interface AssessmentResult {
+  id: string;
+  assessment_type: string;
+  result_code: string;
+  result_summary: string;
+  recommended_directions: string[];
+  scores: Record<string, number>;
+  created_at: string;
+}
+
+// ===== 每日重点 =====
+export interface DailyFocusItem {
+  plan_id: string;
+  plan_goal: string;
+  milestone_title: string;
+  milestone_index: number;
+  milestone_description: string | null;
+  status: string;
+  has_logs: boolean;
+}
+
+// ===== 周回顾 =====
+export interface WeeklyRecap {
+  completed_this_week: number;
+  logs_this_week: number;
+  upcoming_deadlines: ReminderItem[];
+  active_plans: number;
+  total_milestones_done: number;
+  total_milestones: number;
+  encouragement: string;
+}
+
 // ===== 用户职业画像 =====
 export interface CareerProfile {
   id: string;

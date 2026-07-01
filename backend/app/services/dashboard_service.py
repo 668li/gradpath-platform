@@ -1,9 +1,12 @@
+from datetime import datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy.orm import Session
 
 from app.models.career_event import CareerEvent
+from app.models.career_plan import CareerPlan
 from app.models.destination_decision import DestinationDecision
+from app.models.milestone_log import MilestoneLog
 from app.models.retrospective import Retrospective
 from app.models.skill_node import SkillNode
 
@@ -93,4 +96,99 @@ def get_overview(db: Session, user_id: UUID) -> dict:
         "skill_categories": skill_categories,
         "latest_retrospective": latest_retro,
         "timeline": timeline,
+    }
+
+
+def get_weekly_recap(db: Session, user_id: UUID) -> dict:
+    """周回顾：本周完成的里程碑、本周新增日志、即将到期里程碑等。
+
+    - 本周范围：周一 00:00:00 到下周一 00:00:00（左闭右开）。
+    - completed_this_week：status=="done" 且本周有执行日志的里程碑数
+      （以 MilestoneLog.created_at 落在本周作为完成活动信号）。
+    - logs_this_week：本周新增的 MilestoneLog 数量。
+    - upcoming_deadlines：未来 7 天内（含今天）有 target_date 且
+      pending/in_progress 的里程碑。
+    - active_plans：status=="active" 的规划数。
+    - total_milestones_done / total_milestones：全部规划里程碑统计。
+    """
+    today = datetime.utcnow().date()
+    monday = today - timedelta(days=today.weekday())  # weekday(): Monday=0
+    week_start = datetime.combine(monday, datetime.min.time())
+    next_monday = datetime.combine(monday + timedelta(days=7), datetime.min.time())
+    horizon = today + timedelta(days=7)
+
+    plans = db.query(CareerPlan).filter(CareerPlan.user_id == user_id).all()
+    user_plan_ids = {str(p.id) for p in plans}
+
+    active_plans = sum(1 for p in plans if p.status == "active")
+    total_milestones = 0
+    total_milestones_done = 0
+    upcoming_deadlines: list[dict] = []
+    done_indices_per_plan: dict[str, set[int]] = {}
+
+    for plan in plans:
+        milestones = plan.milestones or []
+        plan_done: set[int] = set()
+        for idx, m in enumerate(milestones):
+            if not isinstance(m, dict):
+                continue
+            total_milestones += 1
+            status = m.get("status", "")
+            if status == "done":
+                total_milestones_done += 1
+                plan_done.add(idx)
+
+            # 即将到期：pending/in_progress 且 target_date 在未来 7 天内（含今天）
+            if status in ("pending", "in_progress"):
+                date_str = m.get("target_date") or m.get("deadline")
+                if not date_str:
+                    continue
+                try:
+                    target_date = datetime.strptime(str(date_str), "%Y-%m-%d").date()
+                except (ValueError, TypeError):
+                    continue
+                if today <= target_date <= horizon:
+                    upcoming_deadlines.append(
+                        {
+                            "plan_id": str(plan.id),
+                            "plan_goal": plan.goal_text,
+                            "milestone_title": m.get("title", ""),
+                            "milestone_index": idx,
+                            "target_date": str(date_str),
+                            "days_remaining": (target_date - today).days,
+                        }
+                    )
+        done_indices_per_plan[str(plan.id)] = plan_done
+
+    # 本周新增的执行日志（仅统计属于当前用户的规划）
+    logs_query = db.query(MilestoneLog).filter(
+        MilestoneLog.created_at >= week_start,
+        MilestoneLog.created_at < next_monday,
+    )
+    if user_plan_ids:
+        logs_query = logs_query.filter(MilestoneLog.plan_id.in_(user_plan_ids))
+    week_logs = logs_query.all()
+
+    # 按规划聚合本周日志涉及的里程碑索引
+    week_log_indices: dict[str, set[int]] = {}
+    for log in week_logs:
+        week_log_indices.setdefault(log.plan_id, set()).add(log.milestone_index)
+
+    completed_this_week = 0
+    for plan_id, done_indices in done_indices_per_plan.items():
+        completed_this_week += len(done_indices & week_log_indices.get(plan_id, set()))
+
+    if completed_this_week > 0:
+        encouragement = f"本周已完成{completed_this_week}个里程碑，保持势头！"
+    else:
+        encouragement = "本周还没有进展，从一个小任务开始吧！"
+
+    return {
+        "completed_this_week": completed_this_week,
+        "logs_this_week": len(week_logs),
+        "upcoming_deadlines": upcoming_deadlines,
+        "active_plans": active_plans,
+        "total_milestones_done": total_milestones_done,
+        "total_milestones": total_milestones,
+        "encouragement": encouragement,
     }

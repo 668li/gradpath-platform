@@ -219,3 +219,72 @@ def get_reminders(db: Session, user_id: UUID) -> list[dict]:
             )
 
     return reminders
+
+
+def get_daily_focus(db: Session, user_id: UUID) -> list[dict]:
+    """获取今日重点：每个 active 规划的当前焦点里程碑。
+
+    对每个 status=="active" 的规划：
+    1. 优先取第一个 status=="in_progress" 的里程碑；
+    2. 若没有 in_progress，则取第一个 status=="pending" 的里程碑；
+    3. 都没有则跳过该规划。
+
+    跨规划汇总后按优先级排序（in_progress 优先于 pending），最多返回 3 条。
+    has_logs 标记该里程碑是否已有执行日志（MilestoneLog）。
+
+    Returns:
+        DailyFocusItem 字典列表
+    """
+    plans = (
+        db.query(CareerPlan)
+        .filter(CareerPlan.user_id == user_id, CareerPlan.status == "active")
+        .order_by(CareerPlan.created_at.asc())
+        .all()
+    )
+
+    candidates: list[tuple[int, dict]] = []  # (priority, item)
+    for plan in plans:
+        milestones = plan.milestones or []
+        chosen: tuple[int, dict, int] | None = None  # (idx, milestone, priority)
+
+        # 优先 in_progress（priority=0）
+        for idx, m in enumerate(milestones):
+            if isinstance(m, dict) and m.get("status") == "in_progress":
+                chosen = (idx, m, 0)
+                break
+        # 其次 pending（priority=1）
+        if chosen is None:
+            for idx, m in enumerate(milestones):
+                if isinstance(m, dict) and m.get("status") == "pending":
+                    chosen = (idx, m, 1)
+                    break
+        if chosen is None:
+            continue
+
+        idx, m, priority = chosen
+        log_count = (
+            db.query(MilestoneLog)
+            .filter(
+                MilestoneLog.plan_id == str(plan.id),
+                MilestoneLog.milestone_index == idx,
+            )
+            .count()
+        )
+        candidates.append(
+            (
+                priority,
+                {
+                    "plan_id": str(plan.id),
+                    "plan_goal": plan.goal_text,
+                    "milestone_title": m.get("title", ""),
+                    "milestone_index": idx,
+                    "milestone_description": m.get("description", ""),
+                    "status": m.get("status", ""),
+                    "has_logs": log_count > 0,
+                },
+            )
+        )
+
+    # 按优先级排序：in_progress（0）优先于 pending（1）
+    candidates.sort(key=lambda x: x[0])
+    return [item for _, item in candidates[:3]]

@@ -3,6 +3,7 @@
 
 - GET /api/career-plans — 列出用户的规划
 - GET /api/career-plans/reminders — 到期提醒（Phase 12）
+- GET /api/career-plans/daily-focus — 每日重点（Phase 12）
 - GET /api/career-plans/{id} — 规划详情
 - PATCH /api/career-plans/{id}/milestones/{idx} — 更新里程碑状态
 - POST /api/career-plans/{id}/milestones/{idx}/logs — 添加执行日志（Phase 12）
@@ -19,6 +20,7 @@ from app.database import get_db
 from app.models.user import User
 from app.schemas.chat import (
     CareerPlanResponse,
+    DailyFocusItem,
     MilestoneLogCreate,
     MilestoneLogResponse,
     MilestoneUpdate,
@@ -27,6 +29,7 @@ from app.schemas.chat import (
 from app.services.career_plan_service import (
     add_milestone_log,
     delete_milestone_log,
+    get_daily_focus,
     get_plan,
     get_reminders,
     list_milestone_logs,
@@ -53,6 +56,15 @@ def get_user_reminders(
 ):
     """到期提醒：分类返回 overdue 与 upcoming 的里程碑。"""
     return get_reminders(db, user.id)
+
+
+@router.get("/daily-focus", response_model=list[DailyFocusItem])
+def get_user_daily_focus(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """每日重点：返回各 active 规划当前应聚焦的里程碑（最多 3 条）。"""
+    return get_daily_focus(db, user.id)
 
 
 @router.get("/{plan_id}", response_model=CareerPlanResponse)

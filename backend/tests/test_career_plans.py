@@ -266,3 +266,78 @@ class TestReminders:
         resp = client.get("/api/career-plans/reminders", headers=auth_headers)
         assert resp.status_code == 200
         assert resp.json() == []
+
+
+# ======================================================================
+# Phase 12: 每日重点 (daily-focus)
+# ======================================================================
+
+class TestDailyFocus:
+    def test_daily_focus_returns_pending_milestone(self, auth_headers, client, db_session):
+        """active plan + pending milestone → 返回第一个 pending 里程碑。"""
+        user = db_session.query(User).filter(User.email == "test@example.com").first()
+        _seed_plan(db_session, user.id, status="active")
+
+        resp = client.get("/api/career-plans/daily-focus", headers=auth_headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data) == 1
+        item = data[0]
+        assert item["milestone_title"] == "掌握Go基础"
+        assert item["milestone_index"] == 0
+        assert item["status"] == "pending"
+        assert item["has_logs"] is False
+        assert "字节跳动" in item["plan_goal"]
+        assert item["milestone_description"] == "学习Go语法"
+
+    def test_daily_focus_prefers_in_progress(self, auth_headers, client, db_session):
+        """in_progress 里程碑优先于 pending。"""
+        user = db_session.query(User).filter(User.email == "test@example.com").first()
+        milestones = [
+            {"title": "任务A", "description": "待办", "status": "pending"},
+            {"title": "任务B", "description": "进行中", "status": "in_progress"},
+        ]
+        _seed_plan(db_session, user.id, milestones=milestones, status="active")
+
+        resp = client.get("/api/career-plans/daily-focus", headers=auth_headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data) == 1
+        assert data[0]["milestone_title"] == "任务B"
+        assert data[0]["status"] == "in_progress"
+        assert data[0]["milestone_index"] == 1
+
+    def test_daily_focus_has_logs_true(self, auth_headers, client, db_session):
+        """里程碑已有执行日志时 has_logs 为 True。"""
+        from app.models.milestone_log import MilestoneLog
+
+        user = db_session.query(User).filter(User.email == "test@example.com").first()
+        plan = _seed_plan(db_session, user.id, status="active")
+        db_session.add(
+            MilestoneLog(plan_id=str(plan.id), milestone_index=0, content="日志")
+        )
+        db_session.commit()
+
+        resp = client.get("/api/career-plans/daily-focus", headers=auth_headers)
+        assert resp.status_code == 200
+        assert resp.json()[0]["has_logs"] is True
+
+    def test_daily_focus_empty_when_no_active_plan(self, auth_headers, client, db_session):
+        """无 active 规划时返回空列表。"""
+        user = db_session.query(User).filter(User.email == "test@example.com").first()
+        # draft 状态不参与每日重点
+        _seed_plan(db_session, user.id, status="draft")
+
+        resp = client.get("/api/career-plans/daily-focus", headers=auth_headers)
+        assert resp.status_code == 200
+        assert resp.json() == []
+
+    def test_daily_focus_max_three(self, auth_headers, client, db_session):
+        """最多返回 3 条（创建 4 个 active 规划）。"""
+        user = db_session.query(User).filter(User.email == "test@example.com").first()
+        for _ in range(4):
+            _seed_plan(db_session, user.id, status="active")
+
+        resp = client.get("/api/career-plans/daily-focus", headers=auth_headers)
+        assert resp.status_code == 200
+        assert len(resp.json()) == 3

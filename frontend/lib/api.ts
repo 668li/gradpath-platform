@@ -3,6 +3,8 @@
 import type {
   AIRetroDraft,
   AIRetroDraftRequest,
+  AssessmentQuestion,
+  AssessmentResult,
   CareerPlan,
   CareerProfile,
   CareerProfileCreate,
@@ -13,6 +15,7 @@ import type {
   Company,
   CompanyInfo,
   Conversation,
+  DailyFocusItem,
   DashboardOverview,
   DataSourceCreate,
   DataSourceResponse,
@@ -69,6 +72,7 @@ import type {
   TokenResponse,
   UserResponse,
   UserSetting,
+  WeeklyRecap,
 } from "@/types";
 
 const TOKEN_KEY = "gradpath_access_token";
@@ -392,6 +396,7 @@ export const retrospectivesApi = {
 // ===== Dashboard =====
 export const dashboardApi = {
   overview: () => request<DashboardOverview>("/api/dashboard/overview"),
+  weeklyRecap: () => request<WeeklyRecap>("/api/dashboard/weekly-recap"),
 };
 
 // ===== 就业数据搜索 =====
@@ -710,6 +715,7 @@ export const careerPlansApi = {
       method: "DELETE",
     }),
   getReminders: () => request<ReminderItem[]>("/api/career-plans/reminders"),
+  getDailyFocus: () => request<DailyFocusItem[]>("/api/career-plans/daily-focus"),
 };
 
 // ===== 用户职业画像 =====
@@ -731,4 +737,16 @@ export const careerProfileApi = {
 export const planTemplatesApi = {
   list: () => request<PlanTemplate[]>("/api/plan-templates"),
   get: (id: string) => request<PlanTemplate>(`/api/plan-templates/${id}`),
+};
+
+// ===== 职业测评 =====
+export const assessmentApi = {
+  getQuestions: () => request<AssessmentQuestion[]>("/api/assessment/questions"),
+  submit: (answers: Record<string, string>) =>
+    request<AssessmentResult>("/api/assessment/submit", {
+      method: "POST",
+      body: JSON.stringify({ answers }),
+    }),
+  getResult: () => request<AssessmentResult | null>("/api/assessment/result"),
+  getHistory: () => request<AssessmentResult[]>("/api/assessment/history"),
 };

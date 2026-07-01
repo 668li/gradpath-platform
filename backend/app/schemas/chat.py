@@ -111,3 +111,13 @@ class ReminderItem(BaseModel):
     target_date: str | None
     days_remaining: int | None
     type: str  # "overdue" | "upcoming"
+
+
+class DailyFocusItem(BaseModel):
+    plan_id: str
+    plan_goal: str
+    milestone_title: str
+    milestone_index: int
+    milestone_description: str
+    status: str  # "in_progress" | "pending"
+    has_logs: bool

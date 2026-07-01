@@ -40,6 +40,7 @@ function getNavItems(isAdmin: boolean = false): NavItem[] {
     { href: "/chat", label: "AI 管家", icon: Bot },
     { href: "/plans", label: "职业规划", icon: Target },
     { href: "/profile", label: "职业画像", icon: UserCircle },
+    { href: "/assessment", label: "职业测评", icon: Compass },
     { href: "/explore", label: "去向探索", icon: Telescope },
     { href: "/community", label: "社区数据", icon: Users },
     { href: "/interview", label: "面试经验", icon: Briefcase },

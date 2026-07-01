@@ -71,6 +71,7 @@ async def request_logging_middleware(request: Request, call_next):
 # 路由导入放在 limiter 创建之后，避免循环导入
 # ----------------------------------------------------------------------
 from app.api.ai import router as ai_router
+from app.api.assessment import router as assessment_router
 from app.api.auth import router as auth_router
 from app.api.career_plans import router as career_plans_router
 from app.api.career_profile import router as career_profile_router
@@ -110,6 +111,7 @@ app.include_router(chat_router)
 app.include_router(career_plans_router)
 app.include_router(career_profile_router)
 app.include_router(plan_templates_router)
+app.include_router(assessment_router)
 
 
 # 创建数据库表（仅开发模式；生产环境使用 Alembic 迁移）
