@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import {
   Plus,
   Pencil,
@@ -28,12 +29,20 @@ import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/components/ui/toast";
 import { DestinationPie } from "@/components/charts";
 import { DecisionForm } from "@/components/decision-form";
-import { AIAdvicePanel } from "@/components/ai-advice";
 import type {
   DecisionResponse,
   DecisionStats,
   DestinationType,
 } from "@/types";
+
+// 优化：AI 建议面板需用户交互触发请求，按需加载减少首屏 JS 体积
+const AIAdvicePanel = dynamic(
+  () => import("@/components/ai-advice").then((m) => m.AIAdvicePanel),
+  {
+    ssr: false,
+    loading: () => <LoadingState />,
+  },
+);
 
 function detailSummary(decision: DecisionResponse): string {
   const fields = DESTINATION_DETAIL_FIELDS[decision.destination_type];

@@ -1,0 +1,70 @@
+# Pre-commit hooks for GradPath
+# 使用方法：
+#   pip install pre-commit
+#   pre-commit install
+#   pre-commit run --all-files
+repos:
+  # 基础检查
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^frontend/
+      - id: end-of-file-fixer
+        exclude: ^frontend/
+      - id: check-yaml
+        files: \.(yaml|yml)$
+      - id: check-toml
+        files: \.toml$
+      - id: check-json
+        files: \.json$
+        exclude: ^frontend/package-lock\.json$
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ["--maxkb=500"]
+      - id: debug-statements
+      - id: check-builtin-literals
+      - id: check-docstring-first
+
+  # Python 导入排序
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        files: ^backend/.*\.py$
+        args: ["--profile", "black", "--line-length", "100"]
+
+  # Python 代码格式化
+  - repo: https://github.com/psf/black
+    rev: 24.4.2
+    hooks:
+      - id: black
+        files: ^backend/.*\.py$
+        args: ["--line-length", "100", "--target-version", "py310"]
+
+  # Python Linter
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.5.0
+    hooks:
+      - id: ruff
+        files: ^backend/.*\.py$
+        args: ["--fix", "--exit-non-zero-on-fix"]
+
+  # 类型检查
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.10.0
+    hooks:
+      - id: mypy
+        files: ^backend/app/.*\.py$
+        additional_dependencies:
+          - pydantic>=2.7.0
+          - sqlalchemy>=2.0.30
+        args: ["--config-file", "backend/pyproject.toml"]
+        # 仅在 CI 中严格检查，本地提交时仅警告
+        stages: [manual]
+
+# 全局配置
+default_language_version:
+  python: python3.10
+
+default_stages: [pre-commit]

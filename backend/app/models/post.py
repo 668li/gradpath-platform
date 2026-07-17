@@ -2,7 +2,7 @@
 import enum
 from uuid import UUID
 
-from sqlalchemy import Enum, ForeignKey, String, Text
+from sqlalchemy import Enum, ForeignKey, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -16,17 +16,22 @@ class PostTopicType(str, enum.Enum):
 
 class Post(UUIDMixin, TimestampMixin, Base):
     __tablename__ = "posts"
+    # 复合索引：按主题类型+主题键查询帖子是最高频操作（社区讨论区入口）
+    # 单列索引：user_id（用户发帖历史）、parent_id（查询回复列表）
+    __table_args__ = (
+        Index("ix_posts_topic_type_key", "topic_type", "topic_key"),
+    )
 
     topic_type: Mapped[PostTopicType] = mapped_column(
         Enum(PostTopicType), nullable=False
     )
-    topic_key: Mapped[str] = mapped_column(String(500), nullable=False)
+    topic_key: Mapped[str] = mapped_column(String(500), nullable=False, index=True)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     user_id: Mapped[UUID] = mapped_column(
-        ForeignKey("users.id"), nullable=False
+        ForeignKey("users.id"), nullable=False, index=True
     )
     parent_id: Mapped[UUID | None] = mapped_column(
-        ForeignKey("posts.id", ondelete="CASCADE"), nullable=True
+        ForeignKey("posts.id", ondelete="CASCADE"), nullable=True, index=True
     )
 
     # 自引用关系：顶层帖的 replies 列表

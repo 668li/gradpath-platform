@@ -4,6 +4,7 @@ import secrets
 from dataclasses import dataclass
 from uuid import UUID
 
+from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 
 from app.models.career_event import CareerEvent, EventType
@@ -42,22 +43,69 @@ def get_level(xp: int) -> tuple[int, str, int, int]:
 # ======================================================================
 
 def calculate_xp(db: Session, user_id: UUID) -> int:
-    """从现有数据实时计算 XP。"""
-    decisions = db.query(DestinationDecision).filter(DestinationDecision.user_id == user_id).count()
-    events = db.query(CareerEvent).filter(CareerEvent.user_id == user_id).all()
-    skills = db.query(SkillNode).filter(SkillNode.user_id == user_id).all()
-    retros = db.query(Retrospective).filter(Retrospective.user_id == user_id).count()
-    community = db.query(CommunityReport).filter(CommunityReport.user_id == user_id).count()
-    interviews = db.query(InterviewReport).filter(InterviewReport.user_id == user_id).count()
+    """从现有数据实时计算 XP。
+
+    优化：用聚合查询替代 .all() 加载全量数据，避免 events/skills 表增长后内存膨胀。
+    - events: 一次查询同时获取总数和特殊事件数（promotion/certification 各 +10 额外 XP）
+    - skills: 用 sum(level) 替代遍历累加
+    """
+    decisions = (
+        db.query(func.count(DestinationDecision.id))
+        .filter(DestinationDecision.user_id == user_id)
+        .scalar()
+        or 0
+    )
+    # events: 一次查询获取总数 + 特殊事件数（promotion/certification）
+    events_stats = (
+        db.query(
+            func.count(CareerEvent.id),
+            func.count(
+                case(
+                    (
+                        CareerEvent.event_type.in_(
+                            [EventType.promotion, EventType.certification]
+                        ),
+                        1,
+                    ),
+                    else_=None,
+                )
+            ),
+        )
+        .filter(CareerEvent.user_id == user_id)
+        .one()
+    )
+    total_events = events_stats[0] or 0
+    special_events = events_stats[1] or 0
+    # skills: 用 sum(level) 替代加载全量数据遍历
+    skills_level_sum = (
+        db.query(func.sum(SkillNode.level))
+        .filter(SkillNode.user_id == user_id)
+        .scalar()
+        or 0
+    )
+    retros = (
+        db.query(func.count(Retrospective.id))
+        .filter(Retrospective.user_id == user_id)
+        .scalar()
+        or 0
+    )
+    community = (
+        db.query(func.count(CommunityReport.id))
+        .filter(CommunityReport.user_id == user_id)
+        .scalar()
+        or 0
+    )
+    interviews = (
+        db.query(func.count(InterviewReport.id))
+        .filter(InterviewReport.user_id == user_id)
+        .scalar()
+        or 0
+    )
 
     xp = 0
     xp += decisions * 10
-    for e in events:
-        xp += 5
-        if e.event_type in (EventType.promotion, EventType.certification):
-            xp += 10
-    for s in skills:
-        xp += s.level * 5
+    xp += total_events * 5 + special_events * 10
+    xp += int(skills_level_sum) * 5
     xp += retros * 15
     xp += community * 20
     xp += interviews * 20

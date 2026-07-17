@@ -1,5 +1,6 @@
 # backend/pipeline/fetcher.py
 """高校就业质量报告抓取器"""
+import random
 import time
 import re
 from urllib.robotparser import RobotFileParser
@@ -11,9 +12,14 @@ from app.models.school import School
 from app.models.report_record import ReportRecord, ParseStatus
 
 USER_AGENT = "GradPathBot/1.0 (career research; +https://github.com/gradpath)"
-REQUEST_DELAY = 3  # 秒，请求间隔
+REQUEST_DELAY = 1  # 秒，基础请求间隔（优化：从3减至1，加 jitter 防惊群）
 TIMEOUT = 30
 MAX_RETRIES = 3
+
+
+def _jittered_delay(base: float = REQUEST_DELAY) -> float:
+    """在基础延迟上添加 ±50% 随机抖动，防止多 worker 同时请求。"""
+    return base * (0.5 + random.random())
 
 
 def check_robots_allowed(url: str) -> bool:
@@ -129,6 +135,7 @@ def _find_report_url(index_url: str, year: int) -> str | None:
 def _fetch_url(url: str) -> tuple[str | None, int | None]:
     """带重试的 HTTP GET。
 
+    优化：首次请求不延迟，仅重试时加 jittered 退避，避免不必要的等待。
     Returns:
         (content, status_code)：成功时 content 为响应文本、status_code 为 200；
         失败时 content 为 None，status_code 为 HTTP 状态码（网络异常时为 None）。
@@ -136,7 +143,9 @@ def _fetch_url(url: str) -> tuple[str | None, int | None]:
     headers = {"User-Agent": USER_AGENT}
     for attempt in range(MAX_RETRIES):
         try:
-            time.sleep(REQUEST_DELAY)
+            # 仅重试时延迟（首次 attempt=0 不延迟）
+            if attempt > 0:
+                time.sleep(_jittered_delay(REQUEST_DELAY * (attempt + 1)))
             resp = httpx.get(url, headers=headers, timeout=TIMEOUT, follow_redirects=True)
             if resp.status_code == 200:
                 return resp.text, 200
@@ -145,6 +154,4 @@ def _fetch_url(url: str) -> tuple[str | None, int | None]:
             # 其他非 200 状态码：继续重试
         except httpx.RequestError:
             pass
-        if attempt < MAX_RETRIES - 1:
-            time.sleep(REQUEST_DELAY * (attempt + 2))
     return None, None

@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, AlertTriangle, Users } from "lucide-react";
@@ -13,13 +14,21 @@ import { LoadingState, EmptyState } from "@/components/ui/empty";
 import { Button } from "@/components/ui/form-controls";
 import { useToast } from "@/components/ui/toast";
 import { RankingBar } from "@/components/employment-charts";
-import { DiscussionSection } from "@/components/discussion-section";
 import {
   RATE_LABEL,
   RATE_COLORS,
   SALARY_RANGE_LABEL,
 } from "@/lib/constants";
 import type { CommunityAggregate } from "@/types";
+
+// 优化：讨论区组件较大(17KB)且在页面下方，按需加载减少首屏 JS 体积
+const DiscussionSection = dynamic(
+  () => import("@/components/discussion-section").then((m) => m.DiscussionSection),
+  {
+    ssr: false,
+    loading: () => <LoadingState />,
+  },
+);
 
 const CHART_HEIGHT = 300;
 

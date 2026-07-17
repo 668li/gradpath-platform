@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import dynamic from "next/dynamic";
 import { Plus, Pencil, Trash2, Network, List, ChevronRight } from "lucide-react";
 import { skillsApi } from "@/lib/api";
 import { formatDate, levelStars, cn } from "@/lib/utils";
@@ -10,8 +11,16 @@ import { Badge, Button } from "@/components/ui/form-controls";
 import { useToast } from "@/components/ui/toast";
 import { SkillRadar } from "@/components/charts";
 import { SkillForm } from "@/components/skill-form";
-import { SkillTreeGraph } from "@/components/skill-tree-graph";
 import type { SkillResponse, SkillStats } from "@/types";
+
+// 优化：D3.js 树状图依赖 DOM，仅在客户端渲染，按需加载减少首屏 JS 体积
+const SkillTreeGraph = dynamic(
+  () => import("@/components/skill-tree-graph").then((m) => m.SkillTreeGraph),
+  {
+    ssr: false,
+    loading: () => <LoadingState />,
+  },
+);
 
 const LEVEL_COLOR: Record<number, "slate" | "blue" | "purple"> = {
   1: "slate",

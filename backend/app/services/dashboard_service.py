@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from uuid import UUID
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models.career_event import CareerEvent
@@ -20,25 +21,32 @@ def get_overview(db: Session, user_id: UUID) -> dict:
         db.query(DestinationDecision)
         .filter(DestinationDecision.user_id == user_id)
         .order_by(DestinationDecision.decision_date.desc())
+        .limit(20)
         .all()
     )
     events = (
         db.query(CareerEvent)
         .filter(CareerEvent.user_id == user_id)
         .order_by(CareerEvent.event_date.desc())
+        .limit(20)
         .all()
     )
-    skills = db.query(SkillNode).filter(SkillNode.user_id == user_id).all()
+    # 优化：用 group_by + count 聚合替代加载全部行，避免 skills 表增长后传输大量数据
+    skill_category_counts = (
+        db.query(SkillNode.category, func.count(SkillNode.id))
+        .filter(SkillNode.user_id == user_id)
+        .group_by(SkillNode.category)
+        .all()
+    )
+    skill_categories: dict[str, int] = {cat: cnt for cat, cnt in skill_category_counts}
+    skills_count = sum(skill_categories.values())
     retros = (
         db.query(Retrospective)
         .filter(Retrospective.user_id == user_id)
         .order_by(Retrospective.period_end.desc())
+        .limit(10)
         .all()
     )
-
-    skill_categories: dict[str, int] = {}
-    for s in skills:
-        skill_categories[s.category] = skill_categories.get(s.category, 0) + 1
 
     latest_decision = None
     if decisions:
@@ -93,7 +101,7 @@ def get_overview(db: Session, user_id: UUID) -> dict:
     return {
         "decisions_count": len(decisions),
         "events_count": len(events),
-        "skills_count": len(skills),
+        "skills_count": skills_count,
         "retrospectives_count": len(retros),
         "latest_decision": latest_decision,
         "recent_events": recent_events,
@@ -121,7 +129,12 @@ def get_weekly_recap(db: Session, user_id: UUID) -> dict:
     next_monday = datetime.combine(monday + timedelta(days=7), datetime.min.time())
     horizon = today + timedelta(days=7)
 
-    plans = db.query(CareerPlan).filter(CareerPlan.user_id == user_id).all()
+    plans = (
+        db.query(CareerPlan)
+        .filter(CareerPlan.user_id == user_id)
+        .order_by(CareerPlan.created_at.desc())
+        .all()
+    )
     user_plan_ids = {str(p.id) for p in plans}
 
     active_plans = sum(1 for p in plans if p.status == "active")
@@ -176,7 +189,8 @@ def get_weekly_recap(db: Session, user_id: UUID) -> dict:
     # 按规划聚合本周日志涉及的里程碑索引
     week_log_indices: dict[str, set[int]] = {}
     for log in week_logs:
-        week_log_indices.setdefault(log.plan_id, set()).add(log.milestone_index)
+        key = str(log.plan_id) if not isinstance(log.plan_id, str) else log.plan_id
+        week_log_indices.setdefault(key, set()).add(log.milestone_index)
 
     completed_this_week = 0
     for plan_id, done_indices in done_indices_per_plan.items():
