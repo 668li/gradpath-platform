@@ -342,9 +342,18 @@ export default function SchoolDetailPage() {
               </div>
               <div className="space-y-3">
                 {programs.map((program) => (
-                  <div
+                  <button
                     key={program.id}
-                    className="rounded-lg border border-paper-200 p-4 hover:border-brand-200 transition-colors"
+                    onClick={() => {
+                      setSelectedMajor(program.major_name);
+                      document.getElementById("scoreline-section")?.scrollIntoView({ behavior: "smooth" });
+                    }}
+                    className={cn(
+                      "w-full text-left rounded-lg border p-4 transition-all cursor-pointer",
+                      selectedMajor === program.major_name
+                        ? "border-brand-400 bg-brand-50 shadow-sm"
+                        : "border-paper-200 hover:border-brand-200 hover:bg-brand-50/50",
+                    )}
                   >
                     <div className="flex items-start justify-between gap-3 mb-2">
                       <div>
@@ -368,7 +377,7 @@ export default function SchoolDetailPage() {
                         ))}
                       </div>
                     )}
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -376,7 +385,7 @@ export default function SchoolDetailPage() {
 
           {/* Right: Scorelines & Adjustments */}
           <div className="space-y-6">
-            <div className="rounded-xl border border-paper-200 bg-white p-6 shadow-sm">
+            <div className="rounded-xl border border-paper-200 bg-white p-6 shadow-sm" id="scoreline-section">
               <div className="flex items-center gap-2 mb-4">
                 <BarChart3 className="h-5 w-5 text-brand-600" />
                 <h2 className="text-base font-semibold text-ink-800">近年复试线</h2>
