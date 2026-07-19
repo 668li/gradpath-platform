@@ -240,6 +240,40 @@ def get_tags(
     return [TagStat(tag=r.tag, count=r[0]) for r in tag_rows]
 
 
+@router.get("/stats")
+def get_stats(db: Session = Depends(get_db)):
+    """返回学习方法的标签统计和总数。"""
+    total = (
+        db.query(func.count())
+        .select_from(KnowledgeArticle)
+        .filter(
+            KnowledgeArticle.category == CATEGORY,
+            KnowledgeArticle.is_published == True,  # noqa: E712
+        )
+        .scalar()
+    )
+    tag_rows = (
+        db.query(
+            func.jsonb_array_elements_text(KnowledgeArticle.tags).label("tag"),
+            func.count(),
+        )
+        .filter(
+            KnowledgeArticle.category == CATEGORY,
+            KnowledgeArticle.is_published == True,  # noqa: E712
+        )
+        .group_by("tag")
+        .order_by(func.count().desc())
+        .limit(10)
+        .all()
+    )
+    return {
+        "total": total or 0,
+        "category_counts": [
+            {"category": r[0], "count": r[1]} for r in tag_rows
+        ],
+    }
+
+
 @router.get("/recommend", response_model=list[RecommendItem])
 def recommend(
     limit: int = Query(5, ge=1, le=20),
