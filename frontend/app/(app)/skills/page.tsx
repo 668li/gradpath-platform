@@ -113,15 +113,19 @@ export default function SkillsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [t, s] = await Promise.all([skillsApi.tree(), skillsApi.stats()]);
-      setTree(t);
-      setStats(s);
+      const [treeResult, statsResult] = await Promise.allSettled([skillsApi.tree(), skillsApi.stats()]);
+      if (treeResult.status === "fulfilled") {
+        setTree(treeResult.value);
+      }
+      if (statsResult.status === "fulfilled") {
+        setStats(statsResult.value);
+      }
     } catch (err) {
       toast.push(err instanceof Error ? err.message : "加载失败", "error");
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     load();
@@ -223,7 +227,24 @@ export default function SkillsPage() {
         {/* 技能分组列表 */}
         <div className="lg:col-span-2 space-y-4">
           {loading ? (
-            <LoadingState />
+            <div className="space-y-4 animate-pulse">
+              {[1,2,3].map(i => (
+                <div key={i} className="card p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="h-4 w-4 rounded bg-slate-200" />
+                    <div className="h-4 w-20 bg-slate-200 rounded" />
+                    <div className="h-5 w-10 bg-slate-200 rounded-full" />
+                  </div>
+                  {[1,2].map(j => (
+                    <div key={j} className="flex items-center gap-2 py-2">
+                      <div className="h-3 w-3 bg-slate-100 rounded" />
+                      <div className="h-3 bg-slate-200 rounded flex-1" />
+                      <div className="h-3 w-16 bg-slate-100 rounded" />
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
           ) : tree.length === 0 ? (
             <EmptyState
               title="还没有技能"

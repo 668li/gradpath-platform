@@ -37,6 +37,7 @@ import { SkillRadar } from "@/components/charts";
 import { LevelProgress } from "@/components/gamification/level-progress";
 import { EmptyState, LoadingState } from "@/components/ui/empty";
 import { Button } from "@/components/ui/form-controls";
+import { Skeleton } from "@/components/ui/skeleton";
 import type {
   DashboardOverview,
   GamificationProfile,
@@ -49,6 +50,31 @@ import type {
   LifeWheelSnapshot,
 } from "@/types";
 import { AlertCircle, Clock, Target, Zap, CalendarCheck, TrendingUp } from "lucide-react";
+
+/** Dashboard骨架屏 — 结构化占位，替代空白spinner */
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      <div className="flex items-center justify-between">
+        <div><Skeleton className="h-8 w-32 mb-2" /><Skeleton className="h-4 w-48" /></div>
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[1,2,3,4].map(i => (
+          <div key={i} className="card p-5">
+            <Skeleton className="h-10 w-10 rounded-lg mb-3" />
+            <Skeleton className="h-4 w-16 mb-1" />
+            <Skeleton className="h-6 w-12" />
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Skeleton className="h-48 rounded-xl" />
+        <Skeleton className="h-48 rounded-xl" />
+        <Skeleton className="h-48 rounded-xl" />
+      </div>
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardOverview | null>(null);
@@ -64,60 +90,62 @@ export default function DashboardPage() {
     useState<ProactiveInsightSummary | null>(null);
   const [lifeWheel, setLifeWheel] = useState<LifeWheelSnapshot | null>(null);
   const [generating, setGenerating] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [coreLoading, setCoreLoading] = useState(true);
+  const [secondaryLoading, setSecondaryLoading] = useState(true);
 
+  // 第一批：核心数据（overview + streak + reminders + focus）— 快速渲染主界面
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
-        const [
-          overviewRes,
-          profileRes,
-          remindersRes,
-          focusRes,
-          recapRes,
-          streakRes,
-          insightsRes,
-          lifeWheelRes,
-        ] = await Promise.allSettled([
+        const [overviewRes, streakRes, remindersRes, focusRes] = await Promise.allSettled([
           dashboardApi.overview(),
-          gamificationApi.profile(),
+          streaksApi.getStats(),
           careerPlansApi.getReminders(),
           careerPlansApi.getDailyFocus(),
-          dashboardApi.weeklyRecap(),
-          streaksApi.getStats(),
-          proactiveInsightsApi.getSummary(),
-          lifeWheelApi.getLatest(),
         ]);
         if (alive) {
           if (overviewRes.status === "fulfilled") setData(overviewRes.value);
-          if (profileRes.status === "fulfilled")
-            setGameProfile(profileRes.value);
-          if (remindersRes.status === "fulfilled")
-            setReminders(remindersRes.value);
-          if (focusRes.status === "fulfilled")
-            setDailyFocus(focusRes.value);
-          if (recapRes.status === "fulfilled")
-            setWeeklyRecap(recapRes.value);
-          if (streakRes.status === "fulfilled")
-            setStreakStats(streakRes.value);
+          if (streakRes.status === "fulfilled") setStreakStats(streakRes.value);
+          if (remindersRes.status === "fulfilled") setReminders(remindersRes.value);
+          if (focusRes.status === "fulfilled") setDailyFocus(focusRes.value);
+        }
+      } finally {
+        if (alive) setCoreLoading(false);
+      }
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  // 第二批：次要数据（gamification + insights + lifeWheel + recap）— 异步追加
+  useEffect(() => {
+    if (coreLoading) return; // 等核心数据加载完再加载次要数据
+    let alive = true;
+    (async () => {
+      try {
+        const [profileRes, insightsRes, lifeWheelRes, recapRes] = await Promise.allSettled([
+          gamificationApi.profile(),
+          proactiveInsightsApi.getSummary(),
+          lifeWheelApi.getLatest(),
+          dashboardApi.weeklyRecap(),
+        ]);
+        if (alive) {
+          if (profileRes.status === "fulfilled") setGameProfile(profileRes.value);
           if (insightsRes.status === "fulfilled") {
             setInsightsSummary(insightsRes.value);
             setInsights(insightsRes.value.latest_insights);
           }
-          if (lifeWheelRes.status === "fulfilled")
-            setLifeWheel(lifeWheelRes.value);
+          if (lifeWheelRes.status === "fulfilled") setLifeWheel(lifeWheelRes.value);
+          if (recapRes.status === "fulfilled") setWeeklyRecap(recapRes.value);
         }
       } finally {
-        if (alive) setLoading(false);
+        if (alive) setSecondaryLoading(false);
       }
     })();
-    return () => {
-      alive = false;
-    };
-  }, []);
+    return () => { alive = false; };
+  }, [coreLoading]);
 
-  if (loading) return <LoadingState />;
+  if (coreLoading) return <DashboardSkeleton />;
   if (!data) return null;
 
   const isEmpty =

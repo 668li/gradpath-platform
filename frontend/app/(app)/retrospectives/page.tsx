@@ -15,7 +15,7 @@ import { PERIOD_TYPE_LABEL } from "@/lib/constants";
 import { Modal } from "@/components/ui/modal";
 import { EmptyState } from "@/components/ui/empty";
 import { Badge, Button } from "@/components/ui/form-controls";
-import { ListSkeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/components/ui/toast";
 import { RetroForm } from "@/components/retro-form";
@@ -49,7 +49,7 @@ export default function RetrospectivesPage() {
     } finally {
       setLoading(false);
     }
-  }, [toast, page]);
+  }, [page]);
 
   useEffect(() => {
     load();
@@ -115,7 +115,37 @@ export default function RetrospectivesPage() {
       <RetroAIPanel onUseDraft={handleUseDraft} />
 
       {loading ? (
-        <ListSkeleton />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="card space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3 min-w-0">
+                  <Skeleton className="h-10 w-10 rounded-lg shrink-0" />
+                  <div className="space-y-2 flex-1">
+                    <Skeleton className="h-4 w-2/3" />
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-5 w-12 rounded" />
+                      <Skeleton className="h-3 w-24" />
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-1 shrink-0">
+                  <Skeleton className="h-7 w-7 rounded-md" />
+                  <Skeleton className="h-7 w-7 rounded-md" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-5/6" />
+                <Skeleton className="h-3 w-3/4" />
+              </div>
+              <div className="pt-3 border-t border-slate-100 flex items-center gap-2">
+                <Skeleton className="h-3 w-12" />
+                <Skeleton className="h-3 w-20" />
+              </div>
+            </div>
+          ))}
+        </div>
       ) : retros.length === 0 ? (
         <EmptyState
           title="还没有复盘记录"
