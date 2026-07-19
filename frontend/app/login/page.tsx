@@ -49,7 +49,7 @@ export default function LoginPage() {
       toast.push("登录成功", "success");
       router.replace("/dashboard");
     } catch (err) {
-      toast.push(err instanceof Error ? err.message : "登录失败", "error");
+      toast.push("登录失败,请检查邮箱和密码是否正确", "error");
       setLoading(false);
     }
   };

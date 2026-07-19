@@ -52,7 +52,7 @@ export default function RegisterPage() {
       toast.push("注册成功，欢迎加入 GradPath", "success");
       router.replace("/dashboard");
     } catch (err) {
-      toast.push(err instanceof Error ? err.message : "注册失败", "error");
+      toast.push("注册失败,请稍后重试或检查邮箱格式", "error");
       setLoading(false);
     }
   };

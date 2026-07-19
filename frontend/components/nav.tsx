@@ -15,7 +15,6 @@ import {
   Menu,
   X,
   GraduationCap,
-  Briefcase,
   Users,
   Database,
   TrendingUp,
@@ -24,6 +23,21 @@ import {
   Target,
   BookOpen,
   UserCircle,
+  Rocket,
+  Scale,
+  Sparkles,
+  Brain,
+  Radar,
+  Briefcase,
+  Landmark,
+  Bug,
+  School,
+  UserCheck,
+  Calendar,
+  Library,
+  Search,
+  Trophy,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth";
@@ -32,30 +46,61 @@ interface NavItem {
   href: string;
   label: string;
   icon: typeof LayoutDashboard;
+  /** 可选分组标题：用于在导航中渲染 section header */
+  section?: string;
 }
 
 /** 根据是否为管理员生成导航项列表 */
 function getNavItems(isAdmin: boolean = false): NavItem[] {
   const items: NavItem[] = [
-    { href: "/dashboard", label: "个人看板", icon: LayoutDashboard },
-    { href: "/chat", label: "AI 管家", icon: Bot },
-    { href: "/plans", label: "职业规划", icon: Target },
-    { href: "/profile", label: "职业画像", icon: UserCircle },
-    { href: "/assessment", label: "职业测评", icon: Compass },
-    { href: "/life-wheel", label: "人生平衡轮", icon: PieChart },
-    { href: "/explore", label: "去向探索", icon: Telescope },
-    { href: "/community", label: "社区数据", icon: Users },
-    { href: "/interview", label: "面试经验", icon: Briefcase },
-    { href: "/decisions", label: "去向决策", icon: Compass },
-    { href: "/timeline", label: "成长时间线", icon: History },
+    // ── 考研中心 ──
+    { href: "/kaoyan", label: "考研主页", icon: GraduationCap, section: "考研中心" },
+    { href: "/war-room?tab=grad", label: "院校情报", icon: School },
+    { href: "/kaoyan/compare", label: "院校对比", icon: Network },
+    { href: "/kaoyan/predict", label: "录取预测", icon: Target },
+    { href: "/kaoyan/mentors", label: "导师情报", icon: UserCheck },
+    { href: "/kaoyan/strategy", label: "备考策略", icon: BookOpen },
+    { href: "/study-plans", label: "学习计划", icon: Calendar },
+    { href: "/outcome-report", label: "上岸报告", icon: Trophy },
+    { href: "/explore", label: "就业探索", icon: Search },
+
+    // ── 职业决策 ──
+    { href: "/assessment", label: "评估测试", icon: Sparkles, section: "职业决策" },
+    { href: "/career-simulator", label: "职业路径模拟", icon: Compass },
+    { href: "/decision-lab", label: "决策实验室", icon: ClipboardList },
+    { href: "/war-room?tab=career", label: "求职情报", icon: Target },
+    { href: "/war-room?tab=civil", label: "考公情报", icon: Landmark },
+    { href: "/interview", label: "面经库", icon: Briefcase },
+
+    // ── 成长追踪 ──
+    { href: "/dashboard", label: "个人看板", icon: LayoutDashboard, section: "成长追踪" },
     { href: "/skills", label: "技能树", icon: Network },
-    { href: "/retrospectives", label: "阶段复盘", icon: ClipboardList },
+    { href: "/retrospectives", label: "回顾", icon: History },
+    { href: "/growth-patterns", label: "成长模式", icon: TrendingUp },
+    { href: "/life-wheel", label: "人生平衡轮", icon: PieChart },
+    { href: "/life-design", label: "生活设计", icon: Compass },
+    { href: "/timeline", label: "时间线", icon: History },
     { href: "/insights", label: "成长洞察", icon: TrendingUp },
-    { href: "/achievements", label: "成就", icon: Award },
+    { href: "/learning-methods", label: "学习方法", icon: Brain },
+
+    // ── 社区交流 ──
+    { href: "/community", label: "社区", icon: Users, section: "社区交流" },
+    { href: "/mentors", label: "导师评价", icon: Award },
+    { href: "/chat", label: "AI 管家", icon: Bot },
+    { href: "/notifications", label: "通知", icon: Bell },
+    { href: "/search", label: "全局搜索", icon: Search },
+
+    // ── 个人中心 ──
+    { href: "/profile", label: "职业画像", icon: UserCircle, section: "个人中心" },
+    { href: "/decisions", label: "决策记录", icon: ClipboardList },
+    { href: "/learning-resources", label: "学习资源", icon: Library },
+    { href: "/achievements", label: "成就徽章", icon: Award },
   ];
   if (isAdmin) {
-    items.push({ href: "/knowledge", label: "知识库", icon: BookOpen });
+    items.push({ href: "/knowledge", label: "知识库", icon: BookOpen, section: "管理后台" });
     items.push({ href: "/pipeline", label: "数据管道", icon: Database });
+    items.push({ href: "/admin/crawlers", label: "爬虫管理", icon: Bug });
+    items.push({ href: "/admin/skills", label: "Skill 工具箱", icon: Sparkles });
   }
   return items;
 }
@@ -66,6 +111,21 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const navItems = getNavItems(user?.is_admin);
+
+  const [unread, setUnread] = useState(0);
+  useEffect(() => {
+    if (!user) return;
+    let mounted = true;
+    import("@/lib/api").then(({ notificationsApi }) =>
+      notificationsApi
+        .unreadCount()
+        .then((d) => mounted && setUnread(d.unread_count))
+        .catch(() => {}),
+    );
+    return () => {
+      mounted = false;
+    };
+  }, [user]);
 
   const handleLogout = () => {
     logout();
@@ -91,43 +151,67 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Nav items — warm text on dark, brand accent for active */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {navItems.map((item) => {
+        {navItems.map((item, idx) => {
           const active =
             pathname === item.href || pathname.startsWith(item.href + "/");
           const Icon = item.icon;
+          // 当 item.section 与前一项不同时，渲染一个分组小标题
+          const showSectionHeader =
+            !!item.section && item.section !== navItems[idx - 1]?.section;
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onNavigate}
-              className={cn(
-                "group relative flex min-h-[44px] items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
-                active
-                  ? "bg-brand-500/15 text-brand-300"
-                  : "text-ink-300 hover:bg-ink-700/40 hover:text-paper-100",
+            <div key={item.href}>
+              {showSectionHeader && (
+                <p className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-wider text-ink-500">
+                  {item.section}
+                </p>
               )}
-            >
-              {/* Active left accent bar */}
-              {active && (
-                <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-brand-400" />
-              )}
-              <Icon
+              <Link
+                href={item.href}
+                onClick={onNavigate}
+                data-track-id={`nav:${item.href}`}
                 className={cn(
-                  "h-[18px] w-[18px] transition-colors",
+                  "group relative flex min-h-[44px] items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
                   active
-                    ? "text-brand-400"
-                    : "text-ink-400 group-hover:text-paper-200",
+                    ? "bg-brand-500/15 text-brand-300"
+                    : "text-ink-300 hover:bg-ink-700/40 hover:text-paper-100",
                 )}
-                strokeWidth={active ? 2.2 : 1.8}
-              />
-              {item.label}
-            </Link>
+              >
+                {/* Active left accent bar */}
+                {active && (
+                  <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-brand-400" />
+                )}
+                <Icon
+                  className={cn(
+                    "h-[18px] w-[18px] transition-colors",
+                    active
+                      ? "text-brand-400"
+                      : "text-ink-400 group-hover:text-paper-200",
+                  )}
+                  strokeWidth={active ? 2.2 : 1.8}
+                />
+                {item.label}
+              </Link>
+            </div>
           );
         })}
       </nav>
 
       {/* User area — subtle card on dark */}
       <div className="border-t border-ink-700/50 px-3 py-3 space-y-1">
+        {/* Notification bell */}
+        <Link
+          href="/notifications"
+          onClick={onNavigate}
+          className="relative flex min-h-[44px] w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-ink-300 hover:bg-ink-700/40 hover:text-paper-100 transition-colors"
+        >
+          <Bell className="h-[18px] w-[18px] text-ink-400" strokeWidth={1.8} />
+          通知
+          {unread > 0 && (
+            <span className="absolute right-3 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-brand-500 px-1 text-[11px] font-semibold text-white">
+              {unread > 99 ? "99+" : unread}
+            </span>
+          )}
+        </Link>
         <div className="flex items-center gap-2.5 rounded-lg px-3 py-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500/20 text-sm font-semibold text-brand-300 ring-1 ring-brand-500/30">
             {user?.name?.[0] ?? "U"}
@@ -250,6 +334,20 @@ export function AppNav() {
             >
               <X className="h-5 w-5" strokeWidth={1.8} />
             </button>
+            {/* Quick-start card for new users */}
+            <div className="px-3 pt-14 pb-2">
+              <Link
+                href="/assessment"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-3 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-3 text-white shadow-lg hover:from-brand-600 hover:to-brand-700 transition-all"
+              >
+                <Rocket className="h-5 w-5 flex-shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold">快速开始</p>
+                  <p className="text-xs text-white/80">完成评估测试，获取个性化建议</p>
+                </div>
+              </Link>
+            </div>
             <SidebarContent onNavigate={() => setOpen(false)} />
           </div>
         </div>
