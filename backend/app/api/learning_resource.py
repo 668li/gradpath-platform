@@ -52,6 +52,18 @@ def list_resources(
     return query.offset(skip).limit(limit).all()
 
 
+@router.get("/seed-system", response_model=dict)
+def seed_system_resources(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """灌入系统推荐学习资源（首次运行生效，重复调用幂等）。"""
+    from app.crawlers.real_data.learning_resource_seed import seed
+
+    n = seed(str(current_user.id))
+    return {"seeded": n, "message": f"已灌入 {n} 条系统资源" if n else "已存在系统资源，跳过"}
+
+
 @router.get("/{resource_id}", response_model=LearningResourceResponse)
 def get_resource(
     resource_id: UUID,
@@ -108,15 +120,3 @@ def delete_resource(
     db.delete(resource)
     db.commit()
     return {"message": "资源已删除"}
-
-
-@router.get("/seed-system", response_model=dict)
-def seed_system_resources(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    """灌入系统推荐学习资源（首次运行生效，重复调用幂等）。"""
-    from app.crawlers.real_data.learning_resource_seed import seed
-
-    n = seed(str(current_user.id))
-    return {"seeded": n, "message": f"已灌入 {n} 条系统资源" if n else "已存在系统资源，跳过"}
