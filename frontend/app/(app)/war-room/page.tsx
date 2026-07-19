@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import {
   GraduationCap,
   Briefcase,
@@ -14,6 +15,7 @@ import {
   AlertTriangle,
   Lightbulb,
   ChevronRight,
+  ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -31,19 +33,20 @@ import type {
   SalaryBenchmark,
 } from "@/types";
 
-type WarRoomTab = "grad" | "civil" | "career";
+type WarRoomTab = "grad" | "civil" | "career" | "interview";
 
 export default function WarRoomPage() {
   const searchParams = useSearchParams();
   const initialTab = (searchParams.get("tab") as WarRoomTab) || "grad";
   const [activeTab, setActiveTab] = useState<WarRoomTab>(
-    ["grad", "civil", "career"].includes(initialTab) ? initialTab : "grad",
+    ["grad", "civil", "career", "interview"].includes(initialTab) ? initialTab : "grad",
   );
 
   const tabs = [
     { id: "grad" as const, label: "考研作战室", icon: GraduationCap, color: "text-blue-500" },
     { id: "civil" as const, label: "考公作战室", icon: Landmark, color: "text-red-500" },
     { id: "career" as const, label: "求职作战室", icon: Briefcase, color: "text-green-500" },
+    { id: "interview" as const, label: "面经库", icon: Briefcase, color: "text-amber-500" },
   ];
 
   return (
@@ -80,6 +83,7 @@ export default function WarRoomPage() {
         {activeTab === "grad" && <GradWarRoom />}
         {activeTab === "civil" && <CivilWarRoom />}
         {activeTab === "career" && <CareerWarRoom />}
+        {activeTab === "interview" && <InterviewSection />}
       </div>
     </div>
   );
@@ -974,6 +978,54 @@ function CareerWarRoom() {
             显示前 30 条，共 {filteredSalaries.length} 条结果
           </p>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ======================================================================
+// 面经库
+// ======================================================================
+
+function InterviewSection() {
+  return (
+    <div className="space-y-6">
+      <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-6 border border-amber-200">
+        <h2 className="text-2xl font-bold text-amber-900 mb-2">面经库</h2>
+        <p className="text-amber-700 mb-4">
+          匿名分享面试经验，了解企业面试的真实侧重点
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="bg-white/70 rounded-lg p-3 text-center">
+            <p className="text-2xl font-bold text-amber-700">200+</p>
+            <p className="text-xs text-amber-600">面试样本</p>
+          </div>
+          <div className="bg-white/70 rounded-lg p-3 text-center">
+            <p className="text-2xl font-bold text-amber-700">50+</p>
+            <p className="text-xs text-amber-600">覆盖公司</p>
+          </div>
+          <div className="bg-white/70 rounded-lg p-3 text-center">
+            <p className="text-2xl font-bold text-amber-700">100+</p>
+            <p className="text-xs text-amber-600">覆盖岗位</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl p-6 border border-paper-200">
+        <div className="text-center py-8">
+          <Briefcase className="h-16 w-16 mx-auto mb-4 text-amber-400 opacity-50" />
+          <h3 className="text-xl font-bold text-ink-800 mb-2">查看完整面经库</h3>
+          <p className="text-ink-500 mb-6">
+            提交面试经验，查看公司面试维度分析，获取面试准备建议
+          </p>
+          <Link
+            href="/interview"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-amber-500 text-white rounded-lg font-medium hover:bg-amber-600 transition-colors"
+          >
+            前往面经库
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
       </div>
     </div>
   );

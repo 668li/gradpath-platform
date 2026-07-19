@@ -108,9 +108,11 @@ Button.displayName = "Button";
 export function Badge({
   children,
   color = "slate",
+  className,
 }: {
   children: ReactNode;
   color?: "slate" | "green" | "amber" | "red" | "blue" | "purple";
+  className?: string;
 }) {
   const colors: Record<string, string> = {
     slate: "bg-ink-100 text-ink-600",
@@ -125,6 +127,7 @@ export function Badge({
       className={cn(
         "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
         colors[color],
+        className,
       )}
     >
       {children}
