@@ -228,6 +228,7 @@ def get_tags(
     tag_rows = (
         db.query(
             func.jsonb_array_elements_text(KnowledgeArticle.tags).label("tag"),
+            func.count(),
         )
         .filter(
             KnowledgeArticle.category == CATEGORY,
@@ -237,7 +238,7 @@ def get_tags(
         .order_by(func.count().desc())
         .all()
     )
-    return [TagStat(tag=r.tag, count=r[0]) for r in tag_rows]
+    return [TagStat(tag=r[0], count=int(r[1])) for r in tag_rows]
 
 
 @router.get("/stats")
