@@ -53,48 +53,19 @@ interface NavItem {
 /** 根据是否为管理员生成导航项列表 */
 function getNavItems(isAdmin: boolean = false): NavItem[] {
   const items: NavItem[] = [
-    // ── 考研中心 ──
-    { href: "/kaoyan", label: "考研主页", icon: GraduationCap, section: "考研中心" },
-    { href: "/war-room?tab=grad", label: "院校情报", icon: School },
-    { href: "/kaoyan/compare", label: "院校对比", icon: Network },
-    { href: "/kaoyan/predict", label: "录取预测", icon: Target },
-    { href: "/kaoyan/mentors", label: "导师情报", icon: UserCheck },
-    { href: "/kaoyan/strategy", label: "备考策略", icon: BookOpen },
-    { href: "/study-plans", label: "学习计划", icon: Calendar },
-    { href: "/outcome-report", label: "上岸报告", icon: Trophy },
-    { href: "/explore", label: "就业探索", icon: Search },
+    // ── 核心功能 ──
+    { href: "/kaoyan", label: "考研工具", icon: GraduationCap, section: "核心功能" },
+    { href: "/war-room", label: "情报中心", icon: School },
 
-    // ── 职业决策 ──
-    { href: "/assessment", label: "评估测试", icon: Sparkles, section: "职业决策" },
-    { href: "/career-simulator", label: "职业路径模拟", icon: Compass },
-    { href: "/decision-lab", label: "决策实验室", icon: ClipboardList },
-    { href: "/war-room?tab=career", label: "求职情报", icon: Target },
-    { href: "/war-room?tab=civil", label: "考公情报", icon: Landmark },
-    { href: "/interview", label: "面经库", icon: Briefcase },
+    // ── 规划决策 ──
+    { href: "/career", label: "职业规划", icon: Compass, section: "规划决策" },
+    { href: "/growth", label: "成长追踪", icon: TrendingUp },
 
-    // ── 成长追踪 ──
-    { href: "/dashboard", label: "个人看板", icon: LayoutDashboard, section: "成长追踪" },
-    { href: "/skills", label: "技能树", icon: Network },
-    { href: "/retrospectives", label: "回顾", icon: History },
-    { href: "/growth-patterns", label: "成长模式", icon: TrendingUp },
-    { href: "/life-wheel", label: "人生平衡轮", icon: PieChart },
-    { href: "/life-design", label: "生活设计", icon: Compass },
-    { href: "/timeline", label: "时间线", icon: History },
-    { href: "/insights", label: "成长洞察", icon: TrendingUp },
-    { href: "/learning-methods", label: "学习方法", icon: Brain },
+    // ── 互动交流 ──
+    { href: "/community", label: "社区交流", icon: Users, section: "互动交流" },
 
-    // ── 社区交流 ──
-    { href: "/community", label: "社区", icon: Users, section: "社区交流" },
-    { href: "/mentors", label: "导师评价", icon: Award },
-    { href: "/chat", label: "AI 管家", icon: Bot },
-    { href: "/notifications", label: "通知", icon: Bell },
-    { href: "/search", label: "全局搜索", icon: Search },
-
-    // ── 个人中心 ──
-    { href: "/profile", label: "职业画像", icon: UserCircle, section: "个人中心" },
-    { href: "/decisions", label: "决策记录", icon: ClipboardList },
-    { href: "/learning-resources", label: "学习资源", icon: Library },
-    { href: "/achievements", label: "成就徽章", icon: Award },
+    // ── 我的 ──
+    { href: "/profile", label: "个人中心", icon: UserCircle, section: "我的" },
   ];
   if (isAdmin) {
     items.push({ href: "/knowledge", label: "知识库", icon: BookOpen, section: "管理后台" });
@@ -211,6 +182,14 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               {unread > 99 ? "99+" : unread}
             </span>
           )}
+        </Link>
+        <Link
+          href="/search"
+          onClick={onNavigate}
+          className="flex min-h-[44px] w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-ink-300 hover:bg-ink-700/40 hover:text-paper-100 transition-colors"
+        >
+          <Search className="h-[18px] w-[18px] text-ink-400" strokeWidth={1.8} />
+          搜索
         </Link>
         <div className="flex items-center gap-2.5 rounded-lg px-3 py-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500/20 text-sm font-semibold text-brand-300 ring-1 ring-brand-500/30">
