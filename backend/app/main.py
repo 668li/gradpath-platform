@@ -42,6 +42,7 @@ app = FastAPI(
         {"name": "AI 助手", "description": "AI 对话、知识库、智能推荐"},
         {"name": "爬虫管理", "description": "管理员爬虫调度与监控"},
         {"name": "数据管道", "description": "APScheduler 定时任务管理"},
+        {"name": "RAG", "description": "混合检索增强生成 — 关键词 + 语义搜索 200K+ 记录"},
     ],
 )
 
@@ -153,6 +154,7 @@ from app.api.decisions import router as decisions_router
 from app.api.employment import router as employment_router
 from app.api.events import router as events_router
 from app.api.export import router as export_router
+from app.api.export_v2 import router as export_v2_router
 from app.api.gamification import router as gamification_router
 from app.api.grad_intel import router as grad_intel_router
 from app.api.grad_visualization import router as grad_visualization_router
@@ -176,11 +178,15 @@ from app.api.skills import router as skills_router
 from app.api.streaks import router as streaks_router
 from app.api.study_plan import router as study_plan_router
 from app.api.learning_resource import router as learning_resource_router
+from app.api.learning_methods import router as learning_methods_router
 from app.api.skills_management import router as skills_management_router
 from app.api.bookmarks import router as bookmarks_router
 from app.api.comments import router as comments_router
 from app.api.recommendations import router as recommendations_router
 from app.api.notifications import router as notifications_router
+from app.api.rag_search import router as rag_search_router
+from app.api.school_analyst import router as school_analyst_router
+from app.api.school_compare import router as school_compare_router
 
 app.include_router(auth_router)
 app.include_router(decisions_router)
@@ -225,6 +231,7 @@ app.include_router(kaoyan_news_router)
 # 学习规划与资源
 app.include_router(study_plan_router)
 app.include_router(learning_resource_router)
+app.include_router(learning_methods_router)
 # Skill 管理（6 个项目专用 skill）
 app.include_router(skills_management_router)
 # 爬虫管理（管理员专用）
@@ -239,6 +246,14 @@ app.include_router(comments_router)
 app.include_router(recommendations_router)
 # 通知系统
 app.include_router(notifications_router)
+# 上岸报告
+from app.api.outcome_report import router as outcome_report_router
+app.include_router(outcome_report_router)
+# RAG Search (hybrid keyword + semantic)
+app.include_router(rag_search_router)
+# AI 院校分析师 & 院校对比工具
+app.include_router(school_analyst_router)
+app.include_router(school_compare_router)
 # Metrics endpoint
 app.include_router(metrics_router)
 # Monitor API
@@ -249,6 +264,12 @@ app.include_router(search_router)
 # AI Agent (unified endpoint: DB + web search + LLM)
 from app.api.ai_agent import router as ai_agent_router
 app.include_router(ai_agent_router)
+# Data Freshness Engine
+from app.api.data_freshness import router as data_freshness_router
+app.include_router(data_freshness_router)
+# Career Path Simulator
+from app.api.career_simulator import router as career_simulator_router
+app.include_router(career_simulator_router)
 
 # AI 增强功能
 from app.api.ai_enhanced import router as ai_enhanced_router
@@ -257,6 +278,22 @@ from app.api.rag_admin_api import router as rag_admin_router
 app.include_router(ai_enhanced_router)
 app.include_router(analytics_router)
 app.include_router(rag_admin_router)
+
+# AI 智能学习计划
+from app.api.ai_study_plan import router as ai_study_plan_router
+app.include_router(ai_study_plan_router)
+# 录取预测 & 社区评分
+from app.api.admission_predict import router as admission_predict_router
+from app.api.community_rating import router as community_rating_router
+app.include_router(admission_predict_router)
+app.include_router(community_rating_router)
+
+# 数据导出 V2 (院校报告/职业报告/个人报告/数据导出)
+app.include_router(export_v2_router)
+
+# 可用性测试：反馈收集
+from app.api.feedback import router as feedback_router
+app.include_router(feedback_router)
 
 
 # fastapi-mcp 暂时禁用（递归问题）
