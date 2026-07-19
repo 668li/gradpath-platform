@@ -246,9 +246,9 @@ try:
             db.close()
 
     mcp_server = mcp
-    # 挂载 SSE endpoint: /sse
-    app.mount("/sse", mcp.sse_app())
-    logger.info("MCP server 已挂载到 /sse (SSE transport)")
+    # 挂载 MCP SSE: /mcp/sse (SSE stream), /mcp/messages (MCP protocol)
+    app.mount("/mcp", mcp.sse_app())
+    logger.info("MCP server 已挂载: /mcp/sse (SSE), /mcp/messages (MCP)")
 except ImportError:
     mcp_server = None
     logger.info("mcp 库未安装，跳过 MCP server")
