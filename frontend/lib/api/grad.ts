@@ -46,9 +46,9 @@ export const gradIntelApi = {
   getPositioningHistory: () =>
     request<PositioningResponse[]>("/api/grad-intel/positioning/history"),
   // 暗知识
-  getDarkKnowledge: (stage?: string) =>
-    request<DarkKnowledgeResponse[]>(
-      `/api/grad-intel/dark-knowledge/list${buildQuery({ stage })}`,
+  getDarkKnowledge: (params?: { stage?: string; page?: number; page_size?: number }) =>
+    request<any>(
+      `/api/grad-intel/dark-knowledge/list${buildQuery((params as Record<string, string | number | undefined | null>) || {})}`,
     ),
   getDarkKnowledgeStages: () =>
     request<DarkKnowledgeStage[]>("/api/grad-intel/dark-knowledge/stages"),
@@ -102,6 +102,86 @@ export const gradIntelApi = {
     ),
   getSchoolSummary: (university_name: string) =>
     request<GradSchoolDataSummary>(`/api/grad-intel/schools/${encodeURIComponent(university_name)}/summary`),
+};
+
+// ===== AI 院校分析师 =====
+export interface DimensionScore {
+  score: number;
+  description: string;
+}
+
+export interface SixDimensionRadar {
+  admission_difficulty: DimensionScore;
+  first_choice_protection: DimensionScore;
+  transfer_friendliness: DimensionScore;
+  score_suppression_risk: DimensionScore;
+  info_transparency: DimensionScore;
+  cost_effectiveness: DimensionScore;
+}
+
+export interface ScorelineTrendItem {
+  year: number;
+  score_line: number | null;
+  competition_ratio: string | null;
+}
+
+export interface AnalystReportRequest {
+  school_name: string;
+  major: string;
+}
+
+export interface AnalystReportResponse {
+  school_name: string;
+  major: string;
+  six_dimension_radar: SixDimensionRadar;
+  scoreline_trend: ScorelineTrendItem[];
+  dark_knowledge_highlights: string[];
+  similar_schools: string[];
+  recommendation: string;
+  summary: string;
+}
+
+// ===== 院校对比工具 =====
+export interface CompareSchoolItem {
+  name: string;
+  major: string;
+}
+
+export interface CompareRequest {
+  schools: CompareSchoolItem[];
+  user_score: number;
+}
+
+export interface SchoolAnalysis {
+  school_name: string;
+  major: string;
+  six_dimension_radar: SixDimensionRadar;
+  scoreline_trend: ScorelineTrendItem[];
+  recommendation: string;
+  match_score: number;
+}
+
+export interface CompareResponse {
+  schools: SchoolAnalysis[];
+  radar_comparison: Array<{ name: string; scores: Record<string, number> }>;
+  recommendation_summary: { reach: string[]; target: string[]; safe: string[] };
+  ai_summary: string;
+}
+
+export const schoolAnalystApi = {
+  getReport: (body: AnalystReportRequest) =>
+    request<AnalystReportResponse>("/api/school-analyst/report", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+};
+
+export const schoolCompareApi = {
+  compare: (body: CompareRequest) =>
+    request<CompareResponse>("/api/school-compare/compare", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
 };
 
 // ===== 考研可视化 =====

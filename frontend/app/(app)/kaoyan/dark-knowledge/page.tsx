@@ -24,78 +24,56 @@ const IMPORTANCE_MAP: Record<string, { label: string; color: string; icon: typeo
   low: { label: "了解", color: "bg-gray-100 text-gray-600", icon: CheckCircle },
 };
 
-interface DarkKnowledgeItem {
-  id: string;
-  title: string;
-  content: string;
-  stage: string;
-  category: string;
-  importance: string;
-  tags: string[];
-  common_misconception?: string;
-  actionable_advice?: string;
-  verification_method?: string;
-}
+const PAGE_SIZE = 20;
 
 export default function KaoyanDarkKnowledgePage() {
   const toast = useToast();
-  const [allItems, setAllItems] = useState<DarkKnowledgeItem[]>([]);
-  const [items, setItems] = useState<DarkKnowledgeItem[]>([]);
+  const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [stage, setStage] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const PAGE_SIZE = 20;
 
-  const load = useCallback(() => {
+  const load = useCallback((targetPage: number, targetStage: string) => {
     setLoading(true);
-    setPage(1);
+    const params: Record<string, any> = { page: targetPage, page_size: PAGE_SIZE };
+    if (targetStage) params.stage = targetStage;
     gradIntelApi
-      .getDarkKnowledge(stage || undefined)
+      .getDarkKnowledge(params)
       .then((d: any) => {
-        const raw = Array.isArray(d) ? d : (d.items || []);
-        setAllItems(raw);
-        setTotal(raw.length);
-        setItems(raw.slice(0, PAGE_SIZE));
+        const raw = d.items || (Array.isArray(d) ? d : []);
+        const totalCount = d.total || raw.length;
+        setItems(raw);
+        setTotal(totalCount);
       })
       .catch(() => toast.push("加载暗知识失败", "error"))
       .finally(() => setLoading(false));
-  }, [stage, toast]);
+  }, [toast]);
 
-  // Client-side search + pagination
-  useEffect(() => {
-    const q = search.toLowerCase();
-    const filtered = q
-      ? allItems.filter(
-          (item) =>
-            item.title.toLowerCase().includes(q) ||
-            item.content.toLowerCase().includes(q) ||
-            item.tags?.some((t) => t.toLowerCase().includes(q)),
-        )
-      : allItems;
-    setTotal(filtered.length);
+  useEffect(() => { load(page, stage); }, [page, stage, load]);
+
+  const handleStageChange = (s: string) => {
+    setStage(s);
     setPage(1);
-    setItems(filtered.slice(0, PAGE_SIZE));
-  }, [search, allItems]);
-
-  const goToPage = (p: number) => {
-    const q = search.toLowerCase();
-    const filtered = q
-      ? allItems.filter(
-          (item) =>
-            item.title.toLowerCase().includes(q) ||
-            item.content.toLowerCase().includes(q) ||
-            item.tags?.some((t) => t.toLowerCase().includes(q)),
-        )
-      : allItems;
-    setPage(p);
-    setItems(filtered.slice((p - 1) * PAGE_SIZE, p * PAGE_SIZE));
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    setSearch("");
   };
 
-  useEffect(() => { load(); }, [load]);
+  const handleSearch = (q: string) => {
+    setSearch(q);
+    setPage(1);
+  };
+
+  // Client-side filter on current page items
+  const filtered = search
+    ? items.filter(
+        (item) =>
+          item.title?.toLowerCase().includes(search.toLowerCase()) ||
+          item.content?.toLowerCase().includes(search.toLowerCase()) ||
+          item.tags?.some((t: string) => t.toLowerCase().includes(search.toLowerCase())),
+      )
+    : items;
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
@@ -123,8 +101,8 @@ export default function KaoyanDarkKnowledgePage() {
           <input
             type="text"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="搜索暗知识标题、内容、标签..."
+            onChange={(e) => handleSearch(e.target.value)}
+            placeholder="搜索当前页的标题、内容、标签..."
             className="w-full rounded-lg border border-paper-300 bg-white pl-9 pr-3 py-2 text-sm text-ink-800 placeholder:text-ink-400 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-100"
           />
         </div>
@@ -132,7 +110,7 @@ export default function KaoyanDarkKnowledgePage() {
           {STAGES.map((s) => (
             <button
               key={s.value}
-              onClick={() => setStage(s.value)}
+              onClick={() => handleStageChange(s.value)}
               className={cn(
                 "px-3 py-1.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap",
                 stage === s.value
@@ -149,14 +127,14 @@ export default function KaoyanDarkKnowledgePage() {
       {/* Content */}
       {loading ? (
         <ListSkeleton count={5} />
-      ) : items.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <EmptyState
           title={search ? `没有匹配"${search}"的暗知识` : "暂无暗知识"}
           description={search ? "换个关键词试试" : "换个阶段筛选试试"}
         />
       ) : (
         <div className="space-y-3">
-          {items.map((item) => {
+          {filtered.map((item: any) => {
             const imp = IMPORTANCE_MAP[item.importance] || IMPORTANCE_MAP.medium;
             const ImpIcon = imp.icon;
             const expanded = expandedId === item.id;
@@ -215,11 +193,11 @@ export default function KaoyanDarkKnowledgePage() {
         </div>
       )}
 
-      {/* Pagination */}
+      {/* Server-side Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
           <button
-            onClick={() => goToPage(page - 1)}
+            onClick={() => { setPage(page - 1); window.scrollTo({ top: 0, behavior: "smooth" }); }}
             disabled={page <= 1}
             className="px-3 py-1.5 rounded-lg text-sm border border-paper-300 disabled:opacity-30 hover:bg-paper-100"
           >
@@ -232,7 +210,7 @@ export default function KaoyanDarkKnowledgePage() {
             return (
               <button
                 key={p}
-                onClick={() => goToPage(p)}
+                onClick={() => { setPage(p); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                 className={cn(
                   "px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
                   p === page ? "bg-amber-500 text-white" : "border border-paper-300 hover:bg-paper-100",
@@ -243,10 +221,10 @@ export default function KaoyanDarkKnowledgePage() {
             );
           })}
           <span className="text-sm text-ink-500 mx-2">
-            {page}/{totalPages} 页
+            {page}/{totalPages} 页 · 共 {total.toLocaleString()} 条
           </span>
           <button
-            onClick={() => goToPage(page + 1)}
+            onClick={() => { setPage(page + 1); window.scrollTo({ top: 0, behavior: "smooth" }); }}
             disabled={page >= totalPages}
             className="px-3 py-1.5 rounded-lg text-sm border border-paper-300 disabled:opacity-30 hover:bg-paper-100"
           >
