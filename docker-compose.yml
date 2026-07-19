@@ -69,18 +69,16 @@ services:
     command: npm run dev
 
   n8n:
-    image: n8nio/n8n:1.31.0
+    image: n8nio/n8n:latest
     ports:
       - "5678:5678"
     environment:
-      N8N_BASIC_AUTH_ACTIVE: "true"
-      N8N_BASIC_AUTH_USER: admin
-      N8N_BASIC_AUTH_PASSWORD: gradpath
       N8N_HOST: localhost
       N8N_PORT: 5678
       N8N_PROTOCOL: http
       WEBHOOK_URL: http://localhost:5678/
       GENERIC_TIMEZONE: Asia/Shanghai
+      N8N_SECURE_COOKIE: "false"
     volumes:
       - n8n_data:/home/node/.n8n
     depends_on:
