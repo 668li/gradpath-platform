@@ -1,6 +1,7 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import {
   LayoutDashboard,
   GitBranch,
@@ -10,91 +11,164 @@ import {
   RotateCcw,
   Lightbulb,
   BookOpen,
-  ChevronRight,
+  Sparkles,
+  TrendingUp,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { growthPatternsApi } from "@/lib/api";
+import { Button } from "@/components/ui/form-controls";
+import { ListSkeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/empty";
+import { useToast } from "@/components/ui/toast";
 
-const tabs = [
-  { id: "dashboard", label: "个人看板", icon: LayoutDashboard, color: "text-blue-500", href: "/dashboard", desc: "总览你的成长数据、目标进度和关键指标" },
-  { id: "skills", label: "技能树", icon: GitBranch, color: "text-purple-500", href: "/skills", desc: "可视化技能掌握程度，发现能力短板与发展方向" },
-  { id: "life-wheel", label: "人生平衡轮", icon: Circle, color: "text-green-500", href: "/life-wheel", desc: "评估生活各维度的满意度，找到需要平衡的领域" },
-  { id: "life-design", label: "生活设计", icon: Palette, color: "text-pink-500", href: "/life-design", desc: "用设计思维重新规划你的生活，探索更多可能性" },
-  { id: "timeline", label: "时间线", icon: Clock, color: "text-amber-500", href: "/timeline", desc: "记录关键成长节点，回看你的发展轨迹" },
-  { id: "retrospectives", label: "回顾", icon: RotateCcw, color: "text-orange-500", href: "/retrospectives", desc: "定期复盘，总结经验教训，持续迭代自我" },
-  { id: "insights", label: "成长洞察", icon: Lightbulb, color: "text-cyan-500", href: "/insights", desc: "AI 驱动的成长分析，发现隐藏的模式和趋势" },
-  { id: "learning-methods", label: "学习方法", icon: BookOpen, color: "text-indigo-500", href: "/learning-methods", desc: "科学的学习策略与方法论，提升学习效率" },
+const tools = [
+  { label: "个人看板", icon: LayoutDashboard, href: "/dashboard", color: "text-blue-500", desc: "总览成长数据、目标进度和关键指标" },
+  { label: "技能树", icon: GitBranch, href: "/skills", color: "text-purple-500", desc: "可视化技能掌握程度，发现能力短板" },
+  { label: "人生平衡轮", icon: Circle, href: "/life-wheel", color: "text-green-500", desc: "评估生活各维满意度，找到需平衡领域" },
+  { label: "生活设计", icon: Palette, href: "/life-design", color: "text-pink-500", desc: "用设计思维重新规划生活" },
+  { label: "时间线", icon: Clock, href: "/timeline", color: "text-amber-500", desc: "记录关键成长节点，回看发展轨迹" },
+  { label: "回顾", icon: RotateCcw, href: "/retrospectives", color: "text-orange-500", desc: "定期复盘，持续迭代自我" },
+  { label: "成长洞察", icon: Lightbulb, href: "/insights", color: "text-cyan-500", desc: "AI 驱动的成长分析" },
+  { label: "学习方法", icon: BookOpen, href: "/learning-methods", color: "text-indigo-500", desc: "科学学习策略，提升效率" },
 ];
 
 export default function GrowthPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const activeTab = searchParams.get("tab") || "dashboard";
-  const current = tabs.find((t) => t.id === activeTab) || tabs[0];
+  const toast = useToast();
+  const [loading, setLoading] = useState(true);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [result, setResult] = useState<any>(null);
+  const [history, setHistory] = useState<any[]>([]);
 
-  const handleTabChange = (id: string) => {
-    router.push(`/growth?tab=${id}`);
+  const load = useCallback(() => {
+    setLoading(true);
+    Promise.allSettled([growthPatternsApi.analyze(), growthPatternsApi.history()])
+      .then(([a, h]) => {
+        if (a.status === "fulfilled") setResult(a.value);
+        if (h.status === "fulfilled") setHistory(h.value.items || []);
+      })
+      .catch(() => toast.push("加载成长档案失败", "error"))
+      .finally(() => setLoading(false));
+  }, [toast]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const reanalyze = () => {
+    setAnalyzing(true);
+    growthPatternsApi
+      .analyze()
+      .then((r) => {
+        setResult(r);
+        return growthPatternsApi.history();
+      })
+      .then((h) => setHistory(h.items || []))
+      .catch(() => toast.push("分析失败", "error"))
+      .finally(() => setAnalyzing(false));
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-ink-800 mb-2">成长追踪</h1>
-        <p className="text-ink-500">记录、分析、优化你的个人成长路径</p>
-      </div>
-
-      {/* Tab 切换 */}
-      <div className="flex gap-2 mb-8 border-b border-paper-200 overflow-x-auto">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => handleTabChange(tab.id)}
-              className={cn(
-                "flex items-center gap-2 px-6 py-3 font-medium transition-all border-b-2 whitespace-nowrap",
-                activeTab === tab.id
-                  ? `${tab.color} border-current`
-                  : "text-ink-400 border-transparent hover:text-ink-600"
-              )}
-            >
-              <Icon className="h-5 w-5" />
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* 内容区域 - 卡片链接 */}
-      <div className="mt-8 max-w-2xl">
-        <div className="bg-white rounded-xl border border-paper-200 p-6 hover:shadow-md transition-shadow">
-          <div className="flex items-start gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-paper-50">
-              <current.icon className={cn("h-7 w-7", current.color)} strokeWidth={1.8} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h2 className="font-display text-xl font-bold text-ink-800 mb-2">{current.label}</h2>
-              <p className="text-sm text-ink-500 leading-relaxed mb-4">{current.desc}</p>
-              <a
-                href={current.href}
-                className={cn(
-                  "inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-white transition-opacity hover:opacity-90",
-                  current.id === "dashboard" && "bg-blue-600",
-                  current.id === "skills" && "bg-purple-600",
-                  current.id === "life-wheel" && "bg-green-600",
-                  current.id === "life-design" && "bg-pink-600",
-                  current.id === "timeline" && "bg-amber-600",
-                  current.id === "retrospectives" && "bg-orange-600",
-                  current.id === "insights" && "bg-cyan-600",
-                  current.id === "learning-methods" && "bg-indigo-600",
-                )}
-              >
-                前往
-                <ChevronRight className="h-4 w-4" />
-              </a>
-            </div>
+    <div className="space-y-6">
+      <header className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-500/15 text-brand-500">
+            <TrendingUp className="h-6 w-6" strokeWidth={2} />
+          </div>
+          <div>
+            <h1 className="font-display text-2xl font-semibold tracking-tight text-ink-800">
+              成长档案
+            </h1>
+            <p className="text-sm text-ink-500">
+              聚合你的成长模式，跨期对比，发现隐藏规律。
+            </p>
           </div>
         </div>
-      </div>
+        <Button size="sm" onClick={reanalyze} loading={analyzing}>
+          <Sparkles className="h-4 w-4" /> 重新分析
+        </Button>
+      </header>
+
+      {loading ? (
+        <ListSkeleton count={4} />
+      ) : (
+        <>
+          {/* 成长得分 + 历史曲线 */}
+          <section className="grid gap-4 md:grid-cols-3">
+            <div className="card flex flex-col items-center justify-center p-6">
+              <p className="text-sm text-ink-500">当前成长得分</p>
+              <p className="font-display text-5xl font-bold text-brand-600">
+                {result?.growth_score ?? 0}
+              </p>
+              <p className="mt-1 text-xs text-ink-400">
+                发现 {result?.patterns?.length ?? 0} 个模式
+              </p>
+            </div>
+            <div className="card col-span-2 p-5">
+              <p className="mb-3 text-sm font-medium text-ink-600">成长得分历史</p>
+              {history.length === 0 ? (
+                <p className="text-sm text-ink-400">暂无历史，点击「重新分析」生成首个快照。</p>
+              ) : (
+                <div className="flex items-end gap-2 h-32">
+                  {history.map((h) => (
+                    <div key={h.id} className="flex flex-1 flex-col items-center gap-1">
+                      <div
+                        className="w-full rounded-t bg-brand-500/70"
+                        style={{ height: `${Math.max(8, h.growth_score)}%` }}
+                        title={`${h.period}: ${h.growth_score}`}
+                      />
+                      <span className="text-[10px] text-ink-400">{h.period}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+
+          {/* 发现的模式 */}
+          <section className="card p-5">
+            <h2 className="mb-3 flex items-center gap-2 font-semibold text-ink-800">
+              <Lightbulb className="h-5 w-5 text-brand-500" /> 发现的成长模式
+            </h2>
+            {result?.patterns?.length > 0 ? (
+              <div className="space-y-3">
+                {result.patterns.map((p: any, i: number) => (
+                  <div key={i} className="rounded-lg border border-paper-200 p-3">
+                    <p className="font-medium text-ink-800">{p.title}</p>
+                    <p className="mt-1 text-sm text-ink-500">{p.description}</p>
+                    {p.suggestion && (
+                      <p className="mt-1 text-sm text-brand-700">→ {p.suggestion}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                title="数据不足"
+                description="多记录技能、决策与复盘后，管家会揭示你的成长模式。"
+              />
+            )}
+          </section>
+
+          {/* 成长工具 */}
+          <section>
+            <h2 className="mb-3 text-sm font-medium text-ink-600">成长工具</h2>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {tools.map((t) => (
+                <Link
+                  key={t.href}
+                  href={t.href}
+                  className="card flex items-start gap-3 p-4 transition-shadow hover:shadow-md"
+                >
+                  <t.icon className={`h-6 w-6 ${t.color}`} strokeWidth={1.8} />
+                  <div>
+                    <p className="text-sm font-medium text-ink-800">{t.label}</p>
+                    <p className="text-xs text-ink-400">{t.desc}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        </>
+      )}
     </div>
   );
 }

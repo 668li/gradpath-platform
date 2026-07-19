@@ -19,6 +19,7 @@ import {
   Landmark,
   Briefcase,
   LayoutDashboard,
+  Bot,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth";
@@ -40,6 +41,7 @@ function getNavItems(): NavItem[] {
     { href: "/employment", label: "就业中心", icon: Briefcase },
     // 通用工具
     { href: "/dashboard", label: "个人看板", icon: LayoutDashboard, section: "工具" },
+    { href: "/ai-butler", label: "AI管家", icon: Bot },
     { href: "/career", label: "职业规划", icon: Compass },
     // 互动
     { href: "/community", label: "社区交流", icon: Users, section: "互动" },

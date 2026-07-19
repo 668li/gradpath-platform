@@ -4,7 +4,7 @@ from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.models.post import Post, PostTopicType
 from app.models.user import User
@@ -21,6 +21,7 @@ def _to_response(post: Post, author: User | None = None) -> PostResponse:
         id=str(post.id),
         topic_type=post.topic_type.value if hasattr(post.topic_type, "value") else post.topic_type,
         topic_key=post.topic_key,
+        title=post.title,
         content=post.content,
         author_id=str(post.user_id),
         author_name=author_name,
@@ -77,7 +78,8 @@ def list_posts(
     total = base_q.count()
     offset = (page - 1) * page_size
     top_posts = (
-        base_q.order_by(Post.created_at.desc())
+        base_q.options(selectinload(Post.replies))
+        .order_by(Post.created_at.desc())
         .offset(offset)
         .limit(page_size)
         .all()
@@ -147,6 +149,7 @@ def create_post(db: Session, user: User, data: PostCreate) -> PostResponse:
     post = Post(
         topic_type=tt,
         topic_key=data.topic_key,
+        title=data.title,
         content=data.content,
         user_id=user.id,
         parent_id=parent_id,
@@ -213,3 +216,45 @@ def delete_post(db: Session, user: User, post_id: str) -> None:
 
     db.delete(post)
     db.commit()
+
+
+def list_public_posts(
+    db: Session,
+    page: int = 1,
+    page_size: int = 20,
+    topic_type: str | None = None,
+) -> PostListResponse:
+    """公开信息流：跨主题的最新顶层帖（社区广场）。"""
+    q = db.query(Post).filter(Post.parent_id.is_(None))
+    if topic_type:
+        try:
+            q = q.filter(Post.topic_type == PostTopicType(topic_type))
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"无效的 topic_type: {topic_type}",
+            )
+    total = q.count()
+    offset = (page - 1) * page_size
+    top_posts = (
+        q.order_by(Post.created_at.desc())
+        .offset(offset)
+        .limit(page_size)
+        .all()
+    )
+    user_ids = {p.user_id for p in top_posts}
+    users = (
+        db.query(User).filter(User.id.in_(list(user_ids))).all()
+        if user_ids else []
+    )
+    user_map = {u.id: (u.nickname or u.username or u.name) for u in users}
+
+    items = []
+    for p in top_posts:
+        resp = _to_response(p)
+        resp.author_name = user_map.get(p.user_id, "未知用户")
+        items.append(resp)
+
+    return PostListResponse(
+        items=items, total=total, page=page, page_size=page_size
+    )

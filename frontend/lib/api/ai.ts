@@ -130,3 +130,21 @@ export const proactiveInsightsApi = {
   markAsRead: (id: string) =>
     request<void>(`/api/proactive-insights/${id}/read`, { method: "PATCH" }),
 };
+
+// ===== AI 管家（统一功能：扫描我的数据 + 个性化对话）=====
+export const aiButlerApi = {
+  /** 扫描当前用户全量数据，返回结构化画像 + 行动清单 */
+  scan: () => request<any>("/api/ai/scan"),
+  /** 个性化 Agent 对话（注入用户上下文） */
+  chat: (message: string, webSearch = true) =>
+    request<any>("/api/ai/chat", {
+      method: "POST",
+      body: JSON.stringify({ message, web_search: webSearch }),
+    }),
+  /** 通用 Agent（原 /api/ai/agent） */
+  ask: (question: string, searchWeb = true) =>
+    request<any>("/api/ai/agent", {
+      method: "POST",
+      body: JSON.stringify({ question, search_web: searchWeb }),
+    }),
+};

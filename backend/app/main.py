@@ -161,6 +161,7 @@ from app.api.grad_visualization import router as grad_visualization_router
 from app.api.career_intel import router as career_intel_router
 from app.api.civil_service_intel import router as civil_service_intel_router
 from app.api.experience_posts import router as experience_posts_router
+from app.api.follow import router as follow_router
 from app.api.growth_patterns import router as growth_patterns_router
 from app.api.interview import router as interview_router
 from app.api.kaoyan_news import router as kaoyan_news_router
@@ -199,6 +200,7 @@ app.include_router(community_router)
 app.include_router(interview_router)
 app.include_router(pipeline_router)
 app.include_router(posts_router)
+app.include_router(follow_router)
 app.include_router(ai_router)
 app.include_router(gamification_router)
 app.include_router(export_router)

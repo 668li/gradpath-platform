@@ -19,6 +19,8 @@ class User(UUIDMixin, TimestampMixin, Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
+    nickname: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    username: Mapped[str | None] = mapped_column(String(50), unique=True, nullable=True, index=True)
     current_stage: Mapped[UserStage | None] = mapped_column(Enum(UserStage), nullable=True)
     school: Mapped[str | None] = mapped_column(String(255), nullable=True)
     major: Mapped[str | None] = mapped_column(String(255), nullable=True)

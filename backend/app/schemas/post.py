@@ -15,6 +15,7 @@ class PostQuery(BaseModel):
 class PostCreate(BaseModel):
     topic_type: str
     topic_key: str = Field(..., max_length=500)
+    title: str | None = Field(None, max_length=200)
     content: str = Field(..., min_length=1, max_length=2000)
     parent_id: str | None = None
 
@@ -27,6 +28,7 @@ class PostResponse(BaseModel):
     id: str
     topic_type: str
     topic_key: str
+    title: str | None = None
     content: str
     author_id: str
     author_name: str

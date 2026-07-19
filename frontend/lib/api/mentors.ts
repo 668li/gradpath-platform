@@ -29,7 +29,8 @@ export const mentorsApi = {
 
 // ===== 护城河功能：成长模式智能 =====
 export const growthPatternsApi = {
-  analyze: () => request<GrowthPatternResponse>("/api/growth-patterns/analyze"),
+  analyze: () => request<any>("/api/growth-patterns/analyze"),
+  history: () => request<{ items: any[] }>("/api/growth-patterns/history"),
 };
 
 // ===== 考研导师评价系统 =====

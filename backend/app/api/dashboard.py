@@ -5,6 +5,7 @@ from app.core.deps import get_current_user
 from app.database import get_db
 from app.models.user import User
 from app.services.dashboard_service import get_overview, get_weekly_recap
+from app.services.personal_intel_service import get_personal_intel
 
 router = APIRouter(prefix="/api/dashboard", tags=["个人看板"])
 
@@ -12,6 +13,12 @@ router = APIRouter(prefix="/api/dashboard", tags=["个人看板"])
 @router.get("/overview")
 def overview(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     return get_overview(db, user.id)
+
+
+@router.get("/personal-intel")
+def personal_intel(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    """个人情报总览 — 跨库聚合用户全部信号，形成看板护城河。"""
+    return get_personal_intel(db, user.id)
 
 
 @router.get("/weekly-recap")

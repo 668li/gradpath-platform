@@ -89,6 +89,7 @@ export default function DashboardPage() {
   const [insightsSummary, setInsightsSummary] =
     useState<ProactiveInsightSummary | null>(null);
   const [lifeWheel, setLifeWheel] = useState<LifeWheelSnapshot | null>(null);
+  const [personalIntel, setPersonalIntel] = useState<any>(null);
   const [generating, setGenerating] = useState(false);
   const [coreLoading, setCoreLoading] = useState(true);
   const [secondaryLoading, setSecondaryLoading] = useState(true);
@@ -123,11 +124,12 @@ export default function DashboardPage() {
     let alive = true;
     (async () => {
       try {
-        const [profileRes, insightsRes, lifeWheelRes, recapRes] = await Promise.allSettled([
+        const [profileRes, insightsRes, lifeWheelRes, recapRes, personalIntelRes] = await Promise.allSettled([
           gamificationApi.profile(),
           proactiveInsightsApi.getSummary(),
           lifeWheelApi.getLatest(),
           dashboardApi.weeklyRecap(),
+          dashboardApi.personalIntel(),
         ]);
         if (alive) {
           if (profileRes.status === "fulfilled") setGameProfile(profileRes.value);
@@ -137,6 +139,7 @@ export default function DashboardPage() {
           }
           if (lifeWheelRes.status === "fulfilled") setLifeWheel(lifeWheelRes.value);
           if (recapRes.status === "fulfilled") setWeeklyRecap(recapRes.value);
+          if (personalIntelRes.status === "fulfilled") setPersonalIntel(personalIntelRes.value);
         }
       } finally {
         if (alive) setSecondaryLoading(false);
@@ -236,6 +239,90 @@ export default function DashboardPage() {
           hint={data.latest_retrospective?.title ?? "暂无"}
         />
       </div>
+
+      {/* 个人情报总览（护城河：跨库聚合） */}
+      {personalIntel && (
+        <section className="card p-5 animate-fade-in">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="flex items-center gap-2 text-lg font-semibold text-ink-800">
+              <Sparkles className="h-5 w-5 text-brand-500" />
+              个人情报总览
+            </h2>
+            <span className="text-xs text-ink-400">
+              档案完整度 {personalIntel.profile_completeness}%
+            </span>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-3">
+            {/* 三大方向进度 */}
+            <div>
+              <p className="mb-2 text-sm font-medium text-ink-600">三大方向进度</p>
+              <div className="space-y-2">
+                {personalIntel.directions?.map((d: any) => (
+                  <div key={d.name}>
+                    <div className="flex justify-between text-xs text-ink-500">
+                      <span>{d.name}</span>
+                      <span>{d.progress}%</span>
+                    </div>
+                    <div className="mt-1 h-2 rounded-full bg-paper-200">
+                      <div
+                        className="h-2 rounded-full bg-brand-500"
+                        style={{ width: `${d.progress}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 竞争力雷达（简易条） */}
+            <div>
+              <p className="mb-2 text-sm font-medium text-ink-600">竞争力雷达</p>
+              <div className="space-y-2">
+                {personalIntel.competitiveness_radar?.map((r: any) => (
+                  <div key={r.axis}>
+                    <div className="flex justify-between text-xs text-ink-500">
+                      <span>{r.axis}</span>
+                      <span>{r.value}</span>
+                    </div>
+                    <div className="mt-1 h-2 rounded-full bg-paper-200">
+                      <div
+                        className="h-2 rounded-full bg-emerald-500"
+                        style={{ width: `${r.value}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 待办风险 */}
+            <div>
+              <p className="mb-2 flex items-center gap-1 text-sm font-medium text-ink-600">
+                <AlertTriangle className="h-4 w-4 text-amber-500" />
+                待办风险
+              </p>
+              {personalIntel.risks?.length > 0 ? (
+                <ul className="space-y-1.5 text-sm text-ink-600">
+                  {personalIntel.risks.map((risk: string, i: number) => (
+                    <li key={i} className="flex gap-1.5">
+                      <span className="text-amber-500">•</span>
+                      <span>{risk}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-emerald-600">暂无显著风险，保持节奏 🎉</p>
+              )}
+              {personalIntel.profile_gaps?.length > 0 && (
+                <p className="mt-2 text-xs text-ink-400">
+                  待补全档案：{personalIntel.profile_gaps.join("、")}
+                </p>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* 连续打卡 */}
       {streakStats && (

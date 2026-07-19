@@ -26,6 +26,7 @@ class Post(UUIDMixin, TimestampMixin, Base):
         Enum(PostTopicType), nullable=False
     )
     topic_key: Mapped[str] = mapped_column(String(500), nullable=False, index=True)
+    title: Mapped[str | None] = mapped_column(String(200), nullable=True)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     user_id: Mapped[UUID] = mapped_column(
         ForeignKey("users.id"), nullable=False, index=True

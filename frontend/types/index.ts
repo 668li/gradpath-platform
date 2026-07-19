@@ -492,6 +492,7 @@ export interface PostListResponse {
 export interface PostCreate {
   topic_type: string;
   topic_key: string;
+  title?: string | null;
   content: string;
   parent_id?: string | null;
 }
@@ -710,18 +711,30 @@ export interface ReminderItem {
 }
 
 // ===== 职业测评 =====
+// 测评类型
+export type AssessmentType = "holland" | "mbti" | "big_five" | "disc";
+
+// 测评选项
 export interface QuestionOption {
   value: string;
   label: string;
 }
 
-export interface AssessmentQuestion {
+// 题目
+export interface Question {
   id: string;
   question: string;
   options: QuestionOption[];
 }
 
-export interface AssessmentResult {
+// 测评提交
+export interface AssessmentSubmit {
+  assessment_type: AssessmentType;
+  answers: Record<string, string>;
+}
+
+// 测评响应
+export interface AssessmentResponse {
   id: string;
   assessment_type: string;
   result_code: string;
@@ -890,4 +903,1145 @@ export interface ProactiveInsightSummary {
   unread_count: number;
   total_count: number;
   latest_insights: ProactiveInsight[];
+}
+
+// ===== 护城河功能：人生设计引擎 =====
+export interface AuditQuestion {
+  question: string;
+  answer: string;
+}
+
+export interface SprintGoal {
+  title: string;
+  measurable_result: string;
+  deadline?: string | null;
+}
+
+export interface SprintCreate {
+  name: string;
+  primary_domain: string;
+  maintenance_domains: string[];
+  start_date: string;
+  end_date: string;
+  goals: SprintGoal[];
+  vision_statement?: string | null;
+  audit_summary?: string | null;
+  audit_qa: AuditQuestion[];
+}
+
+export interface SprintResponse {
+  id: string;
+  name: string;
+  primary_domain: string;
+  maintenance_domains: string[];
+  start_date: string;
+  end_date: string;
+  status: string;
+  goals: SprintGoal[];
+  vision_statement: string | null;
+  audit_summary: string | null;
+  audit_qa: AuditQuestion[];
+  review_notes: string | null;
+  ai_review: string | null;
+  created_at: string;
+}
+
+export interface WeeklyReviewCreate {
+  sprint_id?: string | null;
+  week_start: string;
+  week_end: string;
+  planned_actions?: string | null;
+  actual_actions?: string | null;
+  what_worked?: string | null;
+  what_didnt_work?: string | null;
+  next_week_plan?: string | null;
+  energy_level?: number | null;
+}
+
+export interface WeeklyReviewResponse {
+  id: string;
+  sprint_id: string | null;
+  week_start: string;
+  week_end: string;
+  planned_actions: string | null;
+  actual_actions: string | null;
+  what_worked: string | null;
+  what_didnt_work: string | null;
+  next_week_plan: string | null;
+  energy_level: number | null;
+  ai_analysis: string | null;
+  created_at: string;
+}
+
+// ===== 护城河功能：决策深度分析 =====
+export interface Criterion {
+  criterion: string;
+  weight: number;
+}
+
+export interface MatrixOption {
+  name: string;
+  scores: Record<string, number>;
+}
+
+export interface PremortemReason {
+  reason: string;
+  category: string;
+}
+
+export interface Safeguard {
+  category: string;
+  action: string;
+}
+
+export interface DecisionAnalysisCreate {
+  title: string;
+  decision_id?: string | null;
+  options: string[];
+  premortem_reasons: PremortemReason[];
+  premortem_categories: string[];
+  safeguards: Safeguard[];
+  criteria: Criterion[];
+  matrix_scores: Record<string, unknown>[];
+  red_team_questions: string[];
+  red_team_answers: string[];
+}
+
+export interface DecisionAnalysisResponse {
+  id: string;
+  decision_id: string | null;
+  title: string;
+  options: string[];
+  premortem_reasons: PremortemReason[];
+  premortem_categories: string[];
+  safeguards: Safeguard[];
+  criteria: Criterion[];
+  matrix_scores: Record<string, unknown>[];
+  weighted_results: { name: string; total: number; details: Record<string, number> }[];
+  winner: string | null;
+  red_team_questions: string[];
+  red_team_answers: string[];
+  ai_analysis: string | null;
+  recommendation: string | null;
+  created_at: string;
+}
+
+export interface MatrixComputeRequest {
+  criteria: Criterion[];
+  matrix_scores: MatrixOption[];
+}
+
+export interface PremortemAnalyzeRequest {
+  title: string;
+  options: string[];
+  premortem_reasons: string[];
+}
+
+export interface RedTeamGenerateRequest {
+  title: string;
+  options: string[];
+  reasoning?: string | null;
+}
+
+// ===== 护城河功能：AI 导师人格库 =====
+export interface MentorPersona {
+  code: string;
+  name: string;
+  icon: string;
+  tagline: string;
+}
+
+export interface MentorAdviceRequest {
+  persona_code: string;
+  question: string;
+  user_context?: string;
+}
+
+export interface MultiPerspectiveRequest {
+  persona_codes: string[];
+  question: string;
+  user_context?: string;
+}
+
+export interface MentorPerspectiveResult {
+  persona_code: string;
+  persona_name: string;
+  persona_icon: string;
+  advice: string;
+}
+
+export interface MultiPerspectiveResponse {
+  perspectives: MentorPerspectiveResult[];
+}
+
+// ===== 护城河功能：成长模式智能 =====
+export interface GrowthPattern {
+  pattern_type: string;
+  title: string;
+  description: string;
+  data_points: Record<string, unknown>;
+  suggestion: string;
+}
+
+export interface GrowthPatternResponse {
+  patterns: GrowthPattern[];
+  calibration_score: number;
+  total_data_points: number;
+}
+
+// ===== 考研作战室：院校情报 =====
+export type DiscriminationLevel = "none" | "mild" | "moderate" | "severe" | "unknown";
+export type ProtectionLevel = "yes" | "no" | "partial" | "unknown";
+export type SuppressionLevel = "none" | "mild" | "moderate" | "severe" | "unknown";
+export type TransferLevel = "friendly" | "neutral" | "unfriendly" | "unknown";
+
+export interface IntelQueryRequest {
+  school_name: string;
+  major_name: string;
+}
+
+export interface AIIntelResult {
+  school_name: string;
+  major_name: string;
+  school_tier: string;
+  background_discrimination: DiscriminationLevel;
+  first_choice_protection: ProtectionLevel;
+  admission_ratio: string | null;
+  push_ratio: string | null;
+  actual_quota: number | null;
+  score_line: number | null;
+  retest_weight: string | null;
+  retest_format: string | null;
+  score_suppression: SuppressionLevel;
+  transfer_friendly: TransferLevel;
+  insider_notes: string | null;
+  data_sources: string[];
+  tags: string[];
+  ai_summary: string;
+}
+
+export interface IntelSaveRequest {
+  school_name: string;
+  major_name: string;
+  school_tier?: string;
+  year?: number;
+  background_discrimination?: DiscriminationLevel;
+  first_choice_protection?: ProtectionLevel;
+  admission_ratio?: string | null;
+  push_ratio?: string | null;
+  actual_quota?: number | null;
+  score_line?: number | null;
+  retest_weight?: string | null;
+  retest_format?: string | null;
+  score_suppression?: SuppressionLevel;
+  transfer_friendly?: TransferLevel;
+  insider_notes?: string | null;
+  data_sources?: string[];
+  tags?: string[];
+  ai_summary?: string | null;
+  is_ai_generated?: boolean;
+}
+
+export interface IntelResponse {
+  id: string;
+  school_name: string;
+  major_name: string;
+  school_tier: string;
+  year: number;
+  background_discrimination: DiscriminationLevel;
+  first_choice_protection: ProtectionLevel;
+  admission_ratio: string | null;
+  push_ratio: string | null;
+  actual_quota: number | null;
+  score_line: number | null;
+  retest_weight: string | null;
+  retest_format: string | null;
+  score_suppression: SuppressionLevel;
+  transfer_friendly: TransferLevel;
+  insider_notes: string | null;
+  data_sources: string[];
+  tags: string[];
+  ai_summary: string | null;
+  is_ai_generated: boolean;
+  created_at: string;
+}
+
+// ===== 考研作战室：自我定位 =====
+export interface PositioningCreateRequest {
+  undergrad_tier: string;
+  undergrad_major?: string | null;
+  gpa?: number | null;
+  gpa_rank?: string | null;
+  english_level?: string | null;
+  english_score?: number | null;
+  research_experience?: string | null;
+  competitions?: string[];
+  awards?: string | null;
+  internships?: string | null;
+  target_school?: string | null;
+  target_major?: string | null;
+  target_region?: string | null;
+  other_info?: string | null;
+}
+
+export interface SchoolRecommendation {
+  name: string;
+  major: string;
+  tier: string;
+  reason: string;
+  probability: number;
+}
+
+export interface PositioningResponse {
+  id: string;
+  undergrad_tier: string;
+  undergrad_major: string | null;
+  gpa: number | null;
+  gpa_rank: string | null;
+  english_level: string | null;
+  english_score: number | null;
+  research_experience: string | null;
+  competitions: string[];
+  awards: string | null;
+  internships: string | null;
+  target_school: string | null;
+  target_major: string | null;
+  target_region: string | null;
+  other_info: string | null;
+  ai_assessment: string | null;
+  reach_schools: SchoolRecommendation[];
+  target_schools: SchoolRecommendation[];
+  safety_schools: SchoolRecommendation[];
+  success_probability: number | null;
+  risk_warnings: string[];
+  created_at: string;
+}
+
+// ===== 考研作战室：暗知识 =====
+export interface DarkKnowledgeResponse {
+  id: string;
+  stage: string;
+  category: string;
+  title: string;
+  content: string;
+  importance: "critical" | "high" | "medium";
+  common_misconception: string | null;
+  actionable_advice: string | null;
+  verification_method: string | null;
+  tags: string[];
+  sort_order: number;
+}
+
+export interface DarkKnowledgeStage {
+  stage: string;
+  stage_name: string;
+  count: number;
+}
+
+// ===== 考研作战室：研招网真实数据 =====
+export interface GradYanzhaoProgram {
+  id: string;
+  university_name: string;
+  department: string;
+  major_name: string;
+  degree_type: string;
+  research_directions: string[];
+  enrollment_quota: number | null;
+  tuition: string | null;
+  duration: string | null;
+  study_mode: string | null;
+  admission_requirements: string | null;
+  contact_info: string | null;
+  source_url: string | null;
+  year: number;
+  data_sources: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GradScorelineRecord {
+  id: string;
+  university_name: string;
+  major_name: string;
+  degree_type: string | null;
+  year: number;
+  total_score_line: number | null;
+  politics_score: number | null;
+  foreign_language_score: number | null;
+  business_1_score: number | null;
+  business_2_score: number | null;
+  enrollment_count: number | null;
+  application_count: number | null;
+  adjustment_count: number | null;
+  data_sources: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GradScorelineTrend {
+  university_name: string;
+  major_name: string;
+  degree_type: string | null;
+  years: number[];
+  total_score_lines: (number | null)[];
+  politics_scores: (number | null)[];
+  foreign_language_scores: (number | null)[];
+  business_1_scores: (number | null)[];
+  business_2_scores: (number | null)[];
+  application_counts: (number | null)[];
+  enrollment_counts: (number | null)[];
+}
+
+export interface GradAdjustmentInfo {
+  id: string;
+  university_name: string;
+  department: string;
+  major_name: string;
+  degree_type: string | null;
+  original_major_range: string | null;
+  adjustment_quota: number | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  deadline: string | null;
+  source_url: string | null;
+  year: number;
+  status: string;
+  data_sources: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GradSchoolDataSummary {
+  university_name: string;
+  program_count: number;
+  latest_year: number | null;
+  latest_scoreline: number | null;
+  scoreline_trend: "up" | "down" | "stable";
+  has_adjustment: boolean;
+  adjustment_count: number;
+}
+
+// ===== AI 推荐系统 =====
+export interface SchoolRecommendation {
+  name: string;
+  province: string;
+  level: string;
+  match_score: number;
+  match_reasons: string[];
+  score_line: number | null;
+  adjustment_available: boolean;
+}
+
+export interface AdjustmentRecommendation {
+  university_name: string;
+  department: string;
+  major_name: string;
+  match_score: number;
+  match_reasons: string[];
+  adjustment_quota: number | null;
+  deadline: string | null;
+  contact_email: string | null;
+  contact_phone: string | null;
+  source_url: string | null;
+}
+
+export interface DarkKnowledgeRecommendation {
+  id: string;
+  stage: string;
+  category: string;
+  title: string;
+  content: string;
+  importance: string;
+  common_misconception: string | null;
+  actionable_advice: string | null;
+  relevance_score: number;
+}
+
+export interface RecommendationResponse<T> {
+  items: T[];
+  total: number;
+}
+
+// ===== 求职作战室：公司情报 =====
+export type OvertimeLevel = "none" | "mild" | "moderate" | "severe" | "unknown";
+export type LayoffLevel = "none" | "low" | "moderate" | "high" | "unknown";
+export type PromotionLevel = "good" | "fair" | "poor" | "unknown";
+export type EducationBarrierLevel = "none" | "mild" | "moderate" | "severe" | "unknown";
+export type SalaryHonestyLevel = "honest" | "exaggerated" | "misleading" | "unknown";
+export type CultureLevel = "good" | "neutral" | "toxic" | "unknown";
+
+export interface CompanyIntelQueryRequest {
+  company_name: string;
+  position_name: string;
+}
+
+export interface AICompanyIntelResult {
+  company_name: string;
+  position_name: string;
+  industry: string;
+  overtime_intensity: OvertimeLevel;
+  layoff_risk: LayoffLevel;
+  promotion_outlook: PromotionLevel;
+  education_barrier: EducationBarrierLevel;
+  salary_honesty: SalaryHonestyLevel;
+  culture_fit: CultureLevel;
+  salary_range: string | null;
+  actual_salary: string | null;
+  interview_style: string | null;
+  interview_rounds: number | null;
+  turnover_rate: string | null;
+  growth_path: string | null;
+  insider_notes: string | null;
+  risk_warnings: string[];
+  data_sources: string[];
+  tags: string[];
+  ai_summary: string;
+}
+
+export interface CompanyIntelSaveRequest {
+  company_name: string;
+  position_name: string;
+  industry?: string;
+  overtime_intensity?: OvertimeLevel;
+  layoff_risk?: LayoffLevel;
+  promotion_outlook?: PromotionLevel;
+  education_barrier?: EducationBarrierLevel;
+  salary_honesty?: SalaryHonestyLevel;
+  culture_fit?: CultureLevel;
+  salary_range?: string | null;
+  actual_salary?: string | null;
+  interview_style?: string | null;
+  interview_rounds?: number | null;
+  turnover_rate?: string | null;
+  growth_path?: string | null;
+  insider_notes?: string | null;
+  risk_warnings?: string[];
+  data_sources?: string[];
+  tags?: string[];
+  ai_summary?: string | null;
+  is_ai_generated?: boolean;
+}
+
+export interface CompanyIntelResponse {
+  id: string;
+  company_name: string;
+  position_name: string;
+  industry: string;
+  overtime_intensity: OvertimeLevel;
+  layoff_risk: LayoffLevel;
+  promotion_outlook: PromotionLevel;
+  education_barrier: EducationBarrierLevel;
+  salary_honesty: SalaryHonestyLevel;
+  culture_fit: CultureLevel;
+  salary_range: string | null;
+  actual_salary: string | null;
+  interview_style: string | null;
+  interview_rounds: number | null;
+  turnover_rate: string | null;
+  growth_path: string | null;
+  insider_notes: string | null;
+  risk_warnings: string[];
+  data_sources: string[];
+  tags: string[];
+  ai_summary: string | null;
+  is_ai_generated: boolean;
+  created_at: string;
+}
+
+// ===== 求职作战室：求职定位 =====
+export interface CareerPositioningCreateRequest {
+  education_level: string;
+  school_tier?: string;
+  major?: string | null;
+  graduation_year?: number | null;
+  gpa?: number | null;
+  internships?: string | null;
+  skills?: string[];
+  competitions?: string[];
+  projects?: string | null;
+  certifications?: string | null;
+  target_industry?: string | null;
+  target_position?: string | null;
+  target_city?: string | null;
+  salary_expectation?: string | null;
+  other_info?: string | null;
+}
+
+export interface CompanyRecommendation {
+  name: string;
+  position: string;
+  tier: string;
+  reason: string;
+  probability: number;
+}
+
+export interface SkillGap {
+  skill: string;
+  importance: string;
+  suggestion: string;
+}
+
+export interface CareerPositioningResponse {
+  id: string;
+  education_level: string;
+  school_tier: string;
+  major: string | null;
+  graduation_year: number | null;
+  gpa: number | null;
+  internships: string | null;
+  skills: string[];
+  competitions: string[];
+  projects: string | null;
+  certifications: string | null;
+  target_industry: string | null;
+  target_position: string | null;
+  target_city: string | null;
+  salary_expectation: string | null;
+  other_info: string | null;
+  ai_assessment: string | null;
+  competitiveness_score: number | null;
+  reach_companies: CompanyRecommendation[];
+  target_companies: CompanyRecommendation[];
+  safety_companies: CompanyRecommendation[];
+  salary_estimate: string | null;
+  skill_gaps: SkillGap[];
+  risk_warnings: string[];
+  created_at: string;
+}
+
+// ===== 求职作战室：求职暗知识 =====
+export interface CareerDarkKnowledgeResponse {
+  id: string;
+  stage: string;
+  category: string;
+  title: string;
+  content: string;
+  importance: "critical" | "high" | "medium";
+  common_misconception: string | null;
+  actionable_advice: string | null;
+  verification_method: string | null;
+  tags: string[];
+  sort_order: number;
+}
+
+export interface CareerDarkKnowledgeStage {
+  stage: string;
+  stage_name: string;
+  count: number;
+}
+
+// ===== 考公作战室：岗位情报 =====
+export type RealCompetitionLevel = "low" | "medium" | "high" | "extreme" | "unknown";
+export type TreatmentLevel = "low" | "medium" | "high" | "top" | "unknown";
+export type PromotionSpeedLevel = "slow" | "medium" | "fast" | "unknown";
+export type WorkloadLevel = "light" | "moderate" | "heavy" | "extreme" | "unknown";
+export type RadishPostLevel = "unlikely" | "possible" | "likely" | "unknown";
+export type ServicePeriodLevel = "yes" | "no" | "unknown";
+
+export interface PostIntelQueryRequest {
+  region: string;
+  department: string;
+  post_name: string;
+  exam_type?: string;
+}
+
+export interface AIPostIntelResult {
+  region: string;
+  department: string;
+  post_name: string;
+  exam_type: string;
+  real_competition: RealCompetitionLevel;
+  treatment_level: TreatmentLevel;
+  promotion_speed: PromotionSpeedLevel;
+  workload: WorkloadLevel;
+  radish_post: RadishPostLevel;
+  service_period: ServicePeriodLevel;
+  admission_ratio: string | null;
+  cutoff_score: number | null;
+  salary_estimate: string | null;
+  housing_fund: string | null;
+  bonus_info: string | null;
+  department_tier: string | null;
+  work_content: string | null;
+  insider_notes: string | null;
+  risk_warnings: string[];
+  data_sources: string[];
+  tags: string[];
+  ai_summary: string;
+}
+
+export interface PostIntelSaveRequest {
+  region: string;
+  department: string;
+  post_name: string;
+  exam_type?: string;
+  real_competition?: RealCompetitionLevel;
+  treatment_level?: TreatmentLevel;
+  promotion_speed?: PromotionSpeedLevel;
+  workload?: WorkloadLevel;
+  radish_post?: RadishPostLevel;
+  service_period?: ServicePeriodLevel;
+  admission_ratio?: string | null;
+  cutoff_score?: number | null;
+  salary_estimate?: string | null;
+  housing_fund?: string | null;
+  bonus_info?: string | null;
+  department_tier?: string | null;
+  work_content?: string | null;
+  insider_notes?: string | null;
+  risk_warnings?: string[];
+  data_sources?: string[];
+  tags?: string[];
+  ai_summary?: string | null;
+  is_ai_generated?: boolean;
+}
+
+export interface PostIntelResponse {
+  id: string;
+  region: string;
+  department: string;
+  post_name: string;
+  exam_type: string;
+  real_competition: RealCompetitionLevel;
+  treatment_level: TreatmentLevel;
+  promotion_speed: PromotionSpeedLevel;
+  workload: WorkloadLevel;
+  radish_post: RadishPostLevel;
+  service_period: ServicePeriodLevel;
+  admission_ratio: string | null;
+  cutoff_score: number | null;
+  salary_estimate: string | null;
+  housing_fund: string | null;
+  bonus_info: string | null;
+  department_tier: string | null;
+  work_content: string | null;
+  insider_notes: string | null;
+  risk_warnings: string[];
+  data_sources: string[];
+  tags: string[];
+  ai_summary: string | null;
+  is_ai_generated: boolean;
+  created_at: string;
+}
+
+// ===== 考公作战室：考公定位 =====
+export interface CivilServicePositioningCreateRequest {
+  education_level: string;
+  school_tier?: string;
+  major?: string | null;
+  is_party_member?: boolean;
+  student_leader?: boolean;
+  has_honors?: boolean;
+  is_fresh_graduate?: boolean;
+  target_region?: string | null;
+  target_type?: string | null;
+  family_background?: string | null;
+  other_info?: string | null;
+}
+
+export interface CivilServicePostRecommendation {
+  region: string;
+  department: string;
+  post: string;
+  reason: string;
+  probability: number;
+}
+
+export interface CivilServicePositioningResponse {
+  id: string;
+  education_level: string;
+  school_tier: string;
+  major: string | null;
+  is_party_member: boolean;
+  student_leader: boolean;
+  has_honors: boolean;
+  is_fresh_graduate: boolean;
+  target_region: string | null;
+  target_type: string | null;
+  family_background: string | null;
+  other_info: string | null;
+  ai_assessment: string | null;
+  competitiveness_score: number | null;
+  eligible_for_xuandiao: boolean;
+  reach_posts: CivilServicePostRecommendation[];
+  target_posts: CivilServicePostRecommendation[];
+  safety_posts: CivilServicePostRecommendation[];
+  preparation_timeline: string | null;
+  risk_warnings: string[];
+  created_at: string;
+}
+
+// ===== 考公作战室：考公暗知识 =====
+export interface CivilServiceDarkKnowledgeResponse {
+  id: string;
+  stage: string;
+  category: string;
+  title: string;
+  content: string;
+  importance: "critical" | "high" | "medium" | "low";
+  common_misconception: string | null;
+  actionable_advice: string | null;
+  verification_method: string | null;
+  tags: string[];
+  sort_order: number;
+}
+
+export interface CivilServiceDarkKnowledgeStage {
+  stage: string;
+  stage_name: string;
+  count: number;
+}
+
+// ===== 爬虫管理后台 =====
+export type CrawlerCategory = "grad" | "civil" | "career" | "reports";
+export type CrawlerLastStatus = "success" | "failed" | "running" | null;
+export type CrawlerRunStatus = "success" | "failed" | "running";
+
+export interface CrawlerInfo {
+  name: string;
+  category: CrawlerCategory;
+  description: string;
+  last_run_at: string | null;
+  last_status: CrawlerLastStatus;
+  last_items_stored: number | null;
+}
+
+export interface CrawlerRun {
+  id: string;
+  source_name: string;
+  category: string;
+  status: CrawlerRunStatus;
+  started_at: string;
+  finished_at: string | null;
+  duration_seconds: number | null;
+  items_fetched: number;
+  items_stored: number;
+  items_duplicates: number;
+  error_count: number;
+  error_message: string | null;
+  log: string;
+}
+
+// ===== 考研导师评价系统 =====
+export interface MentorResponse {
+  id: string;
+  name: string;
+  university: string;
+  department: string;
+  title: string;
+  research_directions: string[];
+  paper_count: number;
+  project_count: number;
+  citation_count: number;
+  h_index: number | null;
+  academic_homepage: string | null;
+  google_scholar_url: string | null;
+  cnki_url: string | null;
+  enrollment_status: string;
+  enrollment_directions: string[];
+  contact_email: string | null;
+  contact_phone: string | null;
+  avg_rating: number;
+  review_count: number;
+  rating_academic: number;
+  rating_guidance: number;
+  rating_relationship: number;
+  rating_funding: number;
+  rating_workload: number;
+  rating_career: number;
+  source_url: string | null;
+  source_platform: string;
+  is_verified: boolean;
+  tags: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MentorListResponse {
+  items: MentorResponse[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface MentorReviewResponse {
+  id: string;
+  mentor_id: string;
+  user_id: string;
+  is_anonymous: boolean;
+  anonymous_id: string | null;
+  rating_academic: number;
+  rating_guidance: number;
+  rating_relationship: number;
+  rating_funding: number;
+  rating_workload: number;
+  rating_career: number;
+  overall_rating: number;
+  title: string;
+  content: string;
+  pros: string[];
+  cons: string[];
+  review_status: string;
+  like_count: number;
+  is_helpful: boolean;
+  submitted_at: string;
+  is_verified: boolean;
+  verification_proof: string | null;
+  reviewer_identity: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MentorReviewListResponse {
+  items: MentorReviewResponse[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+// ===== Skill 管理 =====
+export type SkillCategory = "builder" | "advisor" | "generator";
+
+export interface SkillInfo {
+  name: string;
+  display_name: string;
+  description: string;
+  trigger_words: string[];
+  use_cases: string[];
+  capabilities: string[];
+  limitations: string[];
+  category: SkillCategory;
+  is_active: boolean;
+}
+
+export interface SkillListResponse {
+  items: SkillInfo[];
+  total: number;
+}
+
+export interface MentorReviewCreate {
+  is_anonymous?: boolean;
+  anonymous_id?: string;
+  rating_academic: number;
+  rating_guidance: number;
+  rating_relationship: number;
+  rating_funding: number;
+  rating_workload: number;
+  rating_career: number;
+  title: string;
+  content: string;
+  pros?: string[];
+  cons?: string[];
+  reviewer_identity?: string;
+}
+
+// ===== 考研社区交流系统 =====
+export interface ExperiencePostResponse {
+  id: string;
+  user_id: string;
+  title: string;
+  summary: string | null;
+  content: string;
+  tags: string[];
+  category: string;
+  view_count: number;
+  like_count: number;
+  comment_count: number;
+  is_pinned: boolean;
+  is_anonymous: boolean;
+  status: string;
+  source_platform: string;
+  source_url: string | null;
+  external_view_count: number;
+  external_like_count: number;
+  is_verified: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ExperiencePostCreate {
+  title: string;
+  summary?: string | null;
+  content: string;
+  tags?: string[];
+  category?: string;
+  is_anonymous?: boolean;
+  source_platform?: string;
+  source_url?: string | null;
+}
+
+export interface ExperiencePostUpdate {
+  title?: string;
+  summary?: string | null;
+  content?: string;
+  tags?: string[];
+  category?: string;
+  is_anonymous?: boolean;
+  source_url?: string | null;
+}
+
+export interface QAAnswerResponse {
+  id: string;
+  qa_id: string;
+  user_id: string;
+  content: string;
+  is_best: boolean;
+  like_count: number;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface QAAnswerCreate {
+  content: string;
+}
+
+export interface QAResponse {
+  id: string;
+  user_id: string;
+  title: string;
+  content: string;
+  tags: string[];
+  status: string;
+  view_count: number;
+  answer_count: number;
+  is_resolved: boolean;
+  best_answer_id: string | null;
+  answers: QAAnswerResponse[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface QACreate {
+  title: string;
+  content: string;
+  tags?: string[];
+}
+
+export interface QAUpdate {
+  title?: string;
+  content?: string;
+  tags?: string[];
+}
+
+// ===== 学习计划 =====
+export interface StudyPlan {
+  id: string;
+  user_id: string;
+  title: string;
+  start_date: string | null;
+  end_date: string | null;
+  subjects: string[] | null;
+  completed: boolean;
+  progress: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StudyPlanCreate {
+  title: string;
+  start_date?: string | null;
+  end_date?: string | null;
+  subjects?: string[] | null;
+  completed?: boolean;
+  progress?: number;
+}
+
+export interface StudyPlanUpdate {
+  title?: string;
+  start_date?: string | null;
+  end_date?: string | null;
+  subjects?: string[] | null;
+  completed?: boolean;
+  progress?: number;
+}
+
+// ===== 学习资源 =====
+export interface LearningResource {
+  id: string;
+  user_id: string;
+  title: string;
+  url: string | null;
+  resource_type: string;
+  subject: string;
+  difficulty: string;
+  description: string | null;
+  tags: string[] | null;
+  rating: number;
+  is_free: boolean;
+  view_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LearningResourceCreate {
+  title: string;
+  url?: string | null;
+  resource_type: string;
+  subject: string;
+  difficulty: string;
+  description?: string | null;
+  tags?: string[] | null;
+  rating?: number;
+  is_free?: boolean;
+}
+
+export interface LearningResourceUpdate {
+  title?: string;
+  url?: string | null;
+  resource_type?: string;
+  subject?: string;
+  difficulty?: string;
+  description?: string | null;
+  tags?: string[] | null;
+  rating?: number;
+  is_free?: boolean;
+}
+
+// ===== 考研资讯 =====
+export interface KaoyanNewsResponse {
+  id: string;
+  title: string;
+  summary: string | null;
+  content: string | null;
+  source_platform: string;
+  source_url: string;
+  published_at: string | null;
+  crawled_at: string;
+  category: string;
+  tags: string[];
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KaoyanNewsListResponse {
+  items: KaoyanNewsResponse[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface CommentResponse {
+  id: string;
+  post_id: string;
+  user_id: string;
+  content: string;
+  parent_id: string | null;
+  like_count: number;
+  is_deleted: boolean;
+  author_nickname: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CommentCreate {
+  post_id: string;
+  content: string;
+  parent_id?: string | null;
+}
+
+export interface CommentListResponse {
+  items: CommentResponse[];
+  total: number;
 }
