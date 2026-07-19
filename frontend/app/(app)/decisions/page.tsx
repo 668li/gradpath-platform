@@ -315,30 +315,38 @@ export default function DecisionsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [list, s] = await Promise.all([
+      const [listResult, statsResult] = await Promise.allSettled([
         decisionsApi.list({ page, page_size: PAGE_SIZE }),
         decisionsApi.stats(),
       ]);
-      setDecisions(list.items);
-      setTotal(list.total);
-      setStats(s);
+      if (listResult.status === "fulfilled") {
+        setDecisions(listResult.value.items);
+        setTotal(listResult.value.total);
+      }
+      if (statsResult.status === "fulfilled") {
+        setStats(statsResult.value);
+      }
     } catch (err) {
       toast.push(err instanceof Error ? err.message : "加载失败", "error");
     } finally {
       setLoading(false);
     }
-  }, [toast, page]);
+  }, [page]);
 
   const loadJournal = useCallback(async () => {
     setPendingLoading(true);
     setReviewedLoading(true);
     try {
-      const [pending, rev] = await Promise.all([
+      const [pendingResult, revResult] = await Promise.allSettled([
         decisionJournalApi.getPendingReviews(),
         decisionJournalApi.getReviewed(),
       ]);
-      setPendingReviews(pending);
-      setReviewed(rev);
+      if (pendingResult.status === "fulfilled") {
+        setPendingReviews(pendingResult.value);
+      }
+      if (revResult.status === "fulfilled") {
+        setReviewed(revResult.value);
+      }
     } catch (err) {
       toast.push(
         err instanceof Error ? err.message : "加载回溯数据失败",
@@ -348,7 +356,7 @@ export default function DecisionsPage() {
       setPendingLoading(false);
       setReviewedLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     load();
