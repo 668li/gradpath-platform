@@ -11,6 +11,7 @@ import {
   UserPlus,
   UserCheck,
   Bell,
+  Search,
 } from "lucide-react";
 import { postsApi, commentApi, followApi, communityApi, employmentApi } from "@/lib/api";
 import { Button, Input, Textarea } from "@/components/ui/form-controls";
@@ -98,6 +99,7 @@ function FeedTab({ currentUser }: { currentUser: any }) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [posting, setPosting] = useState(false);
+  const [searchText, setSearchText] = useState("");
   const PAGE_SIZE = 10;
 
   const load = useCallback(() => {
@@ -140,8 +142,18 @@ function FeedTab({ currentUser }: { currentUser: any }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-ink-500">共 {total} 条讨论</p>
+      <div className="flex items-center justify-between gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-400" />
+          <input
+            type="text"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            placeholder="搜索帖子标题或内容..."
+            className="w-full rounded-lg border border-paper-300 bg-white pl-9 pr-3 py-2 text-sm text-ink-800 placeholder:text-ink-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
+          />
+        </div>
+        <p className="text-sm text-ink-500 whitespace-nowrap">共 {total} 条</p>
         <Button size="sm" onClick={() => setShowComposer((s) => !s)}>
           <Plus className="h-4 w-4" /> 发帖
         </Button>
@@ -176,7 +188,9 @@ function FeedTab({ currentUser }: { currentUser: any }) {
         <EmptyState title="还没有讨论" description="成为第一个发帖的人吧！" />
       ) : (
         <div className="space-y-3">
-          {posts.map((p) => (
+          {posts
+            .filter((p) => !searchText || (p.title?.toLowerCase().includes(searchText.toLowerCase())) || p.content.toLowerCase().includes(searchText.toLowerCase()))
+            .map((p) => (
             <PostCard key={p.id} post={p} currentUser={currentUser} onChanged={load} />
           ))}
         </div>

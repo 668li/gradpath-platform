@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { learningResourceApi } from "@/lib/api";
 import { LearningResource, LearningResourceCreate } from "@/types";
 import { toast } from "sonner";
-import { Plus, Trash2, ExternalLink, Star } from "lucide-react";
+import { Plus, Trash2, ExternalLink, Star, Search } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty";
 import { ListSkeleton } from "@/components/ui/skeleton";
 
@@ -35,6 +35,7 @@ export default function LearningResourcesPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [filterSubject, setFilterSubject] = useState<string>("all");
   const [filterDifficulty, setFilterDifficulty] = useState<string>("all");
+  const [searchText, setSearchText] = useState<string>("");
   const [formData, setFormData] = useState<LearningResourceCreate>({
     title: "",
     url: "",
@@ -126,7 +127,17 @@ export default function LearningResourcesPage() {
       </div>
 
       {/* 筛选器 */}
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3 items-center">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-400" />
+          <input
+            type="text"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            placeholder="搜索资源名称..."
+            className="w-full rounded-lg border border-ink-200 bg-white pl-9 pr-3 py-2 text-sm text-ink-800 placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-brand-500/30"
+          />
+        </div>
         <select
           value={filterSubject}
           onChange={(e) => setFilterSubject(e.target.value)}
@@ -253,7 +264,9 @@ export default function LearningResourcesPage() {
         />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {resources.map((resource) => (
+          {resources
+            .filter((r) => !searchText || r.title.toLowerCase().includes(searchText.toLowerCase()) || r.description?.toLowerCase().includes(searchText.toLowerCase()))
+            .map((resource) => (
             <div key={resource.id} className="rounded-xl border border-ink-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between mb-3">
                 <h3 className="text-lg font-semibold text-ink-800 leading-tight">{resource.title}</h3>
