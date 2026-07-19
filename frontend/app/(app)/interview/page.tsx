@@ -224,6 +224,29 @@ export default function InterviewPage() {
         </div>
       )}
 
+      {/* 公司面经库 - 浏览入口 */}
+      {companies.length > 0 && (
+        <div className="card">
+          <h2 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+            <Briefcase className="h-4 w-4 text-brand-500" />
+            公司面经库
+            <span className="text-xs font-normal text-slate-400">（点击公司查看聚合数据）</span>
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            {companies.map((c) => (
+              <Link
+                key={c.name}
+                href={`/interview/result?c=${encodeURIComponent(btoa(unescape(encodeURIComponent(c.name))))}`}
+                className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 hover:border-brand-300 hover:bg-brand-50 transition-colors group"
+              >
+                <span className="text-sm font-medium text-slate-700 group-hover:text-brand-700 truncate">{c.name}</span>
+                <span className="ml-2 flex-shrink-0 rounded-full bg-brand-100 px-2 py-0.5 text-xs font-medium text-brand-700">{c.count}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* 提交表单 */}
       <div className="card">
         <h2 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">

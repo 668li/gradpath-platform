@@ -197,6 +197,7 @@ function Tab2Salary() {
   const toast = useToast();
   const [salaries, setSalaries] = useState<SalaryBenchmark[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchText, setSearchText] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -210,6 +211,15 @@ function Tab2Salary() {
       }
     })();
   }, [toast]);
+
+  const filtered = searchText
+    ? salaries.filter(
+        (s) =>
+          s.position?.toLowerCase().includes(searchText.toLowerCase()) ||
+          s.company?.toLowerCase().includes(searchText.toLowerCase()) ||
+          s.city?.toLowerCase().includes(searchText.toLowerCase()),
+      )
+    : salaries;
 
   const chartData = useMemo(() => {
     const grouped: Record<string, { min: number; max: number; median: number; count: number }> = {};
@@ -242,10 +252,28 @@ function Tab2Salary() {
     );
   }
 
+  const filteredChart = searchText
+    ? chartData.filter(
+        (d) =>
+          d.position.toLowerCase().includes(searchText.toLowerCase()),
+      )
+    : chartData;
+
   return (
     <div className="space-y-6">
+      {/* 搜索 */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-400" />
+        <input
+          type="text"
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          placeholder="搜索岗位、公司、城市..."
+          className="w-full rounded-lg border border-paper-300 bg-white pl-9 pr-3 py-2 text-sm text-ink-800 placeholder:text-ink-400 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-100"
+        />
+      </div>
       {/* 薪资分布图 */}
-      {chartData.length > 0 && (
+      {filteredChart.length > 0 && (
         <div className="bg-white rounded-xl border border-paper-200 p-5">
           <h3 className="font-bold text-ink-800 mb-4">岗位薪资分布（单位：k）</h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -278,7 +306,7 @@ function Tab2Salary() {
               </tr>
             </thead>
             <tbody>
-              {salaries.slice(0, 50).map((s) => (
+              {filtered.slice(0, 50).map((s) => (
                 <tr key={s.id} className="border-b border-paper-100 hover:bg-paper-50/50">
                   <td className="px-4 py-3 font-medium text-ink-800">{s.company}</td>
                   <td className="px-4 py-3 text-ink-600">{s.position}</td>
