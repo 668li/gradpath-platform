@@ -4,40 +4,21 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  LayoutDashboard,
-  Telescope,
+  GraduationCap,
+  Users,
   Compass,
-  History,
-  Network,
-  PieChart,
-  ClipboardList,
+  TrendingUp,
+  UserCircle,
   LogOut,
   Menu,
   X,
-  GraduationCap,
-  Users,
-  Database,
-  TrendingUp,
-  Award,
-  Bot,
-  Target,
-  BookOpen,
-  UserCircle,
   Rocket,
-  Scale,
-  Sparkles,
-  Brain,
-  Radar,
-  Briefcase,
-  Landmark,
-  Bug,
-  School,
-  UserCheck,
-  Calendar,
-  Library,
-  Search,
-  Trophy,
   Bell,
+  Search,
+  School,
+  Landmark,
+  Briefcase,
+  LayoutDashboard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth";
@@ -45,34 +26,26 @@ import { useAuthStore } from "@/stores/auth";
 interface NavItem {
   href: string;
   label: string;
-  icon: typeof LayoutDashboard;
+  icon: typeof GraduationCap;
   /** 可选分组标题：用于在导航中渲染 section header */
   section?: string;
 }
 
-/** 根据是否为管理员生成导航项列表 */
-function getNavItems(isAdmin: boolean = false): NavItem[] {
+/** 导航项列表 */
+function getNavItems(): NavItem[] {
   const items: NavItem[] = [
-    // ── 核心功能 ──
-    { href: "/kaoyan", label: "考研工具", icon: GraduationCap, section: "核心功能" },
-    { href: "/war-room", label: "情报中心", icon: School },
-
-    // ── 规划决策 ──
-    { href: "/career", label: "职业规划", icon: Compass, section: "规划决策" },
-    { href: "/growth", label: "成长追踪", icon: TrendingUp },
-
-    // ── 互动交流 ──
-    { href: "/community", label: "社区交流", icon: Users, section: "互动交流" },
-
-    // ── 我的 ──
+    // 三大方向
+    { href: "/kaoyan", label: "考研中心", icon: GraduationCap, section: "方向" },
+    { href: "/civil-service", label: "考公中心", icon: Landmark },
+    { href: "/employment", label: "就业中心", icon: Briefcase },
+    // 通用工具
+    { href: "/dashboard", label: "个人看板", icon: LayoutDashboard, section: "工具" },
+    { href: "/career", label: "职业规划", icon: Compass },
+    // 互动
+    { href: "/community", label: "社区交流", icon: Users, section: "互动" },
+    // 我的
     { href: "/profile", label: "个人中心", icon: UserCircle, section: "我的" },
   ];
-  if (isAdmin) {
-    items.push({ href: "/knowledge", label: "知识库", icon: BookOpen, section: "管理后台" });
-    items.push({ href: "/pipeline", label: "数据管道", icon: Database });
-    items.push({ href: "/admin/crawlers", label: "爬虫管理", icon: Bug });
-    items.push({ href: "/admin/skills", label: "Skill 工具箱", icon: Sparkles });
-  }
   return items;
 }
 
@@ -81,7 +54,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
-  const navItems = getNavItems(user?.is_admin);
+  const navItems = getNavItems();
 
   const [unread, setUnread] = useState(0);
   useEffect(() => {
