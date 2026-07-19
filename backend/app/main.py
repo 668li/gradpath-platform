@@ -140,6 +140,122 @@ async def request_logging_middleware(request: Request, call_next):
 from app.api import auto_discover_routers
 auto_discover_routers(app)
 
+# ----------------------------------------------------------------------
+# MCP Server — 暴露核心 GradPath 工具给 AI 代理
+# fastapi-mcp 有递归 bug，改用 SSE transport 手动注册核心工具
+# ----------------------------------------------------------------------
+try:
+    from mcp.server.fastmcp import FastMCP
+
+    mcp = FastMCP("GradPath", instructions="GradPath 职业规划平台 — 考研/考公/就业一体化工具集")
+
+    @mcp.tool()
+    async def search_knowledge(query: str) -> str:
+        """搜索 GradPath 知识库（经验帖/QA/知识文章/暗知识）"""
+        from app.api.ai_agent import _db_search
+        results = _db_search(query, limit=5)
+        if not results:
+            return f"未找到与「{query}」相关的内容"
+        lines = []
+        for r in results:
+            lines.append(f"[{r['type']}] {r['title']}: {r['content'][:150]}")
+        return "\n".join(lines)
+
+    @mcp.tool()
+    async def search_web(query: str) -> str:
+        """搜索互联网获取最新信息"""
+        from app.services.web_search import WebSearchService
+        ws = WebSearchService()
+        results = await ws.search(query, max_results=5)
+        if not results:
+            return f"未找到关于「{query}」的网络结果"
+        lines = []
+        for r in results:
+            lines.append(f"{r.title}\n  {r.url}\n  {r.snippet[:100]}")
+        return "\n".join(lines)
+
+    @mcp.tool()
+    async def get_user_profile(user_id: str) -> str:
+        """获取用户职业画像（技能/规划/决策/测评）"""
+        from uuid import UUID
+        from app.database import SessionLocal
+        from app.services.chat_service import build_user_context
+        db = SessionLocal()
+        try:
+            return build_user_context(db, UUID(user_id))
+        finally:
+            db.close()
+
+    @mcp.tool()
+    async def get_school_intel(school_name: str) -> str:
+        """查询考研院校情报"""
+        from app.database import SessionLocal
+        from app.models.grad_intel import GradSchoolIntel
+        db = SessionLocal()
+        try:
+            schools = db.query(GradSchoolIntel).filter(
+                GradSchoolIntel.school_name.contains(school_name)
+            ).limit(3).all()
+            if not schools:
+                return f"未找到「{school_name}」的情报"
+            lines = []
+            for s in schools:
+                lines.append(f"{s.school_name} ({s.province}) — {s.major_name}: 分数线{s.min_scoreline or 'N/A'}")
+            return "\n".join(lines)
+        finally:
+            db.close()
+
+    @mcp.tool()
+    async def get_salary_benchmark(industry: str, city: str = "") -> str:
+        """查询就业薪资基准数据"""
+        from app.database import SessionLocal
+        from app.models.market_data import MarketData
+        db = SessionLocal()
+        try:
+            q = db.query(MarketData).filter(MarketData.industry.contains(industry))
+            if city:
+                q = q.filter(MarketData.city.contains(city))
+            items = q.limit(5).all()
+            if not items:
+                return f"未找到{industry}行业的薪资数据"
+            lines = []
+            for i in items:
+                lines.append(f"{i.company or i.industry} — {i.position or ''}: ¥{i.salary_min or 0}-{i.salary_max or 0}")
+            return "\n".join(lines)
+        finally:
+            db.close()
+
+    @mcp.tool()
+    async def get_civil_service_intel(region: str = "") -> str:
+        """查询考公岗位情报"""
+        from app.database import SessionLocal
+        from app.models.civil_service_intel import CivilServicePostIntel
+        db = SessionLocal()
+        try:
+            q = db.query(CivilServicePostIntel)
+            if region:
+                q = q.filter(CivilServicePostIntel.region.contains(region))
+            items = q.limit(5).all()
+            if not items:
+                return f"未找到{region or ''}的考公岗位情报"
+            lines = []
+            for i in items:
+                lines.append(f"{i.department} — {i.position}: 招{i.recruit_count or '?'}人")
+            return "\n".join(lines)
+        finally:
+            db.close()
+
+    mcp_server = mcp
+    # 挂载 SSE endpoint: /sse
+    app.mount("/sse", mcp.sse_app())
+    logger.info("MCP server 已挂载到 /sse (SSE transport)")
+except ImportError:
+    mcp_server = None
+    logger.info("mcp 库未安装，跳过 MCP server")
+except Exception as e:
+    mcp_server = None
+    logger.warning("MCP server 创建失败: %s", e)
+
 
 # 创建数据库表（仅开发模式；生产环境使用 Alembic 迁移）
 # 必须在路由导入之后：路由导入触发模型注册到 Base.metadata
