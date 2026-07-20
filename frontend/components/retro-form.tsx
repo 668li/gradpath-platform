@@ -77,7 +77,7 @@ function DynamicList({
 
 export const RetroForm = memo(function RetroForm({ initial, aiDraft, onSaved, onCancel }: RetroFormProps) {
   const toast = useToast();
-  const isEdit = !!initial;
+  const isEdit = !!initial && !!initial.id;
 
   // AI 草稿自动生成标题：取摘要前 30 字
   const aiTitle = aiDraft?.draft.summary

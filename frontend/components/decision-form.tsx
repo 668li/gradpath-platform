@@ -37,7 +37,7 @@ function emptyDetails(type: DestinationType): DecisionDetails {
 
 export const DecisionForm = memo(function DecisionForm({ initial, onSaved, onCancel }: DecisionFormProps) {
   const toast = useToast();
-  const isEdit = !!initial;
+  const isEdit = !!initial && !!initial.id;
 
   const [decisionDate, setDecisionDate] = useState(
     initial?.decision_date ?? todayISO(),
