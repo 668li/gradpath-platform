@@ -18,10 +18,12 @@ import {
   AlertTriangle,
   PartyPopper,
   Search,
+  AlertCircle,
+  Clock,
+  Target,
 } from "lucide-react";
 import {
   proactiveInsightsApi,
-  decisionPulseApi,
   useApi,
 } from "@/lib/api";
 import { formatDate, cn } from "@/lib/utils";
@@ -30,36 +32,23 @@ import {
   EVENT_TYPE_LABEL,
 } from "@/lib/constants";
 import { StatCard } from "@/components/stat-card";
-import { SkillRadar } from "@/components/charts";
-import { LevelProgress } from "@/components/gamification/level-progress";
-import { EmptyState, LoadingState } from "@/components/ui/empty";
+import { EmptyState } from "@/components/ui/empty";
 import { Button } from "@/components/ui/form-controls";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   PulseOverviewSection,
   ActiveDecisionsSection,
-  ReviewQueueSection,
-  DarkKnowledgeFeedSection,
-  MemoryFactsSection,
 } from "@/components/decision-copilot";
 import type {
   DashboardOverview,
-  GamificationProfile,
   ReminderItem,
-  DailyFocusItem,
-  WeeklyRecap,
   StreakStats,
   ProactiveInsight,
   ProactiveInsightSummary,
-  LifeWheelSnapshot,
   PulseOverview,
   PulseActiveDecision,
-  PulseReviewItem,
-  PulseDarkKnowledgeItem,
-  PulseMemoryFact,
   PulseFull,
 } from "@/types";
-import { AlertCircle, Clock, Target, Zap, CalendarCheck, TrendingUp } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 
 /** Dashboard骨架屏 — 结构化占位，替代空白spinner */
@@ -91,33 +80,25 @@ export default function DashboardPage() {
   const toast = useToast();
   const [generating, setGenerating] = useState(false);
 
-  // 第一批：核心数据（overview + streak + reminders + focus + pulse）— SWR 并行获取
+  // 第一批：核心数据（overview + streak + reminders + pulse）— SWR 并行获取
   const { data, error: overviewError, isLoading: overviewLoading } = useApi<DashboardOverview>("/api/dashboard/overview");
   const { data: streakData, error: streakError, isLoading: streakLoading } = useApi<StreakStats>("/api/streaks/stats");
   const { data: remindersData, error: remindersError, isLoading: remindersLoading } = useApi<ReminderItem[]>("/api/career-plans/reminders");
-  const { data: focusData, error: focusError, isLoading: focusLoading } = useApi<DailyFocusItem[]>("/api/career-plans/daily-focus");
-  const { data: pulseData, error: pulseError, isLoading: pulseLoading, mutate: mutatePulse } = useApi<PulseFull>("/api/decision-pulse");
+  const { data: pulseData, error: pulseError, isLoading: pulseLoading } = useApi<PulseFull>("/api/decision-pulse");
 
-  const coreLoading = overviewLoading || streakLoading || remindersLoading || focusLoading || pulseLoading;
+  const coreLoading = overviewLoading || streakLoading || remindersLoading || pulseLoading;
 
   // 数组兜底，避免 undefined 导致渲染崩溃
   const streakStats = streakData ?? null;
   const reminders = remindersData ?? [];
-  const dailyFocus = focusData ?? [];
 
   // 决策副驾驶看板数据（护城河）— 从 pulseData 派生
   const pulseOverview = pulseData?.overview ?? null;
   const pulseActiveDecisions = pulseData?.active_decisions ?? [];
-  const pulseReviewQueue = pulseData?.review_queue ?? [];
-  const pulseDarkFeed = pulseData?.dark_knowledge_feed ?? [];
-  const pulseMemory = pulseData?.memory_facts ?? [];
 
   // 第二批：次要数据 — 等核心数据就绪后再触发（保持两批加载语义）
   const batch1Ready = !coreLoading;
-  const { data: gameProfile } = useApi<GamificationProfile>(batch1Ready ? "/api/gamification/profile" : null);
   const { data: insightsSummary, mutate: mutateInsights } = useApi<ProactiveInsightSummary>(batch1Ready ? "/api/proactive-insights/summary" : null);
-  const { data: lifeWheel } = useApi<LifeWheelSnapshot | null>(batch1Ready ? "/api/life-wheel/latest" : null);
-  const { data: weeklyRecap } = useApi<WeeklyRecap>(batch1Ready ? "/api/dashboard/weekly-recap" : null);
   const { data: personalIntel } = useApi<any>(batch1Ready ? "/api/dashboard/personal-intel" : null);
 
   // 错误提示（核心接口失败时提示用户）
@@ -128,33 +109,6 @@ export default function DashboardPage() {
     if (pulseError) toast.push(pulseError.message || "加载决策副驾驶数据失败", "error");
   }, [pulseError, toast]);
 
-  // 刷新 AI 记忆面板
-  const refreshMemory = async () => {
-    try {
-      const res = await decisionPulseApi.getMemoryFacts(20);
-      mutatePulse(
-        (prev) => (prev ? { ...prev, memory_facts: res.items } : prev),
-        { revalidate: false },
-      );
-    } catch {
-      // 静默
-    }
-  };
-
-  // 刷新暗知识流（乐观更新本地缓存）
-  const refreshDarkFeed = (pushId: string) => {
-    mutatePulse(
-      (prev) => prev ? {
-        ...prev,
-        dark_knowledge_feed: prev.dark_knowledge_feed.map((it) =>
-          it.push_id === pushId ? { ...it, is_read: true, read_at: new Date().toISOString() } : it,
-        ),
-        overview: prev.overview ? { ...prev.overview, unread_pushes: Math.max(0, prev.overview.unread_pushes - 1) } : prev.overview,
-      } : prev,
-      { revalidate: false },
-    );
-  };
-
   if (coreLoading) return <DashboardSkeleton />;
   if (!data) return null;
 
@@ -163,10 +117,6 @@ export default function DashboardPage() {
     data.events_count === 0 &&
     data.skills_count === 0 &&
     data.retrospectives_count === 0;
-
-  const radarData = Object.entries(data.skill_categories).map(
-    ([category, count]) => ({ category, count }),
-  );
 
   const insights = insightsSummary?.latest_insights ?? [];
   const unreadInsightCount =
@@ -250,21 +200,8 @@ export default function DashboardPage() {
       {/* 决策副驾驶护城河看板 */}
       <PulseOverviewSection overview={pulseOverview} loading={pulseLoading} />
 
-      {/* 决策副驾驶：四象限 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <ActiveDecisionsSection items={pulseActiveDecisions} loading={pulseLoading} />
-        <ReviewQueueSection items={pulseReviewQueue} loading={pulseLoading} />
-        <DarkKnowledgeFeedSection
-          items={pulseDarkFeed}
-          loading={pulseLoading}
-          onMarkRead={refreshDarkFeed}
-        />
-        <MemoryFactsSection
-          items={pulseMemory}
-          loading={pulseLoading}
-          onRefresh={refreshMemory}
-        />
-      </div>
+      {/* 决策副驾驶：活跃决策 */}
+      <ActiveDecisionsSection items={pulseActiveDecisions} loading={pulseLoading} />
 
       {/* 个人情报总览（护城河：跨库聚合） */}
       {personalIntel && (
@@ -436,25 +373,6 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* 成长进度预览 */}
-      {gameProfile && (
-        <div className="card flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <LevelProgress
-            xp={gameProfile.xp}
-            level={gameProfile.level}
-            levelName={gameProfile.level_name}
-            progress={gameProfile.progress}
-            compact
-          />
-          <Link
-            href="/achievements"
-            className="inline-flex items-center gap-1.5 rounded-lg border border-paper-300 bg-white px-4 py-2 text-sm font-medium text-ink-700 transition-all hover:bg-paper-100 hover:border-ink-200"
-          >
-            查看成就 <ArrowRight className="h-4 w-4" />
-          </Link>
-        </div>
-      )}
-
       {isEmpty && (
         <EmptyState
           title="欢迎来到 GradPath"
@@ -485,129 +403,6 @@ export default function DashboardPage() {
         </div>
         <ArrowRight className="h-5 w-5 shrink-0 text-brand-400" />
       </Link>
-
-      {/* 每日重点 + 周回顾 双栏 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* 每日重点 */}
-        {dailyFocus.length > 0 && (
-          <div className="card space-y-3 animate-fade-in">
-            <div className="flex items-center gap-2">
-              <Zap className="h-4 w-4 text-brand-600" />
-              <h2 className="font-display font-semibold text-ink-800">今日重点</h2>
-            </div>
-            <div className="space-y-2">
-              {dailyFocus.map((item, i) => (
-                <Link
-                  key={`${item.plan_id}-${item.milestone_index}`}
-                  href="/plans"
-                  className="flex items-start gap-3 rounded-lg border border-paper-200 bg-paper-50/50 px-3 py-2.5 transition-colors hover:border-brand-300 hover:bg-brand-50/30"
-                >
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-600">
-                    {i + 1}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-ink-700 truncate">
-                      {item.milestone_title}
-                    </p>
-                    <p className="text-xs text-ink-400 truncate">{item.plan_goal}</p>
-                  </div>
-                  {item.status === "in_progress" ? (
-                    <span className="shrink-0 rounded-full bg-brand-100 px-2 py-0.5 text-[10px] font-medium text-brand-600">
-                      进行中
-                    </span>
-                  ) : (
-                    <span className="shrink-0 rounded-full bg-paper-200 px-2 py-0.5 text-[10px] font-medium text-ink-400">
-                      待开始
-                    </span>
-                  )}
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* 周回顾 */}
-        {weeklyRecap && (
-          <div className="card space-y-3 animate-fade-in">
-            <div className="flex items-center gap-2">
-              <CalendarCheck className="h-4 w-4 text-brand-600" />
-              <h2 className="font-display font-semibold text-ink-800">本周回顾</h2>
-            </div>
-            <div className="grid grid-cols-3 gap-2 text-center">
-              <RecapStat value={weeklyRecap.logs_this_week} label="执行记录" />
-              <RecapStat value={weeklyRecap.completed_this_week} label="完成里程碑" />
-              <RecapStat value={weeklyRecap.active_plans} label="进行中规划" />
-            </div>
-            <div className="rounded-lg bg-brand-50/40 px-3 py-2.5">
-              <p className="flex items-center gap-1.5 text-xs text-brand-700">
-                <TrendingUp className="h-3.5 w-3.5" />
-                {weeklyRecap.encouragement}
-              </p>
-            </div>
-            {weeklyRecap.total_milestones > 0 && (
-              <div>
-                <div className="flex items-center justify-between mb-1 text-xs text-ink-400">
-                  <span>总体进度</span>
-                  <span>{weeklyRecap.total_milestones_done}/{weeklyRecap.total_milestones}</span>
-                </div>
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-paper-200">
-                  <div
-                    className="h-full rounded-full bg-brand-500 transition-all duration-500"
-                    style={{
-                      width: `${weeklyRecap.total_milestones > 0
-                        ? Math.round((weeklyRecap.total_milestones_done / weeklyRecap.total_milestones) * 100)
-                        : 0}%`,
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* 人生平衡轮迷你概览 */}
-      {lifeWheel && (
-        <div className="card space-y-3 animate-fade-in">
-          <div className="flex items-center justify-between">
-            <h2 className="font-display font-semibold text-ink-800">
-              人生平衡轮
-            </h2>
-            <Link
-              href="/life-wheel"
-              className="inline-flex items-center text-sm text-brand-600 transition-colors hover:text-brand-700"
-            >
-              完整评估 <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <div className="flex shrink-0 flex-col items-center justify-center rounded-xl bg-brand-50 px-6 py-3">
-              <p className="font-display text-3xl font-bold leading-none text-brand-700">
-                {lifeWheel.overall_score.toFixed(1)}
-              </p>
-              <p className="mt-1 text-xs text-ink-400">综合得分</p>
-            </div>
-            <div className="grid flex-1 grid-cols-1 gap-x-6 gap-y-2.5 sm:grid-cols-2">
-              {Object.entries(lifeWheel.scores).map(([key, score]) => (
-                <div key={key}>
-                  <div className="mb-1 flex items-center justify-between text-xs">
-                    <span className="text-ink-500">{prettifyKey(key)}</span>
-                    <span className="text-ink-400">{score}</span>
-                  </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-paper-200">
-                    <div
-                      className="h-full rounded-full bg-brand-500 transition-all duration-500"
-                      style={{
-                        width: `${Math.min(100, Math.round((score / 10) * 100))}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* 规划提醒 */}
       {reminders.length > 0 && (
@@ -691,69 +486,42 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* 技能分类雷达图 */}
+        {/* 最近事件 */}
         <div className="card">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="font-display font-semibold text-ink-800">技能分类分布</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-display font-semibold text-ink-800">最近事件</h2>
             <Link
-              href="/skills"
-              className="text-sm text-brand-600 hover:underline"
+              href="/timeline"
+              className="text-sm text-brand-600 hover:underline inline-flex items-center"
             >
-              管理
+              查看全部 <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
-          {radarData.length === 0 ? (
-            <EmptyState title="暂无技能" description="在技能树页面添加你的技能" />
+          {data.recent_events.length === 0 ? (
+            <EmptyState title="暂无事件" description="记录入职、晋升、项目等职业事件" />
           ) : (
-            <SkillRadar data={radarData} />
+            <ul className="divide-y divide-paper-100">
+              {data.recent_events.map((e) => (
+                <li key={e.id} className="flex items-center gap-3 py-3">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+                    <TimelineIcon className="h-4 w-4" />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-ink-800 truncate">
+                      {e.title}
+                    </p>
+                    <p className="text-xs text-ink-400">
+                      {EVENT_TYPE_LABEL[e.event_type as keyof typeof EVENT_TYPE_LABEL] ?? e.event_type}
+                      {" · "}
+                      {formatDate(e.event_date)}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
           )}
         </div>
       </div>
-
-      {/* 最近事件 */}
-      <div className="card">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-display font-semibold text-ink-800">最近事件</h2>
-          <Link
-            href="/timeline"
-            className="text-sm text-brand-600 hover:underline inline-flex items-center"
-          >
-            查看全部 <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-        {data.recent_events.length === 0 ? (
-          <EmptyState title="暂无事件" description="记录入职、晋升、项目等职业事件" />
-        ) : (
-          <ul className="divide-y divide-paper-100">
-            {data.recent_events.map((e) => (
-              <li key={e.id} className="flex items-center gap-3 py-3">
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
-                  <TimelineIcon className="h-4 w-4" />
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-ink-800 truncate">
-                    {e.title}
-                  </p>
-                  <p className="text-xs text-ink-400">
-                    {EVENT_TYPE_LABEL[e.event_type as keyof typeof EVENT_TYPE_LABEL] ?? e.event_type}
-                    {" · "}
-                    {formatDate(e.event_date)}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function RecapStat({ value, label }: { value: number; label: string }) {
-  return (
-    <div className="rounded-lg bg-paper-50 px-2 py-2.5">
-      <p className="font-display text-xl font-bold text-brand-700">{value}</p>
-      <p className="text-[10px] text-ink-400">{label}</p>
     </div>
   );
 }
@@ -855,13 +623,6 @@ function getPriorityBorder(priority: number) {
     default:
       return "border-l-ink-300";
   }
-}
-
-/** 将维度 key 转为可读名称（如 career_health -> Career Health） */
-function prettifyKey(key: string): string {
-  return key
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 /** 单条 AI 洞察卡片：点击标记已读，未读有品牌色底，按优先级显示左色条 */

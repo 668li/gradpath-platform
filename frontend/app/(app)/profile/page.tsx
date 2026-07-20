@@ -47,6 +47,15 @@ const profileTabs: { id: ProfileTab; label: string; icon: typeof UserCircle; hre
   { id: "search", label: "搜索", icon: Search, href: "/search", color: "text-purple-500" },
 ];
 
+type ProfileTopTab = "profile" | "diagnosis" | "achievements" | "notifications";
+
+const profileTopTabs: { id: ProfileTopTab; label: string }[] = [
+  { id: "profile", label: "个人资料" },
+  { id: "diagnosis", label: "诊断报告" },
+  { id: "achievements", label: "成就与徽章" },
+  { id: "notifications", label: "通知设置" },
+];
+
 export default function ProfilePage() {
   return (
     <Suspense fallback={<LoadingState />}>
@@ -59,6 +68,7 @@ function ProfilePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeTab = (searchParams.get("tab") as ProfileTab) || "profile";
+  const [topTab, setTopTab] = useState<ProfileTopTab>("profile");
   const toast = useToast();
   const invalidate = useInvalidate();
 
@@ -166,40 +176,72 @@ function ProfilePageContent() {
     }
   };
 
+  const handleTopTabChange = (tabId: ProfileTopTab) => {
+    if (tabId === "profile") {
+      setTopTab("profile");
+    } else if (tabId === "diagnosis") {
+      router.push("/onboarding");
+    } else if (tabId === "achievements") {
+      router.push("/achievements");
+    } else if (tabId === "notifications") {
+      router.push("/notifications");
+    }
+  };
+
   if (loading) return <LoadingState />;
 
   return (
     <div className="space-y-6 max-w-3xl animate-fade-in">
-      {/* Tab 切换 */}
-      <div className="flex gap-2 border-b border-paper-200 max-w-3xl">
-        {profileTabs.map((tab) => {
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => {
-                if (tab.id === "profile") {
-                  router.push("/profile");
-                } else {
-                  router.push(tab.href);
-                }
-              }}
-              className={cn(
-                "flex items-center gap-2 px-4 py-3 font-medium transition-all border-b-2 text-sm",
-                activeTab === tab.id
-                  ? `${tab.color} border-current`
-                  : "text-ink-400 border-transparent hover:text-ink-600"
-              )}
-            >
-              <Icon className="h-4 w-4" />
-              {tab.label}
-            </button>
-          );
-        })}
+      {/* 个人中心 Tab */}
+      <div className="flex gap-0 border-b border-paper-200">
+        {profileTopTabs.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => handleTopTabChange(t.id)}
+            className={cn(
+              "px-5 py-3 text-sm font-medium transition-all border-b-2",
+              topTab === t.id
+                ? "border-brand-500 text-brand-600"
+                : "border-transparent text-ink-400 hover:text-ink-600",
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
-      {activeTab !== "profile" && (
-        <div className="flex items-center justify-center py-20 text-ink-400">
+      {topTab === "profile" && (
+        <>
+          {/* Tab 切换 */}
+          <div className="flex gap-2 border-b border-paper-200 max-w-3xl">
+            {profileTabs.map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    if (tab.id === "profile") {
+                      router.push("/profile");
+                    } else {
+                      router.push(tab.href);
+                    }
+                  }}
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-3 font-medium transition-all border-b-2 text-sm",
+                    activeTab === tab.id
+                      ? `${tab.color} border-current`
+                      : "text-ink-400 border-transparent hover:text-ink-600"
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {activeTab !== "profile" && (
+            <div className="flex items-center justify-center py-20 text-ink-400">
           <p>页面加载中…</p>
         </div>
       )}
@@ -375,6 +417,8 @@ function ProfilePageContent() {
         </div>
       </div>
       </div>
+      )}
+        </>
       )}
     </div>
   );

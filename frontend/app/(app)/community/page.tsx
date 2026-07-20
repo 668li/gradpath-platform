@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Send,
   Users,
@@ -24,14 +25,57 @@ import { cn } from "@/lib/utils";
 import type { PostItem, UserResponse } from "@/types";
 
 type Tab = "feed" | "report" | "mentors";
+type DirectionTab = "all" | "kaoyan" | "civil-service" | "employment" | "landing-wall";
 
 export default function CommunityPage() {
   const user = useAuthStore((s) => s.user);
   const [tab, setTab] = useState<Tab>("feed");
+  const [directionTab, setDirectionTab] = useState<DirectionTab>("all");
+  const router = useRouter();
+
+  const directionTabs: { id: DirectionTab; label: string }[] = [
+    { id: "all", label: "全部" },
+    { id: "kaoyan", label: "考研专区" },
+    { id: "civil-service", label: "考公专区" },
+    { id: "employment", label: "就业专区" },
+    { id: "landing-wall", label: "上岸墙" },
+  ];
+
+  const handleDirectionTabChange = (id: DirectionTab) => {
+    if (id === "kaoyan") {
+      router.push("/kaoyan/community");
+      return;
+    }
+    if (id === "landing-wall") {
+      router.push("/outcome-report/landing-wall");
+      return;
+    }
+    setDirectionTab(id);
+  };
 
   return (
     <div className="space-y-6">
-      <header className="flex items-center gap-3">
+      {/* 方向专区 Tab */}
+      <div className="flex gap-0 border-b border-paper-200">
+        {directionTabs.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => handleDirectionTabChange(t.id)}
+            className={cn(
+              "px-5 py-3 text-sm font-medium transition-all border-b-2",
+              directionTab === t.id
+                ? "border-brand-500 text-brand-600"
+                : "border-transparent text-ink-400 hover:text-ink-600",
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {directionTab === "all" && (
+        <>
+          <header className="flex items-center gap-3">
         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-500/15 text-brand-500">
           <Users className="h-6 w-6" strokeWidth={2} />
         </div>
@@ -72,6 +116,22 @@ export default function CommunityPage() {
           title="导师评价"
           description="前往考研中心 → 导师情报查看学长学姐对导师的评价。"
           action={<Link href="/kaoyan" className="text-brand-600 underline">去考研中心</Link>}
+        />
+      )}
+        </>
+      )}
+
+      {directionTab === "civil-service" && (
+        <EmptyState
+          title="考公专区"
+          description="考公专区即将上线，敬请期待..."
+        />
+      )}
+
+      {directionTab === "employment" && (
+        <EmptyState
+          title="就业专区"
+          description="就业专区即将上线，敬请期待..."
         />
       )}
     </div>

@@ -6,19 +6,16 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   GraduationCap,
   Users,
-  Compass,
   UserCircle,
   LogOut,
   Menu,
   X,
-  Rocket,
   Bell,
   Search,
-  Landmark,
-  Briefcase,
   LayoutDashboard,
   Bot,
-  Sparkles,
+  Target,
+  TrendingUp,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth";
@@ -34,19 +31,16 @@ interface NavItem {
 /** 导航项列表 */
 function getNavItems(): NavItem[] {
   const items: NavItem[] = [
-    // 三大方向
-    { href: "/kaoyan", label: "考研中心", icon: GraduationCap, section: "方向" },
-    { href: "/civil-service", label: "考公中心", icon: Landmark },
-    { href: "/employment", label: "就业中心", icon: Briefcase },
-    // 通用工具
-    { href: "/dashboard", label: "个人看板", icon: LayoutDashboard, section: "工具" },
-    { href: "/ai-butler", label: "AI管家", icon: Bot },
-    { href: "/career", label: "职业规划", icon: Compass },
-    // 互动
-    { href: "/community", label: "社区交流", icon: Users, section: "互动" },
-    // 我的
-    { href: "/onboarding", label: "职业诊断", icon: Sparkles, section: "我的" },
-    { href: "/profile", label: "个人中心", icon: UserCircle },
+    // 核心
+    { href: "/dashboard", label: "我的看板", icon: LayoutDashboard, section: "核心" },
+    { href: "/decision-center", label: "决策中心", icon: Target },
+    { href: "/intel", label: "情报中心", icon: Search },
+    // 成长
+    { href: "/growth/archive", label: "成长档案", icon: TrendingUp, section: "成长" },
+    { href: "/community", label: "社区", icon: Users },
+    { href: "/ai-butler", label: "AI 对话", icon: Bot },
+    // 其他
+    { href: "/profile", label: "个人中心", icon: UserCircle, section: "其他" },
   ];
   return items;
 }
@@ -295,7 +289,7 @@ export function AppNav() {
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-3 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-3 text-white shadow-lg hover:from-brand-600 hover:to-brand-700 transition-all"
               >
-                <Rocket className="h-5 w-5 flex-shrink-0" />
+                <Target className="h-5 w-5 flex-shrink-0" />
                 <div>
                   <p className="text-sm font-semibold">快速开始</p>
                   <p className="text-xs text-white/80">完成评估测试，获取个性化建议</p>
