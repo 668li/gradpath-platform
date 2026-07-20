@@ -1,34 +1,18 @@
-"use client";
-
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/stores/auth";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
 /**
- * 根页面：根据登录状态重定向到 /dashboard 或 /login。
+ * 根页面：服务端快速重定向。
+ * 读取 gradpath_token cookie，有 token 去 dashboard，没有去 login。
+ * 零 JS 依赖，瞬间跳转，不卡 spinner。
  */
 export default function HomePage() {
-  const router = useRouter();
-  const token = useAuthStore((s) => s.token);
-  const hydrated = useAuthStore((s) => s.hydrated);
-  const restore = useAuthStore((s) => s.restore);
+  const cookieStore = cookies();
+  const token = cookieStore.get("gradpath_token")?.value;
 
-  useEffect(() => {
-    restore();
-  }, [restore]);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    if (token) {
-      router.replace("/dashboard");
-    } else {
-      router.replace("/login");
-    }
-  }, [hydrated, token, router]);
-
-  return (
-    <div className="flex min-h-screen items-center justify-center text-slate-400">
-      <span className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-slate-300 border-t-brand-500" />
-    </div>
-  );
+  if (token) {
+    redirect("/dashboard");
+  } else {
+    redirect("/login");
+  }
 }
