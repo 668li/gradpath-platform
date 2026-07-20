@@ -36,6 +36,57 @@ import type {
   PaginatedResponse,
 } from "@/types";
 
+/** 示例决策模板（用于空态引导，用户「以此创建」时预填表单，不写库） */
+type DecisionTemplate = Omit<DecisionResponse, "id" | "user_id" | "created_at" | "updated_at">;
+
+const DECISION_TEMPLATES: DecisionTemplate[] = [
+  {
+    destination_type: "postgrad",
+    status: "planned",
+    decision_date: "",
+    review_date: "",
+    reasoning:
+      "本科双非，想进大厂算法岗，但学历受限；读研既能刷新院校背景，又能补强算法基础。",
+    prediction: "若上岸 985 院校，秋招算法岗竞争力明显提升，目标年薪 35w+。",
+    assumptions: ["数学和专业课基础尚可", "能承受 1 年沉没成本", "目标院校报录比 < 8:1"],
+    details: { school: "某 985 高校", major: "计算机技术", target_score: "380" },
+    confidence: 3,
+    ai_analysis: null,
+    actual_outcome: null,
+    review_notes: null,
+  },
+  {
+    destination_type: "civil_service",
+    status: "planned",
+    decision_date: "",
+    review_date: "",
+    reasoning:
+      "求稳优先，老家省考岗位与专业匹配；相比互联网更看重长期确定性。",
+    prediction: "若行测申论稳定在 70+，进面概率较大，上岸后工作生活平衡较好。",
+    assumptions: ["能接受薪资涨幅有限", "笔试准备周期 6 个月", "户籍符合报考要求"],
+    details: { region: "本省省会", position: "综合管理岗" },
+    confidence: 4,
+    ai_analysis: null,
+    actual_outcome: null,
+    review_notes: null,
+  },
+  {
+    destination_type: "employment",
+    status: "planned",
+    decision_date: "",
+    review_date: "",
+    reasoning:
+      "已有两段实习 offer 意向，先就业积累工程经验，再决定是否考研。",
+    prediction: "入职后 2 年内可成长为独立开发者，年薪有望达 25-30w。",
+    assumptions: ["实习转正概率高", "技术栈与岗位匹配", "可接受一线城市节奏"],
+    details: { company: "某互联网中厂", position: "后端开发" },
+    confidence: 4,
+    ai_analysis: null,
+    actual_outcome: null,
+    review_notes: null,
+  },
+];
+
 // 优化：AI 建议面板需用户交互触发请求，按需加载减少首屏 JS 体积
 const AIAdvicePanel = dynamic(
   () => import("@/components/ai-advice").then((m) => m.AIAdvicePanel),
@@ -357,6 +408,12 @@ export default function DecisionsPage() {
     setModalOpen(true);
   };
 
+  /** 用示例模板预填决策表单（不写入数据库，仅作为创建起点） */
+  const openCreateWithTemplate = (tpl: DecisionTemplate) => {
+    setEditing(tpl as unknown as DecisionResponse);
+    setModalOpen(true);
+  };
+
   const openEdit = (d: DecisionResponse) => {
     setEditing(d);
     setModalOpen(true);
@@ -485,15 +542,18 @@ export default function DecisionsPage() {
           {loading ? (
             <ListSkeleton />
           ) : decisions.length === 0 ? (
-            <EmptyState
-              title="还没有决策记录"
-              description="记录你的第一个毕业去向决策，沉淀决策思考"
-              action={
-                <Button onClick={openCreate}>
-                  <Plus className="h-4 w-4" /> 创建决策
-                </Button>
-              }
-            />
+            <>
+              <EmptyState
+                title="还没有决策记录"
+                description="记录你的第一个毕业去向决策，沉淀决策思考"
+                action={
+                  <Button onClick={openCreate}>
+                    <Plus className="h-4 w-4" /> 创建决策
+                  </Button>
+                }
+              />
+              <DecisionTemplateGallery onUse={openCreateWithTemplate} />
+            </>
           ) : (
             decisions.map((d) => (
               <div key={d.id} className="card hover:shadow-md transition-shadow">
@@ -701,5 +761,60 @@ export default function DecisionsPage() {
         onCompleted={handleReviewCompleted}
       />
     </div>
+  );
+}
+
+/** 空态示例模板画廊：展示真实决策长什么样，点「以此创建」预填表单 */
+function DecisionTemplateGallery({
+  onUse,
+}: {
+  onUse: (tpl: DecisionTemplate) => void;
+}) {
+  return (
+    <section className="space-y-3">
+      <p className="flex items-center gap-2 text-sm font-medium text-ink-600">
+        <Sparkles className="h-4 w-4 text-brand-500" />
+        看看别人怎么记的（示例模板，点「以此创建」快速套用）
+      </p>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        {DECISION_TEMPLATES.map((tpl, i) => (
+          <div
+            key={i}
+            className="card flex flex-col gap-3 border-dashed border-brand-200 bg-brand-50/30"
+          >
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+                  <Compass className="h-4 w-4" />
+                </span>
+                <span className="text-sm font-semibold text-ink-800">
+                  {DESTINATION_TYPE_LABEL[tpl.destination_type]}
+                </span>
+              </span>
+              <Badge color="slate">示例</Badge>
+            </div>
+            {tpl.reasoning && (
+              <p className="line-clamp-2 text-xs text-ink-500">
+                <span className="text-ink-400">理由：</span>
+                {tpl.reasoning}
+              </p>
+            )}
+            <div className="flex items-center gap-1 text-xs text-amber-500">
+              <Star className="h-3.5 w-3.5" />
+              <span className="tracking-wide">{levelStars(tpl.confidence)}</span>
+              <span className="text-ink-400">信心 {tpl.confidence}/5</span>
+            </div>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => onUse(tpl)}
+              className="mt-auto"
+            >
+              以此创建
+            </Button>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }

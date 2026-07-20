@@ -5,7 +5,26 @@ import Link from "next/link";
 import { studyPlanApi } from "@/lib/api";
 import { StudyPlan, StudyPlanCreate } from "@/types";
 import { toast } from "sonner";
-import { Plus, Trash2, Edit2, Sparkles } from "lucide-react";
+import { Plus, Trash2, Edit2, Sparkles, FileText } from "lucide-react";
+
+/** 学习计划示例模板（空态引导，点「套用」预填创建表单） */
+const STUDY_PLAN_TEMPLATES: { title: string; subjects: string[]; hint: string }[] = [
+  {
+    title: "考研冲刺 90 天计划",
+    subjects: ["政治", "英语", "数学", "专业课"],
+    hint: "适合 9-12 月冲刺，按周拆解四科任务",
+  },
+  {
+    title: "考公百日刷题计划",
+    subjects: ["行测", "申论", "时政"],
+    hint: "行测分模块刷题 + 申论每周 2 篇练笔",
+  },
+  {
+    title: "秋招求职备战计划",
+    subjects: ["简历", "算法题", "项目复盘", "八股"],
+    hint: "每日 1 套笔试题 + 2 道算法 + 1 个知识点",
+  },
+];
 
 export default function StudyPlansPage() {
   const [plans, setPlans] = useState<StudyPlan[]>([]);
@@ -46,6 +65,22 @@ export default function StudyPlansPage() {
     } catch {
       toast.error("创建失败");
     }
+  };
+
+  /** 套用示例模板：预填表单并展开创建区 */
+  const applyTemplate = (tpl: { title: string; subjects: string[] }) => {
+    const today = new Date().toISOString().slice(0, 10);
+    const endDate = new Date(Date.now() + 90 * 86400000)
+      .toISOString()
+      .slice(0, 10);
+    setFormData({
+      title: tpl.title,
+      start_date: today,
+      end_date: endDate,
+      subjects: [...tpl.subjects],
+      progress: 0,
+    });
+    setShowCreateForm(true);
   };
 
   const handleDelete = async (id: string) => {
@@ -143,14 +178,53 @@ export default function StudyPlansPage() {
 
       {/* 计划列表 */}
       {plans.length === 0 ? (
-        <div className="rounded-xl border border-ink-200 bg-white p-12 text-center">
-          <p className="text-ink-500 mb-4">还没有学习计划</p>
-          <button
-            onClick={() => setShowCreateForm(true)}
-            className="px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors"
-          >
-            创建第一个计划
-          </button>
+        <div className="space-y-6">
+          <div className="rounded-xl border border-ink-200 bg-white p-12 text-center">
+            <p className="text-ink-500 mb-4">还没有学习计划</p>
+            <button
+              onClick={() => setShowCreateForm(true)}
+              className="px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors"
+            >
+              创建第一个计划
+            </button>
+          </div>
+
+          {/* 示例模板画廊 */}
+          <section className="space-y-3">
+            <p className="flex items-center gap-2 text-sm font-medium text-ink-600">
+              <FileText className="h-4 w-4 text-brand-500" />
+              参考模板（点「套用」快速开始）
+            </p>
+            <div className="grid gap-4 md:grid-cols-3">
+              {STUDY_PLAN_TEMPLATES.map((tpl, i) => (
+                <div
+                  key={i}
+                  className="rounded-xl border border-dashed border-brand-200 bg-brand-50/30 p-5"
+                >
+                  <h3 className="font-semibold text-ink-800">{tpl.title}</h3>
+                  <p className="mt-1 text-xs text-ink-400 leading-relaxed">
+                    {tpl.hint}
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {tpl.subjects.map((s) => (
+                      <span
+                        key={s}
+                        className="px-2 py-0.5 text-xs rounded-full bg-ink-100 text-ink-600"
+                      >
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                  <button
+                    onClick={() => applyTemplate(tpl)}
+                    className="mt-4 w-full px-3 py-2 text-sm bg-white border border-brand-200 text-brand-700 rounded-lg hover:bg-brand-50 transition-colors"
+                  >
+                    套用此模板
+                  </button>
+                </div>
+              ))}
+            </div>
+          </section>
         </div>
       ) : (
         <div className="grid gap-4">

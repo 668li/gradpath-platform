@@ -17,6 +17,8 @@ const TOKEN_COOKIE = "gradpath_token";
 // 受保护路径前缀（匹配以这些路径开头，含子路径）
 const PROTECTED_PREFIXES = [
   "/dashboard",
+  "/decision-center",
+  "/intel",
   "/employment",
   "/war-room",
   "/career",

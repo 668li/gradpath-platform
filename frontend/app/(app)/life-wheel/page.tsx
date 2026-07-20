@@ -10,6 +10,9 @@ import { useToast } from "@/components/ui/toast";
 import { LifeWheelRadar } from "@/components/charts";
 import type { LifeWheelDimension, LifeWheelSnapshot } from "@/types";
 
+/** 示例平衡轮评分（仅用于 intro 预览，不写库） */
+const SAMPLE_WHEEL_SCORES = [7, 5, 6, 8, 7, 4, 6, 5];
+
 /** 维度默认定义（API 不可用时兜底） */
 const DEFAULT_DIMENSIONS: LifeWheelDimension[] = [
   { key: "career", name: "职业发展", desc: "工作满意度、职业成长与方向感" },
@@ -176,6 +179,11 @@ export default function LifeWheelPage() {
 
   // 介绍页
   if (mode === "intro") {
+    const sampleData = dimensions.map((d, i) => ({
+      key: d.key,
+      name: d.name,
+      score: SAMPLE_WHEEL_SCORES[i % SAMPLE_WHEEL_SCORES.length],
+    }));
     return (
       <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
         <div className="text-center">
@@ -195,6 +203,16 @@ export default function LifeWheelPage() {
             <InfoBox icon="⏱️" label="约 2 分钟" />
             <InfoBox icon="🎚️" label="8 维度" />
             <InfoBox icon="🤖" label="AI 解读" />
+          </div>
+
+          {/* 示例平衡轮预览 */}
+          <div className="rounded-lg bg-paper-50 p-4 space-y-2">
+            <p className="text-xs font-medium text-ink-500">
+              示例：一份评估完成后长这样 👇
+            </p>
+            <div className="mx-auto max-w-[280px]">
+              <LifeWheelRadar data={sampleData} />
+            </div>
           </div>
 
           <div className="rounded-lg bg-paper-50 p-4 space-y-3">

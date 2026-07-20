@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -16,33 +16,113 @@ import {
   Bot,
   Target,
   TrendingUp,
+  ChevronDown,
+  BeakerIcon,
+  GitBranch,
+  Route,
+  BookOpen,
+  Building2,
+  Briefcase,
+  MessageSquare,
+  Brain,
+  Network,
+  Compass,
+  Map,
+  Swords,
+  Calendar,
+  Sparkles,
+  Lightbulb,
+  Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth";
 
-interface NavItem {
+interface NavChild {
   href: string;
   label: string;
   icon: typeof GraduationCap;
-  /** 可选分组标题：用于在导航中渲染 section header */
-  section?: string;
 }
 
-/** 导航项列表 */
-function getNavItems(): NavItem[] {
-  const items: NavItem[] = [
-    // 核心
-    { href: "/dashboard", label: "我的看板", icon: LayoutDashboard, section: "核心" },
-    { href: "/decision-center", label: "决策中心", icon: Target },
-    { href: "/intel", label: "情报中心", icon: Search },
-    // 成长
-    { href: "/growth/archive", label: "成长档案", icon: TrendingUp, section: "成长" },
-    { href: "/community", label: "社区", icon: Users },
-    { href: "/ai-butler", label: "AI 对话", icon: Bot },
-    // 其他
-    { href: "/profile", label: "个人中心", icon: UserCircle, section: "其他" },
+interface NavSection {
+  href: string;
+  label: string;
+  icon: typeof GraduationCap;
+  section?: string;
+  children?: NavChild[];
+}
+
+function getNavSections(): NavSection[] {
+  return [
+    {
+      href: "/dashboard",
+      label: "我的看板",
+      icon: LayoutDashboard,
+      section: "核心",
+    },
+    {
+      href: "/decision-center",
+      label: "决策中心",
+      icon: Target,
+      children: [
+        { href: "/decision-center", label: "决策中心", icon: Target },
+        { href: "/decision-lab", label: "决策实验室", icon: BeakerIcon },
+        { href: "/decisions", label: "去向决策", icon: GitBranch },
+        { href: "/career-simulator", label: "职业路径模拟器", icon: Route },
+      ],
+    },
+    {
+      href: "/intel",
+      label: "情报中心",
+      icon: Search,
+      children: [
+        { href: "/intel", label: "情报中心", icon: Search },
+        { href: "/kaoyan", label: "考研工具箱", icon: BookOpen },
+        { href: "/civil-service", label: "考公中心", icon: Building2 },
+        { href: "/employment", label: "就业中心", icon: Briefcase },
+        { href: "/interview", label: "面试经验", icon: MessageSquare },
+      ],
+    },
+    {
+      href: "/growth/archive",
+      label: "成长档案",
+      icon: TrendingUp,
+      section: "成长",
+      children: [
+        { href: "/growth/archive", label: "成长档案", icon: TrendingUp },
+        { href: "/skills", label: "技能树", icon: Network },
+        { href: "/life-wheel", label: "人生平衡轮", icon: Compass },
+        { href: "/retrospectives", label: "阶段复盘", icon: Calendar },
+        { href: "/insights", label: "成长洞察", icon: Lightbulb },
+      ],
+    },
+    {
+      href: "/community",
+      label: "社区",
+      icon: Users,
+    },
+    {
+      href: "/ai-butler",
+      label: "AI 对话",
+      icon: Bot,
+      children: [
+        { href: "/ai-butler", label: "AI 对话", icon: Bot },
+        { href: "/mentors", label: "AI 导师团", icon: Brain },
+        { href: "/life-design", label: "人生设计引擎", icon: Sparkles },
+      ],
+    },
+    {
+      href: "/profile",
+      label: "个人中心",
+      icon: UserCircle,
+      section: "其他",
+      children: [
+        { href: "/profile", label: "个人中心", icon: UserCircle },
+        { href: "/career", label: "职业规划", icon: Map },
+        { href: "/study-plans", label: "学习计划", icon: Swords },
+        { href: "/achievements", label: "成就墙", icon: Trophy },
+      ],
+    },
   ];
-  return items;
 }
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
@@ -50,7 +130,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
-  const navItems = getNavItems();
+  const sections = useMemo(() => getNavSections(), []);
 
   const [unread, setUnread] = useState(0);
   useEffect(() => {
@@ -74,7 +154,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
   return (
     <div className="flex h-full flex-col">
-      {/* Logo — display font, warm accent on dark */}
+      {/* Logo */}
       <div className="flex items-center gap-3 px-5 py-6 border-b border-ink-700/50">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-500 text-white shadow-brand-sm">
           <GraduationCap className="h-5 w-5" strokeWidth={2.2} />
@@ -89,56 +169,27 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         </div>
       </div>
 
-      {/* Nav items — warm text on dark, brand accent for active */}
+      {/* Nav items */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {navItems.map((item, idx) => {
-          const active =
-            pathname === item.href || pathname.startsWith(item.href + "/");
-          const Icon = item.icon;
-          // 当 item.section 与前一项不同时，渲染一个分组小标题
+        {sections.map((section, idx) => {
           const showSectionHeader =
-            !!item.section && item.section !== navItems[idx - 1]?.section;
+            !!section.section &&
+            section.section !== sections[idx - 1]?.section;
+
           return (
-            <div key={item.href}>
-              {showSectionHeader && (
-                <p className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-wider text-ink-500">
-                  {item.section}
-                </p>
-              )}
-              <Link
-                href={item.href}
-                onClick={onNavigate}
-                data-track-id={`nav:${item.href}`}
-                className={cn(
-                  "group relative flex min-h-[44px] items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
-                  active
-                    ? "bg-brand-500/15 text-brand-300"
-                    : "text-ink-300 hover:bg-ink-700/40 hover:text-paper-100",
-                )}
-              >
-                {/* Active left accent bar */}
-                {active && (
-                  <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-brand-400" />
-                )}
-                <Icon
-                  className={cn(
-                    "h-[18px] w-[18px] transition-colors",
-                    active
-                      ? "text-brand-400"
-                      : "text-ink-400 group-hover:text-paper-200",
-                  )}
-                  strokeWidth={active ? 2.2 : 1.8}
-                />
-                {item.label}
-              </Link>
-            </div>
+            <NavSectionItem
+              key={section.href}
+              section={section}
+              pathname={pathname}
+              onNavigate={onNavigate}
+              showSectionHeader={showSectionHeader}
+            />
           );
         })}
       </nav>
 
-      {/* User area — subtle card on dark */}
+      {/* User area */}
       <div className="border-t border-ink-700/50 px-3 py-3 space-y-1">
-        {/* Notification bell */}
         <Link
           href="/notifications"
           onClick={onNavigate}
@@ -185,11 +236,146 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
+function NavSectionItem({
+  section,
+  pathname,
+  onNavigate,
+  showSectionHeader,
+}: {
+  section: NavSection;
+  pathname: string;
+  onNavigate?: () => void;
+  showSectionHeader: boolean;
+}) {
+  const hasChildren = !!section.children && section.children.length > 0;
+
+  const isActive = (href: string) =>
+    pathname === href || pathname.startsWith(href + "/");
+
+  const isSelfOrChildActive = hasChildren
+    ? section.children!.some((c) => isActive(c.href)) || isActive(section.href)
+    : isActive(section.href);
+
+  const [expanded, setExpanded] = useState(isSelfOrChildActive);
+
+  useEffect(() => {
+    if (isSelfOrChildActive) {
+      setExpanded(true);
+    }
+  }, [isSelfOrChildActive]);
+
+  return (
+    <div>
+      {showSectionHeader && (
+        <p className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-wider text-ink-500">
+          {section.section}
+        </p>
+      )}
+
+      {/* Parent item */}
+      {hasChildren ? (
+        <button
+          onClick={() => setExpanded((v) => !v)}
+          className={cn(
+            "group relative flex min-h-[44px] w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+            isSelfOrChildActive
+              ? "bg-brand-500/15 text-brand-300"
+              : "text-ink-300 hover:bg-ink-700/40 hover:text-paper-100",
+          )}
+        >
+          {isSelfOrChildActive && (
+            <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-brand-400" />
+          )}
+          <section.icon
+            className={cn(
+              "h-[18px] w-[18px] transition-colors",
+              isSelfOrChildActive
+                ? "text-brand-400"
+                : "text-ink-400 group-hover:text-paper-200",
+            )}
+            strokeWidth={isSelfOrChildActive ? 2.2 : 1.8}
+          />
+          <span className="flex-1 text-left">{section.label}</span>
+          <ChevronDown
+            className={cn(
+              "h-3.5 w-3.5 transition-transform duration-200",
+              expanded ? "rotate-0" : "-rotate-90",
+              isSelfOrChildActive ? "text-brand-400" : "text-ink-500",
+            )}
+            strokeWidth={2}
+          />
+        </button>
+      ) : (
+        <Link
+          href={section.href}
+          onClick={onNavigate}
+          data-track-id={`nav:${section.href}`}
+          className={cn(
+            "group relative flex min-h-[44px] items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+            isActive(section.href)
+              ? "bg-brand-500/15 text-brand-300"
+              : "text-ink-300 hover:bg-ink-700/40 hover:text-paper-100",
+          )}
+        >
+          {isActive(section.href) && (
+            <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-brand-400" />
+          )}
+          <section.icon
+            className={cn(
+              "h-[18px] w-[18px] transition-colors",
+              isActive(section.href)
+                ? "text-brand-400"
+                : "text-ink-400 group-hover:text-paper-200",
+            )}
+            strokeWidth={isActive(section.href) ? 2.2 : 1.8}
+          />
+          {section.label}
+        </Link>
+      )}
+
+      {/* Children */}
+      {hasChildren && expanded && (
+        <div className="ml-1 space-y-0.5 overflow-hidden">
+          {section.children!.map((child) => {
+            const active = isActive(child.href);
+            const ChildIcon = child.icon;
+            return (
+              <Link
+                key={child.href}
+                href={child.href}
+                onClick={onNavigate}
+                data-track-id={`nav:${child.href}`}
+                className={cn(
+                  "group relative flex min-h-[40px] items-center gap-3 rounded-lg pl-10 pr-3 py-2 text-[13px] font-medium transition-all duration-200",
+                  active
+                    ? "bg-brand-500/10 text-brand-300"
+                    : "text-ink-400 hover:bg-ink-700/40 hover:text-paper-100",
+                )}
+              >
+                {active && (
+                  <span className="absolute left-0 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-r-full bg-brand-400/60" />
+                )}
+                <ChildIcon
+                  className={cn(
+                    "h-4 w-4 transition-colors",
+                    active ? "text-brand-400" : "text-ink-500",
+                  )}
+                  strokeWidth={active ? 2 : 1.6}
+                />
+                {child.label}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function AppNav() {
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // 抽屉打开时：锁定 body 滚动、Escape 关闭、焦点陷阱、关闭后恢复焦点
   useEffect(() => {
     if (!open) return;
 
@@ -235,12 +421,10 @@ export function AppNav() {
 
   return (
     <>
-      {/* 桌面端固定侧边栏 — 深色"期刊书脊" */}
       <aside className="hidden md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 bg-ink-800">
         <SidebarContent />
       </aside>
 
-      {/* 移动端顶栏 */}
       <div className="md:hidden sticky top-0 z-30 flex items-center justify-between border-b border-paper-300 bg-paper-50 px-4 py-3 backdrop-blur-sm">
         <div className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500 text-white shadow-brand-sm">
@@ -259,7 +443,6 @@ export function AppNav() {
         </button>
       </div>
 
-      {/* 移动端抽屉 */}
       {open && (
         <div className="md:hidden fixed inset-0 z-40">
           <div
@@ -282,7 +465,6 @@ export function AppNav() {
             >
               <X className="h-5 w-5" strokeWidth={1.8} />
             </button>
-            {/* Quick-start card for new users */}
             <div className="px-3 pt-14 pb-2">
               <Link
                 href="/assessment"

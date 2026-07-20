@@ -22,6 +22,24 @@ import { RetroForm } from "@/components/retro-form";
 import { RetroAIPanel } from "@/components/retro-ai-panel";
 import type { AIRetroDraft, RetrospectiveResponse } from "@/types";
 
+/** 阶段复盘示例模板（空态引导，点「以此为例」预填表单） */
+const RETRO_TEMPLATES: { title: string; period_type: string; achievements: string[]; challenges: string; next_steps: string[] }[] = [
+  {
+    title: "2025 春季学期复盘",
+    period_type: "semester",
+    achievements: ["考研数学一轮复习完成", "英语真题刷完 2010-2020", "拿到一段实习 offer"],
+    challenges: "专业课起步晚，前期进度焦虑明显，时间分配不够科学。",
+    next_steps: ["暑期集中攻克专业课", "每天固定 2 小时数学错题复盘", "开始政治基础课"],
+  },
+  {
+    title: "秋招月度复盘",
+    period_type: "month",
+    achievements: ["投递 30 家，笔试通过 12 家", "算法题稳定到中等难度", "简历迭代 3 版"],
+    challenges: "面试表达卡顿，项目亮点讲不深，八股记忆碎片化。",
+    next_steps: ["每周 2 场模拟面试", "深挖 1 个项目到能讲 20 分钟", "系统整理八股笔记"],
+  },
+];
+
 export default function RetrospectivesPage() {
   const toast = useToast();
   const [retros, setRetros] = useState<RetrospectiveResponse[]>([]);
@@ -54,6 +72,29 @@ export default function RetrospectivesPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  /** 用示例模板预填复盘表单（不写库，仅作为创建起点） */
+  const useTemplate = (tpl: typeof RETRO_TEMPLATES[number]) => {
+    const today = new Date().toISOString().slice(0, 10);
+    const start = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
+    setEditing({
+      id: "",
+      user_id: "",
+      title: tpl.title,
+      period_type: tpl.period_type as RetrospectiveResponse["period_type"],
+      period_start: start,
+      period_end: today,
+      achievements: tpl.achievements,
+      challenges: tpl.challenges,
+      lessons_learned: "",
+      next_steps: tpl.next_steps,
+      satisfaction: 4,
+      created_at: "",
+      updated_at: "",
+    } as unknown as RetrospectiveResponse);
+    setAiDraftData(null);
+    setModalOpen(true);
+  };
 
   const openCreate = () => {
     setEditing(null);
@@ -147,15 +188,57 @@ export default function RetrospectivesPage() {
           ))}
         </div>
       ) : retros.length === 0 ? (
-        <EmptyState
-          title="还没有复盘记录"
-          description="创建你的第一次阶段性复盘，可基于事件自动生成草稿"
-          action={
-            <Button onClick={openCreate}>
-              <Plus className="h-4 w-4" /> 创建复盘
-            </Button>
-          }
-        />
+        <>
+          <EmptyState
+            title="还没有复盘记录"
+            description="创建你的第一次阶段性复盘，可基于事件自动生成草稿"
+            action={
+              <Button onClick={openCreate}>
+                <Plus className="h-4 w-4" /> 创建复盘
+              </Button>
+            }
+          />
+          <section className="space-y-3">
+            <p className="flex items-center gap-2 text-sm font-medium text-ink-600">
+              <ClipboardList className="h-4 w-4 text-brand-500" />
+              看看一份完整复盘长什么样（点「以此为例」快速套用）
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {RETRO_TEMPLATES.map((tpl, i) => (
+                <div
+                  key={i}
+                  className="card flex flex-col gap-3 border-dashed border-brand-200 bg-brand-50/30"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="font-semibold text-ink-800">{tpl.title}</h3>
+                    <Badge color="purple">
+                      {PERIOD_TYPE_LABEL[tpl.period_type as keyof typeof PERIOD_TYPE_LABEL] ?? tpl.period_type}
+                    </Badge>
+                  </div>
+                  <div className="space-y-2 text-xs text-ink-500">
+                    <p>
+                      <span className="text-ink-400">成就：</span>
+                      {tpl.achievements.slice(0, 2).join("、")}
+                      {tpl.achievements.length > 2 ? "…" : ""}
+                    </p>
+                    <p className="line-clamp-2">
+                      <span className="text-ink-400">挑战：</span>
+                      {tpl.challenges}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => useTemplate(tpl)}
+                    className="mt-auto"
+                  >
+                    以此为例
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </section>
+        </>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {retros.map((r) => (
