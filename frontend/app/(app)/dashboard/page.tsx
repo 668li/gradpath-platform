@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Compass,
@@ -33,7 +33,7 @@ import {
 } from "@/lib/constants";
 import { StatCard } from "@/components/stat-card";
 import { EmptyState } from "@/components/ui/empty";
-import { Button } from "@/components/ui/form-controls";
+import { Button, Badge } from "@/components/ui/form-controls";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   PulseOverviewSection,
@@ -95,6 +95,65 @@ export default function DashboardPage() {
   // 决策副驾驶看板数据（护城河）— 从 pulseData 派生
   const pulseOverview = pulseData?.overview ?? null;
   const pulseActiveDecisions = pulseData?.active_decisions ?? [];
+
+  // 今日行动 — 纯前端聚合三中心数据，提取今日优先级助推（不新增 API）
+  const todayActions = useMemo(() => {
+    const actions: Array<{
+      key: string;
+      title: string;
+      href: string;
+      source: string;
+      badgeColor: "blue" | "purple" | "amber" | "green" | "red";
+      duration?: number;
+    }> = [];
+
+    const dc = data?.decisions_count ?? 0;
+    const rc = data?.retrospectives_count ?? 0;
+    const sc = data?.skills_count ?? 0;
+
+    // 新用户引导动作
+    if (dc === 0) {
+      actions.push({ key: "first-decision", title: "建立你的第一个去向决策", href: "/decisions", source: "决策中心", badgeColor: "blue", duration: 3 });
+    }
+    if (rc === 0) {
+      actions.push({ key: "first-retro", title: "完成第一次阶段复盘", href: "/retrospectives", source: "成长档案", badgeColor: "purple", duration: 5 });
+    }
+    if (sc === 0) {
+      actions.push({ key: "first-wheel", title: "绘制你的人生平衡轮", href: "/life-wheel", source: "成长档案", badgeColor: "amber", duration: 2 });
+    }
+
+    // 老用户：决策待回溯项（有 scheduled review_date 的活跃决策）
+    if (dc > 0) {
+      const pendingReview = pulseActiveDecisions.find((d) => d.review_date);
+      if (pendingReview) {
+        actions.push({
+          key: `review-${pendingReview.id}`,
+          title: `回溯你的决策：${pendingReview.destination_type}`,
+          href: "/decisions",
+          source: "决策中心",
+          badgeColor: "blue",
+        });
+      }
+    }
+
+    // 计划提醒动作（取前 2 条）
+    reminders.slice(0, 2).forEach((r) => {
+      actions.push({
+        key: `reminder-${r.plan_id}-${r.milestone_index}`,
+        title: r.milestone_title || r.plan_goal,
+        href: "/plans",
+        source: "提醒",
+        badgeColor: r.type === "overdue" ? "red" : "green",
+      });
+    });
+
+    // 老用户兜底：以上皆空且 reminders 也空 → 通用建议动作
+    if (actions.length === 0) {
+      actions.push({ key: "suggest-retro", title: "做一次阶段复盘梳理近期进展", href: "/retrospectives", source: "成长档案", badgeColor: "purple", duration: 5 });
+    }
+
+    return actions;
+  }, [data, reminders, pulseActiveDecisions]);
 
   // 第二批：次要数据 — 等核心数据就绪后再触发（保持两批加载语义）
   const batch1Ready = !coreLoading;
@@ -196,6 +255,42 @@ export default function DashboardPage() {
           hint={data.latest_retrospective?.title ?? "暂无"}
         />
       </div>
+
+      {/* 今日行动 — AI 从三中心聚合的今日优先级助推 */}
+      <section className="card p-5 animate-fade-in">
+        <div className="mb-4 flex items-center gap-2">
+          <Target className="h-5 w-5 text-brand-600" />
+          <h2 className="text-lg font-semibold text-ink-800">今日行动</h2>
+        </div>
+        {todayActions.length === 0 ? (
+          <div className="flex items-center gap-2 text-sm text-ink-400">
+            <Sparkles className="h-4 w-4 text-brand-500" />
+            <span>暂无紧急待办，保持节奏 — 或去做一次阶段复盘梳理思路。</span>
+            <Link href="/retrospectives" className="text-brand-600 hover:underline">去复盘</Link>
+          </div>
+        ) : (
+          <ul className="space-y-3">
+            {todayActions.map((action) => (
+              <li key={action.key} className="flex items-center gap-3">
+                <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-brand-500" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-ink-800 truncate">{action.title}</p>
+                </div>
+                <Badge color={action.badgeColor}>{action.source}</Badge>
+                {action.duration && (
+                  <span className="text-xs text-ink-400 whitespace-nowrap">约 {action.duration} 分钟</span>
+                )}
+                <Link
+                  href={action.href}
+                  className="inline-flex items-center gap-1 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700 transition-colors whitespace-nowrap"
+                >
+                  去做 <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       {/* 决策副驾驶护城河看板 */}
       <PulseOverviewSection overview={pulseOverview} loading={pulseLoading} />

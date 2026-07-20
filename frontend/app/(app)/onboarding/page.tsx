@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Compass,
   ArrowLeft,
@@ -592,6 +593,75 @@ function ResultView({
           </ol>
         </div>
       )}
+
+      {/* 你的下一步 3 个动作 */}
+      {
+        <div className="card space-y-4">
+          <div className="flex items-center gap-2">
+            <Target className="h-4 w-4 text-brand-600" />
+            <h2 className="font-display font-semibold text-ink-800">你的下一步 3 个动作</h2>
+          </div>
+          <p className="text-sm text-ink-500 -mt-1">
+            诊断只是开始，按顺序完成下面三件事，把方向变成可执行的进度。
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {[
+              {
+                step: 1,
+                title: "完成霍兰德职业评估",
+                desc: "了解你的兴趣与职业匹配，让后续决策有依据。",
+                time: "约 5 分钟",
+                href: "/assessment",
+                icon: Compass,
+              },
+              {
+                step: 2,
+                title: "建立你的第一个去向决策",
+                desc: "记录考研 / 考公 / 就业的选择与理由，系统会提醒你回溯。",
+                time: "约 3 分钟",
+                href: "/decisions",
+                icon: Check,
+              },
+              {
+                step: 3,
+                title: "生成你的学习计划",
+                desc: "把目标拆成可执行的周 / 月任务，每天知道做什么。",
+                time: "约 2 分钟",
+                href: "/study-plans",
+                icon: Rocket,
+              },
+            ].map(({ step, title, desc, time, href, icon: Icon }) => (
+              <div
+                key={href}
+                className="flex flex-col rounded-xl border border-paper-300 bg-white p-4 space-y-3"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-500 text-white text-xs font-bold">
+                    {step}
+                  </span>
+                  <Icon className="h-4 w-4 text-brand-600" strokeWidth={1.8} />
+                </div>
+                <div className="flex-1 space-y-1.5">
+                  <p className="font-display font-semibold text-ink-800 text-sm leading-snug">
+                    {title}
+                  </p>
+                  <p className="text-xs text-ink-500 leading-relaxed">{desc}</p>
+                </div>
+                <span className="self-start rounded-full bg-brand-50 text-brand-700 text-xs font-medium px-2 py-0.5">
+                  {time}
+                </span>
+                <Link
+                  href={href}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-brand-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-600"
+                >
+                  开始
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+      }
 
       {/* 无诊断提示 */}
       {!hasDiagnosis && (

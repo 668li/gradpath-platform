@@ -10,8 +10,8 @@ import { useToast } from "@/components/ui/toast";
 import { LifeWheelRadar } from "@/components/charts";
 import type { LifeWheelDimension, LifeWheelSnapshot } from "@/types";
 
-/** 示例平衡轮评分（仅用于 intro 预览，不写库） */
-const SAMPLE_WHEEL_SCORES = [7, 5, 6, 8, 7, 4, 6, 5];
+/** 示例平衡轮评分（仅用于 intro 预览，不写库）：考研冲刺期同学典型分布——学业/职业偏高，兴趣/精神偏低 */
+const SAMPLE_WHEEL_SCORES = [8, 5, 6, 7, 7, 3, 5, 4];
 
 /** 维度默认定义（API 不可用时兜底） */
 const DEFAULT_DIMENSIONS: LifeWheelDimension[] = [
@@ -213,6 +213,9 @@ export default function LifeWheelPage() {
             <div className="mx-auto max-w-[280px]">
               <LifeWheelRadar data={sampleData} />
             </div>
+            <p className="text-[11px] leading-snug text-ink-400 text-center">
+              示例：考研冲刺期同学的典型分布（学业/职业偏高、兴趣/精神偏低）——不同阶段重点不同，没有标准答案。
+            </p>
           </div>
 
           <div className="rounded-lg bg-paper-50 p-4 space-y-3">
