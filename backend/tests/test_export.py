@@ -11,7 +11,17 @@ from app.models.retrospective import PeriodType, Retrospective
 from app.models.skill_node import SkillNode
 from app.models.user import User
 from app.models.user_setting import UserSetting
+from app.models.grad_intel import (
+    DarkKnowledge,
+    GradAdjustmentInfo,
+    GradScorelineRecord,
+    GradSchoolIntel,
+    GradYanzhaoProgram,
+    SelfPositioning,
+)
 from app.services.export_service import (
+    export_grad_intel_csv,
+    export_grad_intel_json,
     export_profile_json,
     export_timeline_pdf,
     get_shareable_skills,
@@ -350,3 +360,233 @@ class TestShareSkills:
         assert result["user_name"] == "测试用户"
         assert len(result["skills"]) == 1
         assert result["skills"][0]["name"] == "Go"
+
+
+# ======================================================================
+# 考研情报数据导出
+# ======================================================================
+
+def _seed_grad_intel(db_session, user_id):
+    """为某用户创建考研情报测试数据。"""
+    # 院校情报（用户维度）
+    db_session.add(GradSchoolIntel(
+        user_id=user_id,
+        school_name="北京大学",
+        major_name="计算机科学与技术",
+        school_tier="985",
+        year=2026,
+        background_discrimination="moderate",
+        first_choice_protection="yes",
+        admission_ratio="20:1",
+        push_ratio="40%",
+        actual_quota=15,
+        score_line=380,
+        retest_weight="40%",
+        retest_format="笔试+面试",
+        score_suppression="no",
+        transfer_friendly="moderate",
+        insider_notes="保护一志愿",
+        data_sources=["研招网"],
+        tags=["计算机", "985"],
+    ))
+    # 自我定位（用户维度）
+    db_session.add(SelfPositioning(
+        user_id=user_id,
+        undergrad_tier="211",
+        undergrad_major="软件工程",
+        gpa=3.7,
+        gpa_rank="前20%",
+        english_level="CET-6",
+        english_score=520,
+        target_school="北京大学",
+        target_major="计算机科学与技术",
+        target_region="北京",
+        ai_assessment="冲刺北大，稳妥浙大",
+        reach_schools=["北京大学", "清华大学"],
+        target_schools=["浙江大学", "复旦大学"],
+        safety_schools=["武汉大学", "华中科技大学"],
+        success_probability=35,
+        risk_warnings=["竞争激烈", "推免比例高"],
+    ))
+    # 暗知识（全局）
+    db_session.add(DarkKnowledge(
+        stage="school_selection",
+        category="信息战",
+        title="第一志愿保护的真相",
+        content="部分院校复试时会优先录取第一志愿考生",
+        importance="high",
+        common_misconception="所有学校都保护一志愿",
+        actionable_advice="查证目标院校近三年录取数据",
+        verification_method="对比一志愿与调剂录取分数",
+        tags=["院校选择"],
+        sort_order=1,
+    ))
+    # 研招网专业目录（全局）
+    db_session.add(GradYanzhaoProgram(
+        university_name="北京大学",
+        department="信息科学技术学院",
+        major_name="计算机科学与技术",
+        degree_type="学术型",
+        research_directions=["人工智能", "计算机系统结构"],
+        enrollment_quota=30,
+        tuition="8000/年",
+        duration="3年",
+        study_mode="全日制",
+        year=2026,
+        data_sources=["研招网"],
+    ))
+    # 分数线记录（全局）
+    db_session.add(GradScorelineRecord(
+        university_name="北京大学",
+        major_name="计算机科学与技术",
+        degree_type="学术型",
+        year=2025,
+        total_score_line=375,
+        politics_score=55,
+        foreign_language_score=55,
+        business_1_score=90,
+        business_2_score=90,
+        enrollment_count=28,
+        application_count=450,
+        data_sources=["研招网"],
+    ))
+    # 调剂信息（全局）
+    db_session.add(GradAdjustmentInfo(
+        university_name="某大学",
+        department="计算机学院",
+        major_name="软件工程",
+        degree_type="专业型",
+        original_major_range="计算机类",
+        adjustment_quota=5,
+        contact_email="gs@university.edu.cn",
+        deadline="2026-04-01",
+        year=2026,
+        status="open",
+        data_sources=["研招网"],
+    ))
+    db_session.commit()
+
+
+class TestGradIntelJsonExport:
+    def test_json_requires_auth(self, client):
+        resp = client.get("/api/export/grad-intel")
+        assert resp.status_code == 401
+
+    def test_json_success_all_sections(self, client, auth_headers, db_session):
+        user = db_session.query(User).first()
+        _seed_grad_intel(db_session, user.id)
+
+        resp = client.get("/api/export/grad-intel", headers=auth_headers)
+        assert resp.status_code == 200
+        data = resp.json()
+
+        for section in [
+            "grad_school_intel",
+            "self_positionings",
+            "dark_knowledge",
+            "yanzhao_programs",
+            "scoreline_records",
+            "adjustment_info",
+        ]:
+            assert section in data, f"缺少 section: {section}"
+
+        assert len(data["grad_school_intel"]) == 1
+        assert data["grad_school_intel"][0]["school_name"] == "北京大学"
+        assert data["grad_school_intel"][0]["background_discrimination"] == "moderate"
+        assert data["grad_school_intel"][0]["tags"] == ["计算机", "985"]
+
+        assert len(data["self_positionings"]) == 1
+        assert data["self_positionings"][0]["undergrad_tier"] == "211"
+        assert data["self_positionings"][0]["reach_schools"] == ["北京大学", "清华大学"]
+
+        assert len(data["dark_knowledge"]) == 1
+        assert data["dark_knowledge"][0]["stage"] == "school_selection"
+
+        assert len(data["yanzhao_programs"]) == 1
+        assert data["yanzhao_programs"][0]["university_name"] == "北京大学"
+
+        assert len(data["scoreline_records"]) == 1
+        assert data["scoreline_records"][0]["total_score_line"] == 375
+
+        assert len(data["adjustment_info"]) == 1
+        assert data["adjustment_info"][0]["status"] == "open"
+
+    def test_json_empty_user(self, client, auth_headers):
+        """无考研数据的用户仍应返回完整结构（各列表为空）。"""
+        resp = client.get("/api/export/grad-intel", headers=auth_headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["grad_school_intel"] == []
+        assert data["self_positionings"] == []
+        assert data["dark_knowledge"] == []
+        assert data["yanzhao_programs"] == []
+        assert data["scoreline_records"] == []
+        assert data["adjustment_info"] == []
+
+    def test_json_user_scoped_data(self, client, auth_headers, db_session):
+        """院校情报和自我定位只返回当前用户的数据。"""
+        user = db_session.query(User).first()
+        # 只插入院校情报，不插入其他用户的
+        db_session.add(GradSchoolIntel(
+            user_id=user.id,
+            school_name="清华大学",
+            major_name="电子工程",
+            school_tier="985",
+        ))
+        db_session.commit()
+
+        resp = client.get("/api/export/grad-intel", headers=auth_headers)
+        data = resp.json()
+        assert len(data["grad_school_intel"]) == 1
+        assert data["grad_school_intel"][0]["school_name"] == "清华大学"
+
+    def test_json_service_directly(self, db_session, auth_headers):
+        """直接调用服务函数验证返回 dict。"""
+        from app.models.user import User as UserModel
+        user = db_session.query(UserModel).first()
+        result = export_grad_intel_json(db_session, user.id)
+        assert isinstance(result, dict)
+        assert "grad_school_intel" in result
+        assert "self_positionings" in result
+
+
+class TestGradIntelCsvExport:
+    def test_csv_requires_auth(self, client):
+        resp = client.get("/api/export/grad-intel/csv")
+        assert resp.status_code == 401
+
+    def test_csv_success_with_data(self, client, auth_headers, db_session):
+        user = db_session.query(User).first()
+        _seed_grad_intel(db_session, user.id)
+
+        resp = client.get("/api/export/grad-intel/csv", headers=auth_headers)
+        assert resp.status_code == 200
+        assert "text/csv" in resp.headers["content-type"]
+        assert "attachment" in resp.headers.get("content-disposition", "")
+        assert "grad-intel-export.csv" in resp.headers.get("content-disposition", "")
+
+        content = resp.content.decode("utf-8-sig")
+        assert "=== 院校情报" in content
+        assert "=== 自我定位" in content
+        assert "=== 暗知识" in content
+        assert "=== 研招网专业目录" in content
+        assert "=== 分数线记录" in content
+        assert "=== 调剂信息" in content
+        assert "北京大学" in content
+
+    def test_csv_empty_user(self, client, auth_headers):
+        """无数据时 CSV 仍应包含所有 section 标题。"""
+        resp = client.get("/api/export/grad-intel/csv", headers=auth_headers)
+        assert resp.status_code == 200
+        content = resp.content.decode("utf-8-sig")
+        assert "=== 院校情报" in content
+        assert "=== 自我定位" in content
+        assert "=== 暗知识" in content
+
+    def test_csv_service_directly(self, db_session, auth_headers):
+        """直接调用服务函数验证返回 str。"""
+        from app.models.user import User as UserModel
+        user = db_session.query(UserModel).first()
+        result = export_grad_intel_csv(db_session, user.id)
+        assert isinstance(result, str)
+        assert "=== 院校情报" in result

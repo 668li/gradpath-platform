@@ -21,6 +21,7 @@ import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/components/ui/toast";
 import { useAuthStore } from "@/stores/auth";
 import { cn } from "@/lib/utils";
+import type { PostItem, UserResponse } from "@/types";
 
 type Tab = "feed" | "report" | "mentors";
 
@@ -86,10 +87,10 @@ type FeedPost = {
   topic_type: string;
   topic_key: string;
   created_at: string;
-  replies?: any[];
+  replies?: PostItem[];
 };
 
-function FeedTab({ currentUser }: { currentUser: any }) {
+function FeedTab({ currentUser }: { currentUser: UserResponse | null }) {
   const toast = useToast();
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,10 +108,20 @@ function FeedTab({ currentUser }: { currentUser: any }) {
     postsApi
       .publicList({ page, page_size: PAGE_SIZE })
       .then((d) => {
-        setPosts(d.items as FeedPost[]);
-        setTotal(d.total);
+        // 修复 P0 bug: 后端可能返回 null，导致 d.items 崩溃
+        if (!d) {
+          setPosts([]);
+          setTotal(0);
+          return;
+        }
+        setPosts(Array.isArray(d.items) ? (d.items as FeedPost[]) : []);
+        setTotal(d.total || 0);
       })
-      .catch(() => toast.push("加载广场失败", "error"))
+      .catch(() => {
+        toast.push("加载广场失败", "error");
+        setPosts([]);
+        setTotal(0);
+      })
       .finally(() => setLoading(false));
   }, [page, toast]);
 
@@ -154,7 +165,7 @@ function FeedTab({ currentUser }: { currentUser: any }) {
           />
         </div>
         <p className="text-sm text-ink-500 whitespace-nowrap">共 {total} 条</p>
-        <Button size="sm" onClick={() => setShowComposer((s) => !s)}>
+        <Button size="sm" onClick={() => setShowComposer((s) => !s)} data-testid="new-post-button">
           <Plus className="h-4 w-4" /> 发帖
         </Button>
       </div>
@@ -165,17 +176,19 @@ function FeedTab({ currentUser }: { currentUser: any }) {
             placeholder="标题（可选）"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            data-testid="post-title-input"
           />
           <Textarea
             placeholder="分享你的备考经验、疑问或资讯…"
             value={content}
             onChange={(e) => setContent(e.target.value)}
+            data-testid="post-content-input"
           />
           <div className="flex justify-end gap-2">
             <Button variant="ghost" size="sm" onClick={() => setShowComposer(false)}>
               取消
             </Button>
-            <Button size="sm" onClick={submit} loading={posting}>
+            <Button size="sm" onClick={submit} loading={posting} data-testid="submit-post-button">
               发布
             </Button>
           </div>
@@ -288,7 +301,7 @@ function PostCard({
       </div>
 
       <div className="mt-3 flex items-center gap-4 text-sm text-ink-500">
-        <button onClick={toggleComments} className="flex items-center gap-1 hover:text-brand-600">
+        <button onClick={toggleComments} className="flex items-center gap-1 hover:text-brand-600" data-testid={`post-comments-toggle-${post.id}`}>
           <MessageCircle className="h-4 w-4" />
           {comments.length > 0 ? comments.length : "评论"}
         </button>
@@ -297,7 +310,7 @@ function PostCard({
       {showComments && (
         <div className="mt-3 space-y-2 border-t border-paper-200 pt-3">
           {comments.map((c) => (
-            <div key={c.id} className="text-sm">
+            <div key={c.id} className="text-sm" data-testid={`comment-item-${c.id}`}>
               <span className="font-medium text-ink-700">{c.author_nickname}：</span>
               <span className="text-ink-600">{c.content}</span>
             </div>
@@ -308,8 +321,9 @@ function PostCard({
                 placeholder="写下评论…"
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
+                data-testid="comment-input"
               />
-              <Button size="sm" onClick={submitComment}>
+              <Button size="sm" onClick={submitComment} data-testid="submit-comment-button">
                 发送
               </Button>
             </div>

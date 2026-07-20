@@ -27,6 +27,11 @@ const GRID_COLOR = "var(--color-paper-200, #f5f3ec)";
 const TICK_COLOR = "var(--color-ink-400, #7a7468)";
 const RANK_COLOR = "#3377f6";
 
+// recharts 轴样式：提取为模块顶层常量，避免每次渲染创建新对象导致 React.memo 失效
+const TICK_STYLE_PLAIN = { fontSize: 12 };
+const TICK_STYLE_COLORED = { fill: TICK_COLOR, fontSize: 12 };
+const AXIS_LINE_STYLE = { stroke: GRID_COLOR };
+
 function useIsMobile(breakpoint = 768): boolean {
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
@@ -104,7 +109,7 @@ export function BarChart({
               type="category"
               dataKey="name"
               width={isMobile ? 80 : 120}
-              tick={{ fontSize: 12 }}
+              tick={TICK_STYLE_PLAIN}
               tickFormatter={formatTickName}
             />
             <Tooltip />
@@ -130,14 +135,14 @@ export function BarChart({
         <CartesianGrid strokeDasharray="3 3" stroke={GRID_COLOR} />
         <XAxis
           dataKey="range"
-          tick={{ fill: TICK_COLOR, fontSize: 12 }}
+          tick={TICK_STYLE_COLORED}
           tickLine={false}
-          axisLine={{ stroke: GRID_COLOR }}
+          axisLine={AXIS_LINE_STYLE}
         />
         <YAxis
-          tick={{ fill: TICK_COLOR, fontSize: 12 }}
+          tick={TICK_STYLE_COLORED}
           tickLine={false}
-          axisLine={{ stroke: GRID_COLOR }}
+          axisLine={AXIS_LINE_STYLE}
         />
         <Tooltip
           contentStyle={tooltipStyle}

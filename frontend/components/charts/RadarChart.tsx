@@ -26,6 +26,10 @@ const TICK_COLOR = "var(--color-ink-400, #7a7468)";
 const NEUTRAL_TICK = "#6b6760";
 const NEUTRAL_GRID = "#e2e0db";
 
+// recharts 极轴样式：提取为模块顶层常量，避免每次渲染创建新对象导致 React.memo 失效
+const TICK_STYLE_NEUTRAL = { fill: NEUTRAL_TICK, fontSize: 12 };
+const TICK_STYLE_BRAND = { fill: TICK_COLOR, fontSize: 12 };
+
 // —— 多系列（院校对比）形态 ——
 export interface SchoolRadarSeries {
   name: string;
@@ -105,7 +109,7 @@ export function RadarChart({
           <PolarGrid stroke={gridVariant === "neutral" ? NEUTRAL_GRID : "var(--color-paper-200, #f5f3ec)"} />
           <PolarAngleAxis
             dataKey="dimension"
-            tick={{ fill: gridVariant === "neutral" ? NEUTRAL_TICK : TICK_COLOR, fontSize: 12 }}
+            tick={gridVariant === "neutral" ? TICK_STYLE_NEUTRAL : TICK_STYLE_BRAND}
           />
           <PolarRadiusAxis allowDecimals={false} tick={showRadiusTicks} axisLine={false} domain={domain} />
           {schools.map((school, i) => {
@@ -135,7 +139,6 @@ export function RadarChart({
     return <ChartEmpty message={emptyText} height={height} />;
   }
 
-  const tickColor = gridVariant === "neutral" ? NEUTRAL_TICK : TICK_COLOR;
   const gridColor = gridVariant === "neutral" ? NEUTRAL_GRID : "var(--color-paper-200, #f5f3ec)";
   const c = color ?? "var(--color-brand-600, #0d7159)";
 
@@ -143,7 +146,7 @@ export function RadarChart({
     <ResponsiveContainer width="100%" height={height}>
       <ReRadarChart data={resolved} outerRadius="72%" role="img" aria-label={ariaLabel ?? "雷达图"}>
         <PolarGrid stroke={gridColor} />
-        <PolarAngleAxis dataKey={axisKey} tick={{ fill: tickColor, fontSize: 12 }} />
+        <PolarAngleAxis dataKey={axisKey} tick={gridVariant === "neutral" ? TICK_STYLE_NEUTRAL : TICK_STYLE_BRAND} />
         <PolarRadiusAxis
           allowDecimals={false}
           tick={showRadiusTicks}

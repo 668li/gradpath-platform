@@ -12,11 +12,11 @@ _SAMPLE_ANSWERS = {
 
 class TestAssessmentQuestions:
     def test_get_questions_no_auth(self, client):
-        """获取题目列表无需认证，返回 12 题。"""
+        """获取题目列表无需认证，返回 48 题（霍兰德扩展题库）。"""
         resp = client.get("/api/assessment/questions")
         assert resp.status_code == 200
         questions = resp.json()
-        assert len(questions) == 12
+        assert len(questions) == 48
         q = questions[0]
         assert set(q.keys()) == {"id", "question", "options"}
         assert len(q["options"]) == 2

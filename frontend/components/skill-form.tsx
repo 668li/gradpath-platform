@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { memo, useMemo, useState, type FormEvent } from "react";
 import { skillsApi } from "@/lib/api";
 import { skillSchema } from "@/lib/validations";
 import { todayISO } from "@/lib/utils";
@@ -44,7 +44,7 @@ function flattenForSelect(
   return out;
 }
 
-export function SkillForm({ initial, tree, onSaved, onCancel }: SkillFormProps) {
+export const SkillForm = memo(function SkillForm({ initial, tree, onSaved, onCancel }: SkillFormProps) {
   const toast = useToast();
   const isEdit = !!initial;
 
@@ -192,4 +192,4 @@ export function SkillForm({ initial, tree, onSaved, onCancel }: SkillFormProps) 
       </div>
     </form>
   );
-}
+});

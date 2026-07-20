@@ -1,7 +1,7 @@
 """评论 API。"""
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
@@ -19,11 +19,9 @@ from app.schemas.comment import (
 from app.services.comment_service import (
     create_comment,
     get_comments_by_post,
-    get_replies,
     like_comment,
     soft_delete_comment,
 )
-from app.api.notifications import create_notification
 
 router = APIRouter(prefix="/api/comments", tags=["评论系统"])
 
@@ -59,7 +57,11 @@ def create_comment_endpoint(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    """创建评论（需登录）。"""
+    """创建评论（需登录）。
+
+    通知闭环由 comment_service.create_comment 内部统一处理（帖子作者/父评论作者通知），
+    此处不再重复触发，避免重复通知。
+    """
     try:
         comment = create_comment(
             db,
@@ -71,45 +73,19 @@ def create_comment_endpoint(
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-    # 通知闭环：评论经验贴 → 通知帖子作者；回复评论 → 通知父评论作者
-    try:
-        if data.parent_id:
-            parent = db.query(Comment).filter(Comment.id == data.parent_id).first()
-            if parent and str(parent.user_id) != str(user.id):
-                create_notification(
-                    db, parent.user_id, type="reply",
-                    title="有人回复了你的评论",
-                    content=data.content[:80],
-                )
-        else:
-            post = db.query(ExperiencePost).filter(ExperiencePost.id == data.post_id).first()
-            if post and str(post.user_id) != str(user.id):
-                create_notification(
-                    db, post.user_id, type="comment",
-                    title="有人评论了你的经验贴",
-                    content=data.content[:80],
-                )
-        db.commit()
-    except Exception:
-        db.rollback()
-
     return _comment_to_response(comment)
 
 
 @router.get("/post/{post_id}", response_model=CommentListResponse)
 def list_comments(
     post_id: UUID,
-    offset: int = 0,
-    limit: int = 50,
+    offset: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
     db: Session = Depends(get_db),
 ):
     """获取帖子评论列表。"""
     items, total = get_comments_by_post(db, post_id, offset=offset, limit=limit)
-    result = []
-    for c in items:
-        resp = _comment_to_response(c)
-        reply_list = get_replies(db, c.id)
-        result.append(resp)
+    result = [_comment_to_response(c) for c in items]
     return CommentListResponse(items=result, total=total)
 
 

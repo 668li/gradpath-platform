@@ -1,5 +1,7 @@
 # backend/pipeline/cli.py
 """管道 CLI 入口"""
+import asyncio
+
 import click
 from uuid import UUID
 
@@ -38,7 +40,7 @@ def extract(report_id: str):
     """LLM 解析报告"""
     db = SessionLocal()
     try:
-        report = extract_report(db, report_id=UUID(report_id))
+        report = asyncio.run(extract_report(db, report_id=UUID(report_id)))
         if report is None:
             click.echo("报告不存在")
         else:

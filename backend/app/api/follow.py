@@ -82,23 +82,38 @@ def list_follow(
     )
     uid = user.id
 
+    # 批量查询所有相关用户，避免 N+1
+    following_ids = {f.followee_id for f in following}
+    follower_ids = {f.follower_id for f in followers}
+    all_user_ids = list(following_ids | follower_ids)
+    users_map = {
+        str(u.id): u
+        for u in (
+            db.query(User).filter(User.id.in_(all_user_ids)).all()
+            if all_user_ids
+            else []
+        )
+    }
+
+    # 批量查询当前用户关注的 ID 集合，避免每条记录查一次
+    following_set = {
+        str(f.followee_id)
+        for f in db.query(Follow).filter(Follow.follower_id == uid).all()
+    }
+
     def _load(pairs, me_is_follower: bool):
         out = []
         for f in pairs:
             other_id = f.followee_id if me_is_follower else f.follower_id
-            u = db.query(User).filter(User.id == other_id).first()
+            u = users_map.get(str(other_id))
             if not u:
                 continue
             out.append({
-                "user_id": other_id,
+                "user_id": str(other_id),
                 "nickname": u.nickname or u.username or u.name,
                 "school": u.school,
                 "major": u.major,
-                "is_following": me_is_follower
-                or db.query(Follow)
-                .filter(Follow.follower_id == uid, Follow.followee_id == other_id)
-                .first()
-                is not None,
+                "is_following": me_is_follower or str(other_id) in following_set,
             })
         return out
 

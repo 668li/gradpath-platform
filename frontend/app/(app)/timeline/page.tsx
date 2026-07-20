@@ -191,7 +191,7 @@ export default function TimelinePage() {
                     <div className="mt-3 flex flex-wrap gap-1.5">
                       {e.skills_gained.map((s, i) => (
                         <span
-                          key={i}
+                          key={`${s}-${i}`}
                           className="inline-flex items-center rounded-md bg-purple-50 px-2 py-0.5 text-xs text-purple-700"
                         >
                           <Sparkles className="h-3 w-3 mr-0.5" />

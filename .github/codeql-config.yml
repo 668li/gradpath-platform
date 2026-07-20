@@ -1,0 +1,23 @@
+# .github/codeql-config.yml
+# CodeQL 自定义配置 — 排除测试 / 迁移 / 第三方代码路径
+name: "GradPath CodeQL Config"
+
+paths:
+  - backend/app
+  - frontend/app
+  - frontend/components
+  - frontend/lib
+  - frontend/stores
+  - frontend/middleware.ts
+
+paths-ignore:
+  - backend/migrations
+  - backend/tests
+  - frontend/tests
+  - frontend/node_modules
+  - "**/*.test.ts"
+  - "**/*.test.tsx"
+  - "**/*.spec.ts"
+
+queries:
+  - uses: security-and-quality

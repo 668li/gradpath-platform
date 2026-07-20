@@ -19,7 +19,11 @@ export default function HomePage() {
 
   useEffect(() => {
     if (!hydrated) return;
-    router.replace(token ? "/dashboard" : "/login");
+    if (token) {
+      router.replace("/dashboard");
+    } else {
+      router.replace("/login");
+    }
   }, [hydrated, token, router]);
 
   return (

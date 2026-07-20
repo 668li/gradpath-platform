@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { UserCircle, GraduationCap, Target, Star, Save } from "lucide-react";
-import { careerProfileApi } from "@/lib/api";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { UserCircle, GraduationCap, Target, Star, Save, Download, FileText, FileSpreadsheet, ClipboardList, Library, Award, Bell, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { careerProfileApi, exportV2Api, useApi, useInvalidate } from "@/lib/api";
 import { LoadingState, EmptyState } from "@/components/ui/empty";
 import { Button, Field, Input, Select, Textarea } from "@/components/ui/form-controls";
 import { FieldError } from "@/components/ui/form-controls";
@@ -35,13 +36,39 @@ const SKILL_LABELS: { key: keyof Pick<CareerProfile, "technical_skill" | "commun
   { key: "creativity_skill", label: "创造力" },
 ];
 
+type ProfileTab = "profile" | "decisions" | "learning-resources" | "achievements" | "notifications" | "search";
+
+const profileTabs: { id: ProfileTab; label: string; icon: typeof UserCircle; href: string; color: string }[] = [
+  { id: "profile", label: "职业画像", icon: UserCircle, href: "/profile", color: "text-brand-500" },
+  { id: "decisions", label: "决策记录", icon: ClipboardList, href: "/decisions", color: "text-blue-500" },
+  { id: "learning-resources", label: "学习资源", icon: Library, href: "/learning-resources", color: "text-green-500" },
+  { id: "achievements", label: "成就徽章", icon: Award, href: "/achievements", color: "text-amber-500" },
+  { id: "notifications", label: "通知", icon: Bell, href: "/notifications", color: "text-red-500" },
+  { id: "search", label: "搜索", icon: Search, href: "/search", color: "text-purple-500" },
+];
+
 export default function ProfilePage() {
+  return (
+    <Suspense fallback={<LoadingState />}>
+      <ProfilePageContent />
+    </Suspense>
+  );
+}
+
+function ProfilePageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const activeTab = (searchParams.get("tab") as ProfileTab) || "profile";
   const toast = useToast();
-  const [profile, setProfile] = useState<CareerProfile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const invalidate = useInvalidate();
+
+  // SWR 拉取画像
+  const { data: profile, error: profileError, isLoading: loading } = useApi<CareerProfile | null>(
+    "/api/career-profile",
+  );
 
   // 表单状态
+  const [saving, setSaving] = useState(false);
   const [educationLevel, setEducationLevel] = useState("");
   const [major, setMajor] = useState("");
   const [schoolName, setSchoolName] = useState("");
@@ -55,30 +82,30 @@ export default function ProfilePage() {
   const [creativitySkill, setCreativitySkill] = useState(3);
   const [selfIntroduction, setSelfIntroduction] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [exporting, setExporting] = useState<"profile" | "csv" | "json" | null>(null);
+
+  // SWR 数据加载后同步表单字段
+  useEffect(() => {
+    if (profile) {
+      setEducationLevel(profile.education_level ?? "");
+      setMajor(profile.major ?? "");
+      setSchoolName(profile.school_name ?? "");
+      setSchoolTier(profile.school_tier ?? "");
+      setGraduationYear(profile.graduation_year?.toString() ?? "");
+      setTargetDirection(profile.target_direction ?? "");
+      setTargetIndustry(profile.target_industry ?? "");
+      // 修复 P2 bug: skill 字段可能为 null，导致 range 输入失控
+      setTechnicalSkill(profile.technical_skill ?? 3);
+      setCommunicationSkill(profile.communication_skill ?? 3);
+      setLeadershipSkill(profile.leadership_skill ?? 3);
+      setCreativitySkill(profile.creativity_skill ?? 3);
+      setSelfIntroduction(profile.self_introduction ?? "");
+    }
+  }, [profile]);
 
   useEffect(() => {
-    careerProfileApi
-      .get()
-      .then((data) => {
-        if (data) {
-          setProfile(data);
-          setEducationLevel(data.education_level ?? "");
-          setMajor(data.major ?? "");
-          setSchoolName(data.school_name ?? "");
-          setSchoolTier(data.school_tier ?? "");
-          setGraduationYear(data.graduation_year?.toString() ?? "");
-          setTargetDirection(data.target_direction ?? "");
-          setTargetIndustry(data.target_industry ?? "");
-          setTechnicalSkill(data.technical_skill);
-          setCommunicationSkill(data.communication_skill);
-          setLeadershipSkill(data.leadership_skill);
-          setCreativitySkill(data.creativity_skill);
-          setSelfIntroduction(data.self_introduction ?? "");
-        }
-      })
-      .catch(() => toast.push("加载画像失败", "error"))
-      .finally(() => setLoading(false));
-  }, [toast]);
+    if (profileError) toast.push("加载画像失败", "error");
+  }, [profileError, toast]);
 
   const handleSave = async () => {
     const data: CareerProfileCreate = {
@@ -100,14 +127,14 @@ export default function ProfilePage() {
     setErrors({});
     try {
       if (profile) {
-        const updated = await careerProfileApi.update(data);
-        setProfile(updated);
+        await careerProfileApi.update(data);
         toast.push("画像已更新", "success");
       } else {
-        const created = await careerProfileApi.create(data);
-        setProfile(created);
+        await careerProfileApi.create(data);
         toast.push("画像已创建", "success");
       }
+      // 让 SWR 重新拉取最新画像
+      await invalidate("/api/career-profile");
     } catch {
       toast.push("保存失败", "error");
     } finally {
@@ -115,10 +142,70 @@ export default function ProfilePage() {
     }
   };
 
+  const handleExportProfile = async () => {
+    setExporting("profile");
+    try {
+      await exportV2Api.profileReport();
+      toast.push("个人报告导出成功", "success");
+    } catch (err) {
+      toast.push(err instanceof Error ? err.message : "导出失败", "error");
+    } finally {
+      setExporting(null);
+    }
+  };
+
+  const handleExportData = async (format: "csv" | "json") => {
+    setExporting(format);
+    try {
+      await exportV2Api.dataExport(format);
+      toast.push(`${format === "csv" ? "CSV" : "JSON"} 数据导出成功`, "success");
+    } catch (err) {
+      toast.push(err instanceof Error ? err.message : "导出失败", "error");
+    } finally {
+      setExporting(null);
+    }
+  };
+
   if (loading) return <LoadingState />;
 
   return (
     <div className="space-y-6 max-w-3xl animate-fade-in">
+      {/* Tab 切换 */}
+      <div className="flex gap-2 border-b border-paper-200 max-w-3xl">
+        {profileTabs.map((tab) => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.id}
+              onClick={() => {
+                if (tab.id === "profile") {
+                  router.push("/profile");
+                } else {
+                  router.push(tab.href);
+                }
+              }}
+              className={cn(
+                "flex items-center gap-2 px-4 py-3 font-medium transition-all border-b-2 text-sm",
+                activeTab === tab.id
+                  ? `${tab.color} border-current`
+                  : "text-ink-400 border-transparent hover:text-ink-600"
+              )}
+            >
+              <Icon className="h-4 w-4" />
+              {tab.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {activeTab !== "profile" && (
+        <div className="flex items-center justify-center py-20 text-ink-400">
+          <p>页面加载中…</p>
+        </div>
+      )}
+
+      {activeTab === "profile" && (
+      <div className="space-y-6 max-w-3xl">
       <div>
         <h1 className="page-title">职业画像</h1>
         <p className="text-sm text-ink-400 mt-1.5">
@@ -249,6 +336,46 @@ export default function ProfilePage() {
           {profile ? "保存修改" : "创建画像"}
         </Button>
       </div>
+
+      {/* 导出 */}
+      <div className="card space-y-4">
+        <div className="flex items-center gap-2 mb-1">
+          <Download className="h-5 w-5 text-brand-600" />
+          <h2 className="font-display font-semibold text-ink-800">数据导出</h2>
+        </div>
+        <p className="text-xs text-ink-400">导出你的个人数据和报告</p>
+        <div className="flex flex-wrap gap-3">
+          <Button
+            onClick={handleExportProfile}
+            loading={exporting === "profile"}
+            size="md"
+            variant="secondary"
+          >
+            <FileText className="h-4 w-4" />
+            导出个人报告（PDF）
+          </Button>
+          <Button
+            onClick={() => handleExportData("csv")}
+            loading={exporting === "csv"}
+            size="md"
+            variant="secondary"
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            导出数据（CSV）
+          </Button>
+          <Button
+            onClick={() => handleExportData("json")}
+            loading={exporting === "json"}
+            size="md"
+            variant="secondary"
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            导出数据（JSON）
+          </Button>
+        </div>
+      </div>
+      </div>
+      )}
     </div>
   );
 }

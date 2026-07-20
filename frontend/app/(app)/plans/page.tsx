@@ -62,10 +62,13 @@ export default function PlansPage() {
     setLoading(true);
     try {
       const data = await careerPlansApi.list();
-      setPlans(data);
-      if (data.length > 0) setExpandedId(data[0].id);
+      // 修复 P0 bug: 后端可能返回 null/非数组，导致 data.length / plans.map 崩溃
+      const plansList = Array.isArray(data) ? data : [];
+      setPlans(plansList);
+      if (plansList.length > 0) setExpandedId(plansList[0].id);
     } catch {
       toast.push("加载规划失败", "error");
+      setPlans([]);
     } finally {
       setLoading(false);
     }
@@ -277,7 +280,7 @@ function PlanCard({
               </p>
               <ul className="space-y-1">
                 {plan.gaps.map((gap, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-ink-600">
+                  <li key={`${gap}-${i}`} className="flex items-start gap-2 text-sm text-ink-600">
                     <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-amber-400" />
                     {gap}
                   </li>
@@ -293,7 +296,7 @@ function PlanCard({
               <div className="space-y-2">
                 {plan.milestones.map((m, idx) => (
                   <MilestoneItem
-                    key={idx}
+                    key={`${plan.id}-${idx}`}
                     milestone={m}
                     idx={idx}
                     planId={plan.id}
@@ -357,7 +360,9 @@ function EmptyPlansState({
       const { chatApi } = await import("@/lib/api");
       const conv = await chatApi.createConversation(`规划：${tpl.name}`);
       // 发送一条消息让 AI 保存这个规划
-      const msg = `请帮我创建一个职业规划：目标 - ${tpl.goal_text}，时间线 - ${tpl.timeline_months}个月。以下是参考里程碑：\n${tpl.milestones.map((m, i) => `${i + 1}. ${m.title}：${m.description}`).join("\n")}`;
+      // 修复 P1 bug: tpl.milestones 可能为 null，导致 .map 崩溃
+      const milestones = tpl.milestones || [];
+      const msg = `请帮我创建一个职业规划：目标 - ${tpl.goal_text}，时间线 - ${tpl.timeline_months}个月。以下是参考里程碑：\n${milestones.map((m, i) => `${i + 1}. ${m.title}：${m.description}`).join("\n")}`;
       const res = await chatApi.sendMessage(conv.id, { content: msg });
       if (res.career_plan) {
         toast.push("规划已创建", "success");

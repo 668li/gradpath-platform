@@ -1,0 +1,24 @@
+# GitHub 开源数据集接入器配置
+name: github_datasets
+category: reports
+description: GitHub开源数据集接入器
+enabled: true
+schedule: weekly  # 每周扫描新增数据集
+rate_limit: 1.0
+rate_limit_ms: 1000
+max_retries: 3
+timeout_seconds: 30
+target_table: dataset_info
+dedup_key:
+  - dataset_name
+  - github_url
+notes: |
+  数据源：GitHub 开源数据集仓库元信息（预置）。
+  覆盖范围：5 个领域（就业/教育/经济/人口/行业），每领域 10 个数据集，共 50 条。
+  抓取策略：本爬虫不直接下载大文件，而是写入数据集元信息（仓库地址、字段 schema、
+  记录数、许可证等）到 DatasetInfo 表，供后续按需下载与检索。
+  字段映射：dataset_name/description/category/source_repo/github_url/file_format/
+  file_size_estimate/last_updated/license/record_count/field_schema/local_path/is_downloaded → DatasetInfo。
+  未来接入 requests / pyarrow 后，可用 download_dataset() 真实下载数据集并缓存到 local_path，
+  将 is_downloaded 置为 True。
+  去重规则：按 dataset_name + github_url + user_id(system) 去重，已存在则更新元信息。

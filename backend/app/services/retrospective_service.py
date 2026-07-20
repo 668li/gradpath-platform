@@ -4,9 +4,18 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.cache import cache
 from app.models.career_event import CareerEvent
 from app.models.retrospective import Retrospective
 from app.schemas.retrospective import RetroCreate, RetroUpdate
+
+
+def _invalidate_user_context_cache(user_id: UUID) -> None:
+    """复盘 CRUD 后失效用户上下文缓存（build_user_context 依赖 Retrospective）。"""
+    try:
+        cache.delete(f"user_context:{user_id}")
+    except Exception:
+        pass
 
 
 def create_retrospective(db: Session, user_id: UUID, data: RetroCreate) -> Retrospective:
@@ -14,6 +23,7 @@ def create_retrospective(db: Session, user_id: UUID, data: RetroCreate) -> Retro
     db.add(retro)
     db.commit()
     db.refresh(retro)
+    _invalidate_user_context_cache(user_id)
     return retro
 
 
@@ -58,6 +68,7 @@ def update_retrospective(db: Session, user_id: UUID, retro_id: UUID, data: Retro
         setattr(retro, key, value)
     db.commit()
     db.refresh(retro)
+    _invalidate_user_context_cache(user_id)
     return retro
 
 
@@ -65,6 +76,7 @@ def delete_retrospective(db: Session, user_id: UUID, retro_id: UUID) -> None:
     retro = get_retrospective(db, user_id, retro_id)
     db.delete(retro)
     db.commit()
+    _invalidate_user_context_cache(user_id)
 
 
 def generate_draft(

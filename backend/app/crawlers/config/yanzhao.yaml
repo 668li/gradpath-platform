@@ -1,0 +1,20 @@
+# 研招网招生简章爬虫配置
+name: yanzhao
+category: grad
+description: 研招网招生简章数据爬虫（预置 985 院校招生信息）
+enabled: true
+schedule: monthly  # 每年招生季更新
+rate_limit: 1.0
+rate_limit_ms: 1000
+max_retries: 3
+timeout_seconds: 30
+target_table: grad_school_intel
+dedup_key:
+  - school_name
+  - major_name
+notes: |
+  数据源：研招网公开招生简章整理的预置数据。
+  覆盖范围：30 所 985 院校的主要专业。
+  抓取策略：因研招网反爬机制较强，使用预置数据作为数据源，
+  包含招生人数、考试科目、学制、报录比估计、复试占比、是否保护一志愿等关键字段。
+  去重规则：按 school_name + major_name + user_id(system) 去重，已存在则更新核心字段。

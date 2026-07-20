@@ -10,6 +10,12 @@ from app.models.pipeline_enums import ContentType
 
 logger = logging.getLogger(__name__)
 
+_llm_client = httpx.Client(
+    timeout=15,
+    limits=httpx.Limits(max_connections=10, max_keepalive_connections=5),
+    headers={"Content-Type": "application/json"},
+)
+
 # 扩展名 → ContentType 映射
 EXTENSION_MAP: dict[str, ContentType] = {
     ".pdf": ContentType.pdf,
@@ -55,7 +61,10 @@ def route_by_url(url: str) -> ContentType | None:
 
 
 def route_by_llm(content_preview: str) -> ContentType:
-    """LLM 兜底路由 — 取内容前 500 字符调用轻量 LLM。"""
+    """LLM 兜底路由 — 取内容前 500 字符调用轻量 LLM。
+
+    使用共享 httpx.Client 实例实现连接复用，提升批量调用性能。
+    """
     prompt = (
         "判断以下内容的文件类型，只返回一个词：html / pdf / excel / csv / json\n"
         f"内容片段：\n{content_preview[:500]}"
@@ -70,7 +79,7 @@ def route_by_llm(content_preview: str) -> ContentType:
         "temperature": 0,
     }
     try:
-        resp = httpx.post(
+        resp = _llm_client.post(
             f"{settings.LLM_BASE_URL}chat/completions",
             headers=headers,
             json=payload,

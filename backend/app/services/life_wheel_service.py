@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.models.life_wheel import LifeWheelSnapshot
 from app.services.ai_service import AIService
+from app.services.ai_orchestrator import AIOrchestrator
 
 # 8 个生活维度定义
 LIFE_DIMENSIONS = [
@@ -69,7 +70,7 @@ def get_history(db: Session, user_id: UUID, limit: int = 12) -> list[LifeWheelSn
     )
 
 
-def generate_ai_analysis(db: Session, snapshot_id: UUID) -> str:
+async def generate_ai_analysis(db: Session, snapshot_id: UUID) -> str:
     """为指定快照生成 AI 分析建议。"""
     snapshot = db.query(LifeWheelSnapshot).filter(LifeWheelSnapshot.id == snapshot_id).first()
     if not snapshot:
@@ -83,8 +84,8 @@ def generate_ai_analysis(db: Session, snapshot_id: UUID) -> str:
     if snapshot.notes:
         lines.append(f"\n用户笔记: {snapshot.notes}")
 
-    service = AIService()
-    raw = service.chat(SYSTEM_PROMPT, "\n".join(lines), timeout=30)
+    orchestrator = AIOrchestrator()
+    raw = await orchestrator.chat(system_prompt=SYSTEM_PROMPT, user_prompt="\n".join(lines), timeout=30)
 
     snapshot.ai_analysis = raw
     db.commit()

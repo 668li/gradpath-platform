@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 interface StatCardProps {
@@ -16,7 +16,7 @@ const colorMap = {
   purple: "bg-purple-50 text-purple-600",
 };
 
-export function StatCard({ label, value, icon, hint, color = "blue" }: StatCardProps) {
+export const StatCard = memo(function StatCard({ label, value, icon, hint, color = "blue" }: StatCardProps) {
   return (
     <div className="card flex items-center gap-4">
       <div
@@ -34,4 +34,4 @@ export function StatCard({ label, value, icon, hint, color = "blue" }: StatCardP
       </div>
     </div>
   );
-}
+});

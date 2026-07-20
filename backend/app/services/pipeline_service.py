@@ -2,9 +2,11 @@
 """Pipeline 业务逻辑。"""
 import json
 import logging
+import re
 import time
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urlparse
 from uuid import UUID
 
 import httpx
@@ -36,6 +38,45 @@ UPLOAD_DIR = Path(__file__).parent.parent.parent / "uploads"
 MAX_FILE_SIZE = 20 * 1024 * 1024  # 20MB
 ALLOWED_EXTENSIONS = {".pdf", ".xlsx", ".xls", ".csv"}
 
+# 修复: FASTAPI-INJECT-001 — SSRF 防护：仅允许 http/https scheme，
+# 拒绝 file:// / gopher:// / ftp:// 等可能读取本地资源或攻击内网的协议。
+_ALLOWED_URL_SCHEMES = {"http", "https"}
+
+# 修复: FASTAPI-FILES-001 — 限制 URL 长度，防止超长 URL 触发解析或日志注入。
+_MAX_URL_LENGTH = 2048
+
+# 修复: FASTAPI-FILES-001 — 文件名清洗白名单：仅保留字母数字-_.，
+# 防止路径穿越 (../) / null byte / 控制字符注入。
+_SAFE_FILENAME_RE = re.compile(r"[^A-Za-z0-9._-]+")
+
+
+def _validate_url(url: str) -> str:
+    """校验 URL scheme 与长度，返回原 url 或抛 ValueError。
+
+    修复: FASTAPI-INJECT-001 — SSRF 防护。
+    """
+    if not url or len(url) > _MAX_URL_LENGTH:
+        raise ValueError("URL 为空或过长")
+    parsed = urlparse(url)
+    if parsed.scheme.lower() not in _ALLOWED_URL_SCHEMES:
+        raise ValueError(f"不支持的 URL scheme: {parsed.scheme!r}")
+    if not parsed.netloc:
+        raise ValueError("URL 缺少主机名")
+    return url
+
+
+def _sanitize_filename(name: str) -> str:
+    """清洗文件名，移除路径分隔符与控制字符。
+
+    修复: FASTAPI-FILES-001 / FASTAPI-INJECT-001 — 防止路径穿越。
+    """
+    # 仅取 basename，剥离任何路径前缀
+    name = Path(name).name
+    # 把不在白名单内的字符替换为 _
+    name = _SAFE_FILENAME_RE.sub("_", name)
+    # 限制长度
+    return name[:128] if name else "upload"
+
 
 def get_or_create_report(
     db: Session, school_id: UUID, year: int, source_url: str = "", source_type: SourceType = SourceType.crawl
@@ -62,6 +103,9 @@ def get_or_create_report(
 
 def ingest_url(db: Session, req: IngestURLRequest) -> ReportRecord:
     """URL 抓取模式。"""
+    # 修复: FASTAPI-INJECT-001 — SSRF 防护：拒绝 file:// / ftp:// 等危险 scheme。
+    _validate_url(req.url)
+
     school = db.query(School).filter(School.slug == req.school_slug).first()
     if not school:
         raise ValueError(f"学校 '{req.school_slug}' 不存在")
@@ -102,17 +146,23 @@ def ingest_file(
     if not school:
         raise ValueError(f"学校 '{school_slug}' 不存在")
 
-    ext = Path(filename).suffix.lower()
+    # 修复: FASTAPI-FILES-001 — 校验扩展名前先取 basename + 清洗，
+    # 防止 "../../etc/passwd.pdf" 这类路径穿越攻击。
+    safe_filename = _sanitize_filename(filename)
+    ext = Path(safe_filename).suffix.lower()
     if ext not in ALLOWED_EXTENSIONS:
         raise ValueError(f"不支持的文件格式: {ext}")
 
     if len(file_content) > MAX_FILE_SIZE:
         raise ValueError("文件过大，最大 20MB")
 
+    # 修复: FASTAPI-FILES-001 — school_slug 也需清洗，防止拼接出路径穿越。
+    safe_slug = _SAFE_FILENAME_RE.sub("_", Path(school_slug).name) or "school"
+
     # 保存文件
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     timestamp = int(time.time())
-    saved_name = f"{school_slug}_{year}_{timestamp}{ext}"
+    saved_name = f"{safe_slug}_{year}_{timestamp}{ext}"
     file_path = UPLOAD_DIR / saved_name
     file_path.write_bytes(file_content)
 
@@ -120,8 +170,8 @@ def ingest_file(
     report.file_path = str(file_path)
     report.source_url = str(file_path)
 
-    # 路由
-    content_type = route_content(filename=filename)
+    # 路由（基于清洗后的扩展名）
+    content_type = route_content(filename=safe_filename)
     report.content_type = content_type
     db.commit()
 
@@ -154,6 +204,10 @@ def ingest_api(db: Session, req: IngestAPIRequest) -> ReportRecord:
         raise ValueError("数据源不存在")
     if not source.is_active:
         raise ValueError("数据源已禁用")
+
+    # 修复: FASTAPI-INJECT-001 — SSRF 防护：管理员配置的 api_url 也需校验。
+    if source.api_url:
+        _validate_url(source.api_url)
 
     report = get_or_create_report(db, school.id, req.year, source.api_url or "", SourceType.api)
 

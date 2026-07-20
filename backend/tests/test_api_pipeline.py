@@ -1,5 +1,7 @@
 # backend/tests/test_api_pipeline.py
 """Pipeline API 端点测试。"""
+import io
+
 import pytest
 from app.models.employment_data import Degree, EmploymentData
 from app.models.report_record import ParseStatus, ReportRecord
@@ -166,7 +168,6 @@ class TestStats:
 
 class TestFileUpload:
     def test_upload_unsupported_format(self, client, admin_headers):
-        import io
         resp = client.post(
             "/api/pipeline/ingest/file",
             data={"school_slug": "tsinghua", "year": "2024"},

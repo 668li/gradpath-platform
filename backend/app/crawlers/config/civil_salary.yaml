@@ -1,0 +1,19 @@
+# 公务员待遇信息爬虫配置
+name: civil_salary
+category: civil
+description: 公务员待遇信息爬虫
+enabled: true
+schedule: yearly  # 每年更新待遇数据
+rate_limit: 1.0
+rate_limit_ms: 1000
+max_retries: 3
+timeout_seconds: 30
+target_table: civil_service_post_intel
+dedup_key:
+  - region
+  - post_name
+notes: |
+  数据源：各地公务员薪资待遇调研数据（预置）。
+  覆盖范围：20 个城市/地区 × 4 个级别（科员/副科/正科/副处），共 80 条记录。
+  抓取策略：模拟抓取各地公务员薪资待遇数据，包含基本工资、津贴、年终绩效等综合年收入信息。
+  去重规则：按 region + post_name + user_id(system) 去重，已存在则跳过。

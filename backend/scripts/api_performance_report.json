@@ -1,0 +1,306 @@
+{
+  "tests": [
+    {
+      "module": "系统",
+      "endpoint": "/health",
+      "method": "GET",
+      "status_code": 404,
+      "response_time": 2.033,
+      "within_limit": true,
+      "data_size": 0
+    },
+    {
+      "module": "系统",
+      "endpoint": "/ready",
+      "method": "GET",
+      "status_code": 404,
+      "response_time": 2.066,
+      "within_limit": true,
+      "data_size": 0
+    },
+    {
+      "module": "考研导师",
+      "endpoint": "/mentors/kaoyan-mentors",
+      "method": "GET",
+      "status_code": 200,
+      "response_time": 2.02,
+      "within_limit": true,
+      "data_size": 16439
+    },
+    {
+      "module": "考研导师",
+      "endpoint": "/mentors/kaoyan-mentors?page=1&page_size=50",
+      "method": "GET",
+      "status_code": 200,
+      "response_time": 2.028,
+      "within_limit": true,
+      "data_size": 40776
+    },
+    {
+      "module": "考研导师",
+      "endpoint": "/mentors/kaoyan-mentors?search=计算机",
+      "method": "GET",
+      "status_code": 200,
+      "response_time": 2.047,
+      "within_limit": true,
+      "data_size": 46
+    },
+    {
+      "module": "考研导师",
+      "endpoint": "/mentors/kaoyan-mentors?university=清华大学",
+      "method": "GET",
+      "status_code": 200,
+      "response_time": 2.039,
+      "within_limit": true,
+      "data_size": 2487
+    },
+    {
+      "module": "考研情报",
+      "endpoint": "/grad-intel/dark-knowledge/list",
+      "method": "GET",
+      "status_code": 200,
+      "response_time": 2.026,
+      "within_limit": true,
+      "data_size": 31007
+    },
+    {
+      "module": "考研经验贴",
+      "endpoint": "/kaoyan/experience-posts",
+      "method": "GET",
+      "status_code": 200,
+      "response_time": 2.058,
+      "within_limit": true,
+      "data_size": 32301
+    },
+    {
+      "module": "考研问答",
+      "endpoint": "/kaoyan/qa",
+      "method": "GET",
+      "status_code": 200,
+      "response_time": 2.019,
+      "within_limit": true,
+      "data_size": 9509
+    },
+    {
+      "module": "职业测评",
+      "endpoint": "/assessment/questions",
+      "method": "GET",
+      "status_code": 200,
+      "response_time": 2.045,
+      "within_limit": true,
+      "data_size": 9253
+    },
+    {
+      "module": "职业测评",
+      "endpoint": "/assessment/questions?type=mbti",
+      "method": "GET",
+      "status_code": 200,
+      "response_time": 2.037,
+      "within_limit": true,
+      "data_size": 8107
+    },
+    {
+      "module": "AI导师",
+      "endpoint": "/mentors/personas",
+      "method": "GET",
+      "status_code": 200,
+      "response_time": 2.047,
+      "within_limit": true,
+      "data_size": 413
+    },
+    {
+      "module": "职业决策",
+      "endpoint": "/decisions",
+      "method": "GET",
+      "status_code": 200,
+      "response_time": 2.05,
+      "within_limit": true,
+      "data_size": 46
+    },
+    {
+      "module": "职业决策",
+      "endpoint": "/decisions?page=1&page_size=20",
+      "method": "GET",
+      "status_code": 200,
+      "response_time": 2.023,
+      "within_limit": true,
+      "data_size": 46
+    },
+    {
+      "module": "技能树",
+      "endpoint": "/skills",
+      "method": "GET",
+      "status_code": 200,
+      "response_time": 2.028,
+      "within_limit": true,
+      "data_size": 2
+    },
+    {
+      "module": "人生平衡轮",
+      "endpoint": "/life-wheel/latest",
+      "method": "GET",
+      "status_code": 200,
+      "response_time": 2.038,
+      "within_limit": true,
+      "data_size": 4
+    },
+    {
+      "module": "阶段复盘",
+      "endpoint": "/retrospectives",
+      "method": "GET",
+      "status_code": 200,
+      "response_time": 2.022,
+      "within_limit": true,
+      "data_size": 46
+    },
+    {
+      "module": "阶段复盘",
+      "endpoint": "/retrospectives?page=1&page_size=10",
+      "method": "GET",
+      "status_code": 200,
+      "response_time": 2.051,
+      "within_limit": true,
+      "data_size": 46
+    },
+    {
+      "module": "成长模式",
+      "endpoint": "/growth-patterns/analyze",
+      "method": "GET",
+      "status_code": 500,
+      "response_time": 2.058,
+      "within_limit": true,
+      "data_size": 0
+    },
+    {
+      "module": "人生设计",
+      "endpoint": "/life-design/sprints",
+      "method": "GET",
+      "status_code": 200,
+      "response_time": 2.042,
+      "within_limit": true,
+      "data_size": 2
+    },
+    {
+      "module": "决策分析",
+      "endpoint": "/decision-analysis/list",
+      "method": "GET",
+      "status_code": 200,
+      "response_time": 2.059,
+      "within_limit": true,
+      "data_size": 2
+    },
+    {
+      "module": "社区报告",
+      "endpoint": "/community/my-reports",
+      "method": "GET",
+      "status_code": 200,
+      "response_time": 2.054,
+      "within_limit": true,
+      "data_size": 46
+    },
+    {
+      "module": "社区报告",
+      "endpoint": "/community/my-reports?page=1&page_size=10",
+      "method": "GET",
+      "status_code": 200,
+      "response_time": 2.033,
+      "within_limit": true,
+      "data_size": 46
+    },
+    {
+      "module": "AI对话",
+      "endpoint": "/chat/conversations",
+      "method": "GET",
+      "status_code": 200,
+      "response_time": 2.021,
+      "within_limit": true,
+      "data_size": 46
+    },
+    {
+      "module": "职业档案",
+      "endpoint": "/career-profile",
+      "method": "GET",
+      "status_code": 200,
+      "response_time": 2.013,
+      "within_limit": true,
+      "data_size": 4
+    },
+    {
+      "module": "职业规划",
+      "endpoint": "/career-plans",
+      "method": "GET",
+      "status_code": 200,
+      "response_time": 2.034,
+      "within_limit": true,
+      "data_size": 2
+    },
+    {
+      "module": "职业事件",
+      "endpoint": "/events",
+      "method": "GET",
+      "status_code": 200,
+      "response_time": 2.024,
+      "within_limit": true,
+      "data_size": 46
+    },
+    {
+      "module": "仪表盘",
+      "endpoint": "/dashboard/overview",
+      "method": "GET",
+      "status_code": 200,
+      "response_time": 2.071,
+      "within_limit": true,
+      "data_size": 186
+    },
+    {
+      "module": "连续打卡",
+      "endpoint": "/streaks",
+      "method": "GET",
+      "status_code": 404,
+      "response_time": 2.023,
+      "within_limit": true,
+      "data_size": 0
+    },
+    {
+      "module": "主动洞察",
+      "endpoint": "/proactive-insights",
+      "method": "GET",
+      "status_code": 404,
+      "response_time": 2.039,
+      "within_limit": true,
+      "data_size": 0
+    },
+    {
+      "module": "决策日志",
+      "endpoint": "/decision-journal",
+      "method": "GET",
+      "status_code": 404,
+      "response_time": 2.03,
+      "within_limit": true,
+      "data_size": 0
+    },
+    {
+      "module": "求职情报",
+      "endpoint": "/career-intel/companies",
+      "method": "GET",
+      "status_code": 404,
+      "response_time": 2.033,
+      "within_limit": true,
+      "data_size": 0
+    },
+    {
+      "module": "考公情报",
+      "endpoint": "/civil-service-intel/posts",
+      "method": "GET",
+      "status_code": 404,
+      "response_time": 2.036,
+      "within_limit": true,
+      "data_size": 0
+    }
+  ],
+  "avg_response_time": 2.038,
+  "max_response_time": 2.071,
+  "min_response_time": 2.013,
+  "tests_over_3s": 0,
+  "total_tests": 33
+}

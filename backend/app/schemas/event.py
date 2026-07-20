@@ -10,12 +10,13 @@ class EventCreate(BaseModel):
     event_date: date
     event_type: EventType
     title: str = Field(min_length=1, max_length=255)
-    description: str | None = None
-    situation: str | None = None
-    task: str | None = None
-    action: str | None = None
-    result: str | None = None
-    reflection: str | None = None
+    # 修复: FASTAPI-VALID-001 — STAR 各字段加 max_length 防止超大文本
+    description: str | None = Field(None, max_length=5000)
+    situation: str | None = Field(None, max_length=5000)
+    task: str | None = Field(None, max_length=5000)
+    action: str | None = Field(None, max_length=10000)
+    result: str | None = Field(None, max_length=5000)
+    reflection: str | None = Field(None, max_length=5000)
     skills_gained: list[str] = Field(default_factory=list)
     impact_metrics: dict | None = None
     mood: int | None = Field(default=None, ge=1, le=5)
@@ -24,13 +25,13 @@ class EventCreate(BaseModel):
 class EventUpdate(BaseModel):
     event_date: date | None = None
     event_type: EventType | None = None
-    title: str | None = None
-    description: str | None = None
-    situation: str | None = None
-    task: str | None = None
-    action: str | None = None
-    result: str | None = None
-    reflection: str | None = None
+    title: str | None = Field(None, min_length=1, max_length=255)
+    description: str | None = Field(None, max_length=5000)
+    situation: str | None = Field(None, max_length=5000)
+    task: str | None = Field(None, max_length=5000)
+    action: str | None = Field(None, max_length=10000)
+    result: str | None = Field(None, max_length=5000)
+    reflection: str | None = Field(None, max_length=5000)
     skills_gained: list[str] | None = None
     impact_metrics: dict | None = None
     mood: int | None = Field(default=None, ge=1, le=5)

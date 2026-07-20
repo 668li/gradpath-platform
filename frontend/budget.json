@@ -1,0 +1,47 @@
+[
+  {
+    "path": "/*",
+    "timings": {
+      "first-contentful-paint": 1500,
+      "largest-contentful-paint": 2500,
+      "cumulative-layout-shift": 0.1,
+      "total-blocking-time": 300,
+      "interactive": 3500,
+      "speed-index": 3000
+    },
+    "resourceSizes": {
+      "script": 200,
+      "stylesheet": 50,
+      "image": 300,
+      "font": 100,
+      "total": 500
+    },
+    "resourceCounts": {
+      "script": 15,
+      "stylesheet": 5,
+      "image": 20,
+      "font": 5,
+      "total": 50
+    }
+  },
+  {
+    "path": "/login",
+    "timings": {
+      "first-contentful-paint": 1200,
+      "largest-contentful-paint": 2000,
+      "cumulative-layout-shift": 0.1,
+      "total-blocking-time": 200,
+      "interactive": 3000
+    }
+  },
+  {
+    "path": "/dashboard",
+    "timings": {
+      "first-contentful-paint": 2000,
+      "largest-contentful-paint": 3000,
+      "cumulative-layout-shift": 0.15,
+      "total-blocking-time": 400,
+      "interactive": 4000
+    }
+  }
+]

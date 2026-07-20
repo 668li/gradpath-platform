@@ -11,6 +11,13 @@ export {
 export type { ApiError } from "./client";
 
 export { cachedRequest, invalidateCache, clearQueryCache } from "./query-cache";
+export {
+  SWR_GLOBAL_CONFIG,
+  apiFetcher,
+  useApi,
+  useApiMutation,
+  useInvalidate,
+} from "./swr-config";
 
 export { authApi } from "./auth";
 export { dashboardApi } from "./dashboard";
@@ -56,3 +63,51 @@ export { ratingApi } from "./communityRating";
 export type { RatingResponse, RatingStats, TopRatedItem } from "./communityRating";
 export { learningMethodsApi } from "./learningMethods";
 export type { LearningMethod, LearningMethodListResponse, LearningMethodTag, LearningMethodStats } from "./learningMethods";
+
+// 决策副驾驶护城河（Phase D）
+export {
+  userContextApi,
+  userMemoryApi,
+  onboardingApi,
+  decisionPulseApi,
+  darkKnowledgePushApi,
+} from "./decision-copilot";
+export type {
+  MemoryFactType,
+  OnboardingStatus,
+  ReviewStatus,
+  PushFeedback,
+  ContextCareerProfile,
+  ContextOnboarding,
+  ContextMemoryFact,
+  ContextDecision,
+  ContextOutcomeReport,
+  UserContextStats,
+  UserContext,
+  UserContextPrompt,
+  UserMemoryFact,
+  UserMemoryListResponse,
+  AddFactRequest,
+  AddFactResponse,
+  MemoryFeedbackRequest,
+  MemoryFeedbackResponse,
+  ExtractRequest,
+  ExtractResponse,
+  OnboardingRecord,
+  OnboardingGetResponse,
+  OnboardingSaveRequest,
+  OnboardingStatusResponse,
+  PulseOverview,
+  PulseActiveDecision,
+  PulseReviewItem,
+  PulseDarkKnowledgeItem,
+  PulseMemoryFact,
+  PulseFull,
+  PulseListResponse,
+  DarkKnowledgePush,
+  DarkKnowledgePushListResponse,
+  DarkKnowledgeUnreadCount,
+  DarkKnowledgePushRequest,
+  DarkKnowledgePushTriggerResponse,
+  DarkKnowledgeFeedbackRequest,
+} from "../../types/decision-copilot";

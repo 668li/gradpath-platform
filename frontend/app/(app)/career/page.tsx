@@ -1,8 +1,10 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import { ClipboardCheck, Compass, ClipboardList, TrendingUp, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { LoadingState } from "@/components/ui/empty";
 
 const tabs = [
   { id: "assessment", label: "评估测试", icon: ClipboardCheck, color: "text-purple-500", href: "/assessment", desc: "霍兰德、MBTI、大五、DISC 四大职业测评，深度了解你的兴趣、人格与行为风格" },
@@ -12,6 +14,14 @@ const tabs = [
 ];
 
 export default function CareerPage() {
+  return (
+    <Suspense fallback={<LoadingState />}>
+      <CareerPageContent />
+    </Suspense>
+  );
+}
+
+function CareerPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeTab = searchParams.get("tab") || "assessment";

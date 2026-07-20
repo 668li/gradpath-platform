@@ -1,0 +1,22 @@
+# 面试经验爬虫配置
+name: interview
+category: career
+description: 面试经验爬虫
+enabled: true
+schedule: weekly  # 每周更新面试经验
+rate_limit: 1.0
+rate_limit_ms: 1000
+max_retries: 3
+timeout_seconds: 30
+target_table: companies + interview_reports
+dedup_key:
+  - company
+  - position
+  - interview_year
+notes: |
+  数据源：看准网/牛客网的面试经验帖数据（预置）。
+  覆盖范围：20 家知名公司 × 6 条面试经验，共 120 条。
+  抓取策略：模拟看准网/牛客网面试经验帖数据，每公司 6 条面试经验使用不同岗位
+  以保证 InterviewReport 表唯一约束 (user_id, company, position, interview_year) 不冲突。
+  字段映射：公司信息 → Company；面试经验 → InterviewReport。
+  去重规则：Company 按 name 去重；InterviewReport 按 user_id + company + position + interview_year 去重。

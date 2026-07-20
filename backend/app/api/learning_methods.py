@@ -14,6 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, text
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.core.deps import get_current_user
 from app.database import get_db
 from app.models.assessment import Assessment
@@ -28,6 +29,66 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/learning-methods", tags=["学习方法"])
 
 CATEGORY = "学习方法"
+
+
+def _is_sqlite() -> bool:
+    """检测当前数据库是否为 SQLite（开发环境，不支持 jsonb_array_elements_text）。"""
+    return settings.DATABASE_URL.startswith("sqlite")
+
+
+def _compute_tag_stats(db: Session, limit: int | None = None) -> list[tuple[str, int]]:
+    """统计学习方法文章的 tag 分布。
+
+    修复 bug: PostgreSQL 用 jsonb_array_elements_text，SQLite 不支持，
+    改为查询所有文章后在 Python 端聚合统计。
+    """
+    if not _is_sqlite():
+        # PostgreSQL: 使用 jsonb_array_elements_text 高效统计
+        q = (
+            db.query(
+                func.jsonb_array_elements_text(KnowledgeArticle.tags).label("tag"),
+                func.count(),
+            )
+            .filter(
+                KnowledgeArticle.category == CATEGORY,
+                KnowledgeArticle.is_published == True,  # noqa: E712
+            )
+            .group_by("tag")
+            .order_by(func.count().desc())
+        )
+        if limit:
+            q = q.limit(limit)
+        return [(r[0], int(r[1])) for r in q.all()]
+
+    # SQLite: Python 端聚合（兼容方案）
+    articles = (
+        db.query(KnowledgeArticle.tags)
+        .filter(
+            KnowledgeArticle.category == CATEGORY,
+            KnowledgeArticle.is_published == True,  # noqa: E712
+        )
+        .all()
+    )
+    counter: dict[str, int] = {}
+    for row in articles:
+        tags = row[0] if isinstance(row, tuple) else row.tags
+        if not tags:
+            continue
+        if isinstance(tags, str):
+            try:
+                import json as _json
+                tags = _json.loads(tags)
+            except Exception:
+                continue
+        for t in tags:
+            if not isinstance(t, str):
+                continue
+            counter[t] = counter.get(t, 0) + 1
+    sorted_tags = sorted(counter.items(), key=lambda x: x[1], reverse=True)
+    if limit:
+        sorted_tags = sorted_tags[:limit]
+    return sorted_tags
+
 
 # ---------- 学习方法 tag 体系 ----------
 
@@ -185,30 +246,33 @@ def list_articles(
         KnowledgeArticle.is_published == True,  # noqa: E712
     )
     if tag:
-        q = q.filter(KnowledgeArticle.tags.contains([tag]))
-
-    total = q.count()
-    items = (
-        q.order_by(KnowledgeArticle.created_at.desc())
-        .offset((page - 1) * page_size)
-        .limit(page_size)
-        .all()
-    )
+        if _is_sqlite():
+            # SQLite: tags 是 JSON 字符串/列表，用 Python 端过滤
+            q = q.all()
+            q = [a for a in q if a.tags and tag in (a.tags if isinstance(a.tags, list) else [])]
+            total = len(q)
+            items = q[(page - 1) * page_size : (page - 1) * page_size + page_size]
+        else:
+            q = q.filter(KnowledgeArticle.tags.contains([tag]))
+            total = q.count()
+            items = (
+                q.order_by(KnowledgeArticle.created_at.desc())
+                .offset((page - 1) * page_size)
+                .limit(page_size)
+                .all()
+            )
+    else:
+        total = q.count()
+        items = (
+            q.order_by(KnowledgeArticle.created_at.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+            .all()
+        )
 
     # tags_stats: 当前筛选范围内的 tag 分布
-    tag_rows = (
-        db.query(
-            func.jsonb_array_elements_text(KnowledgeArticle.tags).label("tag"),
-        )
-        .filter(
-            KnowledgeArticle.category == CATEGORY,
-            KnowledgeArticle.is_published == True,  # noqa: E712
-        )
-        .group_by("tag")
-        .order_by(func.count().desc())
-        .all()
-    )
-    tags_stats = [{"tag": r.tag, "count": r[0]} for r in tag_rows]
+    tag_stats_raw = _compute_tag_stats(db)
+    tags_stats = [{"tag": t, "count": c} for t, c in tag_stats_raw]
 
     return {
         "items": [ArticleBrief.model_validate(a) for a in items],
@@ -225,20 +289,8 @@ def get_tags(
     _user: User = Depends(get_current_user),
 ):
     """返回 category='学习方法' 的所有 tag 分布统计。"""
-    tag_rows = (
-        db.query(
-            func.jsonb_array_elements_text(KnowledgeArticle.tags).label("tag"),
-            func.count(),
-        )
-        .filter(
-            KnowledgeArticle.category == CATEGORY,
-            KnowledgeArticle.is_published == True,  # noqa: E712
-        )
-        .group_by("tag")
-        .order_by(func.count().desc())
-        .all()
-    )
-    return [TagStat(tag=r[0], count=int(r[1])) for r in tag_rows]
+    tag_rows = _compute_tag_stats(db)
+    return [TagStat(tag=t, count=c) for t, c in tag_rows]
 
 
 @router.get("/stats")
@@ -253,30 +305,17 @@ def get_stats(db: Session = Depends(get_db)):
         )
         .scalar()
     )
-    tag_rows = (
-        db.query(
-            func.jsonb_array_elements_text(KnowledgeArticle.tags).label("tag"),
-            func.count(),
-        )
-        .filter(
-            KnowledgeArticle.category == CATEGORY,
-            KnowledgeArticle.is_published == True,  # noqa: E712
-        )
-        .group_by("tag")
-        .order_by(func.count().desc())
-        .limit(10)
-        .all()
-    )
+    tag_rows = _compute_tag_stats(db, limit=10)
     return {
         "total": total or 0,
         "category_counts": [
-            {"category": r[0], "count": r[1]} for r in tag_rows
+            {"category": t, "count": c} for t, c in tag_rows
         ],
     }
 
 
 @router.get("/recommend", response_model=list[RecommendItem])
-def recommend(
+async def recommend(
     limit: int = Query(5, ge=1, le=20),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
@@ -289,7 +328,7 @@ def recommend(
     4. 无画像数据时fallback到随机推荐
     """
     # 尝试个性化推荐
-    personalized = recommend_personalized(db, user.id, limit)
+    personalized = await recommend_personalized(db, user.id, limit)
     if personalized:
         return [
             RecommendItem(

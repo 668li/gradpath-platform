@@ -24,6 +24,36 @@ def test_register_duplicate_email(client):
     assert resp.status_code == 409
 
 
+def test_register_rejects_disagree_terms(client):
+    """B3 合规：未同意条款时拒绝注册。"""
+    resp = client.post(
+        "/api/auth/register",
+        json={
+            "email": "disagree@example.com",
+            "password": "Pass1234!",
+            "name": "用户",
+            "agree_terms": False,
+        },
+    )
+    assert resp.status_code == 400
+    body = resp.json()
+    assert body["code"] == "TERMS_NOT_AGREED"
+
+
+def test_register_accepts_explicit_agree_terms(client):
+    """B3 合规：显式 agree_terms=true 可正常注册。"""
+    resp = client.post(
+        "/api/auth/register",
+        json={
+            "email": "agree@example.com",
+            "password": "Pass1234!",
+            "name": "同意用户",
+            "agree_terms": True,
+        },
+    )
+    assert resp.status_code == 201
+
+
 def test_login_success(client):
     client.post(
         "/api/auth/register",

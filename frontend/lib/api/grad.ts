@@ -102,6 +102,12 @@ export const gradIntelApi = {
     ),
   getSchoolSummary: (university_name: string) =>
     request<GradSchoolDataSummary>(`/api/grad-intel/schools/${encodeURIComponent(university_name)}/summary`),
+  // 批量获取院校汇总（消除前端 N+1 调用）
+  batchSchoolSummaries: (universityNames: string[]) =>
+    request<GradSchoolDataSummary[]>(`/api/grad-intel/schools/batch`, {
+      method: "POST",
+      body: JSON.stringify({ university_names: universityNames }),
+    }),
 };
 
 // ===== AI 院校分析师 =====

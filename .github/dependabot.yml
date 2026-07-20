@@ -1,0 +1,129 @@
+# .github/dependabot.yml
+# Dependabot 配置 — 定期检查依赖更新并自动创建 PR
+# 文档: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+
+updates:
+  # ===== Python 后端依赖（pip / pyproject.toml） =====
+  - package-ecosystem: "pip"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+      timezone: "Asia/Shanghai"
+    open-pull-requests-limit: 5
+    target-branch: "develop"
+    labels:
+      - "dependencies"
+      - "python"
+      - "backend"
+    commit-message:
+      prefix: "deps(backend)"
+      include: "scope"
+    # 安全更新优先（默认每天检查）
+    allow:
+      - dependency-type: "all"
+    groups:
+      # 把同类小版本更新合并为一个 PR，减少噪声
+      fastapi:
+        patterns:
+          - "fastapi"
+          - "pydantic"
+          - "pydantic-settings"
+      sqlalchemy:
+        patterns:
+          - "sqlalchemy"
+          - "alembic"
+          - "psycopg2-binary"
+      security:
+        update-types:
+          - "version-update:semver-major"
+          - "version-update:semver-minor"
+        dependency-type: "all"
+
+  # ===== Node.js 前端依赖（npm） =====
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "03:00"
+      timezone: "Asia/Shanghai"
+    open-pull-requests-limit: 5
+    target-branch: "develop"
+    labels:
+      - "dependencies"
+      - "javascript"
+      - "frontend"
+    commit-message:
+      prefix: "deps(frontend)"
+      include: "scope"
+    allow:
+      - dependency-type: "all"
+    groups:
+      next:
+        patterns:
+          - "next"
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+      testing:
+        patterns:
+          - "vitest"
+          - "@vitejs/*"
+          - "@testing-library/*"
+          - "@playwright/*"
+      ui:
+        patterns:
+          - "lucide-react"
+          - "tailwindcss"
+          - "tailwind-merge"
+          - "clsx"
+          - "recharts"
+
+  # ===== GitHub Actions 依赖 =====
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    target-branch: "develop"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "deps(ci)"
+      include: "scope"
+
+  # ===== Docker 基础镜像 =====
+  - package-ecosystem: "docker"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    target-branch: "develop"
+    labels:
+      - "dependencies"
+      - "docker"
+      - "backend"
+    commit-message:
+      prefix: "deps(docker-backend)"
+      include: "scope"
+
+  - package-ecosystem: "docker"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    target-branch: "develop"
+    labels:
+      - "dependencies"
+      - "docker"
+      - "frontend"
+    commit-message:
+      prefix: "deps(docker-frontend)"
+      include: "scope"

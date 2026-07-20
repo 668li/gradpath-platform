@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { Suspense, useEffect, useState, useMemo, memo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   GraduationCap,
   Briefcase,
@@ -18,12 +19,9 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  gradIntelApi,
-  civilServiceIntelApi,
-  externalDataApi,
-} from "@/lib/api";
+import { useApi } from "@/lib/api/swr-config";
 import { useToast } from "@/components/ui/toast";
+import { LoadingState } from "@/components/ui/empty";
 import type {
   IntelResponse,
   DarkKnowledgeResponse,
@@ -36,6 +34,14 @@ import type {
 type WarRoomTab = "grad" | "civil" | "career" | "interview";
 
 export default function WarRoomPage() {
+  return (
+    <Suspense fallback={<LoadingState />}>
+      <WarRoomPageContent />
+    </Suspense>
+  );
+}
+
+function WarRoomPageContent() {
   const searchParams = useSearchParams();
   const initialTab = (searchParams.get("tab") as WarRoomTab) || "grad";
   const [activeTab, setActiveTab] = useState<WarRoomTab>(
@@ -63,6 +69,7 @@ export default function WarRoomPage() {
           return (
             <button
               key={tab.id}
+              data-testid={`${tab.id}-tab`}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
                 "flex items-center gap-2 px-6 py-3 font-medium transition-all border-b-2",
@@ -95,30 +102,37 @@ export default function WarRoomPage() {
 
 function GradWarRoom() {
   const toast = useToast();
-  const [intelList, setIntelList] = useState<IntelResponse[]>([]);
-  const [darkKnowledge, setDarkKnowledge] = useState<DarkKnowledgeResponse[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchSchool, setSearchSchool] = useState("");
   const [searchMajor, setSearchMajor] = useState("");
   const [filterTier, setFilterTier] = useState("");
   const [activeStage, setActiveStage] = useState<string>("all");
 
+  const intelParentRef = useRef<HTMLDivElement>(null);
+  const darkKnowledgeParentRef = useRef<HTMLDivElement>(null);
+
+  // SWR 替代原 useEffect+Promise.all：自动去重/缓存，全局已禁用 focus 重验证
+  const { data: intelData, error: intelError, isLoading: intelLoading } = useApi<IntelResponse[]>(
+    "/api/grad-intel/intel/public?limit=300",
+    { fallbackData: [] },
+  );
+  const { data: darkData, error: darkError, isLoading: darkLoading } = useApi<any>(
+    "/api/grad-intel/dark-knowledge/list",
+    { fallbackData: { items: [] as DarkKnowledgeResponse[] } },
+  );
+
   useEffect(() => {
-    (async () => {
-      try {
-        const [intel, dark] = await Promise.all([
-          gradIntelApi.listPublicIntel({ limit: 300 }),
-          gradIntelApi.getDarkKnowledge(),
-        ]);
-        setIntelList(intel);
-        setDarkKnowledge(Array.isArray(dark) ? dark : (dark as any)?.items ?? []);
-      } catch (err) {
-        toast.push(err instanceof Error ? err.message : "加载数据失败", "error");
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [toast]);
+    if (intelError) toast.push(intelError.message || "加载数据失败", "error");
+  }, [intelError, toast]);
+  useEffect(() => {
+    if (darkError) toast.push(darkError.message || "加载数据失败", "error");
+  }, [darkError, toast]);
+
+  const intelList = intelData ?? [];
+  const darkKnowledge: DarkKnowledgeResponse[] = useMemo(
+    () => (Array.isArray(darkData) ? darkData : darkData?.items ?? []),
+    [darkData],
+  );
+  const loading = intelLoading || darkLoading;
 
   const filteredIntel = useMemo(() => {
     return intelList.filter((item) => {
@@ -152,6 +166,29 @@ function GradWarRoom() {
     if (activeStage === "all") return darkKnowledge;
     return darkKnowledge.filter((dk) => dk.stage === activeStage);
   }, [darkKnowledge, activeStage]);
+
+  // 院校情报两列分组，用于虚拟滚动
+  const intelRows = useMemo(() => {
+    const rows: IntelResponse[][] = [];
+    for (let i = 0; i < filteredIntel.length; i += 2) {
+      rows.push(filteredIntel.slice(i, i + 2));
+    }
+    return rows;
+  }, [filteredIntel]);
+
+  const intelRowVirtualizer = useVirtualizer({
+    count: intelRows.length,
+    getScrollElement: () => intelParentRef.current,
+    estimateSize: () => 220,
+    overscan: 4,
+  });
+
+  const darkKnowledgeRowVirtualizer = useVirtualizer({
+    count: filteredDarkKnowledge.length,
+    getScrollElement: () => darkKnowledgeParentRef.current,
+    estimateSize: () => 140,
+    overscan: 4,
+  });
 
   if (loading) {
     return (
@@ -247,21 +284,46 @@ function GradWarRoom() {
           <SchoolIcon className="h-5 w-5 text-blue-500" />
           院校情报（{filteredIntel.length} 条）
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {filteredIntel.slice(0, 20).map((intel) => (
-            <IntelCard key={intel.id} intel={intel} />
-          ))}
-        </div>
-        {filteredIntel.length === 0 && (
+        {filteredIntel.length === 0 ? (
           <div className="text-center py-10 text-ink-400">
             <SchoolIcon className="h-12 w-12 mx-auto mb-3 opacity-30" />
             <p>没有找到匹配的情报，试试调整搜索条件</p>
           </div>
-        )}
-        {filteredIntel.length > 20 && (
-          <p className="text-center text-sm text-ink-400 mt-4">
-            显示前 20 条，共 {filteredIntel.length} 条结果
-          </p>
+        ) : (
+          <div
+            ref={intelParentRef}
+            style={{ height: "600px", overflow: "auto" }}
+            className="rounded-lg"
+          >
+            <div
+              style={{
+                height: `${intelRowVirtualizer.getTotalSize()}px`,
+                position: "relative",
+              }}
+            >
+              {intelRowVirtualizer.getVirtualItems().map((virtualRow) => {
+                const rowItems = intelRows[virtualRow.index];
+                return (
+                  <div
+                    key={`intel-row-${virtualRow.index}`}
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "100%",
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 px-0.5">
+                      {rowItems.map((intel) => (
+                        <IntelCardMemo key={intel.id} intel={intel} />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         )}
       </div>
 
@@ -298,11 +360,43 @@ function GradWarRoom() {
             </button>
           ))}
         </div>
-        <div className="space-y-3">
-          {filteredDarkKnowledge.map((dk) => (
-            <DarkKnowledgeCard key={dk.id} dk={dk} color="blue" />
-          ))}
-        </div>
+        {filteredDarkKnowledge.length === 0 ? (
+          <div className="text-center py-10 text-ink-400">
+            <Lightbulb className="h-12 w-12 mx-auto mb-3 opacity-30" />
+            <p>该阶段暂无暗知识</p>
+          </div>
+        ) : (
+          <div
+            ref={darkKnowledgeParentRef}
+            style={{ height: "600px", overflow: "auto" }}
+            className="rounded-lg"
+          >
+            <div
+              style={{
+                height: `${darkKnowledgeRowVirtualizer.getTotalSize()}px`,
+                position: "relative",
+              }}
+            >
+              {darkKnowledgeRowVirtualizer.getVirtualItems().map((virtualRow) => {
+                const dk = filteredDarkKnowledge[virtualRow.index];
+                return (
+                  <div
+                    key={dk.id}
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "100%",
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                  >
+                    <DarkKnowledgeCardMemo dk={dk} color="blue" />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -402,7 +496,7 @@ function IntelCard({ intel }: { intel: IntelResponse }) {
           {intel.tags && intel.tags.length > 0 && (
             <div className="flex flex-wrap gap-1">
               {intel.tags.map((tag, i) => (
-                <span key={i} className="px-1.5 py-0.5 bg-paper-100 rounded text-[10px] text-ink-500">
+                <span key={`${intel.id}-tag-${i}`} className="px-1.5 py-0.5 bg-paper-100 rounded text-[10px] text-ink-500">
                   {tag}
                 </span>
               ))}
@@ -421,6 +515,7 @@ function IntelCard({ intel }: { intel: IntelResponse }) {
     </div>
   );
 }
+const IntelCardMemo = memo(IntelCard);
 
 // ======================================================================
 // 考公作战室
@@ -428,30 +523,37 @@ function IntelCard({ intel }: { intel: IntelResponse }) {
 
 function CivilWarRoom() {
   const toast = useToast();
-  const [postIntel, setPostIntel] = useState<PostIntelResponse[]>([]);
-  const [darkKnowledge, setDarkKnowledge] = useState<CivilServiceDarkKnowledgeResponse[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchRegion, setSearchRegion] = useState("");
   const [searchDept, setSearchDept] = useState("");
   const [filterTier, setFilterTier] = useState("");
   const [activeStage, setActiveStage] = useState<string>("all");
 
+  const postParentRef = useRef<HTMLDivElement>(null);
+  const darkKnowledgeParentRef = useRef<HTMLDivElement>(null);
+
+  // SWR 替代原 useEffect+Promise.all
+  const { data: postData, error: postError, isLoading: postLoading } = useApi<PostIntelResponse[]>(
+    "/api/civil-service/post-intel/public?limit=200",
+    { fallbackData: [] },
+  );
+  const { data: darkData, error: darkError, isLoading: darkLoading } = useApi<any>(
+    "/api/civil-service/dark-knowledge",
+    { fallbackData: [] },
+  );
+
   useEffect(() => {
-    (async () => {
-      try {
-        const [posts, dark] = await Promise.all([
-          civilServiceIntelApi.listPublicPostIntel({ limit: 200 }),
-          civilServiceIntelApi.getDarkKnowledge(),
-        ]);
-        setPostIntel(posts);
-        setDarkKnowledge(Array.isArray(dark) ? dark : (dark as any)?.items ?? []);
-      } catch (err) {
-        toast.push(err instanceof Error ? err.message : "加载数据失败", "error");
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [toast]);
+    if (postError) toast.push(postError.message || "加载数据失败", "error");
+  }, [postError, toast]);
+  useEffect(() => {
+    if (darkError) toast.push(darkError.message || "加载数据失败", "error");
+  }, [darkError, toast]);
+
+  const postIntel = postData ?? [];
+  const darkKnowledge: CivilServiceDarkKnowledgeResponse[] = useMemo(
+    () => (Array.isArray(darkData) ? darkData : darkData?.items ?? []),
+    [darkData],
+  );
+  const loading = postLoading || darkLoading;
 
   const filteredPosts = useMemo(() => {
     return postIntel.filter((item) => {
@@ -486,6 +588,28 @@ function CivilWarRoom() {
     if (activeStage === "all") return darkKnowledge;
     return darkKnowledge.filter((dk) => dk.stage === activeStage);
   }, [darkKnowledge, activeStage]);
+
+  const postRows = useMemo(() => {
+    const rows: PostIntelResponse[][] = [];
+    for (let i = 0; i < filteredPosts.length; i += 2) {
+      rows.push(filteredPosts.slice(i, i + 2));
+    }
+    return rows;
+  }, [filteredPosts]);
+
+  const postRowVirtualizer = useVirtualizer({
+    count: postRows.length,
+    getScrollElement: () => postParentRef.current,
+    estimateSize: () => 240,
+    overscan: 4,
+  });
+
+  const darkKnowledgeRowVirtualizer = useVirtualizer({
+    count: filteredDarkKnowledge.length,
+    getScrollElement: () => darkKnowledgeParentRef.current,
+    estimateSize: () => 140,
+    overscan: 4,
+  });
 
   if (loading) {
     return (
@@ -582,21 +706,46 @@ function CivilWarRoom() {
           <Landmark className="h-5 w-5 text-red-500" />
           岗位情报（{filteredPosts.length} 条）
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {filteredPosts.slice(0, 20).map((post) => (
-            <PostIntelCard key={post.id} post={post} />
-          ))}
-        </div>
-        {filteredPosts.length === 0 && (
+        {filteredPosts.length === 0 ? (
           <div className="text-center py-10 text-ink-400">
             <Landmark className="h-12 w-12 mx-auto mb-3 opacity-30" />
             <p>没有找到匹配的岗位情报，试试调整搜索条件</p>
           </div>
-        )}
-        {filteredPosts.length > 20 && (
-          <p className="text-center text-sm text-ink-400 mt-4">
-            显示前 20 条，共 {filteredPosts.length} 条结果
-          </p>
+        ) : (
+          <div
+            ref={postParentRef}
+            style={{ height: "600px", overflow: "auto" }}
+            className="rounded-lg"
+          >
+            <div
+              style={{
+                height: `${postRowVirtualizer.getTotalSize()}px`,
+                position: "relative",
+              }}
+            >
+              {postRowVirtualizer.getVirtualItems().map((virtualRow) => {
+                const rowItems = postRows[virtualRow.index];
+                return (
+                  <div
+                    key={`post-row-${virtualRow.index}`}
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "100%",
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 px-0.5">
+                      {rowItems.map((post) => (
+                        <PostIntelCardMemo key={post.id} post={post} />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         )}
       </div>
 
@@ -633,11 +782,43 @@ function CivilWarRoom() {
             </button>
           ))}
         </div>
-        <div className="space-y-3">
-          {filteredDarkKnowledge.map((dk) => (
-            <CivilDarkKnowledgeCard key={dk.id} dk={dk} />
-          ))}
-        </div>
+        {filteredDarkKnowledge.length === 0 ? (
+          <div className="text-center py-10 text-ink-400">
+            <Lightbulb className="h-12 w-12 mx-auto mb-3 opacity-30" />
+            <p>该阶段暂无暗知识</p>
+          </div>
+        ) : (
+          <div
+            ref={darkKnowledgeParentRef}
+            style={{ height: "600px", overflow: "auto" }}
+            className="rounded-lg"
+          >
+            <div
+              style={{
+                height: `${darkKnowledgeRowVirtualizer.getTotalSize()}px`,
+                position: "relative",
+              }}
+            >
+              {darkKnowledgeRowVirtualizer.getVirtualItems().map((virtualRow) => {
+                const dk = filteredDarkKnowledge[virtualRow.index];
+                return (
+                  <div
+                    key={dk.id}
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "100%",
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                  >
+                    <CivilDarkKnowledgeCardMemo dk={dk} />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -742,7 +923,7 @@ function PostIntelCard({ post }: { post: PostIntelResponse }) {
               </p>
               <ul className="text-red-600 space-y-0.5">
                 {post.risk_warnings.map((w, i) => (
-                  <li key={i}>· {w}</li>
+                  <li key={`${post.id}-warn-${i}`}>· {w}</li>
                 ))}
               </ul>
             </div>
@@ -750,7 +931,7 @@ function PostIntelCard({ post }: { post: PostIntelResponse }) {
           {post.tags && post.tags.length > 0 && (
             <div className="flex flex-wrap gap-1">
               {post.tags.map((tag, i) => (
-                <span key={i} className="px-1.5 py-0.5 bg-paper-100 rounded text-[10px] text-ink-500">
+                <span key={`${post.id}-tag-${i}`} className="px-1.5 py-0.5 bg-paper-100 rounded text-[10px] text-ink-500">
                   {tag}
                 </span>
               ))}
@@ -769,6 +950,7 @@ function PostIntelCard({ post }: { post: PostIntelResponse }) {
     </div>
   );
 }
+const PostIntelCardMemo = memo(PostIntelCard);
 
 // ======================================================================
 // 求职作战室
@@ -776,28 +958,32 @@ function PostIntelCard({ post }: { post: PostIntelResponse }) {
 
 function CareerWarRoom() {
   const toast = useToast();
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [salaries, setSalaries] = useState<SalaryBenchmark[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchCompany, setSearchCompany] = useState("");
   const [filterIndustry, setFilterIndustry] = useState("");
 
+  const companyParentRef = useRef<HTMLDivElement>(null);
+  const salaryParentRef = useRef<HTMLDivElement>(null);
+
+  // SWR 替代原 useEffect+Promise.all
+  const { data: companiesData, error: companiesError, isLoading: companiesLoading } = useApi<Company[]>(
+    "/api/companies",
+    { fallbackData: [] },
+  );
+  const { data: salariesData, error: salariesError, isLoading: salariesLoading } = useApi<SalaryBenchmark[]>(
+    "/api/salary-benchmarks",
+    { fallbackData: [] },
+  );
+
   useEffect(() => {
-    (async () => {
-      try {
-        const [comps, sals] = await Promise.all([
-          externalDataApi.companies(),
-          externalDataApi.salaryBenchmarks({}),
-        ]);
-        setCompanies(comps);
-        setSalaries(sals);
-      } catch (err) {
-        toast.push(err instanceof Error ? err.message : "加载数据失败", "error");
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [toast]);
+    if (companiesError) toast.push(companiesError.message || "加载数据失败", "error");
+  }, [companiesError, toast]);
+  useEffect(() => {
+    if (salariesError) toast.push(salariesError.message || "加载数据失败", "error");
+  }, [salariesError, toast]);
+
+  const companies = companiesData ?? [];
+  const salaries = salariesData ?? [];
+  const loading = companiesLoading || salariesLoading;
 
   const industries = useMemo(() => {
     const set = new Set<string>();
@@ -819,6 +1005,29 @@ function CareerWarRoom() {
       return true;
     });
   }, [salaries, searchCompany]);
+
+  // 公司卡片按 3 列分组
+  const companyRows = useMemo(() => {
+    const rows: Company[][] = [];
+    for (let i = 0; i < filteredCompanies.length; i += 3) {
+      rows.push(filteredCompanies.slice(i, i + 3));
+    }
+    return rows;
+  }, [filteredCompanies]);
+
+  const companyRowVirtualizer = useVirtualizer({
+    count: companyRows.length,
+    getScrollElement: () => companyParentRef.current,
+    estimateSize: () => 200,
+    overscan: 4,
+  });
+
+  const salaryRowVirtualizer = useVirtualizer({
+    count: filteredSalaries.length,
+    getScrollElement: () => salaryParentRef.current,
+    estimateSize: () => 52,
+    overscan: 8,
+  });
 
   if (loading) {
     return (
@@ -864,6 +1073,7 @@ function CareerWarRoom() {
                 value={searchCompany}
                 onChange={(e) => setSearchCompany(e.target.value)}
                 placeholder="如：腾讯"
+                data-testid="company-input"
                 className="w-full rounded-lg border border-paper-200 pl-9 pr-3 py-2 text-sm focus:border-green-400 focus:outline-none"
               />
             </div>
@@ -873,6 +1083,7 @@ function CareerWarRoom() {
             <select
               value={filterIndustry}
               onChange={(e) => setFilterIndustry(e.target.value)}
+              data-testid="industry-select"
               className="w-full rounded-lg border border-paper-200 px-3 py-2 text-sm focus:border-green-400 focus:outline-none"
             >
               <option value="">全部</option>
@@ -890,43 +1101,45 @@ function CareerWarRoom() {
           <Briefcase className="h-5 w-5 text-green-500" />
           公司列表（{filteredCompanies.length} 家）
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {filteredCompanies.slice(0, 30).map((c) => (
-            <div key={c.id} className="bg-white rounded-lg p-4 border border-paper-200 hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between mb-2">
-                <h4 className="font-semibold text-ink-800">{c.name}</h4>
-                <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700">
-                  {c.industry}
-                </span>
-              </div>
-              <div className="text-xs text-ink-500 space-y-1">
-                <div className="flex justify-between">
-                  <span>规模</span>
-                  <span className="text-ink-700">{c.size || "—"}</span>
-                </div>
-                {c.headquarters && (
-                  <div className="flex justify-between">
-                    <span>总部</span>
-                    <span className="text-ink-700">{c.headquarters}</span>
-                  </div>
-                )}
-                {c.stage && (
-                  <div className="flex justify-between">
-                    <span>阶段</span>
-                    <span className="text-ink-700">{c.stage}</span>
-                  </div>
-                )}
-              </div>
-              {c.description && (
-                <p className="mt-2 text-xs text-ink-400 line-clamp-2">{c.description}</p>
-              )}
-            </div>
-          ))}
-        </div>
-        {filteredCompanies.length === 0 && (
+        {filteredCompanies.length === 0 ? (
           <div className="text-center py-10 text-ink-400">
             <Briefcase className="h-12 w-12 mx-auto mb-3 opacity-30" />
             <p>没有找到匹配的公司</p>
+          </div>
+        ) : (
+          <div
+            ref={companyParentRef}
+            style={{ height: "600px", overflow: "auto" }}
+            className="rounded-lg"
+          >
+            <div
+              style={{
+                height: `${companyRowVirtualizer.getTotalSize()}px`,
+                position: "relative",
+              }}
+            >
+              {companyRowVirtualizer.getVirtualItems().map((virtualRow) => {
+                const rowItems = companyRows[virtualRow.index];
+                return (
+                  <div
+                    key={`company-row-${virtualRow.index}`}
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "100%",
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 px-0.5">
+                      {rowItems.map((c) => (
+                        <CompanyCardMemo key={c.id} company={c} />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
@@ -937,51 +1150,107 @@ function CareerWarRoom() {
           <TrendingUp className="h-5 w-5 text-green-500" />
           薪资基准（{filteredSalaries.length} 条）
         </h3>
-        <div className="bg-white rounded-lg border border-paper-200 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-paper-50 border-b border-paper-200">
-              <tr>
-                <th className="text-left px-4 py-3 font-medium text-ink-600">公司</th>
-                <th className="text-left px-4 py-3 font-medium text-ink-600">岗位</th>
-                <th className="text-left px-4 py-3 font-medium text-ink-600">城市</th>
-                <th className="text-left px-4 py-3 font-medium text-ink-600">经验</th>
-                <th className="text-right px-4 py-3 font-medium text-ink-600">薪资中位数</th>
-                <th className="text-right px-4 py-3 font-medium text-ink-600">范围</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-paper-100">
-              {filteredSalaries.slice(0, 30).map((s) => (
-                <tr key={s.id} className="hover:bg-paper-50">
-                  <td className="px-4 py-3 text-ink-800 font-medium">{s.company}</td>
-                  <td className="px-4 py-3 text-ink-600">{s.position}</td>
-                  <td className="px-4 py-3 text-ink-500">{s.city || "—"}</td>
-                  <td className="px-4 py-3 text-ink-500">{s.experience_level}</td>
-                  <td className="px-4 py-3 text-right font-semibold text-green-700">
-                    {s.salary_median}k
-                  </td>
-                  <td className="px-4 py-3 text-right text-ink-500 text-xs">
-                    {s.salary_min}-{s.salary_max}k
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {filteredSalaries.length === 0 && (
+        {filteredSalaries.length === 0 ? (
           <div className="text-center py-10 text-ink-400">
             <TrendingUp className="h-12 w-12 mx-auto mb-3 opacity-30" />
             <p>没有找到匹配的薪资数据</p>
           </div>
-        )}
-        {filteredSalaries.length > 30 && (
-          <p className="text-center text-sm text-ink-400 mt-4">
-            显示前 30 条，共 {filteredSalaries.length} 条结果
-          </p>
+        ) : (
+          <div className="bg-white rounded-lg border border-paper-200 overflow-hidden">
+            <table className="w-full text-sm">
+              <thead className="bg-paper-50 border-b border-paper-200 sticky top-0">
+                <tr>
+                  <th className="text-left px-4 py-3 font-medium text-ink-600">公司</th>
+                  <th className="text-left px-4 py-3 font-medium text-ink-600">岗位</th>
+                  <th className="text-left px-4 py-3 font-medium text-ink-600">城市</th>
+                  <th className="text-left px-4 py-3 font-medium text-ink-600">经验</th>
+                  <th className="text-right px-4 py-3 font-medium text-ink-600">薪资中位数</th>
+                  <th className="text-right px-4 py-3 font-medium text-ink-600">范围</th>
+                </tr>
+              </thead>
+            </table>
+            <div ref={salaryParentRef} style={{ height: "500px", overflow: "auto" }}>
+              <div
+                style={{
+                  height: `${salaryRowVirtualizer.getTotalSize()}px`,
+                  position: "relative",
+                }}
+              >
+                <table className="w-full text-sm">
+                  <tbody>
+                    {salaryRowVirtualizer.getVirtualItems().map((virtualRow) => {
+                      const s = filteredSalaries[virtualRow.index];
+                      return (
+                        <tr
+                          key={s.id}
+                          className="hover:bg-paper-50"
+                          style={{
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            width: "100%",
+                            transform: `translateY(${virtualRow.start}px)`,
+                            display: "table-row",
+                          }}
+                        >
+                          <td className="px-4 py-3 text-ink-800 font-medium">{s.company}</td>
+                          <td className="px-4 py-3 text-ink-600">{s.position}</td>
+                          <td className="px-4 py-3 text-ink-500">{s.city || "—"}</td>
+                          <td className="px-4 py-3 text-ink-500">{s.experience_level}</td>
+                          <td className="px-4 py-3 text-right font-semibold text-green-700">
+                            {s.salary_median}k
+                          </td>
+                          <td className="px-4 py-3 text-right text-ink-500 text-xs">
+                            {s.salary_min}-{s.salary_max}k
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
   );
 }
+
+function CompanyCard({ company: c }: { company: Company }) {
+  return (
+    <div className="bg-white rounded-lg p-4 border border-paper-200 hover:shadow-md transition-shadow">
+      <div className="flex items-start justify-between mb-2">
+        <h4 className="font-semibold text-ink-800">{c.name}</h4>
+        <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700">
+          {c.industry}
+        </span>
+      </div>
+      <div className="text-xs text-ink-500 space-y-1">
+        <div className="flex justify-between">
+          <span>规模</span>
+          <span className="text-ink-700">{c.size || "—"}</span>
+        </div>
+        {c.headquarters && (
+          <div className="flex justify-between">
+            <span>总部</span>
+            <span className="text-ink-700">{c.headquarters}</span>
+          </div>
+        )}
+        {c.stage && (
+          <div className="flex justify-between">
+            <span>阶段</span>
+            <span className="text-ink-700">{c.stage}</span>
+          </div>
+        )}
+      </div>
+      {c.description && (
+        <p className="mt-2 text-xs text-ink-400 line-clamp-2">{c.description}</p>
+      )}
+    </div>
+  );
+}
+const CompanyCardMemo = memo(CompanyCard);
 
 // ======================================================================
 // 面经库
@@ -1102,6 +1371,7 @@ function DarkKnowledgeCard({ dk }: { dk: DarkKnowledgeResponse; color: string })
     </div>
   );
 }
+const DarkKnowledgeCardMemo = memo(DarkKnowledgeCard);
 
 function CivilDarkKnowledgeCard({ dk }: { dk: CivilServiceDarkKnowledgeResponse }) {
   const [expanded, setExpanded] = useState(false);
@@ -1171,3 +1441,4 @@ function CivilDarkKnowledgeCard({ dk }: { dk: CivilServiceDarkKnowledgeResponse 
     </div>
   );
 }
+const CivilDarkKnowledgeCardMemo = memo(CivilDarkKnowledgeCard);

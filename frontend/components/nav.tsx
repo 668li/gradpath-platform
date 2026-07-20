@@ -7,7 +7,6 @@ import {
   GraduationCap,
   Users,
   Compass,
-  TrendingUp,
   UserCircle,
   LogOut,
   Menu,
@@ -15,11 +14,11 @@ import {
   Rocket,
   Bell,
   Search,
-  School,
   Landmark,
   Briefcase,
   LayoutDashboard,
   Bot,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth";
@@ -46,7 +45,8 @@ function getNavItems(): NavItem[] {
     // 互动
     { href: "/community", label: "社区交流", icon: Users, section: "互动" },
     // 我的
-    { href: "/profile", label: "个人中心", icon: UserCircle, section: "我的" },
+    { href: "/onboarding", label: "职业诊断", icon: Sparkles, section: "我的" },
+    { href: "/profile", label: "个人中心", icon: UserCircle },
   ];
   return items;
 }

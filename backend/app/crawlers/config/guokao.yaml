@@ -1,0 +1,23 @@
+# 国考职位表爬虫配置
+name: guokao
+category: civil
+description: 国考职位表爬虫
+enabled: true
+schedule: yearly  # 国考每年一次
+rate_limit: 1.0
+rate_limit_ms: 1000
+max_retries: 3
+timeout_seconds: 30
+target_table: civil_service_post_intel
+dedup_key:
+  - region
+  - department
+  - post_name
+notes: |
+  数据源：国家公务员局官网公开职位表整理的预置数据。
+  覆盖范围：6 个地区（中央/北京/上海/广东/江苏/浙江）× 8 个部门类型，
+  共 120 条国考职位记录。
+  抓取策略：因国考职位表以 Excel 发布、难以稳定抓取，使用预置数据，
+  包含职位代码、招录人数、报名人数、报录比、学历/专业/政治面貌/年龄/工作年限要求、
+  笔试科目、薪资估计等关键字段。
+  去重规则：按 region + department + post_name + user_id(system) 去重，已存在则跳过。

@@ -1,0 +1,8 @@
+# 爬虫配置示例
+name: example
+url: "https://example.com/api/data"
+rate_limit: 1.0  # 请求间隔(秒)
+max_retries: 3
+field_mapping:
+  title: title
+  content: description

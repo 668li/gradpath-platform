@@ -1,0 +1,93 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.Pipfile.lock
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+.env.*.local
+# 安全规则 (SECURITY-LLM-LEAK-001): 禁止将任何 .env 备份/快照文件提交到仓库
+.env.testbak
+.env.bak
+.env.*.bak
+.env.*.backup
+.env.*.testbak
+.env.*.snapshot
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+coverage.xml
+
+# Node.js
+node_modules/
+.next/
+out/
+.vercel
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*_temp.py
+*_test_temp.py
+
+# Payload files (security)
+*_payload.json
+
+# Archives
+*.zip
+*.tar.gz
+*.rar
+
+# Logs
+*.log
+
+# Docker
+docker-compose.override.yml
+
+# Crawler temp data files (JSON/PNG/HTML from experiments)
+backend/app/crawlers/real_data/*.json
+backend/app/crawlers/real_data/*.png
+backend/app/crawlers/real_data/*.html
+backend/app/crawlers/real_data/*.md
+!backend/app/crawlers/real_data/__init__.py
+
+# Test screenshots
+tests/screenshots/
+
+# Binary test artifacts
+backend/app/__pycache__/
+*.pyc
+
+# Performance test results
+tests/performance/results/
+
+# E2E test screenshots
+frontend/test-results/
+frontend/playwright-report/

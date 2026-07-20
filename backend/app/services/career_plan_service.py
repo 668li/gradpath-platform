@@ -4,14 +4,23 @@
 提供用户职业规划的列表、详情与里程碑状态更新（Phase 11），
 以及里程碑执行日志管理与到期提醒（Phase 12）。
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 
+from app.core.cache import cache
 from app.models.career_plan import CareerPlan
 from app.models.milestone_log import MilestoneLog
+
+
+def _invalidate_user_context_cache(user_id: UUID) -> None:
+    """规划/里程碑 CRUD 后失效用户上下文缓存（build_user_context 依赖 CareerPlan）。"""
+    try:
+        cache.delete(f"user_context:{user_id}")
+    except Exception:
+        pass
 
 
 def list_plans(db: Session, user_id: UUID) -> list[CareerPlan]:
@@ -68,6 +77,7 @@ def update_milestone(
     flag_modified(plan, "milestones")
     db.commit()
     db.refresh(plan)
+    _invalidate_user_context_cache(user_id)
     return plan
 
 
@@ -134,13 +144,32 @@ def delete_milestone_log(db: Session, user_id: UUID, log_id: str) -> MilestoneLo
     Returns:
         被删除的 MilestoneLog；若日志不存在或不属于当前用户则返回 None
     """
-    log = db.query(MilestoneLog).filter(MilestoneLog.id == log_id).first()
+    # 尝试多种方式匹配 log_id（兼容 UUID 对象、带连字符字符串、无连字符字符串）
+    log = None
+    try:
+        log_uuid = UUID(log_id)
+        log = db.query(MilestoneLog).filter(MilestoneLog.id == log_uuid).first()
+    except (ValueError, AttributeError, TypeError):
+        pass
+    
+    if not log:
+        # 尝试直接用字符串匹配（SQLite 存储为无连字符字符串）
+        log = db.query(MilestoneLog).filter(MilestoneLog.id == log_id).first()
+    
+    if not log:
+        # 尝试去掉连字符后匹配
+        clean_id = log_id.replace("-", "")
+        log = db.query(MilestoneLog).filter(MilestoneLog.id == clean_id).first()
+    
     if not log:
         return None
 
-    # 通过 plan 校验归属（log.plan_id 为字符串，需转为 UUID 以匹配 CareerPlan.id 列）
+    # 通过 plan 校验归属（log.plan_id 可能是 UUID 或字符串）
     try:
-        plan_uuid = UUID(log.plan_id)
+        if isinstance(log.plan_id, UUID):
+            plan_uuid = log.plan_id
+        else:
+            plan_uuid = UUID(log.plan_id)
     except (ValueError, AttributeError, TypeError):
         return None
     plan = (
@@ -174,7 +203,7 @@ def get_reminders(db: Session, user_id: UUID) -> list[dict]:
         .all()
     )
 
-    today = datetime.utcnow().date()
+    today = datetime.now(timezone.utc).date()
     horizon = today + timedelta(days=7)
     reminders: list[dict] = []
 
@@ -242,6 +271,18 @@ def get_daily_focus(db: Session, user_id: UUID) -> list[dict]:
         .all()
     )
 
+    # 预加载所有活跃规划的 milestone logs（避免 N+1 查询）
+    plan_ids = [str(p.id) for p in plans]
+    if plan_ids:
+        logs = (
+            db.query(MilestoneLog.plan_id, MilestoneLog.milestone_index)
+            .filter(MilestoneLog.plan_id.in_(plan_ids))
+            .all()
+        )
+        log_set = {(str(l[0]), l[1]) for l in logs}
+    else:
+        log_set = set()
+
     candidates: list[tuple[int, dict]] = []  # (priority, item)
     for plan in plans:
         milestones = plan.milestones or []
@@ -262,14 +303,7 @@ def get_daily_focus(db: Session, user_id: UUID) -> list[dict]:
             continue
 
         idx, m, priority = chosen
-        log_count = (
-            db.query(MilestoneLog)
-            .filter(
-                MilestoneLog.plan_id == str(plan.id),
-                MilestoneLog.milestone_index == idx,
-            )
-            .count()
-        )
+        has_logs = (str(plan.id), idx) in log_set
         candidates.append(
             (
                 priority,
@@ -280,7 +314,7 @@ def get_daily_focus(db: Session, user_id: UUID) -> list[dict]:
                     "milestone_index": idx,
                     "milestone_description": m.get("description", ""),
                     "status": m.get("status", ""),
-                    "has_logs": log_count > 0,
+                    "has_logs": has_logs,
                 },
             )
         )

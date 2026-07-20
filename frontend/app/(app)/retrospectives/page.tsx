@@ -117,7 +117,7 @@ export default function RetrospectivesPage() {
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="card space-y-3">
+            <div key={`skel-${i}`} className="card space-y-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3 min-w-0">
                   <Skeleton className="h-10 w-10 rounded-lg shrink-0" />
@@ -206,7 +206,7 @@ export default function RetrospectivesPage() {
                     <ul className="space-y-1">
                       {r.achievements.slice(0, 3).map((a, i) => (
                         <li
-                          key={i}
+                          key={`${a}-${i}`}
                           className="flex items-start gap-1.5 text-slate-600"
                         >
                           <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0 mt-0.5" />
@@ -248,7 +248,7 @@ export default function RetrospectivesPage() {
                     <ul className="space-y-1">
                       {r.next_steps.slice(0, 2).map((s, i) => (
                         <li
-                          key={i}
+                          key={`${s}-${i}`}
                           className="flex items-start gap-1.5 text-slate-600"
                         >
                           <ArrowRight className="h-3.5 w-3.5 text-brand-500 shrink-0 mt-0.5" />

@@ -7,7 +7,11 @@ export const loginSchema = z.object({
 
 export const registerSchema = z.object({
   email: z.string().email("请输入有效的邮箱地址"),
-  password: z.string().min(8, "密码至少 8 位").max(128, "密码最多 128 位"),
+  password: z
+    .string()
+    .min(8, "密码至少 8 位")
+    .max(128, "密码最多 128 位")
+    .regex(/^(?=.*[A-Za-z])(?=.*\d).{8,}$/, "密码需同时包含字母和数字"),
   name: z.string().min(1, "请输入姓名").max(100, "姓名最多 100 字"),
 });
 

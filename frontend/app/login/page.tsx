@@ -64,7 +64,7 @@ export default function LoginPage() {
           <h1 className="mt-4 font-display text-3xl font-semibold text-ink-800 tracking-tight">
             登录 GradPath
           </h1>
-          <p className="mt-1.5 text-sm text-ink-400">记录你的职业轨迹，规划下一步方向</p>
+          <p className="mt-1.5 text-sm text-ink-500">记录你的职业轨迹，规划下一步方向</p>
         </div>
 
         <form
@@ -74,11 +74,13 @@ export default function LoginPage() {
           <Field label="邮箱" required>
             <Input
               type="email"
+              name="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               autoComplete="email"
               aria-invalid={!!errors.email}
+              data-testid="login-email-input"
               required
             />
             <FieldError message={errors.email} />
@@ -86,16 +88,18 @@ export default function LoginPage() {
           <Field label="密码" required>
             <Input
               type="password"
+              name="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="至少 8 位"
               autoComplete="current-password"
               aria-invalid={!!errors.password}
+              data-testid="login-password-input"
               required
             />
             <FieldError message={errors.password} />
           </Field>
-          <Button type="submit" loading={loading} className="w-full">
+          <Button type="submit" loading={loading} className="w-full" data-testid="login-submit-button">
             登录
           </Button>
           <p className="text-center text-sm text-ink-400">

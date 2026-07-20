@@ -11,6 +11,7 @@ import type {
   InterviewAggregate,
   InterviewStats,
   CompanyInfo,
+  Company,
   PaginatedResponse,
 } from "@/types";
 import { request, buildQuery } from "./client";
@@ -37,6 +38,13 @@ export const employmentApi = {
     }),
 
   stats: () => request<EmploymentStats>("/api/employment/stats"),
+
+  // 批量获取公司元数据（消除前端 N+1 调用）
+  batchCompanies: (ids: string[]) =>
+    request<Company[]>("/api/employment/companies/batch", {
+      method: "POST",
+      body: JSON.stringify({ ids }),
+    }),
 };
 
 // ===== 社区数据 =====

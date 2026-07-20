@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import { authApi, setToken, clearToken, getToken } from "@/lib/api";
+import { authApi, setToken, clearToken, getToken, clearQueryCache } from "@/lib/api";
 import type { UserResponse } from "@/types";
 
 interface AuthState {
@@ -33,6 +33,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setUser: (user) => set({ user }),
   logout: () => {
     clearToken();
+    clearQueryCache();
     set({ token: null, user: null });
   },
   fetchUser: async () => {

@@ -1,4 +1,4 @@
-# ---- Stage 1: builder (install all deps, build wheels) ----
+# ---- Stage 1: builder (install build deps, build) ----
 FROM python:3.11-slim AS builder
 
 WORKDIR /app
@@ -9,8 +9,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY pyproject.toml .
 COPY app/__init__.py app/__init__.py
-# 安装所有依赖（含 dev），用于构建 wheel
-RUN pip install --no-cache-dir --prefix=/install -e ".[dev]"
+
+RUN pip install --no-cache-dir build && \
+    python -m build --wheel --outdir /wheels
 
 # ---- Stage 2: production (runtime only, no dev deps) ----
 FROM python:3.11-slim AS production
@@ -19,14 +20,16 @@ RUN groupadd -r gradpath && useradd --no-log-init -r -g gradpath gradpath
 
 WORKDIR /app
 
-# 只安装运行时依赖（不含 pytest/ruff/black 等 dev 工具）
-COPY pyproject.toml .
-COPY app/__init__.py app/__init__.py
-RUN pip install --no-cache-dir --prefix=/install -e "." && \
-    pip install --no-cache-dir --prefix=/install redis
+COPY --from=builder /wheels/*.whl /wheels/
 
-COPY --from=builder /install /usr/local
-COPY . .
+RUN pip install --no-cache-dir /wheels/*.whl && \
+    pip install --no-cache-dir redis && \
+    rm -rf /wheels
+
+COPY app/ app/
+COPY pipeline/ pipeline/
+COPY migrations/ migrations/
+COPY alembic.ini .
 
 RUN chown -R gradpath:gradpath /app
 

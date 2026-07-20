@@ -12,7 +12,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.models.career_event import CareerEvent
-from app.services.ai_service import AIService
+from app.services.ai_orchestrator import AIOrchestrator
 
 SYSTEM_PROMPT = """你是一位资深的职业复盘教练，擅长引导用户回顾一段时间内的职业经历，提炼成就、挑战与经验教训。
 
@@ -143,7 +143,7 @@ def _coerce_draft(data: dict) -> dict:
     }
 
 
-def generate_ai_retro_draft(
+async def generate_ai_retro_draft(
     db: Session, user_id: UUID, period_start: date, period_end: date
 ) -> dict:
     """生成 AI 复盘草稿：组装 context、调用 LLM、解析返回。
@@ -167,13 +167,13 @@ def generate_ai_retro_draft(
     # 组装 context（含 STAR 细节）
     context_text = _build_context(db, user_id, period_start, period_end)
 
-    # 调用 LLM（AIService._check_config 会在 key 为空时抛出 AIServiceNotConfigured）
-    service = AIService()
+    # 调用 LLM（AIOrchestrator 会在 key 为空时抛出 AIServiceNotConfigured）
+    orchestrator = AIOrchestrator()
     user_content = (
         f"{context_text}\n\n"
         "请基于以上职业事件生成该时段的阶段复盘草稿（严格按 JSON 格式输出）。"
     )
-    raw = service.chat(SYSTEM_PROMPT, user_content, timeout=30)
+    raw = await orchestrator.chat(system_prompt=SYSTEM_PROMPT, user_prompt=user_content, timeout=30)
 
     # 解析返回（不保存到 DB）
     data = _parse_llm_json(raw)

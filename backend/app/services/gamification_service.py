@@ -161,8 +161,8 @@ BADGE_REGISTRY: list[dict] = [
 ]
 
 
-def build_context(db: Session, user_id: UUID) -> GamificationContext:
-    """查询各表计数并计算等级。"""
+def build_context(db: Session, user_id: UUID) -> tuple[GamificationContext, int]:
+    """查询各表计数并计算等级。返回 (context, xp)。"""
     decisions_count = db.query(DestinationDecision).filter(DestinationDecision.user_id == user_id).count()
     events_count = db.query(CareerEvent).filter(CareerEvent.user_id == user_id).count()
     skills_count = db.query(SkillNode).filter(SkillNode.user_id == user_id).count()
@@ -173,7 +173,7 @@ def build_context(db: Session, user_id: UUID) -> GamificationContext:
     xp = calculate_xp(db, user_id)
     level, _, _, _ = get_level(xp)
 
-    return GamificationContext(
+    ctx = GamificationContext(
         decisions_count=decisions_count,
         events_count=events_count,
         skills_count=skills_count,
@@ -182,11 +182,12 @@ def build_context(db: Session, user_id: UUID) -> GamificationContext:
         interview_count=interview_count,
         level=level,
     )
+    return ctx, xp
 
 
-def check_and_award_badges(db: Session, user_id: UUID) -> list[dict]:
-    """检查所有徽章，将新符合条件的颁发到 DB，返回新颁发的徽章列表。"""
-    ctx = build_context(db, user_id)
+def check_and_award_badges(db: Session, user_id: UUID) -> tuple[list[dict], int]:
+    """检查所有徽章，将新符合条件的颁发到 DB。返回 (新颁发徽章列表, xp)。"""
+    ctx, xp = build_context(db, user_id)
     existing_codes = {
         ub.badge_code
         for ub in db.query(UserBadge).filter(UserBadge.user_id == user_id).all()
@@ -204,13 +205,12 @@ def check_and_award_badges(db: Session, user_id: UUID) -> list[dict]:
             })
     if newly_awarded:
         db.commit()
-    return newly_awarded
+    return newly_awarded, xp
 
 
 def get_profile(db: Session, user_id: UUID) -> dict:
     """返回完整的游戏化档案。"""
-    newly_awarded = check_and_award_badges(db, user_id)
-    xp = calculate_xp(db, user_id)
+    newly_awarded, xp = check_and_award_badges(db, user_id)
     level, level_name, current_min, next_min = get_level(xp)
 
     earned_codes = {

@@ -229,7 +229,7 @@ export default function SkillsPage() {
           {loading ? (
             <div className="space-y-4 animate-pulse">
               {[1,2,3].map(i => (
-                <div key={i} className="card p-4">
+                <div key={`skel-${i}`} className="card p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <div className="h-4 w-4 rounded bg-slate-200" />
                     <div className="h-4 w-20 bg-slate-200 rounded" />

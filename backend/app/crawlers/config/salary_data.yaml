@@ -1,0 +1,23 @@
+# 薪资数据爬虫配置
+name: salary_data
+category: career
+description: 薪资数据爬虫
+enabled: true
+schedule: weekly  # 每周更新薪资数据
+rate_limit: 1.0
+rate_limit_ms: 1000
+max_retries: 3
+timeout_seconds: 30
+target_table: companies + salary_benchmarks
+dedup_key:
+  - company
+  - position
+  - experience_level
+  - city
+notes: |
+  数据源：OfferShow/Levels.fyi 的薪资数据（预置）。
+  覆盖范围：20 家公司 × 5 个岗位 × 2 个级别（初级/高级），共 200 条薪资数据。
+  抓取策略：模拟 OfferShow/Levels.fyi 薪资数据，高级别薪资显著高于初级别，
+  在基线范围内随机波动 ±15% 模拟真实薪资分布。
+  字段映射：公司信息 → Company；薪资数据 → SalaryBenchmark。
+  去重规则：Company 按 name 去重；SalaryBenchmark 按 company + position + experience_level + city 去重。

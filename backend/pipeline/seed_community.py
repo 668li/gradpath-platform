@@ -8,6 +8,8 @@
 注意：由于 CommunityReport 的唯一约束为 (user_id, graduation_year)，
 每个用户的报告必须使用不同的毕业年份。
 """
+from sqlalchemy import func
+
 from app.core.security import hash_password
 from app.database import SessionLocal
 from app.models.community_report import CommunityReport, DestinationType, SalaryRange
@@ -281,7 +283,6 @@ def run_seed():
 
         print("社区报告种子数据导入完成")
         # 统计
-        from sqlalchemy import func
 
         user_count = (
             db.query(User)

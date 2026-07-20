@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, model_validator
 
 
 class IngestURLRequest(BaseModel):
@@ -95,11 +95,16 @@ class DataSourceUpdate(BaseModel):
 
 
 class DataSourceResponse(BaseModel):
+    """数据源响应。
+
+    修复: FASTAPI-RESP-001 — 不再返回 api_key 字段，避免敏感凭证泄漏给客户端。
+    保留 has_api_key 布尔值方便前端展示"已配置"状态。
+    """
     id: str
     name: str
     source_type: str
     api_url: str | None = None
-    api_key: str | None = None
+    has_api_key: bool = False
     data_mapping: dict | None = None
     is_active: bool
 
@@ -107,6 +112,33 @@ class DataSourceResponse(BaseModel):
     @classmethod
     def convert_uuid(cls, v):
         return str(v) if hasattr(v, "hex") else v
+
+    @field_validator("has_api_key", mode="before")
+    @classmethod
+    def _derive_has_api_key(cls, v):
+        # 直接传布尔值时直接返回；ORM 对象无该字段时此处不会触发，
+        # 由 model_validator 兜底从 api_key 推导。
+        if isinstance(v, bool):
+            return v
+        return bool(v)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _from_orm_with_api_key_flag(cls, data):
+        # 兼容 ORM 对象：从 api_key 推导 has_api_key，并删除 api_key 防止返回。
+        if hasattr(data, "api_key"):
+            api_key = getattr(data, "api_key", None)
+            data_dict = {
+                "id": getattr(data, "id", None),
+                "name": getattr(data, "name", None),
+                "source_type": getattr(data, "source_type", None),
+                "api_url": getattr(data, "api_url", None),
+                "has_api_key": bool(api_key),
+                "data_mapping": getattr(data, "data_mapping", None),
+                "is_active": getattr(data, "is_active", False),
+            }
+            return data_dict
+        return data
 
     model_config = {"from_attributes": True}
 

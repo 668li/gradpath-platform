@@ -15,12 +15,12 @@ router = APIRouter(prefix="/api/growth-patterns", tags=["成长模式智能"])
 
 
 @router.get("/analyze")
-def analyze_patterns(
+async def analyze_patterns(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
     """分析用户历史数据，发现成长模式，并落库为月度快照。"""
-    result = growth_pattern_service.analyze_patterns(db, user.id)
+    result = await growth_pattern_service.analyze_patterns(db, user.id)
     patterns = result.get("patterns", []) if isinstance(result, dict) else []
     # 计算成长得分：模式数 + 数据完整度启发式
     score = min(100, len(patterns) * 18 + result.get("data_points", {}).get("skill_count", 0) if isinstance(result, dict) else 0)

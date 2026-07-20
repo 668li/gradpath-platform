@@ -20,9 +20,14 @@ on:
 
 permissions:
   contents: read
+  security-events: write
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  # ===== 后端测试与代码质量 =====
+  # ===== 后端 Lint / 类型检查 / 安全扫描 =====
   backend-lint:
     name: Backend Lint & Type Check
     runs-on: ubuntu-latest
@@ -37,6 +42,7 @@ jobs:
         with:
           python-version: "3.11"
           cache: "pip"
+          cache-dependency-path: backend/pyproject.toml
 
       - name: Install dependencies
         run: |
@@ -52,6 +58,9 @@ jobs:
       - name: Run black check
         run: black --check app/ tests/ pipeline/
 
+      - name: Run mypy strict type check
+        run: mypy app/
+
   backend-test:
     name: Backend Tests
     runs-on: ubuntu-latest
@@ -66,6 +75,7 @@ jobs:
         with:
           python-version: "3.11"
           cache: "pip"
+          cache-dependency-path: backend/pyproject.toml
 
       - name: Install dependencies
         run: |
@@ -74,6 +84,9 @@ jobs:
           pip install pytest-cov
 
       - name: Run tests with coverage
+        env:
+          SECRET_KEY: ci-test-secret-key-min-32-characters-long-aaaa-bbbb
+          ENVIRONMENT: development
         run: pytest tests/ -v --tb=short --cov=app --cov-report=term-missing --cov-report=html --cov-fail-under=80
 
       - name: Upload coverage
@@ -99,6 +112,7 @@ jobs:
         with:
           python-version: "3.11"
           cache: "pip"
+          cache-dependency-path: backend/pyproject.toml
 
       - name: Install dependencies
         run: |
@@ -113,9 +127,9 @@ jobs:
         run: safety check --full-report
         continue-on-error: true
 
-  # ===== 前端测试与代码质量 =====
+  # ===== 前端 Lint & 类型检查 =====
   frontend-lint:
-    name: Frontend Lint
+    name: Frontend Lint & Type Check
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -161,6 +175,40 @@ jobs:
       - name: Run Vitest with coverage
         run: npm run test:coverage
 
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+          retention-days: 7
+
+  # ===== 前端构建验证 =====
+  frontend-build:
+    name: Frontend Production Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Next.js (production)
+        env:
+          NEXT_PUBLIC_API_URL: ""
+          NEXT_PUBLIC_SENTRY_DSN: ""
+        run: npm run build
+
   # ===== E2E 测试 =====
   frontend-e2e:
     name: Frontend E2E Tests
@@ -187,7 +235,7 @@ jobs:
         with:
           python-version: "3.11"
           cache: "pip"
-          cache-dependency-path: backend/requirements*.txt
+          cache-dependency-path: backend/pyproject.toml
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -211,7 +259,7 @@ jobs:
         run: |
           DATABASE_URL=postgresql://gradpath:gradpath_test@localhost:5432/gradpath_test \
           ENVIRONMENT=development \
-          SECRET_KEY=test-secret-key-for-e2e \
+          SECRET_KEY=ci-test-secret-key-min-32-characters-long-aaaa-bbbb \
           uvicorn app.main:app --host 0.0.0.0 --port 8000 &
           npx wait-on http://localhost:8000/health --timeout 30000
 
@@ -229,6 +277,48 @@ jobs:
       - name: Run Playwright tests
         working-directory: frontend
         run: npm run test:e2e
+
+  # ===== Docker 构建验证 =====
+  docker-build:
+    name: Docker Build Verification
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: false
+          tags: gradpath-backend:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          load: true
+
+      - name: Build frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: false
+          tags: gradpath-frontend:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          load: true
+
+      - name: Smoke test backend image
+        run: |
+          docker run --rm -d --name gradpath-backend-ci \
+            -e SECRET_KEY=ci-test-secret-key-min-32-characters-long-aaaa-bbbb \
+            -e ENVIRONMENT=development \
+            -e DATABASE_URL=sqlite:///:memory: \
+            -p 18000:8000 \
+            gradpath-backend:ci
+          sleep 5
+          curl -fsS http://localhost:18000/health | grep -q '"status"'
+          docker stop gradpath-backend-ci || true
 
   # ===== Pre-commit 检查 =====
   pre-commit:

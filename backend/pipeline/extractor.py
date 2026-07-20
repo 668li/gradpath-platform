@@ -6,13 +6,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from uuid import UUID
 
-import httpx
 from bs4 import BeautifulSoup
 from sqlalchemy.orm import Session
 
-from app.config import settings
 from app.models.employment_data import Degree, EmploymentData
 from app.models.report_record import ParseStatus, ReportRecord
+from app.services.ai_orchestrator import AIOrchestrator
 from pipeline.extractors.html_extractor import extract_html
 
 logger = logging.getLogger(__name__)
@@ -20,8 +19,17 @@ logger = logging.getLogger(__name__)
 PROMPT_PATH = Path(__file__).parent / "prompts" / "extract_report.txt"
 MAX_TEXT_LENGTH = 12000  # LLM 输入文本上限
 
+# 统一编排层：复用 AIOrchestrator 的超时/重试语义，保留原 call_llm 的 60s 超时
+LLM_TIMEOUT = 60
 
-def extract_report(db: Session, report_id: UUID) -> ReportRecord | None:
+try:
+    _PROMPT_TEMPLATE = PROMPT_PATH.read_text(encoding="utf-8")
+except Exception as e:
+    logger.error(f"加载 prompt 模板失败: {e}")
+    _PROMPT_TEMPLATE = ""
+
+
+async def extract_report(db: Session, report_id: UUID) -> ReportRecord | None:
     """解析报告，通过 LLM 提取结构化就业数据。
 
     Args:
@@ -48,7 +56,7 @@ def extract_report(db: Session, report_id: UUID) -> ReportRecord | None:
 
     # 调用 LLM
     try:
-        llm_response = call_llm(text)
+        llm_response = await call_llm(text)
         data = json.loads(llm_response)
     except json.JSONDecodeError as e:
         report.parse_status = ParseStatus.failed
@@ -107,32 +115,16 @@ def _clean_html(html: str) -> str:
     return extract_html(html).text
 
 
-def call_llm(report_text: str) -> str:
+async def call_llm(report_text: str) -> str:
     """调用 LLM API 解析报告文本，返回 JSON 字符串。
 
-    使用 OpenAI 兼容接口（智谱 GLM-4 / OpenAI GPT-4o 均支持）。
+    通过统一编排层 AIOrchestrator 发起调用（等价于原 httpx.POST 通道），
+    保留原 call_llm 的 60s 超时语义。prompt 模板整体作为 user_prompt 传入，
+    保持与原实现一致的请求内容。
     """
-    prompt_template = PROMPT_PATH.read_text(encoding="utf-8")
-    prompt = prompt_template.replace("{report_text}", report_text)
+    if not _PROMPT_TEMPLATE:
+        raise ValueError("prompt 模板未加载")
+    prompt = _PROMPT_TEMPLATE.replace("{report_text}", report_text)
 
-    headers = {
-        "Authorization": f"Bearer {settings.LLM_API_KEY}",
-        "Content-Type": "application/json",
-    }
-    payload = {
-        "model": settings.LLM_MODEL,
-        "messages": [
-            {"role": "user", "content": prompt}
-        ],
-        "temperature": 0,
-    }
-
-    resp = httpx.post(
-        f"{settings.LLM_BASE_URL}chat/completions",
-        headers=headers,
-        json=payload,
-        timeout=60,
-    )
-    resp.raise_for_status()
-    result = resp.json()
-    return result["choices"][0]["message"]["content"]
+    orchestrator = AIOrchestrator()
+    return await orchestrator.chat(system_prompt="", user_prompt=prompt, timeout=LLM_TIMEOUT)

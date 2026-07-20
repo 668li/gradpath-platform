@@ -89,12 +89,13 @@ class MilestoneUpdate(BaseModel):
 # ======================================================================
 
 class MilestoneLogCreate(BaseModel):
-    content: str
+    # 修复: FASTAPI-VALID-001 — 里程碑日志 content 加 max_length
+    content: str = Field(..., min_length=1, max_length=5000)
 
 
 class MilestoneLogResponse(BaseModel):
-    id: str
-    plan_id: str
+    id: UUID
+    plan_id: UUID
     milestone_index: int
     content: str
     created_at: datetime

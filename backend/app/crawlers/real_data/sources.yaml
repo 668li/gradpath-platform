@@ -1,0 +1,454 @@
+# ===================================================================
+# 统一高速爬取引擎 — 数据源配置
+# ===================================================================
+# 每个 source 的字段说明：
+#   name          : 数据源中文名称
+#   enabled       : 是否启用
+#   source_type   : 数据类型 (grad=考研 / civil=公考)
+#   list_urls     : 列表页 URL 列表（用于发现详情页 URL）
+#   list_parser   : 列表页解析器名称（对应 PARSE_REGISTRY 中的 key）
+#   detail_parser : 详情页解析器名称（对应 PARSE_REGISTRY 中的 key）
+#   concurrency   : 并发抓取数（Semaphore 信号量）
+#   rate_limit    : 请求间隔（秒）
+#   target_model  : 入库目标 ORM 模型名
+#   unique_key    : 去重字段名
+#   category_map  : 源分类 → 数据库 category 字段映射
+# ===================================================================
+
+# ── 数据源 1: 研招网 (yz.chsi.com.cn) ──
+# URL 生成规则（复用 firecrawl_yz_batch.py 的 SECTIONS 配置）：
+#   page 1  → {BASE_URL}{path}
+#   page 2+ → {BASE_URL}{path}index_{page}.html
+#   kydt  考研动态 (原 max_pages=50, 取前 5 页)
+#   jybzc 教育部政策 (原 max_pages=20, 取前 3 页)
+#   zsjz  招生简章 (原 max_pages=30, 取前 3 页)
+#   fstj  复试经验 (原 max_pages=20, 取前 3 页)
+yanzhao:
+  name: 研招网
+  enabled: true
+  source_type: grad
+  list_urls:
+    - https://yz.chsi.com.cn/kyzx/kydt/
+    - https://yz.chsi.com.cn/kyzx/kydt/index_2.html
+    - https://yz.chsi.com.cn/kyzx/kydt/index_3.html
+    - https://yz.chsi.com.cn/kyzx/kydt/index_4.html
+    - https://yz.chsi.com.cn/kyzx/kydt/index_5.html
+    - https://yz.chsi.com.cn/kyzx/jybzc/
+    - https://yz.chsi.com.cn/kyzx/jybzc/index_2.html
+    - https://yz.chsi.com.cn/kyzx/jybzc/index_3.html
+    - https://yz.chsi.com.cn/kyzx/zsjz/
+    - https://yz.chsi.com.cn/kyzx/zsjz/index_2.html
+    - https://yz.chsi.com.cn/kyzx/zsjz/index_3.html
+    - https://yz.chsi.com.cn/kyzx/fstj/
+    - https://yz.chsi.com.cn/kyzx/fstj/index_2.html
+    - https://yz.chsi.com.cn/kyzx/fstj/index_3.html
+  list_parser: yz_list
+  detail_parser: yz_detail
+  concurrency: 10
+  rate_limit: 0.5
+  target_model: ExperiencePost
+  unique_key: source_url
+  category_map:
+    kydt: 政策
+    jybzc: 政策
+    zsjz: 政策
+    fstj: 复试
+
+# ── 数据源 2: 考研帮 (kaoyan.com) ──
+# 列表页 URL 复用 batch_scrape_all.py 的 crawl_kaoyan() 列表页
+kaoyan:
+  name: 考研帮
+  enabled: true
+  source_type: grad
+  list_urls:
+    - https://www.kaoyan.com/experience/?page=1
+    - https://www.kaoyan.com/experience/?page=2
+    - https://www.kaoyan.com/experience/?page=3
+    - https://www.kaoyan.com/experience/?page=4
+    - https://www.kaoyan.com/experience/?page=5
+    - https://www.kaoyan.com/news/list/1/9370
+    - https://www.kaoyan.com/news/list/1/3946
+    - https://www.kaoyan.com/news/list/1/3949
+  list_parser: kaoyan_list
+  detail_parser: kaoyan_detail
+  concurrency: 15
+  rate_limit: 0.3
+  target_model: ExperiencePost
+  unique_key: source_url
+  category_map:
+    初试: 初试
+    复试: 复试
+    调剂: 调剂
+    择校: 择校
+    备考: 复习
+    政策: general
+    分数线: 初试
+    专业分析: general
+    经验分享: general
+    院校信息: 择校
+
+# ── 数据源 3: 中公教育 (offcn.com) ──
+# 列表页 URL 复用 civil_service_expand.py 的 OFFCN_SECTIONS
+offcn:
+  name: 中公教育
+  enabled: true
+  source_type: civil
+  list_urls:
+    - https://www.offcn.com/gwy/
+    - https://www.offcn.com/sksy/
+    - https://www.offcn.com/xd/
+    - https://www.offcn.com/shiyedanwei/
+  list_parser: offcn_list
+  detail_parser: offcn_detail
+  concurrency: 8
+  rate_limit: 0.5
+  target_model: ExperiencePost
+  unique_key: source_url
+  category_map:
+    国考: general
+    省考: general
+    选调: general
+    事业单位: general
+
+# ── 数据源 4: 华图教育 (huatu.com) ──
+# 列表页 URL 复用 civil_service_expand.py 的 HUATU_SECTIONS
+huatu:
+  name: 华图教育
+  enabled: true
+  source_type: civil
+  list_urls:
+    - https://www.huatu.com/guojia/
+    - https://www.huatu.com/sheng/
+    - https://www.huatu.com/xds/
+    - https://www.huatu.com/sydw/
+  list_parser: huatu_list
+  detail_parser: huatu_detail
+  concurrency: 8
+  rate_limit: 0.5
+  target_model: ExperiencePost
+  unique_key: source_url
+  category_map:
+    国考: general
+    省考: general
+    选调: general
+    事业单位: general
+
+# -- Data Source 5: Sina Education --
+sina_edu:
+  name: Sina Education
+  enabled: true
+  source_type: news
+  list_urls:
+    - https://edu.sina.com.cn/
+    - https://edu.sina.com.cn/kaoyan/
+    - https://edu.sina.com.cn/gaokao/
+  list_parser: sina_list
+  detail_parser: generic_detail
+  concurrency: 10
+  rate_limit: 0.3
+  target_model: ExperiencePost
+  unique_key: source_url
+  category_map:
+    kaoyan: general
+
+# -- Data Source 6: MOE --
+moe:
+  name: MOE
+  enabled: false
+  source_type: policy
+  list_urls:
+    - http://www.moe.gov.cn/jyb_xwfb/
+    - http://www.moe.gov.cn/jyb_xwfb/xw_zt/
+  list_parser: moe_list
+  detail_parser: generic_detail
+  concurrency: 5
+  rate_limit: 0.8
+  target_model: ExperiencePost
+  unique_key: source_url
+  category_map:
+    policy: policy
+
+# -- Data Source 7: Xinhua Education --
+xinhua_edu:
+  name: Xinhua Education
+  enabled: true
+  source_type: news
+  list_urls:
+    - http://www.xinhuanet.com/edu/
+  list_parser: xinhua_list
+  detail_parser: generic_detail
+  concurrency: 8
+  rate_limit: 0.5
+  target_model: ExperiencePost
+  unique_key: source_url
+  category_map:
+    education: general
+
+# -- Data Source 8: EOL --
+eol:
+  name: EOL
+  enabled: true
+  source_type: news
+  list_urls:
+    - https://www.eol.cn/kaoyan/
+    - https://www.eol.cn/kaoyan/zhengce/
+  list_parser: eol_list
+  detail_parser: generic_detail
+  concurrency: 8
+  rate_limit: 0.5
+  target_model: ExperiencePost
+  unique_key: source_url
+  category_map:
+    kaoyan: general
+
+# -- Data Source 9: Fenbi --
+fenbi:
+  name: Fenbi
+  enabled: true
+  source_type: civil
+  list_urls:
+    - https://www.fenbi.com/
+    - https://www.fenbi.com/page/guokao
+    - https://www.fenbi.com/page/shengkao
+    - https://www.fenbi.com/page/shiyedanwei
+  list_parser: fenbi_list
+  detail_parser: generic_detail
+  concurrency: 10
+  rate_limit: 0.3
+  target_model: ExperiencePost
+  unique_key: source_url
+  category_map:
+    gwy: general
+    sydw: general
+
+# -- Data Source 10: Hqwx --
+hqwx:
+  name: Hqwx
+  enabled: true
+  source_type: civil
+  list_urls:
+    - https://www.hqwx.com/gjgwy-kaoshi/
+    - https://www.hqwx.com/dfgwy-kaoshi/
+    - https://www.hqwx.com/yjjzs-kaoshi/
+    - https://www.hqwx.com/ejjzs-kaoshi/
+    - https://www.hqwx.com/gjjjs-kaoshi/
+  list_parser: hqwx_list
+  detail_parser: generic_detail
+  concurrency: 8
+  rate_limit: 0.5
+  target_model: ExperiencePost
+  unique_key: source_url
+  category_map:
+    gwy: general
+    js: general
+
+# -- Data Source 11: EOL Kaoyan --
+eol_kaoyan:
+  name: EOL Kaoyan
+  enabled: true
+  source_type: grad
+  list_urls:
+    - https://kaoyan.eol.cn/
+    - https://kaoyan.eol.cn/nnews/202607/
+    - https://kaoyan.eol.cn/nnews/202606/
+    - https://kaoyan.eol.cn/nnews/202605/
+    - https://kaoyan.eol.cn/nnews/202604/
+  list_parser: eol_kaoyan_list
+  detail_parser: generic_detail
+  concurrency: 10
+  rate_limit: 0.3
+  target_model: ExperiencePost
+  unique_key: source_url
+  category_map:
+    kaoyan: general
+    zsjz: policy
+    fstj: retest
+
+# -- Data Source 12: 163 Edu --
+163_edu:
+  name: 163 Edu
+  enabled: true
+  source_type: news
+  list_urls:
+    - https://edu.163.com/
+    - https://edu.163.com/kaoyan/
+    - https://edu.163.com/gaokao/
+  list_parser: 163_edu_list
+  detail_parser: generic_detail
+  concurrency: 10
+  rate_limit: 0.3
+  target_model: ExperiencePost
+  unique_key: source_url
+
+# -- Data Source 13: Sohu Edu --
+sohu_edu:
+  name: Sohu Edu
+  enabled: true
+  source_type: news
+  list_urls:
+    - https://learning.sohu.com/
+  list_parser: sohu_edu_list
+  detail_parser: generic_detail
+  concurrency: 10
+  rate_limit: 0.3
+  target_model: ExperiencePost
+  unique_key: source_url
+
+# -- Data Source 14: Gaokao CN --
+gaokao_cn:
+  name: Gaokao CN
+  enabled: true
+  source_type: grad
+  list_urls:
+    - https://gaokao.chsi.com.cn/
+  list_parser: gaokao_cn_list
+  detail_parser: generic_detail
+  concurrency: 8
+  rate_limit: 0.5
+  target_model: ExperiencePost
+  unique_key: source_url
+
+# -- Data Source 15: EOL Gaokao --
+eol_gaokao:
+  name: EOL Gaokao
+  enabled: true
+  source_type: news
+  list_urls:
+    - https://gaokao.eol.cn/
+  list_parser: eol_gaokao_list
+  detail_parser: generic_detail
+  concurrency: 10
+  rate_limit: 0.3
+  target_model: ExperiencePost
+  unique_key: source_url
+
+# -- Data Source 16: 51job --
+51job:
+  name: 51Job
+  enabled: true
+  source_type: career
+  list_urls:
+    - https://www.51job.com/
+    - https://www.51job.com/list/000000,000000,0000,00,9,99,%25E8%2580%2583%25E7%25A0%2594,2,1.html
+  list_parser: 51job_list
+  detail_parser: generic_detail
+  concurrency: 8
+  rate_limit: 0.5
+  target_model: ExperiencePost
+  unique_key: source_url
+
+# -- Data Source 17: BOSS --
+boss:
+  name: BOSS
+  enabled: true
+  source_type: career
+  list_urls:
+    - https://www.zhipin.com/
+  list_parser: boss_list
+  detail_parser: generic_detail
+  concurrency: 8
+  rate_limit: 0.5
+  target_model: ExperiencePost
+  unique_key: source_url
+
+# -- Data Source 18: EOL College List --
+eol_college:
+  name: EOL College
+  enabled: true
+  source_type: grad
+  list_urls:
+    - https://gkcx.eol.cn/school/90001
+    - https://gkcx.eol.cn/school/90002
+    - https://gkcx.eol.cn/school/90003
+    - https://gkcx.eol.cn/school/90004
+    - https://gkcx.eol.cn/school/90005
+  list_parser: eol_college_list
+  detail_parser: generic_detail
+  concurrency: 8
+  rate_limit: 0.5
+  target_model: ExperiencePost
+  unique_key: source_url
+
+# -- Data Source 19: MoFangGe --
+mofangge:
+  name: MoFangGe
+  enabled: true
+  source_type: training
+  list_urls:
+    - https://www.mofangge.com/
+    - https://www.mofangge.com/gongchenlei/
+    - https://www.mofangge.com/english/
+    - https://www.mofangge.com/zhonggong/
+  list_parser: mofangge_list
+  detail_parser: generic_detail
+  concurrency: 10
+  rate_limit: 0.3
+  target_model: ExperiencePost
+  unique_key: source_url
+
+# -- Data Source 20: Offcn Shengkao (省考) --
+offcn_shengkao:
+  name: Offcn Shengkao
+  enabled: true
+  source_type: civil
+  list_urls:
+    - https://www.offcn.com/gwy/
+    - https://www.offcn.com/gwy/kaoshi/
+    - https://www.offcn.com/gwy/zixun/
+  list_parser: offcn_list
+  detail_parser: offcn_detail
+  concurrency: 8
+  rate_limit: 0.5
+  target_model: ExperiencePost
+  unique_key: source_url
+  category_map:
+    general: general
+
+# -- Data Source 21: Offcn Teacher --
+offcn_teacher:
+  name: Offcn Teacher
+  enabled: true
+  source_type: teacher
+  list_urls:
+    - https://www.offcn.com/jiaoshi/
+    - https://www.offcn.com/jiaoshi/zige/
+  list_parser: offcn_list
+  detail_parser: offcn_detail
+  concurrency: 8
+  rate_limit: 0.5
+  target_model: ExperiencePost
+  unique_key: source_url
+  category_map:
+    general: general
+
+# -- Data Source 22: MoFangGe Engineering --
+mofangge_eng:
+  name: MoFangGe Engineering
+  enabled: true
+  source_type: training
+  list_urls:
+    - https://www.mofangge.com/gongchenlei/
+    - https://www.mofangge.com/jiaoyu/
+    - https://www.mofangge.com/english/
+  list_parser: mofangge_eng_list
+  detail_parser: generic_detail
+  concurrency: 10
+  rate_limit: 0.3
+  target_model: ExperiencePost
+  unique_key: source_url
+
+# -- Data Source 23: Offcn Accounting --
+offcn_accounting:
+  name: Offcn Accounting
+  enabled: true
+  source_type: professional
+  list_urls:
+    - https://www.offcn.com/kuaiji/
+  list_parser: offcn_list
+  detail_parser: offcn_detail
+  concurrency: 8
+  rate_limit: 0.5
+  target_model: ExperiencePost
+  unique_key: source_url
+  category_map:
+    general: general

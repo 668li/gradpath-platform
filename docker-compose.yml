@@ -1,46 +1,135 @@
 name: gradpath
 
 services:
+  # ======================================================================
+  # nginx — 反向代理（统一入口，承载 TLS 终止、gzip、安全头、限流）
+  # ======================================================================
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      # 唯一对外暴露的 HTTP 端口；生产环境可在 nginx 前再叠一层 CDN/TLS
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/health >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+      nproc: 4096
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
+        reservations:
+          memory: 64M
+          cpus: "0.1"
+    restart: unless-stopped
+
+  # ======================================================================
+  # db — PostgreSQL 16
+  # ======================================================================
   db:
     image: postgres:16-alpine
     environment:
+      # FASTAPI-DEPLOY-002: 不使用默认密码，强制由环境变量提供强密码
       POSTGRES_DB: ${POSTGRES_DB:-gradpath}
       POSTGRES_USER: ${POSTGRES_USER:-gradpath}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
-    ports:
-      - "5432:5432"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required (generate one with: python -c \"import secrets; print(secrets.token_urlsafe(32))\")}"
+    # FASTAPI-DEPLOY-001: 不暴露 5432 到宿主机，仅 docker network 内通信
+    # nginx 接管所有外部流量后，db 无需任何 ports/expose（容器网络内自动可达）
+    expose:
+      - "5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U gradpath"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-gradpath}"]
       interval: 5s
       timeout: 5s
       retries: 5
+      start_period: 10s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+      nproc: 4096
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1.0"
+        reservations:
+          memory: 256M
+          cpus: "0.25"
+    restart: unless-stopped
 
+  # ======================================================================
+  # redis — 缓存（带密码认证）
+  # ======================================================================
   redis:
     image: redis:7-alpine
-    command: redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru
-    ports:
-      - "6379:6379"
+    # FASTAPI-DEPLOY-002: 启用 Redis 密码认证，避免未授权访问
+    command: >-
+      sh -c 'redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru
+      --requirepass "$${REDIS_PASSWORD}"'
+    environment:
+      REDIS_PASSWORD: "${REDIS_PASSWORD:?REDIS_PASSWORD is required (generate one with: python -c \"import secrets; print(secrets.token_urlsafe(32))\")}"
+    # FASTAPI-DEPLOY-001: 不暴露 6379 到宿主机，仅 docker network 内通信
+    expose:
+      - "6379"
     volumes:
       - redisdata:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      # healthcheck 也需要提供密码，否则 ping 会返回 NOAUTH
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping | grep -q PONG"]
       interval: 5s
       timeout: 3s
       retries: 5
+      start_period: 5s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+      nproc: 4096
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
+        reservations:
+          memory: 64M
+          cpus: "0.1"
+    restart: unless-stopped
 
+  # ======================================================================
+  # backend — FastAPI (uvicorn 4 workers)
+  # ======================================================================
   backend:
     build: ./backend
-    ports:
-      - "8001:8000"
+    # FASTAPI-DEPLOY-001: nginx 接管外部流量后，backend 不再 ports 暴露到宿主机
+    # 仅在 docker network 内通过 service name + 8000 端口可达
+    expose:
+      - "8000"
     env_file:
       - ./backend/.env
     environment:
       ENVIRONMENT: development
       CORS_ORIGINS: http://localhost:3000
-      DATABASE_URL: postgresql://${POSTGRES_USER:-gradpath}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-gradpath}
-      REDIS_URL: redis://redis:6379/0
+      DATABASE_URL: postgresql://${POSTGRES_USER:-gradpath}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-gradpath}
+      # Redis URL 包含密码，与 redis 服务的 --requirepass 保持一致
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
     depends_on:
       db:
         condition: service_healthy
@@ -51,40 +140,261 @@ services:
     # 生产配置：移除 --reload，启用 4 worker 提升并发能力
     # 本地开发时可改回：uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+    healthcheck:
+      # 使用 /health 端点（app.main 提供，依赖 DB 连通性）
+      test: ["CMD-SHELL", "python -c \"import httpx; httpx.get('http://localhost:8000/health', timeout=5).raise_for_status()\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+      nproc: 8192
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "2.0"
+        reservations:
+          memory: 256M
+          cpus: "0.5"
+    restart: unless-stopped
 
+  # ======================================================================
+  # frontend — Next.js SSR
+  # ======================================================================
   frontend:
     build: ./frontend
-    ports:
-      - "4001:3000"
+    # nginx 接管外部流量后，frontend 不再 ports 暴露到宿主机
+    expose:
+      - "3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:8000
+      # NEXT_PUBLIC_API_URL 故意留空：前端通过 next.config.js 的 rewrites 走 /api/* 同源代理，
+      # 避免把宿主端口（8001）硬编码进客户端 bundle（容器内 8000，宿主映射 8001）
+      NEXT_PUBLIC_API_URL: ""
       BACKEND_URL: http://backend:8000
       NEXT_PUBLIC_TEST_MODE: "1"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     volumes:
       - ./frontend:/app
       - /app/node_modules
       - /app/.next
     command: npm run dev
+    healthcheck:
+      # Next.js dev server 启动较慢，给 60s start_period
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3000', r => process.exit(r.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+      nproc: 4096
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "1.0"
+        reservations:
+          memory: 128M
+          cpus: "0.25"
+    restart: unless-stopped
+
+  # ======================================================================
+  # celery-worker — 异步任务执行（爬虫队列 + AI 队列）
+  # ======================================================================
+  # A10: 替代 FastAPI BackgroundTasks，爬虫与 AI 异步任务统一通过 Celery 调度
+  # - crawler 队列：爬虫任务（IO 密集，单任务可能耗时 5-30 分钟）
+  # - ai 队列：AI 异步生成任务（如批量生成建议、长期记忆更新）
+  # - worker_prefetch_multiplier=1 防止长任务饥饿（已在 celery_app.py 配置）
+  celery-worker:
+    build: ./backend
+    # 复用 backend 镜像，但 command 不同
+    command: >
+      celery -A app.celery_app.celery_app worker
+      --loglevel=info
+      --concurrency=4
+      --queues=crawler,ai,default
+      --max-tasks-per-child=100
+      --without-gossip
+      --without-mingle
+      --without-heartbeat
+    env_file:
+      - ./backend/.env
+    environment:
+      ENVIRONMENT: development
+      DATABASE_URL: postgresql://${POSTGRES_USER:-gradpath}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-gradpath}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/1
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@redis:6379/2
+      PROMETHEUS_MULTIPROC_DIR: /tmp/prometheus_multiproc
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.celery_app.celery_app inspect ping -d celery@$$HOSTNAME || exit 1"]
+      interval: 60s
+      timeout: 15s
+      retries: 3
+      start_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+      nproc: 4096
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1.0"
+        reservations:
+          memory: 256M
+          cpus: "0.25"
+    restart: unless-stopped
+
+  # ======================================================================
+  # flower — Celery 任务监控面板（仅 127.0.0.1 访问）
+  # ======================================================================
+  flower:
+    image: mher/flower:2.0
+    command: >
+      celery --app=app.celery_app.celery_app flower
+      --port=5555
+      --broker=redis://:${REDIS_PASSWORD}@redis:6379/1
+      --url-prefix=flower
+      --basic-auth=${FLOWER_USER:-admin}:${FLOWER_PASSWORD:?FLOWER_PASSWORD is required}
+    environment:
+      FLOWER_USER: "${FLOWER_USER:-admin}"
+      FLOWER_PASSWORD: "${FLOWER_PASSWORD:?FLOWER_PASSWORD is required (generate one with: python -c \"import secrets; print(secrets.token_urlsafe(16))\")}"
+    ports:
+      # FASTAPI-DEPLOY-001: 端口仅绑定 127.0.0.1，避免 5555 直接暴露公网
+      # 生产环境应通过 nginx 反向代理访问，并启用 basic-auth（已配置）
+      - "127.0.0.1:5555:5555"
+    depends_on:
+      redis:
+        condition: service_healthy
+      celery-worker:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5555/flower/api/workers >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.25"
+        reservations:
+          memory: 64M
+          cpus: "0.1"
+    restart: unless-stopped
+
+  # ======================================================================
+  # n8n — 自动化工作流（可选服务，仅 127.0.0.1 访问）
+  # ======================================================================
 
   n8n:
     image: n8nio/n8n:latest
     ports:
-      - "5678:5678"
+      # 修复: FASTAPI-DEPLOY-001 — 端口仅绑定 127.0.0.1，避免 5678 直接暴露公网
+      # 生产环境应通过 nginx 反向代理访问，并加认证
+      - "127.0.0.1:5678:5678"
     environment:
       N8N_HOST: localhost
       N8N_PORT: 5678
       N8N_PROTOCOL: http
       WEBHOOK_URL: http://localhost:5678/
       GENERIC_TIMEZONE: Asia/Shanghai
-      N8N_SECURE_COOKIE: "false"
+      # 修复: FASTAPI-DEPLOY-001 — 启用 secure cookie，防止会话 cookie 在非 HTTPS 通道被窃取
+      N8N_SECURE_COOKIE: "true"
     volumes:
       - n8n_data:/home/node/.n8n
     depends_on:
       - backend
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5678/healthz >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+        reservations:
+          memory: 128M
+          cpus: "0.1"
+    restart: unless-stopped
+
+  # ======================================================================
+  # backup — 定时备份服务（每天 02:00 备份 DB+Redis，每周日 03:00 验证）
+  # ======================================================================
+  backup:
+    image: postgres:16-alpine
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-gradpath}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-gradpath}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      BACKUP_DIR: /var/backups/gradpath
+      RETENTION_DAYS: "14"
+    volumes:
+      - ./backend/scripts:/backup-scripts:ro
+      - backup_data:/var/backups/gradpath
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    # apk add redis 用于 redis-cli 调用；tail -f /dev/null 保持容器常驻
+    entrypoint: |
+      sh -c "
+        apk add --no-cache redis dcron 2>/dev/null;
+        chmod +x /backup-scripts/backup_db.sh /backup-scripts/backup_redis.sh /backup-scripts/backup_verify.sh;
+        mkdir -p /var/backups/gradpath /var/log;
+        # 写入 crontab
+        echo '0 2 * * * /backup-scripts/backup_db.sh >> /var/log/backup.log 2>&1' > /etc/crontabs/root;
+        echo '30 2 * * * /backup-scripts/backup_redis.sh >> /var/log/backup.log 2>&1' >> /etc/crontabs/root;
+        echo '0 3 * * 0 /backup-scripts/backup_verify.sh >> /var/log/backup_verify.log 2>&1' >> /etc/crontabs/root;
+        # 启动 crond 前台运行
+        exec crond -l 2 -f
+      "
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
+        reservations:
+          memory: 64M
+          cpus: "0.1"
+    restart: unless-stopped
 
 volumes:
   pgdata:
   redisdata:
   n8n_data:
+  backup_data:
+  nginx_logs:

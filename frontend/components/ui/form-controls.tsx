@@ -6,6 +6,7 @@ import type {
   SelectHTMLAttributes,
   TextareaHTMLAttributes,
   ReactNode,
+  MouseEvent as ReactMouseEvent,
 } from "react";
 import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
@@ -43,14 +44,16 @@ export function Field({
   required,
   children,
   hint,
+  className,
 }: {
   label: string;
   required?: boolean;
   children: ReactNode;
   hint?: string;
+  className?: string;
 }) {
   return (
-    <label className="block">
+    <label className={cn("block", className)}>
       <span className="mb-1.5 block text-sm font-medium text-ink-700">
         {label}
         {required && <span className="ml-0.5 text-red-500">*</span>}
@@ -109,10 +112,12 @@ export function Badge({
   children,
   color = "slate",
   className,
+  onClick,
 }: {
   children: ReactNode;
   color?: "slate" | "green" | "amber" | "red" | "blue" | "purple";
   className?: string;
+  onClick?: (e: ReactMouseEvent<HTMLSpanElement>) => void;
 }) {
   const colors: Record<string, string> = {
     slate: "bg-ink-100 text-ink-600",
@@ -124,6 +129,7 @@ export function Badge({
   };
   return (
     <span
+      onClick={onClick}
       className={cn(
         "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
         colors[color],

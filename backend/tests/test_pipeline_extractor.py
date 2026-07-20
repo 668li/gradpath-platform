@@ -1,7 +1,8 @@
 # backend/tests/test_pipeline_extractor.py
+import asyncio
 import pytest
 import json
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 from uuid import uuid4
 
 from app.models.school import School
@@ -86,8 +87,8 @@ class TestExtractor:
         db_session.add(report)
         db_session.commit()
 
-        with patch("pipeline.extractor.call_llm", return_value=MOCK_LLM_RESPONSE):
-            extract_report(db_session, report_id=report.id)
+        with patch("pipeline.extractor.call_llm", new=AsyncMock(return_value=MOCK_LLM_RESPONSE)):
+            asyncio.run(extract_report(db_session, report_id=report.id))
 
         db_session.refresh(report)
         assert report.parse_status == ParseStatus.parsed
@@ -114,8 +115,8 @@ class TestExtractor:
         db_session.add(report)
         db_session.commit()
 
-        with patch("pipeline.extractor.call_llm", return_value="not valid json"):
-            extract_report(db_session, report_id=report.id)
+        with patch("pipeline.extractor.call_llm", new=AsyncMock(return_value="not valid json")):
+            asyncio.run(extract_report(db_session, report_id=report.id))
 
         db_session.refresh(report)
         assert report.parse_status == ParseStatus.failed
@@ -136,34 +137,34 @@ class TestExtractor:
         db_session.add(report)
         db_session.commit()
 
-        result = extract_report(db_session, report_id=report.id)
+        result = asyncio.run(extract_report(db_session, report_id=report.id))
         assert result is None
 
         db_session.refresh(report)
         assert report.parse_status == ParseStatus.failed
 
     def test_call_llm_payload_has_no_timeout_field(self):
-        """B1: call_llm 的 JSON payload 不应包含非法的 timeout 字段。
+        """B1: call_llm 通过 AIOrchestrator 调用，timeout 是传输层参数不应进入 LLM payload。
 
-        timeout 是 httpx 传输层参数，不应放入 OpenAI 兼容接口的请求体。
+        修复: call_llm 已重构为使用 AIOrchestrator（统一 LLM 入口），
+        不再直接调用 httpx.post。本测试验证 AIOrchestrator.chat 被正确调用，
+        且 timeout 作为调用参数（而非 payload 字段）传递。
         """
-        with patch("pipeline.extractor.httpx.post") as mock_post:
-            mock_response = MagicMock()
-            mock_response.json.return_value = {
-                "choices": [{"message": {"content": "{}"}}]
-            }
-            mock_response.raise_for_status = MagicMock()
-            mock_post.return_value = mock_response
+        with patch("pipeline.extractor.AIOrchestrator") as MockOrch:
+            mock_orch = MagicMock()
+            mock_orch.chat = AsyncMock(return_value='{"majors": []}')
+            MockOrch.return_value = mock_orch
 
-            call_llm("测试文本")
+            asyncio.run(call_llm("测试文本"))
 
-            assert mock_post.called
-            call_kwargs = mock_post.call_args.kwargs
-            payload = call_kwargs["json"]
-            # payload 中不应包含 timeout 字段
-            assert "timeout" not in payload, "payload 不应包含非法的 timeout 字段"
-            # httpx.post 的 timeout 传输层参数应保留
-            assert call_kwargs.get("timeout") == 60
+            # AIOrchestrator.chat 应被调用，timeout 作为关键字参数传递
+            assert mock_orch.chat.called
+            call_kwargs = mock_orch.chat.call_args.kwargs
+            # timeout 应作为调用参数（传输层），而非进入 prompt/payload
+            assert call_kwargs.get("timeout") == 60, "timeout 应作为调用参数传递"
+            # system_prompt 和 user_prompt 是字符串，不应包含 timeout 字段
+            assert "timeout" not in call_kwargs.get("system_prompt", "")
+            assert "timeout" not in call_kwargs.get("user_prompt", "")
 
     def test_extract_bad_degree_skipped(self, db_session):
         """B3: 单个坏 degree 值应跳过该专业，不影响其他专业与整份报告解析。"""
@@ -180,8 +181,8 @@ class TestExtractor:
         db_session.add(report)
         db_session.commit()
 
-        with patch("pipeline.extractor.call_llm", return_value=MOCK_LLM_RESPONSE_BAD_DEGREE):
-            result = extract_report(db_session, report_id=report.id)
+        with patch("pipeline.extractor.call_llm", new=AsyncMock(return_value=MOCK_LLM_RESPONSE_BAD_DEGREE)):
+            result = asyncio.run(extract_report(db_session, report_id=report.id))
 
         db_session.refresh(report)
         # 整份报告应解析成功，而非 failed
@@ -222,8 +223,8 @@ class TestExtractor:
         db_session.add(old_emp)
         db_session.commit()
 
-        with patch("pipeline.extractor.call_llm", return_value=MOCK_LLM_RESPONSE_SINGLE):
-            extract_report(db_session, report_id=report.id)
+        with patch("pipeline.extractor.call_llm", new=AsyncMock(return_value=MOCK_LLM_RESPONSE_SINGLE)):
+            asyncio.run(extract_report(db_session, report_id=report.id))
 
         db_session.refresh(report)
         assert report.parse_status == ParseStatus.parsed

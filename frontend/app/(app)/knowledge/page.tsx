@@ -223,7 +223,7 @@ export default function KnowledgeListPage() {
                       <div className="flex flex-wrap gap-1">
                         {article.tags.slice(0, 3).map((tag, i) => (
                           <span
-                            key={i}
+                            key={`${tag}-${i}`}
                             className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500"
                           >
                             {tag}

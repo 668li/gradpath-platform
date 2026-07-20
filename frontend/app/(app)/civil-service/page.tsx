@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Building2,
@@ -45,7 +45,7 @@ function PostIntelSkeleton() {
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="rounded-xl border border-paper-200 bg-white p-5 space-y-3">
+        <div key={`skel-${i}`} className="rounded-xl border border-paper-200 bg-white p-5 space-y-3">
           <div className="flex items-center gap-2">
             <Skeleton className="h-5 w-5 rounded" />
             <Skeleton className="h-4 w-24" />
@@ -157,7 +157,7 @@ function PositioningContent({ data }: { data: CivilServicePositioningResponse | 
             <div className="space-y-2">
               {group.posts.map((post, i) => (
                 <div
-                  key={i}
+                  key={`${post.region}-${post.department}-${i}`}
                   className="flex items-center justify-between rounded-lg bg-white/80 px-4 py-3 border border-paper-100"
                 >
                   <div>
@@ -308,7 +308,7 @@ function ToolsContent({ positioning }: { positioning: CivilServicePositioningRes
           </div>
           <ul className="space-y-2">
             {positioning.risk_warnings.map((warn, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-ink-600">
+              <li key={`${warn}-${i}`} className="flex items-start gap-2 text-sm text-ink-600">
                 <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-red-400" />
                 {warn}
               </li>
@@ -335,6 +335,14 @@ function ToolsContent({ positioning }: { positioning: CivilServicePositioningRes
 }
 
 export default function CivilServicePage() {
+  return (
+    <Suspense fallback={<LoadingState />}>
+      <CivilServicePageContent />
+    </Suspense>
+  );
+}
+
+function CivilServicePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeTab = searchParams.get("tab") || "post-intel";

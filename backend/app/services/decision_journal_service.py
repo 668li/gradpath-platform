@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.models.destination_decision import DestinationDecision
 from app.services.ai_service import AIService
+from app.services.ai_orchestrator import AIOrchestrator
 
 SYSTEM_PROMPT = """你是一位决策分析教练。用户在做一个决策时记录了预测和假设，现在填写了实际结果。
 
@@ -37,7 +38,7 @@ def get_pending_reviews(db: Session, user_id: UUID) -> list[DestinationDecision]
     )
 
 
-def complete_review(
+async def complete_review(
     db: Session,
     user_id: UUID,
     decision_id: UUID,
@@ -77,8 +78,8 @@ def complete_review(
 【用户回溯笔记】
 {review_notes or '无'}"""
 
-        service = AIService()
-        decision.ai_analysis = service.chat(SYSTEM_PROMPT, context, timeout=30)
+        orchestrator = AIOrchestrator()
+        decision.ai_analysis = await orchestrator.chat(system_prompt=SYSTEM_PROMPT, user_prompt=context, timeout=30)
     except Exception:
         # AI 不可用时不阻断回溯流程
         pass

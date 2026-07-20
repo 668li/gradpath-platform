@@ -583,11 +583,13 @@ def export_grad_intel_json(db: Session, user_id: UUID) -> dict:
     dark_knowledge = (
         db.query(DarkKnowledge)
         .order_by(DarkKnowledge.sort_order.asc())
+        .limit(1000)
         .all()
     )
     yanzhao_programs = (
         db.query(GradYanzhaoProgram)
         .order_by(GradYanzhaoProgram.university_name.asc())
+        .limit(5000)
         .all()
     )
     scoreline_records = (
@@ -596,11 +598,13 @@ def export_grad_intel_json(db: Session, user_id: UUID) -> dict:
             GradScorelineRecord.university_name.asc(),
             GradScorelineRecord.year.desc(),
         )
+        .limit(5000)
         .all()
     )
     adjustment_info = (
         db.query(GradAdjustmentInfo)
         .order_by(GradAdjustmentInfo.created_at.desc())
+        .limit(2000)
         .all()
     )
 
@@ -809,6 +813,7 @@ def export_grad_intel_csv(db: Session, user_id: UUID) -> str:
     dark_knowledge = (
         db.query(DarkKnowledge)
         .order_by(DarkKnowledge.sort_order.asc())
+        .limit(1000)
         .all()
     )
     if dark_knowledge:
@@ -830,6 +835,7 @@ def export_grad_intel_csv(db: Session, user_id: UUID) -> str:
     yanzhao_programs = (
         db.query(GradYanzhaoProgram)
         .order_by(GradYanzhaoProgram.university_name.asc())
+        .limit(5000)
         .all()
     )
     if yanzhao_programs:
@@ -854,6 +860,7 @@ def export_grad_intel_csv(db: Session, user_id: UUID) -> str:
             GradScorelineRecord.university_name.asc(),
             GradScorelineRecord.year.desc(),
         )
+        .limit(5000)
         .all()
     )
     if scoreline_records:
@@ -879,6 +886,7 @@ def export_grad_intel_csv(db: Session, user_id: UUID) -> str:
     adjustment_info = (
         db.query(GradAdjustmentInfo)
         .order_by(GradAdjustmentInfo.created_at.desc())
+        .limit(2000)
         .all()
     )
     if adjustment_info:
@@ -1193,6 +1201,8 @@ def export_grad_intel_excel(db: Session, user_id: UUID) -> bytes:
     def _write_data(ws, data, start_row=2):
         for row_idx, row_data in enumerate(data):
             for col_idx, value in enumerate(row_data, 1):
+                if isinstance(value, (list, dict)):
+                    value = str(value)
                 cell = ws.cell(row=start_row + row_idx, column=col_idx, value=value)
                 cell.alignment = cell_alignment
                 cell.border = thin_border

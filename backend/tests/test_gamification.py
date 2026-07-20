@@ -155,7 +155,7 @@ class TestBadgeAwarding:
             confidence=3,
         ))
         db_session.commit()
-        awarded = check_and_award_badges(db_session, user.id)
+        awarded, _ = check_and_award_badges(db_session, user.id)
         codes = [b["code"] for b in awarded]
         assert "first_decision" in codes
 
@@ -168,7 +168,7 @@ class TestBadgeAwarding:
             title="入职",
         ))
         db_session.commit()
-        awarded = check_and_award_badges(db_session, user.id)
+        awarded, _ = check_and_award_badges(db_session, user.id)
         codes = [b["code"] for b in awarded]
         assert "first_event" in codes
 
@@ -183,7 +183,7 @@ class TestBadgeAwarding:
                 confidence=3,
             ))
         db_session.commit()
-        awarded = check_and_award_badges(db_session, user.id)
+        awarded, _ = check_and_award_badges(db_session, user.id)
         codes = [b["code"] for b in awarded]
         assert "decision_master" in codes
 
@@ -198,10 +198,10 @@ class TestBadgeAwarding:
         ))
         db_session.commit()
         # First call awards the badge
-        first = check_and_award_badges(db_session, user.id)
+        first, _ = check_and_award_badges(db_session, user.id)
         assert len(first) > 0
         # Second call should not re-award
-        second = check_and_award_badges(db_session, user.id)
+        second, _ = check_and_award_badges(db_session, user.id)
         assert len(second) == 0
 
 

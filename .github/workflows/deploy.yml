@@ -1,0 +1,164 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - '.vscode/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 部署目标环境
+        required: true
+        type: choice
+        default: production
+        options:
+          - production
+          - staging
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false  # 部署任务不允许被取消，避免中断正在进行的发布
+
+jobs:
+  # ===== 前置：必须所有 CI 通过 =====
+  verify-ci:
+    name: Verify CI Passed
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for CI workflow to complete
+        uses: lewagon/wait-on-check-action@v1.3.4
+        with:
+          ref: ${{ github.sha }}
+          check-name: "Backend Tests"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          wait-interval: 30
+
+  # ===== 构建并推送 Docker 镜像到 GHCR =====
+  build-and-push:
+    name: Build & Push Images
+    needs: verify-ci
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.meta.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        run: |
+          echo "version=sha-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> $GITHUB_OUTPUT
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          target: production
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/backend:latest
+            ghcr.io/${{ github.repository }}/backend:${{ steps.meta.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: |
+            org.opencontainers.image.source=${{ github.repositoryUrl }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.created=${{ steps.meta.outputs.date }}
+
+      - name: Build and push frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          target: production
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/frontend:latest
+            ghcr.io/${{ github.repository }}/frontend:${{ steps.meta.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: |
+            org.opencontainers.image.source=${{ github.repositoryUrl }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.created=${{ steps.meta.outputs.date }}
+
+  # ===== 部署到生产服务器（SSH + docker compose）=====
+  deploy:
+    name: Deploy to Server
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.event.inputs.environment || 'production' }}
+      url: ${{ vars.DEPLOY_URL }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
+          script: |
+            set -euo pipefail
+            cd ${{ vars.DEPLOY_PATH || '/opt/gradpath' }}
+            # 拉取最新代码
+            git fetch --all
+            git reset --hard ${{ github.sha }}
+            # 登录 GHCR
+            echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            # 拉取新镜像
+            docker compose -f docker-compose.prod.yml pull
+            # 备份当前数据库
+            docker compose -f docker-compose.prod.yml exec -T db pg_dump -U gradpath -Fc gradpath > /var/backups/gradpath/pre-deploy_$(date +%Y%m%d_%H%M%S).dump
+            # 运行数据库迁移
+            docker compose -f docker-compose.prod.yml run --rm backend alembic upgrade head
+            # 滚动重启
+            docker compose -f docker-compose.prod.yml up -d --no-deps --force-recreate backend frontend
+            # 健康检查（最长等待 60s）
+            for i in $(seq 1 12); do
+              if curl -fsS http://localhost/health | grep -q '"status"'; then
+                echo "Deploy success"
+                exit 0
+              fi
+              sleep 5
+            done
+            echo "Deploy health check failed"
+            docker compose -f docker-compose.prod.yml logs --tail=200 backend
+            exit 1
+
+  # ===== 部署后通知 =====
+  notify:
+    name: Notify
+    needs: deploy
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send notification
+        run: |
+          STATUS="${{ needs.deploy.result }}"
+          if [[ "${STATUS}" == "success" ]]; then
+            echo "Deploy succeeded"
+          else
+            echo "Deploy failed or cancelled: ${STATUS}"
+            exit 1
+          fi

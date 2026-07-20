@@ -16,6 +16,30 @@ dependencies = [
     "python-multipart>=0.0.9",
     "email-validator>=2.1.0",
     "python-json-logger>=2.0.0",
+    "slowapi>=0.1.9",
+    "fastapi-mcp>=0.4.0",
+    "feedparser>=6.0.0",
+    "httpx>=0.27.0",
+    "pyyaml>=6.0",
+    "reportlab>=4.0.0",
+    "openpyxl>=3.1.0",
+    "xlrd>=2.0.0",
+    "beautifulsoup4>=4.12.0",
+    "lxml>=5.0.0",
+    "PyMuPDF>=1.24.0",
+    "pandas>=2.0.0",
+    "numpy>=1.24.0",
+    "scikit-learn>=1.3.0",
+    "matplotlib>=3.7.0",
+    "seaborn>=0.12.0",
+    "apscheduler>=3.10.0",
+    "redis>=5.0.0",
+    "tenacity>=8.2.0",
+    "circuitbreaker>=2.0.0",
+    "celery[redis]>=5.3.6",
+    "flower>=2.0.1",
+    "prometheus_client>=0.20.0",
+    "sentry-sdk>=2.10.0",
 ]
 
 [project.optional-dependencies]
@@ -23,8 +47,149 @@ dev = [
     "pytest>=8.2.0",
     "pytest-asyncio>=0.23.0",
     "httpx>=0.27.0",
+    "isort>=5.13.0",
+    "ruff>=0.5.0",
+    "black>=24.4.0",
+    "mypy>=1.10.0",
+    "pre-commit>=3.7.0",
+    "types-python-jose>=3.3.4",
+    "types-passlib>=1.7.7",
 ]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+# ===== isort: 导入语句自动排序 =====
+[tool.isort]
+profile = "black"
+line_length = 100
+known_first_party = ["app"]
+known_third_party = ["fastapi", "sqlalchemy", "pydantic", "starlette"]
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+skip_glob = ["migrations/*", ".venv/*", "build/*", "dist/*"]
+
+# ===== ruff: 快速 Linter + Formatter =====
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["app", "tests", "pipeline"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+    "N",   # pep8-naming
+    "SIM", # flake8-simplify
+    "TCH", # flake8-type-checking
+]
+ignore = [
+    "E501",  # line too long (black handles)
+    "B008",  # do not perform function calls in argument defaults (FastAPI pattern)
+    "B904",  # raise from in except (existing code style)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["N802", "N803"]  # 测试中允许非标准命名
+"migrations/*" = ["E", "W", "F"]  # 迁移脚本不检查
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+
+# ===== black: 代码格式化 =====
+[tool.black]
+line-length = 100
+target-version = ["py310", "py311", "py312"]
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+    \.git
+  | \.venv
+  | build
+  | dist
+  | migrations/versions
+)/
+'''
+
+# ===== mypy: 类型检查（B14 收紧为 strict 模式） =====
+# 文档: https://mypy.readthedocs.io/en/stable/config_file.html
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_return_any = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_untyped_decorators = false  # FastAPI 装饰器部分未带类型
+check_untyped_defs = true
+no_implicit_optional = true
+no_implicit_reexport = false  # 兼容 __init__.py re-export 模式
+strict_equality = true
+extra_checks = true
+show_error_codes = true
+show_column_numbers = true
+files = ["app"]
+
+# 第三方库缺类型存根时忽略
+[[tool.mypy.overrides]]
+module = [
+    "passlib.*",
+    "slowapi.*",
+    "psycopg2.*",
+    "fastapi_mcp.*",
+    "mcp.*",
+    "flower.*",
+    "feedparser.*",
+    "apscheduler.*",
+    "celery.*",
+    "circuitbreaker.*",
+    "tenacity.*",
+    "prometheus_client.*",
+    "reportlab.*",
+    "openpyxl.*",
+    "xlrd.*",
+    "PyMuPDF.*",
+    "fitz.*",
+    "pandas.*",
+    "numpy.*",
+    "sklearn.*",
+    "matplotlib.*",
+    "seaborn.*",
+    "bs4.*",
+    "lxml.*",
+    "redis.*",
+    "httpx.*",
+]
+ignore_missing_imports = true
+
+# 测试代码放宽：允许未注解 fixture / test 函数
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+check_untyped_defs = false
+ignore_errors = true
+
+# Alembic 迁移脚本不检查（自动生成代码）
+[[tool.mypy.overrides]]
+module = "migrations.*"
+ignore_errors = true
+
+# pipeline 脚本：渐进式收紧
+[[tool.mypy.overrides]]
+module = "pipeline.*"
+disallow_untyped_defs = false
+disallow_incomplete_defs = false

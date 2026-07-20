@@ -31,6 +31,7 @@ export interface RegisterRequest {
   email: string;
   password: string;
   name: string;
+  agree_terms?: boolean;
 }
 
 export interface LoginRequest {
@@ -662,7 +663,11 @@ export interface SendMessageResponse {
   career_plan: string | null;
 }
 
-export interface SkillInfo {
+// 修复: 此处原为 `interface SkillInfo`, 与 L1805 处 "Skill 管理" 模块的 SkillInfo 同名,
+// TypeScript 会自动合并两者, 导致合并后的类型要求所有字段都必填,
+// 但 chat 接口 (/api/chat/skills) 与 skill-toolbox 接口 (/api/skill-toolbox) 返回字段完全不同。
+// 因此将聊天用的 Skill 重命名为 ChatSkillInfo, 与 L1805 的 SkillInfo 区分开。
+export interface ChatSkillInfo {
   code: string;
   name: string;
   description: string;
@@ -2045,3 +2050,7 @@ export interface CommentListResponse {
   items: CommentResponse[];
   total: number;
 }
+
+// ===== 决策副驾驶护城河（Phase D） =====
+// 类型定义位于 ./decision-copilot，此处 re-export 保持单一类型入口
+export * from "./decision-copilot";

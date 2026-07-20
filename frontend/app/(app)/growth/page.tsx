@@ -42,8 +42,9 @@ export default function GrowthPage() {
     setLoading(true);
     Promise.allSettled([growthPatternsApi.analyze(), growthPatternsApi.history()])
       .then(([a, h]) => {
+        // 修复 P1 bug: h.value 可能为 null，访问 .items 崩溃
         if (a.status === "fulfilled") setResult(a.value);
-        if (h.status === "fulfilled") setHistory(h.value.items || []);
+        if (h.status === "fulfilled" && h.value) setHistory(h.value.items || []);
       })
       .catch(() => toast.push("加载成长档案失败", "error"))
       .finally(() => setLoading(false));
@@ -61,7 +62,7 @@ export default function GrowthPage() {
         setResult(r);
         return growthPatternsApi.history();
       })
-      .then((h) => setHistory(h.items || []))
+      .then((h) => setHistory(h?.items || []))
       .catch(() => toast.push("分析失败", "error"))
       .finally(() => setAnalyzing(false));
   };
@@ -112,8 +113,8 @@ export default function GrowthPage() {
                     <div key={h.id} className="flex flex-1 flex-col items-center gap-1">
                       <div
                         className="w-full rounded-t bg-brand-500/70"
-                        style={{ height: `${Math.max(8, h.growth_score)}%` }}
-                        title={`${h.period}: ${h.growth_score}`}
+                        style={{ height: `${Math.max(8, h.growth_score || 0)}%` }}
+                        title={`${h.period}: ${h.growth_score ?? 0}`}
                       />
                       <span className="text-[10px] text-ink-400">{h.period}</span>
                     </div>
@@ -131,7 +132,7 @@ export default function GrowthPage() {
             {result?.patterns?.length > 0 ? (
               <div className="space-y-3">
                 {result.patterns.map((p: any, i: number) => (
-                  <div key={i} className="rounded-lg border border-paper-200 p-3">
+                  <div key={`${p.title}-${i}`} className="rounded-lg border border-paper-200 p-3">
                     <p className="font-medium text-ink-800">{p.title}</p>
                     <p className="mt-1 text-sm text-ink-500">{p.description}</p>
                     {p.suggestion && (

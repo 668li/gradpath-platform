@@ -14,7 +14,7 @@ import { interviewApi } from "@/lib/api";
 import { LoadingState, EmptyState } from "@/components/ui/empty";
 import { Button } from "@/components/ui/form-controls";
 import { useToast } from "@/components/ui/toast";
-import { RankingBar } from "@/components/employment-charts";
+import { RankingBar } from "@/components/charts";
 import {
   INTERVIEW_DIMENSION_LABEL,
   INTERVIEW_DIMENSIONS,
@@ -256,7 +256,7 @@ function InterviewResultContent() {
       {data.common_positions && data.common_positions.length > 0 && (
         <div className="card">
           <h2 className="font-semibold text-slate-800 mb-4">常见岗位</h2>
-          <RankingBar data={data.common_positions} title="常见岗位" />
+          <RankingBar ranking={data.common_positions} title="常见岗位" />
         </div>
       )}
 

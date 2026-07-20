@@ -1,6 +1,6 @@
 import json
 from datetime import date
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import httpx
 
@@ -176,7 +176,7 @@ def test_ai_draft_success_with_mock(auth_headers, client, db_session, monkeypatc
     with patch.object(
         ai_service.AIService,
         "chat",
-        lambda self, sp, uc, timeout=30: MOCK_RETRO_DRAFT_RESPONSE,
+        AsyncMock(return_value=MOCK_RETRO_DRAFT_RESPONSE),
     ):
         resp = client.post(
             "/api/retrospectives/ai-draft",
@@ -202,7 +202,7 @@ def test_ai_draft_empty_period_still_works(auth_headers, client, db_session, mon
     with patch.object(
         ai_service.AIService,
         "chat",
-        lambda self, sp, uc, timeout=30: MOCK_RETRO_DRAFT_RESPONSE,
+        AsyncMock(return_value=MOCK_RETRO_DRAFT_RESPONSE),
     ):
         resp = client.post(
             "/api/retrospectives/ai-draft",
@@ -223,7 +223,7 @@ def test_ai_draft_timeout_returns_504(auth_headers, client, db_session, monkeypa
 
     monkeypatch.setattr(ai_service.settings, "LLM_API_KEY", "fake-key-for-test")
 
-    def fake_chat(self, system_prompt, user_content, timeout=30):
+    async def fake_chat(self, system_prompt, user_content, timeout=30):
         raise httpx.TimeoutException("request timed out")
 
     with patch.object(ai_service.AIService, "chat", fake_chat):

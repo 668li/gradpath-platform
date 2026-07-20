@@ -1,0 +1,161 @@
+{
+  "name": "GradPath Community Digest",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
+      },
+      "id": "cron-trigger",
+      "name": "Daily 08:00 UTC",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.GRADPATH_API_URL }}/api/kaoyan/experience-posts?limit=5",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "get-experience-posts",
+      "name": "Get Experience Posts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [450, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "gradpath-api",
+          "name": "GradPath API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "=# 📚 考研经验日报\n\n**日期**: {{ $now.format('yyyy-MM-dd') }}\n**精选帖子数**: {{ $json.length }}\n\n---\n\n{{ $json.map((post, i) => `## ${i+1}. ${post.title}\n\n**作者**: ${post.author}\n**分类**: ${post.category}\n**发布时间**: ${post.created_at}\n\n${post.content.substring(0, 200)}...\n\n[阅读完整帖子](${post.url})\n`).join('\\n---\\n\\n') }}\n\n---\n\n*此摘要由 GradPath 自动发送*",
+        "options": {}
+      },
+      "id": "format-digest",
+      "name": "Format Digest",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GRADPATH_API_URL }}/api/notifications/broadcast",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "title",
+              "value": "=📚 考研经验日报 - {{ $now.format('yyyy-MM-dd') }}"
+            },
+            {
+              "name": "message",
+              "value": "={{ $json.content }}"
+            },
+            {
+              "name": "type",
+              "value": "community_digest"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "send-digest",
+      "name": "Send Digest Broadcast",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [850, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "gradpath-api",
+          "name": "GradPath API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "=✅ 社区摘要已发送\n\n日期: {{ $now.format('yyyy-MM-dd') }}\n帖子数: {{ $json.length }}\n发送时间: {{ $now.toISO() }}",
+        "options": {}
+      },
+      "id": "log-success",
+      "name": "Log Success",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [1050, 300]
+    }
+  ],
+  "connections": {
+    "Daily 08:00 UTC": {
+      "main": [
+        [
+          {
+            "node": "Get Experience Posts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Experience Posts": {
+      "main": [
+        [
+          {
+            "node": "Format Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Digest": {
+      "main": [
+        [
+          {
+            "node": "Send Digest Broadcast",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Digest Broadcast": {
+      "main": [
+        [
+          {
+            "node": "Log Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "gradpath"
+    },
+    {
+      "name": "community"
+    },
+    {
+      "name": "digest"
+    }
+  ]
+}

@@ -4,8 +4,17 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.cache import cache
 from app.models.career_event import CareerEvent, EventType
 from app.schemas.event import EventCreate, EventUpdate
+
+
+def _invalidate_user_context_cache(user_id: UUID) -> None:
+    """事件 CRUD 后失效用户上下文缓存（build_user_context 依赖 CareerEvent）。"""
+    try:
+        cache.delete(f"user_context:{user_id}")
+    except Exception:
+        pass
 
 
 def create_event(db: Session, user_id: UUID, data: EventCreate) -> CareerEvent:
@@ -13,6 +22,7 @@ def create_event(db: Session, user_id: UUID, data: EventCreate) -> CareerEvent:
     db.add(event)
     db.commit()
     db.refresh(event)
+    _invalidate_user_context_cache(user_id)
     return event
 
 
@@ -77,6 +87,7 @@ def update_event(db: Session, user_id: UUID, event_id: UUID, data: EventUpdate) 
         setattr(event, key, value)
     db.commit()
     db.refresh(event)
+    _invalidate_user_context_cache(user_id)
     return event
 
 
@@ -84,3 +95,4 @@ def delete_event(db: Session, user_id: UUID, event_id: UUID) -> None:
     event = get_event(db, user_id, event_id)
     db.delete(event)
     db.commit()
+    _invalidate_user_context_cache(user_id)

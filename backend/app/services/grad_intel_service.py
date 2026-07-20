@@ -23,7 +23,8 @@ from app.models.grad_intel import (
     GradYanzhaoProgram,
     SelfPositioning,
 )
-from app.services.ai_service import AIService, AIServiceNotConfigured
+from app.services.ai_orchestrator import AIOrchestrator
+from app.services.ai_service import AIServiceNotConfigured
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +68,25 @@ def _set_cached_result(cache_key: str, result: dict) -> None:
     full_key = f"{CACHE_PREFIX}:{cache_key}"
     cache.set(full_key, result, ttl=CACHE_TTL_SECONDS)
     logger.info("AI 结果已缓存: %s", cache_key[:8])
+
+
+def clear_positioning_cache() -> int:
+    """清除所有自我定位 AI 结果缓存。
+
+    修复 bug: 原先 API 层调用 grad_intel_service._ai_cache.clear()，
+    但 _ai_cache 属性从未定义（旧实现已重构为 cache 模块），
+    导致 AttributeError → 500 错误。
+
+    Returns:
+        被清除的缓存项数量
+    """
+    deleted = 0
+    for key in cache.keys():
+        if key.startswith(f"{CACHE_PREFIX}:"):
+            if cache.delete(key):
+                deleted += 1
+    logger.info("已清除 %d 项自我定位 AI 缓存", deleted)
+    return deleted
 
 
 # ======================================================================
@@ -459,7 +479,7 @@ def get_dark_knowledge_stages(db: Session) -> list[dict]:
 # 院校情报服务
 # ======================================================================
 
-def query_school_intel(school_name: str, major_name: str) -> dict:
+async def query_school_intel(school_name: str, major_name: str) -> dict:
     """AI 生成院校情报。
 
     基于公开信息（学校官网、研招网、考研论坛、知乎经验贴等）
@@ -500,8 +520,8 @@ def query_school_intel(school_name: str, major_name: str) -> dict:
 
 请基于你的知识生成结构化情报分析。"""
 
-    ai = AIService()
-    raw = ai.chat(system_prompt, user_content, timeout=45)
+    orchestrator = AIOrchestrator()
+    raw = await orchestrator.chat(system_prompt=system_prompt, user_prompt=user_content, timeout=45)
 
     # 解析 JSON
     try:
@@ -594,7 +614,7 @@ def delete_intel(db: Session, user_id: UUID, intel_id: UUID) -> bool:
 # 自我定位服务
 # ======================================================================
 
-def create_positioning(db: Session, user_id: UUID, data: dict, bypass_cache: bool = False) -> SelfPositioning:
+async def create_positioning(db: Session, user_id: UUID, data: dict, bypass_cache: bool = False) -> SelfPositioning:
     """创建自我定位并触发 AI 评估。
     
     Args:
@@ -661,7 +681,7 @@ def create_positioning(db: Session, user_id: UUID, data: dict, bypass_cache: boo
 
     # AI 评估（带降级处理）
     try:
-        assessment = _generate_ai_assessment(positioning)
+        assessment = await _generate_ai_assessment(positioning)
         # 缓存结果
         _set_cached_result(cache_key, assessment)
     except AIServiceNotConfigured:
@@ -682,7 +702,7 @@ def create_positioning(db: Session, user_id: UUID, data: dict, bypass_cache: boo
     return positioning
 
 
-def _generate_ai_assessment(positioning: SelfPositioning) -> dict:
+async def _generate_ai_assessment(positioning: SelfPositioning) -> dict:
     """AI 基于用户背景生成三档院校推荐。"""
     system_prompt = """你是一位资深考研规划师，有10年以上的择校指导经验。你的任务是基于考生的背景信息，给出精准的三档院校推荐。
 
@@ -726,8 +746,8 @@ def _generate_ai_assessment(positioning: SelfPositioning) -> dict:
 
 请基于以上背景，给出三档院校推荐。如果目标专业未确定，根据本科专业推荐相近方向。"""
 
-    ai = AIService()
-    raw = ai.chat(system_prompt, background, timeout=45)
+    orchestrator = AIOrchestrator()
+    raw = await orchestrator.chat(system_prompt=system_prompt, user_prompt=background, timeout=45)
 
     try:
         json_match = re.search(r"```(?:json)?\s*([\s\S]*?)```", raw)

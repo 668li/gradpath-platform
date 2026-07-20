@@ -1,5 +1,5 @@
 """学习资源 API"""
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from uuid import UUID
 
@@ -32,8 +32,8 @@ def create_resource(
 
 @router.get("/", response_model=list[LearningResourceResponse])
 def list_resources(
-    skip: int = 0,
-    limit: int = 100,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
     subject: str | None = None,
     difficulty: str | None = None,
     resource_type: str | None = None,

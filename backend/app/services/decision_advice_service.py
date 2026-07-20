@@ -22,6 +22,7 @@ from app.models.skill_node import SkillNode
 from app.models.user import User
 from app.schemas.ai import DecisionAdviceRequest, DecisionAdviceResponse
 from app.services.ai_service import AIService
+from app.services.ai_orchestrator import AIOrchestrator
 from app.services.employment_service import escape_like
 
 # 用户最近职业事件条数
@@ -387,7 +388,7 @@ def _coerce_response(data: dict) -> DecisionAdviceResponse:
     )
 
 
-def get_decision_advice(
+async def get_decision_advice(
     db: Session, user: User, request: DecisionAdviceRequest
 ) -> DecisionAdviceResponse:
     """组装全部 context，调用 AIService.chat()，解析 LLM 返回的 JSON。
@@ -425,8 +426,8 @@ def get_decision_advice(
     )
 
     # 调用 LLM
-    service = AIService()
-    raw = service.chat(SYSTEM_PROMPT, full_content)
+    orchestrator = AIOrchestrator()
+    raw = await orchestrator.chat(system_prompt=SYSTEM_PROMPT, user_prompt=full_content, timeout=30)
 
     # 解析返回
     data = _parse_llm_json(raw)

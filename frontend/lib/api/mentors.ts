@@ -72,4 +72,11 @@ export const mentorApi = {
     request<{ success: boolean }>(`/api/mentors/kaoyan-mentors/${mentorId}/reviews/${reviewId}/like`, {
       method: "POST",
     }),
+
+  /** 批量获取导师详情（消除前端 N+1 调用） */
+  batch: (ids: string[]) =>
+    request<MentorResponse[]>(`/api/mentors/batch`, {
+      method: "POST",
+      body: JSON.stringify({ ids }),
+    }),
 };

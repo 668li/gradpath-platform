@@ -1,0 +1,23 @@
+# 教育部/国家统计局统计数据导入器配置
+name: stats_importer
+category: reports
+description: 教育部/国家统计局统计数据导入器
+enabled: true
+schedule: yearly  # 每年更新统计数据
+rate_limit: 1.0
+rate_limit_ms: 1000
+max_retries: 3
+timeout_seconds: 30
+target_table: market_data
+dedup_key:
+  - indicator
+  - year
+  - region
+notes: |
+  数据源：教育部年度教育统计公报、国家统计局《中国统计年鉴》等公开资料（预置）。
+  覆盖范围：6 个统计维度（高校毕业生/研究生报考/研究生录取/公务员报考/城镇就业/行业工资），
+  每维度 10 条，共 60 条。数值尽量贴近真实趋势（如毕业生人数逐年增长）。
+  字段映射：indicator_name → indicator；indicator_category → category；
+  value/unit/region/industry/year/source/source_url → MarketData 对应字段。
+  未来可扩展为从教育部 / 统计局官网 API 真实抓取。
+  去重规则：按 indicator + year + region + user_id(system) 去重，已存在则更新。

@@ -20,12 +20,9 @@ import {
   Search,
 } from "lucide-react";
 import {
-  dashboardApi,
-  gamificationApi,
-  careerPlansApi,
-  streaksApi,
   proactiveInsightsApi,
-  lifeWheelApi,
+  decisionPulseApi,
+  useApi,
 } from "@/lib/api";
 import { formatDate, cn } from "@/lib/utils";
 import {
@@ -38,6 +35,13 @@ import { LevelProgress } from "@/components/gamification/level-progress";
 import { EmptyState, LoadingState } from "@/components/ui/empty";
 import { Button } from "@/components/ui/form-controls";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  PulseOverviewSection,
+  ActiveDecisionsSection,
+  ReviewQueueSection,
+  DarkKnowledgeFeedSection,
+  MemoryFactsSection,
+} from "@/components/decision-copilot";
 import type {
   DashboardOverview,
   GamificationProfile,
@@ -48,8 +52,15 @@ import type {
   ProactiveInsight,
   ProactiveInsightSummary,
   LifeWheelSnapshot,
+  PulseOverview,
+  PulseActiveDecision,
+  PulseReviewItem,
+  PulseDarkKnowledgeItem,
+  PulseMemoryFact,
+  PulseFull,
 } from "@/types";
 import { AlertCircle, Clock, Target, Zap, CalendarCheck, TrendingUp } from "lucide-react";
+import { useToast } from "@/components/ui/toast";
 
 /** Dashboard骨架屏 — 结构化占位，替代空白spinner */
 function DashboardSkeleton() {
@@ -60,7 +71,7 @@ function DashboardSkeleton() {
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[1,2,3,4].map(i => (
-          <div key={i} className="card p-5">
+          <div key={`skel-${i}`} className="card p-5">
             <Skeleton className="h-10 w-10 rounded-lg mb-3" />
             <Skeleton className="h-4 w-16 mb-1" />
             <Skeleton className="h-6 w-12" />
@@ -77,76 +88,72 @@ function DashboardSkeleton() {
 }
 
 export default function DashboardPage() {
-  const [data, setData] = useState<DashboardOverview | null>(null);
-  const [gameProfile, setGameProfile] = useState<GamificationProfile | null>(
-    null,
-  );
-  const [reminders, setReminders] = useState<ReminderItem[]>([]);
-  const [dailyFocus, setDailyFocus] = useState<DailyFocusItem[]>([]);
-  const [weeklyRecap, setWeeklyRecap] = useState<WeeklyRecap | null>(null);
-  const [streakStats, setStreakStats] = useState<StreakStats | null>(null);
-  const [insights, setInsights] = useState<ProactiveInsight[]>([]);
-  const [insightsSummary, setInsightsSummary] =
-    useState<ProactiveInsightSummary | null>(null);
-  const [lifeWheel, setLifeWheel] = useState<LifeWheelSnapshot | null>(null);
-  const [personalIntel, setPersonalIntel] = useState<any>(null);
+  const toast = useToast();
   const [generating, setGenerating] = useState(false);
-  const [coreLoading, setCoreLoading] = useState(true);
-  const [secondaryLoading, setSecondaryLoading] = useState(true);
 
-  // 第一批：核心数据（overview + streak + reminders + focus）— 快速渲染主界面
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const [overviewRes, streakRes, remindersRes, focusRes] = await Promise.allSettled([
-          dashboardApi.overview(),
-          streaksApi.getStats(),
-          careerPlansApi.getReminders(),
-          careerPlansApi.getDailyFocus(),
-        ]);
-        if (alive) {
-          if (overviewRes.status === "fulfilled") setData(overviewRes.value);
-          if (streakRes.status === "fulfilled") setStreakStats(streakRes.value);
-          if (remindersRes.status === "fulfilled") setReminders(remindersRes.value);
-          if (focusRes.status === "fulfilled") setDailyFocus(focusRes.value);
-        }
-      } finally {
-        if (alive) setCoreLoading(false);
-      }
-    })();
-    return () => { alive = false; };
-  }, []);
+  // 第一批：核心数据（overview + streak + reminders + focus + pulse）— SWR 并行获取
+  const { data, error: overviewError, isLoading: overviewLoading } = useApi<DashboardOverview>("/api/dashboard/overview");
+  const { data: streakData, error: streakError, isLoading: streakLoading } = useApi<StreakStats>("/api/streaks/stats");
+  const { data: remindersData, error: remindersError, isLoading: remindersLoading } = useApi<ReminderItem[]>("/api/career-plans/reminders");
+  const { data: focusData, error: focusError, isLoading: focusLoading } = useApi<DailyFocusItem[]>("/api/career-plans/daily-focus");
+  const { data: pulseData, error: pulseError, isLoading: pulseLoading, mutate: mutatePulse } = useApi<PulseFull>("/api/decision-pulse");
 
-  // 第二批：次要数据（gamification + insights + lifeWheel + recap）— 异步追加
+  const coreLoading = overviewLoading || streakLoading || remindersLoading || focusLoading || pulseLoading;
+
+  // 数组兜底，避免 undefined 导致渲染崩溃
+  const streakStats = streakData ?? null;
+  const reminders = remindersData ?? [];
+  const dailyFocus = focusData ?? [];
+
+  // 决策副驾驶看板数据（护城河）— 从 pulseData 派生
+  const pulseOverview = pulseData?.overview ?? null;
+  const pulseActiveDecisions = pulseData?.active_decisions ?? [];
+  const pulseReviewQueue = pulseData?.review_queue ?? [];
+  const pulseDarkFeed = pulseData?.dark_knowledge_feed ?? [];
+  const pulseMemory = pulseData?.memory_facts ?? [];
+
+  // 第二批：次要数据 — 等核心数据就绪后再触发（保持两批加载语义）
+  const batch1Ready = !coreLoading;
+  const { data: gameProfile } = useApi<GamificationProfile>(batch1Ready ? "/api/gamification/profile" : null);
+  const { data: insightsSummary, mutate: mutateInsights } = useApi<ProactiveInsightSummary>(batch1Ready ? "/api/proactive-insights/summary" : null);
+  const { data: lifeWheel } = useApi<LifeWheelSnapshot | null>(batch1Ready ? "/api/life-wheel/latest" : null);
+  const { data: weeklyRecap } = useApi<WeeklyRecap>(batch1Ready ? "/api/dashboard/weekly-recap" : null);
+  const { data: personalIntel } = useApi<any>(batch1Ready ? "/api/dashboard/personal-intel" : null);
+
+  // 错误提示（核心接口失败时提示用户）
   useEffect(() => {
-    if (coreLoading) return; // 等核心数据加载完再加载次要数据
-    let alive = true;
-    (async () => {
-      try {
-        const [profileRes, insightsRes, lifeWheelRes, recapRes, personalIntelRes] = await Promise.allSettled([
-          gamificationApi.profile(),
-          proactiveInsightsApi.getSummary(),
-          lifeWheelApi.getLatest(),
-          dashboardApi.weeklyRecap(),
-          dashboardApi.personalIntel(),
-        ]);
-        if (alive) {
-          if (profileRes.status === "fulfilled") setGameProfile(profileRes.value);
-          if (insightsRes.status === "fulfilled") {
-            setInsightsSummary(insightsRes.value);
-            setInsights(insightsRes.value.latest_insights);
-          }
-          if (lifeWheelRes.status === "fulfilled") setLifeWheel(lifeWheelRes.value);
-          if (recapRes.status === "fulfilled") setWeeklyRecap(recapRes.value);
-          if (personalIntelRes.status === "fulfilled") setPersonalIntel(personalIntelRes.value);
-        }
-      } finally {
-        if (alive) setSecondaryLoading(false);
-      }
-    })();
-    return () => { alive = false; };
-  }, [coreLoading]);
+    if (overviewError) toast.push(overviewError.message || "加载看板失败", "error");
+  }, [overviewError, toast]);
+  useEffect(() => {
+    if (pulseError) toast.push(pulseError.message || "加载决策副驾驶数据失败", "error");
+  }, [pulseError, toast]);
+
+  // 刷新 AI 记忆面板
+  const refreshMemory = async () => {
+    try {
+      const res = await decisionPulseApi.getMemoryFacts(20);
+      mutatePulse(
+        (prev) => (prev ? { ...prev, memory_facts: res.items } : prev),
+        { revalidate: false },
+      );
+    } catch {
+      // 静默
+    }
+  };
+
+  // 刷新暗知识流（乐观更新本地缓存）
+  const refreshDarkFeed = (pushId: string) => {
+    mutatePulse(
+      (prev) => prev ? {
+        ...prev,
+        dark_knowledge_feed: prev.dark_knowledge_feed.map((it) =>
+          it.push_id === pushId ? { ...it, is_read: true, read_at: new Date().toISOString() } : it,
+        ),
+        overview: prev.overview ? { ...prev.overview, unread_pushes: Math.max(0, prev.overview.unread_pushes - 1) } : prev.overview,
+      } : prev,
+      { revalidate: false },
+    );
+  };
 
   if (coreLoading) return <DashboardSkeleton />;
   if (!data) return null;
@@ -161,24 +168,26 @@ export default function DashboardPage() {
     ([category, count]) => ({ category, count }),
   );
 
+  const insights = insightsSummary?.latest_insights ?? [];
   const unreadInsightCount =
     insightsSummary?.unread_count ??
     insights.filter((i) => !i.is_read).length;
 
-  // 点击洞察卡片标记为已读（乐观更新，失败静默）
+  // 点击洞察卡片标记为已读（乐观更新，失败静默回滚）
   const handleMarkAsRead = async (id: string) => {
-    setInsights((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, is_read: true } : i)),
-    );
-    setInsightsSummary((prev) =>
-      prev
-        ? { ...prev, unread_count: Math.max(0, prev.unread_count - 1) }
-        : prev,
+    mutateInsights(
+      (prev) => prev ? {
+        ...prev,
+        unread_count: Math.max(0, prev.unread_count - 1),
+        latest_insights: prev.latest_insights.map((i) => (i.id === id ? { ...i, is_read: true } : i)),
+      } : prev,
+      { revalidate: false },
     );
     try {
       await proactiveInsightsApi.markAsRead(id);
     } catch {
-      // 静默失败：下次进入页面会重新拉取最新状态
+      // 静默失败：重新拉取最新状态
+      mutateInsights();
     }
   };
 
@@ -187,9 +196,7 @@ export default function DashboardPage() {
     setGenerating(true);
     try {
       await proactiveInsightsApi.generate();
-      const summary = await proactiveInsightsApi.getSummary();
-      setInsightsSummary(summary);
-      setInsights(summary.latest_insights);
+      await mutateInsights();
     } catch {
       // 静默失败
     } finally {
@@ -237,6 +244,25 @@ export default function DashboardPage() {
           icon={<ClipboardList className="h-6 w-6" />}
           color="purple"
           hint={data.latest_retrospective?.title ?? "暂无"}
+        />
+      </div>
+
+      {/* 决策副驾驶护城河看板 */}
+      <PulseOverviewSection overview={pulseOverview} loading={pulseLoading} />
+
+      {/* 决策副驾驶：四象限 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <ActiveDecisionsSection items={pulseActiveDecisions} loading={pulseLoading} />
+        <ReviewQueueSection items={pulseReviewQueue} loading={pulseLoading} />
+        <DarkKnowledgeFeedSection
+          items={pulseDarkFeed}
+          loading={pulseLoading}
+          onMarkRead={refreshDarkFeed}
+        />
+        <MemoryFactsSection
+          items={pulseMemory}
+          loading={pulseLoading}
+          onRefresh={refreshMemory}
         />
       </div>
 
@@ -305,7 +331,7 @@ export default function DashboardPage() {
               {personalIntel.risks?.length > 0 ? (
                 <ul className="space-y-1.5 text-sm text-ink-600">
                   {personalIntel.risks.map((risk: string, i: number) => (
-                    <li key={i} className="flex gap-1.5">
+                    <li key={`${risk}-${i}`} className="flex gap-1.5">
                       <span className="text-amber-500">•</span>
                       <span>{risk}</span>
                     </li>

@@ -133,12 +133,12 @@ def list_logs(
 @router.delete("/{plan_id}/logs/{log_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_log(
     plan_id: UUID,
-    log_id: str,
+    log_id: UUID,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
     """删除一条执行日志。"""
-    deleted = delete_milestone_log(db, user.id, log_id)
+    deleted = delete_milestone_log(db, user.id, str(log_id))
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="日志不存在"

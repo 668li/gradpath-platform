@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { memo, useState, type FormEvent } from "react";
 import { ChevronDown } from "lucide-react";
 import { eventsApi } from "@/lib/api";
 import { EVENT_TYPES, EVENT_TYPE_LABEL } from "@/lib/constants";
@@ -37,7 +37,7 @@ function textToMetrics(text: string): Record<string, unknown> | null {
   return Object.keys(obj).length ? obj : null;
 }
 
-export function EventForm({ initial, onSaved, onCancel }: EventFormProps) {
+export const EventForm = memo(function EventForm({ initial, onSaved, onCancel }: EventFormProps) {
   const toast = useToast();
   const isEdit = !!initial;
 
@@ -240,4 +240,4 @@ export function EventForm({ initial, onSaved, onCancel }: EventFormProps) {
       </div>
     </form>
   );
-}
+});

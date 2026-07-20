@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { memo, useState, type FormEvent } from "react";
 import { ChevronDown, Plus, Trash2 } from "lucide-react";
 import { decisionsApi } from "@/lib/api";
 import {
@@ -35,7 +35,7 @@ function emptyDetails(type: DestinationType): DecisionDetails {
   return obj;
 }
 
-export function DecisionForm({ initial, onSaved, onCancel }: DecisionFormProps) {
+export const DecisionForm = memo(function DecisionForm({ initial, onSaved, onCancel }: DecisionFormProps) {
   const toast = useToast();
   const isEdit = !!initial;
 
@@ -267,7 +267,7 @@ export function DecisionForm({ initial, onSaved, onCancel }: DecisionFormProps) 
               <p className="mb-2 text-xs text-ink-400">你的关键假设是什么？</p>
               <div className="space-y-2">
                 {assumptions.map((a, i) => (
-                  <div key={i} className="flex items-start gap-2">
+                  <div key={`assumption-${i}`} className="flex items-start gap-2">
                     <Textarea
                       value={a}
                       onChange={(e) =>
@@ -323,4 +323,4 @@ export function DecisionForm({ initial, onSaved, onCancel }: DecisionFormProps) 
       </div>
     </form>
   );
-}
+});

@@ -14,7 +14,7 @@ import {
   Sparkles,
   History,
 } from "lucide-react";
-import { decisionsApi, decisionJournalApi } from "@/lib/api";
+import { decisionsApi, decisionJournalApi, useApi, useInvalidate } from "@/lib/api";
 import { formatDate, levelStars, cn } from "@/lib/utils";
 import {
   DECISION_STATUS_LABEL,
@@ -33,6 +33,7 @@ import type {
   DecisionResponse,
   DecisionStats,
   DestinationType,
+  PaginatedResponse,
 } from "@/types";
 
 // 优化：AI 建议面板需用户交互触发请求，按需加载减少首屏 JS 体积
@@ -45,7 +46,8 @@ const AIAdvicePanel = dynamic(
 );
 
 function detailSummary(decision: DecisionResponse): string {
-  const fields = DESTINATION_DETAIL_FIELDS[decision.destination_type];
+  // 修复 P0 bug: 未知 destination_type 时 fields 为 undefined，for...of 崩溃
+  const fields = DESTINATION_DETAIL_FIELDS[decision.destination_type] || [];
   const parts: string[] = [];
   for (const f of fields) {
     const v = decision.details?.[f.key];
@@ -179,7 +181,7 @@ function ReviewModal({
               <span className="text-ink-400">关键假设：</span>
               <ul className="mt-1 space-y-0.5">
                 {decision.assumptions.map((a, i) => (
-                  <li key={i} className="flex gap-1.5">
+                  <li key={`${a}-${i}`} className="flex gap-1.5">
                     <span className="text-brand-500">·</span>
                     <span>{a}</span>
                   </li>
@@ -292,19 +294,12 @@ function ReviewModal({
 
 export default function DecisionsPage() {
   const toast = useToast();
-  const [decisions, setDecisions] = useState<DecisionResponse[]>([]);
-  const [stats, setStats] = useState<DecisionStats>({});
-  const [loading, setLoading] = useState(true);
+  const invalidate = useInvalidate();
   const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<DecisionResponse | null>(null);
 
   // 决策日志与回溯
-  const [pendingReviews, setPendingReviews] = useState<DecisionResponse[]>([]);
-  const [pendingLoading, setPendingLoading] = useState(true);
-  const [reviewed, setReviewed] = useState<DecisionResponse[]>([]);
-  const [reviewedLoading, setReviewedLoading] = useState(true);
   const [reviewTarget, setReviewTarget] = useState<DecisionResponse | null>(
     null,
   );
@@ -312,56 +307,50 @@ export default function DecisionsPage() {
 
   const PAGE_SIZE = 20;
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [listResult, statsResult] = await Promise.allSettled([
-        decisionsApi.list({ page, page_size: PAGE_SIZE }),
-        decisionsApi.stats(),
-      ]);
-      if (listResult.status === "fulfilled") {
-        setDecisions(listResult.value.items);
-        setTotal(listResult.value.total);
-      }
-      if (statsResult.status === "fulfilled") {
-        setStats(statsResult.value);
-      }
-    } catch (err) {
-      toast.push(err instanceof Error ? err.message : "加载失败", "error");
-    } finally {
-      setLoading(false);
-    }
-  }, [page]);
+  // SWR 替代原 useCallback + Promise.allSettled：自动去重/缓存/重试
+  const listKey = `/api/decisions?page=${page}&page_size=${PAGE_SIZE}`;
+  const { data: listData, error: listError, isLoading: loading } = useApi<PaginatedResponse<DecisionResponse>>(
+    listKey,
+  );
+  const { data: stats, error: statsError } = useApi<DecisionStats>(
+    "/api/decisions/stats",
+  );
+  const { data: pendingReviewsData, error: pendingError, isLoading: pendingLoading } = useApi<DecisionResponse[]>(
+    "/api/decision-journal/pending-reviews",
+    { fallbackData: [] },
+  );
+  const pendingReviews = pendingReviewsData ?? [];
+  const { data: reviewedData, error: reviewedError, isLoading: reviewedLoading } = useApi<DecisionResponse[]>(
+    "/api/decision-journal/reviewed",
+    { fallbackData: [] },
+  );
+  const reviewed = reviewedData ?? [];
 
-  const loadJournal = useCallback(async () => {
-    setPendingLoading(true);
-    setReviewedLoading(true);
-    try {
-      const [pendingResult, revResult] = await Promise.allSettled([
-        decisionJournalApi.getPendingReviews(),
-        decisionJournalApi.getReviewed(),
-      ]);
-      if (pendingResult.status === "fulfilled") {
-        setPendingReviews(pendingResult.value);
-      }
-      if (revResult.status === "fulfilled") {
-        setReviewed(revResult.value);
-      }
-    } catch (err) {
-      toast.push(
-        err instanceof Error ? err.message : "加载回溯数据失败",
-        "error",
-      );
-    } finally {
-      setPendingLoading(false);
-      setReviewedLoading(false);
-    }
-  }, []);
+  const decisions = listData?.items ?? [];
+  const total = listData?.total ?? 0;
 
   useEffect(() => {
-    load();
-    loadJournal();
-  }, [load, loadJournal]);
+    if (listError) toast.push(listError.message || "加载失败", "error");
+  }, [listError, toast]);
+  useEffect(() => {
+    if (statsError) toast.push(statsError.message || "加载统计失败", "error");
+  }, [statsError, toast]);
+  useEffect(() => {
+    if (pendingError) toast.push(pendingError.message || "加载回溯数据失败", "error");
+  }, [pendingError, toast]);
+  useEffect(() => {
+    if (reviewedError) toast.push(reviewedError.message || "加载已回溯数据失败", "error");
+  }, [reviewedError, toast]);
+
+  // 刷新列表（写操作完成后调用）
+  const reloadAll = useCallback(async () => {
+    await Promise.all([
+      invalidate(listKey),
+      invalidate("/api/decisions/stats"),
+      invalidate("/api/decision-journal/pending-reviews"),
+      invalidate("/api/decision-journal/reviewed"),
+    ]);
+  }, [invalidate, listKey]);
 
   const openCreate = () => {
     setEditing(null);
@@ -376,8 +365,7 @@ export default function DecisionsPage() {
   const handleSaved = () => {
     setModalOpen(false);
     setEditing(null);
-    load();
-    loadJournal();
+    reloadAll();
   };
 
   const handleDelete = async (d: DecisionResponse) => {
@@ -387,8 +375,7 @@ export default function DecisionsPage() {
     try {
       await decisionsApi.remove(d.id);
       toast.push("删除成功", "success");
-      load();
-      loadJournal();
+      reloadAll();
     } catch (err) {
       toast.push(err instanceof Error ? err.message : "删除失败", "error");
     }
@@ -405,11 +392,10 @@ export default function DecisionsPage() {
   };
 
   const handleReviewCompleted = () => {
-    loadJournal();
-    load();
+    reloadAll();
   };
 
-  const pieData = Object.entries(stats).map(([key, value]) => ({
+  const pieData = Object.entries(stats ?? {}).map(([key, value]) => ({
     name: DESTINATION_TYPE_LABEL[key as DestinationType] ?? key,
     value,
   }));

@@ -8,6 +8,8 @@
 注意：InterviewReport 的唯一约束为 (user_id, company, position, interview_year)，
 同一用户对同一公司同岗位同年只能有一条记录。
 """
+from sqlalchemy import func
+
 from app.core.security import hash_password
 from app.database import SessionLocal
 from app.models.interview_report import (
@@ -277,7 +279,6 @@ def run_seed():
                 total_reports += 1
 
         print("面试经验种子数据导入完成")
-        from sqlalchemy import func
 
         user_count = (
             db.query(User)

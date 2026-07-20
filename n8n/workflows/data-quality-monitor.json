@@ -1,0 +1,184 @@
+{
+  "name": "GradPath Data Quality Monitor",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * 0"
+            }
+          ]
+        }
+      },
+      "id": "cron-trigger",
+      "name": "Weekly Sunday 08:00 UTC",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.GRADPATH_API_URL }}/api/grad-intel/dark-knowledge/stages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {}
+      },
+      "id": "get-stages",
+      "name": "Get Dark Knowledge Stages",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [450, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "gradpath-api",
+          "name": "GradPath API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.total }}",
+              "operation": "smaller",
+              "value2": 1000
+            }
+          ]
+        }
+      },
+      "id": "check-count",
+      "name": "Count Below 1000?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "content": "=⚠️ 数据质量警报\n\n当前暗知识总数: {{ $json.total }}\n低于阈值: 1000\n检查时间: {{ $now.toISO() }}\n\n建议检查爬虫运行状态和数据完整性。",
+        "options": {}
+      },
+      "id": "format-alert",
+      "name": "Format Alert Message",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [850, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GRADPATH_API_URL }}/api/webhooks/data-update",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "source_name",
+              "value": "data-quality-monitor"
+            },
+            {
+              "name": "items_stored",
+              "value": 0
+            },
+            {
+              "name": "error",
+              "value": "=Data quality alert: total count {{ $json.total }} below threshold 1000"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "send-alert",
+      "name": "Send Alert Webhook",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1050, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "gradpath-api",
+          "name": "GradPath API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "=✅ 数据质量正常\n\n当前暗知识总数: {{ $json.total }}\n检查时间: {{ $now.toISO() }}",
+        "options": {}
+      },
+      "id": "format-ok",
+      "name": "Format OK Message",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [850, 400]
+    }
+  ],
+  "connections": {
+    "Weekly Sunday 08:00 UTC": {
+      "main": [
+        [
+          {
+            "node": "Get Dark Knowledge Stages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Dark Knowledge Stages": {
+      "main": [
+        [
+          {
+            "node": "Count Below 1000?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Count Below 1000?": {
+      "main": [
+        [
+          {
+            "node": "Format Alert Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Format OK Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Alert Message": {
+      "main": [
+        [
+          {
+            "node": "Send Alert Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "gradpath"
+    },
+    {
+      "name": "monitor"
+    },
+    {
+      "name": "data-quality"
+    }
+  ]
+}

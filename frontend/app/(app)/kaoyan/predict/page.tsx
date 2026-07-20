@@ -56,8 +56,8 @@ export default function AdmissionPredictPage() {
         score: score ? Number(score) : undefined,
       });
       setPredictResult(res);
-    } catch (err: any) {
-      toast(err?.message || "预测请求失败，请重试", "error");
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : "预测请求失败，请重试", "error");
     } finally {
       setLoading(false);
     }
@@ -72,8 +72,8 @@ export default function AdmissionPredictPage() {
     try {
       const res = await admissionApi.history(school.trim(), major.trim());
       setHistoryResult(res);
-    } catch (err: any) {
-      toast(err?.message || "获取历史分数线失败", "error");
+    } catch (err: unknown) {
+      toast(err instanceof Error ? err.message : "获取历史分数线失败", "error");
     }
   }, [school, major, toast]);
 

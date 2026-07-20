@@ -1,8 +1,10 @@
 # backend/app/api/events.py
 """用户行为埋点API — 可用性测试数据采集。
 
-- POST /api/events        批量接收事件（page_view/click/dwell/error/web_vital）
-- GET  /api/events/export 导出事件（仅测试环境，供分析脚本）
+- POST /api/tracking/events        批量接收事件（page_view/click/dwell/error/web_vital）
+- GET  /api/tracking/events/export 导出事件（仅测试环境，供分析脚本）
+
+注：路由前缀使用 /api/tracking/events 以避免与职业事件 API（/api/events）冲突。
 """
 import logging
 from typing import Any
@@ -18,14 +20,15 @@ from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/events", tags=["埋点"])
+router = APIRouter(prefix="/api/tracking/events", tags=["埋点"])
 
 
 class EventItem(BaseModel):
-    session_id: str = Field(..., description="会话ID")
-    event_type: str = Field(..., description="事件类型: page_view/click/dwell/error/web_vital")
-    page: str | None = None
-    element: str | None = None
+    # 修复: FASTAPI-VALID-001 — 埋点字段加 max_length 防止恶意大字段刷量
+    session_id: str = Field(..., min_length=1, max_length=128, description="会话ID")
+    event_type: str = Field(..., min_length=1, max_length=50, description="事件类型: page_view/click/dwell/error/web_vital")
+    page: str | None = Field(None, max_length=500)
+    element: str | None = Field(None, max_length=500)
     payload: dict[str, Any] | None = None
 
 
@@ -45,13 +48,25 @@ class EventExportItem(BaseModel):
 
     model_config = {"from_attributes": True}
 
-    @classmethod
-    def validate_user_id(cls, v):
-        return str(v) if hasattr(v, "hex") else v
+    # 修复 bug: ORM 返回的 user_id 是 UUID，created_at 是 datetime，
+    # 直接序列化为 str 会触发 ResponseValidationError
+    from pydantic import field_validator
 
+    @field_validator("user_id", mode="before")
     @classmethod
-    def validate_created_at(cls, v):
-        return v.isoformat() if hasattr(v, "isoformat") else str(v)
+    def _convert_user_id(cls, v):
+        if v is None:
+            return None
+        return str(v) if hasattr(v, "hex") else str(v)
+
+    @field_validator("created_at", mode="before")
+    @classmethod
+    def _convert_created_at(cls, v):
+        if v is None:
+            return None
+        if hasattr(v, "isoformat"):
+            return v.isoformat()
+        return str(v)
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)

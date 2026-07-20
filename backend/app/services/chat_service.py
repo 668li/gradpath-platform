@@ -14,10 +14,12 @@
 10. CareerPlan 持久化
 11. AI 消息持久化（含 skill_used 与 context_snapshot）
 """
+import logging
 from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from app.core.cache import cache
 from app.models.career_event import CareerEvent
 from app.models.career_plan import CareerPlan
 from app.models.conversation import Conversation, Message
@@ -25,9 +27,11 @@ from app.models.destination_decision import DestinationDecision
 from app.models.retrospective import Retrospective
 from app.models.skill_node import SkillNode
 from app.models.user import User
-from app.services.ai_service import AIService
+from app.services.ai_orchestrator import AIOrchestrator
 from app.services.knowledge_service import search_articles
-from app.skills.registry import find_skill, get_skill
+from app.skills.registry import find_skill, get_skill, get_skill_instance, find_skill_instance
+
+logger = logging.getLogger(__name__)
 
 # Context 各类数据条数上限
 EVENT_LIMIT = 10
@@ -36,6 +40,9 @@ DECISION_LIMIT = 5
 RETRO_LIMIT = 3
 HISTORY_LIMIT = 20
 KNOWLEDGE_LIMIT = 3
+
+# build_user_context 缓存 TTL（秒）—— 上下文由 7+ 张表组装，TTL 略长于 user 缓存
+USER_CONTEXT_CACHE_TTL = 300
 
 
 def create_conversation(db: Session, user_id: UUID, title: str = "新对话") -> Conversation:
@@ -115,7 +122,20 @@ def build_user_context(db: Session, user_id: UUID) -> str:
     复用 decision_advice_service / growth_insight_service 的 context 组装模式，
     查询：CareerEvent(最近10)、SkillNode(全部)、DestinationDecision(最近5)、
     Retrospective(最近3)、最新 GrowthInsight。
+
+    缓存：key=`user_context:{user_id}`，TTL=USER_CONTEXT_CACHE_TTL（300s）。
+    缓存命中直接返回字符串；未命中执行 7+ 查询后写缓存。
+    缓存读写失败不阻塞业务。
     """
+    cache_key = f"user_context:{user_id}"
+    # 尝试命中缓存（失败不阻塞业务）
+    try:
+        cached = cache.get(cache_key)
+        if cached:
+            return cached
+    except Exception as e:
+        logger.debug("user_context cache get failed: %s", e)
+
     user = db.query(User).filter(User.id == user_id).first()
     lines = ["【用户画像】"]
     if user:
@@ -285,10 +305,18 @@ def build_user_context(db: Session, user_id: UUID) -> str:
         # 成长洞察查询失败不应阻断对话流程
         pass
 
-    return "\n".join(lines) + "\n"
+    context_str = "\n".join(lines) + "\n"
+
+    # 写缓存（失败不阻塞业务）
+    try:
+        cache.set(cache_key, context_str, ttl=USER_CONTEXT_CACHE_TTL)
+    except Exception as e:
+        logger.debug("user_context cache set failed: %s", e)
+
+    return context_str
 
 
-def send_message(
+async def send_message(
     db: Session,
     user_id: UUID,
     conversation_id: UUID,
@@ -332,12 +360,20 @@ def send_message(
 
     # 5. Skill 匹配
     context = {"conversation": conv, "history": history}
+    skill = None
+    
+    # Try to get skill by hint first
     if skill_hint:
-        skill = get_skill(skill_hint)
-        if skill is None:
-            skill = find_skill(content, context)
-    else:
-        skill = find_skill(content, context)
+        skill = get_skill_instance(skill_hint)
+    
+    # Fallback to content-based matching
+    if skill is None:
+        skill = find_skill_instance(content, context)
+    
+    # Final fallback to DefaultSkill
+    if skill is None:
+        from app.skills.default_skill import DefaultSkill
+        skill = DefaultSkill()
 
     # 6. 知识库 RAG 检索（top 3）
     knowledge_articles = search_articles(db, content, limit=KNOWLEDGE_LIMIT)
@@ -362,9 +398,9 @@ def send_message(
         history_block = "\n".join(h_lines) + "\n\n"
     user_prompt = history_block + skill.build_user_prompt(content)
 
-    # 8. 调用 LLM（AIService._check_config 在 key 为空时抛 AIServiceNotConfigured）
-    service = AIService()
-    raw = service.chat(system_prompt, user_prompt, timeout=30)
+    # 8. 调用 LLM（AIOrchestrator 在 key 为空时抛 AIServiceNotConfigured）
+    orchestrator = AIOrchestrator()
+    raw = await orchestrator.chat(system_prompt=system_prompt, user_prompt=user_prompt, timeout=30)
 
     # 9. Skill 解析输出
     parsed = skill.parse_response(raw)
@@ -389,6 +425,11 @@ def send_message(
         db.commit()
         db.refresh(plan)
         saved_plan_id = str(plan.id)
+        # 新规划落库后失效用户上下文缓存（build_user_context 依赖 CareerPlan）
+        try:
+            cache.delete(f"user_context:{user_id}")
+        except Exception as e:
+            logger.debug("user_context cache invalidate after plan save failed: %s", e)
 
     # 11. 保存 AI 消息（含 skill_used 与 context_snapshot）
     context_snapshot = {

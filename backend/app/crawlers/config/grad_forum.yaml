@@ -1,0 +1,20 @@
+# 考研论坛报录比经验爬虫配置
+name: grad_forum
+category: grad
+description: 考研论坛报录比经验数据爬虫（预置论坛帖数据）
+enabled: true
+schedule: weekly  # 每周更新论坛新帖
+rate_limit: 1.0
+rate_limit_ms: 1000
+max_retries: 3
+timeout_seconds: 30
+target_table: grad_school_intel
+dedup_key:
+  - school_name
+  - major_name
+notes: |
+  数据源：小木虫/考研论坛报录比经验帖整理的预置数据。
+  覆盖范围：985 院校 + 部分 211/双一流院校的报录比经验。
+  抓取策略：模拟论坛数据格式，提取 school_name、major_name、admission_ratio、
+  push_ratio、insider_notes 字段，更新到 grad_school_intel 表。
+  去重规则：按 school_name + major_name 匹配更新，不存在则创建新记录。

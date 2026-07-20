@@ -1,6 +1,9 @@
 // frontend/lib/tracker.ts
-// 用户行为埋点客户端 — 发送事件到 /api/events
-import { usePathname } from "next/navigation";
+// 用户行为埋点客户端 — 发送事件到 /api/tracking/events
+// 修复: 统一使用 @/lib/api 的 getToken 读取 access_token,
+// 避免 localStorage 键名不一致 (旧代码使用 "token"/"auth_token", 实际键为 "gradpath_access_token")
+// 注：路由已从 /api/events 迁移到 /api/tracking/events，避免与职业事件 API 冲突
+import { getToken } from "@/lib/api";
 
 export type EventType = "page_view" | "click" | "dwell" | "error" | "web_vital";
 
@@ -73,7 +76,8 @@ export function flushEvents() {
   const events = [...eventBuffer];
   eventBuffer.length = 0;
 
-  const token = localStorage.getItem("token") || localStorage.getItem("auth_token");
+  // 修复: 使用统一的 getToken 读取真实键名 "gradpath_access_token"
+  const token = getToken();
   if (!token) return;
 
   const body = JSON.stringify({ events });
@@ -81,9 +85,9 @@ export function flushEvents() {
   // 优先 sendBeacon（不阻塞页面卸载），失败降级 fetch
   if (navigator.sendBeacon) {
     const blob = new Blob([body], { type: "application/json" });
-    navigator.sendBeacon("/api/events", blob);
+    navigator.sendBeacon("/api/tracking/events", blob);
   } else {
-    fetch("/api/events", {
+    fetch("/api/tracking/events", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { memo, useState, type FormEvent } from "react";
 import { Plus, X, Wand2 } from "lucide-react";
 import { retrospectivesApi } from "@/lib/api";
 import { PERIOD_TYPES, PERIOD_TYPE_LABEL } from "@/lib/constants";
@@ -46,7 +46,7 @@ function DynamicList({
         <p className="text-xs text-slate-400">{emptyLabel}</p>
       )}
       {items.map((item, i) => (
-        <div key={i} className="flex items-center gap-2">
+        <div key={`item-${i}`} className="flex items-center gap-2">
           <span className="text-xs text-slate-400 w-4 shrink-0">{i + 1}.</span>
           <Input
             value={item}
@@ -75,7 +75,7 @@ function DynamicList({
   );
 }
 
-export function RetroForm({ initial, aiDraft, onSaved, onCancel }: RetroFormProps) {
+export const RetroForm = memo(function RetroForm({ initial, aiDraft, onSaved, onCancel }: RetroFormProps) {
   const toast = useToast();
   const isEdit = !!initial;
 
@@ -314,4 +314,4 @@ export function RetroForm({ initial, aiDraft, onSaved, onCancel }: RetroFormProp
       </div>
     </form>
   );
-}
+});

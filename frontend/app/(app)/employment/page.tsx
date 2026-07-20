@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState, useMemo } from "react";
+import { Suspense, useEffect, useState, useMemo, useRef } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   Building2,
   DollarSign,
@@ -17,11 +18,13 @@ import {
   Star,
   MapPin,
   GraduationCap,
+  // 修复: 缺失 Search 图标导入，导致 L266 引用未定义变量
+  Search,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { careerIntelApi } from "@/lib/api/ai";
 import { employmentApi } from "@/lib/api/employment";
-import { externalDataApi } from "@/lib/api/pipeline";
+import { useApi } from "@/lib/api/swr-config";
 import { useToast } from "@/components/ui/toast";
 import { EmptyState, LoadingState } from "@/components/ui/empty";
 import { ListSkeleton, CardSkeleton } from "@/components/ui/skeleton";
@@ -42,6 +45,15 @@ import type {
   SalaryBenchmark,
   EmploymentStats,
 } from "@/types";
+
+// ===== Recharts 内联对象提取为模块级常量（A3 性能优化） =====
+const SALARY_CHART_TICK = { fontSize: 12 } as const;
+const SALARY_CHART_TOOLTIP_STYLE = {
+  background: "white",
+  border: "1px solid #e5e5e5",
+  borderRadius: "8px",
+} as const;
+const SALARY_CHART_GRID_COLOR = "var(--color-paper-200, #f5f3ec)";
 
 // ===== Tab 配置 =====
 const tabs = [
@@ -112,29 +124,40 @@ const importanceLabels: Record<string, string> = {
   medium: "一般",
 };
 
+// 修复: Tailwind 不能 JIT 动态类名 (如 `bg-${color}-50`)，必须用静态完整类名映射
+// 否则这些类不会出现在最终 CSS 中，样式会失效
+const iconBgColors: Record<string, string> = {
+  blue: "bg-blue-50",
+  green: "bg-green-50",
+  purple: "bg-purple-50",
+  amber: "bg-amber-50",
+};
+
+const iconTextColors: Record<string, string> = {
+  blue: "text-blue-500",
+  green: "text-green-500",
+  purple: "text-purple-500",
+  amber: "text-amber-500",
+};
+
 // ===== 子组件 =====
 
 function Tab1Intel() {
   const toast = useToast();
-  const [intelList, setIntelList] = useState<CompanyIntelResponse[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: intelList, error, isLoading } = useApi<CompanyIntelResponse[]>(
+    "/api/career-intel/intel/list",
+    { fallbackData: [] },
+  );
 
   useEffect(() => {
-    (async () => {
-      try {
-        const data = await careerIntelApi.listIntel();
-        setIntelList(data);
-      } catch (err) {
-        toast.push(err instanceof Error ? err.message : "加载公司情报失败", "error");
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [toast]);
+    if (error) toast.push(error.message || "加载公司情报失败", "error");
+  }, [error, toast]);
 
-  if (loading) return <ListSkeleton count={3} />;
+  if (isLoading) return <ListSkeleton count={3} />;
 
-  if (intelList.length === 0) {
+  const list = intelList ?? [];
+
+  if (list.length === 0) {
     return (
       <EmptyState
         title="暂无公司情报"
@@ -151,7 +174,7 @@ function Tab1Intel() {
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      {intelList.map((intel) => (
+      {list.map((intel) => (
         <div key={intel.id} className="bg-white rounded-xl border border-paper-200 p-5 hover:shadow-md transition-shadow">
           <div className="flex items-start justify-between mb-3">
             <div>
@@ -195,22 +218,22 @@ function Tab1Intel() {
 
 function Tab2Salary() {
   const toast = useToast();
-  const [salaries, setSalaries] = useState<SalaryBenchmark[]>([]);
-  const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState("");
 
+  // 修复 P0 bug: 后端可能返回 null/非数组，导致 salaries.forEach/filter 崩溃
+  const { data: rawData, error, isLoading } = useApi<SalaryBenchmark[]>(
+    "/api/salary-benchmarks",
+    { fallbackData: [] },
+  );
+
   useEffect(() => {
-    (async () => {
-      try {
-        const data = await externalDataApi.salaryBenchmarks({});
-        setSalaries(data);
-      } catch (err) {
-        toast.push(err instanceof Error ? err.message : "加载薪资数据失败", "error");
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [toast]);
+    if (error) toast.push(error.message || "加载薪资数据失败", "error");
+  }, [error, toast]);
+
+  const salaries = useMemo(
+    () => (Array.isArray(rawData) ? rawData : []),
+    [rawData],
+  );
 
   const filtered = searchText
     ? salaries.filter(
@@ -223,7 +246,9 @@ function Tab2Salary() {
 
   const chartData = useMemo(() => {
     const grouped: Record<string, { min: number; max: number; median: number; count: number }> = {};
+    // 修复 P2 bug: 薪资字段可能为 null/undefined，导致 NaN 显示
     salaries.forEach((s) => {
+      if (s.salary_min == null || s.salary_max == null || s.salary_median == null) return;
       if (!grouped[s.position]) {
         grouped[s.position] = { min: s.salary_min, max: s.salary_max, median: s.salary_median, count: 1 };
       } else {
@@ -241,7 +266,7 @@ function Tab2Salary() {
     }));
   }, [salaries]);
 
-  if (loading) return <ListSkeleton count={3} />;
+  if (isLoading) return <ListSkeleton count={3} />;
 
   if (salaries.length === 0) {
     return (
@@ -278,11 +303,11 @@ function Tab2Salary() {
           <h3 className="font-bold text-ink-800 mb-4">岗位薪资分布（单位：k）</h3>
           <ResponsiveContainer width="100%" height={300}>
             <ReBarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--color-paper-200, #f5f3ec)" />
-              <XAxis dataKey="position" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} />
+              <CartesianGrid strokeDasharray="3 3" stroke={SALARY_CHART_GRID_COLOR} />
+              <XAxis dataKey="position" tick={SALARY_CHART_TICK} />
+              <YAxis tick={SALARY_CHART_TICK} />
               <Tooltip
-                contentStyle={{ background: "white", border: "1px solid #e5e5e5", borderRadius: "8px" }}
+                contentStyle={SALARY_CHART_TOOLTIP_STYLE}
                 formatter={(value: number) => [`${value}k`, ""]}
               />
               <Bar dataKey="median" fill="#3377f6" radius={[4, 4, 0, 0]} name="中位数" />
@@ -291,38 +316,97 @@ function Tab2Salary() {
         </div>
       )}
 
-      {/* 薪资表格 */}
-      <div className="bg-white rounded-xl border border-paper-200 overflow-hidden">
-        <div className="overflow-x-auto">
+      {/* 薪资表格（虚拟滚动） */}
+      <SalaryTable salaries={filtered} totalCount={salaries.length} />
+    </div>
+  );
+}
+
+// ===== 薪资表格虚拟滚动组件 =====
+function SalaryTable({
+  salaries,
+  totalCount,
+}: {
+  salaries: SalaryBenchmark[];
+  totalCount: number;
+}) {
+  const parentRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useVirtualizer({
+    count: salaries.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 52,
+    overscan: 8,
+  });
+
+  if (salaries.length === 0) {
+    return (
+      <div className="bg-white rounded-xl border border-paper-200 p-8 text-center text-sm text-ink-400">
+        暂无匹配的薪资数据
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-xl border border-paper-200 overflow-hidden">
+      {/* 表头（sticky） */}
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-paper-200 bg-paper-50">
+              <th className="px-4 py-3 text-left font-medium text-ink-600">公司</th>
+              <th className="px-4 py-3 text-left font-medium text-ink-600">岗位</th>
+              <th className="px-4 py-3 text-left font-medium text-ink-600">城市</th>
+              <th className="px-4 py-3 text-left font-medium text-ink-600">经验级别</th>
+              <th className="px-4 py-3 text-right font-medium text-ink-600">薪资范围</th>
+              <th className="px-4 py-3 text-right font-medium text-ink-600">中位数</th>
+            </tr>
+          </thead>
+        </table>
+      </div>
+      {/* 虚拟滚动 body */}
+      <div ref={parentRef} style={{ height: "500px", overflow: "auto" }}>
+        <div
+          style={{
+            height: `${rowVirtualizer.getTotalSize()}px`,
+            position: "relative",
+            width: "100%",
+          }}
+        >
           <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-paper-200 bg-paper-50">
-                <th className="px-4 py-3 text-left font-medium text-ink-600">公司</th>
-                <th className="px-4 py-3 text-left font-medium text-ink-600">岗位</th>
-                <th className="px-4 py-3 text-left font-medium text-ink-600">城市</th>
-                <th className="px-4 py-3 text-left font-medium text-ink-600">经验级别</th>
-                <th className="px-4 py-3 text-right font-medium text-ink-600">薪资范围</th>
-                <th className="px-4 py-3 text-right font-medium text-ink-600">中位数</th>
-              </tr>
-            </thead>
             <tbody>
-              {filtered.slice(0, 50).map((s) => (
-                <tr key={s.id} className="border-b border-paper-100 hover:bg-paper-50/50">
-                  <td className="px-4 py-3 font-medium text-ink-800">{s.company}</td>
-                  <td className="px-4 py-3 text-ink-600">{s.position}</td>
-                  <td className="px-4 py-3 text-ink-600">{s.city || "-"}</td>
-                  <td className="px-4 py-3 text-ink-600">{s.experience_level}</td>
-                  <td className="px-4 py-3 text-right text-ink-800">{s.salary_min}-{s.salary_max}k</td>
-                  <td className="px-4 py-3 text-right font-medium text-green-600">{s.salary_median}k</td>
-                </tr>
-              ))}
+              {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                const s = salaries[virtualRow.index];
+                return (
+                  <tr
+                    key={s.id}
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "100%",
+                      transform: `translateY(${virtualRow.start}px)`,
+                      display: "table-row",
+                    }}
+                    className="border-b border-paper-100 hover:bg-paper-50/50"
+                  >
+                    <td className="px-4 py-3 font-medium text-ink-800">{s.company}</td>
+                    <td className="px-4 py-3 text-ink-600">{s.position}</td>
+                    <td className="px-4 py-3 text-ink-600">{s.city || "-"}</td>
+                    <td className="px-4 py-3 text-ink-600">{s.experience_level}</td>
+                    <td className="px-4 py-3 text-right text-ink-800">{s.salary_min}-{s.salary_max}k</td>
+                    <td className="px-4 py-3 text-right font-medium text-green-600">{s.salary_median}k</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
-        {salaries.length > 50 && (
-          <p className="text-center text-sm text-ink-400 py-3">显示前 50 条，共 {salaries.length} 条数据</p>
-        )}
       </div>
+      {totalCount > salaries.length && (
+        <p className="text-center text-sm text-ink-400 py-3">
+          显示 {salaries.length} 条（共 {totalCount} 条数据）
+        </p>
+      )}
     </div>
   );
 }
@@ -390,7 +474,7 @@ function Tab3Positioning() {
         ].map(({ label, data, color, icon: Icon }) => (
           <div key={label} className="bg-white rounded-xl border border-paper-200 p-4">
             <div className="flex items-center gap-2 mb-3">
-              <Icon className={cn("h-5 w-5", `text-${color}-500`)} />
+              <Icon className={cn("h-5 w-5", iconTextColors[color])} />
               <h4 className="font-bold text-ink-800">{label}</h4>
             </div>
             {data.length === 0 ? (
@@ -398,7 +482,7 @@ function Tab3Positioning() {
             ) : (
               <div className="space-y-2">
                 {data.slice(0, 3).map((c, i) => (
-                  <div key={i} className="text-sm">
+                  <div key={`${c.name}-${c.position}-${i}`} className="text-sm">
                     <div className="font-medium text-ink-800">{c.name}</div>
                     <div className="text-ink-500">{c.position} · 概率 {Math.round(c.probability * 100)}%</div>
                   </div>
@@ -415,7 +499,7 @@ function Tab3Positioning() {
           <h3 className="font-bold text-ink-800 mb-3">技能差距分析</h3>
           <div className="space-y-3">
             {positioning.skill_gaps.map((gap, i) => (
-              <div key={i} className="flex items-start gap-3">
+              <div key={`${gap.skill}-${i}`} className="flex items-start gap-3">
                 <div className="h-6 w-6 shrink-0 rounded-full bg-amber-100 flex items-center justify-center text-amber-600 text-xs font-bold">
                   {i + 1}
                 </div>
@@ -472,8 +556,8 @@ function Tab4Employment() {
           { label: "数据年份", value: stats.year_range[0] && stats.year_range[1] ? `${stats.year_range[0]}-${stats.year_range[1]}` : "-", icon: TrendingUp, color: "amber" },
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="bg-white rounded-xl border border-paper-200 p-4">
-            <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center mb-3", `bg-${color}-50`)}>
-              <Icon className={cn("h-5 w-5", `text-${color}-500`)} />
+            <div className={cn("h-10 w-10 rounded-lg flex items-center justify-center mb-3", iconBgColors[color])}>
+              <Icon className={cn("h-5 w-5", iconTextColors[color])} />
             </div>
             <div className="text-2xl font-bold text-ink-800">{value}</div>
             <div className="text-sm text-ink-500">{label}</div>
@@ -670,6 +754,14 @@ function Tab6Interview() {
 // ===== 主页面 =====
 
 export default function EmploymentPage() {
+  return (
+    <Suspense fallback={<LoadingState />}>
+      <EmploymentPageContent />
+    </Suspense>
+  );
+}
+
+function EmploymentPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeTab = searchParams.get("tab") || "intel";

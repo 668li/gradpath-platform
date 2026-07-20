@@ -13,7 +13,8 @@ from pydantic import BaseModel, ConfigDict, Field
 class KnowledgeArticleBase(BaseModel):
     category: str = Field(..., max_length=50)
     title: str = Field(..., max_length=200)
-    content: str
+    # 修复: FASTAPI-VALID-001 — content 加 max_length 防止超大文本攻击
+    content: str = Field(..., min_length=1, max_length=100000)
     tags: list[str] = Field(default_factory=list)
     source: str | None = Field(None, max_length=200)
     metadata_: dict = Field(default_factory=dict)
@@ -27,7 +28,7 @@ class KnowledgeArticleCreate(KnowledgeArticleBase):
 class KnowledgeArticleUpdate(BaseModel):
     category: str | None = Field(None, max_length=50)
     title: str | None = Field(None, max_length=200)
-    content: str | None = None
+    content: str | None = Field(None, min_length=1, max_length=100000)
     tags: list[str] | None = None
     source: str | None = Field(None, max_length=200)
     metadata_: dict | None = None

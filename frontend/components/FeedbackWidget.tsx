@@ -4,6 +4,8 @@ import { useState } from "react";
 import { MessageSquareWarning, X, Camera, Send } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { getSessionId } from "@/lib/tracker";
+// 修复: 统一使用 @/lib/api 的 getToken 读取 access_token, 避免键名不一致
+import { getToken } from "@/lib/api";
 
 const CATEGORIES = ["卡顿", "找不到入口", "操作繁琐", "提示模糊", "逻辑别扭"] as const;
 type Category = (typeof CATEGORIES)[number];
@@ -15,16 +17,13 @@ export function FeedbackWidget() {
   const [submitting, setSubmitting] = useState(false);
   const { push } = useToast();
 
-  const token =
-    typeof window !== "undefined"
-      ? localStorage.getItem("token") || localStorage.getItem("auth_token")
-      : null;
-
   const handleSubmit = async () => {
     if (!category) {
       push("请选择反馈类型", "error");
       return;
     }
+    // 修复 P3 bug: 在 handleSubmit 内部读取 token，确保用户登录后立即可用
+    const token = getToken();
     if (!token) {
       push("请先登录", "error");
       return;

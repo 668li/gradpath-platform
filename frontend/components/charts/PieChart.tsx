@@ -78,7 +78,7 @@ export function PieChart({
   contextLabel,
   percentage = false,
   height,
-  emptyText = "暂无数据",
+  emptyText = "暂无录取数据",
   outerRadius = 90,
   innerRadius = 45,
   ariaSummary,
@@ -164,7 +164,7 @@ export function PieChart({
           label={percentage ? ({ name, value }) => `${name} ${pct(value)}` : true}
         >
           {resolved.map((_, i) => (
-            <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+            <Cell key={`cell-${i}`} fill={PIE_COLORS[i % PIE_COLORS.length]} />
           ))}
         </Pie>
         <Tooltip

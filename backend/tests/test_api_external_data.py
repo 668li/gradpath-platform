@@ -42,16 +42,26 @@ class TestCompanies:
         assert "size" in first
 
     def test_search_company_by_name(self, seeded_db, client):
-        """按名称模糊搜索公司。"""
+        """按名称模糊搜索公司。
+
+        修复: 模糊搜索 "腾讯" 会返回所有包含 "腾讯" 的公司（腾讯、腾讯课堂、腾讯教育等），
+        不再期望只返回 1 条。改为验证 "腾讯" 在结果中且第一条是精确匹配。
+        """
         resp = client.get("/api/companies", params={"name": "腾讯"})
         assert resp.status_code == 200
         data = resp.json()
-        assert len(data) == 1
+        assert len(data) >= 1
+        names = [c["name"] for c in data]
+        assert "腾讯" in names
+        # 按名称升序排列，"腾讯" 应在所有 "腾讯X" 之前
         assert data[0]["name"] == "腾讯"
 
     def test_search_company_fuzzy(self, seeded_db, client):
-        """模糊搜索（部分关键词）。"""
-        resp = client.get("/api/companies", params={"name": "中"})
+        """模糊搜索（部分关键词）。
+
+        修复: 默认 limit=50 可能截断结果，使用 limit=200 确保覆盖所有含 "中" 的公司。
+        """
+        resp = client.get("/api/companies", params={"name": "中", "limit": 200})
         assert resp.status_code == 200
         data = resp.json()
         names = [c["name"] for c in data]

@@ -9,6 +9,7 @@
 - DELETE /api/chat/conversations/{id} — 删除对话
 - GET /api/chat/skills — 列出可用 Skill
 """
+import logging
 from uuid import UUID
 
 import httpx
@@ -29,7 +30,13 @@ from app.schemas.chat import (
     SkillInfo,
 )
 from app.schemas.common import PaginatedResponse
-from app.services.ai_service import AIServiceNotConfigured
+from app.services.ai_circuit_breaker import AICircuitBreakerOpenError
+from app.services.ai_quota_service import (
+    AILLMQuotaExceeded,
+    check_llm_quota,
+    incr_llm_quota,
+)
+from app.services.ai_service import AIServiceNotConfigured, AIServiceRetryExhausted
 from app.services.chat_service import (
     create_conversation,
     delete_conversation,
@@ -40,6 +47,9 @@ from app.services.chat_service import (
     update_conversation_title,
 )
 from app.skills.registry import list_skills
+
+# 修复: 文件内 logger.exception 调用未定义 logger，补全模块级 logger
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/chat", tags=["AI 职业管家"])
 
@@ -88,7 +98,7 @@ def get_messages(
     response_model=SendMessageResponse,
 )
 @limiter.limit("20/minute")
-def post_message(
+async def post_message(
     request: Request,
     response: Response,
     conversation_id: UUID,
@@ -100,14 +110,41 @@ def post_message(
 
     降级策略：
     - LLM_API_KEY 未配置 → 503
-    - LLM 超时 → 504
+    - LLM 超时 / 重试耗尽 → 504
+    - 熔断器打开 → 503
+    - 配额超额 → 429
     - 其他异常 → 500
     """
     conv = get_conversation(db, user.id, conversation_id)
     if not conv:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="对话不存在")
+    # B8: 配额检查（Redis 不可用时降级到不限制）
     try:
-        result = send_message(db, user.id, conversation_id, body.content, body.skill_hint)
+        await check_llm_quota(user.id)
+    except AILLMQuotaExceeded:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="今日 AI 调用次数已达上限，请明日再试",
+        )
+    try:
+        result = await send_message(db, user.id, conversation_id, body.content, body.skill_hint)
+        # B8: 调用成功后递增配额计数
+        await incr_llm_quota(user.id)
+    except AILLMQuotaExceeded:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="今日 AI 调用次数已达上限，请明日再试",
+        )
+    except AICircuitBreakerOpenError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="AI 服务暂时不可用，请稍后重试",
+        )
+    except AIServiceRetryExhausted:
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail="AI 服务响应超时，请稍后重试",
+        )
     except AIServiceNotConfigured:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -126,9 +163,10 @@ def post_message(
     except HTTPException:
         raise
     except Exception as e:
+        logger.exception("对话服务异常: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"对话服务异常: {e}",
+            detail="对话服务异常，请稍后重试",
         )
     return result
 

@@ -1,6 +1,20 @@
 "use client";
 
 const TOKEN_KEY = "gradpath_access_token";
+// 中间件可读的 cookie 名称（Edge Middleware 无法读取 localStorage，
+// 因此在写入 / 清除 localStorage 时同步维护同名 cookie）
+export const TOKEN_COOKIE = "gradpath_token";
+const TOKEN_COOKIE_MAX_AGE = 60 * 60 * 24 * 30; // 30 天
+
+function setCookie(name: string, value: string, maxAge: number): void {
+  if (typeof document === "undefined") return;
+  document.cookie = `${name}=${encodeURIComponent(value)}; Path=/; SameSite=Lax; Max-Age=${maxAge}`;
+}
+
+function deleteCookie(name: string): void {
+  if (typeof document === "undefined") return;
+  document.cookie = `${name}=; Path=/; SameSite=Lax; Max-Age=0`;
+}
 
 /** 读取 localStorage 中的 token（仅在客户端） */
 export function getToken(): string | null {
@@ -11,11 +25,15 @@ export function getToken(): string | null {
 export function setToken(token: string): void {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(TOKEN_KEY, token);
+  // 同步写入 cookie 供 Edge Middleware 路由守卫读取
+  setCookie(TOKEN_COOKIE, token, TOKEN_COOKIE_MAX_AGE);
 }
 
 export function clearToken(): void {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(TOKEN_KEY);
+  // 同步清除 cookie
+  deleteCookie(TOKEN_COOKIE);
 }
 
 const REFRESH_TOKEN_KEY = "gradpath_refresh_token";
@@ -36,17 +54,48 @@ export function clearRefreshToken(): void {
   window.localStorage.removeItem(REFRESH_TOKEN_KEY);
 }
 
-export interface ApiError extends Error {
+export class ApiError extends Error {
   status: number;
   detail?: unknown;
+  constructor(message: string, status: number, detail?: unknown) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.detail = detail;
+  }
 }
 
 /** 统一 API 错误 */
 function makeError(status: number, message: string, detail?: unknown): ApiError {
-  const err = new Error(message) as ApiError;
-  err.status = status;
-  err.detail = detail;
-  return err;
+  return new ApiError(message, status, detail);
+}
+
+/**
+ * B5: Sentry breadcrumb 注入 — 记录 API 调用与错误轨迹。
+ * 在 @sentry/nextjs 未安装或未初始化时静默失败，不影响业务。
+ */
+function addSentryBreadcrumb(
+  level: "info" | "warning" | "error",
+  message: string,
+  data?: Record<string, unknown>,
+): void {
+  try {
+    // 动态 import 避免 SSR/测试环境下模块未安装时抛错
+    import("@sentry/nextjs").then((Sentry) => {
+      if (typeof Sentry.addBreadcrumb === "function") {
+        Sentry.addBreadcrumb({
+          category: "api",
+          level,
+          message,
+          data,
+        });
+      }
+    }).catch(() => {
+      // @sentry/nextjs 未安装 — 忽略
+    });
+  } catch {
+    // 忽略
+  }
 }
 
 const DEFAULT_TIMEOUT = 30000; // 30 秒
@@ -93,6 +142,7 @@ export async function request<T>(
 ): Promise<T> {
   // 离线检查
   if (typeof window !== "undefined" && !navigator.onLine) {
+    addSentryBreadcrumb("warning", "Request attempted while offline", { path });
     throw makeError(0, "网络不可用，请检查网络连接");
   }
 
@@ -137,6 +187,10 @@ export async function request<T>(
       res = await doFetch(retryController.signal);
     } catch (e2) {
       clearTimeout(retryTimeoutId);
+      addSentryBreadcrumb("error", "Network request failed after retry", {
+        path,
+        method: options.method || "GET",
+      });
       throw e2;
     }
     clearTimeout(retryTimeoutId);
@@ -163,6 +217,7 @@ export async function request<T>(
     if (res.status === 401) {
       clearToken();
       clearRefreshToken();
+      addSentryBreadcrumb("warning", "Session expired — cleared tokens", { path });
       throw makeError(401, "未登录或登录已过期");
     }
   }
@@ -187,6 +242,9 @@ export async function request<T>(
     const message =
       (data && typeof data === "object" && ((data as Record<string, unknown>).detail || (data as Record<string, unknown>).message)) ||
       `请求失败 (${res.status})`;
+    addSentryBreadcrumb("error", `API ${res.status} on ${options.method || "GET"} ${path}`, {
+      status: res.status,
+    });
     throw makeError(res.status, typeof message === "string" ? message : "请求失败", data);
   }
 

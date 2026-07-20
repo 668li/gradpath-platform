@@ -13,7 +13,7 @@ import { communityApi } from "@/lib/api";
 import { LoadingState, EmptyState } from "@/components/ui/empty";
 import { Button } from "@/components/ui/form-controls";
 import { useToast } from "@/components/ui/toast";
-import { RankingBar } from "@/components/employment-charts";
+import { RankingBar } from "@/components/charts";
 import {
   RATE_LABEL,
   RATE_COLORS,
@@ -251,11 +251,11 @@ function CommunityResultContent() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div>
             <h3 className="text-sm font-medium text-slate-600 mb-2">热门雇主 Top10</h3>
-            <RankingBar data={data.top_employers ?? []} title="热门雇主" />
+            <RankingBar ranking={data.top_employers ?? []} title="热门雇主" />
           </div>
           <div>
             <h3 className="text-sm font-medium text-slate-600 mb-2">城市分布 Top10</h3>
-            <RankingBar data={data.top_cities ?? []} title="城市分布" />
+            <RankingBar ranking={data.top_cities ?? []} title="城市分布" />
           </div>
         </div>
       </div>
@@ -264,7 +264,7 @@ function CommunityResultContent() {
       {data.top_industries && data.top_industries.length > 0 && (
         <div className="card">
           <h2 className="font-semibold text-slate-800 mb-4">热门行业</h2>
-          <RankingBar data={data.top_industries} title="热门行业" />
+          <RankingBar ranking={data.top_industries} title="热门行业" />
         </div>
       )}
 

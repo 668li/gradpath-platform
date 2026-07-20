@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import {
   Sparkles,
   CheckCircle2,
@@ -25,7 +25,7 @@ interface AIAdvicePanelProps {
   // 组件内部管理状态，无外部 props
 }
 
-export function AIAdvicePanel(_: AIAdvicePanelProps) {
+export const AIAdvicePanel = memo(function AIAdvicePanel(_: AIAdvicePanelProps) {
   const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -180,7 +180,7 @@ export function AIAdvicePanel(_: AIAdvicePanelProps) {
       )}
     </div>
   );
-}
+});
 
 /** 加载骨架屏 + 分析中文案 */
 function LoadingSkeleton() {
@@ -236,7 +236,7 @@ function AdviceResult({ result }: { result: DecisionAdviceResponse }) {
         <span className="flex">
           {Array.from({ length: 5 }).map((_, i) => (
             <Star
-              key={i}
+              key={`star-${i}`}
               className={`h-4 w-4 ${
                 i < safeConfidence
                   ? "fill-amber-400 text-amber-400"
@@ -258,7 +258,7 @@ function AdviceResult({ result }: { result: DecisionAdviceResponse }) {
           <ul className="mt-2 space-y-1.5">
             {pros.map((p, i) => (
               <li
-                key={i}
+                key={`pro-${i}`}
                 className="flex items-start gap-1.5 text-sm text-slate-600"
               >
                 <span className="mt-0.5 text-green-500">•</span>
@@ -275,7 +275,7 @@ function AdviceResult({ result }: { result: DecisionAdviceResponse }) {
           <ul className="mt-2 space-y-1.5">
             {cons.map((c, i) => (
               <li
-                key={i}
+                key={`con-${i}`}
                 className="flex items-start gap-1.5 text-sm text-slate-600"
               >
                 <span className="mt-0.5 text-red-500">•</span>
@@ -307,7 +307,7 @@ function AdviceResult({ result }: { result: DecisionAdviceResponse }) {
           <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
             {alternatives.map((a, i) => (
               <div
-                key={i}
+                key={`alt-${i}`}
                 className="rounded-lg border border-slate-200 bg-slate-50 p-3"
               >
                 <p className="text-sm font-medium text-slate-800">{a.option}</p>
@@ -328,7 +328,7 @@ function AdviceResult({ result }: { result: DecisionAdviceResponse }) {
           <div className="mt-2 flex flex-wrap gap-2">
             {skill_gap.map((s, i) => (
               <span
-                key={i}
+                key={`skill-${i}`}
                 className="inline-flex items-center rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-medium text-orange-700"
               >
                 {s}

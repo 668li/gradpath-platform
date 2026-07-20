@@ -1,0 +1,21 @@
+# 考公报录比爬虫配置
+name: civil_ratio
+category: civil
+description: 考公报录比爬虫
+enabled: true
+schedule: weekly  # 每周更新论坛报录比数据
+rate_limit: 1.0
+rate_limit_ms: 1000
+max_retries: 3
+timeout_seconds: 30
+target_table: civil_service_post_intel
+dedup_key:
+  - region
+  - post_name
+  - insider_notes
+notes: |
+  数据源：QZZN 论坛/粉笔网抓取的热门职位历史报录比数据（预置）。
+  覆盖范围：20 个热门职位 × 5 年（2020-2024）共 100 条记录。
+  抓取策略：模拟论坛数据格式，每条记录包含年份、报名人数、招录人数、报录比及竞争情况说明。
+  去重规则：按 region + post_name + insider_notes(含年份) + user_id(system) 去重，
+  同一职位不同年份的记录各自独立，已存在则跳过。

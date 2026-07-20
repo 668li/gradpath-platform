@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import {
   TrendingUp,
   TrendingDown,
@@ -16,7 +16,7 @@ import {
 import { aiApi, type ApiError } from "@/lib/api";
 import { todayISO, cn } from "@/lib/utils";
 import { Button } from "@/components/ui/form-controls";
-import type { GrowthInsight } from "@/types";
+import type { GrowthInsight as GrowthInsightType } from "@/types";
 
 /**
  * 成长洞察面板：
@@ -24,13 +24,13 @@ import type { GrowthInsight } from "@/types";
  * - 展示成长分数、趋势、优势、差距、建议与总结
  * - 挂载时尝试加载最近一次洞察结果
  */
-export function GrowthInsight() {
+export const GrowthInsight = memo(function GrowthInsight() {
   const [periodStart, setPeriodStart] = useState(todayISO().slice(0, 8) + "01");
   const [periodEnd, setPeriodEnd] = useState(todayISO());
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<GrowthInsight | null>(null);
+  const [result, setResult] = useState<GrowthInsightType | null>(null);
 
   // 挂载时加载最近一次洞察
   const loadLatest = useCallback(async () => {
@@ -148,7 +148,7 @@ export function GrowthInsight() {
       {result && !loading && <InsightResult result={result} />}
     </div>
   );
-}
+});
 
 /** 成长分数仪表盘颜色判定 */
 function scoreColor(score: number): { ring: string; text: string; bg: string } {
@@ -186,7 +186,7 @@ function TrendDisplay({ trend }: { trend: string }) {
 }
 
 /** 洞察结果展示 */
-function InsightResult({ result }: { result: GrowthInsight }) {
+function InsightResult({ result }: { result: GrowthInsightType }) {
   const { growth_score, trend, strengths, gaps, recommendations, summary } =
     result;
   const safeScore = Math.max(0, Math.min(100, Math.round(growth_score)));
@@ -267,7 +267,7 @@ function InsightResult({ result }: { result: GrowthInsight }) {
             <ul className="space-y-1.5">
               {strengths.map((s, i) => (
                 <li
-                  key={i}
+                  key={`strength-${i}`}
                   className="flex items-start gap-1.5 text-sm text-slate-600"
                 >
                   <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-green-500" />
@@ -288,7 +288,7 @@ function InsightResult({ result }: { result: GrowthInsight }) {
             <ul className="space-y-1.5">
               {gaps.map((g, i) => (
                 <li
-                  key={i}
+                  key={`gap-${i}`}
                   className="flex items-start gap-1.5 text-sm text-slate-600"
                 >
                   <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-red-500" />
@@ -310,7 +310,7 @@ function InsightResult({ result }: { result: GrowthInsight }) {
           <ul className="space-y-1.5">
             {recommendations.map((r, i) => (
               <li
-                key={i}
+                key={`rec-${i}`}
                 className="flex items-start gap-1.5 text-sm text-slate-600"
               >
                 <Circle className="mt-0.5 h-3 w-3 shrink-0 fill-blue-500 text-blue-500" />

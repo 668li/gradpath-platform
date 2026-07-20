@@ -18,6 +18,12 @@ export const skillsApi = {
   remove: (id: string) =>
     request<void>(`/api/skills/${id}`, { method: "DELETE" }),
   stats: () => request<SkillStats>("/api/skills/stats"),
+  // 批量获取技能（消除前端 N+1 调用，仅返回当前用户的技能）
+  batch: (ids: string[]) =>
+    request<SkillResponse[]>(`/api/skills/batch`, {
+      method: "POST",
+      body: JSON.stringify({ ids }),
+    }),
 };
 
 // ===== Skill 管理 =====

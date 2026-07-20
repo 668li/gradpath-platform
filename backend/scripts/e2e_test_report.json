@@ -1,0 +1,231 @@
+{
+  "passed": 30,
+  "failed": 2,
+  "total": 32,
+  "details": [
+    {
+      "module": "系统",
+      "endpoint": "/health",
+      "status": "PASS",
+      "response_time": 2.059,
+      "details": ""
+    },
+    {
+      "module": "认证",
+      "endpoint": "/auth/register+login",
+      "status": "PASS",
+      "response_time": 2.258,
+      "details": ""
+    },
+    {
+      "module": "考研导师",
+      "endpoint": "/mentors/kaoyan-mentors",
+      "status": "PASS",
+      "response_time": 2.032,
+      "details": "Status: 200"
+    },
+    {
+      "module": "考研情报-暗知识",
+      "endpoint": "/grad-intel/dark-knowledge/list",
+      "status": "PASS",
+      "response_time": 2.029,
+      "details": "Status: 200"
+    },
+    {
+      "module": "考研经验贴",
+      "endpoint": "/kaoyan/experience-posts",
+      "status": "PASS",
+      "response_time": 2.026,
+      "details": "Status: 200"
+    },
+    {
+      "module": "考研问答",
+      "endpoint": "/kaoyan/qa",
+      "status": "PASS",
+      "response_time": 2.049,
+      "details": "Status: 200"
+    },
+    {
+      "module": "考研导师",
+      "endpoint": "/mentors/kaoyan-mentors (分页)",
+      "status": "PASS",
+      "response_time": 2.03,
+      "details": "Total: 318"
+    },
+    {
+      "module": "考研导师",
+      "endpoint": "/mentors/kaoyan-mentors (search=计算机)",
+      "status": "PASS",
+      "response_time": 2.036,
+      "details": ""
+    },
+    {
+      "module": "职业决策",
+      "endpoint": "/decisions",
+      "status": "PASS",
+      "response_time": 2.014,
+      "details": "Status: 200"
+    },
+    {
+      "module": "职业决策",
+      "endpoint": "/decisions (分页)",
+      "status": "PASS",
+      "response_time": 2.055,
+      "details": "Total: 0"
+    },
+    {
+      "module": "技能树",
+      "endpoint": "/skills",
+      "status": "PASS",
+      "response_time": 2.033,
+      "details": "Status: 200"
+    },
+    {
+      "module": "人生平衡轮",
+      "endpoint": "/life-wheel/latest",
+      "status": "PASS",
+      "response_time": 2.011,
+      "details": "Status: 200"
+    },
+    {
+      "module": "职业测评-题目",
+      "endpoint": "/assessment/questions",
+      "status": "PASS",
+      "response_time": 2.023,
+      "details": "Status: 200"
+    },
+    {
+      "module": "职业测评-历史",
+      "endpoint": "/assessment/history",
+      "status": "PASS",
+      "response_time": 2.048,
+      "details": "Status: 200"
+    },
+    {
+      "module": "阶段复盘",
+      "endpoint": "/retrospectives",
+      "status": "PASS",
+      "response_time": 2.046,
+      "details": "Status: 200"
+    },
+    {
+      "module": "阶段复盘",
+      "endpoint": "/retrospectives (分页)",
+      "status": "PASS",
+      "response_time": 2.02,
+      "details": "Total: 0"
+    },
+    {
+      "module": "成长模式",
+      "endpoint": "/growth-patterns/analyze",
+      "status": "FAIL",
+      "response_time": 2.029,
+      "details": "Status: 500"
+    },
+    {
+      "module": "人生设计",
+      "endpoint": "/life-design/sprints",
+      "status": "PASS",
+      "response_time": 2.013,
+      "details": "Status: 200"
+    },
+    {
+      "module": "决策分析",
+      "endpoint": "/decision-analysis/list",
+      "status": "PASS",
+      "response_time": 2.036,
+      "details": "Status: 200"
+    },
+    {
+      "module": "社区帖子",
+      "endpoint": "/posts",
+      "status": "FAIL",
+      "response_time": 2.021,
+      "details": "Status: 422"
+    },
+    {
+      "module": "社区报告",
+      "endpoint": "/community/my-reports",
+      "status": "PASS",
+      "response_time": 2.057,
+      "details": "Status: 200"
+    },
+    {
+      "module": "AI对话",
+      "endpoint": "/chat/conversations",
+      "status": "PASS",
+      "response_time": 2.032,
+      "details": "Status: 200"
+    },
+    {
+      "module": "AI导师人格",
+      "endpoint": "/mentors/personas",
+      "status": "PASS",
+      "response_time": 2.034,
+      "details": "Status: 200"
+    },
+    {
+      "module": "职业档案",
+      "endpoint": "/career-profile",
+      "status": "PASS",
+      "response_time": 2.011,
+      "details": "Status: 200"
+    },
+    {
+      "module": "职业规划",
+      "endpoint": "/career-plans",
+      "status": "PASS",
+      "response_time": 2.025,
+      "details": "Status: 200"
+    },
+    {
+      "module": "职业事件",
+      "endpoint": "/events",
+      "status": "PASS",
+      "response_time": 2.009,
+      "details": "Status: 200"
+    },
+    {
+      "module": "仪表盘",
+      "endpoint": "/dashboard/overview",
+      "status": "PASS",
+      "response_time": 2.072,
+      "details": "Status: 200"
+    },
+    {
+      "module": "连续打卡",
+      "endpoint": "/streaks",
+      "status": "PASS",
+      "response_time": 2.033,
+      "details": "Status: 404"
+    },
+    {
+      "module": "主动洞察",
+      "endpoint": "/proactive-insights",
+      "status": "PASS",
+      "response_time": 2.03,
+      "details": "Status: 404"
+    },
+    {
+      "module": "决策日志",
+      "endpoint": "/decision-journal",
+      "status": "PASS",
+      "response_time": 2.017,
+      "details": "Status: 404"
+    },
+    {
+      "module": "求职情报",
+      "endpoint": "/career-intel/companies",
+      "status": "PASS",
+      "response_time": 2.024,
+      "details": "Status: 404"
+    },
+    {
+      "module": "考公情报",
+      "endpoint": "/civil-service-intel/posts",
+      "status": "PASS",
+      "response_time": 2.024,
+      "details": "Status: 404"
+    }
+  ]
+}

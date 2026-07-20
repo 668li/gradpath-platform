@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
@@ -8,7 +9,7 @@ import { cn } from "@/lib/utils";
  * 安全的 Markdown 渲染组件 — 用于 AI 回复内容展示。
  * 支持 GFM（表格、删除线、任务列表等），禁用 raw HTML 防止 XSS。
  */
-export function Markdown({ content, className }: { content: string; className?: string }) {
+export const Markdown = memo(function Markdown({ content, className }: { content: string; className?: string }) {
   return (
     <div
       className={cn(
@@ -49,4 +50,4 @@ export function Markdown({ content, className }: { content: string; className?: 
       </ReactMarkdown>
     </div>
   );
-}
+});

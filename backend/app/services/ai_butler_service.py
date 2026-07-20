@@ -202,7 +202,7 @@ def _latest_assessment_summary(db: Session, user_id: UUID) -> dict | None:
 # 对外 API
 # ---------------------------------------------------------------------------
 
-def scan_user(db: Session, user_id: UUID) -> dict:
+async def scan_user(db: Session, user_id: UUID) -> dict:
     """扫描用户全量数据，返回结构化画像 + 行动清单。
 
     LLM 仅做可选润色；key 缺失时纯 DB + 启发式合成，绝不报错。
@@ -213,7 +213,7 @@ def scan_user(db: Session, user_id: UUID) -> dict:
     llm_enriched = False
     if getattr(settings, "LLM_API_KEY", None):
         try:
-            profile, plan = _llm_enrich(profile, plan)
+            profile, plan = await _llm_enrich(profile, plan)
             llm_enriched = True
         except Exception as e:  # noqa: BLE001
             logger.warning("AI 管家 LLM 润色失败，回退启发式: %s", e)
@@ -227,7 +227,7 @@ def scan_user(db: Session, user_id: UUID) -> dict:
     }
 
 
-def _llm_enrich(profile: dict, plan: list[dict]) -> tuple[dict, list[dict]]:
+async def _llm_enrich(profile: dict, plan: list[dict]) -> tuple[dict, list[dict]]:
     """可选：用 LLM 把画像/方案润色成更自然的中文叙述。"""
     from app.services.ai_service import AIService
 
@@ -237,7 +237,7 @@ def _llm_enrich(profile: dict, plan: list[dict]) -> tuple[dict, list[dict]]:
         "输出一段 200 字以内的鼓励性总结（不要新增事实）。\n"
         f"画像: {profile}\n方案: {plan}"
     )
-    summary = ai.chat(
+    summary = await ai.chat(
         "你只做总结润色，不编造数据。", prompt, timeout=20
     )
     profile = dict(profile)

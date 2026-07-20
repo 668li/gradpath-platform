@@ -1,0 +1,23 @@
+# 高校就业质量报告 PDF 解析器配置
+name: pdf_report
+category: reports
+description: 高校就业质量报告PDF解析器
+enabled: true
+schedule: yearly  # 每年更新就业质量报告
+rate_limit: 1.0
+rate_limit_ms: 1000
+max_retries: 3
+timeout_seconds: 30
+target_table: employment_data
+dedup_key:
+  - school_name
+  - year
+  - major_category
+notes: |
+  数据源：各高校就业信息网发布的就业质量报告 PDF（预置数据）。
+  覆盖范围：40 所高校（含 985/211/普通本科）× 2 个年度（2023、2024），共 80 条记录。
+  抓取策略：因高校就业网 PDF 下载链路不稳定（校网限流、链接失效、版式不一），
+  使用从公开报告整理的预置数据作为数据源。
+  字段映射：就业率/升学率/出国率/平均薪酬/主要用人单位 → EmploymentData。
+  未来接入 pdfplumber / PyMuPDF 后，可替换 fetch() 实现真实 PDF 下载与解析。
+  去重规则：按 school_name + year + major_category + user_id(system) 去重，已存在则更新。

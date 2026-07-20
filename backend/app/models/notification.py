@@ -1,9 +1,10 @@
 """通知模型 — 系统通知、活动提醒、评论回复等。"""
 import enum
+from datetime import datetime
 from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import Boolean, Enum, ForeignKey, String, Text
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -33,3 +34,16 @@ class Notification(UUIDMixin, TimestampMixin, Base):
     content: Mapped[str] = mapped_column(Text, nullable=False, default="")
     link: Mapped[Optional[str]] = mapped_column(String(500), nullable=True, comment="点击通知后跳转的链接")
     read: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    # C4 通知归档：归档后不再出现在主列表，仅可通过 ?archived=true 查询
+    archived: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        index=True,
+        comment="是否已归档（归档通知从主列表移除）",
+    )
+    archived_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        comment="归档时间，归档时设置，恢复时清空",
+    )

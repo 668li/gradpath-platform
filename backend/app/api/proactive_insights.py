@@ -42,12 +42,12 @@ def list_insights(
 
 
 @router.post("/generate", response_model=list[ProactiveInsightResponse], status_code=status.HTTP_201_CREATED)
-def generate_insights(
+async def generate_insights(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
     """主动分析用户数据模式，生成洞察。"""
-    insights = proactive_insight_service.generate_insights(db, user.id)
+    insights = await proactive_insight_service.generate_insights(db, user.id)
     return [ProactiveInsightResponse.model_validate(i) for i in insights]
 
 

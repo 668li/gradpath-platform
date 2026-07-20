@@ -1,0 +1,227 @@
+{
+  "name": "GradPath Auto Crawl Schedule",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 2 * * *"
+            }
+          ]
+        }
+      },
+      "id": "cron-trigger",
+      "name": "Daily 02:00 UTC",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GRADPATH_API_URL }}/api/crawlers/run",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "crawler_name",
+              "value": "yanzhao"
+            },
+            {
+              "name": "dry_run",
+              "value": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "run-yanzhao-crawler",
+      "name": "Run Yanzhao Crawler",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [450, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "gradpath-api",
+          "name": "GradPath API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{ $json.status }}",
+              "operation": "equal",
+              "value2": 200
+            }
+          ]
+        }
+      },
+      "id": "check-success",
+      "name": "Check Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "content": "=✅ 爬虫任务启动成功\n\n爬虫名称: yanzhao\n任务ID: {{ $json.task_id }}\n启动时间: {{ $now.toISO() }}",
+        "options": {}
+      },
+      "id": "success-message",
+      "name": "Success Message",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [850, 200]
+    },
+    {
+      "parameters": {
+        "content": "=❌ 爬虫任务启动失败\n\n爬虫名称: yanzhao\n错误信息: {{ $json.message }}\n启动时间: {{ $now.toISO() }}",
+        "options": {}
+      },
+      "id": "failure-message",
+      "name": "Failure Message",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [850, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GRADPATH_API_URL }}/api/webhooks/data-update",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "source_name",
+              "value": "yanzhao"
+            },
+            {
+              "name": "items_stored",
+              "value": "={{ $json.stored || 0 }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "notify-success",
+      "name": "Notify Success",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1050, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.GRADPATH_API_URL }}/api/webhooks/data-update",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "source_name",
+              "value": "yanzhao"
+            },
+            {
+              "name": "items_stored",
+              "value": 0
+            },
+            {
+              "name": "error",
+              "value": "={{ $json.message }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "notify-failure",
+      "name": "Notify Failure",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1050, 400]
+    }
+  ],
+  "connections": {
+    "Daily 02:00 UTC": {
+      "main": [
+        [
+          {
+            "node": "Run Yanzhao Crawler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Yanzhao Crawler": {
+      "main": [
+        [
+          {
+            "node": "Check Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Success": {
+      "main": [
+        [
+          {
+            "node": "Success Message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Failure Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Success Message": {
+      "main": [
+        [
+          {
+            "node": "Notify Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Failure Message": {
+      "main": [
+        [
+          {
+            "node": "Notify Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": [
+    {
+      "name": "gradpath"
+    },
+    {
+      "name": "crawler"
+    },
+    {
+      "name": "schedule"
+    }
+  ]
+}

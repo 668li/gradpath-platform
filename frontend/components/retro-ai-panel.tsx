@@ -175,7 +175,7 @@ export function RetroAIPanel({ onUseDraft }: RetroAIPanelProps) {
                     <ul className="space-y-1">
                       {draft.achievements.map((a, i) => (
                         <li
-                          key={i}
+                          key={`${a}-${i}`}
                           className="flex items-start gap-1.5 text-sm text-slate-600"
                         >
                           <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-green-500" />
@@ -217,7 +217,7 @@ export function RetroAIPanel({ onUseDraft }: RetroAIPanelProps) {
                     <ul className="space-y-1">
                       {draft.next_steps.map((s, i) => (
                         <li
-                          key={i}
+                          key={`${s}-${i}`}
                           className="flex items-start gap-1.5 text-sm text-slate-600"
                         >
                           <ArrowRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-500" />

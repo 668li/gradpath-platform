@@ -16,12 +16,19 @@ import {
   X,
   Target,
 } from "lucide-react";
-import { chatApi } from "@/lib/api";
+import { chatApi, aiAgentApi } from "@/lib/api";
+import type { AgentSource } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Markdown } from "@/components/ui/markdown";
 import { LoadingState } from "@/components/ui/empty";
 import { useToast } from "@/components/ui/toast";
-import type { Conversation, Message, SkillInfo } from "@/types";
+import type { Conversation, Message, ChatSkillInfo } from "@/types";
+
+/** 扩展消息类型，支持 Agent 来源和置信度 */
+interface MessageWithMeta extends Message {
+  agent_sources?: AgentSource[];
+  agent_confidence?: number;
+}
 
 const SUGGESTED_PROMPTS = [
   {
@@ -46,8 +53,8 @@ export default function ChatPage() {
   const toast = useToast();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentId, setCurrentId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [skills, setSkills] = useState<SkillInfo[]>([]);
+  const [messages, setMessages] = useState<MessageWithMeta[]>([]);
+  const [skills, setSkills] = useState<ChatSkillInfo[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [loadingConvos, setLoadingConvos] = useState(true);
@@ -145,7 +152,7 @@ export default function ChatPage() {
     }
 
     // 乐观更新：立即显示用户消息
-    const userMsg: Message = {
+    const userMsg: MessageWithMeta = {
       id: `temp-${Date.now()}`,
       conversation_id: convId,
       role: "user",
@@ -160,32 +167,32 @@ export default function ChatPage() {
     setLastPlanId(null);
 
     try {
-      const res = await chatApi.sendMessage(convId, {
-        content,
-        skill_hint: skillHint || null,
+      const res = await aiAgentApi.ask({
+        question: content,
+        context: skillHint || undefined,
       });
 
-      const aiMsg: Message = {
+      const aiMsg: MessageWithMeta = {
         id: `ai-${Date.now()}`,
         conversation_id: convId,
         role: "assistant",
-        content: res.content,
-        skill_used: res.skill_used,
+        // 修复 P1 bug: res.answer 可能为 undefined，导致 Markdown 渲染异常
+        content: res.answer || "（AI 未返回内容，请重试）",
+        skill_used: null,
         context_snapshot: {},
         created_at: new Date().toISOString(),
+        agent_sources: res.sources || [],
+        agent_confidence: res.confidence ?? 0,
       };
       setMessages((prev) => [...prev, aiMsg]);
-
-      if (res.career_plan) {
-        setLastPlanId(res.career_plan);
-        toast.push("已生成职业规划，点击查看", "success");
-      }
 
       // 如果是首次对话，刷新标题（后端可能已更新）
       if (messages.length === 0) {
         loadConversations();
       }
     } catch (e) {
+      // 修复 P2 bug: 失败时回滚乐观更新的用户消息，避免消息悬空
+      setMessages((prev) => prev.filter((m) => m.id !== userMsg.id));
       const err = e as { status?: number };
       if (err.status === 503) {
         toast.push("AI 服务未配置，请联系管理员", "error");
@@ -549,13 +556,15 @@ function MessageBubble({
   message,
   skills,
 }: {
-  message: Message;
-  skills: SkillInfo[];
+  message: MessageWithMeta;
+  skills: ChatSkillInfo[];
 }) {
   const isUser = message.role === "user";
   const skill = message.skill_used
     ? skills.find((s) => s.code === message.skill_used)
     : null;
+  const sources = message.agent_sources;
+  const confidence = message.agent_confidence;
 
   return (
     <div
@@ -596,6 +605,58 @@ function MessageBubble({
           </p>
         ) : (
           <Markdown content={message.content} />
+        )}
+        {/* Agent 来源列表 */}
+        {!isUser && sources && sources.length > 0 && (
+          <div className="mt-3 border-t border-slate-200 pt-2">
+            <p className="mb-1 text-[10px] font-medium text-slate-400">参考来源</p>
+            <div className="flex flex-wrap gap-1.5">
+              {sources.map((src, i) => (
+                <span
+                  key={`${src.title}-${i}`}
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px]",
+                    src.type === "db"
+                      ? "bg-blue-50 text-blue-600"
+                      : "bg-green-50 text-green-600",
+                  )}
+                >
+                  {src.type === "db" ? "📚" : "🌐"}
+                  {src.title.slice(0, 20)}
+                  {src.url && (
+                    <a
+                      href={src.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-0.5 hover:underline"
+                    >
+                      ↗
+                    </a>
+                  )}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+        {/* 置信度 */}
+        {!isUser && confidence !== undefined && (
+          <div className="mt-2 flex items-center gap-1.5 text-[10px] text-slate-400">
+            <span>置信度</span>
+            <div className="h-1.5 w-16 overflow-hidden rounded-full bg-slate-200">
+              <div
+                className={cn(
+                  "h-full rounded-full",
+                  confidence >= 0.7
+                    ? "bg-green-500"
+                    : confidence >= 0.5
+                      ? "bg-yellow-500"
+                      : "bg-red-400",
+                )}
+                style={{ width: `${confidence * 100}%` }}
+              />
+            </div>
+            <span>{Math.round(confidence * 100)}%</span>
+          </div>
         )}
       </div>
     </div>

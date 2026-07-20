@@ -1,0 +1,20 @@
+# 院校复试分数线爬虫配置
+name: scoreline
+category: grad
+description: 院校复试分数线数据爬虫（预置院校官网分数线数据）
+enabled: true
+schedule: yearly  # 每年招生季更新
+rate_limit: 1.0
+rate_limit_ms: 1000
+max_retries: 3
+timeout_seconds: 30
+target_table: grad_school_intel
+dedup_key:
+  - school_name
+  - major_name
+notes: |
+  数据源：各院校官网公开的复试分数线数据整理。
+  覆盖范围：30 所 985 院校主要专业 2025 年复试分数线。
+  抓取策略：使用预置数据，更新已存在 grad_school_intel 记录的 score_line 字段，
+  不存在则创建新记录。
+  去重规则：按 school_name + major_name 匹配更新，不存在则创建。

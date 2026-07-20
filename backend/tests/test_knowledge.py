@@ -1,5 +1,7 @@
 # backend/tests/test_knowledge.py
 """知识库 API 测试 — Phase 11。"""
+import uuid
+
 import pytest
 
 from app.models.knowledge_article import KnowledgeArticle
@@ -95,8 +97,6 @@ class TestKnowledgeDetail:
 
     def test_get_article_404(self, auth_headers, client):
         """不存在的 ID 返回 404。"""
-        import uuid
-
         resp = client.get(f"/api/knowledge/{uuid.uuid4()}", headers=auth_headers)
         assert resp.status_code == 404
 

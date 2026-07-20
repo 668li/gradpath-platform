@@ -1,5 +1,7 @@
 # backend/app/api/pipeline.py
 """Pipeline API 路由 — 管理员专用。"""
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
@@ -100,7 +102,6 @@ def get_report_endpoint(
     db: Session = Depends(get_db),
 ):
     """报告详情。"""
-    from uuid import UUID
     try:
         return get_report_detail(db, UUID(report_id))
     except ValueError as e:
@@ -113,7 +114,6 @@ def delete_report_endpoint(
     user: User = Depends(get_admin_user),
     db: Session = Depends(get_db),
 ):
-    from uuid import UUID
     try:
         delete_report(db, UUID(report_id))
     except ValueError as e:
@@ -126,7 +126,6 @@ def reparse_endpoint(
     user: User = Depends(get_admin_user),
     db: Session = Depends(get_db),
 ):
-    from uuid import UUID
     try:
         return reparse_report(db, UUID(report_id))
     except ValueError as e:
@@ -139,7 +138,6 @@ def publish_endpoint(
     user: User = Depends(get_admin_user),
     db: Session = Depends(get_db),
 ):
-    from uuid import UUID
     try:
         return publish_report(db, UUID(report_id))
     except ValueError as e:

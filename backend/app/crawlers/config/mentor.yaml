@@ -1,0 +1,21 @@
+# 导师信息爬虫配置
+name: mentor
+category: grad
+description: 导师信息数据爬虫（预置导师基础信息、学术信息、招生信息）
+enabled: true
+schedule: monthly  # 每月更新导师信息
+rate_limit: 1.0
+rate_limit_ms: 1000
+max_retries: 3
+timeout_seconds: 30
+target_table: mentors
+dedup_key:
+  - name
+  - university
+  - department
+notes: |
+  数据源：各院校导师主页公开信息整理的预置数据。
+  覆盖范围：30+ 所 985 院校导师基础信息、学术信息、招生信息。
+  抓取策略：将导师信息存入 mentors 表，包含姓名、院校、院系、职称、
+  研究方向、论文数、项目数、引用数、h-index、招生状态、招生方向、联系方式等。
+  去重规则：按 name + university + department 匹配，已存在则更新，不存在则创建。

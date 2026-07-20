@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Eye, Pencil, Save } from "lucide-react";
 import { knowledgeApi } from "@/lib/api";
@@ -26,7 +26,7 @@ interface Props {
   loading?: boolean;
 }
 
-export function KnowledgeEditor({ article, loading }: Props) {
+export const KnowledgeEditor = memo(function KnowledgeEditor({ article, loading }: Props) {
   const router = useRouter();
   const toast = useToast();
 
@@ -242,4 +242,4 @@ export function KnowledgeEditor({ article, loading }: Props) {
       </div>
     </div>
   );
-}
+});

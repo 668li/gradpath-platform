@@ -2,6 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
+import { Suspense } from "react";
 import {
   Network,
   Target,
@@ -17,6 +18,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { LoadingState } from "@/components/ui/empty";
 
 const tabs = [
   { id: "schools", label: "院校情报", href: "/kaoyan/schools", icon: School },
@@ -31,6 +33,14 @@ const tabs = [
 ];
 
 export default function KaoyanHomePage() {
+  return (
+    <Suspense fallback={<LoadingState />}>
+      <KaoyanHomePageContent />
+    </Suspense>
+  );
+}
+
+function KaoyanHomePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeTab = searchParams.get("tab") || "";

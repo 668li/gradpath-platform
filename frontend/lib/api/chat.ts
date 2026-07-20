@@ -4,7 +4,8 @@ import type {
   Message,
   SendMessageRequest,
   SendMessageResponse,
-  SkillInfo,
+  // 修复: 配合 types/index.ts 中 SkillInfo 重命名为 ChatSkillInfo
+  ChatSkillInfo,
 } from "@/types";
 import { request, buildQuery } from "./client";
 
@@ -35,5 +36,5 @@ export const chatApi = {
     request<void>(`/api/chat/conversations/${conversationId}`, {
       method: "DELETE",
     }),
-  listSkills: () => request<SkillInfo[]>("/api/chat/skills"),
+  listSkills: () => request<ChatSkillInfo[]>("/api/chat/skills"),
 };

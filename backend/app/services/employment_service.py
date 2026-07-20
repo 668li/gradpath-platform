@@ -2,9 +2,13 @@
 from sqlalchemy import distinct, func
 from sqlalchemy.orm import Session
 
+from app.core.cache import cache
 from app.models.employment_data import EmploymentData
 from app.models.report_record import ParseStatus, ReportRecord
 from app.models.school import School
+
+# 就业数据缓存 TTL（秒）— 5 分钟，平衡数据新鲜度与 DB 压力
+EMPLOYMENT_CACHE_TTL = 300
 
 
 def escape_like(value: str) -> str:
@@ -24,6 +28,15 @@ def search_employment(
     degree: str | None = None,
 ) -> dict:
     """搜索就业数据"""
+    cache_key = f"employment:search:{school}:{major}:{year}:{degree}"
+
+    try:
+        cached = cache.get(cache_key)
+    except Exception:
+        cached = None
+    if cached is not None:
+        return cached
+
     # 模糊匹配学校（转义 LIKE 通配符，避免 %/_ 被当作通配符）
     school_obj = (
         db.query(School)
@@ -32,7 +45,12 @@ def search_employment(
     )
 
     if not school_obj:
-        return {"school": None, "major": None, "records": [], "trend": None}
+        result = {"school": None, "major": None, "records": [], "trend": None}
+        try:
+            cache.set(cache_key, result, ttl=EMPLOYMENT_CACHE_TTL)
+        except Exception:
+            pass
+        return result
 
     # 查询已发布的报告
     query = (
@@ -77,12 +95,17 @@ def search_employment(
     # 构建趋势
     trend = _build_trend(results)
 
-    return {
+    result = {
         "school": {"id": str(school_obj.id), "name": school_obj.name, "slug": school_obj.slug, "code": school_obj.code},
         "major": results[0].major if results else None,
         "records": records,
         "trend": trend,
     }
+    try:
+        cache.set(cache_key, result, ttl=EMPLOYMENT_CACHE_TTL)
+    except Exception:
+        pass
+    return result
 
 
 def _build_trend(results: list[EmploymentData]) -> dict | None:
@@ -111,7 +134,18 @@ def list_schools(db: Session) -> list[dict]:
     - ``EmploymentData`` 使用 LEFT JOIN：保留有报告但暂无就业明细的学校，
       此时 ``major_count`` 为 0，与原实现行为一致。
     - 使用 ``COUNT(DISTINCT ...)`` 避免一对多 JOIN 导致的重复计数。
+
+    结果缓存 5 分钟（``schools:list``）。
     """
+    cache_key = "schools:list"
+
+    try:
+        cached = cache.get(cache_key)
+    except Exception:
+        cached = None
+    if cached is not None:
+        return cached
+
     rows = (
         db.query(
             School.id,
@@ -127,7 +161,7 @@ def list_schools(db: Session) -> list[dict]:
         .group_by(School.id, School.name, School.slug, School.code)
         .all()
     )
-    return [
+    result = [
         {
             "id": str(row.id),
             "name": row.name,
@@ -138,6 +172,11 @@ def list_schools(db: Session) -> list[dict]:
         }
         for row in rows
     ]
+    try:
+        cache.set(cache_key, result, ttl=EMPLOYMENT_CACHE_TTL)
+    except Exception:
+        pass
+    return result
 
 
 def list_majors(db: Session, school: str) -> list[str]:
@@ -170,7 +209,18 @@ def get_stats(db: Session) -> dict:
     - ``COUNT(DISTINCT ReportRecord.school_id)``：覆盖学校数。
     - ``COUNT(DISTINCT EmploymentData.major)``：覆盖专业数。
     - ``MIN/MAX(ReportRecord.year)``：年份范围。
+
+    结果缓存 5 分钟（``employment:stats``）。
     """
+    cache_key = "employment:stats"
+
+    try:
+        cached = cache.get(cache_key)
+    except Exception:
+        cached = None
+    if cached is not None:
+        return cached
+
     row = (
         db.query(
             func.count(distinct(ReportRecord.id)).label("report_count"),
@@ -184,9 +234,14 @@ def get_stats(db: Session) -> dict:
         .filter(ReportRecord.parse_status == ParseStatus.published)
         .one()
     )
-    return {
+    result = {
         "school_count": row.school_count or 0,
         "report_count": row.report_count or 0,
         "major_count": row.major_count or 0,
         "year_range": [row.min_year, row.max_year],
     }
+    try:
+        cache.set(cache_key, result, ttl=EMPLOYMENT_CACHE_TTL)
+    except Exception:
+        pass
+    return result

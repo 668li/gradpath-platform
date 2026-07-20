@@ -131,7 +131,7 @@ function ScanPanel() {
           <div className="mt-4 space-y-1 text-sm text-ink-600">
             <p className="font-medium text-ink-700">进行中的规划：</p>
             {profile.active_plans.map((p: any, i: number) => (
-              <p key={i}>· {p.goal}（进度 {p.progress} · {p.timeline_months} 个月）</p>
+              <p key={`${p.goal}-${i}`}>· {p.goal}（进度 {p.progress} · {p.timeline_months} 个月）</p>
             ))}
           </div>
         )}
@@ -144,7 +144,7 @@ function ScanPanel() {
           {plan.map((item: any, i: number) => {
             const pr = PRIORITY_LABEL[item.priority] || PRIORITY_LABEL.low;
             return (
-              <div key={i} className="flex gap-3 rounded-lg border border-paper-200 p-3">
+              <div key={`${item.title}-${i}`} className="flex gap-3 rounded-lg border border-paper-200 p-3">
                 <span className={cn("mt-0.5 rounded px-2 py-0.5 text-xs font-medium", pr.cls)}>
                   {pr.label}
                 </span>
@@ -191,7 +191,7 @@ function ChatPanel() {
         )}
         {messages.map((m, i) => (
           <div
-            key={i}
+            key={`${m.role}-${i}`}
             className={cn(
               "max-w-[85%] rounded-lg px-3 py-2 text-sm",
               m.role === "user"

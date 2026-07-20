@@ -102,12 +102,12 @@ function HighlightedContent({ text, query }: { text: string; query: string }) {
         }
         if (inHighlight) {
           return (
-            <mark key={i} className="bg-brand-200 text-brand-900 rounded px-0.5">
+            <mark key={`hl-${i}`} className="bg-brand-200 text-brand-900 rounded px-0.5">
               {part}
             </mark>
           );
         }
-        return <span key={i}>{part}</span>;
+        return <span key={`text-${i}`}>{part}</span>;
       })}
     </>
   );
@@ -143,8 +143,17 @@ export default function SearchPage() {
           const res = await fetch(`/api/ai/agent/web-search?q=${encodeURIComponent(q)}`, {
             headers: token ? { Authorization: `Bearer ${token}` } : {},
           });
+          // 修复 P1 bug: 后端可能返回非 JSON 或错误对象 {detail: "..."}
+          if (!res.ok) {
+            throw new Error(`网页搜索失败 (${res.status})`);
+          }
           const data = await res.json();
-          const webResults: SearchResult[] = (data.results || data.data || data || []).map(
+          // 修复 P1 bug: 严格校验数组类型，避免 data 是 {error:...} 时 .map 崩溃
+          const rawArr = Array.isArray(data) ? data
+            : Array.isArray(data?.results) ? data.results
+            : Array.isArray(data?.data) ? data.data
+            : [];
+          const webResults: SearchResult[] = rawArr.map(
             (r: any, i: number) => ({
               id: r.id || `web-${i}`,
               type: "knowledge" as const,
@@ -280,7 +289,7 @@ export default function SearchPage() {
       {loading && (
         <div className="space-y-4">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="animate-pulse rounded-xl border border-paper-200 bg-white p-5">
+            <div key={`skel-${i}`} className="animate-pulse rounded-xl border border-paper-200 bg-white p-5">
               <div className="flex items-center gap-3 mb-3">
                 <div className="h-5 w-24 rounded bg-slate-200" />
                 <div className="h-5 w-16 rounded bg-slate-200" />

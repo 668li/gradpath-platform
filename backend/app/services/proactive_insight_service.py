@@ -24,6 +24,7 @@ from app.models.destination_decision import DestinationDecision
 from app.models.proactive_insight import ProactiveInsight
 from app.models.skill_node import SkillNode
 from app.services.ai_service import AIService
+from app.services.ai_orchestrator import AIOrchestrator
 
 SYSTEM_PROMPT = """你是一位敏锐的职业成长观察者。基于用户的数据，请发现 2-3 个非显而易见的洞察。
 
@@ -134,7 +135,7 @@ def _build_context(db: Session, user_id: UUID) -> str:
     return "\n".join(lines) if len(lines) > 1 else "用户暂无数据"
 
 
-def generate_insights(db: Session, user_id: UUID) -> list[ProactiveInsight]:
+async def generate_insights(db: Session, user_id: UUID) -> list[ProactiveInsight]:
     """主动分析用户数据模式，生成洞察并保存。"""
     context = _build_context(db, user_id)
 
@@ -144,8 +145,8 @@ def generate_insights(db: Session, user_id: UUID) -> list[ProactiveInsight]:
     # LLM 型洞察（深度模式识别）
     llm_insights = []
     try:
-        service = AIService()
-        raw = service.chat(SYSTEM_PROMPT, context, timeout=30)
+        orchestrator = AIOrchestrator()
+        raw = await orchestrator.chat(system_prompt=SYSTEM_PROMPT, user_prompt=context, timeout=30)
         llm_insights = _parse_insights(raw)
     except Exception:
         # LLM 不可用时仅返回规则型洞察

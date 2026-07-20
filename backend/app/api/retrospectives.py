@@ -1,4 +1,5 @@
 from datetime import date
+import logging
 from uuid import UUID
 
 import httpx
@@ -27,6 +28,8 @@ from app.services.retrospective_service import (
     list_retrospectives_paginated,
     update_retrospective,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/retrospectives", tags=["阶段复盘"])
 
@@ -59,7 +62,7 @@ def draft(
 
 @router.post("/ai-draft", response_model=AIRetroDraftResponse)
 @limiter.limit("10/minute")
-def ai_draft(
+async def ai_draft(
     request: Request,
     response: Response,
     body: AIRetroDraftRequest,
@@ -77,7 +80,7 @@ def ai_draft(
     - 其他异常 → 500
     """
     try:
-        return generate_ai_retro_draft(
+        return await generate_ai_retro_draft(
             db, user.id, body.period_start, body.period_end
         )
     except AIServiceNotConfigured:
@@ -93,9 +96,11 @@ def ai_draft(
     except HTTPException:
         raise
     except Exception as e:
+        # 修复: FASTAPI-RESP-001 — 不向客户端泄漏内部异常信息，仅记录日志
+        logger.exception("AI 复盘草稿服务异常: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"AI 复盘草稿服务异常: {e}",
+            detail="AI 复盘草稿服务异常，请稍后重试",
         )
 
 

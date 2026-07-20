@@ -41,11 +41,18 @@ services:
 
   redis:
     image: redis:7-alpine
-    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+    # 修复: FASTAPI-DEPLOY-002 — 生产环境 Redis 必须启用密码认证，
+    # 避免容器内任何服务均可未授权访问 Redis（含缓存投毒/数据泄露）
+    command: >-
+      sh -c 'redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+      --requirepass "$${REDIS_PASSWORD}"'
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required (generate one: python -c "import secrets; print(secrets.token_urlsafe(32))")}
     volumes:
       - redisdata:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      # healthcheck 也需提供密码，否则 ping 会返回 NOAUTH
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping | grep -q PONG"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -66,7 +73,8 @@ services:
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required}
       CORS_ORIGINS: ${CORS_ORIGINS:-}
       LLM_API_KEY: ${LLM_API_KEY:-}
-      REDIS_URL: redis://redis:6379/0
+      # Redis URL 包含密码，与 redis 服务的 --requirepass 保持一致
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
     depends_on:
       db:
         condition: service_healthy

@@ -26,6 +26,15 @@ repos:
       - id: check-builtin-literals
       - id: check-docstring-first
 
+  # 密钥扫描 (SECURITY-LLM-LEAK-001)
+  # 阻止 API Key / Token / 密码等敏感信息被提交到仓库
+  # 使用方法：pre-commit install && pre-commit run gitleaks --all-files
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks
+        name: 检测敏感信息 (API Key / Token / 密码)
+
   # Python 导入排序
   - repo: https://github.com/PyCQA/isort
     rev: 5.13.2

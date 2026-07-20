@@ -57,7 +57,7 @@ function renderContent(content: string) {
     if (/^https?:\/\//.test(part)) {
       return (
         <a
-          key={i}
+          key={`link-${i}`}
           href={part}
           target="_blank"
           rel="noopener noreferrer"

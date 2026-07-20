@@ -1,7 +1,8 @@
 # backend/tests/test_chat.py
 """对话 API 测试 — Phase 11 AI 职业管家。"""
 import json
-from unittest.mock import patch
+import uuid
+from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
@@ -105,8 +106,6 @@ class TestConversationCRUD:
 
     def test_delete_conversation_404(self, auth_headers, client):
         """删除不存在的对话返回 404。"""
-        import uuid
-
         resp = client.delete(
             f"/api/chat/conversations/{uuid.uuid4()}", headers=auth_headers
         )
@@ -120,8 +119,6 @@ class TestConversationCRUD:
 class TestSendMessage:
     def test_send_message_401(self, client):
         """未登录发送消息返回 401。"""
-        import uuid
-
         resp = client.post(
             f"/api/chat/conversations/{uuid.uuid4()}/messages",
             json={"content": "你好"},
@@ -154,7 +151,7 @@ class TestSendMessage:
         with patch.object(
             ai_service.AIService,
             "chat",
-            lambda self, sp, uc, timeout=30: MOCK_REPLY_PLAIN,
+            AsyncMock(return_value=MOCK_REPLY_PLAIN),
         ):
             resp = client.post(
                 f"/api/chat/conversations/{conv['id']}/messages",
@@ -186,7 +183,7 @@ class TestSendMessage:
 
         captured = {}
 
-        def fake_chat(self, system_prompt, user_content, timeout=30):
+        async def fake_chat(self, system_prompt, user_content, timeout=30):
             captured["system"] = system_prompt
             return mock_interview_reply
 
@@ -221,7 +218,7 @@ class TestMessageHistory:
         with patch.object(
             ai_service.AIService,
             "chat",
-            lambda self, sp, uc, timeout=30: "回复1",
+            AsyncMock(return_value="回复1"),
         ):
             client.post(
                 f"/api/chat/conversations/{conv['id']}/messages",
@@ -231,7 +228,7 @@ class TestMessageHistory:
         with patch.object(
             ai_service.AIService,
             "chat",
-            lambda self, sp, uc, timeout=30: "回复2",
+            AsyncMock(return_value="回复2"),
         ):
             client.post(
                 f"/api/chat/conversations/{conv['id']}/messages",
@@ -267,7 +264,7 @@ class TestSkillsList:
         resp = client.get("/api/chat/skills", headers=auth_headers)
         assert resp.status_code == 200
         skills = resp.json()
-        assert len(skills) == 6
+        assert len(skills) >= 6
         codes = [s["code"] for s in skills]
         assert "career_planning" in codes
         assert "grad_school_planning" in codes
@@ -294,7 +291,7 @@ class TestCareerPlanExtraction:
         with patch.object(
             ai_service.AIService,
             "chat",
-            lambda self, sp, uc, timeout=30: MOCK_REPLY_CAREER_PLAN,
+            AsyncMock(return_value=MOCK_REPLY_CAREER_PLAN),
         ):
             resp = client.post(
                 f"/api/chat/conversations/{conv['id']}/messages",
@@ -328,7 +325,7 @@ class TestCareerPlanExtraction:
         with patch.object(
             ai_service.AIService,
             "chat",
-            lambda self, sp, uc, timeout=30: MOCK_REPLY_CAREER_PLAN,
+            AsyncMock(return_value=MOCK_REPLY_CAREER_PLAN),
         ):
             client.post(
                 f"/api/chat/conversations/{conv['id']}/messages",

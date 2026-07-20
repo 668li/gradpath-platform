@@ -27,6 +27,12 @@ const GRID_COLOR = "var(--color-paper-200, #f5f3ec)";
 const TICK_COLOR = "var(--color-ink-400, #7a7468)";
 const NEUTRAL_GRID = "#e2e8f0";
 
+// recharts 轴/点样式：提取为模块顶层常量，避免每次渲染创建新对象导致 React.memo 失效
+const TICK_STYLE_COLORED = { fill: TICK_COLOR, fontSize: 12 };
+const AXIS_LINE_STYLE = { stroke: GRID_COLOR };
+const DOT_STYLE = { fill: BRAND_LINE, strokeWidth: 2 };
+const ACTIVE_DOT_STYLE = { r: 6 };
+
 const MOBILE_CHART_HEIGHT = 220;
 const DESKTOP_CHART_HEIGHT = 300;
 
@@ -84,7 +90,7 @@ export function LineChart({
   trend,
   contextLabel,
   height,
-  emptyText = "暂无数据",
+  emptyText = "暂无分数线数据",
   ariaLabel,
 }: LineChartProps) {
   const isMobile = useIsMobile();
@@ -159,14 +165,14 @@ export function LineChart({
         <CartesianGrid strokeDasharray="3 3" stroke={GRID_COLOR} />
         <XAxis
           dataKey="year"
-          tick={{ fill: TICK_COLOR, fontSize: 12 }}
+          tick={TICK_STYLE_COLORED}
           tickLine={false}
-          axisLine={{ stroke: GRID_COLOR }}
+          axisLine={AXIS_LINE_STYLE}
         />
         <YAxis
-          tick={{ fill: TICK_COLOR, fontSize: 12 }}
+          tick={TICK_STYLE_COLORED}
           tickLine={false}
-          axisLine={{ stroke: GRID_COLOR }}
+          axisLine={AXIS_LINE_STYLE}
           domain={["dataMin - 10", "dataMax + 10"]}
         />
         <Tooltip contentStyle={tooltipStyle} />
@@ -177,8 +183,8 @@ export function LineChart({
           name={name}
           stroke={BRAND_LINE}
           strokeWidth={2}
-          dot={{ fill: BRAND_LINE, strokeWidth: 2 }}
-          activeDot={{ r: 6 }}
+          dot={DOT_STYLE}
+          activeDot={ACTIVE_DOT_STYLE}
         />
       </ReLineChart>
     </ResponsiveContainer>

@@ -21,7 +21,7 @@ from app.services.ai_service import AIService
 from app.services.ai_orchestrator import AIOrchestrator
 
 
-def analyze_patterns(db: Session, user_id: UUID) -> dict:
+async def analyze_patterns(db: Session, user_id: UUID) -> dict:
     """分析用户历史数据，发现成长模式。"""
     patterns = []
     data_points = {}
@@ -100,8 +100,8 @@ def analyze_patterns(db: Session, user_id: UUID) -> dict:
 
     # 3. 里程碑完成节奏（MilestoneLog 通过 plan_id 关联用户的规划）
     plan_ids = [
-        p.id
-        for p in db.query(CareerPlan.id).filter(CareerPlan.user_id == user_id).all()
+        row[0]
+        for row in db.query(CareerPlan.id).filter(CareerPlan.user_id == user_id).all()
     ]
     logs = (
         db.query(MilestoneLog)
@@ -132,7 +132,7 @@ def analyze_patterns(db: Session, user_id: UUID) -> dict:
 
     # 4. LLM 深度模式分析（如果有足够数据）
     if len(patterns) >= 1 or len(skills) + len(decisions) + len(logs) >= 10:
-        llm_patterns = _llm_pattern_analysis(db, user_id, skills, decisions, logs)
+        llm_patterns = await _llm_pattern_analysis(db, user_id, skills, decisions, logs)
         patterns.extend(llm_patterns)
 
     # 校准分数
@@ -152,7 +152,7 @@ def analyze_patterns(db: Session, user_id: UUID) -> dict:
     }
 
 
-def _llm_pattern_analysis(db: Session, user_id: UUID, skills, decisions, logs) -> list[dict]:
+async def _llm_pattern_analysis(db: Session, user_id: UUID, skills, decisions, logs) -> list[dict]:
     """LLM 深度模式分析。"""
     system_prompt = """你是一位行为数据分析师。基于用户的历史数据，发现 1-2 个非显而易见的成长模式。
 
@@ -184,7 +184,7 @@ def _llm_pattern_analysis(db: Session, user_id: UUID, skills, decisions, logs) -
 
     try:
         orchestrator = AIOrchestrator()
-        raw = orchestrator.chat(system_prompt=system_prompt, user_prompt=context, timeout=30)
+        raw = await orchestrator.chat(system_prompt=system_prompt, user_prompt=context, timeout=30)
         data = json.loads(raw)
         if not isinstance(data, list):
             match = re.search(r"\[.*\]", raw, re.DOTALL)

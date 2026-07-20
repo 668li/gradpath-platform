@@ -1,5 +1,5 @@
 """职业规划模板 — 常见职业路径预设，用户可一键创建。"""
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, status
 
 router = APIRouter(prefix="/api/plan-templates", tags=["规划模板"])
 
@@ -125,5 +125,4 @@ def get_template(template_id: str):
     for t in TEMPLATES:
         if t["id"] == template_id:
             return t
-    from fastapi import HTTPException, status
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="模板不存在")

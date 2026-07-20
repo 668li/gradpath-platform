@@ -1,0 +1,21 @@
+# 公司评价爬虫配置
+name: company_review
+category: career
+description: 公司评价爬虫
+enabled: true
+schedule: weekly  # 每周更新公司评价
+rate_limit: 1.0
+rate_limit_ms: 1000
+max_retries: 3
+timeout_seconds: 30
+target_table: companies + company_reviews
+dedup_key:
+  - company
+  - title
+notes: |
+  数据源：看准网/脉脉的公司匿名评价数据（预置）。
+  覆盖范围：20 家知名公司 × 4 条评价，共 80 条。
+  抓取策略：模拟看准网/脉脉公司匿名评价，评价涵盖正面/负面/中性三种基调，
+  每公司 4 条评价（2 正面、1 中性、1 负面）。
+  字段映射：公司信息 → Company；公司评价 → CompanyReview。
+  去重规则：Company 按 name 去重；CompanyReview 按 user_id + company + title 去重。

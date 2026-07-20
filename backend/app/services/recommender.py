@@ -22,7 +22,7 @@ EE探索:
 import logging
 import math
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from sqlalchemy import func
@@ -110,7 +110,7 @@ def build_user_profile(db: Session, user_id: UUID) -> dict[str, float]:
         )
         .all()
     )
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     for bm in bookmarks:
         article = (
             db.query(KnowledgeArticle)
@@ -122,8 +122,9 @@ def build_user_profile(db: Session, user_id: UUID) -> dict[str, float]:
             age_days = 0
             if bm.created_at:
                 bt = bm.created_at
-                if bt.tzinfo is not None:
-                    bt = bt.replace(tzinfo=None)
+                # 兼容 DB 返回 naive datetime 的情况，统一补 tzinfo 后再与 aware now 比较
+                if bt.tzinfo is None:
+                    bt = bt.replace(tzinfo=timezone.utc)
                 age_days = (now - bt).days
             decay = math.exp(-age_days / 30.0)  # 30天半衰期
             for tag in article.tags:
@@ -287,10 +288,11 @@ def recall_sequence(db: Session, user_id: UUID, candidate_pool: list, top_k: int
     sequence = []
     for b in bookmarks:
         bt = b.created_at
-        if bt and bt.tzinfo is not None:
-            bt = bt.replace(tzinfo=None)
+        # 兼容 DB 返回 naive datetime 的情况，统一补 tzinfo 后再与 aware now 比较
+        if bt and bt.tzinfo is None:
+            bt = bt.replace(tzinfo=timezone.utc)
         sequence.append((str(b.target_id), bt))
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     # 对序列中每对 (prev, next) 计算转移权重
     for i in range(len(sequence) - 1):
@@ -533,7 +535,7 @@ def _generate_rule_reason(profile: dict[str, float], article_tags: list[str]) ->
     return f"这篇文章涉及 {', '.join(article_tags[:3])}，对你的学习有帮助"
 
 
-def _generate_ai_reason(profile: dict[str, float], article: KnowledgeArticle) -> str | None:
+async def _generate_ai_reason(profile: dict[str, float], article: KnowledgeArticle) -> str | None:
     """调用AI生成个性化推荐理由。"""
     try:
         from app.services.ai_orchestrator import AIOrchestrator
@@ -554,7 +556,7 @@ def _generate_ai_reason(profile: dict[str, float], article: KnowledgeArticle) ->
         )
 
         orchestrator = AIOrchestrator()
-        result = orchestrator.chat(system_prompt, user_prompt, timeout=10, retry=0)
+        result = await orchestrator.chat(system_prompt, user_prompt, timeout=10, retry=0)
         if result and len(result.strip()) > 5:
             return result.strip()[:100]
     except Exception as e:
@@ -564,7 +566,7 @@ def _generate_ai_reason(profile: dict[str, float], article: KnowledgeArticle) ->
 
 # ==================== 主入口 ====================
 
-def recommend_personalized(
+async def recommend_personalized(
     db: Session, user_id: UUID, limit: int = 10
 ) -> list[tuple[KnowledgeArticle, float, str]]:
     """个性化推荐主流程 — 抖音四层架构。
@@ -615,7 +617,7 @@ def recommend_personalized(
     # 生成推荐理由
     results = []
     for article, score in final:
-        reason = _generate_ai_reason(profile, article)
+        reason = await _generate_ai_reason(profile, article)
         if not reason:
             reason = _generate_rule_reason(profile, article.tags or [])
         results.append((article, score, reason))

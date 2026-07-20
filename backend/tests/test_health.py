@@ -3,17 +3,21 @@ from unittest.mock import MagicMock
 
 
 def test_health_returns_ok(client):
-    """GET /health 始终返回 200 与 {"status": "ok"}（liveness probe）。"""
+    """GET /health 始终返回 200 与 status=ok（liveness probe）。"""
     resp = client.get("/health")
     assert resp.status_code == 200
-    assert resp.json() == {"status": "ok"}
+    data = resp.json()
+    assert data["status"] == "ok"
+    assert data["database"] == "connected"
 
 
 def test_ready_returns_ok_when_db_working(client):
     """GET /ready 在数据库连通时返回 200 与连接状态（readiness probe）。"""
     resp = client.get("/ready")
     assert resp.status_code == 200
-    assert resp.json() == {"status": "ok", "database": "connected"}
+    data = resp.json()
+    assert data["status"] == "ok"
+    assert data["database"] == "connected"
 
 
 def test_ready_returns_503_when_db_unavailable(client):
@@ -29,7 +33,9 @@ def test_ready_returns_503_when_db_unavailable(client):
     app.dependency_overrides[get_db] = broken_get_db
     resp = client.get("/ready")
     assert resp.status_code == 503
-    assert resp.json()["detail"] == "数据库不可用"
+    data = resp.json()["detail"]
+    assert data["status"] == "not_ready"
+    assert data["database"] == "failed"
 
 
 def test_cors_preflight_returns_allow_origin(client):

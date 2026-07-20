@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from sqlalchemy import func
@@ -123,7 +123,7 @@ def get_weekly_recap(db: Session, user_id: UUID) -> dict:
     - active_plans：status=="active" 的规划数。
     - total_milestones_done / total_milestones：全部规划里程碑统计。
     """
-    today = datetime.utcnow().date()
+    today = datetime.now(timezone.utc).date()
     monday = today - timedelta(days=today.weekday())  # weekday(): Monday=0
     week_start = datetime.combine(monday, datetime.min.time())
     next_monday = datetime.combine(monday + timedelta(days=7), datetime.min.time())

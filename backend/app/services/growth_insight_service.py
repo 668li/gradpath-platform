@@ -18,6 +18,7 @@ from app.models.growth_insight import GrowthInsight
 from app.models.retrospective import Retrospective
 from app.models.skill_node import SkillNode
 from app.services.ai_service import AIService
+from app.services.ai_orchestrator import AIOrchestrator
 
 # Context 中各类数据的条数上限（事件取最近 50 条）
 EVENT_LIMIT = 50
@@ -226,7 +227,7 @@ def _coerce_insight(data: dict) -> dict:
     }
 
 
-def generate_growth_insight(
+async def generate_growth_insight(
     db: Session, user_id: UUID, period_start: date, period_end: date
 ) -> dict:
     """生成成长洞察：组装 context、检查缓存、调用 LLM、解析并保存。
@@ -264,12 +265,12 @@ def generate_growth_insight(
         return cached.insight_data
 
     # 调用 LLM（AIService._check_config 会在 key 为空时抛出 AIServiceNotConfigured）
-    service = AIService()
+    orchestrator = AIOrchestrator()
     user_content = (
         f"{context_text}\n\n"
         "请基于以上数据生成该时段的成长洞察（严格按 JSON 格式输出）。"
     )
-    raw = service.chat(SYSTEM_PROMPT, user_content, timeout=30)
+    raw = await orchestrator.chat(system_prompt=SYSTEM_PROMPT, user_prompt=user_content, timeout=30)
 
     # 解析返回
     data = _parse_llm_json(raw)

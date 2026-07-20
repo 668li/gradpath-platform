@@ -1,7 +1,7 @@
 # backend/pipeline/fetcher.py
 """高校就业质量报告抓取器"""
+import asyncio
 import random
-import time
 import re
 from urllib.robotparser import RobotFileParser
 
@@ -133,7 +133,7 @@ def _find_report_url(index_url: str, year: int) -> str | None:
 
 
 def _fetch_url(url: str) -> tuple[str | None, int | None]:
-    """带重试的 HTTP GET。
+    """带重试的 HTTP GET（同步版本）。
 
     优化：首次请求不延迟，仅重试时加 jittered 退避，避免不必要的等待。
     Returns:
@@ -143,15 +143,125 @@ def _fetch_url(url: str) -> tuple[str | None, int | None]:
     headers = {"User-Agent": USER_AGENT}
     for attempt in range(MAX_RETRIES):
         try:
-            # 仅重试时延迟（首次 attempt=0 不延迟）
             if attempt > 0:
+                import time
                 time.sleep(_jittered_delay(REQUEST_DELAY * (attempt + 1)))
             resp = httpx.get(url, headers=headers, timeout=TIMEOUT, follow_redirects=True)
             if resp.status_code == 200:
                 return resp.text, 200
             if resp.status_code == 404:
                 return None, 404
-            # 其他非 200 状态码：继续重试
         except httpx.RequestError:
             pass
     return None, None
+
+
+async def _fetch_url_async(url: str, client: httpx.AsyncClient | None = None) -> tuple[str | None, int | None]:
+    """带重试的异步 HTTP GET。
+
+    在 async 上下文中使用，不会阻塞事件循环。
+    """
+    headers = {"User-Agent": USER_AGENT}
+    for attempt in range(MAX_RETRIES):
+        try:
+            if attempt > 0:
+                await asyncio.sleep(_jittered_delay(REQUEST_DELAY * (attempt + 1)))
+            if client:
+                resp = await client.get(url, headers=headers, timeout=TIMEOUT, follow_redirects=True)
+            else:
+                async with httpx.AsyncClient() as ac:
+                    resp = await ac.get(url, headers=headers, timeout=TIMEOUT, follow_redirects=True)
+            if resp.status_code == 200:
+                return resp.text, 200
+            if resp.status_code == 404:
+                return None, 404
+        except httpx.RequestError:
+            pass
+    return None, None
+
+
+async def _find_report_url_async(index_url: str, year: int, client: httpx.AsyncClient | None = None) -> str | None:
+    """从入口页搜索指定年份的报告链接（异步版本）"""
+    html, _ = await _fetch_url_async(index_url, client)
+    if not html:
+        return None
+    pattern = rf'href=["\']([^"\']*{year}[^"\']*(?:就业|employment|report)[^"\']*)["\']'
+    matches = re.findall(pattern, html, re.IGNORECASE)
+    if matches:
+        from urllib.parse import urljoin
+        return urljoin(index_url, matches[0])
+    return None
+
+
+async def fetch_report_async(
+    db: Session,
+    school_slug: str,
+    year: int,
+    direct_url: str | None = None,
+    client: httpx.AsyncClient | None = None,
+) -> ReportRecord | None:
+    """抓取指定学校的指定年份就业质量报告（异步版本）。
+
+    在 async 上下文中使用，不会阻塞事件循环。
+    """
+    school = db.query(School).filter(School.slug == school_slug).first()
+    if not school:
+        return None
+
+    if direct_url:
+        report_url = direct_url
+    elif school.report_index_url:
+        report_url = await _find_report_url_async(school.report_index_url, year, client)
+        if not report_url:
+            report_url = school.report_index_url
+    else:
+        report = ReportRecord(
+            school_id=school.id,
+            year=year,
+            source_url="",
+            parse_status=ParseStatus.failed,
+            parse_error="学校未配置 report_index_url",
+        )
+        db.add(report)
+        db.commit()
+        return report
+
+    if not check_robots_allowed(report_url):
+        report = ReportRecord(
+            school_id=school.id,
+            year=year,
+            source_url=report_url,
+            parse_status=ParseStatus.failed,
+            parse_error="robots.txt 禁止抓取该 URL",
+        )
+        db.add(report)
+        db.commit()
+        return report
+
+    html_content, status_code = await _fetch_url_async(report_url, client)
+    if html_content is None:
+        if status_code is not None:
+            error_msg = f"抓取失败: HTTP {status_code}"
+        else:
+            error_msg = "抓取失败: HTTP 错误或网络超时"
+        report = ReportRecord(
+            school_id=school.id,
+            year=year,
+            source_url=report_url,
+            parse_status=ParseStatus.failed,
+            parse_error=error_msg,
+        )
+        db.add(report)
+        db.commit()
+        return report
+
+    report = ReportRecord(
+        school_id=school.id,
+        year=year,
+        source_url=report_url,
+        raw_html=html_content,
+        parse_status=ParseStatus.pending,
+    )
+    db.add(report)
+    db.commit()
+    return report

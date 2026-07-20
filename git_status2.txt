@@ -1,0 +1,589 @@
+ M .github/workflows/ci.yml
+ M .pre-commit-config.yaml
+ M backend/.env.example
+ M backend/Dockerfile
+D  backend/app/__pycache__/__init__.cpython-310.pyc
+D  backend/app/__pycache__/config.cpython-310.pyc
+ M backend/app/api/ai.py
+ M backend/app/api/ai_agent.py
+ M backend/app/api/assessment.py
+ M backend/app/api/auth.py
+ M backend/app/api/career_plans.py
+ M backend/app/api/chat.py
+ M backend/app/api/comments.py
+ M backend/app/api/crawlers.py
+ M backend/app/api/decision_journal.py
+ M backend/app/api/decisions.py
+ M backend/app/api/employment.py
+ M backend/app/api/events.py
+ M backend/app/api/export.py
+ M backend/app/api/feedback.py
+ M backend/app/api/follow.py
+ M backend/app/api/growth_patterns.py
+ M backend/app/api/learning_methods.py
+ M backend/app/api/learning_resource.py
+ M backend/app/api/life_wheel.py
+ M backend/app/api/pipeline.py
+ M backend/app/api/plan_templates.py
+ M backend/app/api/posts.py
+ M backend/app/api/proactive_insights.py
+ M backend/app/api/retrospectives.py
+ M backend/app/api/skills.py
+ M backend/app/config.py
+ M backend/app/core/deps.py
+ M backend/app/core/exceptions.py
+ M backend/app/core/logging.py
+ M backend/app/core/security.py
+ M backend/app/main.py
+ M backend/app/models/__init__.py
+ M backend/app/models/base.py
+ M backend/app/models/employment_data.py
+ M backend/app/models/knowledge_article.py
+ M backend/app/models/market_data.py
+ M backend/app/models/milestone_log.py
+ M backend/app/models/notification.py
+ M backend/app/models/school.py
+ M backend/app/schemas/assessment.py
+ M backend/app/schemas/auth.py
+ M backend/app/schemas/chat.py
+ M backend/app/schemas/common.py
+ M backend/app/schemas/event.py
+ M backend/app/schemas/knowledge.py
+ M backend/app/schemas/pipeline.py
+ M backend/app/seed/seed_companies.py
+ M backend/app/seed/seed_knowledge.py
+ M backend/app/seed/seed_salary_benchmarks.py
+ M backend/app/services/ai_butler_service.py
+ M backend/app/services/ai_service.py
+ M backend/app/services/assessment_service.py
+ M backend/app/services/auth_service.py
+ M backend/app/services/career_plan_service.py
+ M backend/app/services/chat_service.py
+ M backend/app/services/dashboard_service.py
+ M backend/app/services/decision_advice_service.py
+ M backend/app/services/decision_journal_service.py
+ M backend/app/services/decision_service.py
+ M backend/app/services/employment_service.py
+ M backend/app/services/event_service.py
+ M backend/app/services/export_service.py
+ M backend/app/services/external_data_service.py
+ M backend/app/services/gamification_service.py
+ M backend/app/services/grad_intel_service.py
+ M backend/app/services/growth_insight_service.py
+ M backend/app/services/growth_pattern_service.py
+ M backend/app/services/life_wheel_service.py
+ M backend/app/services/pipeline_service.py
+ M backend/app/services/proactive_insight_service.py
+ M backend/app/services/recommender.py
+ M backend/app/services/retro_ai_service.py
+ M backend/app/services/retrospective_service.py
+ M backend/app/services/skill_service.py
+ M backend/app/skills/__init__.py
+ M backend/app/skills/interview_simulation.py
+ M backend/app/skills/registry.py
+ M backend/pipeline/cli.py
+ M backend/pipeline/extractor.py
+ M backend/pipeline/fetcher.py
+ M backend/pipeline/router.py
+ M backend/pipeline/seed_community.py
+ M backend/pipeline/seed_interview.py
+ M backend/pyproject.toml
+ M backend/tests/conftest.py
+ M backend/tests/test_api_ai.py
+ M backend/tests/test_api_community.py
+ M backend/tests/test_api_external_data.py
+ M backend/tests/test_api_pipeline.py
+ M backend/tests/test_assessment.py
+ M backend/tests/test_auth.py
+ M backend/tests/test_chat.py
+ M backend/tests/test_config.py
+ M backend/tests/test_exceptions.py
+ M backend/tests/test_export.py
+ M backend/tests/test_gamification.py
+ M backend/tests/test_health.py
+ M backend/tests/test_knowledge.py
+ M backend/tests/test_pipeline_extractor.py
+ M backend/tests/test_pipeline_extractors.py
+ M backend/tests/test_rate_limit.py
+ M backend/tests/test_retrospectives.py
+ M backend/tests/test_skills.py
+ M docker-compose.prod.yml
+ M docker-compose.yml
+ M frontend/app/(app)/achievements/page.tsx
+ M frontend/app/(app)/ai-butler/page.tsx
+ M frontend/app/(app)/assessment/page.tsx
+ M frontend/app/(app)/career/page.tsx
+ M frontend/app/(app)/chat/page.tsx
+ M frontend/app/(app)/civil-service/page.tsx
+ M frontend/app/(app)/community/page.tsx
+ M frontend/app/(app)/community/result/page.tsx
+ M frontend/app/(app)/dashboard/page.tsx
+ M frontend/app/(app)/decisions/page.tsx
+ M frontend/app/(app)/employment/page.tsx
+ M frontend/app/(app)/explore/result/page.tsx
+ M frontend/app/(app)/growth/page.tsx
+ M frontend/app/(app)/interview/result/page.tsx
+ M frontend/app/(app)/kaoyan/page.tsx
+ M frontend/app/(app)/kaoyan/predict/page.tsx
+ M frontend/app/(app)/knowledge/page.tsx
+ M frontend/app/(app)/layout.tsx
+ M frontend/app/(app)/plans/page.tsx
+ M frontend/app/(app)/profile/page.tsx
+ M frontend/app/(app)/retrospectives/page.tsx
+ M frontend/app/(app)/search/page.tsx
+ M frontend/app/(app)/skills/page.tsx
+ M frontend/app/(app)/timeline/page.tsx
+ M frontend/app/(app)/war-room/page.tsx
+ M frontend/app/layout.tsx
+ M frontend/app/login/page.tsx
+ M frontend/app/page.tsx
+ M frontend/app/register/page.tsx
+ M frontend/components/FeedbackWidget.tsx
+ M frontend/components/ai-advice.tsx
+ M frontend/components/auth-guard.tsx
+D  frontend/components/charts.tsx
+ M frontend/components/charts/BarChart.tsx
+ M frontend/components/charts/LineChart.tsx
+ M frontend/components/charts/PieChart.tsx
+ M frontend/components/charts/RadarChart.tsx
+ M frontend/components/decision-form.tsx
+ M frontend/components/discussion-section.tsx
+D  frontend/components/employment-charts.tsx
+ M frontend/components/event-form.tsx
+ M frontend/components/gamification/badge-card.tsx
+ M frontend/components/growth-insight.tsx
+ M frontend/components/knowledge-editor.tsx
+ M frontend/components/nav.tsx
+ M frontend/components/retro-ai-panel.tsx
+ M frontend/components/retro-form.tsx
+ M frontend/components/skill-form.tsx
+ M frontend/components/stat-card.tsx
+ M frontend/components/ui/form-controls.tsx
+ M frontend/components/ui/markdown.tsx
+ M frontend/components/ui/toast.tsx
+ M frontend/lib/api/chat.ts
+ M frontend/lib/api/client.ts
+ M frontend/lib/api/employment.ts
+ M frontend/lib/api/grad.ts
+ M frontend/lib/api/index.ts
+ M frontend/lib/api/mentors.ts
+ M frontend/lib/api/skills.ts
+ M frontend/lib/tracker.ts
+ M frontend/lib/validations.ts
+ M frontend/lib/web-vitals.ts
+ M frontend/next.config.js
+ M frontend/package-lock.json
+ M frontend/package.json
+ M frontend/stores/auth.ts
+ M frontend/types/index.ts
+?? .github/codeql-config.yml
+?? .github/dependabot.yml
+?? .github/workflows/codeql.yml
+?? .github/workflows/deploy.yml
+?? .github/workflows/performance.yml
+?? .github/workflows/security.yml
+?? .gitignore
+?? AGENTS.md
+?? DOCKER_README.md
+?? Makefile
+?? README.md
+?? _chk.py
+?? backend/.dockerignore
+?? backend/alembic.ini
+?? backend/analyze_short.py
+?? backend/app/api/admin/
+?? backend/app/api/admission_predict.py
+?? backend/app/api/ai_enhanced.py
+?? backend/app/api/ai_study_plan.py
+?? backend/app/api/analytics_api.py
+?? backend/app/api/bookmarks.py
+?? backend/app/api/career_events.py
+?? backend/app/api/career_intel.py
+?? backend/app/api/career_simulator.py
+?? backend/app/api/civil_service_intel.py
+?? backend/app/api/community_rating.py
+?? backend/app/api/dark_knowledge_push.py
+?? backend/app/api/data_freshness.py
+?? backend/app/api/decision_analysis.py
+?? backend/app/api/decision_pulse.py
+?? backend/app/api/experience_posts.py
+?? backend/app/api/export_v2.py
+?? backend/app/api/grad_intel.py
+?? backend/app/api/grad_visualization.py
+?? backend/app/api/kaoyan_news.py
+?? backend/app/api/life_design.py
+?? backend/app/api/mentors.py
+?? backend/app/api/metrics.py
+?? backend/app/api/monitor.py
+?? backend/app/api/notifications.py
+?? backend/app/api/onboarding.py
+?? backend/app/api/outcome_report.py
+?? backend/app/api/qa.py
+?? backend/app/api/rag_admin_api.py
+?? backend/app/api/rag_search.py
+?? backend/app/api/recommendations.py
+?? backend/app/api/school_analyst.py
+?? backend/app/api/school_compare.py
+?? backend/app/api/search.py
+?? backend/app/api/skills_management.py
+?? backend/app/api/study_plan.py
+?? backend/app/api/user_context.py
+?? backend/app/api/user_memory.py
+?? backend/app/celery_app.py
+?? backend/app/core/cache.py
+?? backend/app/core/cursor_pagination.py
+?? backend/app/core/rate_limit.py
+?? backend/app/core/websocket_manager.py
+?? backend/app/crawlers/__init__.py
+?? backend/app/crawlers/base_crawler.py
+?? backend/app/crawlers/career/
+?? backend/app/crawlers/civil/
+?? backend/app/crawlers/config/
+?? backend/app/crawlers/crawl4ai_scraper.py
+?? backend/app/crawlers/crawler_config.py
+?? backend/app/crawlers/grad/
+?? backend/app/crawlers/real_data/__init__.py
+?? backend/app/crawlers/real_data/_check_schema.py
+?? backend/app/crawlers/real_data/_import_xhs.py
+?? backend/app/crawlers/real_data/add_prefetched.py
+?? backend/app/crawlers/real_data/batch_fetch_colleges.py
+?? backend/app/crawlers/real_data/bilibili_expand.py
+?? backend/app/crawlers/real_data/bilibili_fetch_pw.py
+?? backend/app/crawlers/real_data/bilibili_round2_scraper.py
+?? backend/app/crawlers/real_data/bilibili_round3_scraper.py
+?? backend/app/crawlers/real_data/check_data.py
+?? backend/app/crawlers/real_data/check_schema.py
+?? backend/app/crawlers/real_data/civil_service_expand.py
+?? backend/app/crawlers/real_data/company_expand.py
+?? backend/app/crawlers/real_data/crawl_job_sites.py
+?? backend/app/crawlers/real_data/crawl_job_stealth.py
+?? backend/app/crawlers/real_data/crawl_kaoyan.py
+?? backend/app/crawlers/real_data/crawl_kaoyan_major.py
+?? backend/app/crawlers/real_data/crawl_kaoyan_major_browser.py
+?? backend/app/crawlers/real_data/crawl_kaoyan_round2.py
+?? backend/app/crawlers/real_data/crawl_kaoyan_round2_v2.py
+?? backend/app/crawlers/real_data/crawl_kaoyan_round2_v3.py
+?? backend/app/crawlers/real_data/crawl_koolearn.py
+?? backend/app/crawlers/real_data/crawl_yz.py
+?? backend/app/crawlers/real_data/crawl_yz_remaining.py
+?? backend/app/crawlers/real_data/crawl_yz_scrape.py
+?? backend/app/crawlers/real_data/crawlee_kaoyan.py
+?? backend/app/crawlers/real_data/dark_knowledge_deep.py
+?? backend/app/crawlers/real_data/debug_html.py
+?? backend/app/crawlers/real_data/debug_job_pages.py
+?? backend/app/crawlers/real_data/discover_urls.py
+?? backend/app/crawlers/real_data/exp_expand.py
+?? backend/app/crawlers/real_data/fast_bilibili.py
+?? backend/app/crawlers/real_data/fast_bilibili_page2.py
+?? backend/app/crawlers/real_data/fast_bilibili_retry.py
+?? backend/app/crawlers/real_data/fast_bilibili_retry2.py
+?? backend/app/crawlers/real_data/fast_kaoyan_scraper.py
+?? backend/app/crawlers/real_data/fetch_new_articles.py
+?? backend/app/crawlers/real_data/firecrawl_batch_scraper.py
+?? backend/app/crawlers/real_data/firecrawl_crawler.py
+?? backend/app/crawlers/real_data/firecrawl_import.py
+?? backend/app/crawlers/real_data/firecrawl_kaoyan_full.py
+?? backend/app/crawlers/real_data/firecrawl_yz_batch.py
+?? backend/app/crawlers/real_data/fix_quotes.py
+?? backend/app/crawlers/real_data/import_all.py
+?? backend/app/crawlers/real_data/import_all_real.py
+?? backend/app/crawlers/real_data/import_all_scraped.py
+?? backend/app/crawlers/real_data/import_batch.py
+?? backend/app/crawlers/real_data/import_expanded.py
+?? backend/app/crawlers/real_data/import_knowledge.py
+?? backend/app/crawlers/real_data/import_real_data.py
+?? backend/app/crawlers/real_data/import_school_v2ex.py
+?? backend/app/crawlers/real_data/import_social.py
+?? backend/app/crawlers/real_data/import_weibo_bilibili.py
+?? backend/app/crawlers/real_data/intel_expand.py
+?? backend/app/crawlers/real_data/kaoyan_scraper.py
+?? backend/app/crawlers/real_data/knowledge_expand.py
+?? backend/app/crawlers/real_data/market_expand.py
+?? backend/app/crawlers/real_data/mentor_expand.py
+?? backend/app/crawlers/real_data/process_kaoyan.py
+?? backend/app/crawlers/real_data/qa_deep.py
+?? backend/app/crawlers/real_data/qa_expand.py
+?? backend/app/crawlers/real_data/real_data/
+?? backend/app/crawlers/real_data/real_data_pipeline.py
+?? backend/app/crawlers/real_data/real_scraper.py
+?? backend/app/crawlers/real_data/salary_expand.py
+?? backend/app/crawlers/real_data/salary_scraper.py
+?? backend/app/crawlers/real_data/school_expand.py
+?? backend/app/crawlers/real_data/school_official_scraper.py
+?? backend/app/crawlers/real_data/scoreline_deep.py
+?? backend/app/crawlers/real_data/scoreline_scraper.py
+?? backend/app/crawlers/real_data/scrape_articles.py
+?? backend/app/crawlers/real_data/sources.yaml
+?? backend/app/crawlers/real_data/transfer_to_docker.py
+?? backend/app/crawlers/real_data/unified_fast_scraper.py
+?? backend/app/crawlers/real_data/update_content.py
+?? backend/app/crawlers/real_data/v2ex_scraper.py
+?? backend/app/crawlers/real_data/verify_import.py
+?? backend/app/crawlers/real_data/verify_knowledge.py
+?? backend/app/crawlers/real_data/verify_round2.py
+?? backend/app/crawlers/real_data/verify_zhihu.py
+?? backend/app/crawlers/real_data/weibo_scraper.py
+?? backend/app/crawlers/real_data/xiaohongshu_deep.py
+?? backend/app/crawlers/real_data/xiaohongshu_scraper.py
+?? backend/app/crawlers/real_data/yanzhao_scraper.py
+?? backend/app/crawlers/real_data/zhihu_deep.py
+?? backend/app/crawlers/real_data/zhihu_final.py
+?? backend/app/crawlers/real_data/zhihu_scraper.py
+?? backend/app/crawlers/registry.py
+?? backend/app/crawlers/reports/
+?? backend/app/crawlers/research/
+?? backend/app/crawlers/run.py
+?? backend/app/crawlers/scrapy_grad/
+?? backend/app/error_handlers.py
+?? backend/app/metrics.py
+?? backend/app/models/bookmark.py
+?? backend/app/models/career_intel.py
+?? backend/app/models/civil_service_intel.py
+?? backend/app/models/comment.py
+?? backend/app/models/community_rating.py
+?? backend/app/models/company_review.py
+?? backend/app/models/crawler_run.py
+?? backend/app/models/dark_knowledge_push.py
+?? backend/app/models/dataset_info.py
+?? backend/app/models/decision_analysis.py
+?? backend/app/models/decision_review.py
+?? backend/app/models/embedding_model.py
+?? backend/app/models/experience_post.py
+?? backend/app/models/grad_intel.py
+?? backend/app/models/kaoyan_news.py
+?? backend/app/models/learning_resource.py
+?? backend/app/models/life_design.py
+?? backend/app/models/mentor.py
+?? backend/app/models/mentor_review.py
+?? backend/app/models/onboarding.py
+?? backend/app/models/outcome_report.py
+?? backend/app/models/qa.py
+?? backend/app/models/qa_answer.py
+?? backend/app/models/study_plan.py
+?? backend/app/models/user_memory.py
+?? backend/app/schemas/bookmark.py
+?? backend/app/schemas/career_intel.py
+?? backend/app/schemas/civil_service_intel.py
+?? backend/app/schemas/comment.py
+?? backend/app/schemas/crawler_run.py
+?? backend/app/schemas/decision_analysis.py
+?? backend/app/schemas/experience_post.py
+?? backend/app/schemas/grad_intel.py
+?? backend/app/schemas/growth_pattern.py
+?? backend/app/schemas/kaoyan_news.py
+?? backend/app/schemas/learning_resource.py
+?? backend/app/schemas/life_design.py
+?? backend/app/schemas/mentor.py
+?? backend/app/schemas/notification.py
+?? backend/app/schemas/outcome_report.py
+?? backend/app/schemas/qa.py
+?? backend/app/schemas/research_admin.py
+?? backend/app/schemas/study_plan.py
+?? backend/app/seed/add_grad_intel.py
+?? backend/app/seed/check_remaining.py
+?? backend/app/seed/count_all.py
+?? backend/app/seed/count_qa.py
+?? backend/app/seed/find_all_corrupted.py
+?? backend/app/seed/find_corrupted.py
+?? backend/app/seed/find_incomplete_qa.py
+?? backend/app/seed/find_one_answer.py
+?? backend/app/seed/fix_corrupted.py
+?? backend/app/seed/fix_one_answer.py
+?? backend/app/seed/fix_qa_answers.py
+?? backend/app/seed/fix_remaining.py
+?? backend/app/seed/generate_entries.ps1
+?? backend/app/seed/run_all_new_crawlers.py
+?? backend/app/seed/run_all_seeds.py
+?? backend/app/seed/seed_civil_service.py
+?? backend/app/seed/seed_community.py
+?? backend/app/seed/seed_community_generated.py
+?? backend/app/seed/seed_from_research.py
+?? backend/app/seed/seed_grad_intel.py
+?? backend/app/seed/seed_kaoyan_community.py
+?? backend/app/seed/seed_schools.py
+?? backend/app/seed/seed_scorelines.py
+?? backend/app/seed/show_corrupted.py
+?? backend/app/seed/verify_counts.py
+?? backend/app/services/ai_circuit_breaker.py
+?? backend/app/services/ai_orchestrator.py
+?? backend/app/services/ai_quota_service.py
+?? backend/app/services/analytics_service.py
+?? backend/app/services/assessment_data/
+?? backend/app/services/career_intel_service.py
+?? backend/app/services/civil_service_intel_service.py
+?? backend/app/services/comment_service.py
+?? backend/app/services/dark_knowledge_push_service.py
+?? backend/app/services/decision_analysis_service.py
+?? backend/app/services/decision_pulse_service.py
+?? backend/app/services/experience_post_service.py
+?? backend/app/services/life_design_service.py
+?? backend/app/services/mcp_service.py
+?? backend/app/services/mentor_persona_service.py
+?? backend/app/services/mentor_service.py
+?? backend/app/services/notification_cleanup_service.py
+?? backend/app/services/onboarding_service.py
+?? backend/app/services/pdf_converter.py
+?? backend/app/services/pdf_service.py
+?? backend/app/services/qa_service.py
+?? backend/app/services/rag_engine.py
+?? backend/app/services/rag_service.py
+?? backend/app/services/recommendation.py
+?? backend/app/services/user_context_service.py
+?? backend/app/services/user_memory_service.py
+?? backend/app/services/web_search.py
+?? backend/app/services/web_vitals_service.py
+?? backend/app/skills/career_path_mapper.py
+?? backend/app/skills/company_review.py
+?? backend/app/skills/industry_analyzer.py
+?? backend/app/skills/interview_coach.py
+?? backend/app/skills/learning_plan_generator.py
+?? backend/app/skills/resume_optimizer.py
+?? backend/app/skills/salary_benchmark.py
+?? backend/app/skills/salary_negotiation.py
+?? backend/app/skills/user_referral.py
+?? backend/app/tasks/
+?? backend/cleanup_spam.py
+?? backend/dedup_knowledge.py
+?? backend/docs/
+?? backend/enrich.py
+?? backend/final_cleanup.py
+?? backend/final_stats.py
+?? backend/final_stats2.py
+?? backend/insert_answers.py
+?? backend/insert_schools.py
+?? backend/list_tables.py
+?? backend/migrations/env.py
+?? backend/migrations/script.py.mako
+?? backend/migrations/versions/.gitkeep
+?? backend/migrations/versions/20260318_add_mentor_tables.py
+?? backend/migrations/versions/20260716_add_perf_indexes.py
+?? backend/migrations/versions/20260717_add_pgtrgm_gin_indexes.py
+?? backend/migrations/versions/20260718_add_notification_link.py
+?? backend/migrations/versions/20260720_add_notification_archive.py
+?? backend/migrations/versions/20260720_add_pgtrgm_gin_indexes_v2.py
+?? backend/migrations/versions/2026_07_07_0518-bbcc8a2def16_add_external_research_fields.py
+?? backend/pytest_result.xml
+?? backend/scripts/
+?? backend/task3_4.py
+?? backend/tests/test_ai_circuit_breaker.py
+?? backend/tests/test_ai_quota.py
+?? backend/tests/test_api_comments.py
+?? backend/tests/test_api_grad_intel.py
+?? backend/tests/test_api_metrics.py
+?? backend/tests/test_atomic_update.py
+?? backend/tests/test_batch_endpoints.py
+?? backend/tests/test_bookmarks_api.py
+?? backend/tests/test_celery_tasks.py
+?? backend/tests/test_crawlers.py
+?? backend/tests/test_cursor_pagination.py
+?? backend/tests/test_external_data_cache.py
+?? backend/tests/test_metrics.py
+?? backend/tests/test_new_models_phase_a.py
+?? backend/tests/test_notification_archive.py
+?? backend/tests/test_notifications_api.py
+?? backend/tests/test_password_reset.py
+?? backend/tests/test_pg_trgm_search.py
+?? backend/tests/test_phase_b_services.py
+?? backend/tests/test_research_crawlers.py
+?? backend/tests/test_scheduler_config.py
+?? backend/tests/test_user_cache.py
+?? backend/tests/test_web_vitals.py
+?? backend/tests/test_websocket_manager.py
+?? backend/verify_all.py
+?? backend/verify_counts_tmp.py
+?? backend/verify_v2.py
+?? docs/ENGINEERING_IMPROVEMENTS.md
+?? docs/SECURITY.md
+?? docs/adr/
+?? docs/compose/
+?? docs/e2e-walkthrough-ux.md
+?? docs/search-and-export-design.md
+?? docs/superpowers/plans/2026-07-19-gradpath-decision-copilot.md
+?? docs/superpowers/specs/2026-07-20-gradpath-production-readiness-design.md
+?? frontend/.dockerignore
+?? frontend/Dockerfile
+?? frontend/app/(app)/achievements/loading.tsx
+?? frontend/app/(app)/admin/
+?? frontend/app/(app)/career-simulator/
+?? frontend/app/(app)/career/error.tsx
+?? frontend/app/(app)/career/loading.tsx
+?? frontend/app/(app)/chat/error.tsx
+?? frontend/app/(app)/chat/loading.tsx
+?? frontend/app/(app)/civil-service/loading.tsx
+?? frontend/app/(app)/dashboard/error.tsx
+?? frontend/app/(app)/dashboard/loading.tsx
+?? frontend/app/(app)/decision-lab/
+?? frontend/app/(app)/decisions/error.tsx
+?? frontend/app/(app)/decisions/loading.tsx
+?? frontend/app/(app)/employment/error.tsx
+?? frontend/app/(app)/employment/loading.tsx
+?? frontend/app/(app)/growth-patterns/
+?? frontend/app/(app)/growth/loading.tsx
+?? frontend/app/(app)/kaoyan/community/
+?? frontend/app/(app)/kaoyan/compare/
+?? frontend/app/(app)/kaoyan/error.tsx
+?? frontend/app/(app)/kaoyan/layout.tsx
+?? frontend/app/(app)/kaoyan/loading.tsx
+?? frontend/app/(app)/kaoyan/mentors/
+?? frontend/app/(app)/kaoyan/schools/loading.tsx
+?? frontend/app/(app)/kaoyan/schools/page.tsx
+?? frontend/app/(app)/kaoyan/strategy/
+?? frontend/app/(app)/kaoyan/study-plans/
+?? frontend/app/(app)/legal/
+?? frontend/app/(app)/life-design/
+?? frontend/app/(app)/life-wheel/loading.tsx
+?? frontend/app/(app)/mentors/
+?? frontend/app/(app)/onboarding/
+?? frontend/app/(app)/outcome-report/
+?? frontend/app/(app)/profile/community/
+?? frontend/app/(app)/profile/error.tsx
+?? frontend/app/(app)/profile/loading.tsx
+?? frontend/app/(app)/retrospectives/loading.tsx
+?? frontend/app/(app)/skills/loading.tsx
+?? frontend/app/(app)/study-plans/
+?? frontend/app/(app)/war-room/error.tsx
+?? frontend/app/(app)/war-room/loading.tsx
+?? frontend/app/robots.ts
+?? frontend/app/sitemap.ts
+?? frontend/budget.json
+?? frontend/components/__tests__/
+?? frontend/components/community/
+?? frontend/components/decision-copilot/
+?? frontend/components/error-boundary.tsx
+?? frontend/components/grad/
+?? frontend/components/recommend/
+?? frontend/components/ui/card.tsx
+?? frontend/lib/api/__tests__/
+?? frontend/lib/api/admission.ts
+?? frontend/lib/api/ai-study-plan.ts
+?? frontend/lib/api/aiAgent.ts
+?? frontend/lib/api/bookmarks.ts
+?? frontend/lib/api/career-simulator.ts
+?? frontend/lib/api/communityRating.ts
+?? frontend/lib/api/decision-copilot.ts
+?? frontend/lib/api/exportV2.ts
+?? frontend/lib/api/notifications.ts
+?? frontend/lib/api/outcome-report.ts
+?? frontend/lib/api/query-cache.ts
+?? frontend/lib/api/rag.ts
+?? frontend/lib/api/swr-config.ts
+?? frontend/lib/utils.test.ts
+?? frontend/lib/validations.test.ts
+?? frontend/middleware.test.ts
+?? frontend/middleware.ts
+?? frontend/playwright.config.ts
+?? frontend/sentry.client.config.ts
+?? frontend/sentry.edge.config.ts
+?? frontend/sentry.server.config.ts
+?? frontend/stores/onboarding.ts
+?? frontend/tests/
+?? frontend/types/decision-copilot.ts
+?? frontend/vitest.config.ts
+?? git_status.txt
+?? git_status2.txt
+?? n8n/
+?? nginx.conf
+?? nginx/
+?? scripts/
+?? tests/
+?? "\347\253\257\345\210\260\347\253\257\351\252\214\350\257\201\346\265\213\350\257\225\346\212\245\345\221\212.md"

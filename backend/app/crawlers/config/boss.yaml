@@ -1,0 +1,23 @@
+# BOSS 直聘招聘岗位爬虫配置
+name: boss
+category: career
+description: BOSS直聘招聘岗位爬虫
+enabled: true
+schedule: daily  # 招聘信息变化快，每日更新
+rate_limit: 1.0
+rate_limit_ms: 1000
+max_retries: 3
+timeout_seconds: 30
+target_table: companies + salary_benchmarks
+dedup_key:
+  - company
+  - position
+  - city
+  - experience_level
+notes: |
+  数据源：BOSS 直聘平台招聘信息（预置数据）。
+  覆盖范围：15 个主要城市 × 10 类岗位，共 150 条招聘信息。
+  抓取策略：因 BOSS 直聘具有较强的反爬机制，使用按真实数据格式整理的预置数据，
+  同时生成 Company 表与 SalaryBenchmark 表数据。
+  字段映射：公司名/行业/规模/阶段/总部 → Company；岗位/城市/经验级别/薪资 → SalaryBenchmark。
+  去重规则：Company 按 name 去重；SalaryBenchmark 按 company + position + city + experience_level + year + source 去重。

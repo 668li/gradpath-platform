@@ -40,14 +40,6 @@ class FeedbackItem(BaseModel):
 
     model_config = {"from_attributes": True}
 
-    @classmethod
-    def validate_user_id(cls, v):
-        return str(v) if hasattr(v, "hex") else v
-
-    @classmethod
-    def validate_created_at(cls, v):
-        return v.isoformat() if hasattr(v, "isoformat") else str(v)
-
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=FeedbackItem)
 def create_feedback(

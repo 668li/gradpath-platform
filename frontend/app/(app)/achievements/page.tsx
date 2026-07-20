@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Award, Zap, Star, TrendingUp, Share2, Copy, Check, Link2 } from "lucide-react";
-import { gamificationApi } from "@/lib/api";
+import { gamificationApi, useApi, useInvalidate } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
 import { LoadingState } from "@/components/ui/empty";
 import { LevelProgress } from "@/components/gamification/level-progress";
@@ -12,33 +12,26 @@ import type { GamificationProfile, UserSetting } from "@/types";
 
 export default function AchievementsPage() {
   const toast = useToast();
-  const [profile, setProfile] = useState<GamificationProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const invalidate = useInvalidate();
 
-  // 分享设置
-  const [settings, setSettings] = useState<UserSetting | null>(null);
-  const [toggling, setToggling] = useState(false);
-  const [copied, setCopied] = useState(false);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [p, s] = await Promise.all([
-        gamificationApi.profile(),
-        gamificationApi.getSettings(),
-      ]);
-      setProfile(p);
-      setSettings(s);
-    } catch (err) {
-      toast.push(err instanceof Error ? err.message : "加载失败", "error");
-    } finally {
-      setLoading(false);
-    }
-  }, [toast]);
+  // SWR 替代原 useCallback+Promise.all：自动去重/缓存/重试
+  const { data: profile, error: profileError, isLoading: loading } = useApi<GamificationProfile>(
+    "/api/gamification/profile",
+  );
+  const { data: settings, error: settingsError } = useApi<UserSetting>(
+    "/api/gamification/settings",
+  );
 
   useEffect(() => {
-    load();
-  }, [load]);
+    if (profileError) toast.push(profileError.message || "加载失败", "error");
+  }, [profileError, toast]);
+  useEffect(() => {
+    if (settingsError) toast.push(settingsError.message || "加载设置失败", "error");
+  }, [settingsError, toast]);
+
+  // 分享设置
+  const [toggling, setToggling] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const shareLink =
     settings?.share_skills_enabled && settings.share_token
@@ -48,10 +41,11 @@ export default function AchievementsPage() {
   const handleToggleShare = async (enabled: boolean) => {
     setToggling(true);
     try {
-      const updated = await gamificationApi.updateSettings({
+      await gamificationApi.updateSettings({
         share_skills_enabled: enabled,
       });
-      setSettings(updated);
+      // 让 SWR 重新拉取最新设置
+      await invalidate("/api/gamification/settings");
       toast.push(
         enabled ? "已开启技能分享" : "已关闭技能分享",
         "success",

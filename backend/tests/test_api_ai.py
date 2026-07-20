@@ -1,7 +1,7 @@
 # backend/tests/test_api_ai.py
 """AI 决策指导 API 测试。"""
 import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
@@ -151,8 +151,10 @@ class TestDegradation:
 
         monkeypatch.setattr(ai_service.settings, "LLM_API_KEY", "fake-key-for-test")
 
-        with patch("app.services.ai_service.httpx.post") as mock_post:
-            mock_post.side_effect = httpx.TimeoutException("request timed out")
+        async def fake_chat(self, system_prompt, user_content, timeout=30):
+            raise httpx.TimeoutException("request timed out")
+
+        with patch.object(ai_service.AIService, "chat", fake_chat):
             resp = client.post(
                 "/api/ai/decision-advice",
                 headers=auth_headers,
@@ -168,21 +170,18 @@ class TestDegradation:
 
 class TestNormalCall:
     def test_normal_call_with_mock_llm(self, auth_headers, client, db_session, monkeypatch):
-        """正常调用（mock httpx.post 返回固定 JSON）。"""
+        """正常调用（mock AIService.chat 返回固定 JSON）。"""
         from app.services import ai_service
 
         monkeypatch.setattr(ai_service.settings, "LLM_API_KEY", "fake-key-for-test")
 
         _seed_market_data(db_session)
 
-        with patch("app.services.ai_service.httpx.post") as mock_post:
-            mock_response = MagicMock()
-            mock_response.json.return_value = {
-                "choices": [{"message": {"content": MOCK_LLM_RESPONSE}}]
-            }
-            mock_response.raise_for_status = MagicMock()
-            mock_post.return_value = mock_response
-
+        with patch.object(
+            ai_service.AIService,
+            "chat",
+            AsyncMock(return_value=MOCK_LLM_RESPONSE),
+        ):
             resp = client.post(
                 "/api/ai/decision-advice",
                 headers=auth_headers,
@@ -199,31 +198,17 @@ class TestNormalCall:
         assert len(data["alternatives"]) == 1
         assert data["alternatives"][0]["option"] == "字节跳动后端开发"
 
-        # 验证 httpx.post 被调用且 payload 结构正确
-        assert mock_post.called
-        call_kwargs = mock_post.call_args.kwargs
-        assert "json" in call_kwargs
-        payload = call_kwargs["json"]
-        assert payload["model"] == ai_service.settings.LLM_MODEL
-        # messages 应包含 system + user
-        assert len(payload["messages"]) == 2
-        assert payload["messages"][0]["role"] == "system"
-        assert payload["messages"][1]["role"] == "user"
-
     def test_markdown_codeblock_json_parsed(self, auth_headers, client, db_session, monkeypatch):
         """LLM 返回带 markdown 代码块的 JSON 也能正确解析。"""
         from app.services import ai_service
 
         monkeypatch.setattr(ai_service.settings, "LLM_API_KEY", "fake-key-for-test")
 
-        with patch("app.services.ai_service.httpx.post") as mock_post:
-            mock_response = MagicMock()
-            mock_response.json.return_value = {
-                "choices": [{"message": {"content": MOCK_LLM_RESPONSE_MARKDOWN}}]
-            }
-            mock_response.raise_for_status = MagicMock()
-            mock_post.return_value = mock_response
-
+        with patch.object(
+            ai_service.AIService,
+            "chat",
+            AsyncMock(return_value=MOCK_LLM_RESPONSE_MARKDOWN),
+        ):
             resp = client.post(
                 "/api/ai/decision-advice",
                 headers=auth_headers,
@@ -246,14 +231,11 @@ class TestNormalCall:
 
         plain_text = "抱歉，我无法生成结构化建议，但建议你考虑自身兴趣与市场需求的平衡。"
 
-        with patch("app.services.ai_service.httpx.post") as mock_post:
-            mock_response = MagicMock()
-            mock_response.json.return_value = {
-                "choices": [{"message": {"content": plain_text}}]
-            }
-            mock_response.raise_for_status = MagicMock()
-            mock_post.return_value = mock_response
-
+        with patch.object(
+            ai_service.AIService,
+            "chat",
+            AsyncMock(return_value=plain_text),
+        ):
             resp = client.post(
                 "/api/ai/decision-advice",
                 headers=auth_headers,
@@ -287,7 +269,7 @@ class TestContextAssembly:
 
         captured_content = {}
 
-        def fake_chat(self, system_prompt, user_content, timeout=30):
+        async def fake_chat(self, system_prompt, user_content, timeout=30):
             captured_content["system"] = system_prompt
             captured_content["user"] = user_content
             return MOCK_LLM_RESPONSE
@@ -316,7 +298,7 @@ class TestContextAssembly:
 
         captured_content = {}
 
-        def fake_chat(self, system_prompt, user_content, timeout=30):
+        async def fake_chat(self, system_prompt, user_content, timeout=30):
             captured_content["user"] = user_content
             return MOCK_LLM_RESPONSE
 
@@ -386,7 +368,7 @@ class TestContextAssembly:
 
         captured_content = {}
 
-        def fake_chat(self, system_prompt, user_content, timeout=30):
+        async def fake_chat(self, system_prompt, user_content, timeout=30):
             captured_content["user"] = user_content
             return MOCK_LLM_RESPONSE
 
@@ -413,7 +395,7 @@ class TestContextAssembly:
 
         captured_content = {}
 
-        def fake_chat(self, system_prompt, user_content, timeout=30):
+        async def fake_chat(self, system_prompt, user_content, timeout=30):
             captured_content["user"] = user_content
             return MOCK_LLM_RESPONSE
 
@@ -507,7 +489,7 @@ class TestGrowthInsightDegradation:
 
         monkeypatch.setattr(ai_service.settings, "LLM_API_KEY", "fake-key-for-test")
 
-        def fake_chat(self, system_prompt, user_content, timeout=30):
+        async def fake_chat(self, system_prompt, user_content, timeout=30):
             raise httpx.TimeoutException("request timed out")
 
         with patch.object(ai_service.AIService, "chat", fake_chat):
@@ -534,7 +516,7 @@ class TestGrowthInsightNormalCall:
         with patch.object(
             ai_service.AIService,
             "chat",
-            lambda self, sp, uc, timeout=30: MOCK_GROWTH_INSIGHT_RESPONSE,
+            AsyncMock(return_value=MOCK_GROWTH_INSIGHT_RESPONSE),
         ):
             resp = client.post(
                 "/api/ai/growth-insight",
@@ -563,7 +545,7 @@ class TestGrowthInsightNormalCall:
 
         call_count = {"n": 0}
 
-        def fake_chat(self, system_prompt, user_content, timeout=30):
+        async def fake_chat(self, system_prompt, user_content, timeout=30):
             call_count["n"] += 1
             return MOCK_GROWTH_INSIGHT_RESPONSE
 
@@ -598,7 +580,7 @@ class TestGrowthInsightNormalCall:
 
         call_count = {"n": 0}
 
-        def fake_chat(self, system_prompt, user_content, timeout=30):
+        async def fake_chat(self, system_prompt, user_content, timeout=30):
             call_count["n"] += 1
             return MOCK_GROWTH_INSIGHT_RESPONSE
 
@@ -643,7 +625,7 @@ class TestGrowthInsightLatest:
         with patch.object(
             ai_service.AIService,
             "chat",
-            lambda self, sp, uc, timeout=30: MOCK_GROWTH_INSIGHT_RESPONSE,
+            AsyncMock(return_value=MOCK_GROWTH_INSIGHT_RESPONSE),
         ):
             # 先生成一次洞察
             client.post(

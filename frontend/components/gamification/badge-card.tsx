@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import {
   Compass,
   Sparkles,
@@ -37,7 +38,7 @@ interface BadgeCardProps {
  * earned 为 true 时高亮显示（brand 配色 + 勾选标记），
  * 否则以灰度 + 半透明展示锁定状态。
  */
-export function BadgeCard({ badge, earned }: BadgeCardProps) {
+export const BadgeCard = memo(function BadgeCard({ badge, earned }: BadgeCardProps) {
   const Icon = ICON_MAP[badge.icon] ?? Star;
 
   return (
@@ -75,4 +76,4 @@ export function BadgeCard({ badge, earned }: BadgeCardProps) {
       </p>
     </div>
   );
-}
+});

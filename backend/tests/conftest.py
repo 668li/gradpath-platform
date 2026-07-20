@@ -4,6 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.core.cache import cache
 from app.database import Base, get_db
 from app.main import app, limiter
 
@@ -17,6 +18,19 @@ def _reset_rate_limiter():
     limiter.reset()
     yield
     limiter.reset()
+
+
+@pytest.fixture(autouse=True)
+def _clear_cache():
+    """每个测试前后清空缓存，避免缓存污染跨测试。
+
+    服务层（external_data_service / employment_service 等）引入了 RedisCache，
+    而每个测试使用独立的 SQLite 内存数据库。若不清空缓存，前一个测试写入的
+    缓存会被后一个测试命中，导致返回错误数据或跳过 DB 查询。
+    """
+    cache.clear()
+    yield
+    cache.clear()
 
 
 @pytest.fixture

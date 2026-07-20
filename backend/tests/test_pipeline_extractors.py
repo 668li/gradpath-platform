@@ -33,7 +33,7 @@ class TestHtmlExtractor:
 
     def test_fixture_file(self):
         html_file = FIXTURES / "sample_report.html"
-        result = extract_html(html_file.read_text())
+        result = extract_html(html_file.read_text(encoding="utf-8"))
         assert "清华大学" in result.text
         assert "计算机科学与技术" in result.text
 
@@ -64,6 +64,6 @@ class TestCsvExtractor:
 
     def test_fixture_file(self):
         csv_file = FIXTURES / "sample_report.csv"
-        result = extract_csv(csv_file.read_text())
+        result = extract_csv(csv_file.read_text(encoding="utf-8"))
         assert "计算机科学与技术" in result.text
         assert result.metadata["row_count"] == 3

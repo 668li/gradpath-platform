@@ -9,7 +9,7 @@ import { employmentApi, communityApi } from "@/lib/api";
 import { Button } from "@/components/ui/form-controls";
 import { LoadingState, EmptyState } from "@/components/ui/empty";
 import { useToast } from "@/components/ui/toast";
-import { EmploymentDestinationPie, RankingBar, TrendLine } from "@/components/employment-charts";
+import { EmploymentDestinationPie, RankingBar, TrendLine } from "@/components/charts";
 import { RATE_LABEL } from "@/lib/constants";
 import type { CommunityAggregate, EmploymentSearchResult } from "@/types";
 
@@ -192,11 +192,11 @@ function ExploreResultContent() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div>
             <h3 className="text-sm font-medium text-slate-600 mb-2">就业单位 Top10</h3>
-            <RankingBar data={latest.employer_ranking} title="就业单位" />
+            <RankingBar ranking={latest.employer_ranking} title="就业单位" />
           </div>
           <div>
             <h3 className="text-sm font-medium text-slate-600 mb-2">升学去向 Top10</h3>
-            <RankingBar data={latest.school_for_further_study} title="升学去向" />
+            <RankingBar ranking={latest.school_for_further_study} title="升学去向" />
           </div>
         </div>
       </div>

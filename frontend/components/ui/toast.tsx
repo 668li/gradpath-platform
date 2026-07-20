@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { CheckCircle2, AlertCircle, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +13,9 @@ interface ToastItem {
 
 interface ToastContextValue {
   push: (message: string, type?: ToastType) => void;
+  success: (message: string) => void;
+  error: (message: string) => void;
+  info: (message: string) => void;
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null);
@@ -21,11 +24,15 @@ export function useToast() {
   const ctx = useContext(ToastContext);
   if (!ctx) {
     // 在无 Provider 时降级为 console，避免页面崩溃
+    const fallbackPush = (message: string, type: ToastType = "info") => {
+      // eslint-disable-next-line no-console
+      console.log(`[toast:${type}]`, message);
+    };
     return {
-      push: (message: string, type: ToastType = "info") => {
-        // eslint-disable-next-line no-console
-        console.log(`[toast:${type}]`, message);
-      },
+      push: fallbackPush,
+      success: (message: string) => fallbackPush(message, "success"),
+      error: (message: string) => fallbackPush(message, "error"),
+      info: (message: string) => fallbackPush(message, "info"),
     };
   }
   return ctx;
@@ -33,20 +40,41 @@ export function useToast() {
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([]);
+  const timersRef = useRef<Map<number, ReturnType<typeof setTimeout>>>(new Map());
+
+  useEffect(() => {
+    const timers = timersRef.current;
+    return () => {
+      timers.forEach((t) => clearTimeout(t));
+      timers.clear();
+    };
+  }, []);
 
   const push = useCallback((message: string, type: ToastType = "info") => {
     const id = Date.now() + Math.random();
     setItems((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       setItems((prev) => prev.filter((t) => t.id !== id));
+      timersRef.current.delete(id);
     }, 3500);
+    timersRef.current.set(id, timer);
   }, []);
 
-  const remove = (id: number) =>
+  const success = useCallback((message: string) => push(message, "success"), [push]);
+  const error = useCallback((message: string) => push(message, "error"), [push]);
+  const info = useCallback((message: string) => push(message, "info"), [push]);
+
+  const remove = (id: number) => {
+    const timer = timersRef.current.get(id);
+    if (timer) {
+      clearTimeout(timer);
+      timersRef.current.delete(id);
+    }
     setItems((prev) => prev.filter((t) => t.id !== id));
+  };
 
   return (
-    <ToastContext.Provider value={{ push }}>
+    <ToastContext.Provider value={{ push, success, error, info }}>
       {children}
       <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 w-80 max-w-[90vw]">
         {items.map((t) => (

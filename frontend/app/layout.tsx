@@ -18,9 +18,33 @@ const jakarta = Plus_Jakarta_Sans({
   weight: ["400", "500", "700"],
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://gradpath.example.com";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "GradPath · 职径",
   description: "个人职业轨迹记录与复盘平台",
+  openGraph: {
+    title: "GradPath · 职径",
+    description: "个人职业轨迹记录与复盘平台",
+    type: "website",
+    url: siteUrl,
+    siteName: "GradPath · 职径",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "GradPath · 职径",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "GradPath · 职径",
+    description: "个人职业轨迹记录与复盘平台",
+    images: ["/og-image.png"],
+  },
 };
 
 export default function RootLayout({

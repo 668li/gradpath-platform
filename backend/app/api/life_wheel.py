@@ -1,5 +1,5 @@
 """人生平衡轮 API — 8 维度生活满意度评估。"""
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
@@ -49,11 +49,15 @@ def get_dimensions():
 
 
 @router.post("/analyze", response_model=dict)
-def analyze(
+async def analyze(
     body: LifeWheelAnalyzeRequest,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
     """为指定快照生成 AI 分析建议。"""
-    analysis = life_wheel_service.generate_ai_analysis(db, body.snapshot_id)
+    # 修复 bug: service 层 raise ValueError("快照不存在") -> 500，应转 404
+    try:
+        analysis = await life_wheel_service.generate_ai_analysis(db, body.snapshot_id)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     return {"ai_analysis": analysis}

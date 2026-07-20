@@ -1,7 +1,7 @@
 """决策日志与回溯 API — 记录决策预测，追踪实际结果。"""
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
@@ -36,14 +36,18 @@ def get_reviewed_decisions(
 
 
 @router.post("/{decision_id}/review", response_model=DecisionResponse)
-def complete_review(
+async def complete_review(
     decision_id: UUID,
     body: DecisionReviewSubmit,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
     """完成决策回溯评估，填写实际结果。"""
-    decision = decision_journal_service.complete_review(
-        db, user.id, decision_id, body.actual_outcome, body.review_notes
-    )
+    # 修复 bug: service 层 raise ValueError("决策不存在或无权访问") -> 500，应转 404
+    try:
+        decision = await decision_journal_service.complete_review(
+            db, user.id, decision_id, body.actual_outcome, body.review_notes
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     return DecisionResponse.model_validate(decision)
