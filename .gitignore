@@ -91,3 +91,9 @@ tests/performance/results/
 # E2E test screenshots
 frontend/test-results/
 frontend/playwright-report/
+
+# Scratch/test files in project root
+端到端验证测试报告.md
+_chk.py
+commit_msg.txt
+git_status*.txt
