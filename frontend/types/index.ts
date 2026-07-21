@@ -879,6 +879,16 @@ export interface StreakRecord {
   streak_count: number;
   activity_types: string[];
   xp_earned: number;
+  is_rest_day: boolean;
+  is_redeem: boolean;
+  action_type: string | null;
+  action_detail: string | null;
+}
+
+export interface StreakMilestone {
+  days: number;
+  name: string;
+  unlocked: boolean;
 }
 
 export interface StreakStats {
@@ -889,6 +899,21 @@ export interface StreakStats {
   last_active_date: string | null;
   freeze_available: boolean;
   recent_records: StreakRecord[];
+  milestones: StreakMilestone[];
+  rest_day_available: boolean;
+  redeem_available: boolean;
+}
+
+export interface StreakCheckInRequest {
+  action_type: "main" | "micro";
+  action_detail: string;
+}
+
+export interface StreakCheckInResponse {
+  streak_count: number;
+  activity_types: string[];
+  xp_earned: number;
+  is_new_record: boolean;
 }
 
 // ===== 护城河功能：AI 主动洞察 =====

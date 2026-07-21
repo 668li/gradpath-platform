@@ -6,7 +6,7 @@
 from datetime import date
 from uuid import UUID
 
-from sqlalchemy import Boolean, Date, ForeignKey, Integer, UniqueConstraint
+from sqlalchemy import Boolean, Date, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -31,3 +31,11 @@ class StreakRecord(UUIDMixin, TimestampMixin, Base):
     freeze_used: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     # 当日获得的 XP（用于展示）
     xp_earned: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # 是否为休息日（主动标记，不扣streak）
+    is_rest_day: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    # 是否为回赎日（完成双倍行动赎回断签）
+    is_redeem: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    # 行动类型: "main" | "micro" | "rest" | "redeem"
+    action_type: Mapped[str] = mapped_column(String(20), nullable=True)
+    # 行动详情（用户做了什么）
+    action_detail: Mapped[str] = mapped_column(Text, nullable=True)

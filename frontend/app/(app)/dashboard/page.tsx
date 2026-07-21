@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import {
   Compass,
@@ -26,6 +26,8 @@ import {
   proactiveInsightsApi,
   useApi,
 } from "@/lib/api";
+import { streaksApi } from "@/lib/api/gamification";
+import { gamificationApi } from "@/lib/api/gamification";
 import { formatDate, cn } from "@/lib/utils";
 import {
   DESTINATION_TYPE_LABEL,
@@ -35,6 +37,11 @@ import { StatCard } from "@/components/stat-card";
 import { EmptyState } from "@/components/ui/empty";
 import { Button, Badge } from "@/components/ui/form-controls";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  StreakBar,
+  StreakCalendar,
+  StreakActions,
+} from "@/components/streak";
 import {
   PulseOverviewSection,
   ActiveDecisionsSection,
@@ -82,7 +89,7 @@ export default function DashboardPage() {
 
   // 第一批：核心数据（overview + streak + reminders + pulse）— SWR 并行获取
   const { data, error: overviewError, isLoading: overviewLoading } = useApi<DashboardOverview>("/api/dashboard/overview");
-  const { data: streakData, error: streakError, isLoading: streakLoading } = useApi<StreakStats>("/api/streaks/stats");
+  const { data: streakData, error: streakError, isLoading: streakLoading, mutate: mutateStreak } = useApi<StreakStats>("/api/streaks/stats");
   const { data: remindersData, error: remindersError, isLoading: remindersLoading } = useApi<ReminderItem[]>("/api/career-plans/reminders");
   const { data: pulseData, error: pulseError, isLoading: pulseLoading } = useApi<PulseFull>("/api/decision-pulse");
 
@@ -159,6 +166,8 @@ export default function DashboardPage() {
   const batch1Ready = !coreLoading;
   const { data: insightsSummary, mutate: mutateInsights } = useApi<ProactiveInsightSummary>(batch1Ready ? "/api/proactive-insights/summary" : null);
   const { data: personalIntel } = useApi<any>(batch1Ready ? "/api/dashboard/personal-intel" : null);
+  const { data: weeklyRecap } = useApi<any>(batch1Ready ? "/api/dashboard/weekly-recap" : null);
+  const { data: gamificationProfile } = useApi<any>(batch1Ready ? "/api/gamification/profile" : null);
 
   // 错误提示（核心接口失败时提示用户）
   useEffect(() => {
@@ -382,44 +391,66 @@ export default function DashboardPage() {
         </section>
       )}
 
-      {/* 连续打卡 */}
+      {/* 连续打卡 — 增强版 */}
       {streakStats && (
+        <StreakBar
+          stats={streakStats}
+          onRestDay={async () => {
+            await streaksApi.restDay();
+            mutateStreak();
+          }}
+          restDayLoading={false}
+        />
+      )}
+      {streakStats && (
+        <StreakCalendar records={streakStats.recent_records} />
+      )}
+      {streakStats && (
+        <StreakActions
+          stats={streakStats}
+          onCheckin={() => mutateStreak()}
+        />
+      )}
+
+      {/* 成长档案 — 游戏化概览 */}
+      {gamificationProfile && (
         <div className="card overflow-hidden animate-fade-in">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-orange-500 text-white shadow-lg shadow-orange-500/25">
-              <Flame className="h-8 w-8" strokeWidth={2.2} />
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-400 to-purple-500 text-white">
+              <Target className="h-6 w-6" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-baseline gap-2">
-                <span className="font-display text-4xl font-bold leading-none text-ink-800">
-                  {streakStats.current_streak}
+                <span className="font-display text-lg font-bold text-ink-800">
+                  {gamificationProfile.level_name ?? "萌新"}
                 </span>
-                <span className="text-sm text-ink-500">天连续打卡</span>
+                <span className="text-xs text-ink-400">
+                  Lv.{gamificationProfile.level ?? 1}
+                </span>
               </div>
-              {streakStats.today_active ? (
-                <p className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-brand-600">
-                  <Flame className="h-3 w-3" /> 今日已打卡，连胜延续中
-                </p>
-              ) : (
-                <p className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-amber-600">
-                  <Flame className="h-3 w-3" /> 今天还没打卡，别让连胜中断
-                </p>
-              )}
+              <div className="mt-1 h-2 w-full rounded-full bg-paper-200">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-brand-400 to-purple-400 transition-all"
+                  style={{ width: `${Math.min(gamificationProfile.progress ?? 0, 100)}%` }}
+                />
+              </div>
+              <p className="mt-1 text-xs text-ink-400">
+                {gamificationProfile.xp ?? 0}XP · 距下一级还差 {gamificationProfile.xp_to_next ?? "?"}XP
+              </p>
             </div>
-            <div className="flex gap-6 sm:gap-8 sm:border-l sm:border-paper-200 sm:pl-6">
-              <div>
-                <p className="font-display text-xl font-bold leading-none text-ink-800">
-                  {streakStats.longest_streak}
-                </p>
-                <p className="mt-1 text-xs text-ink-400">最长连胜 / 天</p>
+            {gamificationProfile.earned_badges?.length > 0 && (
+              <div className="flex -space-x-2">
+                {gamificationProfile.earned_badges.slice(0, 5).map((b: any, i: number) => (
+                  <div
+                    key={i}
+                    className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 border-2 border-white text-xs"
+                    title={b.name ?? b}
+                  >
+                    {b.icon ?? "🏅"}
+                  </div>
+                ))}
               </div>
-              <div>
-                <p className="font-display text-xl font-bold leading-none text-ink-800">
-                  {streakStats.total_active_days}
-                </p>
-                <p className="mt-1 text-xs text-ink-400">累计活跃 / 天</p>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       )}
@@ -559,6 +590,55 @@ export default function DashboardPage() {
               </Link>
             ))}
           </div>
+        </div>
+      )}
+      {/* 本周回顾 */}
+      {weeklyRecap && (
+        <div className="card overflow-hidden animate-fade-in">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display font-semibold text-ink-800 flex items-center gap-2">
+              <Target className="h-4 w-4 text-brand-600" />
+              本周回顾
+            </h2>
+            <Link
+              href="/retrospectives/weekly"
+              className="text-sm text-brand-600 hover:text-brand-700 transition-colors inline-flex items-center"
+            >
+              完整周报 <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <div className="rounded-lg bg-brand-50 p-3">
+              <p className="font-display text-xl font-bold text-brand-700">
+                {weeklyRecap.completed_this_week ?? 0}
+              </p>
+              <p className="text-xs text-brand-500">本周完成里程碑</p>
+            </div>
+            <div className="rounded-lg bg-paper-100 p-3">
+              <p className="font-display text-xl font-bold text-ink-700">
+                {weeklyRecap.logs_this_week ?? 0}
+              </p>
+              <p className="text-xs text-ink-400">新增执行日志</p>
+            </div>
+          </div>
+          {weeklyRecap.upcoming_deadlines?.length > 0 && (
+            <div className="mt-3 space-y-1.5">
+              <p className="text-xs font-medium text-ink-500">即将到期</p>
+              {weeklyRecap.upcoming_deadlines.slice(0, 3).map((d: any, i: number) => (
+                <div key={i} className="flex items-center justify-between text-xs">
+                  <span className="text-ink-600 truncate max-w-[200px]">
+                    {d.milestone_title}
+                  </span>
+                  <span className="shrink-0 font-medium text-amber-600">
+                    {d.days_remaining}天后
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="mt-3 text-xs text-ink-400 italic">
+            {weeklyRecap.encouragement}
+          </p>
         </div>
       )}
 

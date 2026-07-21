@@ -28,6 +28,7 @@ from app.services.retrospective_service import (
     list_retrospectives_paginated,
     update_retrospective,
 )
+from app.services.weekly_draft_service import generate_weekly_draft
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +59,19 @@ def draft(
     user: User = Depends(get_current_user),
 ):
     return generate_draft(db, user.id, period_start, period_end)
+
+
+@router.get("/weekly-draft")
+def weekly_draft(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """AI 周报草稿：基于本周行为数据自动生成4层模板。
+
+    4层：数据层→对比层→洞察层→行动层。
+    纯 DB 聚合，不依赖 LLM，零成本生成。
+    """
+    return generate_weekly_draft(db, user.id)
 
 
 @router.post("/ai-draft", response_model=AIRetroDraftResponse)
