@@ -55,7 +55,10 @@ def get_analysis(
 
 
 @router.post("/compute-matrix")
-def compute_matrix(body: MatrixComputeRequest):
+def compute_matrix(
+    body: MatrixComputeRequest,
+    user: User = Depends(get_current_user),
+):
     """计算决策矩阵加权得分（不保存）。"""
     result = decision_analysis_service.compute_matrix(
         [c.model_dump() for c in body.criteria],
@@ -65,7 +68,10 @@ def compute_matrix(body: MatrixComputeRequest):
 
 
 @router.post("/premortem-analyze")
-async def analyze_premortem(body: PremortemAnalyzeRequest):
+async def analyze_premortem(
+    body: PremortemAnalyzeRequest,
+    user: User = Depends(get_current_user),
+):
     """AI 分析预验尸结果：聚类风险 + 生成保障措施。"""
     return await decision_analysis_service.analyze_premortem(
         body.title, body.options, body.premortem_reasons
@@ -73,7 +79,10 @@ async def analyze_premortem(body: PremortemAnalyzeRequest):
 
 
 @router.post("/red-team-questions")
-async def generate_red_team(body: RedTeamGenerateRequest):
+async def generate_red_team(
+    body: RedTeamGenerateRequest,
+    user: User = Depends(get_current_user),
+):
     """AI 生成红队质疑问题。"""
     questions = await decision_analysis_service.generate_red_team_questions(
         body.title, body.options, body.reasoning

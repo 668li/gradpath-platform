@@ -7,7 +7,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from app.database import get_db
 from app.api.school_analyst import (
     _calc_six_dimensions,
     _build_scoreline_trend,
@@ -19,7 +18,10 @@ from app.api.school_analyst import (
     SixDimensionRadar,
     ScorelineTrendItem,
 )
+from app.core.deps import get_current_user
+from app.database import get_db
 from app.models.grad_intel import GradSchoolIntel, GradScorelineRecord
+from app.models.user import User
 from app.services.ai_service import AIService, AIServiceNotConfigured
 
 logger = logging.getLogger(__name__)
@@ -164,6 +166,7 @@ async def _generate_comparison_summary(analyses: list[dict], user_score: int) ->
 async def compare_schools(
     req: CompareRequest,
     db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
     """对比 2-5 所院校，返回六维雷达对比矩阵 + 冲/稳/保分类 + AI 建议。"""
     try:

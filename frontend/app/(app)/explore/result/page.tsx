@@ -41,10 +41,17 @@ function ExploreResultContent() {
   const toast = useToast();
   const searchParams = useSearchParams();
   // 从 URL 读取 Base64 编码的参数并解码为中文
+  // 安全解码: 非法 Base64 或被截断的 URL 参数不应导致页面崩溃
   const sEncoded = searchParams.get("s") ?? "";
   const mEncoded = searchParams.get("m") ?? "";
-  const school = sEncoded ? decodeURIComponent(escape(atob(sEncoded))) : "";
-  const major = mEncoded ? decodeURIComponent(escape(atob(mEncoded))) : "";
+  const school = (() => {
+    if (!sEncoded) return "";
+    try { return decodeURIComponent(escape(atob(sEncoded))); } catch { return ""; }
+  })();
+  const major = (() => {
+    if (!mEncoded) return "";
+    try { return decodeURIComponent(escape(atob(mEncoded))); } catch { return ""; }
+  })();
 
   const [data, setData] = useState<EmploymentSearchResult | null>(null);
   const [loading, setLoading] = useState(true);
@@ -167,20 +174,20 @@ function ExploreResultContent() {
 
       <div>
         <h1 className="page-title">{data.school.name} · {data.major}</h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <p className="text-sm text-ink-500 mt-1">
           {data.records.length} 条记录 · 数据来源：高校就业质量年度报告
         </p>
       </div>
 
       {/* 卡片一：去向分布 */}
       <div className="card">
-        <h2 className="font-semibold text-slate-800 mb-4">毕业去向分布（{latest.year}年）</h2>
+        <h2 className="font-semibold text-ink-800 mb-4">毕业去向分布（{latest.year}年）</h2>
         <EmploymentDestinationPie
           record={latest}
           contextLabel={`${data.school.name}${data.major ?? ""}`}
         />
         {latest.total_graduates && (
-          <p className="text-center text-sm text-slate-400 mt-2">
+          <p className="text-center text-sm text-ink-400 mt-2">
             毕业总人数：{latest.total_graduates}人
           </p>
         )}
@@ -188,14 +195,14 @@ function ExploreResultContent() {
 
       {/* 卡片二：排名 */}
       <div className="card">
-        <h2 className="font-semibold text-slate-800 mb-4">重点单位 / 升学去向排名</h2>
+        <h2 className="font-semibold text-ink-800 mb-4">重点单位 / 升学去向排名</h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div>
-            <h3 className="text-sm font-medium text-slate-600 mb-2">就业单位 Top10</h3>
+            <h3 className="text-sm font-medium text-ink-600 mb-2">就业单位 Top10</h3>
             <RankingBar ranking={latest.employer_ranking} title="就业单位" />
           </div>
           <div>
-            <h3 className="text-sm font-medium text-slate-600 mb-2">升学去向 Top10</h3>
+            <h3 className="text-sm font-medium text-ink-600 mb-2">升学去向 Top10</h3>
             <RankingBar ranking={latest.school_for_further_study} title="升学去向" />
           </div>
         </div>
@@ -204,7 +211,7 @@ function ExploreResultContent() {
       {/* 卡片三：趋势 */}
       {data.trend && data.trend.years.length > 1 && (
         <div className="card">
-          <h2 className="font-semibold text-slate-800 mb-4">多年趋势</h2>
+          <h2 className="font-semibold text-ink-800 mb-4">多年趋势</h2>
           <TrendLine
             trend={data.trend}
             contextLabel={`${data.school.name}${data.major ?? ""}`}
@@ -214,34 +221,34 @@ function ExploreResultContent() {
 
       {/* 社区数据卡片：官方 vs 社区对比 */}
       <div className="card">
-        <h2 className="font-semibold text-slate-800 mb-3 flex items-center gap-2">
+        <h2 className="font-semibold text-ink-800 mb-3 flex items-center gap-2">
           <Users className="h-4 w-4 text-brand-500" />
           社区数据
         </h2>
         {communityLoading ? (
-          <p className="text-sm text-slate-400">加载社区数据中…</p>
+          <p className="text-sm text-ink-400">加载社区数据中…</p>
         ) : hasCommunity ? (
           <div className="space-y-3">
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-ink-500">
               已聚合 <span className="font-semibold text-brand-600">
                 {communityData!.sample_count}
               </span> 份匿名报告，与官方数据对比：
             </p>
             {comparisonRows.length > 0 ? (
-              <div className="overflow-hidden rounded-lg border border-slate-100">
+              <div className="overflow-hidden rounded-lg border border-ink-100">
                 <table className="w-full text-sm">
-                  <thead className="bg-slate-50 text-xs text-slate-500">
+                  <thead className="bg-ink-50 text-xs text-ink-500">
                     <tr>
                       <th className="px-3 py-2 text-left font-medium">去向类型</th>
                       <th className="px-3 py-2 text-right font-medium">官方</th>
                       <th className="px-3 py-2 text-right font-medium">社区</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-ink-100">
                     {comparisonRows.map((r) => (
                       <tr key={r.key}>
-                        <td className="px-3 py-2 text-slate-700">{r.label}</td>
-                        <td className="px-3 py-2 text-right text-slate-600">
+                        <td className="px-3 py-2 text-ink-700">{r.label}</td>
+                        <td className="px-3 py-2 text-right text-ink-600">
                           {r.officialPct !== null ? `${r.officialPct}%` : "—"}
                         </td>
                         <td className="px-3 py-2 text-right text-brand-600">
@@ -253,7 +260,7 @@ function ExploreResultContent() {
                 </table>
               </div>
             ) : (
-              <p className="text-sm text-slate-400">暂无可对比的去向分布数据</p>
+              <p className="text-sm text-ink-400">暂无可对比的去向分布数据</p>
             )}
             <Link
               href={`/community/result?s=${encodeParam(school)}&m=${encodeParam(major)}`}
@@ -264,7 +271,7 @@ function ExploreResultContent() {
           </div>
         ) : (
           <div className="flex flex-col items-start gap-3">
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-ink-500">
               「{school} · {major}」暂无社区数据，官方数据之外的真实去向需要你的分享。
             </p>
             <Link href="/community">
@@ -287,8 +294,8 @@ function ExploreResultContent() {
       <div className="card bg-brand-50 border-brand-100">
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-medium text-slate-800">你的去向是什么？</p>
-            <p className="text-sm text-slate-500">记录你的去向决策，与同专业数据对比</p>
+            <p className="font-medium text-ink-800">你的去向是什么？</p>
+            <p className="text-sm text-ink-500">记录你的去向决策，与同专业数据对比</p>
           </div>
           <Link href="/decisions">
             <Button>

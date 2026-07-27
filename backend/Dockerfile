@@ -4,7 +4,7 @@ FROM python:3.11-slim AS builder
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
+    build-essential=12.* \
     && rm -rf /var/lib/apt/lists/*
 
 COPY pyproject.toml .
@@ -23,7 +23,7 @@ WORKDIR /app
 COPY --from=builder /wheels/*.whl /wheels/
 
 RUN pip install --no-cache-dir /wheels/*.whl && \
-    pip install --no-cache-dir redis && \
+    pip install --no-cache-dir "redis>=5.0,<6.0" "tenacity>=8.0,<9.0" && \
     rm -rf /wheels
 
 COPY app/ app/

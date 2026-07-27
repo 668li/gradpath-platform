@@ -6,7 +6,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 from app.config import settings
+from app.core.deps import get_admin_user
 from app.database import get_db
+from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +121,11 @@ def freshness_dashboard(db: Session = Depends(get_db)):
 
 
 @router.post("/refresh/{source_name}")
-def refresh_source(source_name: str, db: Session = Depends(get_db)):
+def refresh_source(
+    source_name: str,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_admin_user),
+):
     if source_name not in SOURCES:
         raise HTTPException(
             status_code=400,

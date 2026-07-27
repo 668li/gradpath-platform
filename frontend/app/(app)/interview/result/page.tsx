@@ -39,7 +39,11 @@ function InterviewResultContent() {
   const toast = useToast();
   const searchParams = useSearchParams();
   const cEncoded = searchParams.get("c") ?? "";
-  const company = cEncoded ? decodeURIComponent(escape(atob(cEncoded))) : "";
+  // 安全解码: 非法 Base64 或被截断的 URL 参数不应导致页面崩溃
+  const company = (() => {
+    if (!cEncoded) return "";
+    try { return decodeURIComponent(escape(atob(cEncoded))); } catch { return ""; }
+  })();
 
   const [data, setData] = useState<InterviewAggregate | null>(null);
   const [loading, setLoading] = useState(true);
@@ -135,7 +139,7 @@ function InterviewResultContent() {
 
       <div>
         <h1 className="page-title">{company}</h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <p className="text-sm text-ink-500 mt-1">
           面试聚合数据 · 共 {data.sample_count} 份匿名报告
         </p>
       </div>
@@ -166,20 +170,20 @@ function InterviewResultContent() {
           <p className="text-2xl font-bold text-brand-600">
             {data.avg_difficulty ? `${data.avg_difficulty}/5` : "—"}
           </p>
-          <p className="text-xs text-slate-500">平均难度</p>
+          <p className="text-xs text-ink-500">平均难度</p>
         </div>
         <div className="card text-center">
           <p className="text-2xl font-bold text-green-600">
             {data.avg_rounds ? `${data.avg_rounds}` : "—"}
           </p>
-          <p className="text-xs text-slate-500">平均轮数</p>
+          <p className="text-xs text-ink-500">平均轮数</p>
         </div>
       </div>
 
       {/* 考察维度雷达图 */}
       {radarData.length > 0 && (
         <div className="card">
-          <h2 className="font-semibold text-slate-800 mb-4">考察维度频率</h2>
+          <h2 className="font-semibold text-ink-800 mb-4">考察维度频率</h2>
           <div
             role="img"
             aria-label={`${company}面试考察维度频率：${radarData.map((d) => `${d.dimension}${d.frequency}%`).join("，")}`}
@@ -218,7 +222,7 @@ function InterviewResultContent() {
       {/* 面试结果分布 */}
       {pieData.length > 0 && (
         <div className="card">
-          <h2 className="font-semibold text-slate-800 mb-4">面试结果分布</h2>
+          <h2 className="font-semibold text-ink-800 mb-4">面试结果分布</h2>
           <div
             role="img"
             aria-label={`${company}面试结果分布：${pieData.map((d) => `${d.name}${(d.value * 100).toFixed(0)}%`).join("，")}`}
@@ -255,7 +259,7 @@ function InterviewResultContent() {
       {/* 常见岗位 */}
       {data.common_positions && data.common_positions.length > 0 && (
         <div className="card">
-          <h2 className="font-semibold text-slate-800 mb-4">常见岗位</h2>
+          <h2 className="font-semibold text-ink-800 mb-4">常见岗位</h2>
           <RankingBar ranking={data.common_positions} title="常见岗位" />
         </div>
       )}
@@ -271,8 +275,8 @@ function InterviewResultContent() {
       <div className="card bg-brand-50 border-brand-100">
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-medium text-slate-800">你的面试经历是什么？</p>
-            <p className="text-sm text-slate-500">
+            <p className="font-medium text-ink-800">你的面试经历是什么？</p>
+            <p className="text-sm text-ink-500">
               分享你的面试经验，让这份数据更准确
             </p>
           </div>

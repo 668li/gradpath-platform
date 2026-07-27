@@ -18,22 +18,13 @@ RUN npm run build
 # ---- Stage 3: production ----
 FROM node:20-alpine AS production
 
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
-
 WORKDIR /app
 
 ENV NODE_ENV=production
 
-RUN mkdir -p /app/.next/standalone && \
-    mkdir -p /app/.next/static && \
-    chown -R nextjs:nodejs /app
-
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/public ./public
-COPY --from=build --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-USER nextjs
+COPY --from=build /app/.next/static ./.next/static
 
 EXPOSE 3000
 

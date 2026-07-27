@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 from starlette.responses import PlainTextResponse
 
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, get_admin_user
 from app.database import get_db
 from app.models.user import User
 from app.services.web_vitals_service import (
@@ -55,7 +55,7 @@ def _histogram_buckets(values: list[float]) -> list[tuple[float, int]]:
 
 
 @router.get("", response_class=PlainTextResponse)
-def metrics_endpoint():
+def metrics_endpoint(admin: User = Depends(get_admin_user)):
     """Return Prometheus-format metrics."""
     with _lock:
         total = _request_count.get("__total__", 0)

@@ -42,7 +42,7 @@ function CommunityDestinationPie({
 }) {
   const entries = Object.entries(distribution).filter(([, v]) => v > 0);
   if (entries.length === 0) {
-    return <p className="text-sm text-slate-400">暂无去向分布数据</p>;
+    return <p className="text-sm text-ink-400">暂无去向分布数据</p>;
   }
 
   // distribution 的 value 是 0-1 之间的比例值
@@ -94,7 +94,7 @@ function SalaryDistributionBar({
 }) {
   const entries = Object.entries(distribution).filter(([, v]) => v > 0);
   if (entries.length === 0) {
-    return <p className="text-sm text-slate-400">暂无薪资分布数据</p>;
+    return <p className="text-sm text-ink-400">暂无薪资分布数据</p>;
   }
   const data = entries.map(([key, value]) => ({
     name: SALARY_RANGE_LABEL[key] ?? key,
@@ -124,10 +124,17 @@ function CommunityResultContent() {
   const toast = useToast();
   const searchParams = useSearchParams();
   // 从 URL 读取 Base64 编码的参数并解码为中文（与 explore 保持一致）
+  // 安全解码: 非法 Base64 或被截断的 URL 参数不应导致页面崩溃
   const sEncoded = searchParams.get("s") ?? "";
   const mEncoded = searchParams.get("m") ?? "";
-  const school = sEncoded ? decodeURIComponent(escape(atob(sEncoded))) : "";
-  const major = mEncoded ? decodeURIComponent(escape(atob(mEncoded))) : "";
+  const school = (() => {
+    if (!sEncoded) return "";
+    try { return decodeURIComponent(escape(atob(sEncoded))); } catch { return ""; }
+  })();
+  const major = (() => {
+    if (!mEncoded) return "";
+    try { return decodeURIComponent(escape(atob(mEncoded))); } catch { return ""; }
+  })();
 
   const [data, setData] = useState<CommunityAggregate | null>(null);
   const [loading, setLoading] = useState(true);
@@ -207,7 +214,7 @@ function CommunityResultContent() {
 
       <div>
         <h1 className="page-title">{school} · {major}</h1>
-        <p className="text-sm text-slate-500 mt-1">
+        <p className="text-sm text-ink-500 mt-1">
           社区聚合数据 · 共 {data.sample_count} 份匿名报告
         </p>
       </div>
@@ -234,27 +241,27 @@ function CommunityResultContent() {
 
       {/* 去向分布 */}
       <div className="card">
-        <h2 className="font-semibold text-slate-800 mb-4">毕业去向分布</h2>
+        <h2 className="font-semibold text-ink-800 mb-4">毕业去向分布</h2>
         {data.destination_distribution ? (
           <CommunityDestinationPie
             distribution={data.destination_distribution}
             contextLabel={contextLabel}
           />
         ) : (
-          <p className="text-sm text-slate-400">暂无去向分布数据</p>
+          <p className="text-sm text-ink-400">暂无去向分布数据</p>
         )}
       </div>
 
       {/* 热门雇主 & 城市 */}
       <div className="card">
-        <h2 className="font-semibold text-slate-800 mb-4">热门雇主 / 城市</h2>
+        <h2 className="font-semibold text-ink-800 mb-4">热门雇主 / 城市</h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div>
-            <h3 className="text-sm font-medium text-slate-600 mb-2">热门雇主 Top10</h3>
+            <h3 className="text-sm font-medium text-ink-600 mb-2">热门雇主 Top10</h3>
             <RankingBar ranking={data.top_employers ?? []} title="热门雇主" />
           </div>
           <div>
-            <h3 className="text-sm font-medium text-slate-600 mb-2">城市分布 Top10</h3>
+            <h3 className="text-sm font-medium text-ink-600 mb-2">城市分布 Top10</h3>
             <RankingBar ranking={data.top_cities ?? []} title="城市分布" />
           </div>
         </div>
@@ -263,18 +270,18 @@ function CommunityResultContent() {
       {/* 热门行业 */}
       {data.top_industries && data.top_industries.length > 0 && (
         <div className="card">
-          <h2 className="font-semibold text-slate-800 mb-4">热门行业</h2>
+          <h2 className="font-semibold text-ink-800 mb-4">热门行业</h2>
           <RankingBar ranking={data.top_industries} title="热门行业" />
         </div>
       )}
 
       {/* 薪资分布 */}
       <div className="card">
-        <h2 className="font-semibold text-slate-800 mb-4">薪资分布</h2>
+        <h2 className="font-semibold text-ink-800 mb-4">薪资分布</h2>
         {data.salary_distribution ? (
           <SalaryDistributionBar distribution={data.salary_distribution} />
         ) : (
-          <p className="text-sm text-slate-400">暂无薪资分布数据</p>
+          <p className="text-sm text-ink-400">暂无薪资分布数据</p>
         )}
       </div>
 
@@ -289,8 +296,8 @@ function CommunityResultContent() {
       <div className="card bg-brand-50 border-brand-100">
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-medium text-slate-800">你的去向是什么？</p>
-            <p className="text-sm text-slate-500">
+            <p className="font-medium text-ink-800">你的去向是什么？</p>
+            <p className="text-sm text-ink-500">
               分享你的去向，让这份数据更准确
             </p>
           </div>

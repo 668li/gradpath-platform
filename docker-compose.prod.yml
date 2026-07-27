@@ -1,30 +1,59 @@
-version: "3.9"
+name: gradpath-prod
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
 
 services:
+  # ======================================================================
+  # nginx — 反向代理（统一入口，承载安全头、限流、WebSocket）
+  # ======================================================================
   nginx:
-    image: nginx:alpine
+    image: nginx:1.27-alpine
     ports:
-      - "80:80"
+      # FASTAPI-DEPLOY-001: 仅绑定 127.0.0.1，避免 80 端口暴露到公网
+      # 生产环境应在 nginx 前叠一层 CDN/负载均衡提供 TLS 终止
+      - "127.0.0.1:80:80"
+      - "[::1]:80:80"
     volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      # 使用安全版 nginx.conf（含 HSTS/CSP/限流/正确 WS 路径）
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - nginx_logs:/var/log/nginx
     depends_on:
       backend:
         condition: service_healthy
       frontend:
         condition: service_healthy
-    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/health >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging: *default-logging
     deploy:
       resources:
         limits:
           memory: 256M
           cpus: "0.5"
+        reservations:
+          memory: 64M
+          cpus: "0.1"
+    restart: unless-stopped
 
+  # ======================================================================
+  # db — PostgreSQL 16
+  # ======================================================================
   db:
     image: postgres:16-alpine
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-gradpath}
       POSTGRES_USER: ${POSTGRES_USER:-gradpath}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    expose:
+      - "5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -32,87 +61,248 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
+      start_period: 10s
+    logging: *default-logging
     deploy:
       resources:
         limits:
-          memory: 512M
+          memory: 1G
           cpus: "1.0"
+        reservations:
+          memory: 256M
+          cpus: "0.25"
+    restart: unless-stopped
 
+  # ======================================================================
+  # redis — 缓存（带密码认证）
+  # ======================================================================
   redis:
     image: redis:7-alpine
-    # 修复: FASTAPI-DEPLOY-002 — 生产环境 Redis 必须启用密码认证，
-    # 避免容器内任何服务均可未授权访问 Redis（含缓存投毒/数据泄露）
     command: >-
       sh -c 'redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
       --requirepass "$${REDIS_PASSWORD}"'
     environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required (generate one: python -c "import secrets; print(secrets.token_urlsafe(32))")}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+    expose:
+      - "6379"
     volumes:
       - redisdata:/data
     healthcheck:
-      # healthcheck 也需提供密码，否则 ping 会返回 NOAUTH
       test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping | grep -q PONG"]
       interval: 10s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
+      start_period: 5s
+    logging: *default-logging
     deploy:
       resources:
         limits:
           memory: 256M
           cpus: "0.5"
+        reservations:
+          memory: 64M
+          cpus: "0.1"
+    restart: unless-stopped
 
+  # ======================================================================
+  # backend — FastAPI (uvicorn 4 workers)
+  # ======================================================================
   backend:
     build:
       context: ./backend
       target: production
+    expose:
+      - "8000"
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-gradpath}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-gradpath}
       ENVIRONMENT: production
       SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required}
       CORS_ORIGINS: ${CORS_ORIGINS:-}
       LLM_API_KEY: ${LLM_API_KEY:-}
-      # Redis URL 包含密码，与 redis 服务的 --requirepass 保持一致
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/1
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@redis:6379/2
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health').raise_for_status()"]
+      test: ["CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health', timeout=5).raise_for_status()"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 15s
-    restart: unless-stopped
+    logging: *default-logging
     deploy:
       resources:
         limits:
           memory: 1G
           cpus: "2.0"
+        reservations:
+          memory: 256M
+          cpus: "0.5"
+    restart: unless-stopped
 
+  # ======================================================================
+  # frontend — Next.js (production standalone)
+  # ======================================================================
   frontend:
     build:
       context: ./frontend
       target: production
+    expose:
+      - "3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost/api
+      NEXT_PUBLIC_API_URL: ""
       BACKEND_URL: http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', r => { process.exit(r.statusCode === 200 ? 0 : 1) })"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 15s
-    restart: unless-stopped
+    logging: *default-logging
     deploy:
       resources:
         limits:
           memory: 512M
           cpus: "1.0"
+        reservations:
+          memory: 128M
+          cpus: "0.25"
+    restart: unless-stopped
+
+  # ======================================================================
+  # celery-worker — 异步任务执行（爬虫队列 + AI 队列）
+  # ======================================================================
+  celery-worker:
+    build:
+      context: ./backend
+      target: production
+    command: >
+      celery -A app.celery_app.celery_app worker
+      --loglevel=info
+      --concurrency=4
+      --queues=crawler,ai,default
+      --max-tasks-per-child=100
+      --without-gossip
+      --without-mingle
+      --without-heartbeat
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-gradpath}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-gradpath}
+      ENVIRONMENT: production
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/1
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@redis:6379/2
+      PROMETHEUS_MULTIPROC_DIR: /tmp/prometheus_multiproc
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.celery_app.celery_app inspect ping -d celery@$$HOSTNAME || exit 1"]
+      interval: 60s
+      timeout: 15s
+      retries: 3
+      start_period: 30s
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: "1.0"
+        reservations:
+          memory: 256M
+          cpus: "0.25"
+    restart: unless-stopped
+
+  # ======================================================================
+  # flower — Celery 任务监控面板（仅 127.0.0.1 访问）
+  # ======================================================================
+  flower:
+    build:
+      context: ./backend
+      target: production
+    command: >
+      celery --app=app.celery_app.celery_app flower
+      --port=5555
+      --broker=redis://:${REDIS_PASSWORD}@redis:6379/1
+      --url-prefix=flower
+      --basic-auth=${FLOWER_USER:-admin}:${FLOWER_PASSWORD:?FLOWER_PASSWORD is required}
+    environment:
+      FLOWER_USER: ${FLOWER_USER:-admin}
+      FLOWER_PASSWORD: ${FLOWER_PASSWORD:?FLOWER_PASSWORD is required}
+    ports:
+      # FASTAPI-DEPLOY-001: 端口仅绑定 127.0.0.1
+      - "127.0.0.1:5555:5555"
+    depends_on:
+      redis:
+        condition: service_healthy
+      celery-worker:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import socket; s=socket.socket(); s.settimeout(5); s.connect(('localhost',5555)); s.close()\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.25"
+        reservations:
+          memory: 64M
+          cpus: "0.1"
+    restart: unless-stopped
+
+  # ======================================================================
+  # backup — 定时备份服务（每天 02:00 备份 DB+Redis，每周日 03:00 验证）
+  # ======================================================================
+  backup:
+    image: postgres:16-alpine
+    init: true
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-gradpath}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-gradpath}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      BACKUP_DIR: /var/backups/gradpath
+      RETENTION_DAYS: "14"
+    volumes:
+      - ./backend/scripts:/backup-scripts:ro
+      - backup_data:/var/backups/gradpath
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    entrypoint: |
+      sh -c "
+        apk add --no-cache redis dcron 2>/dev/null;
+        mkdir -p /var/backups/gradpath /var/log;
+        echo '0 2 * * * sh /backup-scripts/backup_db.sh >> /var/log/backup.log 2>&1' > /etc/crontabs/root;
+        echo '30 2 * * * sh /backup-scripts/backup_redis.sh >> /var/log/backup.log 2>&1' >> /etc/crontabs/root;
+        echo '0 3 * * 0 sh /backup-scripts/backup_verify.sh >> /var/log/backup_verify.log 2>&1' >> /etc/crontabs/root;
+        exec crond -l 2 -f
+      "
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
+        reservations:
+          memory: 64M
+          cpus: "0.1"
+    restart: unless-stopped
 
 volumes:
   pgdata:
   redisdata:
+  nginx_logs:
+  backup_data:
