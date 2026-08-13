@@ -23,6 +23,28 @@ import type {
 } from "@/types";
 import { request, buildQuery } from "./client";
 
+// ===== AI 管家扫描结果（/api/ai/agent/scan）=====
+// 结构来自后端 ai_butler_service.scan_user / _build_profile。
+export interface AIButlerScanResponse {
+  profile: {
+    identity: {
+      name: string;
+      stage: string | null;
+      school: string | null;
+      major: string | null;
+      graduation_year: number | null;
+    };
+    inventory: Record<string, number>;
+    active_plans: { goal: string; progress: string; timeline_months: number }[];
+    latest_assessment: unknown;
+    gaps: string[];
+    summary?: string;
+  };
+  plan: { priority: string; title: string; why: string; action: string }[];
+  llm_enriched: boolean;
+  generated_at: string;
+}
+
 // ===== AI 决策指导 =====
 export const aiApi = {
   decisionAdvice: (body: DecisionAdviceRequest) =>
@@ -134,10 +156,10 @@ export const proactiveInsightsApi = {
 // ===== AI 管家（统一功能：扫描我的数据 + 个性化对话）=====
 export const aiButlerApi = {
   /** 扫描当前用户全量数据，返回结构化画像 + 行动清单 */
-  scan: () => request<any>("/api/ai/scan"),
+  scan: () => request<AIButlerScanResponse>("/api/ai/agent/scan"),
   /** 个性化 Agent 对话（注入用户上下文） */
   chat: (message: string, webSearch = true) =>
-    request<any>("/api/ai/chat", {
+    request<any>("/api/ai/agent/chat", {
       method: "POST",
       body: JSON.stringify({ message, web_search: webSearch }),
     }),

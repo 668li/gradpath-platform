@@ -17,8 +17,8 @@ export default function GlobalError({
             <div className="flex justify-center">
               <AlertTriangle className="h-12 w-12 text-amber-500" />
             </div>
-            <h2 className="text-xl font-semibold text-slate-800">应用发生严重错误</h2>
-            <p className="text-sm text-slate-500">
+            <h2 className="text-xl font-semibold text-ink-800">应用发生严重错误</h2>
+            <p className="text-sm text-ink-500">
               请尝试刷新页面。如果问题持续，请联系管理员。
             </p>
             <button

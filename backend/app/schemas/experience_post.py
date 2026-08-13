@@ -49,6 +49,8 @@ class ExperiencePostResponse(ExperiencePostBase):
     is_verified: bool = Field(..., description="是否已验证")
     created_at: datetime
     updated_at: datetime
+    author_name: Optional[str] = Field(None, description="作者显示名")
+    author_avatar: Optional[str] = Field(None, description="作者头像URL")
 
     model_config = ConfigDict(from_attributes=True)
 

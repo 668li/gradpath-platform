@@ -111,8 +111,9 @@ services:
     build:
       context: ./backend
       target: production
-    expose:
-      - "8000"
+    # 端口约定红线：宿主机统一 8001 → 容器 8000（仅绑定 loopback）
+    ports:
+      - "127.0.0.1:8001:8000"
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-gradpath}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-gradpath}
       ENVIRONMENT: production

@@ -10,10 +10,15 @@ from app.schemas.skill import SkillCreate, SkillUpdate
 
 def _invalidate_user_context_cache(user_id: UUID) -> None:
     """技能 CRUD 后失效用户上下文缓存（build_user_context 依赖 SkillNode）。"""
-    try:
-        cache.delete(f"user_context:{user_id}")
-    except Exception:
-        pass
+    for key in (
+        f"user_context:{user_id}",
+        f"skill_tree:{user_id}",
+        f"skill_stats:{user_id}",
+    ):
+        try:
+            cache.delete(key)
+        except Exception:
+            pass
 
 
 def create_skill(db: Session, user_id: UUID, data: SkillCreate) -> SkillNode:
@@ -36,6 +41,8 @@ def create_skill(db: Session, user_id: UUID, data: SkillCreate) -> SkillNode:
 
 
 def get_skill_tree(db: Session, user_id: UUID) -> list[SkillNode]:
+    # 注意：ORM 对象不可安全序列化到 Redis（json.dumps 会 stringify），
+    # 因此不对 skill_tree 做缓存。stats 和 overview 返回 dict 可安全缓存。
     roots = (
         db.query(SkillNode)
         .filter(SkillNode.user_id == user_id, SkillNode.parent_id.is_(None))
@@ -76,8 +83,17 @@ def delete_skill(db: Session, user_id: UUID, skill_id: UUID) -> None:
 
 
 def get_skill_stats(db: Session, user_id: UUID) -> dict[str, int]:
-    skills = db.query(SkillNode).filter(SkillNode.user_id == user_id).all()
-    stats: dict[str, int] = {}
-    for s in skills:
-        stats[s.category] = stats.get(s.category, 0) + 1
+    cache_key = f"skill_stats:{user_id}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
+    from sqlalchemy import func
+    rows = (
+        db.query(SkillNode.category, func.count(SkillNode.id))
+        .filter(SkillNode.user_id == user_id)
+        .group_by(SkillNode.category)
+        .all()
+    )
+    stats = {cat: cnt for cat, cnt in rows}
+    cache.set(cache_key, stats, ttl=60)
     return stats

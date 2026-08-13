@@ -11,7 +11,6 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.models.life_design import LifeDesignSprint, WeeklyReview
-from app.services.ai_service import AIService
 from app.services.ai_orchestrator import AIOrchestrator
 
 # 领域定义

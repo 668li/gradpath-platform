@@ -17,8 +17,8 @@ from app.services.ai_quota_service import (
     check_llm_quota,
     incr_llm_quota,
 )
+from app.services.ai_orchestrator import AIOrchestrator
 from app.services.ai_service import (
-    AIService,
     AIServiceNotConfigured,
     AIServiceRetryExhausted,
 )
@@ -227,7 +227,7 @@ async def generate_report(
 请基于以上数据生成分析报告。"""
 
         # 4. 调用 LLM
-        ai_service = AIService()
+        ai_service = AIOrchestrator()
         # 决策副驾驶护城河：注入用户上下文实现个性化
         system_prompt = _inject_user_context(db, user.id, system_prompt)
         result = await ai_service.chat(system_prompt, user_content, timeout=60)
@@ -368,7 +368,7 @@ async def rag_ask(
 
 用户问题: {body.question}"""
 
-        ai_service = AIService()
+        ai_service = AIOrchestrator()
         # 决策副驾驶护城河：注入用户上下文实现个性化
         system_prompt = _inject_user_context(db, user.id, system_prompt)
         answer = await ai_service.chat(system_prompt, user_content, timeout=30)
@@ -626,7 +626,7 @@ async def generate_study_plan(
 请生成个性化学习计划。"""
 
         # 4. 调用 LLM
-        ai_service = AIService()
+        ai_service = AIOrchestrator()
         # 决策副驾驶护城河：注入用户上下文实现个性化
         system_prompt = _inject_user_context(db, user.id, system_prompt)
         result = await ai_service.chat(system_prompt, user_content, timeout=60)

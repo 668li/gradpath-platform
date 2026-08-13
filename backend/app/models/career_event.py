@@ -25,7 +25,7 @@ class CareerEvent(UUIDMixin, TimestampMixin, Base):
 
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     event_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
-    event_type: Mapped[EventType] = mapped_column(Enum(EventType), nullable=False)
+    event_type: Mapped[EventType] = mapped_column(Enum(EventType), nullable=False, index=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     situation: Mapped[str | None] = mapped_column(Text, nullable=True)

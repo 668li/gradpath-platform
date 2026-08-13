@@ -1,4 +1,5 @@
 import os, json, time
+from pathlib import Path
 
 FIRECRAWL_API_KEY = os.getenv("FIRECRAWL_API_KEY", "")
 if not FIRECRAWL_API_KEY:
@@ -9,7 +10,7 @@ from firecrawl import FirecrawlApp
 app = FirecrawlApp(api_key=FIRECRAWL_API_KEY)
 
 # First try map to get URLs
-out_path = r"D:\职业规划\职业规划\backend\app\crawlers\real_data\yz_crawled.json"
+out_path = Path(__file__).resolve().parent / "yz_crawled.json"
 with open(out_path, "r", encoding="utf-8") as f:
     existing = json.load(f)
 

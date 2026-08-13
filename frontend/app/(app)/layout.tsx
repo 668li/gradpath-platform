@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { AppNav } from "@/components/nav";
+import { CommandPalette } from "@/components/command-palette";
 import { AuthGuard } from "@/components/auth-guard";
 import { useAuthStore } from "@/stores/auth";
 import { useOnboardingStore } from "@/stores/onboarding";
@@ -71,34 +72,40 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     }
   }, [onboardingCompleted, pathname, router]);
 
+  // Onboarding 页面使用沉浸式布局（隐藏侧边栏和 footer，减少干扰）
+  const isOnboarding = pathname === "/onboarding" || pathname.startsWith("/onboarding/");
+
   return (
     <AuthGuard>
       <div className="min-h-screen bg-paper-100 flex flex-col">
-        <AppNav />
-        <main className="md:pl-64 flex-1">
+        {!isOnboarding && <AppNav />}
+        <main className={isOnboarding ? "flex-1" : "md:pl-64 flex-1"}>
           <div className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-10">
             {children}
           </div>
         </main>
-        <footer className="md:pl-64 border-t border-paper-300 bg-paper-100">
-          <div className="mx-auto max-w-6xl px-4 md:px-8 py-6 flex flex-col md:flex-row gap-3 md:items-center md:justify-between text-xs text-ink-500">
-            <p>© {new Date().getFullYear()} GradPath · 职径 · 职业轨迹</p>
-            <nav className="flex flex-wrap gap-4">
-              <Link href="/legal/privacy" className="hover:text-brand-600 hover:underline">
-                隐私政策
-              </Link>
-              <Link href="/legal/terms" className="hover:text-brand-600 hover:underline">
-                用户协议
-              </Link>
-              <Link href="/legal/cookie" className="hover:text-brand-600 hover:underline">
-                Cookie 政策
-              </Link>
-              <Link href="/legal" className="hover:text-brand-600 hover:underline">
-                法律文件
-              </Link>
-            </nav>
-          </div>
-        </footer>
+        {!isOnboarding && (
+          <footer className="md:pl-64 border-t border-paper-300 bg-paper-100">
+            <div className="mx-auto max-w-6xl px-4 md:px-8 py-6 flex flex-col md:flex-row gap-3 md:items-center md:justify-between text-xs text-ink-500">
+              <p>© {new Date().getFullYear()} GradPath · 职径 · 职业轨迹</p>
+              <nav className="flex flex-wrap gap-4">
+                <Link href="/legal/privacy" className="hover:text-brand-600 hover:underline">
+                  隐私政策
+                </Link>
+                <Link href="/legal/terms" className="hover:text-brand-600 hover:underline">
+                  用户协议
+                </Link>
+                <Link href="/legal/cookie" className="hover:text-brand-600 hover:underline">
+                  Cookie 政策
+                </Link>
+                <Link href="/legal" className="hover:text-brand-600 hover:underline">
+                  法律文件
+                </Link>
+              </nav>
+            </div>
+          </footer>
+        )}
+        <CommandPalette />
       </div>
     </AuthGuard>
   );

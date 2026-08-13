@@ -17,7 +17,6 @@ from app.models.destination_decision import DestinationDecision
 from app.models.growth_insight import GrowthInsight
 from app.models.retrospective import Retrospective
 from app.models.skill_node import SkillNode
-from app.services.ai_service import AIService
 from app.services.ai_orchestrator import AIOrchestrator
 
 # Context 中各类数据的条数上限（事件取最近 50 条）

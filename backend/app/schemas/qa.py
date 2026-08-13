@@ -52,6 +52,8 @@ class QAAnswerResponse(QAAnswerBase):
     status: str = Field(..., description="审核状态")
     created_at: datetime
     updated_at: datetime
+    author_name: Optional[str] = Field(None, description="作者显示名")
+    author_avatar: Optional[str] = Field(None, description="作者头像URL")
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -68,6 +70,8 @@ class QAResponse(QABase):
     answers: list[QAAnswerResponse] = Field(default_factory=list, description="回答列表")
     created_at: datetime
     updated_at: datetime
+    author_name: Optional[str] = Field(None, description="作者显示名")
+    author_avatar: Optional[str] = Field(None, description="作者头像URL")
 
     model_config = ConfigDict(from_attributes=True)
 

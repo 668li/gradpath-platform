@@ -18,12 +18,12 @@ import {
   TrendingUp,
   ChevronDown,
   BeakerIcon,
-  GitBranch,
   Route,
   BookOpen,
   Building2,
   Briefcase,
   MessageSquare,
+  MessageCircle,
   Brain,
   Network,
   Compass,
@@ -33,9 +33,14 @@ import {
   Sparkles,
   Lightbulb,
   Trophy,
+  Footprints,
+  HeartCrack,
+  ListChecks,
+  Command as CommandIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth";
+import { openCommandPalette } from "@/components/command-palette";
 
 interface NavChild {
   href: string;
@@ -52,74 +57,100 @@ interface NavSection {
 }
 
 function getNavSections(): NavSection[] {
+  // 乔布斯式重组：导航不再按"功能分类"，而按用户旅程脊柱组织。
+  // 学生的旅程是一条线：定位 → 情报 → 决策 → 执行 → 复盘。
   return [
     {
       href: "/dashboard",
       label: "我的看板",
       icon: LayoutDashboard,
-      section: "核心",
+      section: "旅程",
     },
     {
-      href: "/decision-center",
-      label: "决策中心",
-      icon: Target,
+      href: "/assessment",
+      label: "定位 · 认识自己",
+      icon: Compass,
+      section: "旅程",
       children: [
-        { href: "/decision-center", label: "决策中心", icon: Target },
-        { href: "/decision-lab", label: "决策实验室", icon: BeakerIcon },
-        { href: "/decisions", label: "去向决策", icon: GitBranch },
-        { href: "/career-simulator", label: "职业路径模拟器", icon: Route },
+        { href: "/assessment", label: "职业测评", icon: Target },
+        { href: "/life-wheel", label: "人生平衡轮", icon: Compass },
+        { href: "/skills", label: "技能树", icon: Network },
       ],
     },
     {
-      href: "/intel",
-      label: "情报中心",
+      href: "/kaoyan",
+      label: "情报 · 了解选项",
       icon: Search,
+      section: "旅程",
       children: [
-        { href: "/intel", label: "情报中心", icon: Search },
-        { href: "/kaoyan", label: "考研工具箱", icon: BookOpen },
-        { href: "/civil-service", label: "考公中心", icon: Building2 },
-        { href: "/employment", label: "就业中心", icon: Briefcase },
+        { href: "/kaoyan", label: "考研情报", icon: BookOpen },
+        { href: "/civil-service", label: "考公情报", icon: Building2 },
+        { href: "/employment", label: "就业情报", icon: Briefcase },
         { href: "/interview", label: "面试经验", icon: MessageSquare },
+        { href: "/failure-cases", label: "失败案例库", icon: HeartCrack },
+      ],
+    },
+    {
+      href: "/decision-center",
+      label: "决策 · 做出选择",
+      icon: Target,
+      section: "旅程",
+      children: [
+        { href: "/decision-center", label: "决策中心", icon: Target },
+        { href: "/decision-lab", label: "决策实验室", icon: BeakerIcon },
+        { href: "/career-simulator", label: "路径模拟器", icon: Route },
+        { href: "/micro-actions", label: "7天微行动", icon: Footprints },
+      ],
+    },
+    {
+      href: "/career",
+      label: "执行 · 落地行动",
+      icon: Swords,
+      section: "旅程",
+      children: [
+        { href: "/actions", label: "行动任务中心", icon: ListChecks },
+        { href: "/career", label: "职业规划", icon: Map },
+        { href: "/study-plans", label: "学习计划", icon: Swords },
+        { href: "/life-design", label: "人生设计", icon: Sparkles },
+        { href: "/timeline", label: "时间线", icon: Calendar },
       ],
     },
     {
       href: "/growth/archive",
-      label: "成长档案",
+      label: "复盘 · 成长记录",
       icon: TrendingUp,
-      section: "成长",
+      section: "旅程",
       children: [
         { href: "/growth/archive", label: "成长档案", icon: TrendingUp },
-        { href: "/skills", label: "技能树", icon: Network },
-        { href: "/life-wheel", label: "人生平衡轮", icon: Compass },
         { href: "/retrospectives", label: "阶段复盘", icon: Calendar },
         { href: "/insights", label: "成长洞察", icon: Lightbulb },
+        { href: "/achievements", label: "成就墙", icon: Trophy },
       ],
     },
     {
       href: "/community",
       label: "社区",
       icon: Users,
+      section: "更多",
     },
     {
       href: "/ai-butler",
-      label: "AI 对话",
+      label: "AI 助手",
       icon: Bot,
+      section: "更多",
       children: [
-        { href: "/ai-butler", label: "AI 对话", icon: Bot },
+        { href: "/ai-butler", label: "AI 职业管家", icon: Bot },
         { href: "/mentors", label: "AI 导师团", icon: Brain },
-        { href: "/life-design", label: "人生设计引擎", icon: Sparkles },
       ],
     },
     {
       href: "/profile",
       label: "个人中心",
       icon: UserCircle,
-      section: "其他",
+      section: "更多",
       children: [
-        { href: "/profile", label: "个人中心", icon: UserCircle },
-        { href: "/career", label: "职业规划", icon: Map },
-        { href: "/study-plans", label: "学习计划", icon: Swords },
-        { href: "/achievements", label: "成就墙", icon: Trophy },
+        { href: "/profile", label: "个人档案", icon: UserCircle },
+        { href: "/family-dialogue", label: "家庭对话", icon: MessageCircle },
       ],
     },
   ];
@@ -131,6 +162,14 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const sections = useMemo(() => getNavSections(), []);
+
+  const [isMac, setIsMac] = useState(false);
+  useEffect(() => {
+    setIsMac(
+      typeof navigator !== "undefined" &&
+        /Mac|iPhone|iPod|iPad/.test(navigator.platform),
+    );
+  }, []);
 
   const [unread, setUnread] = useState(0);
   useEffect(() => {
@@ -150,6 +189,11 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const handleLogout = () => {
     logout();
     router.replace("/login");
+  };
+
+  const handleOpenPalette = () => {
+    onNavigate?.();
+    openCommandPalette();
   };
 
   return (
@@ -211,6 +255,26 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           <Search className="h-[18px] w-[18px] text-ink-400" strokeWidth={1.8} />
           搜索
         </Link>
+        <button
+          type="button"
+          onClick={handleOpenPalette}
+          data-track-id="nav:command-palette"
+          className="group flex min-h-[44px] w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-ink-300 hover:bg-ink-700/40 hover:text-paper-100 transition-colors"
+          aria-label="打开命令面板"
+        >
+          <CommandIcon
+            className="h-[18px] w-[18px] text-ink-400 transition-colors group-hover:text-paper-200"
+            strokeWidth={1.8}
+          />
+          <span className="flex-1 text-left">命令面板</span>
+          <kbd
+            className="inline-flex h-5 items-center gap-0.5 rounded border border-ink-600 bg-ink-900/40 px-1.5 text-[10px] font-medium text-ink-400"
+            aria-hidden="true"
+          >
+            {isMac ? "⌘" : "Ctrl"}
+            <span className="text-ink-500">K</span>
+          </kbd>
+        </button>
         <div className="flex items-center gap-2.5 rounded-lg px-3 py-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-500/20 text-sm font-semibold text-brand-300 ring-1 ring-brand-500/30">
             {user?.name?.[0] ?? "U"}
@@ -284,7 +348,7 @@ function NavSectionItem({
           )}
         >
           {isSelfOrChildActive && (
-            <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-brand-400" />
+            <span className="absolute left-0 top-1/2 h-5 w-[3px] -tranink-y-1/2 rounded-r-full bg-brand-400" />
           )}
           <section.icon
             className={cn(
@@ -318,7 +382,7 @@ function NavSectionItem({
           )}
         >
           {isActive(section.href) && (
-            <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-brand-400" />
+            <span className="absolute left-0 top-1/2 h-5 w-[3px] -tranink-y-1/2 rounded-r-full bg-brand-400" />
           )}
           <section.icon
             className={cn(
@@ -353,7 +417,7 @@ function NavSectionItem({
                 )}
               >
                 {active && (
-                  <span className="absolute left-0 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-r-full bg-brand-400/60" />
+                  <span className="absolute left-0 top-1/2 h-4 w-[2px] -tranink-y-1/2 rounded-r-full bg-brand-400/60" />
                 )}
                 <ChildIcon
                   className={cn(

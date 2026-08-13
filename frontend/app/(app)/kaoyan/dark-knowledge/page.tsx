@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { BookOpen, Search, ChevronDown, ChevronUp, Lightbulb, AlertTriangle, CheckCircle } from "lucide-react";
 import { gradIntelApi } from "@/lib/api";
+import type { DarkKnowledgeResponse } from "@/types";
 import { EmptyState } from "@/components/ui/empty";
 import { ListSkeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/toast";
@@ -21,14 +22,14 @@ const IMPORTANCE_MAP: Record<string, { label: string; color: string; icon: typeo
   critical: { label: "关键", color: "bg-red-100 text-red-700", icon: AlertTriangle },
   high: { label: "重要", color: "bg-orange-100 text-orange-700", icon: AlertTriangle },
   medium: { label: "一般", color: "bg-blue-100 text-blue-700", icon: Lightbulb },
-  low: { label: "了解", color: "bg-gray-100 text-gray-600", icon: CheckCircle },
+  low: { label: "了解", color: "bg-ink-100 text-ink-600", icon: CheckCircle },
 };
 
 const PAGE_SIZE = 20;
 
 export default function KaoyanDarkKnowledgePage() {
   const toast = useToast();
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<DarkKnowledgeResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [stage, setStage] = useState("");
   const [search, setSearch] = useState("");
@@ -38,11 +39,11 @@ export default function KaoyanDarkKnowledgePage() {
 
   const load = useCallback((targetPage: number, targetStage: string) => {
     setLoading(true);
-    const params: Record<string, any> = { page: targetPage, page_size: PAGE_SIZE };
+    const params: Record<string, string | number> = { page: targetPage, page_size: PAGE_SIZE };
     if (targetStage) params.stage = targetStage;
     gradIntelApi
       .getDarkKnowledge(params)
-      .then((d: any) => {
+      .then((d) => {
         const raw = d.items || (Array.isArray(d) ? d : []);
         const totalCount = d.total || raw.length;
         setItems(raw);
@@ -97,7 +98,7 @@ export default function KaoyanDarkKnowledgePage() {
       {/* Search + Stage Filter */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-400" />
+          <Search className="absolute left-3 top-1/2 -tranink-y-1/2 h-4 w-4 text-ink-400" />
           <input
             type="text"
             value={search}
@@ -134,7 +135,7 @@ export default function KaoyanDarkKnowledgePage() {
         />
       ) : (
         <div className="space-y-3">
-          {filtered.map((item: any) => {
+          {filtered.map((item) => {
             const imp = IMPORTANCE_MAP[item.importance] || IMPORTANCE_MAP.medium;
             const ImpIcon = imp.icon;
             const expanded = expandedId === item.id;

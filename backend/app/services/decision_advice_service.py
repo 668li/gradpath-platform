@@ -21,7 +21,6 @@ from app.models.salary_benchmark import SalaryBenchmark
 from app.models.skill_node import SkillNode
 from app.models.user import User
 from app.schemas.ai import DecisionAdviceRequest, DecisionAdviceResponse
-from app.services.ai_service import AIService
 from app.services.ai_orchestrator import AIOrchestrator
 from app.services.employment_service import escape_like
 

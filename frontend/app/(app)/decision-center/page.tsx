@@ -9,6 +9,12 @@ import { DESTINATION_TYPE_LABEL } from "@/lib/constants";
 import { EmptyState, LoadingState } from "@/components/ui/empty";
 import { Badge, Button } from "@/components/ui/form-controls";
 import { ListSkeleton } from "@/components/ui/skeleton";
+import {
+  PathConflictSection,
+  ProcrastinationCostCard,
+  RegretLessonsCard,
+  TimeCapsuleCard,
+} from "@/components/decision-copilot";
 import type { DecisionResponse, PaginatedResponse, DecisionAnalysisResponse } from "@/types";
 
 const TABS = [
@@ -77,58 +83,100 @@ export default function DecisionCenterPage() {
         ))}
       </div>
 
+      {/* 路径冲突调解卡片 — 检测到冲突时显示在决策列表上方 */}
+      <PathConflictSection />
+
+      {/* 创意功能：决策拖延成本 — 量化"还在犹豫"的真实代价 */}
+      <ProcrastinationCostCard />
+
+      {/* 创意功能：前车之鉴 — 过来人的后悔与教训 */}
+      <RegretLessonsCard />
+
       {loading || analysisLoading ? (
         <ListSkeleton count={4} />
       ) : activeTab === "pending" ? (
         pendingDecisions.length === 0 ? (
-          <EmptyState
-            title="暂无待决策事项"
-            description="前往决策页面创建你的第一个决策"
-            action={
-              <Link href="/decisions">
-                <Button>
-                  <Plus className="h-4 w-4" /> 创建决策
-                </Button>
-              </Link>
-            }
-          />
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            {pendingDecisions.map((d) => (
-              <div key={d.id} className="bg-white rounded-xl border border-paper-200 p-5 hover:shadow-md transition-shadow">
-                <div className="flex items-start gap-3">
-                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
-                    <Clock className="h-4 w-4" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-ink-800">
-                        {DESTINATION_TYPE_LABEL[d.destination_type]}
-                      </h3>
-                      <Badge color={STATUS_BADGE[d.status]}>待决策</Badge>
-                    </div>
-                    <p className="mt-1 text-sm text-ink-400">
-                      创建于 {formatDate(d.created_at)}
-                    </p>
-                    {d.reasoning && (
-                      <p className="mt-2 text-sm text-ink-500 line-clamp-2">{d.reasoning}</p>
-                    )}
+          <div className="space-y-6">
+            <EmptyState
+              title="记录你的第一个去向决策"
+              description="「去向决策」是你对毕业方向的一次正式选择——考研、就业、考公、出国等。记录下来，系统会帮你跟踪进度、安排回顾、检测路径冲突。"
+              action={
+                <Link href="/decisions">
+                  <Button>
+                    <Plus className="h-4 w-4" /> 创建决策
+                  </Button>
+                </Link>
+              }
+            />
+            <div className="bg-white rounded-xl border border-paper-200 p-5">
+              <h3 className="text-sm font-semibold text-ink-700 mb-3">示例：一条决策长什么样？</h3>
+              <div className="flex items-start gap-3 rounded-lg bg-paper-50 border border-paper-200 p-4">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                  <Clock className="h-4 w-4" />
+                </span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-ink-800 text-sm">考研 · 计算机科学与技术</span>
+                    <Badge color="slate">待决策</Badge>
                   </div>
-                </div>
-                <div className="mt-4 flex items-center justify-between border-t border-paper-100 pt-3">
-                  <span className="text-xs text-ink-400">
-                    {analyzedIds.has(d.id) ? "已分析" : "待分析"}
-                  </span>
-                  <Link
-                    href={`/decision-lab?decision_id=${d.id}`}
-                    className="inline-flex items-center gap-1 text-sm font-medium text-brand-600 hover:text-brand-700"
-                  >
-                    继续分析
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </Link>
+                  <p className="mt-1 text-xs text-ink-500">理由：本科项目经历让我对科研产生兴趣，目标院校华科/西交</p>
+                  <p className="mt-1 text-xs text-ink-400">创建后系统会自动安排 30 天回顾提醒</p>
                 </div>
               </div>
-            ))}
+              <p className="mt-3 text-xs text-ink-400">
+                你也可以在 <Link href="/decision-lab" className="text-brand-600 hover:underline">决策实验室</Link> 中用 5 步结构化分析来做深度对比。
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-2">
+              {pendingDecisions.map((d) => (
+                <div key={d.id} className="bg-white rounded-xl border border-paper-200 p-5 hover:shadow-md transition-shadow">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                      <Clock className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-ink-800">
+                          {DESTINATION_TYPE_LABEL[d.destination_type]}
+                        </h3>
+                        <Badge color={STATUS_BADGE[d.status]}>待决策</Badge>
+                      </div>
+                      <p className="mt-1 text-sm text-ink-400">
+                        创建于 {formatDate(d.created_at)}
+                      </p>
+                      {d.reasoning && (
+                        <p className="mt-2 text-sm text-ink-500 line-clamp-2">{d.reasoning}</p>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center justify-between border-t border-paper-100 pt-3">
+                    <span className="text-xs text-ink-400">
+                      {analyzedIds.has(d.id) ? "已分析" : "待分析"}
+                    </span>
+                    <Link
+                      href={`/decision-lab?decision_id=${d.id}`}
+                      className="inline-flex items-center gap-1 text-sm font-medium text-brand-600 hover:text-brand-700"
+                    >
+                      继续分析
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* 创意功能：决策时间胶囊 — 为最近一条待决策写给未来自己的信 */}
+            {pendingDecisions.length > 0 && (
+              <div>
+                <p className="mb-2 text-xs text-ink-400">
+                  给「{DESTINATION_TYPE_LABEL[pendingDecisions[0].destination_type]}」这个决策封存的信
+                </p>
+                <TimeCapsuleCard decisionId={pendingDecisions[0].id} />
+              </div>
+            )}
           </div>
         )
       ) : (

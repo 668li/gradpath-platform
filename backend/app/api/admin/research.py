@@ -2,6 +2,7 @@
 import json
 import logging
 import tempfile
+from datetime import datetime
 from pathlib import Path
 from uuid import UUID
 
@@ -14,6 +15,7 @@ from app.crawlers.research.rss_news_crawler import RssNewsCrawler
 from app.database import get_db
 from app.models.crawler_run import CrawlerRun
 from app.models.experience_post import ExperiencePost
+from app.models.ingestion import ExternalResearchItem, ReviewQueueItem
 from app.models.kaoyan_news import KaoyanNews
 from app.models.user import User
 from app.schemas.research_admin import (
@@ -24,7 +26,7 @@ from app.schemas.research_admin import (
     ResearchTriggerResponse,
     RssResearchRequest,
 )
-from app.seed.seed_from_research import import_bilibili_research, import_rss_research
+from app.services.research_promote import promote_external_item
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +76,67 @@ def _finish_run_record(
     db.commit()
 
 
+def _auto_approve_last_run(db: Session, crawler_name: str, admin: User) -> tuple[int, int]:
+    """采集后对本次写入的队列条目直接执行审核通过（管理员显式授权 auto_approve=True）。
+
+    审核链路统一走新队列（P1 修理）：采集只写 t_external_research_item + t_review_queue_item，
+    此处对刚写入的 PENDING 条目直接走 promote 服务落业务表，不再双写。
+
+    Returns:
+        (promoted, pending_remaining)
+    """
+    run = (
+        db.query(CrawlerRun)
+        .filter(
+            CrawlerRun.source_name == crawler_name,
+            CrawlerRun.status == "success",
+        )
+        .order_by(CrawlerRun.created_at.desc())
+        .first()
+    )
+    if not run:
+        return (0, 0)
+
+    ext_items = (
+        db.query(ExternalResearchItem)
+        .filter(
+            ExternalResearchItem.crawler_run_id == str(run.id),
+            ExternalResearchItem.review_status == "PENDING",
+        )
+        .all()
+    )
+
+    promoted = 0
+    pending_remaining = 0
+    for ext_item in ext_items:
+        queue_item = (
+            db.query(ReviewQueueItem)
+            .filter(
+                ReviewQueueItem.ref_item_id == ext_item.id,
+                ReviewQueueItem.review_status == "PENDING",
+            )
+            .first()
+        )
+        if queue_item is None:
+            continue
+        try:
+            result = promote_external_item(db, ext_item, admin.email)
+            queue_item.review_status = "APPROVED"
+            queue_item.reviewed_by = admin.email
+            queue_item.reviewed_time = datetime.now()
+            ext_item.review_status = "APPROVED"
+            promoted += result["promoted"]
+        except Exception:
+            db.rollback()
+            logger.exception(
+                "[research_admin] auto_approve 单条失败 ext_item_id=%s", ext_item.id
+            )
+            pending_remaining += 1
+            continue
+    db.commit()
+    return (promoted, pending_remaining)
+
+
 @router.post("/bilibili", response_model=ResearchTriggerResponse)
 def run_bilibili_research(
     body: BilibiliResearchRequest,
@@ -99,30 +162,37 @@ def run_bilibili_research(
         )
         raw_items = crawler.fetch()
         parsed_items = crawler.parse(raw_items)
-        crawler.store(parsed_items, db)
+        inserted = crawler.store(parsed_items, db)
 
-        imported = import_bilibili_research(db, parsed_items, approve=body.auto_approve)
+        # 审核链路统一走新队列（P1 修理）：采集只写 t_external_research_item + t_review_queue_item，
+        # 不再双写 ExperiencePost。auto_approve=True 时管理员显式授权，对本次采集的
+        # 队列条目直接执行审核通过（落业务表）；False 则留在队列待人工审核。
+        promoted = 0
+        pending_count = inserted
+        if body.auto_approve:
+            promoted, pending_count = _auto_approve_last_run(db, crawler.name, admin)
 
         _finish_run_record(
             db,
             run_record,
             status="success",
             fetched=len(raw_items),
-            stored=imported,
+            stored=promoted,
         )
 
         logger.info(
-            "[research_admin] admin=%s platform=bilibili keyword=%s imported=%d",
+            "[research_admin] admin=%s platform=bilibili keyword=%s inserted=%d promoted=%d",
             admin.id,
             body.keyword,
-            imported,
+            inserted,
+            promoted,
         )
 
         return ResearchTriggerResponse(
             status="success",
             fetched=len(raw_items),
-            stored=imported,
-            pending=0 if body.auto_approve else imported,
+            stored=promoted,
+            pending=pending_count,
         )
     except Exception as e:
         logger.exception("[research_admin] B站调研失败: %s", e)
@@ -168,29 +238,34 @@ def run_rss_research(
         crawler = RssNewsCrawler(config=config)
         raw_items = crawler.fetch()
         parsed_items = crawler.parse(raw_items)
-        crawler.store(parsed_items, db)
+        inserted = crawler.store(parsed_items, db)
 
-        imported = import_rss_research(db, parsed_items, approve=body.auto_approve)
+        # 与 B站端点一致（P1 修理）：采集只写队列，auto_approve 直接对本次队列执行审核通过
+        promoted = 0
+        pending_count = inserted
+        if body.auto_approve:
+            promoted, pending_count = _auto_approve_last_run(db, crawler.name, admin)
 
         _finish_run_record(
             db,
             run_record,
             status="success",
             fetched=len(raw_items),
-            stored=imported,
+            stored=promoted,
         )
 
         logger.info(
-            "[research_admin] admin=%s platform=rss imported=%d",
+            "[research_admin] admin=%s platform=rss inserted=%d promoted=%d",
             admin.id,
-            imported,
+            inserted,
+            promoted,
         )
 
         return ResearchTriggerResponse(
             status="success",
             fetched=len(raw_items),
-            stored=imported,
-            pending=0 if body.auto_approve else imported,
+            stored=promoted,
+            pending=pending_count,
         )
     except Exception as e:
         logger.exception("[research_admin] RSS调研失败: %s", e)

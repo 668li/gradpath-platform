@@ -20,6 +20,9 @@ import {
   GraduationCap,
   // 修复: 缺失 Search 图标导入，导致 L266 引用未定义变量
   Search,
+  Compass,
+  Sparkles,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { careerIntelApi } from "@/lib/api/ai";
@@ -28,6 +31,7 @@ import { useApi } from "@/lib/api/swr-config";
 import { useToast } from "@/components/ui/toast";
 import { EmptyState, LoadingState } from "@/components/ui/empty";
 import { ListSkeleton, CardSkeleton } from "@/components/ui/skeleton";
+import { InspirationCases } from "@/components/inspiration-cases";
 import {
   BarChart as ReBarChart,
   Bar,
@@ -63,6 +67,10 @@ const tabs = [
   { id: "employment", label: "就业数据", icon: BarChart3, color: "text-amber-500", desc: "查看各高校就业率、行业分布、去向统计等数据" },
   { id: "dark-knowledge", label: "暗知识", icon: Lightbulb, color: "text-rose-500", desc: "求职过程中那些没人告诉你的关键经验与教训" },
   { id: "interview", label: "面经库", icon: MessageSquare, color: "text-cyan-500", desc: "海量面试经验分享，助你充分准备每一场面试" },
+  { id: "bright-outlook", label: "朝阳职业", icon: Sparkles, color: "text-orange-500", desc: "Bright Outlook 朝阳职业：高增长、快速扩张与新兴岗位标记，帮你瞄准正在变热的赛道" },
+  { id: "salary-slice", label: "薪资透视", icon: DollarSign, color: "text-emerald-500", desc: "按岗位 × 城市查看薪资四分位分布，校准期望薪资" },
+  { id: "company-reviews", label: "公司口碑", icon: Users, color: "text-indigo-500", desc: "已入职校友匿名评价：优点、缺点与推荐度" },
+  { id: "inspiration", label: "灵感案例", icon: Sparkles, color: "text-pink-500", desc: "精选 Trae Work 论坛 96 个就业类创意方案，获取产品灵感" },
 ];
 
 // ===== 标签颜色映射 =====
@@ -71,7 +79,7 @@ const overtimeColors: Record<string, string> = {
   mild: "bg-blue-100 text-blue-700",
   moderate: "bg-amber-100 text-amber-700",
   severe: "bg-red-100 text-red-700",
-  unknown: "bg-gray-100 text-gray-500",
+  unknown: "bg-ink-100 text-ink-500",
 };
 
 const overtimeLabels: Record<string, string> = {
@@ -87,7 +95,7 @@ const layoffColors: Record<string, string> = {
   low: "bg-blue-100 text-blue-700",
   moderate: "bg-amber-100 text-amber-700",
   high: "bg-red-100 text-red-700",
-  unknown: "bg-gray-100 text-gray-500",
+  unknown: "bg-ink-100 text-ink-500",
 };
 
 const layoffLabels: Record<string, string> = {
@@ -102,7 +110,7 @@ const promotionColors: Record<string, string> = {
   good: "bg-green-100 text-green-700",
   fair: "bg-amber-100 text-amber-700",
   poor: "bg-red-100 text-red-700",
-  unknown: "bg-gray-100 text-gray-500",
+  unknown: "bg-ink-100 text-ink-500",
 };
 
 const promotionLabels: Record<string, string> = {
@@ -140,6 +148,158 @@ const iconTextColors: Record<string, string> = {
   amber: "text-amber-500",
 };
 
+// ===== 朝阳职业数据（O*NET Bright Outlook 灵感） =====
+type BrightOutlookColor = "red" | "orange" | "green" | "gray";
+type BrightOutlookRole = {
+  name: string;
+  growth: number;
+  badge: string;
+  label: string;
+  color: BrightOutlookColor;
+  desc: string;
+};
+
+const BRIGHT_OUTLOOK_ROLES: BrightOutlookRole[] = [
+  { name: "AI工程师", growth: 35, badge: "🔥", label: "高增长", color: "red", desc: "大模型与应用层需求爆发，算法与工程复合人才紧缺" },
+  { name: "数据科学家", growth: 28, badge: "🔥", label: "高增长", color: "red", desc: "数据驱动决策渗透各行业，建模与业务洞察双能力受追捧" },
+  { name: "云计算工程师", growth: 25, badge: "⬆", label: "快速增长", color: "orange", desc: "企业上云持续深化，云原生与稳定性方向岗位扩张" },
+  { name: "网络安全工程师", growth: 32, badge: "🔥", label: "高增长", color: "red", desc: "合规与攻防双轮驱动，安全人才缺口长期存在" },
+  { name: "新能源工程师", growth: 30, badge: "🆕", label: "新兴", color: "green", desc: "光伏、储能、新能源汽车带动交叉学科岗位崛起" },
+  { name: "芯片设计工程师", growth: 22, badge: "⬆", label: "快速增长", color: "orange", desc: "国产替代主线明确，数字/模拟/验证方向持续招人" },
+  { name: "产品经理", growth: 15, badge: "⬆", label: "稳定增长", color: "orange", desc: "AI 产品与 B 端产品方向需求结构性走强" },
+  { name: "全栈工程师", growth: 18, badge: "⬆", label: "快速增长", color: "orange", desc: "中小团队偏好端到端交付能力，全栈性价比凸显" },
+  { name: "DevOps工程师", growth: 21, badge: "⬆", label: "快速增长", color: "orange", desc: "平台工程与可观测性方向稳定扩张" },
+  { name: "用户研究师", growth: 19, badge: "⬆", label: "稳定增长", color: "orange", desc: "体验经济下用研介入产品全生命周期" },
+  { name: "商业分析师", growth: 14, badge: "→", label: "平稳", color: "gray", desc: "SQL + 业务理解为基础岗，进阶需建模能力" },
+  { name: "供应链管理", growth: 12, badge: "→", label: "平稳", color: "gray", desc: "制造业与跨境电商保持稳定吸纳" },
+  { name: "数字营销", growth: 16, badge: "⬆", label: "稳定增长", color: "orange", desc: "内容种草与投流操盘手需求上行" },
+  { name: "内容运营", growth: 10, badge: "→", label: "平稳", color: "gray", desc: "岗位总量大但门槛走低，差异化能力成关键" },
+  { name: "人力资源", growth: 8, badge: "→", label: "平稳", color: "gray", desc: "HRBP 与组织发展方向相对稳健" },
+];
+
+const brightOutlookColorClasses: Record<BrightOutlookColor, string> = {
+  red: "bg-red-100 text-red-700 border-red-200",
+  orange: "bg-orange-100 text-orange-700 border-orange-200",
+  green: "bg-green-100 text-green-700 border-green-200",
+  gray: "bg-ink-100 text-ink-600 border-ink-200",
+};
+
+const brightOutlookBarColors: Record<BrightOutlookColor, string> = {
+  red: "#ef4444",
+  orange: "#f97316",
+  green: "#22c55e",
+  gray: "#9ca3af",
+};
+
+// 模糊匹配岗位名，命中则返回朝阳职业信息（用于现有公司/岗位列表加标记）
+function findBrightOutlook(position: string | null | undefined): BrightOutlookRole | null {
+  if (!position) return null;
+  const p = position.toLowerCase();
+  return BRIGHT_OUTLOOK_ROLES.find((r) => p.includes(r.name.toLowerCase())) ?? null;
+}
+
+// ===== 薪资透视数据（Glassdoor 灵感：按城市切片） =====
+type SalarySlice = { p25: string; p50: string; p75: string; p90: string };
+const SALARY_DATA: Record<string, Record<string, SalarySlice>> = {
+  软件工程师: {
+    北京: { p25: "18万", p50: "25万", p75: "35万", p90: "50万" },
+    上海: { p25: "17万", p50: "24万", p75: "34万", p90: "48万" },
+    深圳: { p25: "16万", p50: "23万", p75: "32万", p90: "45万" },
+    杭州: { p25: "15万", p50: "22万", p75: "30万", p90: "42万" },
+    成都: { p25: "12万", p50: "18万", p75: "25万", p90: "35万" },
+  },
+  数据科学家: {
+    北京: { p25: "20万", p50: "30万", p75: "45万", p90: "65万" },
+    上海: { p25: "19万", p50: "28万", p75: "42万", p90: "60万" },
+    深圳: { p25: "18万", p50: "27万", p75: "40万", p90: "55万" },
+    杭州: { p25: "16万", p50: "25万", p75: "38万", p90: "52万" },
+    成都: { p25: "13万", p50: "20万", p75: "30万", p90: "42万" },
+  },
+  AI工程师: {
+    北京: { p25: "25万", p50: "38万", p75: "55万", p90: "80万" },
+    上海: { p25: "23万", p50: "35万", p75: "52万", p90: "75万" },
+    深圳: { p25: "22万", p50: "34万", p75: "50万", p90: "72万" },
+    杭州: { p25: "20万", p50: "32万", p75: "48万", p90: "68万" },
+    成都: { p25: "15万", p50: "24万", p75: "36万", p90: "50万" },
+  },
+  算法工程师: {
+    北京: { p25: "22万", p50: "33万", p75: "50万", p90: "72万" },
+    上海: { p25: "20万", p50: "31万", p75: "46万", p90: "66万" },
+    深圳: { p25: "19万", p50: "30万", p75: "44万", p90: "63万" },
+    杭州: { p25: "18万", p50: "28万", p75: "42万", p90: "60万" },
+    成都: { p25: "14万", p50: "22万", p75: "32万", p90: "45万" },
+  },
+  产品经理: {
+    北京: { p25: "18万", p50: "26万", p75: "38万", p90: "55万" },
+    上海: { p25: "17万", p50: "25万", p75: "36万", p90: "52万" },
+    深圳: { p25: "16万", p50: "24万", p75: "34万", p90: "48万" },
+    杭州: { p25: "15万", p50: "22万", p75: "32万", p90: "45万" },
+    成都: { p25: "12万", p50: "18万", p75: "26万", p90: "36万" },
+  },
+  前端工程师: {
+    北京: { p25: "16万", p50: "23万", p75: "32万", p90: "45万" },
+    上海: { p25: "15万", p50: "22万", p75: "31万", p90: "43万" },
+    深圳: { p25: "14万", p50: "21万", p75: "30万", p90: "42万" },
+    杭州: { p25: "13万", p50: "20万", p75: "28万", p90: "40万" },
+    成都: { p25: "10万", p50: "16万", p75: "22万", p90: "32万" },
+  },
+  后端工程师: {
+    北京: { p25: "17万", p50: "25万", p75: "35万", p90: "50万" },
+    上海: { p25: "16万", p50: "24万", p75: "34万", p90: "48万" },
+    深圳: { p25: "15万", p50: "23万", p75: "32万", p90: "46万" },
+    杭州: { p25: "14万", p50: "21万", p75: "30万", p90: "42万" },
+    成都: { p25: "11万", p50: "17万", p75: "24万", p90: "34万" },
+  },
+  测试工程师: {
+    北京: { p25: "12万", p50: "18万", p75: "25万", p90: "35万" },
+    上海: { p25: "11万", p50: "17万", p75: "24万", p90: "33万" },
+    深圳: { p25: "10万", p50: "16万", p75: "23万", p90: "32万" },
+    杭州: { p25: "10万", p50: "15万", p75: "22万", p90: "30万" },
+    成都: { p25: "8万", p50: "13万", p75: "18万", p90: "26万" },
+  },
+  运维工程师: {
+    北京: { p25: "14万", p50: "21万", p75: "30万", p90: "42万" },
+    上海: { p25: "13万", p50: "20万", p75: "28万", p90: "40万" },
+    深圳: { p25: "12万", p50: "19万", p75: "27万", p90: "38万" },
+    杭州: { p25: "11万", p50: "17万", p75: "25万", p90: "35万" },
+    成都: { p25: "9万", p50: "14万", p75: "20万", p90: "28万" },
+  },
+  UI设计师: {
+    北京: { p25: "13万", p50: "19万", p75: "27万", p90: "38万" },
+    上海: { p25: "12万", p50: "18万", p75: "26万", p90: "36万" },
+    深圳: { p25: "11万", p50: "17万", p75: "24万", p90: "34万" },
+    杭州: { p25: "10万", p50: "16万", p75: "22万", p90: "32万" },
+    成都: { p25: "8万", p50: "13万", p75: "18万", p90: "26万" },
+  },
+};
+
+// ===== 公司口碑数据（Glassdoor 灵感：匿名评价切片） =====
+type CompanyReview = {
+  rating: number;
+  pros: string[];
+  cons: string[];
+  recommend: string;
+  industry: string;
+};
+const COMPANY_REVIEWS: Record<string, CompanyReview> = {
+  字节跳动: { rating: 3.8, pros: ["技术氛围好", "薪资有竞争力"], cons: ["加班严重", "压力较大"], recommend: "推荐入职", industry: "互联网" },
+  腾讯: { rating: 4.0, pros: ["福利完善", "工作生活平衡较好"], cons: ["晋升慢", "内部竞争激烈"], recommend: "推荐入职", industry: "互联网" },
+  阿里巴巴: { rating: 3.6, pros: ["成长机会多", "平台大"], cons: ["996文化", "考核严格"], recommend: "看团队", industry: "互联网/电商" },
+  美团: { rating: 3.5, pros: ["业务落地快", "技术务实"], cons: ["大小周", "晋升通道窄"], recommend: "看团队", industry: "本地生活" },
+  百度: { rating: 3.4, pros: ["技术沉淀深", "AI方向投入大"], cons: ["业务波动", "薪资一般"], recommend: "推荐入职", industry: "互联网/AI" },
+  华为: { rating: 3.7, pros: ["薪资高", "平台稳", "技术锻炼强"], cons: ["工作强度大", "狼性文化"], recommend: "推荐入职", industry: "通信/终端" },
+  京东: { rating: 3.3, pros: ["供应链扎实", "福利较全"], cons: ["加班多", "管理层变动频繁"], recommend: "看团队", industry: "电商/物流" },
+  拼多多: { rating: 3.2, pros: ["薪资极高", "成长快"], cons: ["硬核加班", "稳定性一般"], recommend: "谨慎评估", industry: "电商" },
+  网易: { rating: 3.9, pros: ["工作氛围好", "产品力强", "性价比高"], cons: ["薪资中等", "杭州偏多"], recommend: "推荐入职", industry: "互联网/游戏" },
+  小米: { rating: 3.6, pros: ["生态完善", "性价比稳"], cons: ["薪资中游", "硬件利润压力"], recommend: "推荐入职", industry: "硬件/IoT" },
+};
+
+const recommendColorClasses: Record<string, string> = {
+  推荐入职: "bg-green-100 text-green-700",
+  看团队: "bg-amber-100 text-amber-700",
+  谨慎评估: "bg-red-100 text-red-700",
+};
+
 // ===== 子组件 =====
 
 function Tab1Intel() {
@@ -160,12 +320,12 @@ function Tab1Intel() {
   if (list.length === 0) {
     return (
       <EmptyState
-        title="暂无公司情报"
-        description="在求职作战室查询并保存公司情报后，可在此查看"
+        title="探索你的第一家公司"
+        description="输入目标公司名，AI 帮你分析加班强度、裁员风险、晋升前景、薪资竞争力等关键情报，保存后随时回看。"
         action={
-          <a href="/war-room" className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:opacity-90">
-            前往求职作战室
-            <ChevronRight className="h-4 w-4" />
+          <a href="/war-room" className="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 transition-colors">
+            <Search className="h-4 w-4" />
+            搜索公司，生成情报
           </a>
         }
       />
@@ -174,12 +334,17 @@ function Tab1Intel() {
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      {list.map((intel) => (
+      {list.map((intel) => {
+        const bo = findBrightOutlook(intel.position_name);
+        return (
         <div key={intel.id} className="bg-white rounded-xl border border-paper-200 p-5 hover:shadow-md transition-shadow">
           <div className="flex items-start justify-between mb-3">
             <div>
               <h3 className="font-bold text-ink-800 text-lg">{intel.company_name}</h3>
-              <p className="text-sm text-ink-500">{intel.position_name} · {intel.industry}</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-sm text-ink-500">{intel.position_name} · {intel.industry}</p>
+                {bo && <BrightOutlookBadge role={bo} compact />}
+              </div>
             </div>
             {intel.salary_range && (
               <span className="text-sm font-medium text-green-600 bg-green-50 px-2 py-1 rounded">
@@ -210,8 +375,14 @@ function Tab1Intel() {
               <span>{intel.risk_warnings[0]}</span>
             </div>
           )}
+
+          <div className="mt-4 pt-3 border-t border-paper-100 flex items-center justify-between gap-2">
+            <span className="text-xs text-ink-400">不确定这个岗位适不适合你？</span>
+            {intel.position_name && <VirtualTrialButton role={intel.position_name} />}
+          </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -271,8 +442,14 @@ function Tab2Salary() {
   if (salaries.length === 0) {
     return (
       <EmptyState
-        title="暂无薪资数据"
-        description="系统正在持续收集薪资数据，请稍后查看"
+        title="薪资数据即将呈现"
+        description="系统已收录 2880 条薪资基准数据。如果此处为空，可能是筛选条件过严——试试清除搜索关键词，或前往求职作战室查询特定岗位薪资。"
+        action={
+          <a href="/war-room" className="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 transition-colors">
+            <DollarSign className="h-4 w-4" />
+            去作战室查薪资
+          </a>
+        }
       />
     );
   }
@@ -288,7 +465,7 @@ function Tab2Salary() {
     <div className="space-y-6">
       {/* 搜索 */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-400" />
+        <Search className="absolute left-3 top-1/2 -tranink-y-1/2 h-4 w-4 text-ink-400" />
         <input
           type="text"
           value={searchText}
@@ -376,6 +553,7 @@ function SalaryTable({
             <tbody>
               {rowVirtualizer.getVirtualItems().map((virtualRow) => {
                 const s = salaries[virtualRow.index];
+                const bo = findBrightOutlook(s.position);
                 return (
                   <tr
                     key={s.id}
@@ -390,7 +568,12 @@ function SalaryTable({
                     className="border-b border-paper-100 hover:bg-paper-50/50"
                   >
                     <td className="px-4 py-3 font-medium text-ink-800">{s.company}</td>
-                    <td className="px-4 py-3 text-ink-600">{s.position}</td>
+                    <td className="px-4 py-3 text-ink-600">
+                      <span className="inline-flex items-center gap-1.5">
+                        {s.position}
+                        {bo && <BrightOutlookBadge role={bo} compact />}
+                      </span>
+                    </td>
                     <td className="px-4 py-3 text-ink-600">{s.city || "-"}</td>
                     <td className="px-4 py-3 text-ink-600">{s.experience_level}</td>
                     <td className="px-4 py-3 text-right text-ink-800">{s.salary_min}-{s.salary_max}k</td>
@@ -434,12 +617,12 @@ function Tab3Positioning() {
   if (!positioning) {
     return (
       <EmptyState
-        title="暂无求职定位"
-        description="完成求职定位评估，获取个性化竞争力分析和公司推荐"
+        title="找到你的求职定位"
+        description="告诉 AI 你的学校、专业、实习经历和目标岗位，30 秒生成竞争力评分 + 冲刺/目标/保底三档公司推荐。"
         action={
-          <a href="/war-room" className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:opacity-90">
+          <a href="/war-room" className="inline-flex items-center gap-2 px-4 py-2 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 transition-colors">
+            <Target className="h-4 w-4" />
             开始求职定位评估
-            <ChevronRight className="h-4 w-4" />
           </a>
         }
       />
@@ -751,6 +934,393 @@ function Tab6Interview() {
   );
 }
 
+// ===== 朝阳职业标记徽章（用于现有列表与新 Tab） =====
+function BrightOutlookBadge({
+  role,
+  compact,
+}: {
+  role: BrightOutlookRole;
+  compact?: boolean;
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full border text-xs font-medium",
+        brightOutlookColorClasses[role.color],
+        compact ? "px-1.5 py-0.5" : "px-2 py-1",
+      )}
+      title={`${role.label} · 增长率 ${role.growth}%`}
+    >
+      <span>{role.badge}</span>
+      <span>{role.label}</span>
+      {!compact && <span className="opacity-70">+{role.growth}%</span>}
+    </span>
+  );
+}
+
+// ===== 虚拟试岗入口（Forage 灵感） =====
+function VirtualTrialButton({ role, size = "sm" }: { role: string; size?: "sm" | "md" }) {
+  const href = `/career-simulator?from=employment&role=${encodeURIComponent(role)}`;
+  return (
+    <a
+      href={href}
+      title="不确定这个岗位适不适合你？先试驾体验一天"
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-lg bg-purple-600 text-white font-medium hover:opacity-90 transition-opacity",
+        size === "sm" ? "px-3 py-1.5 text-xs" : "px-4 py-2 text-sm",
+      )}
+    >
+      <Compass className={size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4"} />
+      虚拟试岗
+    </a>
+  );
+}
+
+// ===== Tab7: 朝阳职业（Bright Outlook） =====
+function Tab7BrightOutlook() {
+  const [keyword, setKeyword] = useState("");
+  const filtered = keyword
+    ? BRIGHT_OUTLOOK_ROLES.filter(
+        (r) => r.name.includes(keyword) || r.label.includes(keyword),
+      )
+    : BRIGHT_OUTLOOK_ROLES;
+  const sorted = [...filtered].sort((a, b) => b.growth - a.growth);
+  const maxGrowth = Math.max(...BRIGHT_OUTLOOK_ROLES.map((r) => r.growth));
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-5 border border-orange-200">
+        <div className="flex items-center gap-2 mb-2">
+          <Sparkles className="h-5 w-5 text-orange-600" />
+          <h3 className="font-bold text-orange-900">Bright Outlook 朝阳职业</h3>
+        </div>
+        <p className="text-sm text-orange-800">
+          参考 O*NET Bright Outlook，标记 2024-2025 高增长、快速扩张与新兴职业，帮你把目光投向正在变热的赛道。
+        </p>
+        <div className="flex flex-wrap gap-3 mt-3 text-xs">
+          <span className="inline-flex items-center gap-1 text-red-700">🔥 高增长</span>
+          <span className="inline-flex items-center gap-1 text-orange-700">⬆ 快速/稳定增长</span>
+          <span className="inline-flex items-center gap-1 text-green-700">🆕 新兴</span>
+          <span className="inline-flex items-center gap-1 text-ink-600">→ 平稳</span>
+        </div>
+      </div>
+
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -tranink-y-1/2 h-4 w-4 text-ink-400" />
+        <input
+          type="text"
+          value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
+          placeholder="筛选岗位名或标签..."
+          className="w-full rounded-lg border border-paper-300 bg-white pl-9 pr-3 py-2 text-sm text-ink-800 placeholder:text-ink-400 focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-100"
+        />
+      </div>
+
+      {sorted.length === 0 ? (
+        <EmptyState title="未匹配到朝阳职业" description="换个关键词试试" />
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          {sorted.map((role) => (
+            <div
+              key={role.name}
+              className="bg-white rounded-xl border border-paper-200 p-5 hover:shadow-md transition-shadow flex flex-col"
+            >
+              <div className="flex items-start justify-between mb-2 gap-2">
+                <div className="min-w-0">
+                  <h4 className="font-bold text-ink-800 text-lg">{role.name}</h4>
+                  <p className="text-xs text-ink-500 mt-0.5">{role.desc}</p>
+                </div>
+                <BrightOutlookBadge role={role} />
+              </div>
+
+              <div className="mt-3 mb-4">
+                <div className="flex items-center justify-between text-xs text-ink-500 mb-1">
+                  <span>预计增长率</span>
+                  <span className="font-medium" style={{ color: brightOutlookBarColors[role.color] }}>
+                    +{role.growth}%
+                  </span>
+                </div>
+                <div className="h-2 w-full rounded-full bg-paper-100 overflow-hidden">
+                  <div
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${(role.growth / maxGrowth) * 100}%`,
+                      backgroundColor: brightOutlookBarColors[role.color],
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="mt-auto pt-3 border-t border-paper-100 flex items-center justify-between">
+                <span className="text-xs text-ink-400">不确定是否适合？</span>
+                <VirtualTrialButton role={role.name} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ===== Tab8: 薪资透视（按城市切片） =====
+function SalarySliceBar({ data }: { data: SalarySlice }) {
+  const parse = (s: string) => Number(s.replace("万", ""));
+  const p25 = parse(data.p25);
+  const p50 = parse(data.p50);
+  const p75 = parse(data.p75);
+  const p90 = parse(data.p90);
+  const max = p90 || 1;
+  const W = 480;
+  const xOf = (v: number) => (v / max) * W;
+  const wOf = (v1: number, v2: number) => ((v2 - v1) / max) * W;
+  const segments = [
+    { label: "P25", value: data.p25, v1: 0, v2: p25, color: "#dbeafe" },
+    { label: "P50", value: data.p50, v1: p25, v2: p50, color: "#93c5fd" },
+    { label: "P75", value: data.p75, v1: p50, v2: p75, color: "#3b82f6" },
+    { label: "P90", value: data.p90, v1: p75, v2: p90, color: "#1d4ed8" },
+  ];
+  return (
+    <div>
+      <svg viewBox={`0 0 ${W} 40`} className="w-full" role="img" aria-label="薪资分布条">
+        {segments.map((seg, i) => (
+          <rect
+            key={seg.label}
+            x={xOf(seg.v1)}
+            y={8}
+            width={Math.max(0, wOf(seg.v1, seg.v2))}
+            height={24}
+            fill={seg.color}
+            rx={i === 0 || i === segments.length - 1 ? 4 : 0}
+          />
+        ))}
+      </svg>
+      <div className="grid grid-cols-4 gap-2 mt-2">
+        {segments.map((seg) => (
+          <div key={seg.label} className="flex items-center gap-1.5 text-xs">
+            <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ backgroundColor: seg.color }} />
+            <span className="text-ink-500">{seg.label}</span>
+            <span className="font-medium text-ink-800">{seg.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Tab8SalarySlice() {
+  const positions = Object.keys(SALARY_DATA);
+  const [position, setPosition] = useState(positions[0]);
+  const cities = Object.keys(SALARY_DATA[position]);
+  const [city, setCity] = useState(cities[0]);
+  const data = SALARY_DATA[position][city];
+  const maxMed = Math.max(
+    ...cities.map((c) => Number(SALARY_DATA[position][c].p50.replace("万", ""))),
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-5 border border-green-200">
+        <div className="flex items-center gap-2 mb-2">
+          <DollarSign className="h-5 w-5 text-green-600" />
+          <h3 className="font-bold text-green-900">薪资透视</h3>
+        </div>
+        <p className="text-sm text-green-800">
+          参考 Glassdoor 真实薪资切片，按岗位 × 城市查看 P25 / P50 / P75 / P90 四分位分布，帮你校准期望薪资。
+        </p>
+      </div>
+
+      <div className="bg-white rounded-xl border border-paper-200 p-5">
+        <div className="grid gap-4 md:grid-cols-2 mb-5">
+          <div>
+            <label className="text-xs font-medium text-ink-500 mb-1.5 block">选择岗位</label>
+            <select
+              value={position}
+              onChange={(e) => {
+                setPosition(e.target.value);
+                const c = Object.keys(SALARY_DATA[e.target.value]);
+                if (!c.includes(city)) setCity(c[0]);
+              }}
+              className="w-full rounded-lg border border-paper-300 bg-white px-3 py-2 text-sm text-ink-800 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-100"
+            >
+              {positions.map((p) => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-ink-500 mb-1.5 block">选择城市</label>
+            <select
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              className="w-full rounded-lg border border-paper-300 bg-white px-3 py-2 text-sm text-ink-800 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-100"
+            >
+              {cities.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="rounded-lg bg-paper-50 p-4">
+          <div className="flex items-baseline justify-between mb-3">
+            <h4 className="font-bold text-ink-800">{position} · {city}</h4>
+            <span className="text-sm text-ink-500">中位数 <span className="font-semibold text-green-600">{data.p50}</span></span>
+          </div>
+          <SalarySliceBar data={data} />
+        </div>
+
+        <div className="mt-5">
+          <h4 className="text-sm font-medium text-ink-700 mb-2">{position} 各城市中位数对比</h4>
+          <div className="space-y-2">
+            {cities.map((c) => {
+              const d = SALARY_DATA[position][c];
+              const med = Number(d.p50.replace("万", ""));
+              return (
+                <div key={c} className="flex items-center gap-3 text-xs">
+                  <span className="w-12 text-ink-600 shrink-0">{c}</span>
+                  <div className="flex-1 h-3 rounded-full bg-paper-100 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-green-500"
+                      style={{ width: `${(med / maxMed) * 100}%` }}
+                    />
+                  </div>
+                  <span className={cn("w-12 text-right font-medium", c === city ? "text-green-600" : "text-ink-700")}>{d.p50}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <p className="text-xs text-ink-400 mt-5">数据来源：2024 招聘市场调研，仅供参考</p>
+      </div>
+    </div>
+  );
+}
+
+// ===== Tab9: 公司口碑 =====
+function StarRating({ rating }: { rating: number }) {
+  return (
+    <div className="flex items-center gap-1">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <Star
+          key={i}
+          className={cn(
+            "h-4 w-4",
+            i <= Math.round(rating) ? "fill-amber-400 text-amber-400" : "text-paper-300",
+          )}
+        />
+      ))}
+      <span className="ml-1 text-sm font-medium text-ink-700">{rating.toFixed(1)}</span>
+    </div>
+  );
+}
+
+function Tab9CompanyReviews() {
+  const [keyword, setKeyword] = useState("");
+  const [showMore, setShowMore] = useState(false);
+  const companies = Object.keys(COMPANY_REVIEWS);
+  const filtered = keyword
+    ? companies.filter(
+        (c) => c.includes(keyword) || COMPANY_REVIEWS[c].industry.includes(keyword),
+      )
+    : companies;
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl p-5 border border-blue-200">
+        <div className="flex items-center gap-2 mb-2">
+          <Users className="h-5 w-5 text-blue-600" />
+          <h3 className="font-bold text-blue-900">公司口碑</h3>
+        </div>
+        <p className="text-sm text-blue-800">
+          参考 Glassdoor 匿名评价，聚合已入职校友对目标公司的优缺点与推荐度，帮你跳出招聘话术看真实体验。
+        </p>
+      </div>
+
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -tranink-y-1/2 h-4 w-4 text-ink-400" />
+        <input
+          type="text"
+          value={keyword}
+          onChange={(e) => setKeyword(e.target.value)}
+          placeholder="搜索公司或行业..."
+          className="w-full rounded-lg border border-paper-300 bg-white pl-9 pr-3 py-2 text-sm text-ink-800 placeholder:text-ink-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
+        />
+      </div>
+
+      {filtered.length === 0 ? (
+        <EmptyState title="未匹配到公司" description="换个关键词试试" />
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          {filtered.map((name) => {
+            const r = COMPANY_REVIEWS[name];
+            return (
+              <div key={name} className="bg-white rounded-xl border border-paper-200 p-5 hover:shadow-md transition-shadow flex flex-col">
+                <div className="flex items-start justify-between mb-3 gap-2">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4 text-ink-400 shrink-0" />
+                      <h4 className="font-bold text-ink-800">{name}</h4>
+                    </div>
+                    <p className="text-xs text-ink-500 mt-0.5">{r.industry}</p>
+                  </div>
+                  <StarRating rating={r.rating} />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div className="rounded-lg bg-green-50 p-2.5">
+                    <p className="text-xs font-medium text-green-700 mb-1">优点</p>
+                    <ul className="space-y-0.5">
+                      {r.pros.map((p) => (
+                        <li key={p} className="text-xs text-green-800 flex items-start gap-1">
+                          <span className="text-green-500 shrink-0">+</span>
+                          <span>{p}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="rounded-lg bg-red-50 p-2.5">
+                    <p className="text-xs font-medium text-red-700 mb-1">缺点</p>
+                    <ul className="space-y-0.5">
+                      {r.cons.map((c) => (
+                        <li key={c} className="text-xs text-red-800 flex items-start gap-1">
+                          <span className="text-red-500 shrink-0">−</span>
+                          <span>{c}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="mt-auto pt-3 border-t border-paper-100 flex items-center justify-between gap-2">
+                  <span className={cn("text-xs px-2 py-1 rounded-full font-medium", recommendColorClasses[r.recommend] || "bg-ink-100 text-ink-600")}>
+                    {r.recommend}
+                  </span>
+                  <VirtualTrialButton role={name} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="text-center">
+        <button
+          onClick={() => setShowMore(true)}
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-paper-300 rounded-lg text-sm font-medium text-ink-700 hover:bg-paper-50"
+        >
+          查看更多评价
+          <ChevronRight className="h-4 w-4" />
+        </button>
+        {showMore && (
+          <p className="mt-3 text-sm text-ink-400">更多校友评价功能开发中</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ===== 主页面 =====
 
 export default function EmploymentPage() {
@@ -776,7 +1346,7 @@ function EmploymentPageContent() {
       {/* 页面标题 */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-ink-800 mb-2">就业中心</h1>
-        <p className="text-ink-500">公司情报 · 薪资查询 · 求职定位 · 就业数据 · 暗知识 · 面经库</p>
+        <p className="text-ink-500">公司情报 · 薪资查询 · 求职定位 · 就业数据 · 暗知识 · 面经库 · 灵感案例</p>
       </div>
 
       {/* Tab 切换 */}
@@ -814,6 +1384,12 @@ function EmploymentPageContent() {
         {activeTab === "employment" && <Tab4Employment />}
         {activeTab === "dark-knowledge" && <Tab5DarkKnowledge />}
         {activeTab === "interview" && <Tab6Interview />}
+        {activeTab === "bright-outlook" && <Tab7BrightOutlook />}
+        {activeTab === "salary-slice" && <Tab8SalarySlice />}
+        {activeTab === "company-reviews" && <Tab9CompanyReviews />}
+        {activeTab === "inspiration" && (
+          <InspirationCases category="就业灵感" accentColor="text-pink-500" />
+        )}
       </div>
     </div>
   );

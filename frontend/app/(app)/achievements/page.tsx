@@ -74,7 +74,7 @@ export default function AchievementsPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="page-title">成就墙</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-ink-500">
             记录你的成长里程碑，解锁更多徽章
           </p>
         </div>
@@ -99,38 +99,38 @@ export default function AchievementsPage() {
           <div className="card">
             <div className="mb-4 flex items-center gap-2">
               <Zap className="h-5 w-5 text-brand-600" />
-              <h2 className="font-semibold text-slate-800">经验值明细</h2>
+              <h2 className="font-semibold text-ink-800">经验值明细</h2>
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <div className="flex items-center gap-3 rounded-lg border border-ink-200 bg-ink-50 p-3">
                 <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-100 text-brand-600">
                   <TrendingUp className="h-5 w-5" />
                 </span>
                 <div>
-                  <p className="text-xs text-slate-500">当前等级</p>
-                  <p className="text-lg font-bold text-slate-800">
+                  <p className="text-xs text-ink-500">当前等级</p>
+                  <p className="text-lg font-bold text-ink-800">
                     Lv.{profile.level}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <div className="flex items-center gap-3 rounded-lg border border-ink-200 bg-ink-50 p-3">
                 <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
                   <Zap className="h-5 w-5" />
                 </span>
                 <div>
-                  <p className="text-xs text-slate-500">累计经验</p>
-                  <p className="text-lg font-bold text-slate-800">
+                  <p className="text-xs text-ink-500">累计经验</p>
+                  <p className="text-lg font-bold text-ink-800">
                     {profile.xp} XP
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <div className="flex items-center gap-3 rounded-lg border border-ink-200 bg-ink-50 p-3">
                 <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 text-green-600">
                   <Star className="h-5 w-5" />
                 </span>
                 <div>
-                  <p className="text-xs text-slate-500">已获徽章</p>
-                  <p className="text-lg font-bold text-slate-800">
+                  <p className="text-xs text-ink-500">已获徽章</p>
+                  <p className="text-lg font-bold text-ink-800">
                     {profile.earned_badges.length} 枚
                   </p>
                 </div>
@@ -151,7 +151,7 @@ export default function AchievementsPage() {
           <div className="card">
             <div className="mb-4 flex items-center gap-2">
               <Award className="h-5 w-5 text-brand-600" />
-              <h2 className="font-semibold text-slate-800">徽章收藏</h2>
+              <h2 className="font-semibold text-ink-800">徽章收藏</h2>
             </div>
             <BadgeWall
               earnedBadges={profile.earned_badges}
@@ -163,17 +163,17 @@ export default function AchievementsPage() {
           <div className="card">
             <div className="mb-4 flex items-center gap-2">
               <Share2 className="h-5 w-5 text-brand-600" />
-              <h2 className="font-semibold text-slate-800">技能分享</h2>
+              <h2 className="font-semibold text-ink-800">技能分享</h2>
             </div>
-            <p className="mb-4 text-sm text-slate-500">
+            <p className="mb-4 text-sm text-ink-500">
               开启后可生成一个公开链接，他人无需登录即可查看你的技能树（仅展示姓名与技能，不含其他个人数据）。
             </p>
 
             {/* 开关 */}
-            <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+            <div className="flex items-center justify-between rounded-lg border border-ink-200 bg-ink-50 px-4 py-3">
               <div>
-                <p className="text-sm font-medium text-slate-700">公开技能树</p>
-                <p className="text-xs text-slate-400">
+                <p className="text-sm font-medium text-ink-700">公开技能树</p>
+                <p className="text-xs text-ink-400">
                   {settings?.share_skills_enabled ? "已开启，链接可访问" : "已关闭，链接不可访问"}
                 </p>
               </div>
@@ -184,12 +184,12 @@ export default function AchievementsPage() {
                 disabled={toggling}
                 onClick={() => handleToggleShare(!settings?.share_skills_enabled)}
                 className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${
-                  settings?.share_skills_enabled ? "bg-brand-600" : "bg-slate-300"
+                  settings?.share_skills_enabled ? "bg-brand-600" : "bg-ink-300"
                 }`}
               >
                 <span
                   className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    settings?.share_skills_enabled ? "translate-x-6" : "translate-x-1"
+                    settings?.share_skills_enabled ? "tranink-x-6" : "tranink-x-1"
                   }`}
                 />
               </button>
@@ -198,23 +198,23 @@ export default function AchievementsPage() {
             {/* 分享链接 */}
             {settings?.share_skills_enabled && shareLink && (
               <div className="mt-3">
-                <label className="mb-1 block text-xs font-medium text-slate-500">
+                <label className="mb-1 block text-xs font-medium text-ink-500">
                   分享链接
                 </label>
                 <div className="flex items-center gap-2">
-                  <div className="flex flex-1 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2">
-                    <Link2 className="h-4 w-4 shrink-0 text-slate-400" />
+                  <div className="flex flex-1 items-center gap-2 rounded-lg border border-ink-300 bg-white px-3 py-2">
+                    <Link2 className="h-4 w-4 shrink-0 text-ink-400" />
                     <input
                       readOnly
                       value={shareLink}
                       onClick={(e) => (e.target as HTMLInputElement).select()}
-                      className="w-full truncate bg-transparent text-sm text-slate-700 outline-none"
+                      className="w-full truncate bg-transparent text-sm text-ink-700 outline-none"
                     />
                   </div>
                   <button
                     type="button"
                     onClick={handleCopyLink}
-                    className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm font-medium text-ink-700 transition-colors hover:bg-ink-50"
                   >
                     {copied ? (
                       <>

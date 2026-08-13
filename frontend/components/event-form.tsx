@@ -168,15 +168,15 @@ export const EventForm = memo(function EventForm({ initial, onSaved, onCancel }:
       </Field>
 
       {/* STAR+R 折叠区 */}
-      <div className="rounded-lg border border-slate-200">
+      <div className="rounded-lg border border-ink-200">
         <button
           type="button"
           onClick={() => setStarOpen((v) => !v)}
-          className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-ink-700 hover:bg-ink-50"
         >
           <span>
             STAR+R 反思{" "}
-            <span className="text-xs text-slate-400 font-normal">（可选）</span>
+            <span className="text-xs text-ink-400 font-normal">（可选）</span>
             {hasStarContent && (
               <span className="ml-2 inline-flex h-1.5 w-1.5 rounded-full bg-brand-500" />
             )}

@@ -4,16 +4,16 @@ Revision ID: add_mentor_tables
 Revises:
 Create Date: 2026-03-18
 
-添加两个新表：
-- mentors: 导师主表
-- mentor_reviews: 导师评价表
+注意：本迁移的建表职责已由 9c43ddf069ce（autogenerate 完整快照）统一承担，
+其 mentors / mentor_reviews 定义与当前模型同构（id=GUID、JSONB、server_default 齐备），
+从零升级时空库由快照建表即可；历史增量库该 revision 早已 stamp 不会重跑。
 """
 from __future__ import annotations
 
 from typing import Sequence, Union
 
 from alembic import op
-import sqlalchemy as sa
+from sqlalchemy import inspect
 
 # revision identifiers, used by Alembic.
 revision: str = "add_mentor_tables"
@@ -23,88 +23,16 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # 创建 mentors 表
-    op.create_table(
-        "mentors",
-        sa.Column("id", sa.String(32), nullable=False),
-        sa.Column("name", sa.String(length=100), nullable=False),
-        sa.Column("university", sa.String(length=200), nullable=False),
-        sa.Column("department", sa.String(length=200), nullable=False),
-        sa.Column("title", sa.String(length=100), nullable=False),
-        sa.Column("research_directions", sa.JSON(), nullable=False),
-        sa.Column("paper_count", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("project_count", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("citation_count", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("h_index", sa.Integer(), nullable=True),
-        sa.Column("academic_homepage", sa.String(length=500), nullable=True),
-        sa.Column("google_scholar_url", sa.String(length=500), nullable=True),
-        sa.Column("cnki_url", sa.String(length=500), nullable=True),
-        sa.Column("enrollment_status", sa.String(length=50), nullable=False, server_default="unknown"),
-        sa.Column("enrollment_directions", sa.JSON(), nullable=False),
-        sa.Column("contact_email", sa.String(length=200), nullable=True),
-        sa.Column("contact_phone", sa.String(length=50), nullable=True),
-        sa.Column("avg_rating", sa.Float(), nullable=False, server_default="0.0"),
-        sa.Column("review_count", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("rating_academic", sa.Float(), nullable=False, server_default="0.0"),
-        sa.Column("rating_guidance", sa.Float(), nullable=False, server_default="0.0"),
-        sa.Column("rating_relationship", sa.Float(), nullable=False, server_default="0.0"),
-        sa.Column("rating_funding", sa.Float(), nullable=False, server_default="0.0"),
-        sa.Column("rating_workload", sa.Float(), nullable=False, server_default="0.0"),
-        sa.Column("rating_career", sa.Float(), nullable=False, server_default="0.0"),
-        sa.Column("source_url", sa.String(length=500), nullable=True),
-        sa.Column("source_platform", sa.String(length=100), nullable=False, server_default="official"),
-        sa.Column("is_verified", sa.Boolean(), nullable=False, server_default="false"),
-        sa.Column("tags", sa.JSON(), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
-        sa.PrimaryKeyConstraint("id"),
-    )
-
-    # 创建索引
-    op.create_index(op.f("ix_mentors_name"), "mentors", ["name"], unique=False)
-    op.create_index(op.f("ix_mentors_university"), "mentors", ["university"], unique=False)
-    op.create_index(op.f("ix_mentors_department"), "mentors", ["department"], unique=False)
-
-    # 创建 mentor_reviews 表
-    op.create_table(
-        "mentor_reviews",
-        sa.Column("id", sa.String(32), nullable=False),
-        sa.Column("mentor_id", sa.String(32), nullable=False),
-        sa.Column("user_id", sa.String(32), nullable=False),
-        sa.Column("is_anonymous", sa.Boolean(), nullable=False, server_default="true"),
-        sa.Column("anonymous_id", sa.String(length=50), nullable=True),
-        sa.Column("rating_academic", sa.Integer(), nullable=False),
-        sa.Column("rating_guidance", sa.Integer(), nullable=False),
-        sa.Column("rating_relationship", sa.Integer(), nullable=False),
-        sa.Column("rating_funding", sa.Integer(), nullable=False),
-        sa.Column("rating_workload", sa.Integer(), nullable=False),
-        sa.Column("rating_career", sa.Integer(), nullable=False),
-        sa.Column("overall_rating", sa.Float(), nullable=False),
-        sa.Column("title", sa.String(length=200), nullable=False),
-        sa.Column("content", sa.Text(), nullable=False),
-        sa.Column("pros", sa.JSON(), nullable=False),
-        sa.Column("cons", sa.JSON(), nullable=False),
-        sa.Column("review_status", sa.String(length=50), nullable=False, server_default="pending"),
-        sa.Column("like_count", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("is_helpful", sa.Boolean(), nullable=False, server_default="false"),
-        sa.Column("ip_address", sa.String(length=50), nullable=True),
-        sa.Column("submitted_at", sa.String(length=50), nullable=False),
-        sa.Column("is_verified", sa.Boolean(), nullable=False, server_default="false"),
-        sa.Column("verification_proof", sa.String(length=500), nullable=True),
-        sa.Column("reviewer_identity", sa.String(length=100), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
-        sa.ForeignKeyConstraint(["mentor_id"], ["mentors.id"], ondelete="CASCADE"),
-        sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
-        sa.PrimaryKeyConstraint("id"),
-    )
-
-    # 创建索引
-    op.create_index(op.f("ix_mentor_reviews_mentor_id"), "mentor_reviews", ["mentor_id"], unique=False)
-    op.create_index(op.f("ix_mentor_reviews_user_id"), "mentor_reviews", ["user_id"], unique=False)
-    op.create_index(op.f("ix_mentor_reviews_review_status"), "mentor_reviews", ["review_status"], unique=False)
+    # 不再重复建表：mentors/mentor_reviews 由 9c43ddf069ce 快照统一创建，
+    # 避免旧结构（String(32)/JSON/无 server_default）覆盖快照的新结构。
+    return
 
 
 def downgrade() -> None:
-    op.drop_table("mentor_reviews")
-    op.drop_table("mentors")
+    # 与 upgrade 对称：从零库 downgrade 时这两张表已先被 9c43ddf069ce 的
+    # downgrade 删除，这里仅当表仍存在才删除，避免「表不存在」报错。
+    existing = set(inspect(op.get_bind()).get_table_names())
+    if "mentor_reviews" in existing:
+        op.drop_table("mentor_reviews")
+    if "mentors" in existing:
+        op.drop_table("mentors")

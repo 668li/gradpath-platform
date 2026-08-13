@@ -18,7 +18,8 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.models.user_memory import MemoryFactType, UserMemoryFact
-from app.services.ai_service import AIService, AIServiceNotConfigured
+from app.services.ai_orchestrator import AIOrchestrator
+from app.services.ai_service import AIServiceNotConfigured
 
 logger = logging.getLogger(__name__)
 
@@ -69,10 +70,10 @@ async def extract_memory_facts(
     )
 
     try:
-        ai = AIService()
+        ai = AIOrchestrator()
         raw = await ai.chat(
             system_prompt=EXTRACT_SYSTEM_PROMPT,
-            user_content=f"请从以下对话中抽取用户事实：\n\n{dialog_text}",
+            user_prompt=f"请从以下对话中抽取用户事实：\n\n{dialog_text}",
             timeout=20,
         )
     except AIServiceNotConfigured:

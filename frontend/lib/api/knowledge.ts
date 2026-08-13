@@ -10,6 +10,7 @@ import { request, buildQuery } from "./client";
 export const knowledgeApi = {
   list: (params?: {
     category?: string;
+    q?: string;
     page?: number;
     page_size?: number;
   }) =>

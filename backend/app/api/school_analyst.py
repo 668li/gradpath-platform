@@ -13,7 +13,8 @@ from app.models.grad_intel import (
     GradSchoolIntel,
     GradScorelineRecord,
 )
-from app.services.ai_service import AIService, AIServiceNotConfigured
+from app.services.ai_orchestrator import AIOrchestrator
+from app.services.ai_service import AIServiceNotConfigured
 
 logger = logging.getLogger(__name__)
 
@@ -230,7 +231,7 @@ async def _generate_summary(
 ) -> str:
     """用 AI 生成 200 字总结。"""
     try:
-        ai = AIService()
+        ai = AIOrchestrator()
         system_prompt = (
             "你是一位资深考研规划师，请基于以下数据为院校生成一段200字左右的分析总结。"
             "要求：客观、实用、有洞察力。不要使用 emoji。"

@@ -193,13 +193,15 @@ class TestRssNewsCrawler:
             setattr(entry, key, value)
         return entry
 
-    def test_parse_and_dedup(self, tmp_path):
+    def test_parse_and_dedup(self, tmp_path, db_session):
         """mock feedparser.parse，验证 parse 结构和 store 去重。"""
         output_path = tmp_path / "rss_news_test.json"
         crawler = RssNewsCrawler(
             config={
                 "feeds": ["https://example.com/feed.xml"],
                 "output_path": str(output_path),
+                # 落盘爬虫改入库后默认不写 JSON，仅 dump_json=True 时落盘（CLI 老用法）
+                "dump_json": True,
             }
         )
 
@@ -231,13 +233,13 @@ class TestRssNewsCrawler:
         assert parsed[0]["category"] == "考研资讯"
         assert "考研" in parsed[0]["tags"]
 
-        # 第一次 store 应写入 2 条
-        stored = crawler.store(parsed, db=None)
+        # 第一次 store 应写入 2 条（注入内存库，避免写真实 dev 库）
+        stored = crawler.store(parsed, db=db_session)
         assert stored == 2
         assert output_path.exists()
 
         # 再次 store 相同数据应去重
-        stored2 = crawler.store(parsed, db=None)
+        stored2 = crawler.store(parsed, db=db_session)
         assert stored2 == 0
         assert crawler.stats["duplicates"] == 2
 

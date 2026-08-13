@@ -162,7 +162,7 @@ export default function RetrospectivesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="page-title">阶段复盘</h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-ink-500 mt-1">
             定期回顾，沉淀经验，规划下一步
           </p>
         </div>
@@ -198,7 +198,7 @@ export default function RetrospectivesPage() {
                 <Skeleton className="h-3 w-5/6" />
                 <Skeleton className="h-3 w-3/4" />
               </div>
-              <div className="pt-3 border-t border-slate-100 flex items-center gap-2">
+              <div className="pt-3 border-t border-ink-100 flex items-center gap-2">
                 <Skeleton className="h-3 w-12" />
                 <Skeleton className="h-3 w-20" />
               </div>
@@ -267,14 +267,14 @@ export default function RetrospectivesPage() {
                     <ClipboardList className="h-5 w-5" />
                   </span>
                   <div className="min-w-0">
-                    <h3 className="font-semibold text-slate-800 truncate">
+                    <h3 className="font-semibold text-ink-800 truncate">
                       {r.title}
                     </h3>
                     <div className="flex items-center gap-2 mt-0.5">
                       <Badge color="purple">
                         {PERIOD_TYPE_LABEL[r.period_type]}
                       </Badge>
-                      <span className="text-xs text-slate-400">
+                      <span className="text-xs text-ink-400">
                         {formatDate(r.period_start)} ~ {formatDate(r.period_end)}
                       </span>
                     </div>
@@ -283,14 +283,14 @@ export default function RetrospectivesPage() {
                 <div className="flex items-center gap-1 shrink-0">
                   <button
                     onClick={() => openEdit(r)}
-                    className="p-1.5 rounded-md text-slate-400 hover:bg-slate-100 hover:text-brand-600"
+                    className="p-1.5 rounded-md text-ink-400 hover:bg-ink-100 hover:text-brand-600"
                     aria-label="编辑"
                   >
                     <Pencil className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => handleDelete(r)}
-                    className="p-1.5 rounded-md text-slate-400 hover:bg-red-50 hover:text-red-600"
+                    className="p-1.5 rounded-md text-ink-400 hover:bg-red-50 hover:text-red-600"
                     aria-label="删除"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -301,21 +301,21 @@ export default function RetrospectivesPage() {
               <div className="mt-3 space-y-3 text-sm">
                 {r.achievements.length > 0 && (
                   <div>
-                    <p className="text-xs font-medium text-slate-500 mb-1">
+                    <p className="text-xs font-medium text-ink-500 mb-1">
                       成就 ({r.achievements.length})
                     </p>
                     <ul className="space-y-1">
                       {r.achievements.slice(0, 3).map((a, i) => (
                         <li
                           key={`${a}-${i}`}
-                          className="flex items-start gap-1.5 text-slate-600"
+                          className="flex items-start gap-1.5 text-ink-600"
                         >
                           <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0 mt-0.5" />
                           <span className="line-clamp-1">{a}</span>
                         </li>
                       ))}
                       {r.achievements.length > 3 && (
-                        <li className="text-xs text-slate-400 pl-5">
+                        <li className="text-xs text-ink-400 pl-5">
                           …还有 {r.achievements.length - 3} 项
                         </li>
                       )}
@@ -325,17 +325,17 @@ export default function RetrospectivesPage() {
 
                 {r.challenges && (
                   <div>
-                    <p className="text-xs font-medium text-slate-500 mb-1">挑战</p>
-                    <p className="text-slate-600 line-clamp-2">{r.challenges}</p>
+                    <p className="text-xs font-medium text-ink-500 mb-1">挑战</p>
+                    <p className="text-ink-600 line-clamp-2">{r.challenges}</p>
                   </div>
                 )}
 
                 {r.lessons_learned && (
                   <div>
-                    <p className="text-xs font-medium text-slate-500 mb-1">
+                    <p className="text-xs font-medium text-ink-500 mb-1">
                       教训提炼
                     </p>
-                    <p className="text-slate-600 line-clamp-2">
+                    <p className="text-ink-600 line-clamp-2">
                       {r.lessons_learned}
                     </p>
                   </div>
@@ -343,14 +343,14 @@ export default function RetrospectivesPage() {
 
                 {r.next_steps.length > 0 && (
                   <div>
-                    <p className="text-xs font-medium text-slate-500 mb-1">
+                    <p className="text-xs font-medium text-ink-500 mb-1">
                       下一步 ({r.next_steps.length})
                     </p>
                     <ul className="space-y-1">
                       {r.next_steps.slice(0, 2).map((s, i) => (
                         <li
                           key={`${s}-${i}`}
-                          className="flex items-start gap-1.5 text-slate-600"
+                          className="flex items-start gap-1.5 text-ink-600"
                         >
                           <ArrowRight className="h-3.5 w-3.5 text-brand-500 shrink-0 mt-0.5" />
                           <span className="line-clamp-1">{s}</span>
@@ -361,12 +361,12 @@ export default function RetrospectivesPage() {
                 )}
               </div>
 
-              <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-2 text-sm text-slate-500">
+              <div className="mt-3 pt-3 border-t border-ink-100 flex items-center gap-2 text-sm text-ink-500">
                 <span>满意度</span>
                 <span className="text-amber-500 tracking-wide">
                   {levelStars(r.satisfaction)}
                 </span>
-                <span className="text-xs text-slate-400">{r.satisfaction}/5</span>
+                <span className="text-xs text-ink-400">{r.satisfaction}/5</span>
               </div>
             </div>
           ))}

@@ -23,7 +23,6 @@ from app.models.career_plan import CareerPlan
 from app.models.destination_decision import DestinationDecision
 from app.models.proactive_insight import ProactiveInsight
 from app.models.skill_node import SkillNode
-from app.services.ai_service import AIService
 from app.services.ai_orchestrator import AIOrchestrator
 
 SYSTEM_PROMPT = """你是一位敏锐的职业成长观察者。基于用户的数据，请发现 2-3 个非显而易见的洞察。

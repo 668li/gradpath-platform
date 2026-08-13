@@ -240,11 +240,7 @@ function ProfilePageContent() {
             })}
           </div>
 
-          {activeTab !== "profile" && (
-            <div className="flex items-center justify-center py-20 text-ink-400">
-          <p>页面加载中…</p>
-        </div>
-      )}
+          {activeTab !== "profile" && null}
 
       {activeTab === "profile" && (
       <div className="space-y-6 max-w-3xl">

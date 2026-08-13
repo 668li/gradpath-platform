@@ -17,7 +17,6 @@ from app.models.destination_decision import DestinationDecision
 from app.models.life_design import LifeDesignSprint
 from app.models.milestone_log import MilestoneLog
 from app.models.skill_node import SkillNode
-from app.services.ai_service import AIService
 from app.services.ai_orchestrator import AIOrchestrator
 
 

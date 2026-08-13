@@ -90,44 +90,44 @@ export function RetroAIPanel({ onUseDraft }: RetroAIPanelProps) {
             <Sparkles className="h-5 w-5" />
           </span>
           <div>
-            <h2 className="font-semibold text-slate-800">AI 生成复盘草稿</h2>
-            <p className="text-xs text-slate-500">
+            <h2 className="font-semibold text-ink-800">AI 生成复盘草稿</h2>
+            <p className="text-xs text-ink-500">
               选择时间段，AI 自动生成复盘内容草稿
             </p>
           </div>
         </div>
         <ChevronDown
           className={cn(
-            "h-5 w-5 text-slate-400 transition-transform",
+            "h-5 w-5 text-ink-400 transition-transform",
             expanded && "rotate-180",
           )}
         />
       </button>
 
       {expanded && (
-        <div className="mt-4 space-y-4 border-t border-slate-100 pt-4">
+        <div className="mt-4 space-y-4 border-t border-ink-100 pt-4">
           {/* 时间段选择 */}
           <div className="flex flex-wrap items-end gap-3">
             <label className="block">
-              <span className="mb-1 block text-sm font-medium text-slate-700">
+              <span className="mb-1 block text-sm font-medium text-ink-700">
                 开始日期
               </span>
               <input
                 type="date"
                 value={periodStart}
                 onChange={(e) => setPeriodStart(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
+                className="w-full rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm text-ink-800 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
               />
             </label>
             <label className="block">
-              <span className="mb-1 block text-sm font-medium text-slate-700">
+              <span className="mb-1 block text-sm font-medium text-ink-700">
                 结束日期
               </span>
               <input
                 type="date"
                 value={periodEnd}
                 onChange={(e) => setPeriodEnd(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
+                className="w-full rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm text-ink-800 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
               />
             </label>
             <Button
@@ -169,14 +169,14 @@ export function RetroAIPanel({ onUseDraft }: RetroAIPanelProps) {
                 {/* 成就 */}
                 {draft.achievements.length > 0 && (
                   <div className="mb-3">
-                    <p className="mb-1 text-xs font-medium text-slate-500">
+                    <p className="mb-1 text-xs font-medium text-ink-500">
                       成就
                     </p>
                     <ul className="space-y-1">
                       {draft.achievements.map((a, i) => (
                         <li
                           key={`${a}-${i}`}
-                          className="flex items-start gap-1.5 text-sm text-slate-600"
+                          className="flex items-start gap-1.5 text-sm text-ink-600"
                         >
                           <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-green-500" />
                           <span>{a}</span>
@@ -189,20 +189,20 @@ export function RetroAIPanel({ onUseDraft }: RetroAIPanelProps) {
                 {/* 挑战 */}
                 {draft.challenges && (
                   <div className="mb-3">
-                    <p className="mb-1 text-xs font-medium text-slate-500">
+                    <p className="mb-1 text-xs font-medium text-ink-500">
                       挑战
                     </p>
-                    <p className="text-sm text-slate-600">{draft.challenges}</p>
+                    <p className="text-sm text-ink-600">{draft.challenges}</p>
                   </div>
                 )}
 
                 {/* 教训提炼 */}
                 {draft.lessons_learned && (
                   <div className="mb-3">
-                    <p className="mb-1 text-xs font-medium text-slate-500">
+                    <p className="mb-1 text-xs font-medium text-ink-500">
                       教训提炼
                     </p>
-                    <p className="text-sm text-slate-600">
+                    <p className="text-sm text-ink-600">
                       {draft.lessons_learned}
                     </p>
                   </div>
@@ -211,14 +211,14 @@ export function RetroAIPanel({ onUseDraft }: RetroAIPanelProps) {
                 {/* 下一步 */}
                 {draft.next_steps.length > 0 && (
                   <div className="mb-3">
-                    <p className="mb-1 text-xs font-medium text-slate-500">
+                    <p className="mb-1 text-xs font-medium text-ink-500">
                       下一步
                     </p>
                     <ul className="space-y-1">
                       {draft.next_steps.map((s, i) => (
                         <li
                           key={`${s}-${i}`}
-                          className="flex items-start gap-1.5 text-sm text-slate-600"
+                          className="flex items-start gap-1.5 text-sm text-ink-600"
                         >
                           <ArrowRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand-500" />
                           <span>{s}</span>
@@ -231,13 +231,13 @@ export function RetroAIPanel({ onUseDraft }: RetroAIPanelProps) {
                 {/* 建议满意度 */}
                 <div className="mb-3 flex items-center gap-2">
                   <Star className="h-4 w-4 text-amber-400" />
-                  <span className="text-xs font-medium text-slate-500">
+                  <span className="text-xs font-medium text-ink-500">
                     建议满意度
                   </span>
                   <span className="text-amber-500 tracking-wide">
                     {levelStars(draft.suggested_satisfaction)}
                   </span>
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs text-ink-400">
                     {draft.suggested_satisfaction}/5
                   </span>
                 </div>
@@ -245,10 +245,10 @@ export function RetroAIPanel({ onUseDraft }: RetroAIPanelProps) {
                 {/* 总结 */}
                 {draft.summary && (
                   <div>
-                    <p className="mb-1 text-xs font-medium text-slate-500">
+                    <p className="mb-1 text-xs font-medium text-ink-500">
                       总结
                     </p>
-                    <p className="text-sm leading-relaxed text-slate-600">
+                    <p className="text-sm leading-relaxed text-ink-600">
                       {draft.summary}
                     </p>
                   </div>

@@ -6,6 +6,20 @@
 
 工具实现保持原样搬迁，未做行为变更。
 """
+import contextvars
+
+# 安全修复 C1: 用 ContextVar 传递认证用户 ID，防止工具接受任意 user_id
+_mcp_user_id: contextvars.ContextVar[str | None] = contextvars.ContextVar("mcp_user_id", default=None)
+
+
+def set_mcp_user_id(user_id: str | None) -> None:
+    """由 MCPAuthMiddleware 调用，设置当前请求的认证用户 ID。"""
+    _mcp_user_id.set(user_id)
+
+
+def get_mcp_user_id() -> str | None:
+    """获取当前 MCP 会话的认证用户 ID。"""
+    return _mcp_user_id.get()
 
 
 def register_mcp_tools(mcp):
@@ -40,14 +54,18 @@ def register_mcp_tools(mcp):
         return "\n".join(lines)
 
     @mcp.tool()
-    async def get_user_profile(user_id: str) -> str:
-        """获取用户职业画像（技能/规划/决策/测评）"""
+    async def get_my_profile() -> str:
+        """获取当前登录用户的职业画像（技能/规划/决策/测评）"""
         from uuid import UUID
         from app.database import SessionLocal
         from app.services.chat_service import build_user_context
+        # 安全修复 C1: 只允许查询认证用户自己的数据，不接受任意 user_id
+        uid = get_mcp_user_id()
+        if not uid:
+            return "未认证，无法获取用户画像"
         db = SessionLocal()
         try:
-            return build_user_context(db, UUID(user_id))
+            return build_user_context(db, UUID(uid))
         finally:
             db.close()
 

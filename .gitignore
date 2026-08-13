@@ -73,10 +73,13 @@ docker-compose.override.yml
 
 # Crawler temp data files (JSON/PNG/HTML from experiments)
 backend/app/crawlers/real_data/*.json
+backend/app/crawlers/real_data/**/*.json
 backend/app/crawlers/real_data/*.png
 backend/app/crawlers/real_data/*.html
 backend/app/crawlers/real_data/*.md
 !backend/app/crawlers/real_data/__init__.py
+# 一次性抓取产物（研招网等外部数据）不入库不提交，仅本地留存
+scripts/firecrawl_data.json
 
 # Test screenshots
 tests/screenshots/
@@ -97,3 +100,7 @@ frontend/playwright-report/
 _chk.py
 commit_msg.txt
 git_status*.txt
+
+# 安全扫描产物（Mimosa 报告）不入库
+.mimosa/
+**/.mimosa/

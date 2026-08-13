@@ -306,3 +306,94 @@ export interface DarkKnowledgeFeedbackRequest {
   rating?: number | null;
   notes?: string | null;
 }
+
+// ===== 路径冲突调解（/api/path-conflict） =====
+
+/** 单条路径选项 */
+export interface PathConflictOption {
+  /** 选项索引：0=坚持现状, 1=转向推荐, 2=折中方案 */
+  id: number;
+  /** 选项标题，如 "坚持现状" / "转向推荐" / "折中方案" */
+  title: string;
+  /** 选项描述 */
+  description: string;
+  /** 优势列表 */
+  pros: string[];
+  /** 劣势列表 */
+  cons: string[];
+  /** 预计时间线 */
+  estimated_timeline: string;
+  /** 风险等级：low / medium / high */
+  risk_level: "low" | "medium" | "high";
+}
+
+/** 测评结果摘要 */
+export interface PathConflictAssessmentSummary {
+  type?: string;
+  result_code?: string;
+  result_summary?: string;
+  directions?: string[];
+  [key: string]: unknown;
+}
+
+/** 用户现状摘要 */
+export interface PathConflictCurrentSituation {
+  id?: string;
+  destination_type?: string;
+  destination_type_label?: string;
+  status?: string;
+  status_label?: string;
+  decision_date?: string | null;
+  confidence?: number;
+  reasoning?: string | null;
+  [key: string]: unknown;
+}
+
+/** detect 接口响应 */
+export interface PathConflictDetection {
+  /** 本次冲突检测的唯一 ID（用于后续 resolve）；无冲突时为空字符串 */
+  conflict_id: string;
+  /** 冲突类型，如 assessment_vs_current / no_assessment / no_decision / no_conflict */
+  conflict_type: string;
+  /** 是否存在冲突 */
+  has_conflict: boolean;
+  /** 测评结果摘要 */
+  assessment_summary: PathConflictAssessmentSummary;
+  /** 用户现状摘要 */
+  current_situation: PathConflictCurrentSituation;
+  /** 3 条路径选项（无冲突时为空数组） */
+  options: PathConflictOption[];
+  /** 提示信息 */
+  message: string;
+}
+
+/** resolve 请求体 */
+export interface PathConflictResolveRequest {
+  conflict_id: string;
+  selected_option: number;
+  reasoning?: string;
+}
+
+/** 行动计划 */
+export interface PathConflictActionPlan {
+  summary?: string;
+  milestones?: Array<{ phase?: string; goal?: string }>;
+  resources?: string[];
+  risks?: string[];
+  [key: string]: unknown;
+}
+
+/** 调解记录（resolve 响应 / history / detail） */
+export interface PathConflictResolution {
+  id: string;
+  user_id: string;
+  conflict_type: string;
+  assessment_summary: PathConflictAssessmentSummary;
+  current_situation: PathConflictCurrentSituation;
+  options: PathConflictOption[];
+  selected_option: number | null;
+  reasoning: string | null;
+  action_plan: PathConflictActionPlan;
+  created_at: string;
+  updated_at: string;
+}

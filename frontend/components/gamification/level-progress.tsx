@@ -45,7 +45,7 @@ export function LevelProgress({
             r={radius}
             fill="none"
             strokeWidth={strokeWidth}
-            className="text-slate-100"
+            className="text-ink-100"
             stroke="currentColor"
           />
           <circle
@@ -71,7 +71,7 @@ export function LevelProgress({
             Lv.{level}
           </span>
           {!compact && (
-            <span className="mt-0.5 text-[10px] text-slate-400">等级</span>
+            <span className="mt-0.5 text-[10px] text-ink-400">等级</span>
           )}
         </div>
       </div>
@@ -80,7 +80,7 @@ export function LevelProgress({
       <div className="min-w-0 flex-1">
         <p
           className={cn(
-            "font-semibold text-slate-800 truncate",
+            "font-semibold text-ink-800 truncate",
             compact ? "text-sm" : "text-base",
           )}
         >
@@ -88,7 +88,7 @@ export function LevelProgress({
         </p>
         <p
           className={cn(
-            "text-slate-500",
+            "text-ink-500",
             compact ? "text-xs" : "text-sm",
           )}
         >
@@ -98,13 +98,13 @@ export function LevelProgress({
 
         {!compact ? (
           <div className="mt-2">
-            <div className="mb-1 flex items-center justify-between text-xs text-slate-500">
+            <div className="mb-1 flex items-center justify-between text-xs text-ink-500">
               <span>距下一级</span>
               <span>
                 {progress.current} / {progress.needed} XP（{clampedPercent}%）
               </span>
             </div>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-ink-100">
               <div
                 className="h-full rounded-full bg-brand-600 transition-all duration-500"
                 style={{ width: `${clampedPercent}%` }}
@@ -112,7 +112,7 @@ export function LevelProgress({
             </div>
           </div>
         ) : (
-          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-ink-100">
             <div
               className="h-full rounded-full bg-brand-600 transition-all duration-500"
               style={{ width: `${clampedPercent}%` }}

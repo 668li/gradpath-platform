@@ -206,7 +206,6 @@ jobs:
       - name: Build Next.js (production)
         env:
           NEXT_PUBLIC_API_URL: ""
-          NEXT_PUBLIC_SENTRY_DSN: ""
         run: npm run build
 
   # ===== E2E 测试 =====
@@ -260,13 +259,13 @@ jobs:
           DATABASE_URL=postgresql://gradpath:gradpath_test@localhost:5432/gradpath_test \
           ENVIRONMENT=development \
           SECRET_KEY=ci-test-secret-key-min-32-characters-long-aaaa-bbbb \
-          uvicorn app.main:app --host 0.0.0.0 --port 8000 &
-          npx wait-on http://localhost:8000/health --timeout 30000
+          uvicorn app.main:app --host 0.0.0.0 --port 8001 &
+          npx wait-on http://localhost:8001/health --timeout 30000
 
       - name: Start frontend
         working-directory: frontend
         run: |
-          NEXT_PUBLIC_API_URL=http://localhost:8000 \
+          NEXT_PUBLIC_API_URL=http://localhost:8001 \
           npm run dev &
           npx wait-on http://localhost:3000 --timeout 60000
 

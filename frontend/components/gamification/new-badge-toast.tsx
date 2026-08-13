@@ -36,11 +36,11 @@ export function NewBadgeToast({ badges, onDismiss }: NewBadgeToastProps) {
             <p className="text-sm font-medium text-brand-700">
               恭喜获得新徽章！
             </p>
-            <p className="truncate text-sm text-slate-700">{badge.name}</p>
+            <p className="truncate text-sm text-ink-700">{badge.name}</p>
           </div>
           <button
             onClick={onDismiss}
-            className="shrink-0 text-slate-400 hover:text-slate-600"
+            className="shrink-0 text-ink-400 hover:text-ink-600"
             aria-label="关闭"
           >
             <X className="h-4 w-4" />

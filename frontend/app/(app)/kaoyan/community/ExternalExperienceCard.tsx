@@ -2,6 +2,7 @@
 
 import { ExternalLink, Eye, ThumbsUp, Video, Globe, Newspaper } from "lucide-react";
 import { Badge } from "@/components/ui/form-controls";
+import { SourceBadge } from "@/components/ui/source-badge";
 import { cn } from "@/lib/utils";
 import type { ExperiencePostResponse } from "@/types";
 
@@ -54,14 +55,17 @@ export function ExternalExperienceCard({ post, className }: ExternalExperienceCa
         >
           {post.title}
         </h3>
-        <div
-          className={cn(
-            "flex shrink-0 items-center gap-1 rounded-lg border px-2 py-1 text-xs font-medium",
-            platform.color,
-          )}
-        >
-          <PlatformIcon className="h-3 w-3" />
-          {platform.label}
+        <div className="flex shrink-0 items-center gap-1.5">
+          <div
+            className={cn(
+              "flex items-center gap-1 rounded-lg border px-2 py-1 text-xs font-medium",
+              platform.color,
+            )}
+          >
+            <PlatformIcon className="h-3 w-3" />
+            {platform.label}
+          </div>
+          <SourceBadge sourceUrl={post.source_url} sourcePlatform={post.source_platform} showPlatform={false} />
         </div>
       </div>
 

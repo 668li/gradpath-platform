@@ -8,7 +8,6 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.models.destination_decision import DestinationDecision
-from app.services.ai_service import AIService
 from app.services.ai_orchestrator import AIOrchestrator
 
 SYSTEM_PROMPT = """你是一位决策分析教练。用户在做一个决策时记录了预测和假设，现在填写了实际结果。

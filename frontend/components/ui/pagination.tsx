@@ -20,20 +20,20 @@ export function Pagination({ page, pageSize, total, onPageChange }: PaginationPr
         onClick={() => onPageChange(page - 1)}
         disabled={page <= 1}
         className={cn(
-          "p-2 rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed",
+          "p-2 rounded-md text-ink-400 hover:bg-ink-100 hover:text-ink-600 disabled:opacity-30 disabled:cursor-not-allowed",
         )}
         aria-label="上一页"
       >
         <ChevronLeft className="h-4 w-4" />
       </button>
-      <span className="text-sm text-slate-500">
+      <span className="text-sm text-ink-500">
         第 {page} / {totalPages} 页（共 {total} 条）
       </span>
       <button
         onClick={() => onPageChange(page + 1)}
         disabled={page >= totalPages}
         className={cn(
-          "p-2 rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed",
+          "p-2 rounded-md text-ink-400 hover:bg-ink-100 hover:text-ink-600 disabled:opacity-30 disabled:cursor-not-allowed",
         )}
         aria-label="下一页"
       >

@@ -5,7 +5,6 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.models.life_wheel import LifeWheelSnapshot
-from app.services.ai_service import AIService
 from app.services.ai_orchestrator import AIOrchestrator
 
 # 8 个生活维度定义

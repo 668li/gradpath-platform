@@ -92,7 +92,7 @@ export function ExportButton() {
         type="button"
         onClick={() => setOpen((v) => !v)}
         disabled={loading !== null}
-        className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+        className="inline-flex items-center gap-1.5 rounded-lg border border-ink-300 bg-white px-3 py-1.5 text-sm font-medium text-ink-700 transition-colors hover:bg-ink-50 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {loading ? (
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -109,12 +109,12 @@ export function ExportButton() {
       </button>
 
       {open && (
-        <div className="absolute right-0 z-20 mt-1 w-56 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+        <div className="absolute right-0 z-20 mt-1 w-56 overflow-hidden rounded-lg border border-ink-200 bg-white py-1 shadow-lg">
           <button
             type="button"
             onClick={handlePdf}
             disabled={loading !== null}
-            className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-ink-700 transition-colors hover:bg-ink-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <FileText className="h-4 w-4 text-red-500" />
             <span>导出 PDF 时间线</span>
@@ -123,7 +123,7 @@ export function ExportButton() {
             type="button"
             onClick={handleJson}
             disabled={loading !== null}
-            className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-ink-700 transition-colors hover:bg-ink-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             <FileJson className="h-4 w-4 text-amber-500" />
             <span>导出 JSON 备份</span>

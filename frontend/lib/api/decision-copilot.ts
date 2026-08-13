@@ -26,6 +26,9 @@ import type {
   UserContextPrompt,
   UserMemoryFact,
   UserMemoryListResponse,
+  PathConflictDetection,
+  PathConflictResolution,
+  PathConflictResolveRequest,
 } from "../../types/decision-copilot";
 
 // ===== 用户上下文 API =====
@@ -197,4 +200,36 @@ export type {
   DarkKnowledgePushRequest,
   DarkKnowledgePushTriggerResponse,
   DarkKnowledgeFeedbackRequest,
+  PathConflictOption,
+  PathConflictAssessmentSummary,
+  PathConflictCurrentSituation,
+  PathConflictDetection,
+  PathConflictResolveRequest,
+  PathConflictActionPlan,
+  PathConflictResolution,
 } from "../../types/decision-copilot";
+
+// ===== 路径冲突调解 API =====
+
+export const pathConflictApi = {
+  /** 检测冲突 — 返回冲突摘要 + 3 条选项 + conflict_id */
+  detect: () =>
+    request<PathConflictDetection>("/api/path-conflict/detect", {
+      method: "POST",
+    }),
+
+  /** 提交用户选择 — 基于 detect 返回的 conflict_id */
+  resolve: (data: PathConflictResolveRequest) =>
+    request<PathConflictResolution>("/api/path-conflict/resolve", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  /** 获取历史调解记录 */
+  history: () =>
+    request<PathConflictResolution[]>("/api/path-conflict/history"),
+
+  /** 获取单条调解详情 */
+  get: (id: string) =>
+    request<PathConflictResolution>(`/api/path-conflict/${id}`),
+};

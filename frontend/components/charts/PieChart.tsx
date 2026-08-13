@@ -96,7 +96,7 @@ export function PieChart({
       }));
 
     if (chartData.length === 0) {
-      return <p className="text-sm text-slate-400">暂无去向分布数据</p>;
+      return <p className="text-sm text-ink-400">暂无去向分布数据</p>;
     }
 
     const summary =

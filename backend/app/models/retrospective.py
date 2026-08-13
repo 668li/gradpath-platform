@@ -22,7 +22,7 @@ class Retrospective(UUIDMixin, TimestampMixin, Base):
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     period_type: Mapped[PeriodType] = mapped_column(Enum(PeriodType), nullable=False)
     period_start: Mapped[date] = mapped_column(Date, nullable=False)
-    period_end: Mapped[date] = mapped_column(Date, nullable=False)
+    period_end: Mapped[date] = mapped_column(Date, nullable=False, index=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     achievements: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     challenges: Mapped[str | None] = mapped_column(Text, nullable=True)

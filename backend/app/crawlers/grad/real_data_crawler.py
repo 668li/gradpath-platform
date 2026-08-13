@@ -7,6 +7,7 @@
 
 当真实抓取失败时，回退到预置的缓存数据。
 """
+import json
 import random
 import time
 import logging
@@ -19,6 +20,7 @@ from sqlalchemy.orm import Session
 
 from app.crawlers.base_crawler import BaseCrawler
 from app.crawlers.registry import register_crawler
+from app.database import SessionLocal
 
 logger = logging.getLogger(__name__)
 
@@ -225,6 +227,50 @@ def _parse_cdgdc_rank(html: str) -> list[dict]:
     return results
 
 
+# 审核条目的来源回退站点（仅有缓存/无真实 URL 时用于构造稳定的幂等 URL）
+_SOURCE_BASE_URL = {
+    "研招网": "https://yz.chsi.com.cn/zsml/queryAction.do",
+    "学位网": "https://www.cdgdc.edu.cn/xwyyjsjyxx/xkpg/",
+}
+
+
+def _review_url(item: dict) -> str:
+    """生成审核条目的 source_url。
+
+    优先使用真实来源 URL（高校官网）；缓存回退数据用"来源站点 + 锚点"
+    构造稳定幂等的 URL，锚点携带来源与条目标识，保证重复抓取不产生重复条目。
+    """
+    website = (item.get("website") or "").strip()
+    if website:
+        return website[:500]
+    source = (item.get("data_sources") or ["unknown"])[0]
+    base = _SOURCE_BASE_URL.get(source, "https://yz.chsi.com.cn")
+    school = item.get("school_name", "")
+    key = item.get("major_name") or item.get("discipline") or school
+    return f"{base}#real_data:{source}:{school}:{key}"
+
+
+def _to_queue_item(item: dict) -> dict:
+    """把 real_data 解析产物映射为审核队列条目（ExternalResearchItem 核心列）。
+
+    仅提供 title / content / source_url 三个核心字段，
+    data_sources / tags 等其余字段由 store_research_items 自动写入 external_meta，
+    保留行级来源元数据（数据真实性红线：外部数据须来源标注）。
+    """
+    school = item.get("school_name", "")
+    if item.get("discipline"):
+        title = f"学科评级：{school} {item.get('discipline', '')}"
+    elif item.get("major_name"):
+        title = f"专业目录：{school} {item.get('major_name', '')}"
+    else:
+        title = f"院校信息：{school}"
+    return {
+        "title": title[:300],
+        "content": json.dumps(item, ensure_ascii=False),
+        "source_url": _review_url(item),
+    }
+
+
 @register_crawler
 class RealDataCrawler(BaseCrawler):
     """真实数据爬虫 — 从研招网、高校官网、学位网抓取真实考研数据。
@@ -424,50 +470,63 @@ class RealDataCrawler(BaseCrawler):
             "tags": ["学科评级"],
         }
 
-    def store(self, items: list[dict], db: Session) -> int:
-        """将解析后的数据存储到数据库。"""
-        from uuid import UUID
-        from app.models.grad_intel import GradSchoolIntel
+    def store(self, items: list[dict], db: Session = None) -> int:
+        """将解析后的数据写入审核队列（PENDING），不直接进业务表。
 
-        SYSTEM_USER_ID = UUID("00000000-0000-0000-0000-000000000000")
+        合规红线（仅人工确认入库）：研招网/学位网等外部数据一律先写
+        t_external_research_item + t_review_queue_item（review_status=PENDING），
+        由管理员在 admin 端人工确认后才落业务表（research_promote 消费）。
+        本方法不调用 batch_upsert / 不写任何业务表。
+        """
+        from app.models.crawler_run import CrawlerRun
+        from app.services.research_ingestion import store_research_items
 
-        stored_count = 0
-        for item in items:
-            if not item.get("school_name"):
-                continue
+        own_db = False
+        if db is None:
+            db = SessionLocal()
+            own_db = True
+        try:
+            run_record = CrawlerRun(
+                source_name=self.name,
+                category=self.category,
+                status="running",
+            )
+            db.add(run_record)
+            db.commit()
+            db.refresh(run_record)
 
-            # 构建 GradSchoolIntel 记录
-            record = {
-                "user_id": SYSTEM_USER_ID,
-                "school_name": item.get("school_name", ""),
-                "major_name": item.get("major_name", item.get("discipline", "")),
-                "school_tier": item.get("school_tier", ""),
-                "year": 2026,
-                "background_discrimination": "unknown",
-                "first_choice_protection": "unknown",
-                "admission_ratio": "",
-                "push_ratio": "",
-                "actual_quota": item.get("enrollment_quota"),
-                "retest_weight": "",
-                "retest_format": "",
-                "score_suppression": "unknown",
-                "transfer_friendly": "unknown",
-                "insider_notes": f"数据来源: {', '.join(item.get('data_sources', []))}",
-                "data_sources": item.get("data_sources", []),
-                "tags": item.get("tags", []),
+            queue_items = [_to_queue_item(item) for item in items if item.get("school_name")]
+            result = store_research_items(
+                db,
+                crawler_name=self.name,
+                item_type="kaoyan_news",
+                items=queue_items,
+                source_platform="web",
+                run_id=str(run_record.id),
+            )
+
+            run_record.status = "success"
+            run_record.items_fetched = self.stats.get("fetched", 0)
+            run_record.items_stored = result["inserted"]
+            run_record.items_duplicates = result["duplicated"]
+            run_record.stored_count = result["inserted"]
+            run_record.duplicate_count = result["duplicated"]
+            run_record.source_meta = {
+                "note": "研招网/高校官网/学位网数据：仅人工确认后入库（PENDING 审核队列）",
             }
+            db.commit()
 
-            try:
-                # 使用批量UPSERT
-                affected = self.batch_upsert(
-                    db=db,
-                    model_class=GradSchoolIntel,
-                    items=[record],
-                    unique_key=["school_name", "major_name"],
-                )
-                stored_count += affected
-            except Exception as e:
-                logger.error(f"Failed to store record: {e}")
-                self.stats["errors"] += 1
-
-        return stored_count
+            self.stats["stored"] = result["inserted"]
+            self.stats["duplicates"] += result["duplicated"]
+            logger.info(
+                f"[{self.name}] 写入审核队列 {result['inserted']} 条，去重 {result['duplicated']} 条"
+            )
+            return result["inserted"]
+        except Exception as e:
+            db.rollback()
+            logger.error(f"[{self.name}] 写入审核队列失败: {e}")
+            self.stats["errors"] += 1
+            raise
+        finally:
+            if own_db:
+                db.close()

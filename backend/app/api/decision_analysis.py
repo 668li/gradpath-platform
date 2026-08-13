@@ -98,8 +98,9 @@ async def generate_ai_analysis(
 ):
     """AI 综合分析决策（预验尸+矩阵+红队）。"""
     # 修复 bug: service 层 raise ValueError("分析不存在") -> 500，应转 404
+    # 安全修复 H4: 传入 user.id 验证所有权，防止 IDOR
     try:
-        analysis = await decision_analysis_service.generate_ai_analysis(db, analysis_id)
+        analysis = await decision_analysis_service.generate_ai_analysis(db, analysis_id, user_id=user.id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     return {"ai_analysis": analysis}

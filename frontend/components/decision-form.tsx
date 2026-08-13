@@ -170,8 +170,8 @@ export const DecisionForm = memo(function DecisionForm({ initial, onSaved, onCan
       </Field>
 
       {/* 动态详情字段 */}
-      <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-4 space-y-3">
-        <p className="text-sm font-medium text-slate-600">
+      <div className="rounded-lg border border-ink-200 bg-ink-50/50 p-4 space-y-3">
+        <p className="text-sm font-medium text-ink-600">
           {DESTINATION_TYPE_LABEL[destinationType]} 详情
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

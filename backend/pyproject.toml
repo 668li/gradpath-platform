@@ -39,7 +39,6 @@ dependencies = [
     "celery[redis]>=5.3.6",
     "flower>=2.0.1",
     "prometheus_client>=0.20.0",
-    "sentry-sdk>=2.10.0",
 ]
 
 [project.optional-dependencies]

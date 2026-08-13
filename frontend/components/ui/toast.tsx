@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { CheckCircle2, AlertCircle, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -23,11 +23,8 @@ const ToastContext = createContext<ToastContextValue | null>(null);
 export function useToast() {
   const ctx = useContext(ToastContext);
   if (!ctx) {
-    // 在无 Provider 时降级为 console，避免页面崩溃
-    const fallbackPush = (message: string, type: ToastType = "info") => {
-      // eslint-disable-next-line no-console
-      console.log(`[toast:${type}]`, message);
-    };
+    // 在无 Provider 时降级为空操作，避免页面崩溃（不向 console 输出调试噪声）
+    const fallbackPush = (_message: string, _type: ToastType = "info") => {};
     return {
       push: fallbackPush,
       success: (message: string) => fallbackPush(message, "success"),
@@ -73,8 +70,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setItems((prev) => prev.filter((t) => t.id !== id));
   };
 
+  // 用 useMemo 稳定 context value，避免每次渲染创建新对象导致消费者无限重渲染
+  const contextValue = useMemo<ToastContextValue>(() => ({
+    push, success, error, info,
+  }), [push, success, error, info]);
+
   return (
-    <ToastContext.Provider value={{ push, success, error, info }}>
+    <ToastContext.Provider value={contextValue}>
       {children}
       <div className="fixed top-4 right-4 z-[100] flex flex-col gap-2 w-80 max-w-[90vw]">
         {items.map((t) => (
@@ -84,7 +86,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               "flex items-start gap-2 rounded-lg border px-4 py-3 shadow-lg bg-white animate-in",
               t.type === "success" && "border-green-200",
               t.type === "error" && "border-red-200",
-              t.type === "info" && "border-slate-200",
+              t.type === "info" && "border-ink-200",
             )}
           >
             {t.type === "success" && (
@@ -93,10 +95,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             {t.type === "error" && (
               <AlertCircle className="h-5 w-5 text-red-600 shrink-0" />
             )}
-            <p className="text-sm text-slate-700 flex-1">{t.message}</p>
+            <p className="text-sm text-ink-700 flex-1">{t.message}</p>
             <button
               onClick={() => remove(t.id)}
-              className="text-slate-400 hover:text-slate-600"
+              className="text-ink-400 hover:text-ink-600"
               aria-label="关闭"
             >
               <X className="h-4 w-4" />

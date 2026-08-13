@@ -2,6 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import {
   Users,
   MessageSquare,
@@ -32,6 +33,7 @@ const tabs = [
 
 const externalCategories = [
   { value: "", label: "全部分类" },
+  { value: "考研灵感", label: "💡 Trae论坛灵感" },
   { value: "择校", label: "择校" },
   { value: "备考", label: "备考" },
   { value: "复试", label: "复试" },
@@ -80,6 +82,7 @@ function CommunityPageContent() {
         page,
         page_size: PAGE_SIZE,
         search: search || undefined,
+        source_platform: "user",
       });
       setPosts(res.items);
       setTotal(res.total);
@@ -115,10 +118,10 @@ function CommunityPageContent() {
         page_size: 100,
         category: externalCategory || undefined,
         search: search || undefined,
+        source_platform: "external",
       });
-      const external = res.items.filter(isExternalPost);
-      setExternalPosts(external);
-      setTotal(external.length);
+      setExternalPosts(res.items);
+      setTotal(res.total);
     } catch {
       toast.push("加载外部经验失败", "error");
     } finally {
@@ -163,7 +166,7 @@ function CommunityPageContent() {
         {/* Search + Action */}
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -tranink-y-1/2 text-ink-400" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -249,7 +252,13 @@ function CommunityPageContent() {
                       </p>
                       <div className="flex items-center justify-between text-xs text-ink-400">
                         <div className="flex items-center gap-3">
-                          <span>{post.is_anonymous ? "匿名用户" : `用户 ${post.user_id.slice(-4)}`}</span>
+                          {post.is_anonymous ? (
+                            <span>匿名用户</span>
+                          ) : (
+                            <Link href={`/u/${post.user_id}`} className="hover:text-brand-600 hover:underline transition-colors" onClick={(e) => e.stopPropagation()}>
+                              {post.author_name || `用户 ${post.user_id.slice(-4)}`}
+                            </Link>
+                          )}
                           <span className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
                             {new Date(post.created_at).toLocaleDateString("zh-CN")}

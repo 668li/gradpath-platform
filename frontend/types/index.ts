@@ -1117,6 +1117,9 @@ export interface GrowthPatternResponse {
   patterns: GrowthPattern[];
   calibration_score: number;
   total_data_points: number;
+  /** 由 analyze 端点附加的启发式得分（0-100）与落库标记 */
+  growth_score?: number;
+  snapshot_saved?: boolean;
 }
 
 // ===== 考研作战室：院校情报 =====
@@ -1869,6 +1872,8 @@ export interface MentorReviewCreate {
 export interface ExperiencePostResponse {
   id: string;
   user_id: string;
+  author_name?: string | null;
+  author_avatar?: string | null;
   title: string;
   summary: string | null;
   content: string;
@@ -1914,6 +1919,8 @@ export interface QAAnswerResponse {
   id: string;
   qa_id: string;
   user_id: string;
+  author_name?: string | null;
+  author_avatar?: string | null;
   content: string;
   is_best: boolean;
   like_count: number;
@@ -1929,6 +1936,8 @@ export interface QAAnswerCreate {
 export interface QAResponse {
   id: string;
   user_id: string;
+  author_name?: string | null;
+  author_avatar?: string | null;
   title: string;
   content: string;
   tags: string[];
@@ -1952,6 +1961,26 @@ export interface QAUpdate {
   title?: string;
   content?: string;
   tags?: string[];
+}
+
+// ===== 用户公开主页 =====
+export interface UserProfile {
+  id: string;
+  nickname: string | null;
+  username: string | null;
+  name: string | null;
+  display_name: string;
+  avatar_url: string | null;
+  bio: string | null;
+  current_stage: string | null;
+  school: string | null;
+  major: string | null;
+  graduation_year: number | null;
+  created_at: string;
+  post_count: number;
+  qa_count: number;
+  answer_count: number;
+  total_likes: number;
 }
 
 // ===== 学习计划 =====

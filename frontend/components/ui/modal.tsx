@@ -66,7 +66,7 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+        className="absolute inset-0 bg-ink-900/40 backdrop-blur-sm"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -78,18 +78,18 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
         tabIndex={-1}
         onKeyDown={handleKeyDown}
         className={cn(
-          "relative z-10 w-full max-w-lg rounded-2xl bg-white shadow-xl border border-slate-200 outline-none",
+          "relative z-10 w-full max-w-lg rounded-2xl bg-white shadow-xl border border-ink-200 outline-none",
           className,
         )}
       >
         {title && (
-          <div className="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-            <h3 id={titleId} className="text-base font-semibold text-slate-800">
+          <div className="flex items-center justify-between border-b border-ink-100 px-6 py-4">
+            <h3 id={titleId} className="text-base font-semibold text-ink-800">
               {title}
             </h3>
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-slate-600"
+              className="text-ink-400 hover:text-ink-600"
               aria-label="关闭"
             >
               <X className="h-5 w-5" />

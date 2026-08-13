@@ -22,7 +22,8 @@ from app.core.deps import get_current_user
 from app.database import get_db
 from app.models.grad_intel import GradSchoolIntel, GradScorelineRecord
 from app.models.user import User
-from app.services.ai_service import AIService, AIServiceNotConfigured
+from app.services.ai_orchestrator import AIOrchestrator
+from app.services.ai_service import AIServiceNotConfigured
 
 logger = logging.getLogger(__name__)
 
@@ -128,7 +129,7 @@ def _build_radar_comparison(analyses: list[dict]) -> list[dict]:
 async def _generate_comparison_summary(analyses: list[dict], user_score: int) -> str:
     """用 AI 生成对比总结。"""
     try:
-        ai = AIService()
+        ai = AIOrchestrator()
         system_prompt = (
             "你是一位资深考研规划师。请基于以下多校对比数据，生成一段200字左右的对比分析和择校建议。"
             "要求：客观对比各校优劣，给出明确推荐。不要使用 emoji。"

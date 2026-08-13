@@ -129,7 +129,7 @@ export default function LearningResourcesPage() {
       {/* 筛选器 */}
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-400" />
+          <Search className="absolute left-3 top-1/2 -tranink-y-1/2 h-4 w-4 text-ink-400" />
           <input
             type="text"
             value={searchText}

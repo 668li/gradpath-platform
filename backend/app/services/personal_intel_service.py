@@ -15,6 +15,7 @@ from uuid import UUID
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.core.cache import cache
 from app.models.assessment import Assessment
 from app.models.career_plan import CareerPlan
 from app.models.destination_decision import DestinationDecision
@@ -25,6 +26,12 @@ from app.models.user import User
 
 
 def get_personal_intel(db: Session, user_id: UUID) -> dict:
+    # 性能优化: 60s 缓存，避免每次看板加载执行 6 个 COUNT 查询
+    cache_key = f"personal_intel:{user_id}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
+
     user = db.get(User, user_id)
 
     # 1. 资产计数
@@ -62,7 +69,7 @@ def get_personal_intel(db: Session, user_id: UUID) -> dict:
         (5 - len(profile_gaps)) / 5 * 100
     )
 
-    return {
+    result = {
         "inventory": inventory,
         "directions": directions,
         "competitiveness_radar": radar,
@@ -70,6 +77,8 @@ def get_personal_intel(db: Session, user_id: UUID) -> dict:
         "profile_gaps": profile_gaps,
         "profile_completeness": completeness,
     }
+    cache.set(cache_key, result, ttl=60)
+    return result
 
 
 def _count(db: Session, model, user_id: UUID) -> int:

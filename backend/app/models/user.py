@@ -26,3 +26,5 @@ class User(UUIDMixin, TimestampMixin, Base):
     major: Mapped[str | None] = mapped_column(String(255), nullable=True)
     graduation_year: Mapped[int | None] = mapped_column(Integer, nullable=True)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    bio: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    avatar_url: Mapped[str | None] = mapped_column(String(500), nullable=True)

@@ -4,7 +4,7 @@ import { test, expect } from "@playwright/test";
  * 认证流程端到端测试
  *
  * 覆盖登录页渲染、表单校验、错误提示等关键路径。
- * 注意：此测试依赖后端 API server 运行在 localhost:8000。
+ * 注意：此测试依赖后端 API server 运行在 localhost:8001。
  */
 test.describe("认证流程", () => {
   test("登录页应正确渲染", async ({ page }) => {

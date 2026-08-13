@@ -5,10 +5,9 @@ export const dynamic = "force-dynamic";
 
 async function getShareData(token: string) {
   try {
-    const resp = await fetch(
-      `${process.env.BACKEND_URL || "http://localhost:8000"}/api/share/skills/${token}`,
-      { cache: "no-store" },
-    );
+    // 走同源 /api 代理（next.config.js rewrites → BACKEND_URL），
+    // 避免在源码中写死后端地址。
+    const resp = await fetch(`/api/share/skills/${token}`, { cache: "no-store" });
     if (!resp.ok) return null;
     return resp.json();
   } catch {

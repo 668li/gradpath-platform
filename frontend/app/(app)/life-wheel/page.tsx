@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { PieChart, Sparkles, RotateCcw } from "lucide-react";
+import Link from "next/link";
+import { PieChart, Sparkles, RotateCcw, ArrowRight, Target } from "lucide-react";
 import { lifeWheelApi } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { LoadingState } from "@/components/ui/empty";
@@ -490,6 +491,43 @@ function ResultView({
           </p>
         )}
       </div>
+
+      {/* 低分维度（&lt;5）引导：把短板转化为改进目标 */}
+      {(() => {
+        const lowDims = radarData.filter((d) => d.score < 5);
+        if (lowDims.length === 0) return null;
+        return (
+          <div className="card space-y-3 border-amber-200 bg-gradient-to-br from-amber-50/40 to-paper-50">
+            <div className="flex items-center gap-2">
+              <Target className="h-4 w-4 text-amber-600" />
+              <h2 className="font-display font-semibold text-ink-800">低分维度改进建议</h2>
+            </div>
+            <p className="text-xs text-ink-500 -mt-1">
+              下列维度得分低于 5 分。为它创建一个具体的改进目标，比单纯希望它变好更有效。
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {lowDims.map((d) => (
+                <Link
+                  key={d.key}
+                  href={`/life-design?from=life-wheel&dimension=${encodeURIComponent(d.key)}`}
+                  className="group flex items-center gap-3 rounded-xl border border-paper-200 bg-white p-3 transition-all hover:border-amber-300 hover:shadow-sm"
+                >
+                  <span className="text-lg shrink-0">{DIM_ICONS[d.key] ?? "🔹"}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-ink-800">
+                      {d.name} 得分较低
+                    </p>
+                    <p className="text-xs text-ink-400 mt-0.5 line-clamp-1">
+                      创建一个改进目标？当前 {d.score} / 10 分
+                    </p>
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-ink-300 group-hover:text-amber-600 transition-colors shrink-0" />
+                </Link>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* 历史记录 */}
       <div className="card space-y-3">

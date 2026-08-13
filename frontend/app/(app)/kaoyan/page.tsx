@@ -64,7 +64,7 @@ function KaoyanHomePageContent() {
               className={cn(
                 "flex items-center gap-2 px-5 py-3 font-medium transition-all border-b-2 whitespace-nowrap",
                 isActive
-                  ? "text-blue-600 border-blue-600"
+                  ? "text-brand-600 border-brand-600"
                   : "text-ink-400 border-transparent hover:text-ink-600"
               )}
             >
@@ -89,10 +89,10 @@ function KaoyanHomePageContent() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
             {[
-              { value: "100+", label: "院校数据", color: "text-blue-600" },
-              { value: "44", label: "导师信息", color: "text-purple-600" },
-              { value: "20+", label: "真实评价", color: "text-orange-600" },
-              { value: "500+", label: "活跃用户", color: "text-green-600" },
+              { value: "206", label: "院校数据", color: "text-brand-600" },
+              { value: "289", label: "导师信息", color: "text-brand-700" },
+              { value: "1000+", label: "暗知识条目", color: "text-ink-700" },
+              { value: "588", label: "经验帖", color: "text-ink-600" },
             ].map((stat) => (
               <div key={stat.label} className="text-center">
                 <div className={cn("text-3xl font-bold", stat.color)}>
@@ -112,10 +112,10 @@ function KaoyanHomePageContent() {
               <Link
                 key={tab.id}
                 href={`${tab.href}?from=kaoyan`}
-                className="group bg-white rounded-xl p-5 border border-paper-200 hover:shadow-lg hover:border-blue-200 transition-all"
+                className="group bg-white rounded-xl p-5 border border-paper-200 hover:shadow-lg hover:border-brand-200 transition-all"
               >
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="p-2 rounded-lg bg-blue-50 text-blue-600 group-hover:bg-blue-100 transition-colors">
+                  <div className="p-2 rounded-lg bg-brand-50 text-brand-600 group-hover:bg-brand-100 transition-colors">
                     <Icon className="h-5 w-5" />
                   </div>
                   <h3 className="font-semibold text-ink-800">{tab.label}</h3>
@@ -134,11 +134,11 @@ function KaoyanHomePageContent() {
 
 function getTabDescription(tabId: string): string {
   const descriptions: Record<string, string> = {
-    schools: "10万+院校数据，分数线、招生计划、录取率一目了然",
+    schools: "206所院校数据，分数线、招生计划、录取率一目了然",
     compare: "多维度对比院校，选出最适合你的学校",
     predict: "基于历年数据，智能预测录取概率",
     mentors: "289位导师信息，选对导师少走弯路",
-    "dark-knowledge": "10万+条考研暗知识，那些没人告诉你的真相",
+    "dark-knowledge": "1000+条考研暗知识，那些没人告诉你的真相",
     strategy: "个性化推荐，高效备考策略",
     community: "考研经验帖、问答、学长学姐交流",
     plans: "制定学习计划，科学管理时间",

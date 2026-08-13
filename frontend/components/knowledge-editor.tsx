@@ -91,8 +91,8 @@ export const KnowledgeEditor = memo(function KnowledgeEditor({ article, loading 
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12 text-slate-400">
-        <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-brand-500" />
+      <div className="flex items-center justify-center py-12 text-ink-400">
+        <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-ink-300 border-t-brand-500" />
         <span className="ml-2 text-sm">加载中…</span>
       </div>
     );
@@ -104,12 +104,12 @@ export const KnowledgeEditor = memo(function KnowledgeEditor({ article, loading 
       <div className="flex items-center justify-between">
         <button
           onClick={() => router.push("/knowledge")}
-          className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700"
+          className="flex items-center gap-1.5 text-sm text-ink-500 hover:text-ink-700"
         >
           <ArrowLeft className="h-4 w-4" />
           返回列表
         </button>
-        <h1 className="text-lg font-semibold text-slate-800">
+        <h1 className="text-lg font-semibold text-ink-800">
           {isEdit ? "编辑文章" : "新建文章"}
         </h1>
         <Button onClick={handleSave} loading={saving} size="sm">
@@ -170,11 +170,11 @@ export const KnowledgeEditor = memo(function KnowledgeEditor({ article, loading 
               type="checkbox"
               checked={isPublished}
               onChange={(e) => setIsPublished(e.target.checked)}
-              className="h-4 w-4 rounded border-slate-300 accent-brand-600"
+              className="h-4 w-4 rounded border-ink-300 accent-brand-600"
             />
-            <span className="text-sm text-slate-700">发布</span>
+            <span className="text-sm text-ink-700">发布</span>
           </label>
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-ink-400">
             未发布的文章不会被 AI 管家检索
           </span>
         </div>
@@ -188,7 +188,7 @@ export const KnowledgeEditor = memo(function KnowledgeEditor({ article, loading 
             "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
             mobileView === "edit"
               ? "bg-brand-600 text-white"
-              : "bg-slate-100 text-slate-600",
+              : "bg-ink-100 text-ink-600",
           )}
         >
           <Pencil className="h-3.5 w-3.5" />
@@ -200,7 +200,7 @@ export const KnowledgeEditor = memo(function KnowledgeEditor({ article, loading 
             "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
             mobileView === "preview"
               ? "bg-brand-600 text-white"
-              : "bg-slate-100 text-slate-600",
+              : "bg-ink-100 text-ink-600",
           )}
         >
           <Eye className="h-3.5 w-3.5" />
@@ -213,14 +213,14 @@ export const KnowledgeEditor = memo(function KnowledgeEditor({ article, loading 
         {/* 编辑区 */}
         <div className={cn(mobileView === "preview" && "hidden lg:block")}>
           <div className="mb-1.5 flex items-center justify-between">
-            <span className="text-sm font-medium text-slate-700">内容</span>
-            <span className="text-xs text-slate-400">{content.length} 字</span>
+            <span className="text-sm font-medium text-ink-700">内容</span>
+            <span className="text-xs text-ink-400">{content.length} 字</span>
           </div>
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="支持 Markdown 格式…"
-            className="min-h-[400px] w-full resize-y rounded-lg border border-slate-300 bg-white px-4 py-3 font-mono text-sm text-slate-800 placeholder:text-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
+            className="min-h-[400px] w-full resize-y rounded-lg border border-ink-300 bg-white px-4 py-3 font-mono text-sm text-ink-800 placeholder:text-ink-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
             aria-invalid={!!errors.content}
           />
           <FieldError message={errors.content} />
@@ -229,13 +229,13 @@ export const KnowledgeEditor = memo(function KnowledgeEditor({ article, loading 
         {/* 预览区 */}
         <div className={cn(mobileView === "edit" && "hidden lg:block")}>
           <div className="mb-1.5 flex items-center justify-between">
-            <span className="text-sm font-medium text-slate-700">预览</span>
+            <span className="text-sm font-medium text-ink-700">预览</span>
           </div>
-          <div className="min-h-[400px] overflow-y-auto rounded-lg border border-slate-200 bg-white px-4 py-3">
+          <div className="min-h-[400px] overflow-y-auto rounded-lg border border-ink-200 bg-white px-4 py-3">
             {content.trim() ? (
               <Markdown content={content} />
             ) : (
-              <p className="text-sm text-slate-400">开始输入内容后这里会显示预览…</p>
+              <p className="text-sm text-ink-400">开始输入内容后这里会显示预览…</p>
             )}
           </div>
         </div>

@@ -22,8 +22,11 @@ WORKDIR /app
 
 COPY --from=builder /wheels/*.whl /wheels/
 
-RUN pip install --no-cache-dir /wheels/*.whl && \
-    pip install --no-cache-dir "redis>=5.0,<6.0" "tenacity>=8.0,<9.0" && \
+# 修复: 旧版 wheel 安装遗漏 tenacity/redis/prometheus_client 等运行时依赖,
+# 导致路由自动发现全部被跳过,前端所有"加载X失败"均源于此。
+# 直接从 pyproject.toml 安装全部依赖,确保不遗漏。
+COPY pyproject.toml .
+RUN pip install --no-cache-dir . && \
     rm -rf /wheels
 
 COPY app/ app/

@@ -12,6 +12,7 @@ import type {
   GradScorelineTrend,
   GradAdjustmentInfo,
   GradSchoolDataSummary,
+  PaginatedResponse,
 } from "@/types";
 import { request, buildQuery } from "./client";
 
@@ -47,7 +48,7 @@ export const gradIntelApi = {
     request<PositioningResponse[]>("/api/grad-intel/positioning/history"),
   // 暗知识
   getDarkKnowledge: (params?: { stage?: string; page?: number; page_size?: number }) =>
-    request<any>(
+    request<PaginatedResponse<DarkKnowledgeResponse>>(
       `/api/grad-intel/dark-knowledge/list${buildQuery((params as Record<string, string | number | undefined | null>) || {})}`,
     ),
   getDarkKnowledgeStages: () =>

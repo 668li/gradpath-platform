@@ -4,15 +4,17 @@ Revision ID: bbcc8a2def16
 Revises: add_mentor_tables
 Create Date: 2026-07-07 05:18:02.630098+00:00
 
+注意：本迁移的建表/加列职责已由 9c43ddf069ce（autogenerate 完整快照）统一承担：
+- kaoyan_news 由快照 line 258 创建（含 uk_source_url + 3 索引）
+- experience_posts 由快照 line 773 创建，且已含 external_view_count / external_like_count 列
+从零升级时空库由快照建表即可；历史增量库该 revision 早已 stamp 不会重跑。
 """
 from __future__ import annotations
 
 from typing import Sequence, Union
 
 from alembic import op
-import sqlalchemy as sa
-
-from app.models.base import GUID, JSONB
+from sqlalchemy import inspect
 
 # revision identifiers, used by Alembic.
 revision: str = "bbcc8a2def16"
@@ -22,57 +24,22 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Create kaoyan_news table
-    op.create_table(
-        "kaoyan_news",
-        sa.Column("id", GUID(), nullable=False),
-        sa.Column("title", sa.String(length=200), nullable=False),
-        sa.Column("summary", sa.String(length=500), nullable=True),
-        sa.Column("content", sa.Text(), nullable=True),
-        sa.Column("source_platform", sa.String(length=50), nullable=False, server_default="rss"),
-        sa.Column("source_url", sa.String(length=500), nullable=False),
-        sa.Column("published_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column(
-            "crawled_at", sa.DateTime(timezone=True), nullable=False,
-            server_default=sa.text("(CURRENT_TIMESTAMP)"),
-        ),
-        sa.Column("status", sa.String(length=20), nullable=False, server_default="pending"),
-        sa.Column("category", sa.String(length=50), nullable=False, server_default="general"),
-        sa.Column("tags", JSONB(), nullable=False, server_default=sa.text("'[]'")),
-        sa.Column(
-            "created_at", sa.DateTime(timezone=True), nullable=False,
-            server_default=sa.text("(CURRENT_TIMESTAMP)"),
-        ),
-        sa.Column(
-            "updated_at", sa.DateTime(timezone=True), nullable=False,
-            server_default=sa.text("(CURRENT_TIMESTAMP)"),
-        ),
-        sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("source_url"),
-    )
-    with op.batch_alter_table("kaoyan_news", schema=None) as batch_op:
-        batch_op.create_index(batch_op.f("ix_kaoyan_news_category"), ["category"], unique=False)
-        batch_op.create_index(batch_op.f("ix_kaoyan_news_status"), ["status"], unique=False)
-        batch_op.create_index(batch_op.f("ix_kaoyan_news_title"), ["title"], unique=False)
-
-    # Add external platform counters to experience_posts
-    with op.batch_alter_table("experience_posts", schema=None) as batch_op:
-        batch_op.add_column(
-            sa.Column("external_view_count", sa.Integer(), nullable=False, server_default="0")
-        )
-        batch_op.add_column(
-            sa.Column("external_like_count", sa.Integer(), nullable=False, server_default="0")
-        )
+    # 不再重复建表/加列：kaoyan_news 与 experience_posts 的外部计数字段
+    # 均由 9c43ddf069ce 快照统一创建，此处 no-op。
+    return
 
 
 def downgrade() -> None:
-    with op.batch_alter_table("experience_posts", schema=None) as batch_op:
-        batch_op.drop_column("external_like_count")
-        batch_op.drop_column("external_view_count")
-
-    with op.batch_alter_table("kaoyan_news", schema=None) as batch_op:
-        batch_op.drop_index(batch_op.f("ix_kaoyan_news_title"))
-        batch_op.drop_index(batch_op.f("ix_kaoyan_news_status"))
-        batch_op.drop_index(batch_op.f("ix_kaoyan_news_category"))
-
-    op.drop_table("kaoyan_news")
+    # 与 upgrade 对称：从零库 downgrade 时这两张表/列已先被 9c43ddf069ce 的
+    # downgrade 删除，这里仅当目标存在才执行，避免「表/列不存在」报错。
+    existing = set(inspect(op.get_bind()).get_table_names())
+    if "kaoyan_news" in existing:
+        with op.batch_alter_table("kaoyan_news", schema=None) as batch_op:
+            batch_op.drop_index(batch_op.f("ix_kaoyan_news_title"))
+            batch_op.drop_index(batch_op.f("ix_kaoyan_news_status"))
+            batch_op.drop_index(batch_op.f("ix_kaoyan_news_category"))
+        op.drop_table("kaoyan_news")
+    if "experience_posts" in existing:
+        with op.batch_alter_table("experience_posts", schema=None) as batch_op:
+            batch_op.drop_column("external_like_count")
+            batch_op.drop_column("external_view_count")

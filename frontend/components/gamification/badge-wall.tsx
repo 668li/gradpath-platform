@@ -17,14 +17,14 @@ export function BadgeWall({ earnedBadges, availableBadges }: BadgeWallProps) {
     <div className="space-y-6">
       {/* 已获得 */}
       <div>
-        <h3 className="mb-3 text-sm font-semibold text-slate-700">
+        <h3 className="mb-3 text-sm font-semibold text-ink-700">
           已获得{" "}
-          <span className="font-normal text-slate-400">
+          <span className="font-normal text-ink-400">
             ({earnedBadges.length})
           </span>
         </h3>
         {earnedBadges.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50/50 px-4 py-6 text-center text-sm text-slate-400">
+          <p className="rounded-lg border border-dashed border-ink-200 bg-ink-50/50 px-4 py-6 text-center text-sm text-ink-400">
             暂无已获得徽章，继续努力解锁吧！
           </p>
         ) : (
@@ -38,14 +38,14 @@ export function BadgeWall({ earnedBadges, availableBadges }: BadgeWallProps) {
 
       {/* 待解锁 */}
       <div>
-        <h3 className="mb-3 text-sm font-semibold text-slate-700">
+        <h3 className="mb-3 text-sm font-semibold text-ink-700">
           待解锁{" "}
-          <span className="font-normal text-slate-400">
+          <span className="font-normal text-ink-400">
             ({availableBadges.length})
           </span>
         </h3>
         {availableBadges.length === 0 ? (
-          <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50/50 px-4 py-6 text-center text-sm text-slate-400">
+          <p className="rounded-lg border border-dashed border-ink-200 bg-ink-50/50 px-4 py-6 text-center text-sm text-ink-400">
             所有徽章均已解锁！
           </p>
         ) : (

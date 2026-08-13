@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, get_admin_user
 from app.database import get_db
 from app.models.event import Event
 from app.models.user import User
@@ -101,9 +101,9 @@ def export_events(
     session_id: str | None = Query(None, description="按会话ID过滤"),
     limit: int = Query(10000, ge=1, le=100000),
     db: Session = Depends(get_db),
-    _user: User = Depends(get_current_user),
+    _user: User = Depends(get_admin_user),
 ):
-    """导出事件（供分析脚本拉取）。"""
+    """导出事件（仅管理员，供分析脚本拉取）。"""
     q = db.query(Event)
     if session_id:
         q = q.filter(Event.session_id == session_id)

@@ -113,15 +113,15 @@ function PostCard({
   };
 
   return (
-    <div className="rounded-lg border border-slate-200 p-4">
+    <div className="rounded-lg border border-ink-200 p-4">
       <div className="flex items-start gap-3">
         <Avatar name={post.author_name} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="font-medium text-sm text-slate-800">
+            <span className="font-medium text-sm text-ink-800">
               {post.author_name}
             </span>
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-ink-400">
               {relativeTime(post.created_at)}
             </span>
           </div>
@@ -133,7 +133,7 @@ function PostCard({
                 onChange={(e) => setEditContent(e.target.value)}
                 maxLength={MAX_CONTENT}
                 rows={3}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+                className="w-full rounded-md border border-ink-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
               />
               <div className="flex gap-2">
                 <Button size="sm" onClick={handleEdit}>
@@ -152,7 +152,7 @@ function PostCard({
               </div>
             </div>
           ) : (
-            <p className="mt-1 text-sm text-slate-600 whitespace-pre-wrap break-words">
+            <p className="mt-1 text-sm text-ink-600 whitespace-pre-wrap break-words">
               {renderContent(post.content)}
             </p>
           )}
@@ -162,7 +162,7 @@ function PostCard({
               <>
                 <button
                   onClick={() => setEditing(true)}
-                  className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-brand-600"
+                  className="inline-flex items-center gap-1 text-xs text-ink-400 hover:text-brand-600"
                 >
                   <Edit2 className="h-3 w-3" /> 编辑
                 </button>
@@ -176,7 +176,7 @@ function PostCard({
                     </button>
                     <button
                       onClick={() => setConfirmDelete(false)}
-                      className="text-xs text-slate-400 hover:underline"
+                      className="text-xs text-ink-400 hover:underline"
                     >
                       取消
                     </button>
@@ -184,7 +184,7 @@ function PostCard({
                 ) : (
                   <button
                     onClick={() => setConfirmDelete(true)}
-                    className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-red-500"
+                    className="inline-flex items-center gap-1 text-xs text-ink-400 hover:text-red-500"
                   >
                     <Trash2 className="h-3 w-3" /> 删除
                   </button>
@@ -200,18 +200,18 @@ function PostCard({
         <div className="mt-3 ml-11 space-y-3">
           {post.replies.map((reply) => (
             <div key={reply.id} className="flex items-start gap-2">
-              <CornerDownRight className="h-4 w-4 shrink-0 text-slate-300 mt-1" />
+              <CornerDownRight className="h-4 w-4 shrink-0 text-ink-300 mt-1" />
               <Avatar name={reply.author_name} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-xs text-slate-700">
+                  <span className="font-medium text-xs text-ink-700">
                     {reply.author_name}
                   </span>
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs text-ink-400">
                     {relativeTime(reply.created_at)}
                   </span>
                 </div>
-                <p className="mt-0.5 text-sm text-slate-600 whitespace-pre-wrap break-words">
+                <p className="mt-0.5 text-sm text-ink-600 whitespace-pre-wrap break-words">
                   {renderContent(reply.content)}
                 </p>
                 <ReplyActions
@@ -235,7 +235,7 @@ function PostCard({
             maxLength={MAX_CONTENT}
             rows={2}
             placeholder="写下你的回复…"
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+            className="w-full rounded-md border border-ink-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
           />
           <div className="flex gap-2">
             <Button size="sm" onClick={handleReply}>
@@ -256,7 +256,7 @@ function PostCard({
       {!showReplyBox && (
         <button
           onClick={() => setShowReplyBox(true)}
-          className="mt-2 ml-11 inline-flex items-center gap-1 text-xs text-slate-400 hover:text-brand-600"
+          className="mt-2 ml-11 inline-flex items-center gap-1 text-xs text-ink-400 hover:text-brand-600"
         >
           <MessageSquare className="h-3 w-3" /> 回复
         </button>
@@ -291,7 +291,7 @@ function ReplyActions({
           onChange={(e) => setEditContent(e.target.value)}
           maxLength={MAX_CONTENT}
           rows={2}
-          className="w-full rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-brand-500 focus:outline-none"
+          className="w-full rounded-md border border-ink-300 px-2 py-1 text-sm focus:border-brand-500 focus:outline-none"
         />
         <div className="flex gap-2">
           <button
@@ -310,7 +310,7 @@ function ReplyActions({
               setEditing(false);
               setEditContent(reply.content);
             }}
-            className="text-xs text-slate-400 hover:underline"
+            className="text-xs text-ink-400 hover:underline"
           >
             取消
           </button>
@@ -323,7 +323,7 @@ function ReplyActions({
     <div className="mt-1 flex items-center gap-2">
       <button
         onClick={() => setEditing(true)}
-        className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-brand-600"
+        className="inline-flex items-center gap-1 text-xs text-ink-400 hover:text-brand-600"
       >
         <Edit2 className="h-3 w-3" /> 编辑
       </button>
@@ -337,7 +337,7 @@ function ReplyActions({
           </button>
           <button
             onClick={() => setConfirmDelete(false)}
-            className="text-xs text-slate-400 hover:underline"
+            className="text-xs text-ink-400 hover:underline"
           >
             取消
           </button>
@@ -345,7 +345,7 @@ function ReplyActions({
       ) : (
         <button
           onClick={() => setConfirmDelete(true)}
-          className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-red-500"
+          className="inline-flex items-center gap-1 text-xs text-ink-400 hover:text-red-500"
         >
           <Trash2 className="h-3 w-3" /> 删除
         </button>
@@ -490,11 +490,11 @@ export function DiscussionSection({
 
   return (
     <div className="card">
-      <h2 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
+      <h2 className="font-semibold text-ink-800 mb-4 flex items-center gap-2">
         <MessageSquare className="h-5 w-5 text-brand-500" />
         {title ?? "讨论区"}
         {total > 0 && (
-          <span className="text-sm font-normal text-slate-400">（{total}）</span>
+          <span className="text-sm font-normal text-ink-400">（{total}）</span>
         )}
       </h2>
 
@@ -507,10 +507,10 @@ export function DiscussionSection({
             maxLength={MAX_CONTENT}
             rows={3}
             placeholder="分享你的经验或提出问题…"
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
+            className="w-full rounded-md border border-ink-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none"
           />
           <div className="flex items-center justify-between">
-            <span className="text-xs text-slate-400">
+            <span className="text-xs text-ink-400">
               {newContent.length} / {MAX_CONTENT}
             </span>
             <Button
@@ -523,7 +523,7 @@ export function DiscussionSection({
           </div>
         </div>
       ) : (
-        <div className="mb-4 rounded-lg bg-slate-50 px-4 py-3 text-center text-sm text-slate-400">
+        <div className="mb-4 rounded-lg bg-ink-50 px-4 py-3 text-center text-sm text-ink-400">
           <a href="/login" className="text-brand-600 hover:underline">
             登录
           </a>
@@ -533,11 +533,11 @@ export function DiscussionSection({
 
       {/* 帖子列表 */}
       {loading ? (
-        <p className="text-sm text-slate-400">加载讨论中…</p>
+        <p className="text-sm text-ink-400">加载讨论中…</p>
       ) : posts.length === 0 ? (
         <div className="py-8 text-center">
-          <MessageSquare className="h-10 w-10 mx-auto text-slate-300" />
-          <p className="mt-2 text-sm text-slate-400">
+          <MessageSquare className="h-10 w-10 mx-auto text-ink-300" />
+          <p className="mt-2 text-sm text-ink-400">
             还没有人讨论，来说点什么吧
           </p>
         </div>

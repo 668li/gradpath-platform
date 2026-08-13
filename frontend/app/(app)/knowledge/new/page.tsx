@@ -27,8 +27,8 @@ export default function NewKnowledgePage() {
 
   if (!authChecked || (authChecked && user && !user.is_admin)) {
     return (
-      <div className="flex items-center justify-center py-12 text-slate-400">
-        <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-brand-500" />
+      <div className="flex items-center justify-center py-12 text-ink-400">
+        <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-ink-300 border-t-brand-500" />
         <span className="ml-2 text-sm">加载中…</span>
       </div>
     );

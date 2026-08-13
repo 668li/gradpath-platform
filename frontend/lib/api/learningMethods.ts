@@ -62,7 +62,7 @@ export const learningMethodsApi = {
     request<LearningMethodStats>("/api/learning-methods/stats"),
 
   bookmark: (id: string) =>
-    request<{ bookmarked: boolean }>(`/api/learning-methods/${id}/bookmark`, {
+    request<{ bookmarked: boolean }>(`/api/learning-methods/bookmark?article_id=${id}`, {
       method: "POST",
     }),
 };

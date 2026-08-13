@@ -1,7 +1,7 @@
 """Phase B 服务层测试 — 覆盖 5 个新服务的核心功能。
 
 测试策略：
-- 不调用真实 LLM（mock AIService.chat）
+- 不调用真实 LLM（mock AIOrchestrator.chat）
 - 使用 db_session fixture（SQLite 内存）
 - 验证核心业务逻辑：CRUD、聚合、反馈、推送
 """
@@ -254,7 +254,7 @@ class TestUserMemoryService:
         result = asyncio.run(extract_memory_facts(db_session, uuid4(), None, []))
         assert result == []
 
-    @patch("app.services.user_memory_service.AIService")
+    @patch("app.services.user_memory_service.AIOrchestrator")
     def test_extract_memory_facts_with_mock_llm(self, mock_ai_cls, db_session):
         """mock LLM 返回 JSON 数组，应正确抽取并存储"""
         user_id = uuid4()
@@ -277,7 +277,7 @@ class TestUserMemoryService:
         assert result[0].confidence == 95
         assert result[0].source == "ai_extracted"
 
-    @patch("app.services.user_memory_service.AIService")
+    @patch("app.services.user_memory_service.AIOrchestrator")
     def test_extract_memory_facts_overwrites_same_key(self, mock_ai_cls, db_session):
         """同 fact_key 的新事实应覆盖旧事实"""
         user_id = uuid4()
@@ -354,11 +354,12 @@ class TestOnboardingService:
         assert is_onboarding_completed(db_session, user_id) is True
 
     def test_skip_onboarding_creates_record(self, db_session):
-        """跳过时应创建 skipped 记录"""
+        """跳过时应创建 skipped 记录，且 skipped 视为已完成（不再引导）"""
         user_id = uuid4()
         ob = skip_onboarding(db_session, user_id)
         assert ob.status == OnboardingStatus.skipped
-        assert is_onboarding_completed(db_session, user_id) is False
+        # 语义：skipped 与 completed 均视为已完成（与 API /onboarding 判断一致）
+        assert is_onboarding_completed(db_session, user_id) is True
 
     def test_get_onboarding_returns_latest(self, db_session):
         """应返回最新的 onboarding"""
@@ -390,7 +391,7 @@ class TestOnboardingService:
         latest = get_onboarding(db_session, user_id)
         assert latest.id == ob2.id
 
-    @patch("app.services.onboarding_service.AIService")
+    @patch("app.services.onboarding_service.AIOrchestrator")
     def test_generate_diagnosis_success(self, mock_ai_cls, db_session):
         """mock LLM 返回诊断 JSON"""
         user_id = uuid4()
@@ -418,7 +419,7 @@ class TestOnboardingService:
         assert len(result.recommended_path["short_term"]) == 2
         assert len(result.key_insights) == 2
 
-    @patch("app.services.onboarding_service.AIService")
+    @patch("app.services.onboarding_service.AIOrchestrator")
     def test_generate_diagnosis_invalid_json_fallback(self, mock_ai_cls, db_session):
         """LLM 返回非 JSON 时应兜底处理"""
         user_id = uuid4()

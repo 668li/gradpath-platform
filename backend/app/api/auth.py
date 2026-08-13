@@ -135,8 +135,10 @@ def forgot_password(
     )
     from app.config import settings
 
+    # 安全修复 H1: 重置令牌绝不在 HTTP 响应中返回（任何环境）
+    # 开发模式下仅记录到服务端日志供调试
     if settings.ENVIRONMENT == "development" and token:
-        return MessageResponse(message=f"开发模式：重置令牌为 {token}")
+        audit_logger.info("DEV password reset token for %s: %s", data.email, token)
     return MessageResponse(message="若该邮箱已注册，重置链接将发送至您的邮箱")
 
 

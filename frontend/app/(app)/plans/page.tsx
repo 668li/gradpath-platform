@@ -17,6 +17,8 @@ import {
   MessageSquare,
   Sparkles,
   Check,
+  RotateCw,
+  ArrowRight,
 } from "lucide-react";
 import { careerPlansApi, planTemplatesApi } from "@/lib/api";
 import { cn, formatDate } from "@/lib/utils";
@@ -80,6 +82,12 @@ export default function PlansPage() {
     try {
       const updated = await careerPlansApi.updateMilestone(planId, idx, nextStatus);
       setPlans((prev) => prev.map((p) => (p.id === planId ? updated : p)));
+      // 里程碑标记完成时，提示用户去做复盘
+      if (nextStatus === "done") {
+        const plan = plans.find((p) => p.id === planId);
+        const milestoneTitle = plan?.milestones[idx]?.title ?? "此里程碑";
+        toast.push(`里程碑「${milestoneTitle}」完成！建议做一次复盘`, "success");
+      }
     } catch {
       toast.push("更新失败", "error");
     } finally {
@@ -309,6 +317,30 @@ function PlanCard({
             </div>
           ) : (
             <p className="text-sm text-ink-400">暂无里程碑</p>
+          )}
+
+          {/* 已有里程碑完成时：引导做一次阶段复盘 */}
+          {doneCount > 0 && (
+            <Link
+              href={`/retrospectives?from=plans&milestone=${encodeURIComponent(plan.goal_text)}`}
+              className="flex items-center gap-3 rounded-lg border border-brand-200 bg-gradient-to-r from-brand-50/60 to-paper-50 p-3 transition-all hover:shadow-sm group"
+            >
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-100 text-brand-700">
+                <RotateCw className="h-4 w-4" />
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-ink-800">
+                  已完成 {doneCount} 个里程碑，建议做一次复盘
+                </p>
+                <p className="text-xs text-ink-500 mt-0.5">
+                  沉淀经验、对比预期与实际，让后续里程碑更稳。
+                </p>
+              </div>
+              <span className="shrink-0 inline-flex items-center gap-1 text-xs font-medium text-brand-700">
+                去复盘
+                <ArrowRight className="h-3 w-3 group-hover:tranink-x-0.5 transition-transform" />
+              </span>
+            </Link>
           )}
 
           {/* 关联对话 */}

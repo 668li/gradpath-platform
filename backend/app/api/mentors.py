@@ -112,9 +112,10 @@ def list_kaoyan_mentors(
     min_rating: Optional[float] = Query(None, ge=0, le=5, description="最低评分"),
     enrollment_status: Optional[str] = Query(None, description="招生状态"),
     search: Optional[str] = Query(None, description="搜索关键词"),
+    order_by: Optional[str] = Query(None, description="排序: rating_desc/papers_desc/reviews_desc"),
     db: Session = Depends(get_db),
 ):
-    """获取考研导师列表（支持多维度筛选）"""
+    """获取考研导师列表（支持多维度筛选 + 排序）"""
     mentors, total = get_mentors(
         db,
         page=page,
@@ -125,6 +126,7 @@ def list_kaoyan_mentors(
         min_rating=min_rating,
         enrollment_status=enrollment_status,
         search=search,
+        order_by=order_by,
     )
     return MentorListResponse(
         items=[MentorResponse.model_validate(m) for m in mentors],

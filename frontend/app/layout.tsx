@@ -3,19 +3,19 @@ import "./globals.css";
 import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
 import { RootLayoutClient } from "./layout-client";
 
-// 优化：精简字体文件，仅保留常用字重（400/500/600/700），减少约60%字体文件下载量
+// 字重覆盖 400/500/600/700，匹配全站 font-medium / font-semibold / font-bold 使用
 const fraunces = Fraunces({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-display",
-  weight: ["400", "700"],
+  weight: ["400", "600", "700"],
 });
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-sans",
-  weight: ["400", "500", "700"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://gradpath.example.com";

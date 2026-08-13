@@ -129,7 +129,7 @@ export default function TagsPage() {
         {/* Search */}
         <div className="mb-6">
           <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -tranink-y-1/2 text-ink-400" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}

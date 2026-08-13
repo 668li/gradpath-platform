@@ -120,7 +120,7 @@ export const DarkKnowledge = memo(function DarkKnowledge() {
         gradIntelApi.getDarkKnowledge(stage ? { stage } : undefined),
       ]);
       setStages(stageList);
-      setItems(itemList);
+      setItems(itemList.items);
       if (!activeStage && stageList.length > 0) {
         setActiveStage(stageList[0].stage);
       }
@@ -141,7 +141,7 @@ export const DarkKnowledge = memo(function DarkKnowledge() {
     setLoading(true);
     try {
       const itemList = await gradIntelApi.getDarkKnowledge({ stage });
-      setItems(itemList);
+      setItems(itemList.items);
     } catch {
       toast.push("加载失败", "error");
     } finally {

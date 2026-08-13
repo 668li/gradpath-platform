@@ -56,7 +56,7 @@ def get(
     ob = get_onboarding(db, user.id)
     if not ob:
         return {"onboarding": None, "completed": False}
-    return {"onboarding": _serialize(ob), "completed": ob.status.value == "completed"}
+    return {"onboarding": _serialize(ob), "completed": ob.status.value in ("completed", "skipped")}
 
 
 @router.get("/status")

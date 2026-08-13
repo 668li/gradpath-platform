@@ -82,7 +82,7 @@ export default function AIGeneratePlanPage() {
     if (name.includes("基础")) return "bg-blue-500";
     if (name.includes("强化")) return "bg-orange-500";
     if (name.includes("冲刺")) return "bg-red-500";
-    return "bg-gray-500";
+    return "bg-ink-500";
   };
 
   return (

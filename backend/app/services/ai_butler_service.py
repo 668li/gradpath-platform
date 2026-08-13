@@ -229,9 +229,9 @@ async def scan_user(db: Session, user_id: UUID) -> dict:
 
 async def _llm_enrich(profile: dict, plan: list[dict]) -> tuple[dict, list[dict]]:
     """可选：用 LLM 把画像/方案润色成更自然的中文叙述。"""
-    from app.services.ai_service import AIService
+    from app.services.ai_orchestrator import AIOrchestrator
 
-    ai = AIService()
+    ai = AIOrchestrator()
     prompt = (
         "你是职业规划顾问。基于以下用户画像与行动清单，"
         "输出一段 200 字以内的鼓励性总结（不要新增事实）。\n"

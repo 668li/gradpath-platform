@@ -291,7 +291,14 @@ class TestRealDataCrawler:
         assert any(item["type"] == "program" for item in cached)
 
     def test_store_saves_to_database(self, db_session):
-        """验证数据存储到数据库。"""
+        """验证数据写入 PENDING 审核队列（合规红线：不直接进业务表）。
+
+        研招网等外部数据一律先进 t_external_research_item（PENDING），
+        由管理员人工确认后才落业务表；本测试断言队列写入 + 业务表为零。
+        """
+        from app.models.grad_intel import GradSchoolIntel
+        from app.models.ingestion import ExternalResearchItem, ReviewQueueItem
+
         crawler = RealDataCrawler()
 
         items = [
@@ -304,14 +311,30 @@ class TestRealDataCrawler:
             }
         ]
 
-        with patch.object(crawler, "batch_upsert", return_value=1) as mock_upsert:
-            count = crawler.store(items, db_session)
+        count = crawler.store(items, db_session)
 
         assert count == 1
-        mock_upsert.assert_called_once()
+        ext = db_session.query(ExternalResearchItem).filter(
+            ExternalResearchItem.source_url == "https://yz.chsi.com.cn#real_data:test:测试大学:计算机科学"
+        ).first()
+        assert ext is not None
+        assert ext.review_status == "PENDING"
+        assert ext.item_type == "kaoyan_news"
+        assert ext.crawler_name == "real_data"
+        # 审核队列同步写入
+        assert (
+            db_session.query(ReviewQueueItem)
+            .filter(ReviewQueueItem.ref_item_id == ext.id)
+            .count()
+            == 1
+        )
+        # 合规红线：不直接落业务表
+        assert db_session.query(GradSchoolIntel).count() == 0
 
     def test_store_skips_items_without_school_name(self, db_session):
         """验证跳过没有学校名称的条目。"""
+        from app.models.ingestion import ExternalResearchItem
+
         crawler = RealDataCrawler()
 
         items = [
@@ -320,14 +343,17 @@ class TestRealDataCrawler:
             {"school_name": "有效大学", "major_name": "有效专业", "data_sources": []},
         ]
 
-        with patch.object(crawler, "batch_upsert", return_value=1) as mock_upsert:
-            count = crawler.store(items, db_session)
+        count = crawler.store(items, db_session)
 
-        # 只有第三条会被存储
+        # 只有第三条会被写入审核队列
         assert count == 1
+        assert db_session.query(ExternalResearchItem).count() == 1
 
     def test_full_run_workflow(self, db_session):
-        """验证完整的爬取-解析-存储流程。"""
+        """验证完整的爬取-解析-存储流程（产物进 PENDING 队列而非业务表）。"""
+        from app.models.grad_intel import GradSchoolIntel
+        from app.models.ingestion import ExternalResearchItem
+
         crawler = RealDataCrawler(config={"use_cache": False})
 
         # Mock all fetch methods to return cache data
@@ -339,13 +365,18 @@ class TestRealDataCrawler:
         with patch.object(crawler, "_fetch_yanzhao_data", return_value=[]), \
              patch.object(crawler, "_fetch_school_data", return_value=[]), \
              patch.object(crawler, "_fetch_discipline_data", return_value=[]), \
-             patch.object(crawler, "_get_cached_data", return_value=cache_data), \
-             patch.object(crawler, "batch_upsert", return_value=1):
+             patch.object(crawler, "_get_cached_data", return_value=cache_data):
             result = crawler.run(db=db_session)
 
         assert result["status"] == "success"
         assert result["fetched"] == 2
         assert result["stored"] == 2
+        # 合规红线：2 条全部进 PENDING 审核队列，业务表为零
+        pending = db_session.query(ExternalResearchItem).filter(
+            ExternalResearchItem.review_status == "PENDING"
+        ).count()
+        assert pending == 2
+        assert db_session.query(GradSchoolIntel).count() == 0
 
 
 # ======================================================================

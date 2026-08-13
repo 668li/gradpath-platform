@@ -53,6 +53,7 @@ def list_experience_posts(
     tag: Optional[str] = Query(None, description="标签过滤"),
     status: Optional[str] = Query(None, description="审核状态过滤（默认 approved）"),
     search: Optional[str] = Query(None, description="搜索关键词"),
+    source_platform: Optional[str] = Query(None, description="来源平台过滤：user=用户发布, external=外部爬取"),
     db: Session = Depends(get_db),
 ):
     """获取经验贴列表（默认展示已通过的内容）。
@@ -62,7 +63,7 @@ def list_experience_posts(
     - cursor 分页：传 cursor + page_size（高性能，适合无限滚动）
     """
     # 生成缓存键
-    cache_key = f"exp_posts:list:{page}:{page_size}:{category}:{tag}:{status}:{search}"
+    cache_key = f"exp_posts:list:{page}:{page_size}:{category}:{tag}:{status}:{search}:{source_platform}"
 
     # 尝试从缓存获取
     cached_result = cache.get(cache_key)
@@ -78,9 +79,24 @@ def list_experience_posts(
             tag=tag,
             status=status,
             search=search,
+            source_platform=source_platform,
         )
+        # 批量查询作者信息
+        user_ids = {p.user_id for p in items if not p.is_anonymous}
+        user_map = {}
+        if user_ids:
+            users = db.query(User).filter(User.id.in_(user_ids)).all()
+            user_map = {u.id: u for u in users}
         result = CursorPaginatedResponse(
-            items=[ExperiencePostResponse.model_validate(p) for p in items],
+            items=[
+                ExperiencePostResponse.model_validate(p).model_copy(
+                    update={
+                        "author_name": (user_map[p.user_id].nickname or user_map[p.user_id].username or user_map[p.user_id].name) if (not p.is_anonymous and p.user_id in user_map) else None,
+                        "author_avatar": user_map[p.user_id].avatar_url if (not p.is_anonymous and p.user_id in user_map) else None,
+                    }
+                )
+                for p in items
+            ],
             next_cursor=next_cursor,
             has_more=has_more,
         )
@@ -93,9 +109,24 @@ def list_experience_posts(
             tag=tag,
             status=status,
             search=search,
+            source_platform=source_platform,
         )
+        # 批量查询作者信息
+        user_ids = {p.user_id for p in posts if not p.is_anonymous}
+        user_map = {}
+        if user_ids:
+            users = db.query(User).filter(User.id.in_(user_ids)).all()
+            user_map = {u.id: u for u in users}
         result = ExperiencePostListResponse(
-            items=[ExperiencePostResponse.model_validate(p) for p in posts],
+            items=[
+                ExperiencePostResponse.model_validate(p).model_copy(
+                    update={
+                        "author_name": (user_map[p.user_id].nickname or user_map[p.user_id].username or user_map[p.user_id].name) if (not p.is_anonymous and p.user_id in user_map) else None,
+                        "author_avatar": user_map[p.user_id].avatar_url if (not p.is_anonymous and p.user_id in user_map) else None,
+                    }
+                )
+                for p in posts
+            ],
             total=total,
             page=page,
             page_size=page_size,
@@ -116,7 +147,13 @@ def get_experience_post_detail(
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="经验贴不存在")
     increment_experience_post_view(db, post_id)
-    return ExperiencePostResponse.model_validate(post)
+    resp = ExperiencePostResponse.model_validate(post)
+    if not post.is_anonymous:
+        author = db.query(User).filter(User.id == post.user_id).first()
+        if author:
+            resp.author_name = author.nickname or author.username or author.name
+            resp.author_avatar = author.avatar_url
+    return resp
 
 
 @router.post(

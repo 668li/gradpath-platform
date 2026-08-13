@@ -14,12 +14,16 @@ C4 通知分区/归档：
 3. 不受 mark_all_as_read 影响
 4. 可在归档区查看与恢复
 5. 由 delete_old_archived 定时任务物理清理（默认 90 天）
+
+从零升级：notifications 由 9c43ddf069ce 快照创建（快照已含 archived/archived_at 及
+ix_notifications_archived 索引），故仅当目标表已存在（历史增量库补列场景）才执行。
 """
 from __future__ import annotations
 from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import inspect
 
 
 revision: str = "add_notification_archive"
@@ -28,37 +32,48 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
-def upgrade() -> None:
-    # archived 字段：Boolean NOT NULL DEFAULT FALSE，加索引加速主列表过滤
-    op.add_column(
-        "notifications",
-        sa.Column(
-            "archived",
-            sa.Boolean(),
-            nullable=False,
-            server_default=sa.text("false"),
-            comment="是否已归档（归档通知从主列表移除）",
-        ),
-    )
-    op.create_index(
-        "ix_notifications_archived",
-        "notifications",
-        ["archived"],
-    )
+def _has_table(name: str) -> bool:
+    return name in set(inspect(op.get_bind()).get_table_names())
 
-    # archived_at 字段：归档时间戳，nullable
-    op.add_column(
-        "notifications",
-        sa.Column(
-            "archived_at",
-            sa.DateTime(timezone=True),
-            nullable=True,
-            comment="归档时间，归档时设置，恢复时清空",
-        ),
-    )
+
+def upgrade() -> None:
+    if _has_table("notifications"):
+        # archived 字段：Boolean NOT NULL DEFAULT FALSE，加索引加速主列表过滤
+        op.add_column(
+            "notifications",
+            sa.Column(
+                "archived",
+                sa.Boolean(),
+                nullable=False,
+                server_default=sa.text("false"),
+                comment="是否已归档（归档通知从主列表移除）",
+            ),
+        )
+        op.create_index(
+            "ix_notifications_archived",
+            "notifications",
+            ["archived"],
+        )
+
+        # archived_at 字段：归档时间戳，nullable
+        op.add_column(
+            "notifications",
+            sa.Column(
+                "archived_at",
+                sa.DateTime(timezone=True),
+                nullable=True,
+                comment="归档时间，归档时设置，恢复时清空",
+            ),
+        )
 
 
 def downgrade() -> None:
-    op.drop_column("notifications", "archived_at")
-    op.drop_index("ix_notifications_archived", table_name="notifications")
-    op.drop_column("notifications", "archived")
+    if _has_table("notifications"):
+        cols = {c["name"] for c in inspect(op.get_bind()).get_columns("notifications")}
+        indexes = {ix["name"] for ix in inspect(op.get_bind()).get_indexes("notifications")}
+        if "archived_at" in cols:
+            op.drop_column("notifications", "archived_at")
+        if "ix_notifications_archived" in indexes:
+            op.drop_index("ix_notifications_archived", table_name="notifications")
+        if "archived" in cols:
+            op.drop_column("notifications", "archived")

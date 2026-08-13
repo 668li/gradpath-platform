@@ -1,9 +1,11 @@
-import json, time, requests
+import json, os, time, requests
+from pathlib import Path
 
 SESSION = "kaoyan-major-crawl"
 ALL_MAJORS = []
 PAGES_TO_CRAWL = 50
-DAEMON_URL = "http://127.0.0.1:10086/command"
+# 合规红线：守护进程地址 env 注入，禁止硬编码
+DAEMON_URL = os.getenv("DAEMON_URL", "http://127.0.0.1:10086/command")
 
 def send_command(action, args):
     payload = {"action": action, "args": args, "session": SESSION}
@@ -98,7 +100,8 @@ for m in ALL_MAJORS:
         unique_majors.append(m)
 
 # Save results
-output_path = r"D:\职业规划\职业规划\backend\app\crawlers\real_data\major_crawled.json"
+# 输出到脚本所在目录（Path(__file__)），禁止绝对路径硬编码
+output_path = Path(__file__).resolve().parent / "major_crawled.json"
 output = {
     "source": "kaoyan.com/major",
     "pages_crawled": PAGES_TO_CRAWL,

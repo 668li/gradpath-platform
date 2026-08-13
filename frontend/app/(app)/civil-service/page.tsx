@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { civilServiceIntelApi } from "@/lib/api/ai";
 import { EmptyState, LoadingState } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
+import { InspirationCases } from "@/components/inspiration-cases";
 import type {
   PostIntelResponse,
   CivilServicePositioningResponse,
@@ -32,13 +33,14 @@ const tabs = [
   { id: "positioning", label: "考公定位", icon: Target, color: "text-purple-500" },
   { id: "dark-knowledge", label: "暗知识", icon: BookOpen, color: "text-amber-500" },
   { id: "tools", label: "备考工具", icon: Wrench, color: "text-green-500" },
+  { id: "inspiration", label: "灵感案例", icon: Sparkles, color: "text-pink-500" },
 ];
 
 const importanceMap: Record<string, { label: string; color: string }> = {
   critical: { label: "关键", color: "bg-red-100 text-red-700" },
   high: { label: "重要", color: "bg-orange-100 text-orange-700" },
   medium: { label: "一般", color: "bg-blue-100 text-blue-700" },
-  low: { label: "了解", color: "bg-gray-100 text-gray-600" },
+  low: { label: "了解", color: "bg-ink-100 text-ink-600" },
 };
 
 function PostIntelSkeleton() {
@@ -350,6 +352,8 @@ function CivilServicePageContent() {
   // Tab1: 岗位情报
   const [posts, setPosts] = useState<PostIntelResponse[]>([]);
   const [postsLoading, setPostsLoading] = useState(true);
+  const [regionFilter, setRegionFilter] = useState("");
+  const [tierFilter, setTierFilter] = useState("");
 
   // Tab2: 考公定位
   const [positioning, setPositioning] = useState<CivilServicePositioningResponse | null>(null);
@@ -371,11 +375,15 @@ function CivilServicePageContent() {
     if (activeTab !== "post-intel") return;
     setPostsLoading(true);
     civilServiceIntelApi
-      .listPublicPostIntel({ limit: 50 })
+      .listPublicPostIntel({
+        limit: 50,
+        region: regionFilter || undefined,
+        department_tier: tierFilter || undefined,
+      })
       .then((data) => setPosts(data))
       .catch(() => setPosts([]))
       .finally(() => setPostsLoading(false));
-  }, [activeTab]);
+  }, [activeTab, regionFilter, tierFilter]);
 
   // 加载 Tab2 数据
   useEffect(() => {
@@ -447,12 +455,50 @@ function CivilServicePageContent() {
       {/* Tab 内容 */}
       {activeTab === "post-intel" && (
         <div>
+          {/* 筛选栏 */}
+          <div className="mb-4 flex flex-wrap gap-3">
+            <select
+              value={regionFilter}
+              onChange={(e) => setRegionFilter(e.target.value)}
+              className="rounded-lg border border-paper-300 bg-white px-3 py-2 text-sm text-ink-700 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
+            >
+              <option value="">全部地区</option>
+              <option value="北京">北京</option>
+              <option value="上海">上海</option>
+              <option value="广东">广东</option>
+              <option value="浙江">浙江</option>
+              <option value="江苏">江苏</option>
+              <option value="四川">四川</option>
+              <option value="山东">山东</option>
+              <option value="湖北">湖北</option>
+            </select>
+            <select
+              value={tierFilter}
+              onChange={(e) => setTierFilter(e.target.value)}
+              className="rounded-lg border border-paper-300 bg-white px-3 py-2 text-sm text-ink-700 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
+            >
+              <option value="">全部层级</option>
+              <option value="中央直属">中央直属</option>
+              <option value="中央部委">中央部委</option>
+              <option value="省级机关">省级机关</option>
+              <option value="市级机关">市级机关</option>
+              <option value="县区级">县区级</option>
+            </select>
+            {(regionFilter || tierFilter) && (
+              <button
+                onClick={() => { setRegionFilter(""); setTierFilter(""); }}
+                className="text-sm text-ink-400 hover:text-brand-600 underline underline-offset-2"
+              >
+                清除筛选
+              </button>
+            )}
+          </div>
           {postsLoading ? (
             <PostIntelSkeleton />
           ) : posts.length === 0 ? (
             <EmptyState
-              title="暂无岗位情报"
-              description="还没有公开的岗位情报数据"
+              title="暂无匹配的岗位情报"
+              description={regionFilter || tierFilter ? "试试放宽筛选条件，或清除筛选查看全部岗位" : "还没有公开的岗位情报数据"}
             />
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -500,6 +546,10 @@ function CivilServicePageContent() {
             <ToolsContent positioning={positioning} />
           )}
         </div>
+      )}
+
+      {activeTab === "inspiration" && (
+        <InspirationCases category="考公灵感" accentColor="text-amber-500" />
       )}
     </div>
   );

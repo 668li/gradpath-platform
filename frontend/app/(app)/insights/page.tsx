@@ -41,7 +41,7 @@ export default function InsightsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="page-title">成长洞察</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-1 text-sm text-ink-500">
           纵览你的成长轨迹，AI 助你发现优势与差距
         </p>
       </div>
@@ -67,7 +67,7 @@ export default function InsightsPage() {
           <div className="card">
             <div className="mb-4 flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-brand-600" />
-              <h2 className="font-semibold text-slate-800">最近成就</h2>
+              <h2 className="font-semibold text-ink-800">最近成就</h2>
             </div>
             <BadgeWall
               earnedBadges={profile.earned_badges}

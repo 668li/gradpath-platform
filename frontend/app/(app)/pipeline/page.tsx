@@ -85,7 +85,7 @@ export default function PipelinePage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="page-title">数据管道</h1>
-          <p className="text-sm text-slate-500 mt-1">管理就业报告数据源与解析流程</p>
+          <p className="text-sm text-ink-500 mt-1">管理就业报告数据源与解析流程</p>
         </div>
         <Link href="/pipeline/ingest">
           <Button>
@@ -97,20 +97,20 @@ export default function PipelinePage() {
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="card text-center">
-            <p className="text-2xl font-bold text-slate-700">{stats.total_reports}</p>
-            <p className="text-xs text-slate-500">总报告</p>
+            <p className="text-2xl font-bold text-ink-700">{stats.total_reports}</p>
+            <p className="text-xs text-ink-500">总报告</p>
           </div>
           <div className="card text-center">
             <p className="text-2xl font-bold text-green-600">{stats.published_count}</p>
-            <p className="text-xs text-slate-500">已发布</p>
+            <p className="text-xs text-ink-500">已发布</p>
           </div>
           <div className="card text-center">
             <p className="text-2xl font-bold text-amber-600">{stats.pending_count}</p>
-            <p className="text-xs text-slate-500">待处理</p>
+            <p className="text-xs text-ink-500">待处理</p>
           </div>
           <div className="card text-center">
             <p className="text-2xl font-bold text-red-600">{stats.failed_count}</p>
-            <p className="text-xs text-slate-500">失败</p>
+            <p className="text-xs text-ink-500">失败</p>
           </div>
         </div>
       )}
@@ -126,7 +126,7 @@ export default function PipelinePage() {
             className={`rounded-full px-3 py-1.5 text-sm transition-colors ${
               activeStatus === s
                 ? "bg-brand-600 text-white"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                : "bg-ink-100 text-ink-600 hover:bg-ink-200"
             }`}
           >
             {s ? PARSE_STATUS_LABEL[s] : "全部"}
@@ -141,7 +141,7 @@ export default function PipelinePage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-100 text-xs text-slate-400">
+                <tr className="border-b border-ink-100 text-xs text-ink-400">
                   <th className="px-3 py-2 text-left">学校</th>
                   <th className="px-3 py-2 text-left">年份</th>
                   <th className="px-3 py-2 text-left">来源</th>
@@ -152,13 +152,13 @@ export default function PipelinePage() {
               </thead>
               <tbody>
                 {reports.map((r) => (
-                  <tr key={r.id} className="border-b border-slate-50">
-                    <td className="px-3 py-3 font-medium text-slate-700">{r.school_name}</td>
-                    <td className="px-3 py-3 text-slate-500">{r.year}</td>
-                    <td className="px-3 py-3 text-slate-500">
+                  <tr key={r.id} className="border-b border-ink-50">
+                    <td className="px-3 py-3 font-medium text-ink-700">{r.school_name}</td>
+                    <td className="px-3 py-3 text-ink-500">{r.year}</td>
+                    <td className="px-3 py-3 text-ink-500">
                       {SOURCE_TYPE_LABEL[r.source_type] ?? r.source_type}
                     </td>
-                    <td className="px-3 py-3 text-slate-500">
+                    <td className="px-3 py-3 text-ink-500">
                       {r.content_type ? CONTENT_TYPE_LABEL[r.content_type] ?? r.content_type : "—"}
                     </td>
                     <td className="px-3 py-3">
@@ -181,14 +181,14 @@ export default function PipelinePage() {
                       <div className="flex items-center gap-1">
                         <Link
                           href={`/pipeline/reports/${r.id}`}
-                          className="p-1.5 rounded hover:bg-slate-100"
+                          className="p-1.5 rounded hover:bg-ink-100"
                           title="查看"
                         >
-                          <Eye className="h-4 w-4 text-slate-400" />
+                          <Eye className="h-4 w-4 text-ink-400" />
                         </Link>
                         <button
                           onClick={() => handleReparse(r.id)}
-                          className="p-1.5 rounded hover:bg-slate-100"
+                          className="p-1.5 rounded hover:bg-ink-100"
                           title="重新解析"
                         >
                           <RefreshCw className="h-4 w-4 text-blue-400" />
@@ -196,7 +196,7 @@ export default function PipelinePage() {
                         {r.parse_status !== "published" && (
                           <button
                             onClick={() => handlePublish(r.id)}
-                            className="p-1.5 rounded hover:bg-slate-100"
+                            className="p-1.5 rounded hover:bg-ink-100"
                             title="发布"
                           >
                             <CheckCircle className="h-4 w-4 text-green-400" />
@@ -220,11 +220,11 @@ export default function PipelinePage() {
       </div>
 
       {total > 20 && (
-        <div className="flex items-center justify-center gap-2 text-sm text-slate-500">
+        <div className="flex items-center justify-center gap-2 text-sm text-ink-500">
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page <= 1}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 disabled:opacity-40"
+            className="rounded-lg border border-ink-300 px-3 py-1.5 disabled:opacity-40"
           >
             上一页
           </button>
@@ -234,7 +234,7 @@ export default function PipelinePage() {
           <button
             onClick={() => setPage((p) => p + 1)}
             disabled={page * 20 >= total}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 disabled:opacity-40"
+            className="rounded-lg border border-ink-300 px-3 py-1.5 disabled:opacity-40"
           >
             下一页
           </button>

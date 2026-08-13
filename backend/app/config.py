@@ -16,14 +16,12 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
 
     # Environment and runtime
-    # ENV: 短别名，供 Sentry / 日志 / 第三方 SDK 使用；与 ENVIRONMENT 保持一致。
-    ENV: str = "production"
+    # ENV: 短别名，供 Sentry / 日志 / 第三方 SDK 使用；未显式设置时派生自 ENVIRONMENT，
+    # 避免双默认值相反导致环境判定歧义（_validate_config 中统一）。
+    ENV: Optional[str] = None
     ENVIRONMENT: str = "development"
     LOG_LEVEL: str = "INFO"
     CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
-
-    # Sentry (optional) — 未配置时跳过初始化
-    SENTRY_DSN: Optional[str] = None
 
     # LLM config
     LLM_API_KEY: str = ""
@@ -49,6 +47,10 @@ class Settings(BaseSettings):
         可被绕过（python-jose 默认拒绝，但显式校验可防御配置错误）。
         """
         errors = []
+
+        # ENV 派生自 ENVIRONMENT（统一环境来源，消除双默认值相反）
+        if not self.ENV:
+            self.ENV = self.ENVIRONMENT
 
         # 所有环境都必须有 SECRET_KEY，且长度 >= 32
         if not self.SECRET_KEY:

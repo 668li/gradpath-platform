@@ -22,7 +22,14 @@ import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/components/ui/toast";
 import { useAuthStore } from "@/stores/auth";
 import { cn } from "@/lib/utils";
-import type { PostItem, UserResponse } from "@/types";
+import type {
+  PostItem,
+  UserResponse,
+  CommentResponse,
+  SchoolInfo,
+  CommunityStats,
+  CommunityReport,
+} from "@/types";
 
 type Tab = "feed" | "report" | "mentors";
 type DirectionTab = "all" | "kaoyan" | "civil-service" | "employment" | "landing-wall";
@@ -215,7 +222,7 @@ function FeedTab({ currentUser }: { currentUser: UserResponse | null }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-400" />
+          <Search className="absolute left-3 top-1/2 -tranink-y-1/2 h-4 w-4 text-ink-400" />
           <input
             type="text"
             value={searchText}
@@ -287,13 +294,13 @@ function PostCard({
   onChanged,
 }: {
   post: FeedPost;
-  currentUser: any;
+  currentUser: UserResponse | null;
   onChanged: () => void;
 }) {
   const toast = useToast();
   const [following, setFollowing] = useState(false);
   const [showComments, setShowComments] = useState(false);
-  const [comments, setComments] = useState<any[]>([]);
+  const [comments, setComments] = useState<CommentResponse[]>([]);
   const [commentText, setCommentText] = useState("");
   const isMine = currentUser && post.author_id === currentUser.id;
 
@@ -396,9 +403,9 @@ function PostCard({
 
 function ReportTab() {
   const toast = useToast();
-  const [schools, setSchools] = useState<any[]>([]);
-  const [stats, setStats] = useState<any>(null);
-  const [myReports, setMyReports] = useState<any[]>([]);
+  const [schools, setSchools] = useState<SchoolInfo[]>([]);
+  const [stats, setStats] = useState<CommunityStats | null>(null);
+  const [myReports, setMyReports] = useState<CommunityReport[]>([]);
   const [loading, setLoading] = useState(true);
   const PAGE_SIZE = 10;
   const [page, setPage] = useState(1);

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Trophy, Loader2 } from "lucide-react";
 import { outcomeReportApi } from "@/lib/api";
+import type { OutcomeReport } from "@/lib/api/outcome-report";
 import { cn } from "@/lib/utils";
 import { LoadingState } from "@/components/ui/empty";
 import { Button, Input, Textarea, Select, Field } from "@/components/ui/form-controls";
@@ -26,7 +27,7 @@ export default function OutcomeReportPage() {
   const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [myReports, setMyReports] = useState<any[]>([]);
+  const [myReports, setMyReports] = useState<OutcomeReport[]>([]);
 
   const [form, setForm] = useState({
     outcome_type: "grad_civil_career",

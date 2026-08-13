@@ -43,11 +43,11 @@ function DynamicList({
   return (
     <div className="space-y-2">
       {items.length === 0 && (
-        <p className="text-xs text-slate-400">{emptyLabel}</p>
+        <p className="text-xs text-ink-400">{emptyLabel}</p>
       )}
       {items.map((item, i) => (
         <div key={`item-${i}`} className="flex items-center gap-2">
-          <span className="text-xs text-slate-400 w-4 shrink-0">{i + 1}.</span>
+          <span className="text-xs text-ink-400 w-4 shrink-0">{i + 1}.</span>
           <Input
             value={item}
             onChange={(e) => update(i, e.target.value)}
@@ -57,7 +57,7 @@ function DynamicList({
           <button
             type="button"
             onClick={() => remove(i)}
-            className="p-1.5 rounded-md text-slate-400 hover:bg-red-50 hover:text-red-600 shrink-0"
+            className="p-1.5 rounded-md text-ink-400 hover:bg-red-50 hover:text-red-600 shrink-0"
             aria-label="删除"
           >
             <X className="h-4 w-4" />

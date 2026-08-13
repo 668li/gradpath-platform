@@ -258,11 +258,11 @@ export function SkillTreeGraph({ skills, onNodeClick }: SkillTreeGraphProps) {
   return (
     <div className="relative w-full">
       {/* 缩放控制 */}
-      <div className="absolute right-3 top-3 z-10 flex flex-col gap-1.5 rounded-lg border border-slate-200 bg-white/90 p-1.5 shadow-sm backdrop-blur">
+      <div className="absolute right-3 top-3 z-10 flex flex-col gap-1.5 rounded-lg border border-ink-200 bg-white/90 p-1.5 shadow-sm backdrop-blur">
         <button
           type="button"
           onClick={handleZoomIn}
-          className="flex h-8 w-8 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100 hover:text-brand-600"
+          className="flex h-8 w-8 items-center justify-center rounded-md text-ink-600 hover:bg-ink-100 hover:text-brand-600"
           aria-label="放大"
           title="放大"
         >
@@ -271,7 +271,7 @@ export function SkillTreeGraph({ skills, onNodeClick }: SkillTreeGraphProps) {
         <button
           type="button"
           onClick={handleZoomOut}
-          className="flex h-8 w-8 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100 hover:text-brand-600"
+          className="flex h-8 w-8 items-center justify-center rounded-md text-ink-600 hover:bg-ink-100 hover:text-brand-600"
           aria-label="缩小"
           title="缩小"
         >
@@ -280,7 +280,7 @@ export function SkillTreeGraph({ skills, onNodeClick }: SkillTreeGraphProps) {
         <button
           type="button"
           onClick={handleReset}
-          className="flex h-8 w-8 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100 hover:text-brand-600"
+          className="flex h-8 w-8 items-center justify-center rounded-md text-ink-600 hover:bg-ink-100 hover:text-brand-600"
           aria-label="重置视图"
           title="重置视图"
         >
@@ -291,7 +291,7 @@ export function SkillTreeGraph({ skills, onNodeClick }: SkillTreeGraphProps) {
       {/* 分类图例 */}
       <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
         {Array.from(categoryColor.entries()).map(([cat, color]) => (
-          <span key={cat} className="inline-flex items-center gap-1 text-xs text-slate-500">
+          <span key={cat} className="inline-flex items-center gap-1 text-xs text-ink-500">
             <span
               className="inline-block h-2.5 w-2.5 rounded-sm"
               style={{ backgroundColor: color }}
@@ -305,7 +305,7 @@ export function SkillTreeGraph({ skills, onNodeClick }: SkillTreeGraphProps) {
         ref={svgRef}
         width="100%"
         height={height}
-        className="block touch-none select-none rounded-xl border border-slate-200 bg-slate-50/40"
+        className="block touch-none select-none rounded-xl border border-ink-200 bg-ink-50/40"
         style={{ minHeight: MIN_HEIGHT }}
       >
         {/* 透明背景层，确保空白区域也可拖拽平移 */}
@@ -378,7 +378,7 @@ export function SkillTreeGraph({ skills, onNodeClick }: SkillTreeGraphProps) {
           })}
         </g>
       </svg>
-      <p className="mt-2 text-xs text-slate-400">
+      <p className="mt-2 text-xs text-ink-400">
         拖拽平移 · 滚轮缩放 · 点击节点编辑
       </p>
     </div>

@@ -71,32 +71,13 @@ function makeError(status: number, message: string, detail?: unknown): ApiError 
 }
 
 /**
- * B5: Sentry breadcrumb 注入 — 记录 API 调用与错误轨迹。
- * 在 @sentry/nextjs 未安装或未初始化时静默失败，不影响业务。
+ * B5: Sentry breadcrumb 注入 — 已禁用（Docker 构建兼容）。
  */
 function addSentryBreadcrumb(
   level: "info" | "warning" | "error",
   message: string,
   data?: Record<string, unknown>,
-): void {
-  try {
-    // 动态 import 避免 SSR/测试环境下模块未安装时抛错
-    import("@sentry/nextjs").then((Sentry) => {
-      if (typeof Sentry.addBreadcrumb === "function") {
-        Sentry.addBreadcrumb({
-          category: "api",
-          level,
-          message,
-          data,
-        });
-      }
-    }).catch(() => {
-      // @sentry/nextjs 未安装 — 忽略
-    });
-  } catch {
-    // 忽略
-  }
-}
+): void {}
 
 const DEFAULT_TIMEOUT = 30000; // 30 秒
 

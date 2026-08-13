@@ -10,7 +10,6 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.models.decision_analysis import DecisionAnalysis
-from app.services.ai_service import AIService
 from app.services.ai_orchestrator import AIOrchestrator
 
 
@@ -169,9 +168,13 @@ async def generate_red_team_questions(title: str, options: list[str], reasoning:
     return questions[:7]
 
 
-async def generate_ai_analysis(db: Session, analysis_id: UUID) -> str:
+async def generate_ai_analysis(db: Session, analysis_id: UUID, user_id: UUID | None = None) -> str:
     """AI 综合分析决策（预验尸 + 矩阵 + 红队）。"""
-    analysis = db.query(DecisionAnalysis).filter(DecisionAnalysis.id == analysis_id).first()
+    query = db.query(DecisionAnalysis).filter(DecisionAnalysis.id == analysis_id)
+    # 安全修复 H4: 验证分析属于请求用户，防止 IDOR 跨用户读取
+    if user_id is not None:
+        query = query.filter(DecisionAnalysis.user_id == user_id)
+    analysis = query.first()
     if not analysis:
         raise ValueError("分析不存在")
 

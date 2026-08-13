@@ -16,13 +16,20 @@ import {
   X,
   Target,
 } from "lucide-react";
-import { chatApi, aiAgentApi } from "@/lib/api";
-import type { AgentSource } from "@/lib/api";
+import { chatApi } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Markdown } from "@/components/ui/markdown";
 import { LoadingState } from "@/components/ui/empty";
 import { useToast } from "@/components/ui/toast";
 import type { Conversation, Message, ChatSkillInfo } from "@/types";
+
+/** Agent 来源（对应后端 SourceItem：db=数据库检索 / web=联网检索） */
+interface AgentSource {
+  type: "db" | "web";
+  title: string;
+  content?: string;
+  url?: string;
+}
 
 /** 扩展消息类型，支持 Agent 来源和置信度 */
 interface MessageWithMeta extends Message {
@@ -167,24 +174,27 @@ export default function ChatPage() {
     setLastPlanId(null);
 
     try {
-      const res = await aiAgentApi.ask({
-        question: content,
-        context: skillHint || undefined,
+      // 使用持久化端点：消息保存到会话 + 多轮记忆 + Skill 匹配 + 职业规划生成
+      const res = await chatApi.sendMessage(convId, {
+        content,
+        skill_hint: skillHint || undefined,
       });
 
       const aiMsg: MessageWithMeta = {
         id: `ai-${Date.now()}`,
         conversation_id: convId,
         role: "assistant",
-        // 修复 P1 bug: res.answer 可能为 undefined，导致 Markdown 渲染异常
-        content: res.answer || "（AI 未返回内容，请重试）",
-        skill_used: null,
+        content: res.content || "（AI 未返回内容，请重试）",
+        skill_used: res.skill_used || null,
         context_snapshot: {},
         created_at: new Date().toISOString(),
-        agent_sources: res.sources || [],
-        agent_confidence: res.confidence ?? 0,
       };
       setMessages((prev) => [...prev, aiMsg]);
+
+      // 如果 AI 生成了职业规划方案，显示入口
+      if (res.career_plan) {
+        setLastPlanId(res.career_plan);
+      }
 
       // 如果是首次对话，刷新标题（后端可能已更新）
       if (messages.length === 0) {
@@ -254,8 +264,8 @@ export default function ChatPage() {
   return (
     <div className="flex h-[calc(100vh-7rem)] gap-4">
       {/* 左侧：对话列表 */}
-      <div className="hidden md:flex w-64 flex-col rounded-xl border border-slate-200 bg-white">
-        <div className="border-b border-slate-100 p-3">
+      <div className="hidden md:flex w-64 flex-col rounded-xl border border-ink-200 bg-white">
+        <div className="border-b border-ink-100 p-3">
           <button
             onClick={handleNewConversation}
             className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-3 py-2.5 text-sm font-medium text-white transition-colors hover:bg-brand-700"
@@ -268,7 +278,7 @@ export default function ChatPage() {
           {loadingConvos ? (
             <LoadingState text="加载对话…" />
           ) : conversations.length === 0 ? (
-            <p className="px-3 py-4 text-center text-xs text-slate-400">
+            <p className="px-3 py-4 text-center text-xs text-ink-400">
               暂无对话
             </p>
           ) : (
@@ -279,7 +289,7 @@ export default function ChatPage() {
                   "group flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors cursor-pointer",
                   currentId === conv.id
                     ? "bg-brand-50 text-brand-700"
-                    : "text-slate-600 hover:bg-slate-100",
+                    : "text-ink-600 hover:bg-ink-100",
                 )}
                 onClick={() => {
                   setCurrentId(conv.id);
@@ -318,7 +328,7 @@ export default function ChatPage() {
                         e.stopPropagation();
                         setEditingId(null);
                       }}
-                      className="text-slate-400 hover:text-slate-600"
+                      className="text-ink-400 hover:text-ink-600"
                     >
                       <X className="h-3.5 w-3.5" />
                     </button>
@@ -330,7 +340,7 @@ export default function ChatPage() {
                         e.stopPropagation();
                         startRename(conv);
                       }}
-                      className="text-slate-400 hover:text-brand-600"
+                      className="text-ink-400 hover:text-brand-600"
                       aria-label="重命名"
                     >
                       <Pencil className="h-3.5 w-3.5" />
@@ -340,7 +350,7 @@ export default function ChatPage() {
                         e.stopPropagation();
                         handleDelete(conv.id);
                       }}
-                      className="text-slate-400 hover:text-red-600"
+                      className="text-ink-400 hover:text-red-600"
                       aria-label="删除"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -354,7 +364,7 @@ export default function ChatPage() {
       </div>
 
       {/* 右侧：聊天区域 */}
-      <div className="flex flex-1 flex-col rounded-xl border border-slate-200 bg-white overflow-hidden">
+      <div className="flex flex-1 flex-col rounded-xl border border-ink-200 bg-white overflow-hidden">
         {currentId ? (
           <>
             {/* 消息列表 */}
@@ -366,10 +376,10 @@ export default function ChatPage() {
                   <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50">
                     <Bot className="h-7 w-7 text-brand-600" />
                   </div>
-                  <h3 className="text-base font-semibold text-slate-700">
+                  <h3 className="text-base font-semibold text-ink-700">
                     开始与 AI 职业管家对话
                   </h3>
-                  <p className="mt-1 text-sm text-slate-400">
+                  <p className="mt-1 text-sm text-ink-400">
                     我可以根据你的职业数据提供个性化建议
                   </p>
                   <div className="mt-6 grid w-full max-w-lg grid-cols-1 gap-2 sm:grid-cols-2">
@@ -377,12 +387,12 @@ export default function ChatPage() {
                       <button
                         key={p.title}
                         onClick={() => setInput(p.text)}
-                        className="rounded-lg border border-slate-200 bg-slate-50/50 px-3 py-2.5 text-left transition-colors hover:border-brand-300 hover:bg-brand-50/30"
+                        className="rounded-lg border border-ink-200 bg-ink-50/50 px-3 py-2.5 text-left transition-colors hover:border-brand-300 hover:bg-brand-50/30"
                       >
                         <p className="text-xs font-medium text-brand-600">
                           {p.title}
                         </p>
-                        <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">
+                        <p className="mt-0.5 line-clamp-2 text-xs text-ink-500">
                           {p.text}
                         </p>
                       </button>
@@ -399,10 +409,10 @@ export default function ChatPage() {
                       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-50">
                         <Bot className="h-4 w-4 text-brand-600" />
                       </div>
-                      <div className="flex items-center gap-1.5 rounded-2xl rounded-tl-sm bg-slate-50 px-4 py-3">
-                        <span className="h-2 w-2 animate-bounce rounded-full bg-slate-300 [animation-delay:0ms]" />
-                        <span className="h-2 w-2 animate-bounce rounded-full bg-slate-300 [animation-delay:150ms]" />
-                        <span className="h-2 w-2 animate-bounce rounded-full bg-slate-300 [animation-delay:300ms]" />
+                      <div className="flex items-center gap-1.5 rounded-2xl rounded-tl-sm bg-ink-50 px-4 py-3">
+                        <span className="h-2 w-2 animate-bounce rounded-full bg-ink-300 [animation-delay:0ms]" />
+                        <span className="h-2 w-2 animate-bounce rounded-full bg-ink-300 [animation-delay:150ms]" />
+                        <span className="h-2 w-2 animate-bounce rounded-full bg-ink-300 [animation-delay:300ms]" />
                       </div>
                     </div>
                   )}
@@ -429,12 +439,12 @@ export default function ChatPage() {
             </div>
 
             {/* 输入区域 */}
-            <div className="border-t border-slate-100 p-3 md:p-4">
+            <div className="border-t border-ink-100 p-3 md:p-4">
               {/* Skill 选择器 */}
               <div className="mb-2 flex items-center gap-2">
                 <button
                   onClick={() => setShowSkillDropdown(!showSkillDropdown)}
-                  className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs text-slate-500 transition-colors hover:border-brand-300 hover:text-brand-600"
+                  className="flex items-center gap-1.5 rounded-full border border-ink-200 bg-ink-50 px-3 py-1 text-xs text-ink-500 transition-colors hover:border-brand-300 hover:text-brand-600"
                 >
                   <Sparkles className="h-3 w-3" />
                   {currentSkill ? currentSkill.name : "自动匹配 Skill"}
@@ -446,21 +456,21 @@ export default function ChatPage() {
                       setSkillHint("");
                       setShowSkillDropdown(false);
                     }}
-                    className="text-xs text-slate-400 hover:text-slate-600"
+                    className="text-xs text-ink-400 hover:text-ink-600"
                   >
                     清除
                   </button>
                 )}
                 {showSkillDropdown && (
-                  <div className="absolute bottom-16 left-4 z-10 w-64 rounded-lg border border-slate-200 bg-white shadow-lg">
+                  <div className="absolute bottom-16 left-4 z-10 w-64 rounded-lg border border-ink-200 bg-white shadow-lg">
                     <button
                       onClick={() => {
                         setSkillHint("");
                         setShowSkillDropdown(false);
                       }}
-                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-slate-600 hover:bg-slate-50"
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-ink-600 hover:bg-ink-50"
                     >
-                      <Sparkles className="h-3 w-3 text-slate-400" />
+                      <Sparkles className="h-3 w-3 text-ink-400" />
                       自动匹配（推荐）
                     </button>
                     {skills.map((s) => (
@@ -470,14 +480,14 @@ export default function ChatPage() {
                           setSkillHint(s.code);
                           setShowSkillDropdown(false);
                         }}
-                        className="flex w-full items-start gap-2 px-3 py-2 text-left hover:bg-slate-50"
+                        className="flex w-full items-start gap-2 px-3 py-2 text-left hover:bg-ink-50"
                       >
                         <span className="text-sm">{s.icon}</span>
                         <div>
-                          <p className="text-xs font-medium text-slate-700">
+                          <p className="text-xs font-medium text-ink-700">
                             {s.name}
                           </p>
-                          <p className="text-[10px] text-slate-400">
+                          <p className="text-[10px] text-ink-400">
                             {s.description}
                           </p>
                         </div>
@@ -496,7 +506,7 @@ export default function ChatPage() {
                   onKeyDown={handleKeyDown}
                   placeholder="输入你的问题… (Enter 发送，Shift+Enter 换行)"
                   rows={1}
-                  className="flex-1 resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
+                  className="flex-1 resize-none rounded-xl border border-ink-200 bg-ink-50 px-4 py-2.5 text-sm text-ink-800 placeholder:text-ink-400 focus:border-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-100"
                   disabled={sending}
                 />
                 <button
@@ -515,8 +525,8 @@ export default function ChatPage() {
             <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-50">
               <Bot className="h-8 w-8 text-brand-600" />
             </div>
-            <h2 className="text-xl font-bold text-slate-800">AI 职业规划管家</h2>
-            <p className="mt-2 max-w-md text-center text-sm text-slate-500">
+            <h2 className="text-xl font-bold text-ink-800">AI 职业规划管家</h2>
+            <p className="mt-2 max-w-md text-center text-sm text-ink-500">
               结合你的职业数据、知识库和智能 Skill 系统，为你提供个性化的职业规划指导。
               支持职业规划、简历诊断、面试模拟等场景。
             </p>
@@ -528,10 +538,10 @@ export default function ChatPage() {
                     await handleNewConversation();
                     setInput(p.text);
                   }}
-                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-left transition-colors hover:border-brand-300 hover:shadow-sm"
+                  className="rounded-xl border border-ink-200 bg-white px-4 py-3 text-left transition-colors hover:border-brand-300 hover:shadow-sm"
                 >
                   <p className="text-sm font-medium text-brand-600">{p.title}</p>
-                  <p className="mt-1 line-clamp-2 text-xs text-slate-500">
+                  <p className="mt-1 line-clamp-2 text-xs text-ink-500">
                     {p.text}
                   </p>
                 </button>
@@ -576,11 +586,11 @@ function MessageBubble({
       <div
         className={cn(
           "flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
-          isUser ? "bg-slate-100" : "bg-brand-50",
+          isUser ? "bg-ink-100" : "bg-brand-50",
         )}
       >
         {isUser ? (
-          <UserIcon className="h-4 w-4 text-slate-500" />
+          <UserIcon className="h-4 w-4 text-ink-500" />
         ) : (
           <Bot className="h-4 w-4 text-brand-600" />
         )}
@@ -590,7 +600,7 @@ function MessageBubble({
           "max-w-[80%] rounded-2xl px-4 py-3",
           isUser
             ? "rounded-tr-sm bg-brand-600 text-white"
-            : "rounded-tl-sm bg-slate-50 text-slate-800",
+            : "rounded-tl-sm bg-ink-50 text-ink-800",
         )}
       >
         {skill && (
@@ -608,8 +618,8 @@ function MessageBubble({
         )}
         {/* Agent 来源列表 */}
         {!isUser && sources && sources.length > 0 && (
-          <div className="mt-3 border-t border-slate-200 pt-2">
-            <p className="mb-1 text-[10px] font-medium text-slate-400">参考来源</p>
+          <div className="mt-3 border-t border-ink-200 pt-2">
+            <p className="mb-1 text-[10px] font-medium text-ink-400">参考来源</p>
             <div className="flex flex-wrap gap-1.5">
               {sources.map((src, i) => (
                 <span
@@ -617,7 +627,7 @@ function MessageBubble({
                   className={cn(
                     "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px]",
                     src.type === "db"
-                      ? "bg-blue-50 text-blue-600"
+                      ? "bg-brand-50 text-brand-600"
                       : "bg-green-50 text-green-600",
                   )}
                 >
@@ -640,9 +650,9 @@ function MessageBubble({
         )}
         {/* 置信度 */}
         {!isUser && confidence !== undefined && (
-          <div className="mt-2 flex items-center gap-1.5 text-[10px] text-slate-400">
+          <div className="mt-2 flex items-center gap-1.5 text-[10px] text-ink-400">
             <span>置信度</span>
-            <div className="h-1.5 w-16 overflow-hidden rounded-full bg-slate-200">
+            <div className="h-1.5 w-16 overflow-hidden rounded-full bg-ink-200">
               <div
                 className={cn(
                   "h-full rounded-full",

@@ -30,9 +30,9 @@ class DestinationDecision(UUIDMixin, TimestampMixin, Base):
     __tablename__ = "destination_decisions"
 
     user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
-    decision_date: Mapped[date] = mapped_column(Date, nullable=False)
-    destination_type: Mapped[DestinationType] = mapped_column(Enum(DestinationType), nullable=False)
-    status: Mapped[DecisionStatus] = mapped_column(Enum(DecisionStatus), nullable=False)
+    decision_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+    destination_type: Mapped[DestinationType] = mapped_column(Enum(DestinationType), nullable=False, index=True)
+    status: Mapped[DecisionStatus] = mapped_column(Enum(DecisionStatus), nullable=False, index=True)
     details: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     reasoning: Mapped[str | None] = mapped_column(Text, nullable=True)
     confidence: Mapped[int] = mapped_column(Integer, nullable=False)

@@ -25,7 +25,8 @@ from app.services.ai_quota_service import (
     check_llm_quota,
     incr_llm_quota,
 )
-from app.services.ai_service import AIService, AIServiceRetryExhausted
+from app.services.ai_orchestrator import AIOrchestrator
+from app.services.ai_service import AIServiceRetryExhausted
 from app.services.user_context_service import build_context_prompt
 from app.services.web_search import WebSearchService
 
@@ -68,7 +69,7 @@ def _sanitize_prompt_input(text: str) -> str:
 # ---------------------------------------------------------------------------
 # Singleton services (created once at import time)
 # ---------------------------------------------------------------------------
-_ai = AIService()
+_ai = AIOrchestrator()
 _web_search = WebSearchService()
 
 

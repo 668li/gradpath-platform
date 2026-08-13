@@ -1,4 +1,11 @@
-"""爬虫基类 — 所有数据源爬虫继承此类。"""
+"""爬虫基类 — 所有数据源爬虫继承此类。
+
+合规护栏（红线：不批量抓取研招网、仅人工确认入库）：
+- 单爬虫固定串行执行（并发=1，禁止多线程放大请求）
+- ``max_pages`` / ``max_items`` 页数与条数上限，防止一次任务抓取量失控
+- ``rate_limit`` 请求间隔（默认 1s），配合 max_retries 已内置
+- 所有入库必须经人工确认（PENDING 审核队列），基类不提供绕过手段
+"""
 import time
 import logging
 from abc import ABC, abstractmethod
@@ -27,6 +34,11 @@ class BaseCrawler(ABC):
         })
         self.stats = {"fetched": 0, "stored": 0, "errors": 0, "duplicates": 0}
         self._rate_limit = self.config.get("rate_limit", 1.0)  # 默认1秒间隔
+        # 合规护栏：单次任务抓取上限（0 表示不限制，研招网来源必须显式配置）
+        self._max_pages = int(self.config.get("max_pages", 0))
+        self._max_items = int(self.config.get("max_items", 0))
+        # 并发=1（固定串行，不提供并发执行入口）
+        self._concurrency = 1
     
     @abstractmethod
     def fetch(self) -> list[dict]:
@@ -52,10 +64,22 @@ class BaseCrawler(ABC):
         try:
             logger.info(f"[{self.name}] 开始爬取...")
             raw = self.fetch()
+            # 合规护栏：页数上限（max_pages），防止单次任务抓取量失控
+            if self._max_pages > 0 and len(raw) > self._max_pages:
+                logger.warning(
+                    f"[{self.name}] 触发页数护栏: 抓取 {len(raw)} 条 > max_pages={self._max_pages}，截断"
+                )
+                raw = raw[:self._max_pages]
             self.stats["fetched"] = len(raw)
             logger.info(f"[{self.name}] 抓取到 {len(raw)} 条原始数据")
             
             parsed = self.parse(raw)
+            # 合规护栏：条数上限（max_items）
+            if self._max_items > 0 and len(parsed) > self._max_items:
+                logger.warning(
+                    f"[{self.name}] 触发条数护栏: 解析 {len(parsed)} 条 > max_items={self._max_items}，截断"
+                )
+                parsed = parsed[:self._max_items]
             logger.info(f"[{self.name}] 解析为 {len(parsed)} 条标准数据")
             
             stored = self.store(parsed, db)
@@ -130,6 +154,12 @@ class BaseCrawler(ABC):
                 seen.add(key)
                 deduped.append(item)
         deduped.reverse()  # 恢复原始顺序
+
+        # 方言判定：pg_insert(ON CONFLICT) 仅 PostgreSQL 支持。
+        # SQLite（本地 dev / pytest）降级为"查重→仅插入缺失"，不做 UPDATE；
+        # 生产环境强制 PostgreSQL，行为与 ON CONFLICT 一致。
+        if db.get_bind().dialect.name == "sqlite":
+            return self._sqlite_upsert(db, model_class, deduped, unique_key)
         
         total_affected = 0
         
@@ -175,6 +205,32 @@ class BaseCrawler(ABC):
         
         db.commit()
         return total_affected
+    
+    def _sqlite_upsert(self, db: Session, model_class, items: list[dict], unique_key: list) -> int:
+        """SQLite 降级批量入库：按 unique_key 查重后仅插入缺失记录。
+
+        仅用于本地开发 / 测试（生产强制 PostgreSQL，走 batch_upsert 的 ON CONFLICT 精确 upsert）。
+        复用 get_existing_keys 批量查重；所有值经 ORM 绑定参数注入，不拼接 SQL 字符串。
+        注意：SQLite 降级只对单列唯一键做幂等去重；多列唯一键按首列近似去重，
+        生产环境不受影响。
+        """
+        if not items:
+            return 0
+
+        key_field = unique_key[0]
+        valid_cols = set(model_class.__table__.columns.keys())
+        if key_field not in valid_cols:
+            logger.error(f"[{self.name}] SQLite降级: 唯一键列 {key_field} 不存在，跳过本次入库")
+            return 0
+
+        existing_keys = self.get_existing_keys(
+            db, model_class, key_field, [i.get(key_field) for i in items]
+        )
+        new_items = [i for i in items if i.get(key_field) not in existing_keys]
+        for item in new_items:
+            db.add(model_class(**item))
+        db.commit()
+        return len(new_items)
     
     def batch_upsert_simple(
         self,

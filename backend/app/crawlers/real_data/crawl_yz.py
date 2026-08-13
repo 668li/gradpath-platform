@@ -1,4 +1,5 @@
 import os, json, time
+from pathlib import Path
 
 FIRECRAWL_API_KEY = os.getenv("FIRECRAWL_API_KEY", "")
 if not FIRECRAWL_API_KEY:
@@ -97,7 +98,7 @@ output = {
     "data": results,
 }
 
-out_path = r"D:\职业规划\职业规划\backend\app\crawlers\real_data\yz_crawled.json"
+out_path = Path(__file__).resolve().parent / "yz_crawled.json"
 with open(out_path, "w", encoding="utf-8") as f:
     json.dump(output, f, ensure_ascii=False, indent=2)
 

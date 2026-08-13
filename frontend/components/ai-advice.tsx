@@ -85,21 +85,21 @@ export const AIAdvicePanel = memo(function AIAdvicePanel(_: AIAdvicePanelProps) 
             <Sparkles className="h-5 w-5" />
           </span>
           <div>
-            <h2 className="font-semibold text-slate-800">AI 决策分析</h2>
-            <p className="text-xs text-slate-500">
+            <h2 className="font-semibold text-ink-800">AI 决策分析</h2>
+            <p className="text-xs text-ink-500">
               输入意向，获取个性化决策建议与市场分析
             </p>
           </div>
         </div>
         <ChevronDown
-          className={`h-5 w-5 text-slate-400 transition-transform ${
+          className={`h-5 w-5 text-ink-400 transition-transform ${
             expanded ? "rotate-180" : ""
           }`}
         />
       </button>
 
       {expanded && (
-        <div className="mt-4 space-y-4 border-t border-slate-100 pt-4">
+        <div className="mt-4 space-y-4 border-t border-ink-100 pt-4">
           {/* 表单 */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="去向类型" required>
@@ -193,12 +193,12 @@ function LoadingSkeleton() {
         </span>
       </div>
       <div className="space-y-3">
-        <div className="h-16 animate-pulse rounded-lg bg-slate-100" />
+        <div className="h-16 animate-pulse rounded-lg bg-ink-100" />
         <div className="grid grid-cols-2 gap-3">
-          <div className="h-24 animate-pulse rounded-lg bg-slate-100" />
-          <div className="h-24 animate-pulse rounded-lg bg-slate-100" />
+          <div className="h-24 animate-pulse rounded-lg bg-ink-100" />
+          <div className="h-24 animate-pulse rounded-lg bg-ink-100" />
         </div>
-        <div className="h-20 animate-pulse rounded-lg bg-slate-100" />
+        <div className="h-20 animate-pulse rounded-lg bg-ink-100" />
       </div>
     </div>
   );
@@ -226,11 +226,11 @@ function AdviceResult({ result }: { result: DecisionAdviceResponse }) {
           <Sparkles className="h-4 w-4" />
           <span className="text-sm font-semibold">总览</span>
         </div>
-        <p className="mt-1 text-sm text-slate-700">{summary}</p>
+        <p className="mt-1 text-sm text-ink-700">{summary}</p>
       </div>
 
       {/* 信心度星级 */}
-      <div className="flex items-center gap-2 text-sm text-slate-600">
+      <div className="flex items-center gap-2 text-sm text-ink-600">
         <Target className="h-4 w-4 text-brand-500" />
         <span>信心度</span>
         <span className="flex">
@@ -240,12 +240,12 @@ function AdviceResult({ result }: { result: DecisionAdviceResponse }) {
               className={`h-4 w-4 ${
                 i < safeConfidence
                   ? "fill-amber-400 text-amber-400"
-                  : "text-slate-200"
+                  : "text-ink-200"
               }`}
             />
           ))}
         </span>
-        <span className="text-xs text-slate-400">{safeConfidence}/5</span>
+        <span className="text-xs text-ink-400">{safeConfidence}/5</span>
       </div>
 
       {/* 优势 / 风险 两列对比 */}
@@ -259,7 +259,7 @@ function AdviceResult({ result }: { result: DecisionAdviceResponse }) {
             {pros.map((p, i) => (
               <li
                 key={`pro-${i}`}
-                className="flex items-start gap-1.5 text-sm text-slate-600"
+                className="flex items-start gap-1.5 text-sm text-ink-600"
               >
                 <span className="mt-0.5 text-green-500">•</span>
                 <span>{p}</span>
@@ -276,7 +276,7 @@ function AdviceResult({ result }: { result: DecisionAdviceResponse }) {
             {cons.map((c, i) => (
               <li
                 key={`con-${i}`}
-                className="flex items-start gap-1.5 text-sm text-slate-600"
+                className="flex items-start gap-1.5 text-sm text-ink-600"
               >
                 <span className="mt-0.5 text-red-500">•</span>
                 <span>{c}</span>
@@ -288,11 +288,11 @@ function AdviceResult({ result }: { result: DecisionAdviceResponse }) {
 
       {/* 市场分析 */}
       <div>
-        <div className="flex items-center gap-2 text-slate-700">
+        <div className="flex items-center gap-2 text-ink-700">
           <TrendingUp className="h-4 w-4 text-blue-500" />
           <span className="text-sm font-semibold">市场分析</span>
         </div>
-        <p className="mt-1 text-sm leading-relaxed text-slate-600">
+        <p className="mt-1 text-sm leading-relaxed text-ink-600">
           {market_analysis}
         </p>
       </div>
@@ -300,7 +300,7 @@ function AdviceResult({ result }: { result: DecisionAdviceResponse }) {
       {/* 备选方案 */}
       {alternatives.length > 0 && (
         <div>
-          <div className="flex items-center gap-2 text-slate-700">
+          <div className="flex items-center gap-2 text-ink-700">
             <Lightbulb className="h-4 w-4 text-amber-500" />
             <span className="text-sm font-semibold">备选方案</span>
           </div>
@@ -308,10 +308,10 @@ function AdviceResult({ result }: { result: DecisionAdviceResponse }) {
             {alternatives.map((a, i) => (
               <div
                 key={`alt-${i}`}
-                className="rounded-lg border border-slate-200 bg-slate-50 p-3"
+                className="rounded-lg border border-ink-200 bg-ink-50 p-3"
               >
-                <p className="text-sm font-medium text-slate-800">{a.option}</p>
-                <p className="mt-1 text-xs text-slate-500">{a.reason}</p>
+                <p className="text-sm font-medium text-ink-800">{a.option}</p>
+                <p className="mt-1 text-xs text-ink-500">{a.reason}</p>
               </div>
             ))}
           </div>
@@ -321,7 +321,7 @@ function AdviceResult({ result }: { result: DecisionAdviceResponse }) {
       {/* 技能差距 - 橙色标签云 */}
       {skill_gap.length > 0 && (
         <div>
-          <div className="flex items-center gap-2 text-slate-700">
+          <div className="flex items-center gap-2 text-ink-700">
             <Target className="h-4 w-4 text-orange-500" />
             <span className="text-sm font-semibold">技能差距</span>
           </div>
@@ -344,7 +344,7 @@ function AdviceResult({ result }: { result: DecisionAdviceResponse }) {
           <Lightbulb className="h-4 w-4" />
           <span className="text-sm font-semibold">建议</span>
         </div>
-        <p className="mt-1 text-sm leading-relaxed text-slate-700">{advice}</p>
+        <p className="mt-1 text-sm leading-relaxed text-ink-700">{advice}</p>
       </div>
     </div>
   );

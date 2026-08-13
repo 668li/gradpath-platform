@@ -82,7 +82,7 @@ In n8n UI, add credentials:
 Set in n8n or via environment:
 
 ```bash
-GRADPATH_API_URL=http://localhost:8000
+GRADPATH_API_URL=http://localhost:8001
 GRADPATH_ADMIN_TOKEN=<your-admin-jwt>
 ```
 

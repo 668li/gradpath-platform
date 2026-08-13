@@ -219,7 +219,7 @@ export default function SchoolsPage() {
           <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             <div className="sm:col-span-2 lg:col-span-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -tranink-y-1/2 text-ink-400" />
                 <Input
                   placeholder="搜索院校名称..."
                   value={search}
@@ -230,7 +230,7 @@ export default function SchoolsPage() {
               </div>
             </div>
             <div className="relative">
-              <BookOpen className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
+              <BookOpen className="absolute left-3 top-1/2 h-4 w-4 -tranink-y-1/2 text-ink-400" />
               <Input
                 placeholder="搜索专业..."
                 value={major}
@@ -452,7 +452,7 @@ function SchoolCard({
 
       <div className="flex items-center text-sm font-medium text-brand-600 group-hover:text-brand-700">
         查看近 3 年数据
-        <ArrowRight className="h-4 w-4 ml-1.5 group-hover:translate-x-1 transition-transform" />
+        <ArrowRight className="h-4 w-4 ml-1.5 group-hover:tranink-x-1 transition-transform" />
       </div>
     </div>
   );

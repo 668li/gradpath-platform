@@ -17,6 +17,9 @@ if __name__ == "__main__":
 
 from app.crawlers.base_crawler import BaseCrawler
 from app.crawlers.registry import register_crawler
+from app.database import SessionLocal
+from app.models.crawler_run import CrawlerRun
+from app.services.research_ingestion import store_research_items
 
 logger = logging.getLogger(__name__)
 
@@ -120,15 +123,72 @@ class BilibiliResearchCrawler(BaseCrawler):
             )
         return parsed_items
 
-    def store(self, items: list[dict], db) -> int:
-        """将解析结果写入系统临时目录的 JSON 文件。"""
-        tmp_dir = Path(tempfile.gettempdir())
-        output_path = tmp_dir / f"bilibili_research_{self.keyword}.json"
-        tmp_dir.mkdir(parents=True, exist_ok=True)
-        with open(output_path, "w", encoding="utf-8") as f:
-            json.dump(items, f, ensure_ascii=False, indent=2)
-        logger.info(f"[{self.name}] 已保存 {len(items)} 条到 {output_path}")
-        return len(items)
+    def store(self, items: list[dict], db=None) -> int:
+        """将解析结果入库 t_external_research_item + t_review_queue_item。
+
+        方案 C 主线 c（F9）：落盘爬虫改入库。
+        - 自建 session 兜底：main() 直调传 db=None，BaseCrawler.run 会传 db
+        - 先创建一条 CrawlerRun 运行记录，再统一入库
+        - 原 tempfile 落盘保留为可选兼容：config.get("dump_json", False) 为 True 时才写
+        """
+        own_db = False
+        if db is None:
+            db = SessionLocal()
+            own_db = True
+        try:
+            run_record = CrawlerRun(
+                source_name=self.name,
+                category=self.category,
+                status="running",
+            )
+            db.add(run_record)
+            db.commit()
+            db.refresh(run_record)
+
+            result = store_research_items(
+                db,
+                crawler_name=self.name,
+                item_type="experience_post",
+                items=items,
+                source_platform="bilibili",
+                run_id=str(run_record.id),
+            )
+
+            run_record.status = "success"
+            run_record.items_fetched = self.stats.get("fetched", 0)
+            run_record.items_stored = result["inserted"]
+            run_record.items_duplicates = result["duplicated"]
+            run_record.stored_count = result["inserted"]
+            run_record.duplicate_count = result["duplicated"]
+            run_record.source_meta = {
+                "keyword": self.keyword,
+                "pages": self.pages,
+                "platform": "bilibili",
+            }
+            db.commit()
+
+            self.stats["stored"] = result["inserted"]
+            self.stats["duplicates"] += result["duplicated"]
+
+            # 可选兼容：dump_json 为 True 时才写临时文件（CLI 老用法）
+            if self.config.get("dump_json", False):
+                tmp_dir = Path(tempfile.gettempdir())
+                output_path = tmp_dir / f"bilibili_research_{self.keyword}.json"
+                tmp_dir.mkdir(parents=True, exist_ok=True)
+                with open(output_path, "w", encoding="utf-8") as f:
+                    json.dump(items, f, ensure_ascii=False, indent=2)
+                logger.info(f"[{self.name}] 已保存 {len(items)} 条到 {output_path}")
+
+            logger.info(
+                f"[{self.name}] 入库 {result['inserted']} 条新数据，去重 {result['duplicated']} 条"
+            )
+            return result["inserted"]
+        except Exception:
+            db.rollback()
+            raise
+        finally:
+            if own_db:
+                db.close()
 
     @staticmethod
     def _to_int(value) -> int:
@@ -160,7 +220,7 @@ def main() -> None:
     items = crawler.parse(raw)
     stored = crawler.store(items, db=None)
 
-    print(f"抓取完成：原始 {len(raw)} 条，解析 {len(items)} 条，保存 {stored} 条")
+    print(f"抓取完成：原始 {len(raw)} 条，解析 {len(items)} 条，入库 {stored} 条")
 
 
 if __name__ == "__main__":

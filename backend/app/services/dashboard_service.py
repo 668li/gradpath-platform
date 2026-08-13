@@ -4,6 +4,7 @@ from uuid import UUID
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.core.cache import cache
 from app.models.career_event import CareerEvent
 from app.models.career_plan import CareerPlan
 from app.models.destination_decision import DestinationDecision
@@ -13,9 +14,15 @@ from app.models.skill_node import SkillNode
 
 
 def get_overview(db: Session, user_id: UUID) -> dict:
-    # 记录每日打卡（打开看板即视为活跃）
+    cache_key = f"dashboard_overview:{user_id}"
+    cached = cache.get(cache_key)
+
+    # 记录每日打卡（打开看板即视为活跃）— 缓存命中时也记录，保证打卡不丢失
     from app.services.streak_service import record_activity
     record_activity(db, user_id, "dashboard")
+
+    if cached is not None:
+        return cached
 
     decisions = (
         db.query(DestinationDecision)
@@ -98,7 +105,7 @@ def get_overview(db: Session, user_id: UUID) -> dict:
         })
     timeline.sort(key=lambda x: x["date"], reverse=True)
 
-    return {
+    result = {
         "decisions_count": len(decisions),
         "events_count": len(events),
         "skills_count": skills_count,
@@ -109,6 +116,8 @@ def get_overview(db: Session, user_id: UUID) -> dict:
         "latest_retrospective": latest_retro,
         "timeline": timeline,
     }
+    cache.set(cache_key, result, ttl=30)
+    return result
 
 
 def get_weekly_recap(db: Session, user_id: UUID) -> dict:
@@ -123,6 +132,12 @@ def get_weekly_recap(db: Session, user_id: UUID) -> dict:
     - active_plans：status=="active" 的规划数。
     - total_milestones_done / total_milestones：全部规划里程碑统计。
     """
+    # 性能优化: 60s 缓存，避免每次看板加载全量加载 plans + logs
+    cache_key = f"weekly_recap:{user_id}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
+
     today = datetime.now(timezone.utc).date()
     monday = today - timedelta(days=today.weekday())  # weekday(): Monday=0
     week_start = datetime.combine(monday, datetime.min.time())
@@ -201,7 +216,7 @@ def get_weekly_recap(db: Session, user_id: UUID) -> dict:
     else:
         encouragement = "本周还没有进展，从一个小任务开始吧！"
 
-    return {
+    result = {
         "completed_this_week": completed_this_week,
         "logs_this_week": len(week_logs),
         "upcoming_deadlines": upcoming_deadlines,
@@ -210,3 +225,5 @@ def get_weekly_recap(db: Session, user_id: UUID) -> dict:
         "total_milestones": total_milestones,
         "encouragement": encouragement,
     }
+    cache.set(cache_key, result, ttl=60)
+    return result

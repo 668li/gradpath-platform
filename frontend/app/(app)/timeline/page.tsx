@@ -90,7 +90,7 @@ export default function TimelinePage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="page-title">成长时间线</h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-ink-500 mt-1">
             按时间记录你的职业成长事件
           </p>
         </div>
@@ -112,7 +112,7 @@ export default function TimelinePage() {
               "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
               filter === f.key
                 ? "bg-brand-600 text-white"
-                : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50",
+                : "bg-white text-ink-600 border border-ink-200 hover:bg-ink-50",
             )}
           >
             {f.label}
@@ -133,37 +133,37 @@ export default function TimelinePage() {
           }
         />
       ) : (
-        <ol className="relative space-y-4 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+        <ol className="relative space-y-4 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-ink-200">
           {events.map((e) => {
             const color = EVENT_TYPE_COLOR[e.event_type];
             return (
               <li key={e.id} className="relative pl-10">
                 <span
-                  className="absolute left-1 top-4 flex h-[18px] w-[18px] items-center justify-center rounded-full ring-4 ring-slate-50"
+                  className="absolute left-1 top-4 flex h-[18px] w-[18px] items-center justify-center rounded-full ring-4 ring-ink-50"
                   style={{ backgroundColor: color }}
                 />
                 <div className="card hover:shadow-md transition-shadow">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="font-semibold text-slate-800">{e.title}</h3>
+                        <h3 className="font-semibold text-ink-800">{e.title}</h3>
                         <Badge color="blue">{EVENT_TYPE_LABEL[e.event_type]}</Badge>
                       </div>
-                      <p className="text-xs text-slate-400 mt-0.5">
+                      <p className="text-xs text-ink-400 mt-0.5">
                         {formatDate(e.event_date)}
                       </p>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       <button
                         onClick={() => openEdit(e)}
-                        className="p-1.5 rounded-md text-slate-400 hover:bg-slate-100 hover:text-brand-600"
+                        className="p-1.5 rounded-md text-ink-400 hover:bg-ink-100 hover:text-brand-600"
                         aria-label="编辑"
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(e)}
-                        className="p-1.5 rounded-md text-slate-400 hover:bg-red-50 hover:text-red-600"
+                        className="p-1.5 rounded-md text-ink-400 hover:bg-red-50 hover:text-red-600"
                         aria-label="删除"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -172,7 +172,7 @@ export default function TimelinePage() {
                   </div>
 
                   {e.description && (
-                    <p className="mt-2 text-sm text-slate-600">{e.description}</p>
+                    <p className="mt-2 text-sm text-ink-600">{e.description}</p>
                   )}
 
                   {e.reflection && (
@@ -203,11 +203,11 @@ export default function TimelinePage() {
 
                   {e.impact_metrics &&
                     Object.keys(e.impact_metrics).length > 0 && (
-                      <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-500">
+                      <div className="mt-3 flex flex-wrap gap-3 text-xs text-ink-500">
                         {Object.entries(e.impact_metrics).map(([k, v]) => (
-                          <span key={k} className="rounded bg-slate-100 px-2 py-1">
-                            <span className="text-slate-400">{k}: </span>
-                            <span className="font-medium text-slate-700">
+                          <span key={k} className="rounded bg-ink-100 px-2 py-1">
+                            <span className="text-ink-400">{k}: </span>
+                            <span className="font-medium text-ink-700">
                               {String(v)}
                             </span>
                           </span>
@@ -216,7 +216,7 @@ export default function TimelinePage() {
                     )}
 
                   {e.mood && (
-                    <div className="mt-3 flex items-center gap-2 text-xs text-slate-400">
+                    <div className="mt-3 flex items-center gap-2 text-xs text-ink-400">
                       <span>心情</span>
                       <span className="text-amber-500 tracking-wide">
                         {levelStars(e.mood)}

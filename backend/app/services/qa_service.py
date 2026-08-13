@@ -42,14 +42,16 @@ def create_question(
     return question
 
 
-def get_question(db: Session, question_id: UUID) -> Optional[QA]:
-    """获取单个问题。"""
-    return (
+def get_question(db: Session, question_id: UUID, include_unapproved: bool = False) -> Optional[QA]:
+    """获取单个问题。安全修复 M1: 默认只返回已审核通过的问题。"""
+    query = (
         db.query(QA)
         .options(selectinload(QA.answers))
         .filter(QA.id == question_id)
-        .first()
     )
+    if not include_unapproved:
+        query = query.filter(QA.status == "approved")
+    return query.first()
 
 
 def get_questions(

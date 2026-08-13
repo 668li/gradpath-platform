@@ -45,6 +45,7 @@ export const mentorApi = {
     min_rating?: number;
     enrollment_status?: string;
     search?: string;
+    order_by?: string;
   }) =>
     request<MentorListResponse>(
       `/api/mentors/kaoyan-mentors${buildQuery((params as Record<string, string | number | undefined | null>) || {})}`,

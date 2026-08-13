@@ -92,7 +92,7 @@ export function BarChart({
   if (orientation === "horizontal" || ranking) {
     const resolved = ranking ?? [];
     if (!resolved || resolved.length === 0) {
-      return <p className="text-sm text-slate-400">暂无{title}数据</p>;
+      return <p className="text-sm text-ink-400">暂无{title}数据</p>;
     }
 
     const topList = resolved.slice(0, topN).reverse();

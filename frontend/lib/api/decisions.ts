@@ -34,6 +34,16 @@ export const decisionsApi = {
 };
 
 // ===== 护城河功能：决策日志与回溯 =====
+export interface TimeCapsuleResponse {
+  has_capsule: boolean;
+  can_open: boolean;
+  letter: string | null;
+  sealed_at?: string;
+  opens_on?: string | null;
+  opened?: boolean;
+  message?: string;
+}
+
 export const decisionJournalApi = {
   getPendingReviews: () =>
     request<DecisionResponse[]>("/api/decision-journal/pending-reviews"),
@@ -44,6 +54,14 @@ export const decisionJournalApi = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+  // 决策时间胶囊 — 写给未来自己的信
+  sealTimeCapsule: (decisionId: string, letter: string) =>
+    request<{ sealed: boolean; sealed_at: string }>(
+      `/api/decision-journal/${decisionId}/time-capsule`,
+      { method: "POST", body: JSON.stringify({ letter }) },
+    ),
+  openTimeCapsule: (decisionId: string) =>
+    request<TimeCapsuleResponse>(`/api/decision-journal/${decisionId}/time-capsule`),
 };
 
 // ===== 护城河功能：决策深度分析 =====

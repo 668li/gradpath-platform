@@ -29,6 +29,47 @@ import { Button, Field } from "@/components/ui/form-controls";
 import { useToast } from "@/components/ui/toast";
 import type { OnboardingRecord } from "@/types";
 
+// ===== 基于去向的智能推荐下一步 =====
+
+/** 根据用户选择的目标方向，给出最相关的下一个功能入口 */
+function getDirectionNextStep(direction: string): {
+  href: string;
+  title: string;
+  desc: string;
+  icon: typeof Compass;
+} {
+  switch (direction) {
+    case "postgrad":
+      return {
+        href: "/kaoyan/schools?from=onboarding",
+        title: "去院校库选目标学校",
+        desc: "基于你的考研方向，浏览院校与专业，建立候选清单。",
+        icon: GraduationCap,
+      };
+    case "civil_service":
+      return {
+        href: "/civil-service?from=onboarding",
+        title: "去考公情报看岗位",
+        desc: "查看岗位需求、报录比与分数线，找到对口岗位。",
+        icon: Landmark,
+      };
+    case "employment":
+      return {
+        href: "/employment?from=onboarding",
+        title: "去就业情报做候选",
+        desc: "浏览公司、岗位与薪资基准，建立候选公司清单。",
+        icon: Briefcase,
+      };
+    default:
+      return {
+        href: "/assessment?from=onboarding",
+        title: "先做职业测评",
+        desc: "方向未确定？从霍兰德/MBTI 等测评开始定位兴趣与特质。",
+        icon: Compass,
+      };
+  }
+}
+
 // ===== 步骤配置 =====
 
 const STAGES = [
@@ -593,6 +634,35 @@ function ResultView({
           </ol>
         </div>
       )}
+
+      {/* 智能推荐下一步：基于你选择的目标方向 */}
+      {(() => {
+        const next = getDirectionNextStep(record.target_direction);
+        const Icon = next.icon;
+        return (
+          <Link
+            href={next.href}
+            className="card flex items-center gap-4 border-brand-300 bg-gradient-to-r from-brand-50 to-paper-50 p-4 transition-all hover:shadow-md group"
+          >
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-white shadow-sm">
+              <Icon className="h-5 w-5" strokeWidth={1.8} />
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-brand-700 font-medium">
+                基于你选择的「{DIRECTIONS.find((d) => d.value === record.target_direction)?.label ?? "未确定"}」方向
+              </p>
+              <p className="font-display font-semibold text-ink-800 mt-0.5">
+                {next.title}
+              </p>
+              <p className="text-xs text-ink-500 mt-0.5 line-clamp-1">{next.desc}</p>
+            </div>
+            <span className="shrink-0 inline-flex items-center gap-1 rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white transition-colors group-hover:bg-brand-700">
+              前往
+              <ArrowRight className="h-3.5 w-3.5" />
+            </span>
+          </Link>
+        );
+      })()}
 
       {/* 你的下一步 3 个动作 */}
       {

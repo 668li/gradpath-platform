@@ -69,6 +69,7 @@ export default function LoginPage() {
 
         <form
           onSubmit={onSubmit}
+          noValidate
           className="card space-y-5"
         >
           <Field label="邮箱" required>

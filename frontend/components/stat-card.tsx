@@ -28,9 +28,9 @@ export const StatCard = memo(function StatCard({ label, value, icon, hint, color
         {icon}
       </div>
       <div className="min-w-0">
-        <p className="text-sm text-slate-500">{label}</p>
-        <p className="text-2xl font-bold text-slate-800 leading-tight">{value}</p>
-        {hint && <p className="text-xs text-slate-400 truncate">{hint}</p>}
+        <p className="text-sm text-ink-500">{label}</p>
+        <p className="text-2xl font-bold text-ink-800 leading-tight">{value}</p>
+        {hint && <p className="text-xs text-ink-400 truncate">{hint}</p>}
       </div>
     </div>
   );

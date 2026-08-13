@@ -98,7 +98,7 @@ export function LineChart({
   // —— 多系列就业趋势（TrendLine）——
   if (trend) {
     if (!trend || trend.years.length < 1) {
-      return <p className="text-sm text-slate-400">暂无趋势数据</p>;
+      return <p className="text-sm text-ink-400">暂无趋势数据</p>;
     }
 
     const lineData = trend.years.map((year, i) => ({

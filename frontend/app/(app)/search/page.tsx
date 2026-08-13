@@ -16,7 +16,7 @@ function getResultUrl(type: string, id: string, metadata?: any): string {
     case "qa":
       return `/kaoyan/community/qa/${id}`;
     case "knowledge":
-      return `/kaoyan/community/posts/${id}`; // knowledge also uses post detail
+      return `/knowledge`;
     default:
       return `/kaoyan/community/posts/${id}`;
   }
@@ -219,7 +219,7 @@ export default function SearchPage() {
         <h1 className="font-display text-2xl font-bold text-ink-800 mb-6">全局搜索</h1>
         <div className="flex gap-3">
           <div className="relative flex-1">
-            <SearchIcon className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-400" />
+            <SearchIcon className="absolute left-4 top-1/2 h-5 w-5 -tranink-y-1/2 text-ink-400" />
             <input
               type="text"
               value={query}
@@ -291,11 +291,11 @@ export default function SearchPage() {
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={`skel-${i}`} className="animate-pulse rounded-xl border border-paper-200 bg-white p-5">
               <div className="flex items-center gap-3 mb-3">
-                <div className="h-5 w-24 rounded bg-slate-200" />
-                <div className="h-5 w-16 rounded bg-slate-200" />
+                <div className="h-5 w-24 rounded bg-ink-200" />
+                <div className="h-5 w-16 rounded bg-ink-200" />
               </div>
-              <div className="h-4 w-3/4 rounded bg-slate-200 mb-2" />
-              <div className="h-4 w-1/2 rounded bg-slate-200" />
+              <div className="h-4 w-3/4 rounded bg-ink-200 mb-2" />
+              <div className="h-4 w-1/2 rounded bg-ink-200" />
             </div>
           ))}
         </div>
@@ -372,7 +372,7 @@ export default function SearchPage() {
             ))}
             {/* Standard results */}
             {results.map((r) => {
-              const badge = TYPE_BADGE[r.type] || { label: r.type, className: "bg-slate-100 text-slate-600" };
+              const badge = TYPE_BADGE[r.type] || { label: r.type, className: "bg-ink-100 text-ink-600" };
               return (
                 <Link
                   key={r.id}

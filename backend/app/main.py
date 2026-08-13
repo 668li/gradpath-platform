@@ -31,98 +31,7 @@ setup_logging(settings.LOG_LEVEL)
 
 logger = logging.getLogger("gradpath")
 
-
-# ----------------------------------------------------------------------
-# Sentry 初始化（B5）— 在 FastAPI app 创建前完成，确保能捕获后续所有异常。
-# 通过 SENTRY_DSN 环境变量启用；未配置时跳过，不影响本地开发。
-# ----------------------------------------------------------------------
-def _scrub_sensitive_data(event: dict, hint: dict | None = None) -> dict | None:
-    """Sentry before_send 钩子：过滤敏感字段，避免 PII/密钥上传。
-
-    覆盖：
-    - request headers: Authorization / Cookie / X-Api-Key
-    - request body / query 中字段名命中敏感词的值
-    - extra / breadcrumbs 中的敏感字段
-    """
-    sensitive_keys = {
-        "password",
-        "password_hash",
-        "new_password",
-        "current_password",
-        "token",
-        "access_token",
-        "refresh_token",
-        "secret",
-        "secret_key",
-        "api_key",
-        "authorization",
-        "cookie",
-        "session",
-        "csrf",
-    }
-
-    def _scrub(obj):
-        if isinstance(obj, dict):
-            return {
-                k: ("[REDACTED]" if k.lower() in sensitive_keys else _scrub(v))
-                for k, v in obj.items()
-            }
-        if isinstance(obj, list):
-            return [_scrub(v) for v in obj]
-        return obj
-
-    try:
-        request = event.get("request") or {}
-        # headers
-        headers = request.get("headers") or {}
-        scrubbed_headers = {}
-        for k, v in headers.items():
-            if k.lower() in {"authorization", "cookie", "x-api-key"}:
-                scrubbed_headers[k] = "[REDACTED]"
-            else:
-                scrubbed_headers[k] = v
-        request["headers"] = scrubbed_headers
-        # body / query
-        for field in ("data", "query_string", "json"):
-            if field in request and request[field]:
-                request[field] = _scrub(request[field])
-        event["request"] = request
-        # extra / contexts / breadcrumbs
-        if "extra" in event:
-            event["extra"] = _scrub(event["extra"])
-        if "contexts" in event:
-            event["contexts"] = _scrub(event["contexts"])
-        breadcrumbs = event.get("breadcrumbs") or []
-        event["breadcrumbs"] = [_scrub(b) for b in breadcrumbs]
-    except Exception as e:  # noqa: BLE001
-        logger.debug("Sentry scrub error: %s", e)
-    return event
-
-
-if settings.SENTRY_DSN:
-    try:
-        import sentry_sdk
-        from sentry_sdk.integrations.fastapi import FastApiIntegration
-        from sentry_sdk.integrations.redis import RedisIntegration
-        from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
-
-        sentry_sdk.init(
-            dsn=settings.SENTRY_DSN,
-            environment=settings.ENV,
-            traces_sample_rate=0.1,
-            profiles_sample_rate=0.1,
-            integrations=[
-                FastApiIntegration(),
-                SqlalchemyIntegration(),
-                RedisIntegration(),
-            ],
-            send_default_pii=False,
-            before_send=_scrub_sensitive_data,
-        )
-        logger.info("Sentry 已初始化: env=%s", settings.ENV)
-    except Exception as e:  # noqa: BLE001
-        logger.warning("Sentry 初始化失败（不影响启动）: %s", e)
-
+# 修复: FASTAPI-OPENAPI-001
 # 修复: FASTAPI-OPENAPI-001 — 生产环境关闭 /docs /redoc /openapi.json，
 # 避免接口结构暴露给未授权用户；开发/预发环境保留方便调试。
 _is_production = settings.ENVIRONMENT == "production"
@@ -334,6 +243,9 @@ class MCPAuthMiddleware(BaseHTTPMiddleware):
             return JSONResponse(status_code=401, content={"detail": "Invalid token type"})
         # 将 user_id 注入 request.state 供下游工具使用
         request.state.user_id = payload.get("sub")
+        # 安全修复 C1: 同步写入 ContextVar，MCP 工具只能访问认证用户自己的数据
+        from app.services.mcp_service import set_mcp_user_id
+        set_mcp_user_id(payload.get("sub"))
         return await call_next(request)
 
 

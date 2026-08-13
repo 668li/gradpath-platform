@@ -121,7 +121,7 @@ def test_rag_search(
     db: Session = Depends(get_db),
 ):
     """测试 RAG 检索 — 管理员专用。"""
-    from app.rag_service import get_rag_service
+    from app.services.rag_service import get_rag_service
 
     rag = get_rag_service(db)
     results = rag.search(query, top_k=top_k)

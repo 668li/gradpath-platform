@@ -1,27 +1,58 @@
 import { request, buildQuery } from "./client";
 
+export interface PredictFactor {
+  factor: string;
+  impact: string; // positive / negative / neutral
+  weight: number;
+}
+
+export interface SimilarCase {
+  user_score: number;
+  outcome: string; // admitted / rejected / waitlist
+}
+
 export interface PredictResponse {
-  school: string;
+  school_name: string;
   major: string;
   probability: number;
-  risk_level: string;
-  suggestion?: string;
-  factors?: Record<string, unknown>;
+  confidence: string; // high / medium / low
+  factors: PredictFactor[];
+  similar_cases: SimilarCase[];
+  recommendation: string;
+  risk_level: string; // low / medium / high
 }
 
 export interface HistoryResponse {
-  school: string;
+  school_name: string;
   major: string;
   records: Array<{
     year: number;
-    score: number;
-    admission_count?: number;
-    min_rank?: number;
+    total_score_line: number | null;
+    enrollment_count: number | null;
+    application_count: number | null;
+    politics_score: number | null;
+    foreign_language_score: number | null;
+    business_1_score: number | null;
+    business_2_score: number | null;
   }>;
+  statistics: {
+    year_span: string;
+    data_points: number;
+    avg_score: number | null;
+    max_score: number | null;
+    min_score: number | null;
+    avg_admission_rate: number | null;
+  };
 }
 
 export const admissionApi = {
-  predict: (body: { school: string; major: string; score?: number; rank?: number }) =>
+  predict: (body: {
+    school_name: string;
+    major: string;
+    user_score: number;
+    user_gpa: number;
+    user_university: string;
+  }) =>
     request<PredictResponse>("/api/admission/predict", {
       method: "POST",
       body: JSON.stringify(body),

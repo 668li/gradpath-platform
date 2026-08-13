@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   ArrowLeft,
   ThumbsUp,
@@ -345,7 +346,13 @@ export default function ExperiencePostDetailPage() {
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-3 text-sm text-ink-500">
-              <span>{post.is_anonymous ? "匿名用户" : `用户 ${post.user_id.slice(-4)}`}</span>
+              {post.is_anonymous ? (
+                <span>匿名用户</span>
+              ) : (
+                <Link href={`/u/${post.user_id}`} className="hover:text-brand-600 hover:underline transition-colors">
+                  {post.author_name || `用户 ${post.user_id.slice(-4)}`}
+                </Link>
+              )}
               <span className="flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" />
                 {new Date(post.created_at).toLocaleDateString("zh-CN")}
@@ -417,10 +424,14 @@ export default function ExperiencePostDetailPage() {
             <div className="flex items-center gap-4">
               <div className="text-center">
                 <div className="text-3xl font-bold text-ink-900">
-                  {ratingStats ? ratingStats.average.toFixed(1) : "-"}
+                  {ratingStats && typeof ratingStats.average === "number"
+                    ? ratingStats.average.toFixed(1)
+                    : "-"}
                 </div>
                 <div className="text-xs text-ink-400">
-                  {ratingStats ? `${ratingStats.count} 条评分` : "暂无评分"}
+                  {ratingStats && ratingStats.count
+                    ? `${ratingStats.count} 条评分`
+                    : "暂无评分"}
                 </div>
               </div>
               {ratingStats && ratingStats.count > 0 && (
@@ -430,7 +441,12 @@ export default function ExperiencePostDetailPage() {
                       key={s}
                       className={cn(
                         "h-5 w-5",
-                        s <= Math.round(ratingStats.average)
+                        s <=
+                          Math.round(
+                            typeof ratingStats.average === "number"
+                              ? ratingStats.average
+                              : 0,
+                          )
                           ? "fill-yellow-400 text-yellow-400"
                           : "fill-paper-200 text-paper-200",
                       )}

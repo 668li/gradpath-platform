@@ -17,15 +17,17 @@ def list_articles(
     db: Session,
     category: str | None = None,
     tags: list[str] | None = None,
+    q: str | None = None,
     page: int = 1,
     page_size: int = 20,
 ) -> tuple[list[KnowledgeArticle], int]:
-    """分页查询知识条目，支持分类和标签过滤。
+    """分页查询知识条目，支持分类、标签和关键词过滤。
 
     Args:
         db: 数据库会话
         category: 分类过滤（精确匹配）
         tags: 标签过滤（条目需包含任一标签）
+        q: 关键词搜索（ILIKE 匹配 title/content）
         page: 页码（从 1 开始）
         page_size: 每页条数
 
@@ -44,6 +46,14 @@ def list_articles(
             )
         if tag_conditions:
             query = query.filter(or_(*tag_conditions))
+    if q and q.strip():
+        pattern = f"%{escape_like(q.strip())}%"
+        query = query.filter(
+            or_(
+                KnowledgeArticle.title.ilike(pattern),
+                KnowledgeArticle.content.ilike(pattern),
+            )
+        )
 
     total = query.count()
     offset = (page - 1) * page_size

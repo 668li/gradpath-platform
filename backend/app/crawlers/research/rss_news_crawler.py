@@ -19,6 +19,9 @@ from sqlalchemy.orm import Session
 
 from app.crawlers.base_crawler import BaseCrawler
 from app.crawlers.registry import register_crawler
+from app.database import SessionLocal
+from app.models.crawler_run import CrawlerRun
+from app.services.research_ingestion import store_research_items
 
 logger = logging.getLogger(__name__)
 
@@ -154,39 +157,73 @@ class RssNewsCrawler(BaseCrawler):
         text = f"{item.get('title', '')} {item.get('summary', '')}".lower()
         return any(kw in text for kw in self.keywords)
 
-    def store(self, items: list[dict], db: Session) -> int:
-        """基于 source_url 去重，结果写入 /tmp/rss_news_research.json。"""
-        self.output_path.parent.mkdir(parents=True, exist_ok=True)
+    def store(self, items: list[dict], db: Session = None) -> int:
+        """入库 t_external_research_item + t_review_queue_item。
 
-        existing: list[dict] = []
-        if self.output_path.exists():
-            try:
-                with self.output_path.open("r", encoding="utf-8") as f:
-                    existing = json.load(f)
-            except Exception as e:
-                logger.warning(f"[{self.name}] 读取已有 JSON 失败，将重建: {e}")
+        方案 C 主线 c（F9）：落盘爬虫改入库。
+        - 保留 _matches_keywords 关键词过滤
+        - 去重改为依赖 DB 唯一索引（uk_external_research_item_source_url），
+          不再读取/合并旧 JSON 文件
+        - 先创建一条 CrawlerRun 运行记录，再统一入库
+        - output_path 落盘保留为可选兼容：config.get("dump_json", False) 为 True 时才写
+        """
+        own_db = False
+        if db is None:
+            db = SessionLocal()
+            own_db = True
+        try:
+            run_record = CrawlerRun(
+                source_name=self.name,
+                category=self.category,
+                status="running",
+            )
+            db.add(run_record)
+            db.commit()
+            db.refresh(run_record)
 
-        existing_urls = {item.get("source_url") for item in existing if item.get("source_url")}
+            filtered_items = [item for item in items if self._matches_keywords(item)]
+            result = store_research_items(
+                db,
+                crawler_name=self.name,
+                item_type="kaoyan_news",
+                items=filtered_items,
+                source_platform="rss",
+                run_id=str(run_record.id),
+            )
 
-        filtered_items = [item for item in items if self._matches_keywords(item)]
-        new_items: list[dict] = []
-        for item in filtered_items:
-            url = item.get("source_url")
-            if not url:
-                continue
-            if url in existing_urls:
-                self.stats["duplicates"] += 1
-                continue
-            existing_urls.add(url)
-            existing.append(item)
-            new_items.append(item)
+            run_record.status = "success"
+            run_record.items_fetched = self.stats.get("fetched", 0)
+            run_record.items_stored = result["inserted"]
+            run_record.items_duplicates = result["duplicated"]
+            run_record.stored_count = result["inserted"]
+            run_record.duplicate_count = result["duplicated"]
+            run_record.source_meta = {
+                "feeds": self.feeds,
+                "keywords": self.keywords,
+                "platform": "rss",
+            }
+            db.commit()
 
-        with self.output_path.open("w", encoding="utf-8") as f:
-            json.dump(existing, f, ensure_ascii=False, indent=2)
+            self.stats["stored"] = result["inserted"]
+            self.stats["duplicates"] += result["duplicated"]
 
-        self.stats["stored"] = len(new_items)
-        logger.info(f"[{self.name}] 写入 {len(new_items)} 条新资讯，累计 {len(existing)} 条")
-        return len(new_items)
+            # 可选兼容：dump_json 为 True 时才写临时文件（CLI 老用法）
+            if self.config.get("dump_json", False):
+                self.output_path.parent.mkdir(parents=True, exist_ok=True)
+                with self.output_path.open("w", encoding="utf-8") as f:
+                    json.dump(filtered_items, f, ensure_ascii=False, indent=2)
+                logger.info(f"[{self.name}] 已保存 {len(filtered_items)} 条到 {self.output_path}")
+
+            logger.info(
+                f"[{self.name}] 入库 {result['inserted']} 条新资讯，去重 {result['duplicated']} 条"
+            )
+            return result["inserted"]
+        except Exception:
+            db.rollback()
+            raise
+        finally:
+            if own_db:
+                db.close()
 
 
 def _comma_list(value: str | None) -> list[str]:
@@ -207,6 +244,11 @@ def main():
         type=str,
         help="逗号分隔的关键词列表，标题或摘要命中任一关键词才保留",
     )
+    parser.add_argument(
+        "--dump-json",
+        action="store_true",
+        help="额外将结果落盘到 JSON 文件（默认关闭，默认走数据库入库）",
+    )
     args = parser.parse_args()
 
     config: dict[str, Any] = {}
@@ -216,13 +258,16 @@ def main():
     keywords = _comma_list(args.keywords)
     if keywords:
         config["keywords"] = keywords
+    if args.dump_json:
+        config["dump_json"] = True
 
     crawler = RssNewsCrawler(config=config)
     raw = crawler.fetch()
     parsed = crawler.parse(raw)
     stored = crawler.store(parsed, db=None)
-    print(f"抓取 {len(raw)} 条，解析 {len(parsed)} 条，新增 {stored} 条")
-    print(f"输出文件: {crawler.output_path}")
+    print(f"抓取 {len(raw)} 条，解析 {len(parsed)} 条，入库 {stored} 条")
+    if args.dump_json:
+        print(f"额外落盘文件: {crawler.output_path}")
 
 
 if __name__ == "__main__":

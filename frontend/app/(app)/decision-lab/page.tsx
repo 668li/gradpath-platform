@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Scale, Sparkles, AlertTriangle, Shield, Swords, Plus, Trash2, Trophy, ChevronDown, ChevronRight } from "lucide-react";
-import { decisionAnalysisApi } from "@/lib/api";
-import { cn } from "@/lib/utils";
+import Link from "next/link";
+import { Scale, Sparkles, AlertTriangle, Shield, Swords, Plus, Trash2, Trophy, ChevronDown, ChevronRight, Route, ClipboardList, RotateCw, ArrowRight } from "lucide-react";
+import { decisionAnalysisApi, decisionsApi } from "@/lib/api";
+import { cn, todayISO } from "@/lib/utils";
 import { LoadingState, EmptyState } from "@/components/ui/empty";
 import { Button, Input, Textarea, Field } from "@/components/ui/form-controls";
 import { useToast } from "@/components/ui/toast";
@@ -49,6 +50,9 @@ export default function DecisionLabPage() {
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const [savedAnalysisId, setSavedAnalysisId] = useState<string | null>(null);
+  // 是否已保存为决策记录，避免重复保存
+  const [savedDecisionId, setSavedDecisionId] = useState<string | null>(null);
+  const [savingDecision, setSavingDecision] = useState(false);
 
   const loadAnalyses = useCallback(async () => {
     setLoading(true);
@@ -85,6 +89,8 @@ export default function DecisionLabPage() {
     setRedTeamAnswers({});
     setAiAnalysis(null);
     setSavedAnalysisId(null);
+    setSavedDecisionId(null);
+    setSavingDecision(false);
     setStep("setup");
   };
 
@@ -192,6 +198,34 @@ export default function DecisionLabPage() {
       toast.push("保存失败，请重试", "error");
     } finally {
       setAiLoading(false);
+    }
+  };
+
+  /** 把决策分析同步保存为「去向决策」记录，便于后续在 decisions 页面回溯 */
+  const handleSaveAsDecision = async () => {
+    if (savedDecisionId || savingDecision) return;
+    const winner = matrixResult?.winner || options.filter(o => o.trim())[0] || "";
+    if (!winner) {
+      toast.push("请先完成决策分析", "error");
+      return;
+    }
+    setSavingDecision(true);
+    try {
+      const created = await decisionsApi.create({
+        decision_date: todayISO(),
+        destination_type: "employment",
+        status: "confirmed",
+        details: { decision_analysis_id: savedAnalysisId ?? "", winner },
+        reasoning: `${title || "决策分析"}：推荐选项 ${winner}`,
+        confidence: 3,
+        prediction: aiAnalysis ? aiAnalysis.slice(0, 500) : null,
+      });
+      setSavedDecisionId(created.id);
+      toast.push("已保存为决策记录", "success");
+    } catch {
+      toast.push("保存决策记录失败，请稍后重试", "error");
+    } finally {
+      setSavingDecision(false);
     }
   };
 
@@ -575,6 +609,68 @@ export default function DecisionLabPage() {
             {aiAnalysis && (
               <div className="rounded-lg border border-brand-200 bg-brand-50 p-4">
                 <p className="text-sm text-ink-700 leading-relaxed whitespace-pre-line">{aiAnalysis}</p>
+              </div>
+            )}
+
+            {/* 下一步引导：把分析转化为决策记录与行动计划 */}
+            {aiAnalysis && (
+              <div className="rounded-lg border border-brand-200 bg-gradient-to-br from-brand-50/60 to-paper-50 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Route className="h-4 w-4 text-brand-600" />
+                  <h3 className="font-display font-semibold text-ink-800">下一步</h3>
+                </div>
+                <p className="text-xs text-ink-500 -mt-1">
+                  决策分析已就绪。把它沉淀为决策记录，或据此生成行动计划、做阶段复盘。
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <button
+                    onClick={handleSaveAsDecision}
+                    disabled={!!savedDecisionId || savingDecision}
+                    className="group flex flex-col gap-1.5 rounded-lg border border-paper-200 bg-white p-3 text-left transition-all hover:border-brand-300 hover:shadow-sm disabled:opacity-60 disabled:cursor-default"
+                  >
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+                      <ClipboardList className="h-4 w-4" />
+                    </span>
+                    <p className="text-sm font-medium text-ink-800">
+                      {savedDecisionId ? "已保存为决策记录" : "保存为决策记录"}
+                    </p>
+                    <p className="text-xs text-ink-500">
+                      {savedDecisionId
+                        ? "可在「去向决策」页面回溯"
+                        : "同步到 decisions 页面，便于后续回溯"}
+                    </p>
+                  </button>
+                  <Link
+                    href="/plans?from=decision-lab"
+                    className="group flex flex-col gap-1.5 rounded-lg border border-paper-200 bg-white p-3 transition-all hover:border-brand-300 hover:shadow-sm"
+                  >
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+                      <Sparkles className="h-4 w-4" />
+                    </span>
+                    <p className="text-sm font-medium text-ink-800">生成行动计划</p>
+                    <p className="text-xs text-ink-500">
+                      把推荐选项拆成可执行的里程碑
+                    </p>
+                    <span className="inline-flex items-center gap-1 text-xs text-brand-600 mt-0.5">
+                      前往 <ArrowRight className="h-3 w-3" />
+                    </span>
+                  </Link>
+                  <Link
+                    href="/retrospectives?from=decision-lab"
+                    className="group flex flex-col gap-1.5 rounded-lg border border-paper-200 bg-white p-3 transition-all hover:border-brand-300 hover:shadow-sm"
+                  >
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+                      <RotateCw className="h-4 w-4" />
+                    </span>
+                    <p className="text-sm font-medium text-ink-800">做阶段复盘</p>
+                    <p className="text-xs text-ink-500">
+                      隔一段时间回看决策与执行是否一致
+                    </p>
+                    <span className="inline-flex items-center gap-1 text-xs text-brand-600 mt-0.5">
+                      前往 <ArrowRight className="h-3 w-3" />
+                    </span>
+                  </Link>
+                </div>
               </div>
             )}
 

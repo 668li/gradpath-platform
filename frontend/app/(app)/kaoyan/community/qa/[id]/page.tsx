@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   ArrowLeft,
   ThumbsUp,
@@ -153,7 +154,9 @@ export default function QADetailPage() {
               )}
             </div>
             <div className="flex flex-wrap items-center gap-3 text-sm text-ink-500">
-              <span>用户 {question.user_id.slice(-4)}</span>
+              <Link href={`/u/${question.user_id}`} className="hover:text-brand-600 hover:underline transition-colors">
+                {question.author_name || `用户 ${question.user_id.slice(-4)}`}
+              </Link>
               <span className="flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" />
                 {new Date(question.created_at).toLocaleDateString("zh-CN")}
@@ -252,7 +255,9 @@ function AnswerCard({
     >
       <div className="mb-3 flex items-start justify-between gap-3">
         <div className="flex items-center gap-2 text-sm text-ink-500">
-          <span>用户 {answer.user_id.slice(-4)}</span>
+          <Link href={`/u/${answer.user_id}`} className="hover:text-brand-600 hover:underline transition-colors">
+            {answer.author_name || `用户 ${answer.user_id.slice(-4)}`}
+          </Link>
           <span className="text-ink-300">·</span>
           <span className="flex items-center gap-1">
             <Clock className="h-3.5 w-3.5" />

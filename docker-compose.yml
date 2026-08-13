@@ -1,5 +1,11 @@
 name: gradpath
 
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   # ======================================================================
   # nginx — 反向代理（统一入口，承载 TLS 终止、gzip、安全头、限流）
@@ -8,7 +14,11 @@ services:
     image: nginx:1.27-alpine
     ports:
       # 唯一对外暴露的 HTTP 端口；生产环境可在 nginx 前再叠一层 CDN/TLS
-      - "80:80"
+      # FASTAPI-DEPLOY-001: 仅绑定 127.0.0.1,避免 80 端口暴露到外网/被主机其他服务抢占
+      # (本地开发用 docker-compose.dev.yml 改为 127.0.0.1:8080:80 避免与系统 80 冲突)
+      # 同时绑定 IPv4 和 IPv6 loopback，避免 Windows localhost 解析到 ::1 时 2s 超时
+      - "127.0.0.1:80:80"
+      - "[::1]:80:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - nginx_logs:/var/log/nginx
@@ -80,6 +90,7 @@ services:
   # ======================================================================
   redis:
     image: redis:7-alpine
+    logging: *default-logging
     # FASTAPI-DEPLOY-002: 启用 Redis 密码认证，避免未授权访问
     command: >-
       sh -c 'redis-server --maxmemory 64mb --maxmemory-policy allkeys-lru
@@ -118,10 +129,12 @@ services:
   # ======================================================================
   backend:
     build: ./backend
-    # FASTAPI-DEPLOY-001: nginx 接管外部流量后，backend 不再 ports 暴露到宿主机
-    # 仅在 docker network 内通过 service name + 8000 端口可达
-    expose:
-      - "8000"
+    logging: *default-logging
+    # FASTAPI-DEPLOY-001: 容器内固定监听 8000，仅 docker network 内通过
+    # service name（http://backend:8000）可达；宿主机访问统一收敛到 8001
+    # 端口约定（红线：端口映射 8001 后端 / 3000 前端）。
+    ports:
+      - "127.0.0.1:8001:8000"
     env_file:
       - ./backend/.env
     environment:
@@ -138,7 +151,7 @@ services:
     volumes:
       - ./backend:/app
     # 生产配置：移除 --reload，启用 4 worker 提升并发能力
-    # 本地开发时可改回：uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    # 本地开发时可改回：uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload（容器内端口固定 8000）
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
     healthcheck:
       # 使用 /health 端点（app.main 提供，依赖 DB 连通性）
@@ -163,30 +176,21 @@ services:
     restart: unless-stopped
 
   # ======================================================================
-  # frontend — Next.js SSR
+  # frontend — Next.js (production standalone)
   # ======================================================================
   frontend:
     build: ./frontend
-    # nginx 接管外部流量后，frontend 不再 ports 暴露到宿主机
     expose:
       - "3000"
     environment:
-      # NEXT_PUBLIC_API_URL 故意留空：前端通过 next.config.js 的 rewrites 走 /api/* 同源代理，
-      # 避免把宿主端口（8001）硬编码进客户端 bundle（容器内 8000，宿主映射 8001）
       NEXT_PUBLIC_API_URL: ""
       BACKEND_URL: http://backend:8000
       NEXT_PUBLIC_TEST_MODE: "1"
     depends_on:
       backend:
         condition: service_healthy
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - /app/.next
-    command: npm run dev
     healthcheck:
-      # Next.js dev server 启动较慢，给 60s start_period
-      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3000', r => process.exit(r.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))\""]
+      test: ["CMD-SHELL", "node -e \"require('net').connect(3000,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))\""]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -199,11 +203,11 @@ services:
     deploy:
       resources:
         limits:
-          memory: 512M
-          cpus: "1.0"
+          memory: 2G
+          cpus: "2.0"
         reservations:
-          memory: 128M
-          cpus: "0.25"
+          memory: 256M
+          cpus: "0.5"
     restart: unless-stopped
 
   # ======================================================================
@@ -215,6 +219,7 @@ services:
   # - worker_prefetch_multiplier=1 防止长任务饥饿（已在 celery_app.py 配置）
   celery-worker:
     build: ./backend
+    logging: *default-logging
     # 复用 backend 镜像，但 command 不同
     command: >
       celery -A app.celery_app.celery_app worker
@@ -266,13 +271,17 @@ services:
   # flower — Celery 任务监控面板（仅 127.0.0.1 访问）
   # ======================================================================
   flower:
-    image: mher/flower:2.0
+    logging: *default-logging
+    # 修复: mher/flower:2.0 镜像缺少 app 模块，改用 backend 镜像（含完整 app 包）
+    build: ./backend
     command: >
       celery --app=app.celery_app.celery_app flower
       --port=5555
       --broker=redis://:${REDIS_PASSWORD}@redis:6379/1
       --url-prefix=flower
       --basic-auth=${FLOWER_USER:-admin}:${FLOWER_PASSWORD:?FLOWER_PASSWORD is required}
+    env_file:
+      - ./backend/.env
     environment:
       FLOWER_USER: "${FLOWER_USER:-admin}"
       FLOWER_PASSWORD: "${FLOWER_PASSWORD:?FLOWER_PASSWORD is required (generate one with: python -c \"import secrets; print(secrets.token_urlsafe(16))\")}"
@@ -286,7 +295,8 @@ services:
       celery-worker:
         condition: service_started
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:5555/flower/api/workers >/dev/null 2>&1 || exit 1"]
+      # 修复: flower 容器（python:3.11-slim）无 wget/curl，改用 python TCP 端口检查
+      test: ["CMD-SHELL", "python -c \"import socket; s=socket.socket(); s.settimeout(5); s.connect(('localhost',5555)); s.close()\""]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -352,6 +362,8 @@ services:
   # ======================================================================
   backup:
     image: postgres:16-alpine
+    # 修复: dcron 在容器中执行 setpgid 会失败（Operation not permitted），加 init 提供 PID 1 进程管理
+    init: true
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-gradpath}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-gradpath}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
@@ -369,12 +381,11 @@ services:
     entrypoint: |
       sh -c "
         apk add --no-cache redis dcron 2>/dev/null;
-        chmod +x /backup-scripts/backup_db.sh /backup-scripts/backup_redis.sh /backup-scripts/backup_verify.sh;
         mkdir -p /var/backups/gradpath /var/log;
-        # 写入 crontab
-        echo '0 2 * * * /backup-scripts/backup_db.sh >> /var/log/backup.log 2>&1' > /etc/crontabs/root;
-        echo '30 2 * * * /backup-scripts/backup_redis.sh >> /var/log/backup.log 2>&1' >> /etc/crontabs/root;
-        echo '0 3 * * 0 /backup-scripts/backup_verify.sh >> /var/log/backup_verify.log 2>&1' >> /etc/crontabs/root;
+        # 写入 crontab（用 sh 执行脚本，避免 chmod 在只读挂载上失败）
+        echo '0 2 * * * sh /backup-scripts/backup_db.sh >> /var/log/backup.log 2>&1' > /etc/crontabs/root;
+        echo '30 2 * * * sh /backup-scripts/backup_redis.sh >> /var/log/backup.log 2>&1' >> /etc/crontabs/root;
+        echo '0 3 * * 0 sh /backup-scripts/backup_verify.sh >> /var/log/backup_verify.log 2>&1' >> /etc/crontabs/root;
         # 启动 crond 前台运行
         exec crond -l 2 -f
       "

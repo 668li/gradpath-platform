@@ -115,7 +115,7 @@ function GradWarRoom() {
     "/api/grad-intel/intel/public?limit=300",
     { fallbackData: [] },
   );
-  const { data: darkData, error: darkError, isLoading: darkLoading } = useApi<any>(
+  const { data: darkData, error: darkError, isLoading: darkLoading } = useApi<{ items: DarkKnowledgeResponse[] }>(
     "/api/grad-intel/dark-knowledge/list",
     { fallbackData: { items: [] as DarkKnowledgeResponse[] } },
   );
@@ -238,26 +238,26 @@ function GradWarRoom() {
           <div className="flex-1">
             <label className="block text-xs font-medium text-ink-500 mb-1">院校名称</label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-300" />
+              <Search className="absolute left-3 top-1/2 -tranink-y-1/2 h-4 w-4 text-ink-300" />
               <input
                 type="text"
                 value={searchSchool}
                 onChange={(e) => setSearchSchool(e.target.value)}
                 placeholder="如：清华大学"
-                className="w-full rounded-lg border border-paper-200 pl-9 pr-3 py-2 text-sm focus:border-blue-400 focus:outline-none"
+                className="w-full rounded-lg border border-paper-200 pl-9 pr-3 py-2 text-sm focus:border-brand-400 focus:outline-none"
               />
             </div>
           </div>
           <div className="flex-1">
             <label className="block text-xs font-medium text-ink-500 mb-1">专业名称</label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-300" />
+              <Search className="absolute left-3 top-1/2 -tranink-y-1/2 h-4 w-4 text-ink-300" />
               <input
                 type="text"
                 value={searchMajor}
                 onChange={(e) => setSearchMajor(e.target.value)}
                 placeholder="如：计算机"
-                className="w-full rounded-lg border border-paper-200 pl-9 pr-3 py-2 text-sm focus:border-blue-400 focus:outline-none"
+                className="w-full rounded-lg border border-paper-200 pl-9 pr-3 py-2 text-sm focus:border-brand-400 focus:outline-none"
               />
             </div>
           </div>
@@ -266,7 +266,7 @@ function GradWarRoom() {
             <select
               value={filterTier}
               onChange={(e) => setFilterTier(e.target.value)}
-              className="w-full rounded-lg border border-paper-200 px-3 py-2 text-sm focus:border-blue-400 focus:outline-none"
+              className="w-full rounded-lg border border-paper-200 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none"
             >
               <option value="">全部</option>
               <option value="985">985</option>
@@ -339,7 +339,7 @@ function GradWarRoom() {
             className={cn(
               "px-3 py-1.5 rounded-full text-sm transition-colors",
               activeStage === "all"
-                ? "bg-blue-600 text-white"
+                ? "bg-brand-600 text-white"
                 : "bg-paper-100 text-ink-500 hover:bg-paper-200"
             )}
           >
@@ -352,7 +352,7 @@ function GradWarRoom() {
               className={cn(
                 "px-3 py-1.5 rounded-full text-sm transition-colors",
                 activeStage === s.stage
-                  ? "bg-blue-600 text-white"
+                  ? "bg-brand-600 text-white"
                   : "bg-paper-100 text-ink-500 hover:bg-paper-200"
               )}
             >
@@ -507,7 +507,7 @@ function IntelCard({ intel }: { intel: IntelResponse }) {
 
       <button
         onClick={() => setExpanded(!expanded)}
-        className="mt-3 text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
+        className="mt-3 text-xs text-brand-600 hover:text-brand-700 flex items-center gap-1"
       >
         {expanded ? "收起" : "查看详情"}
         <ChevronRight className={cn("h-3 w-3 transition-transform", expanded && "rotate-90")} />
@@ -536,7 +536,7 @@ function CivilWarRoom() {
     "/api/civil-service/post-intel/public?limit=200",
     { fallbackData: [] },
   );
-  const { data: darkData, error: darkError, isLoading: darkLoading } = useApi<any>(
+  const { data: darkData, error: darkError, isLoading: darkLoading } = useApi<CivilServiceDarkKnowledgeResponse[]>(
     "/api/civil-service/dark-knowledge",
     { fallbackData: [] },
   );
@@ -550,7 +550,7 @@ function CivilWarRoom() {
 
   const postIntel = postData ?? [];
   const darkKnowledge: CivilServiceDarkKnowledgeResponse[] = useMemo(
-    () => (Array.isArray(darkData) ? darkData : darkData?.items ?? []),
+    () => darkData ?? [],
     [darkData],
   );
   const loading = postLoading || darkLoading;
@@ -660,7 +660,7 @@ function CivilWarRoom() {
           <div className="flex-1">
             <label className="block text-xs font-medium text-ink-500 mb-1">地区</label>
             <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-300" />
+              <MapPin className="absolute left-3 top-1/2 -tranink-y-1/2 h-4 w-4 text-ink-300" />
               <input
                 type="text"
                 value={searchRegion}
@@ -673,7 +673,7 @@ function CivilWarRoom() {
           <div className="flex-1">
             <label className="block text-xs font-medium text-ink-500 mb-1">部门</label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-300" />
+              <Search className="absolute left-3 top-1/2 -tranink-y-1/2 h-4 w-4 text-ink-300" />
               <input
                 type="text"
                 value={searchDept}
@@ -1067,7 +1067,7 @@ function CareerWarRoom() {
           <div className="flex-1">
             <label className="block text-xs font-medium text-ink-500 mb-1">公司名称</label>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-300" />
+              <Search className="absolute left-3 top-1/2 -tranink-y-1/2 h-4 w-4 text-ink-300" />
               <input
                 type="text"
                 value={searchCompany}
@@ -1363,7 +1363,7 @@ function DarkKnowledgeCard({ dk }: { dk: DarkKnowledgeResponse; color: string })
 
       <button
         onClick={() => setExpanded(!expanded)}
-        className="mt-3 text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
+        className="mt-3 text-xs text-brand-600 hover:text-brand-700 flex items-center gap-1"
       >
         {expanded ? "收起" : "查看详情"}
         <ChevronRight className={cn("h-3 w-3 transition-transform", expanded && "rotate-90")} />

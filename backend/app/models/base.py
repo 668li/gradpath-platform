@@ -1,11 +1,17 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, DateTime, String, func
+from sqlalchemy import JSON, Boolean, DateTime, Integer, BigInteger, String, false, func
 from sqlalchemy.dialects.postgresql import JSONB as _PG_JSONB
 from sqlalchemy.dialects.postgresql import UUID as _PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import TypeDecorator
+
+
+# 跨方言 BIGINT 自增主键：
+# - PostgreSQL：BIGINT（配合 autoincrement=True 生成 BIGSERIAL 语义）
+# - SQLite：回退为原生 INTEGER，触发 rowid 别名实现自增（BigInteger 在 SQLite 下不会自增）
+BigIntPK = BigInteger().with_variant(Integer, "sqlite")
 
 
 def _utcnow() -> datetime:
@@ -87,4 +93,25 @@ class TimestampMixin:
 class UUIDMixin:
     id: Mapped[uuid.UUID] = mapped_column(
         GUID(), primary_key=True, default=uuid.uuid4
+    )
+
+
+class ContractAuditMixin:
+    """系统设计 DDL 契约审计字段（t_ 前缀契约表通用）。
+
+    与 TimestampMixin 不同：字段名为 created_by/created_time/updated_by/updated_time/deleted，
+    对齐系统设计 DDL（TIMESTAMP(3) DEFAULT CURRENT_TIMESTAMP、BOOLEAN NOT NULL DEFAULT FALSE）。
+    三中心（行动任务/成长档案/复盘）与数据真实性接入层的 11 张契约表统一继承本 Mixin。
+    """
+
+    created_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    created_time: Mapped[datetime] = mapped_column(
+        DateTime, default=_utcnow, server_default=func.now()
+    )
+    updated_by: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    updated_time: Mapped[datetime] = mapped_column(
+        DateTime, default=_utcnow, server_default=func.now(), onupdate=_utcnow
+    )
+    deleted: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False, server_default=false()
     )

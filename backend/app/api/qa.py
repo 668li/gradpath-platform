@@ -86,6 +86,12 @@ def list_questions(
             search=search,
             is_resolved=is_resolved,
         )
+        # 批量查询作者信息
+        user_ids = {q.user_id for q in items}
+        user_map = {}
+        if user_ids:
+            users = db.query(User).filter(User.id.in_(user_ids)).all()
+            user_map = {u.id: u for u in users}
         return CursorPaginatedResponse(
             items=[
                 QAResponse(
@@ -102,6 +108,8 @@ def list_questions(
                     answers=[],
                     created_at=q.created_at,
                     updated_at=q.updated_at,
+                    author_name=(user_map[q.user_id].nickname or user_map[q.user_id].username or user_map[q.user_id].name) if q.user_id in user_map else None,
+                    author_avatar=user_map[q.user_id].avatar_url if q.user_id in user_map else None,
                 )
                 for q in items
             ],
@@ -118,6 +126,12 @@ def list_questions(
         search=search,
         is_resolved=is_resolved,
     )
+    # 批量查询作者信息
+    user_ids = {q.user_id for q in questions}
+    user_map = {}
+    if user_ids:
+        users = db.query(User).filter(User.id.in_(user_ids)).all()
+        user_map = {u.id: u for u in users}
     return QAListResponse(
         items=[
             QAResponse(
@@ -134,6 +148,8 @@ def list_questions(
                 answers=[],
                 created_at=q.created_at,
                 updated_at=q.updated_at,
+                author_name=(user_map[q.user_id].nickname or user_map[q.user_id].username or user_map[q.user_id].name) if q.user_id in user_map else None,
+                author_avatar=user_map[q.user_id].avatar_url if q.user_id in user_map else None,
             )
             for q in questions
         ],
@@ -156,6 +172,22 @@ def get_question_detail(
     answers, _ = get_answers(db, question_id)
     increment_question_view(db, question_id)
 
+    # 查询问题作者和回答作者
+    all_user_ids = {question.user_id} | {a.user_id for a in answers}
+    user_map = {}
+    if all_user_ids:
+        users = db.query(User).filter(User.id.in_(all_user_ids)).all()
+        user_map = {u.id: u for u in users}
+
+    def _author_fields(uid):
+        u = user_map.get(uid)
+        if not u:
+            return {"author_name": None, "author_avatar": None}
+        return {
+            "author_name": u.nickname or u.username or u.name,
+            "author_avatar": u.avatar_url,
+        }
+
     return QAResponse(
         id=question.id,
         title=question.title,
@@ -167,9 +199,13 @@ def get_question_detail(
         answer_count=question.answer_count,
         is_resolved=question.is_resolved,
         best_answer_id=question.best_answer_id,
-        answers=[QAAnswerResponse.model_validate(a) for a in answers],
+        answers=[
+            QAAnswerResponse.model_validate(a).model_copy(update=_author_fields(a.user_id))
+            for a in answers
+        ],
         created_at=question.created_at,
         updated_at=question.updated_at,
+        **_author_fields(question.user_id),
     )
 
 

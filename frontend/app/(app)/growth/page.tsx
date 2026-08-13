@@ -15,10 +15,20 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { growthPatternsApi } from "@/lib/api";
+import type { GrowthPatternResponse } from "@/types";
 import { Button } from "@/components/ui/form-controls";
 import { ListSkeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty";
 import { useToast } from "@/components/ui/toast";
+
+// 成长快照历史项（/api/growth-patterns/history → { items: [...] }）
+interface GrowthSnapshotItem {
+  id: string;
+  period: string;
+  growth_score: number;
+  pattern_count: number;
+  created_at: string | null;
+}
 
 const tools = [
   { label: "个人看板", icon: LayoutDashboard, href: "/dashboard", color: "text-blue-500", desc: "总览成长数据、目标进度和关键指标" },
@@ -35,8 +45,8 @@ export default function GrowthPage() {
   const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(false);
-  const [result, setResult] = useState<any>(null);
-  const [history, setHistory] = useState<any[]>([]);
+  const [result, setResult] = useState<GrowthPatternResponse | null>(null);
+  const [history, setHistory] = useState<GrowthSnapshotItem[]>([]);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -104,21 +114,38 @@ export default function GrowthPage() {
               </p>
             </div>
             <div className="card col-span-2 p-5">
-              <p className="mb-3 text-sm font-medium text-ink-600">成长得分历史</p>
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-sm font-medium text-ink-600">成长得分历史</p>
+                {history.length >= 2 && (() => {
+                  const latest = history[history.length - 1]?.growth_score ?? 0;
+                  const prev = history[history.length - 2]?.growth_score ?? 0;
+                  const delta = latest - prev;
+                  return (
+                    <span className={`flex items-center gap-1 text-xs font-medium ${delta >= 0 ? "text-green-600" : "text-red-600"}`}>
+                      <TrendingUp className={`h-3.5 w-3.5 ${delta < 0 ? "rotate-180" : ""}`} />
+                      {delta >= 0 ? "+" : ""}{delta} vs 上期
+                    </span>
+                  );
+                })()}
+              </div>
               {history.length === 0 ? (
                 <p className="text-sm text-ink-400">暂无历史，点击「重新分析」生成首个快照。</p>
               ) : (
                 <div className="flex items-end gap-2 h-32">
-                  {history.map((h) => (
-                    <div key={h.id} className="flex flex-1 flex-col items-center gap-1">
-                      <div
-                        className="w-full rounded-t bg-brand-500/70"
-                        style={{ height: `${Math.max(8, h.growth_score || 0)}%` }}
-                        title={`${h.period}: ${h.growth_score ?? 0}`}
-                      />
-                      <span className="text-[10px] text-ink-400">{h.period}</span>
-                    </div>
-                  ))}
+                  {(() => {
+                    const maxScore = Math.max(...history.map((h) => h.growth_score || 0), 1);
+                    return history.map((h) => (
+                      <div key={h.id} className="flex flex-1 flex-col items-center gap-1">
+                        <span className="text-[10px] font-medium text-ink-600">{h.growth_score ?? 0}</span>
+                        <div
+                          className="w-full rounded-t bg-brand-500/70 transition-all hover:bg-brand-500"
+                          style={{ height: `${Math.max(8, ((h.growth_score || 0) / maxScore) * 100)}%` }}
+                          title={`${h.period}: ${h.growth_score ?? 0} 分`}
+                        />
+                        <span className="text-[10px] text-ink-400">{h.period}</span>
+                      </div>
+                    ));
+                  })()}
                 </div>
               )}
             </div>
@@ -129,9 +156,9 @@ export default function GrowthPage() {
             <h2 className="mb-3 flex items-center gap-2 font-semibold text-ink-800">
               <Lightbulb className="h-5 w-5 text-brand-500" /> 发现的成长模式
             </h2>
-            {result?.patterns?.length > 0 ? (
+            {(result?.patterns?.length ?? 0) > 0 ? (
               <div className="space-y-3">
-                {result.patterns.map((p: any, i: number) => (
+                {result?.patterns.map((p, i) => (
                   <div key={`${p.title}-${i}`} className="rounded-lg border border-paper-200 p-3">
                     <p className="font-medium text-ink-800">{p.title}</p>
                     <p className="mt-1 text-sm text-ink-500">{p.description}</p>

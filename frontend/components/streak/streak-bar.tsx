@@ -38,7 +38,7 @@ export function StreakBar({ stats, onRestDay, restDayLoading }: StreakBarProps) 
             "flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl text-white shadow-lg transition-all duration-500",
             today_active
               ? "bg-gradient-to-br from-brand-500 to-orange-500 shadow-orange-500/25"
-              : "bg-gradient-to-br from-slate-400 to-slate-500 shadow-slate-400/25"
+              : "bg-gradient-to-br from-ink-400 to-ink-500 shadow-ink-400/25"
           )}
         >
           <Flame

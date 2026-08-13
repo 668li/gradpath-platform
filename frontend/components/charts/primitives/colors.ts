@@ -1,23 +1,23 @@
 // 统一色板：集中所有图表使用的颜色，避免散落在各组件里。
 // brand/* 为设计系统 CSS 变量；其余为雷达 / 饼图 / 折线固定的具体色值。
 
-// 品牌色阶（柱状体渐变用）
+// 品牌色阶（柱状体渐变用）— 直接使用 tailwind.config.ts 中的 brand hex
 export const BRAND_SCALE = [
-  "var(--color-brand-400, #34d399)",
-  "var(--color-brand-500, #10b981)",
-  "var(--color-brand-600, #059669)",
-  "var(--color-brand-700, #047857)",
-  "var(--color-brand-800, #065f46)",
+  "#38a887", // brand-400
+  "#1a8c6e", // brand-500
+  "#0d7159", // brand-600
+  "#0a5a48", // brand-700
+  "#094838", // brand-800
 ];
 
-// 通用折线 / 主色
-export const BRAND_LINE = "var(--color-brand-600, #0d7159)";
-export const GRID_COLOR = "var(--color-paper-200, #f5f3ec)";
-export const TICK_COLOR = "var(--color-ink-400, #7a7468)";
+// 通用折线 / 主色 — 直接 hex，与 tailwind.config.ts 对齐
+export const BRAND_LINE = "#0d7159"; // brand-600
+export const GRID_COLOR = "#f5f3ec"; // paper-200
+export const TICK_COLOR = "#7a7468"; // ink-400
 
 // 雷达对比多系列配色（院校对比 / 技能 / 霍兰德 / 人生轮复用）
 export const RADAR_COLORS = [
-  "var(--color-brand-600, #0d7159)",
+  "#0d7159", // brand-600
   "#3377f6",
   "#d97706",
   "#dc2626",

@@ -47,7 +47,7 @@ export const BadgeCard = memo(function BadgeCard({ badge, earned }: BadgeCardPro
         "relative rounded-xl border p-4 text-center transition-all",
         earned
           ? "border-brand-200 bg-brand-50"
-          : "border-slate-200 bg-slate-50 opacity-50 grayscale",
+          : "border-ink-200 bg-ink-50 opacity-50 grayscale",
       )}
     >
       {earned && (
@@ -58,7 +58,7 @@ export const BadgeCard = memo(function BadgeCard({ badge, earned }: BadgeCardPro
       <div
         className={cn(
           "mx-auto flex h-12 w-12 items-center justify-center rounded-full",
-          earned ? "bg-brand-100 text-brand-600" : "bg-slate-200 text-slate-400",
+          earned ? "bg-brand-100 text-brand-600" : "bg-ink-200 text-ink-400",
         )}
       >
         <Icon className="h-6 w-6" />
@@ -66,12 +66,12 @@ export const BadgeCard = memo(function BadgeCard({ badge, earned }: BadgeCardPro
       <p
         className={cn(
           "mt-2 text-sm font-medium",
-          earned ? "text-slate-800" : "text-slate-500",
+          earned ? "text-ink-800" : "text-ink-500",
         )}
       >
         {badge.name}
       </p>
-      <p className="mt-1 text-xs leading-relaxed text-slate-500">
+      <p className="mt-1 text-xs leading-relaxed text-ink-500">
         {badge.description}
       </p>
     </div>

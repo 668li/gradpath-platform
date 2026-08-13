@@ -903,10 +903,10 @@ function RiskAssessmentPanel({ positioning }: { positioning: PositioningResponse
   };
 
   return (
-    <div className="rounded-lg bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 p-4">
+    <div className="rounded-lg bg-gradient-to-br from-ink-50 to-ink-100 border border-ink-200 p-4">
       <div className="flex items-center gap-2 mb-4">
-        <BarChart3 className="h-4 w-4 text-slate-700" />
-        <h4 className="text-sm font-semibold text-slate-900">风险评估</h4>
+        <BarChart3 className="h-4 w-4 text-ink-700" />
+        <h4 className="text-sm font-semibold text-ink-900">风险评估</h4>
       </div>
 
       <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
@@ -918,16 +918,16 @@ function RiskAssessmentPanel({ positioning }: { positioning: PositioningResponse
           </div>
           <div className="space-y-1.5">
             <div>
-              <p className="text-xs text-slate-600">平均录取概率</p>
+              <p className="text-xs text-ink-600">平均录取概率</p>
               <p className="text-sm font-bold text-red-600">{avgReachProb.toFixed(0)}%</p>
             </div>
             <div>
-              <p className="text-xs text-slate-600">预估报录比</p>
-              <p className="text-sm font-semibold text-slate-900">{estimateRatio(avgReachProb)}</p>
+              <p className="text-xs text-ink-600">预估报录比</p>
+              <p className="text-sm font-semibold text-ink-900">{estimateRatio(avgReachProb)}</p>
             </div>
             <div>
-              <p className="text-xs text-slate-600">复试淘汰率</p>
-              <p className="text-sm font-semibold text-slate-900">{estimateRetestElimination(avgReachProb)}</p>
+              <p className="text-xs text-ink-600">复试淘汰率</p>
+              <p className="text-sm font-semibold text-ink-900">{estimateRetestElimination(avgReachProb)}</p>
             </div>
           </div>
         </div>
@@ -940,16 +940,16 @@ function RiskAssessmentPanel({ positioning }: { positioning: PositioningResponse
           </div>
           <div className="space-y-1.5">
             <div>
-              <p className="text-xs text-slate-600">平均录取概率</p>
+              <p className="text-xs text-ink-600">平均录取概率</p>
               <p className="text-sm font-bold text-blue-600">{avgTargetProb.toFixed(0)}%</p>
             </div>
             <div>
-              <p className="text-xs text-slate-600">预估报录比</p>
-              <p className="text-sm font-semibold text-slate-900">{estimateRatio(avgTargetProb)}</p>
+              <p className="text-xs text-ink-600">预估报录比</p>
+              <p className="text-sm font-semibold text-ink-900">{estimateRatio(avgTargetProb)}</p>
             </div>
             <div>
-              <p className="text-xs text-slate-600">复试淘汰率</p>
-              <p className="text-sm font-semibold text-slate-900">{estimateRetestElimination(avgTargetProb)}</p>
+              <p className="text-xs text-ink-600">复试淘汰率</p>
+              <p className="text-sm font-semibold text-ink-900">{estimateRetestElimination(avgTargetProb)}</p>
             </div>
           </div>
         </div>
@@ -962,16 +962,16 @@ function RiskAssessmentPanel({ positioning }: { positioning: PositioningResponse
           </div>
           <div className="space-y-1.5">
             <div>
-              <p className="text-xs text-slate-600">平均录取概率</p>
+              <p className="text-xs text-ink-600">平均录取概率</p>
               <p className="text-sm font-bold text-green-600">{avgSafetyProb.toFixed(0)}%</p>
             </div>
             <div>
-              <p className="text-xs text-slate-600">预估报录比</p>
-              <p className="text-sm font-semibold text-slate-900">{estimateRatio(avgSafetyProb)}</p>
+              <p className="text-xs text-ink-600">预估报录比</p>
+              <p className="text-sm font-semibold text-ink-900">{estimateRatio(avgSafetyProb)}</p>
             </div>
             <div>
-              <p className="text-xs text-slate-600">复试淘汰率</p>
-              <p className="text-sm font-semibold text-slate-900">{estimateRetestElimination(avgSafetyProb)}</p>
+              <p className="text-xs text-ink-600">复试淘汰率</p>
+              <p className="text-sm font-semibold text-ink-900">{estimateRetestElimination(avgSafetyProb)}</p>
             </div>
           </div>
         </div>

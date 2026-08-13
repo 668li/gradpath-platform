@@ -16,6 +16,9 @@ if _BACKEND_DIR not in sys.path:
 
 from app.crawlers.base_crawler import BaseCrawler
 from app.crawlers.registry import register_crawler
+from app.database import SessionLocal
+from app.models.crawler_run import CrawlerRun
+from app.services.research_ingestion import store_research_items
 
 logger = logging.getLogger(__name__)
 
@@ -147,12 +150,68 @@ class WebArticleCrawler(BaseCrawler):
         return "\n".join(content_lines).strip()
 
     def store(self, items: list[dict], db: Any = None) -> int:
-        """将结果保存到 /tmp/web_article_research.json，返回写入条数。"""
-        OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-        with OUTPUT_PATH.open("w", encoding="utf-8") as f:
-            json.dump(items, f, ensure_ascii=False, indent=2)
-        logger.info(f"[{self.name}] 已保存 {len(items)} 条到 {OUTPUT_PATH}")
-        return len(items)
+        """将解析结果入库 t_external_research_item + t_review_queue_item。
+
+        方案 C 主线 c（F9）：落盘爬虫改入库。
+        - run() 被覆盖且无 db 参数，此处 db=None 时自建 session 兜底
+        - 先创建一条 CrawlerRun 运行记录，再统一入库
+        - OUTPUT_PATH 落盘保留为可选兼容：config.get("dump_json", False) 为 True 时才写
+        """
+        own_db = False
+        if db is None:
+            db = SessionLocal()
+            own_db = True
+        try:
+            run_record = CrawlerRun(
+                source_name=self.name,
+                category=self.category,
+                status="running",
+            )
+            db.add(run_record)
+            db.commit()
+            db.refresh(run_record)
+
+            result = store_research_items(
+                db,
+                crawler_name=self.name,
+                item_type="dark_knowledge",
+                items=items,
+                source_platform="web",
+                run_id=str(run_record.id),
+            )
+
+            run_record.status = "success"
+            run_record.items_fetched = self.stats.get("fetched", 0)
+            run_record.items_stored = result["inserted"]
+            run_record.items_duplicates = result["duplicated"]
+            run_record.stored_count = result["inserted"]
+            run_record.duplicate_count = result["duplicated"]
+            run_record.source_meta = {
+                "urls": self.urls,
+                "platform": "web",
+            }
+            db.commit()
+
+            self.stats["stored"] = result["inserted"]
+            self.stats["duplicates"] += result["duplicated"]
+
+            # 可选兼容：dump_json 为 True 时才写临时文件（CLI 老用法）
+            if self.config.get("dump_json", False):
+                OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+                with OUTPUT_PATH.open("w", encoding="utf-8") as f:
+                    json.dump(items, f, ensure_ascii=False, indent=2)
+                logger.info(f"[{self.name}] 已保存 {len(items)} 条到 {OUTPUT_PATH}")
+
+            logger.info(
+                f"[{self.name}] 入库 {result['inserted']} 条新数据，去重 {result['duplicated']} 条"
+            )
+            return result["inserted"]
+        except Exception:
+            db.rollback()
+            raise
+        finally:
+            if own_db:
+                db.close()
 
     def run(self, db: Any = None) -> dict:
         """执行 fetch → parse → store，不依赖数据库会话。"""

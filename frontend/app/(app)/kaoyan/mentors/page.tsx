@@ -17,6 +17,7 @@ export default function MentorListPage() {
   const [university, setUniversity] = useState("");
   const [department, setDepartment] = useState("");
   const [minRating, setMinRating] = useState("");
+  const [sortBy, setSortBy] = useState("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
 
@@ -30,6 +31,7 @@ export default function MentorListPage() {
         university: university || undefined,
         department: department || undefined,
         min_rating: minRating ? parseFloat(minRating) : undefined,
+        order_by: sortBy || undefined,
       });
       setMentors(res.items);
       setTotal(res.total);
@@ -38,7 +40,7 @@ export default function MentorListPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, university, department, minRating]);
+  }, [page, search, university, department, minRating, sortBy]);
 
   useEffect(() => {
     loadMentors();
@@ -84,7 +86,7 @@ export default function MentorListPage() {
             <Filter className="h-4 w-4 text-ink-400" />
             <h2 className="text-sm font-semibold text-ink-700">搜索与筛选</h2>
           </div>
-          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
             <div className="sm:col-span-2 lg:col-span-1">
               <Input
                 placeholder="搜索导师姓名..."
@@ -129,6 +131,15 @@ export default function MentorListPage() {
               <option value="4.5">4.5+ 优秀</option>
               <option value="4">4.0+ 良好</option>
               <option value="3.5">3.5+ 中等</option>
+            </Select>
+            <Select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+            >
+              <option value="">综合排序</option>
+              <option value="rating_desc">评分最高</option>
+              <option value="papers_desc">论文最多</option>
+              <option value="reviews_desc">评价最多</option>
             </Select>
           </div>
         </div>

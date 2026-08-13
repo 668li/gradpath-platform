@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Bot, Sparkles, MessageSquare, RefreshCw, Send } from "lucide-react";
-import { aiButlerApi } from "@/lib/api/ai";
+import { aiButlerApi, type AIButlerScanResponse } from "@/lib/api/ai";
 import { Button, Textarea } from "@/components/ui/form-controls";
 import { useToast } from "@/components/ui/toast";
 import { ListSkeleton } from "@/components/ui/skeleton";
@@ -65,7 +65,7 @@ export default function AIButlerPage() {
 function ScanPanel() {
   const toast = useToast();
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<AIButlerScanResponse | null>(null);
 
   const run = useCallback(() => {
     setLoading(true);
@@ -130,7 +130,7 @@ function ScanPanel() {
         {profile.active_plans?.length > 0 && (
           <div className="mt-4 space-y-1 text-sm text-ink-600">
             <p className="font-medium text-ink-700">进行中的规划：</p>
-            {profile.active_plans.map((p: any, i: number) => (
+            {profile.active_plans.map((p, i) => (
               <p key={`${p.goal}-${i}`}>· {p.goal}（进度 {p.progress} · {p.timeline_months} 个月）</p>
             ))}
           </div>
@@ -141,7 +141,7 @@ function ScanPanel() {
       <section className="rounded-xl border border-paper-300 bg-white p-5">
         <h2 className="mb-3 font-semibold text-ink-800">专属行动清单</h2>
         <div className="space-y-3">
-          {plan.map((item: any, i: number) => {
+          {plan.map((item, i) => {
             const pr = PRIORITY_LABEL[item.priority] || PRIORITY_LABEL.low;
             return (
               <div key={`${item.title}-${i}`} className="flex gap-3 rounded-lg border border-paper-200 p-3">

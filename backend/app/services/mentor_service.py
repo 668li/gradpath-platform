@@ -46,8 +46,9 @@ def get_mentors(
     min_rating: Optional[float] = None,
     enrollment_status: Optional[str] = None,
     search: Optional[str] = None,
+    order_by: Optional[str] = None,
 ) -> tuple[List[Mentor], int]:
-    """获取导师列表（支持筛选）"""
+    """获取导师列表（支持筛选 + 排序）"""
     query = db.query(Mentor)
     
     # 筛选条件
@@ -76,9 +77,17 @@ def get_mentors(
     # 统计总数
     total = query.count()
     
+    # 排序
+    if order_by == "papers_desc":
+        order_clause = Mentor.paper_count.desc()
+    elif order_by == "reviews_desc":
+        order_clause = Mentor.review_count.desc()
+    else:
+        order_clause = Mentor.avg_rating.desc()
+    
     # 分页
     offset = (page - 1) * page_size
-    mentors = query.order_by(Mentor.avg_rating.desc(), Mentor.review_count.desc()).offset(offset).limit(page_size).all()
+    mentors = query.order_by(order_clause, Mentor.review_count.desc()).offset(offset).limit(page_size).all()
     
     return mentors, total
 
@@ -214,32 +223,42 @@ def like_review(db: Session, review_id: UUID) -> Optional[MentorReview]:
 
 
 def _update_mentor_rating_stats(db: Session, mentor_id: UUID):
-    """更新导师评分统计"""
-    # 查询所有已通过的评价
-    reviews = db.query(MentorReview).filter(
+    """更新导师评分统计。性能优化：使用 SQL 聚合替代 Python 循环。"""
+    from sqlalchemy import func
+
+    mentor = db.query(Mentor).filter(Mentor.id == mentor_id).first()
+    if not mentor:
+        return
+
+    # 单条 SQL 聚合查询，不再加载全部评价到内存
+    row = db.query(
+        func.count(MentorReview.id),
+        func.avg(MentorReview.overall_rating),
+        func.avg(MentorReview.rating_academic),
+        func.avg(MentorReview.rating_guidance),
+        func.avg(MentorReview.rating_relationship),
+        func.avg(MentorReview.rating_funding),
+        func.avg(MentorReview.rating_workload),
+        func.avg(MentorReview.rating_career),
+    ).filter(
         and_(
             MentorReview.mentor_id == mentor_id,
             MentorReview.review_status == "approved"
         )
-    ).all()
-    
-    if not reviews:
+    ).first()
+
+    if not row or row[0] == 0:
         return
-    
-    # 计算平均分
-    mentor = db.query(Mentor).filter(Mentor.id == mentor_id).first()
-    if not mentor:
-        return
-    
-    mentor.review_count = len(reviews)
-    mentor.avg_rating = sum(r.overall_rating for r in reviews) / len(reviews)
-    mentor.rating_academic = sum(r.rating_academic for r in reviews) / len(reviews)
-    mentor.rating_guidance = sum(r.rating_guidance for r in reviews) / len(reviews)
-    mentor.rating_relationship = sum(r.rating_relationship for r in reviews) / len(reviews)
-    mentor.rating_funding = sum(r.rating_funding for r in reviews) / len(reviews)
-    mentor.rating_workload = sum(r.rating_workload for r in reviews) / len(reviews)
-    mentor.rating_career = sum(r.rating_career for r in reviews) / len(reviews)
-    
+
+    mentor.review_count = row[0]
+    mentor.avg_rating = float(row[1] or 0)
+    mentor.rating_academic = float(row[2] or 0)
+    mentor.rating_guidance = float(row[3] or 0)
+    mentor.rating_relationship = float(row[4] or 0)
+    mentor.rating_funding = float(row[5] or 0)
+    mentor.rating_workload = float(row[6] or 0)
+    mentor.rating_career = float(row[7] or 0)
+
     db.commit()
 
 

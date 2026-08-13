@@ -39,13 +39,14 @@ router = APIRouter(prefix="/api/knowledge", tags=["知识库"])
 def list_all(
     category: str | None = Query(None, description="分类过滤"),
     tags: list[str] | None = Query(None, description="标签过滤（多个为 OR）"),
+    q: str | None = Query(None, description="关键词搜索（title/content）"),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    """分页查询知识条目（需登录）。"""
-    items, total = list_articles(db, category=category, tags=tags, page=page, page_size=page_size)
+    """分页查询知识条目（需登录），支持关键词搜索。"""
+    items, total = list_articles(db, category=category, tags=tags, q=q, page=page, page_size=page_size)
     return {"items": items, "total": total, "page": page, "page_size": page_size}
 
 

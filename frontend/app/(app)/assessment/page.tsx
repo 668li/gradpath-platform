@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   Briefcase,
   Users,
@@ -16,6 +17,15 @@ import {
   ArrowLeft,
   Check,
   ClipboardList,
+  GraduationCap,
+  Route,
+  MapPin,
+  ArrowRight,
+  Zap,
+  AlertTriangle,
+  Target,
+  Lightbulb,
+  Eye,
 } from "lucide-react";
 import { assessmentApi } from "@/lib/api";
 import { cn, formatDate } from "@/lib/utils";
@@ -130,10 +140,127 @@ const TYPE_NAMES: Record<AssessmentType, string> = {
   disc: "DISC",
 };
 
+// ===== 霍兰德 → 岗位匹配矩阵（灵感：职向"所以呢"转化）=====
+interface HollandRole {
+  role: string;
+  codes: readonly string[];
+  why: string;
+  challenge: string;
+}
+
+const HOLLAND_ROLE_MATRIX: readonly HollandRole[] = [
+  {
+    role: "软件工程师",
+    codes: ["RIC", "RSC", "RAS"],
+    why: "你的现实型+研究型特质契合编码与系统设计所需的动手解题能力",
+    challenge: "需要主动补足团队协作与跨部门沟通能力",
+  },
+  {
+    role: "产品经理",
+    codes: ["ESA", "EAS", "ECS"],
+    why: "你的企业型+社会型特质匹配产品规划与跨团队推动",
+    challenge: "需要在技术深度与数据决策间保持平衡",
+  },
+  {
+    role: "数据分析师",
+    codes: ["ISC", "IEC", "IAC"],
+    why: "你的研究型+常规型特质适合数据建模与规律挖掘",
+    challenge: "需要把分析结论转化为业务可执行的决策建议",
+  },
+  {
+    role: "UI设计师",
+    codes: ["AES", "AIS", "AER"],
+    why: "你的艺术型+企业型特质契合视觉表达与体验创新",
+    challenge: "需要兼顾商业约束与用户研究的客观性",
+  },
+  {
+    role: "考研科研",
+    codes: ["ISR", "IAR", "IES"],
+    why: "你的研究型主导特质高度契合学术深耕与论文写作",
+    challenge: "需要耐受长期不确定性并主动构建学术人脉",
+  },
+  {
+    role: "公务员",
+    codes: ["SCE", "SEC", "CSE"],
+    why: "你的社会型+常规型特质适配公共服务与规则执行",
+    challenge: "需要在稳定环境中主动寻找成长与价值突破口",
+  },
+  {
+    role: "市场营销",
+    codes: ["ESA", "EAS", "SEC"],
+    why: "你的企业型+艺术型特质契合品牌传播与用户触达",
+    challenge: "需要建立数据驱动的复盘习惯避免纯创意决策",
+  },
+  {
+    role: "人力资源",
+    codes: ["SCE", "SEC", "SAE"],
+    why: "你的社会型+常规型特质匹配组织发展与员工关系",
+    challenge: "需要在同理心与制度刚性之间保持平衡",
+  },
+  {
+    role: "财务分析",
+    codes: ["CSE", "CES", "ISC"],
+    why: "你的常规型+研究型特质契合数据严谨与风险控制",
+    challenge: "需要主动提升业务洞察与跨部门影响力",
+  },
+  {
+    role: "教师",
+    codes: ["SAE", "SEC", "SIA"],
+    why: "你的社会型+艺术型特质适配知识传递与启发引导",
+    challenge: "需要在长期重复教学中保持创新与耐心",
+  },
+];
+
+// 匹配度计算：交集维度 / 3 * 80 + 顺序匹配 / 3 * 20（满分 100）
+function calculateHollandMatch(
+  userCode: string,
+  roleCodes: readonly string[],
+): { match: number; bestCode: string } {
+  const userTop3 = userCode.slice(0, 3).toUpperCase().split("");
+  if (userTop3.length < 3) return { match: 0, bestCode: roleCodes[0] ?? "" };
+  let bestMatch = 0;
+  let bestCode = roleCodes[0] ?? "";
+  for (const code of roleCodes) {
+    const roleTop3 = code.toUpperCase().split("");
+    const intersection = userTop3.filter((c) => roleTop3.includes(c)).length;
+    const positionMatches = userTop3.filter((c, i) => roleTop3[i] === c).length;
+    const score = (intersection / 3) * 80 + (positionMatches / 3) * 20;
+    if (score > bestMatch) {
+      bestMatch = score;
+      bestCode = code;
+    }
+  }
+  return { match: Math.round(bestMatch), bestCode };
+}
+
+// ===== 社会赞许性检测（灵感：奕言测谎机制轻量化）=====
+const STRONG_AGREE_WORDS = ["非常", "完全", "总是", "极其", "强烈", "完全符合", "非常同意", "非常符合"];
+
+function detectSocialDesirability(
+  questions: Question[],
+  answers: Record<string, string>,
+): { show: boolean; ratio: number; strongCount: number; total: number } {
+  let total = 0;
+  let strongCount = 0;
+  for (const q of questions) {
+    const val = answers[q.id];
+    if (!val) continue;
+    const opt = q.options.find((o) => o.value === val);
+    if (!opt) continue;
+    total++;
+    if (STRONG_AGREE_WORDS.some((w) => opt.label.includes(w))) {
+      strongCount++;
+    }
+  }
+  const ratio = total > 0 ? strongCount / total : 0;
+  return { show: total >= 5 && ratio > 0.8, ratio, strongCount, total };
+}
+
 type View = "select" | "quiz" | "result" | "history";
 
 export default function AssessmentPage() {
   const toast = useToast();
+  const searchParams = useSearchParams();
   const [view, setView] = useState<View>("select");
   const [selectedType, setSelectedType] = useState<AssessmentType | null>(null);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -143,6 +270,8 @@ export default function AssessmentPage() {
   const [result, setResult] = useState<AssessmentResponse | null>(null);
   const [history, setHistory] = useState<AssessmentResponse[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
+  // 防止 URL 参数重复触发自动启动
+  const quickStartedRef = useRef(false);
 
   // 加载历史记录
   useEffect(() => {
@@ -173,6 +302,20 @@ export default function AssessmentPage() {
     },
     [toast],
   );
+
+  // 支持 /assessment?type=holland 快速启动（灵感：霍兰德方舟极速测评）
+  useEffect(() => {
+    const typeParam = searchParams.get("type");
+    if (
+      typeParam === "holland" &&
+      view === "select" &&
+      !quickStartedRef.current &&
+      !loading
+    ) {
+      quickStartedRef.current = true;
+      startAssessment("holland");
+    }
+  }, [searchParams, view, loading, startAssessment]);
 
   const handleAnswer = useCallback((qId: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [qId]: value }));
@@ -242,6 +385,8 @@ export default function AssessmentPage() {
     return (
       <ResultView
         result={result}
+        questions={questions}
+        answers={answers}
         onRetake={retake}
         onSwitch={switchAssessment}
       />
@@ -269,6 +414,42 @@ export default function AssessmentPage() {
         <p className="text-sm text-ink-400 mt-2 leading-relaxed">
           选择一项测评，深入了解你的职业兴趣、人格特质与行为风格
         </p>
+      </div>
+
+      {/* 极速测评提示（灵感：霍兰德方舟 3-5 分钟极速测评）*/}
+      <div className="rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50 p-4">
+        <div className="flex items-start gap-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
+            <Zap className="h-4 w-4" />
+          </span>
+          <div className="flex-1 min-w-0 space-y-2">
+            <h3 className="font-display text-sm font-semibold text-ink-800">
+              时间紧张？先做极速测评
+            </h3>
+            <p className="text-xs text-ink-500 leading-relaxed">
+              完整测评约 15-20 分钟，可获得最准确结果。如果时间紧张，可以先做霍兰德部分（3-5 分钟），后续再补充其他测评。
+            </p>
+            <div className="flex flex-wrap gap-2 pt-1">
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={() => startAssessment("holland")}
+                loading={loading}
+                disabled={loading}
+              >
+                <Zap className="h-3.5 w-3.5" />
+                快速开始（仅霍兰德）
+              </Button>
+              <Link
+                href="/assessment?type=holland"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-50"
+              >
+                复制极速链接
+                <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -351,10 +532,56 @@ function QuizView({
   submitting: boolean;
 }) {
   const meta = getMeta(type);
+  const [currentIdx, setCurrentIdx] = useState(0);
   const answeredCount = questions.filter((q) => answers[q.id]).length;
   const progress = questions.length ? (answeredCount / questions.length) * 100 : 0;
   // 大五采用 Likert 5 级量表，横向排列
   const isLikert = type === "big_five";
+
+  const currentQuestion = questions[currentIdx];
+  const isLast = currentIdx === questions.length - 1;
+  const allAnswered = answeredCount === questions.length;
+
+  // 自适应提示：检测连续相同选项（灵感：Placify 自适应出题的轻量化变体）
+  const maxConsecutiveSame = (() => {
+    let maxStreak = 0;
+    let currentStreak = 0;
+    let currentValue: string | null = null;
+    for (const q of questions) {
+      const v = answers[q.id];
+      if (!v) {
+        currentStreak = 0;
+        currentValue = null;
+        continue;
+      }
+      if (v === currentValue) {
+        currentStreak++;
+      } else {
+        currentStreak = 1;
+        currentValue = v;
+      }
+      if (currentStreak > maxStreak) maxStreak = currentStreak;
+    }
+    return maxStreak;
+  })();
+  const showStreakHint = maxConsecutiveSame >= 5;
+
+  // 作答后短暂高亮，然后自动跳转下一题
+  const handleSelect = (qId: string, value: string) => {
+    onAnswer(qId, value);
+    if (!isLast) {
+      setTimeout(() => setCurrentIdx((i) => Math.min(i + 1, questions.length - 1)), 350);
+    }
+  };
+
+  // 找到第一个未作答的题目（用于"检查未答题"跳转）
+  const jumpToFirstUnanswered = () => {
+    const idx = questions.findIndex((q) => !answers[q.id]);
+    if (idx >= 0) setCurrentIdx(idx);
+  };
+
+  if (!currentQuestion) return null;
+  const selected = answers[currentQuestion.id];
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
@@ -380,7 +607,7 @@ function QuizView({
         <div>
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-ink-600">
-              已作答 {answeredCount} / {questions.length} 题
+              第 {currentIdx + 1} / {questions.length} 题 · 已作答 {answeredCount} 题
             </span>
             <span className="text-xs text-ink-400">{Math.round(progress)}% 完成</span>
           </div>
@@ -393,112 +620,129 @@ function QuizView({
         </div>
       </div>
 
-      {/* 题目列表（全部显示，可滚动） */}
-      <div className="space-y-4">
-        {questions.map((q, idx) => {
-          const selected = answers[q.id];
-          return (
-            <div key={q.id} className="card space-y-3">
-              <div className="flex items-start gap-3">
-                <span
+      {/* 当前题目（一题一页） */}
+      <div key={currentQuestion.id} className="card space-y-4 py-8 animate-fade-in">
+        <div className="flex items-start gap-3">
+          <span
+            className={cn(
+              "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold",
+              meta.theme.iconBg,
+              meta.theme.iconText,
+            )}
+          >
+            {currentIdx + 1}
+          </span>
+          <h2 className="flex-1 font-display text-lg font-semibold text-ink-800 leading-relaxed pt-1">
+            {currentQuestion.question}
+          </h2>
+        </div>
+        <div className={cn(isLikert ? "grid grid-cols-5 gap-2" : "space-y-2")}>
+          {currentQuestion.options.map((opt) => {
+            const isSel = selected === opt.value;
+            if (isLikert) {
+              return (
+                <button
+                  key={opt.value}
+                  onClick={() => handleSelect(currentQuestion.id, opt.value)}
+                  title={opt.label}
                   className={cn(
-                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold",
-                    meta.theme.iconBg,
-                    meta.theme.iconText,
+                    "flex flex-col items-center gap-1 rounded-lg border p-3 transition-all",
+                    isSel
+                      ? cn(meta.theme.hoverBorder, "bg-paper-50 shadow-sm")
+                      : "border-paper-200 bg-white hover:bg-paper-50",
                   )}
                 >
-                  {idx + 1}
+                  <span
+                    className={cn(
+                      "flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold transition-colors",
+                      isSel
+                        ? cn(meta.theme.bar, "text-white")
+                        : "bg-paper-200 text-ink-400",
+                    )}
+                  >
+                    {opt.value}
+                  </span>
+                  <span className="text-[10px] text-ink-500 text-center leading-tight line-clamp-2">
+                    {opt.label}
+                  </span>
+                </button>
+              );
+            }
+            return (
+              <button
+                key={opt.value}
+                onClick={() => handleSelect(currentQuestion.id, opt.value)}
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-xl border p-4 text-left transition-all",
+                  isSel
+                    ? cn(meta.theme.hoverBorder, "bg-paper-50 shadow-sm")
+                    : "border-paper-300 bg-white hover:bg-paper-50",
+                )}
+              >
+                <span
+                  className={cn(
+                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold transition-colors",
+                    isSel
+                      ? cn(meta.theme.bar, "text-white")
+                      : "bg-paper-200 text-ink-400",
+                  )}
+                >
+                  {isSel ? <Check className="h-4 w-4" /> : opt.value}
                 </span>
-                <h2 className="flex-1 font-display text-base font-semibold text-ink-800 leading-relaxed pt-0.5">
-                  {q.question}
-                </h2>
-              </div>
-              <div className={cn(isLikert ? "grid grid-cols-5 gap-2" : "space-y-2")}>
-                {q.options.map((opt) => {
-                  const isSel = selected === opt.value;
-                  if (isLikert) {
-                    return (
-                      <button
-                        key={opt.value}
-                        onClick={() => onAnswer(q.id, opt.value)}
-                        title={opt.label}
-                        className={cn(
-                          "flex flex-col items-center gap-1 rounded-lg border p-2 transition-all",
-                          isSel
-                            ? cn(meta.theme.hoverBorder, "bg-paper-50 shadow-sm")
-                            : "border-paper-200 bg-white hover:bg-paper-50",
-                        )}
-                      >
-                        <span
-                          className={cn(
-                            "flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors",
-                            isSel
-                              ? cn(meta.theme.bar, "text-white")
-                              : "bg-paper-200 text-ink-400",
-                          )}
-                        >
-                          {opt.value}
-                        </span>
-                        <span className="text-[10px] text-ink-500 text-center leading-tight line-clamp-2">
-                          {opt.label}
-                        </span>
-                      </button>
-                    );
-                  }
-                  return (
-                    <button
-                      key={opt.value}
-                      onClick={() => onAnswer(q.id, opt.value)}
-                      className={cn(
-                        "flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-all",
-                        isSel
-                          ? cn(meta.theme.hoverBorder, "bg-paper-50 shadow-sm")
-                          : "border-paper-300 bg-white hover:bg-paper-50",
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors",
-                          isSel
-                            ? cn(meta.theme.bar, "text-white")
-                            : "bg-paper-200 text-ink-400",
-                        )}
-                      >
-                        {isSel ? <Check className="h-3.5 w-3.5" /> : opt.value}
-                      </span>
-                      <span
-                        className={cn(
-                          "text-sm",
-                          isSel ? cn(meta.theme.accent, "font-medium") : "text-ink-700",
-                        )}
-                      >
-                        {opt.label}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
+                <span
+                  className={cn(
+                    "text-base",
+                    isSel ? cn(meta.theme.accent, "font-medium") : "text-ink-700",
+                  )}
+                >
+                  {opt.label}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* 提交 */}
-      <div className="card flex flex-col sm:flex-row items-center justify-between gap-3">
-        <span className="text-sm text-ink-500">
-          {answeredCount < questions.length
-            ? `还有 ${questions.length - answeredCount} 题未作答`
-            : "全部完成，可以提交了！"}
-        </span>
+      {/* 自适应提示：连续相同选项（底部小字，不打断流程）*/}
+      {showStreakHint && (
+        <div className="flex items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+          <Lightbulb className="h-3.5 w-3.5 shrink-0" />
+          <span>
+            你连续选择了相同选项（{maxConsecutiveSame} 题），建议偶尔停下来想想"大多数情况"下你的真实反应
+          </span>
+        </div>
+      )}
+
+      {/* 导航 + 提交 */}
+      <div className="card flex items-center justify-between gap-3">
         <Button
-          onClick={onSubmit}
-          loading={submitting}
-          disabled={submitting}
-          className="w-full sm:w-auto"
+          variant="secondary"
+          onClick={() => setCurrentIdx((i) => Math.max(i - 1, 0))}
+          disabled={currentIdx === 0}
         >
-          <Sparkles className="h-4 w-4" />
-          提交测评
+          <ArrowLeft className="h-4 w-4" />
+          上一题
         </Button>
+
+        {allAnswered ? (
+          <Button onClick={onSubmit} loading={submitting} disabled={submitting}>
+            <Sparkles className="h-4 w-4" />
+            提交测评
+          </Button>
+        ) : isLast ? (
+          <Button variant="secondary" onClick={jumpToFirstUnanswered}>
+            <AlertTriangle className="h-4 w-4" />
+            还有 {questions.length - answeredCount} 题未答，去检查
+          </Button>
+        ) : (
+          <Button
+            variant="secondary"
+            onClick={() => setCurrentIdx((i) => Math.min(i + 1, questions.length - 1))}
+          >
+            下一题
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -510,10 +754,14 @@ function QuizView({
 
 function ResultView({
   result,
+  questions,
+  answers,
   onRetake,
   onSwitch,
 }: {
   result: AssessmentResponse;
+  questions: Question[];
+  answers: Record<string, string>;
   onRetake: () => void;
   onSwitch: () => void;
 }) {
@@ -521,6 +769,20 @@ function ResultView({
   const meta = getMeta(type);
   const scores = Object.entries(result.scores).sort((a, b) => b[1] - a[1]);
   const maxScore = Math.max(...scores.map(([, v]) => v), 1);
+
+  // 社会赞许性检测（灵感：奕言测谎机制轻量化）
+  const socialDesirability = detectSocialDesirability(questions, answers);
+
+  // 职业适配度：仅霍兰德测评计算（灵感：职向"所以呢"转化）
+  const isHolland = type === "holland";
+  const roleMatches = isHolland
+    ? HOLLAND_ROLE_MATRIX.map((r) => {
+        const { match, bestCode } = calculateHollandMatch(result.result_code, r.codes);
+        return { ...r, match, bestCode };
+      })
+        .sort((a, b) => b.match - a.match)
+        .slice(0, 5)
+    : [];
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
@@ -608,6 +870,156 @@ function ResultView({
           </Link>
           查看相关模板
         </p>
+      </div>
+
+      {/* 职业适配度："所以呢"转化（灵感：职向）—— 仅霍兰德测评显示 */}
+      {isHolland && roleMatches.length > 0 && (
+        <div className="card space-y-3">
+          <div className="flex items-center gap-2 mb-1">
+            <Target className={cn("h-4 w-4", meta.theme.iconText)} />
+            <h2 className="font-display font-semibold text-ink-800">职业适配度 Top 5</h2>
+            <span className="text-xs text-ink-400">基于霍兰德代码 {result.result_code.slice(0, 3)}</span>
+          </div>
+          <p className="text-xs text-ink-500 -mt-1">
+            测评标签不是终点——下面是你的兴趣代码与真实岗位的匹配度，点击深入模拟。
+          </p>
+          <div className="space-y-2.5">
+            {roleMatches.map((r, idx) => {
+              const matchColor =
+                r.match >= 80
+                  ? "bg-emerald-500"
+                  : r.match >= 60
+                    ? "bg-blue-500"
+                    : r.match >= 40
+                      ? "bg-amber-500"
+                      : "bg-ink-300";
+              return (
+                <Link
+                  key={r.role}
+                  href={`/career-simulator?from=assessment&role=${encodeURIComponent(r.role)}`}
+                  className="group block rounded-xl border border-paper-200 bg-white p-3.5 transition-all hover:border-brand-300 hover:shadow-sm"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span
+                        className={cn(
+                          "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold",
+                          meta.theme.iconBg,
+                          meta.theme.iconText,
+                        )}
+                      >
+                        {idx + 1}
+                      </span>
+                      <span className="font-display font-semibold text-ink-800 text-sm">
+                        {r.role}
+                      </span>
+                      <span className="text-[10px] text-ink-400 font-mono">
+                        {r.bestCode}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="hidden sm:block w-20 h-1.5 rounded-full bg-paper-200 overflow-hidden">
+                        <div
+                          className={cn("h-full rounded-full transition-all", matchColor)}
+                          style={{ width: `${r.match}%` }}
+                        />
+                      </div>
+                      <span
+                        className={cn(
+                          "text-sm font-bold tabular-nums",
+                          r.match >= 80
+                            ? "text-emerald-600"
+                            : r.match >= 60
+                              ? "text-blue-600"
+                              : r.match >= 40
+                                ? "text-amber-600"
+                                : "text-ink-400",
+                        )}
+                      >
+                        {r.match}%
+                      </span>
+                      <ArrowRight className="h-3.5 w-3.5 text-ink-300 group-hover:text-brand-600 transition-colors" />
+                    </div>
+                  </div>
+                  <div className="mt-2 pl-9 space-y-1">
+                    <p className="text-xs text-ink-600 leading-relaxed">
+                      <span className={cn("font-medium", meta.theme.accent)}>为什么匹配：</span>
+                      {r.why}
+                    </p>
+                    <p className="text-xs text-ink-500 leading-relaxed">
+                      <span className="font-medium text-amber-600">可能挑战：</span>
+                      {r.challenge}
+                    </p>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* 回答一致性分析（灵感：奕言测谎机制轻量化）*/}
+      {socialDesirability.show && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4 space-y-2">
+          <div className="flex items-center gap-2">
+            <Eye className="h-4 w-4 text-amber-600" />
+            <h3 className="font-display text-sm font-semibold text-ink-800">回答一致性分析</h3>
+          </div>
+          <p className="text-xs text-ink-600 leading-relaxed">
+            你对积极特质的问题倾向于全选"非常同意/完全符合"（{socialDesirability.strongCount}/
+            {socialDesirability.total} 题，{Math.round(socialDesirability.ratio * 100)}%），这可能在职业匹配上产生偏差。
+            建议未来回答时更关注真实状态而非理想状态。
+          </p>
+          <div className="flex items-center gap-1.5 pt-1">
+            <AlertTriangle className="h-3 w-3 text-amber-500" />
+            <span className="text-[11px] text-amber-700">
+              提示：测评结果仅作参考，真实自我认知需要结合实际行为观察
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* 下一步引导：把测评结果转化为行动 */}
+      <div className="card space-y-3 border-brand-200 bg-gradient-to-br from-brand-50/60 to-paper-50">
+        <div className="flex items-center gap-2">
+          <Route className="h-4 w-4 text-brand-600" />
+          <h2 className="font-display font-semibold text-ink-800">基于测评结果的下一步</h2>
+        </div>
+        <p className="text-xs text-ink-500 -mt-1">
+          测评只是起点。把你的兴趣与特质代入真实职业路径，或对照能力地图找到差距。
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Link
+            href="/career-simulator?from=assessment"
+            className="group flex items-center gap-3 rounded-xl border border-paper-200 bg-white p-3.5 transition-all hover:border-brand-300 hover:shadow-sm"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+              <GraduationCap className="h-4 w-4" />
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-ink-800">模拟职业路径</p>
+              <p className="text-xs text-ink-400 mt-0.5 line-clamp-1">
+                把结果代入考研/就业/考公的真实发展轨迹
+              </p>
+            </div>
+            <ArrowRight className="h-4 w-4 text-ink-300 group-hover:text-brand-600 transition-colors shrink-0" />
+          </Link>
+          <Link
+            href="/skills?from=assessment"
+            className="group flex items-center gap-3 rounded-xl border border-paper-200 bg-white p-3.5 transition-all hover:border-brand-300 hover:shadow-sm"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+              <MapPin className="h-4 w-4" />
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-ink-800">查看你的能力地图</p>
+              <p className="text-xs text-ink-400 mt-0.5 line-clamp-1">
+                对照目标职业的能力要求，找到差距
+              </p>
+            </div>
+            <ArrowRight className="h-4 w-4 text-ink-300 group-hover:text-brand-600 transition-colors shrink-0" />
+          </Link>
+        </div>
       </div>
 
       {/* 操作 */}

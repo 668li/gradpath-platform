@@ -53,9 +53,12 @@ def create_experience_post(
     return post
 
 
-def get_experience_post(db: Session, post_id: UUID) -> Optional[ExperiencePost]:
-    """获取单个经验贴。"""
-    return db.query(ExperiencePost).filter(ExperiencePost.id == post_id).first()
+def get_experience_post(db: Session, post_id: UUID, include_unapproved: bool = False) -> Optional[ExperiencePost]:
+    """获取单个经验贴。安全修复 M1: 默认只返回已审核通过的帖子。"""
+    query = db.query(ExperiencePost).filter(ExperiencePost.id == post_id)
+    if not include_unapproved:
+        query = query.filter(ExperiencePost.status == "approved")
+    return query.first()
 
 
 def get_experience_posts(
@@ -66,10 +69,12 @@ def get_experience_posts(
     tag: Optional[str] = None,
     status: Optional[str] = None,
     search: Optional[str] = None,
+    source_platform: Optional[str] = None,
 ) -> tuple[list[ExperiencePost], int]:
     """获取经验贴列表（支持筛选）。
 
     默认只返回 approved 状态的内容；传入 status 可覆盖。
+    传入 source_platform 可过滤来源平台："user" 表示用户发布，其他值表示外部爬取。
     """
     query = db.query(ExperiencePost)
 
@@ -77,6 +82,25 @@ def get_experience_posts(
         query = query.filter(ExperiencePost.status == status)
     else:
         query = query.filter(ExperiencePost.status == "approved")
+
+    if source_platform == "user":
+        query = query.filter(
+            (ExperiencePost.source_platform == "user") |
+            (ExperiencePost.source_platform.is_(None))
+        )
+    elif source_platform == "external":
+        query = query.filter(
+            (ExperiencePost.source_platform.isnot(None)) &
+            (ExperiencePost.source_platform != "user")
+        )
+    elif source_platform is None:
+        query = query.filter(
+            (ExperiencePost.source_platform == "user") |
+            (ExperiencePost.source_platform.is_(None))
+        )
+    else:
+        # 支持按具体来源平台过滤（如 trae_forum / crawler / xiaohongshu / v2ex）
+        query = query.filter(ExperiencePost.source_platform == source_platform)
 
     if category:
         query = query.filter(ExperiencePost.category == category)
@@ -111,6 +135,7 @@ def get_experience_posts_cursor(
     tag: Optional[str] = None,
     status: Optional[str] = None,
     search: Optional[str] = None,
+    source_platform: Optional[str] = None,
 ) -> tuple[list[ExperiencePost], Optional[str], bool]:
     """游标分页获取经验贴列表。
 
@@ -123,6 +148,25 @@ def get_experience_posts_cursor(
         query = query.filter(ExperiencePost.status == status)
     else:
         query = query.filter(ExperiencePost.status == "approved")
+
+    if source_platform == "user":
+        query = query.filter(
+            (ExperiencePost.source_platform == "user") |
+            (ExperiencePost.source_platform.is_(None))
+        )
+    elif source_platform == "external":
+        query = query.filter(
+            (ExperiencePost.source_platform.isnot(None)) &
+            (ExperiencePost.source_platform != "user")
+        )
+    elif source_platform is None:
+        query = query.filter(
+            (ExperiencePost.source_platform == "user") |
+            (ExperiencePost.source_platform.is_(None))
+        )
+    else:
+        # 支持按具体来源平台过滤（如 trae_forum / crawler / xiaohongshu / v2ex）
+        query = query.filter(ExperiencePost.source_platform == source_platform)
 
     if category:
         query = query.filter(ExperiencePost.category == category)

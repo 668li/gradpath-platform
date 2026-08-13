@@ -45,6 +45,7 @@ from app.models.user_setting import UserSetting
 from app.models.mentor import Mentor
 from app.models.mentor_review import MentorReview
 from app.models.experience_post import ExperiencePost
+from app.models.failure_case import FailureCase
 from app.models.kaoyan_news import KaoyanNews
 from app.models.qa import QA
 from app.models.qa_answer import QAAnswer
@@ -59,6 +60,19 @@ from app.models.user_memory import MemoryFactType, UserMemoryFact
 from app.models.onboarding import OnboardingStatus, UserOnboarding
 from app.models.decision_review import DecisionReviewQueue, ReviewStatus
 from app.models.dark_knowledge_push import DarkKnowledgePushLog, PushFeedback
+# 路径冲突调解
+from app.models.path_conflict import PathConflictResolution
+# 多路径 What-If 对比
+from app.models.path_comparison import PathComparison
+# 7天微行动
+from app.models.micro_action import MicroActionPlan, MicroActionTask
+# 家庭对话脚手架
+from app.models.family_dialogue import FamilyDialogueSession
+# 三中心 + 数据真实性接入层（系统设计 §4.2 契约落库，MVP 方案 C）
+from app.models.action_center import ActionCheckin, ActionStreak, ActionWeight, DailyAction
+from app.models.growth_center import GrowthArchive, GrowthTrajectory
+from app.models.review_record import ReviewRecord
+from app.models.ingestion import DataSourceMeta, ExternalResearchItem, ReviewQueueItem
 
 __all__ = [
     "User", "UserStage",
@@ -121,6 +135,8 @@ __all__ = [
     "ExperiencePost",
     "QA",
     "QAAnswer",
+    # 失败案例库（对冲幸存者偏差）
+    "FailureCase",
     # 考研外部资讯
     "KaoyanNews",
     # 收藏
@@ -141,7 +157,40 @@ __all__ = [
     "UserOnboarding", "OnboardingStatus",
     "DecisionReviewQueue", "ReviewStatus",
     "DarkKnowledgePushLog", "PushFeedback",
+    # 路径冲突调解
+    "PathConflictResolution",
+    # 多路径 What-If 对比
+    "PathComparison",
+    # 7天微行动
+    "MicroActionPlan",
+    "MicroActionTask",
+    # 家庭对话脚手架
+    "FamilyDialogueSession",
+    # 三中心 + 数据真实性接入层
+    "DailyAction",
+    "ActionCheckin",
+    "ActionStreak",
+    "ActionWeight",
+    "GrowthTrajectory",
+    "GrowthArchive",
+    "ReviewRecord",
+    "DataSourceMeta",
+    "ExternalResearchItem",
+    "ReviewQueueItem",
+    "CareerTestDrive",
+    "Follow",
+    "GrowthSnapshot",
+    "LearningResource",
+    "StudyPlan",
 ]
 
 # AI 增强功能
 from app.models.embedding_model import DocumentEmbedding, RAGStats
+
+# 独立表模型（原未导出，导致 alembic autogenerate 漏检这 5 张表；
+# 需在 Base.metadata 注册后才能生成对应迁移）
+from app.models.career_test_drive import CareerTestDrive
+from app.models.follow import Follow
+from app.models.growth_snapshot import GrowthSnapshot
+from app.models.learning_resource import LearningResource
+from app.models.study_plan import StudyPlan

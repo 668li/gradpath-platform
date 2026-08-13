@@ -171,21 +171,25 @@ def create(
     db: Session = Depends(get_db),
 ):
     resp = create_post(db, user, body)
-    # 通知粉丝：有新帖子
+    # 通知粉丝：有新帖子（性能优化：批量写入，消除 N+1 flush）
     try:
-        followers = (
-            db.query(Follow)
+        from app.models.notification import Notification, NotificationType
+        follower_ids = (
+            db.query(Follow.follower_id)
             .filter(Follow.followee_id == str(user.id))
             .all()
         )
-        for f in followers:
-            create_notification(
-                db,
-                f.follower_id,
-                type="new_post",
-                title="你关注的人发了新帖",
-                content=body.content[:80],
-            )
+        if follower_ids:
+            notifications = [
+                Notification(
+                    user_id=fid[0],
+                    type=NotificationType("new_post"),
+                    title="你关注的人发了新帖",
+                    content=body.content[:80],
+                )
+                for fid in follower_ids
+            ]
+            db.bulk_save_objects(notifications)
         db.commit()
     except Exception:
         db.rollback()

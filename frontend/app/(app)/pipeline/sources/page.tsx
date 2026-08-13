@@ -98,7 +98,7 @@ export default function SourcesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="page-title">数据源配置</h1>
-          <p className="text-sm text-slate-500 mt-1">管理外部 API 数据源</p>
+          <p className="text-sm text-ink-500 mt-1">管理外部 API 数据源</p>
         </div>
         <Button
           onClick={() => {
@@ -112,11 +112,11 @@ export default function SourcesPage() {
 
       {showForm && (
         <div className="card space-y-4">
-          <h2 className="font-semibold text-slate-800">
+          <h2 className="font-semibold text-ink-800">
             {editing ? "编辑数据源" : "新建数据源"}
           </h2>
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">名称</label>
+            <label className="block text-xs font-medium text-ink-500 mb-1">名称</label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -124,7 +124,7 @@ export default function SourcesPage() {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">API URL</label>
+            <label className="block text-xs font-medium text-ink-500 mb-1">API URL</label>
             <Input
               value={apiUrl}
               onChange={(e) => setApiUrl(e.target.value)}
@@ -132,7 +132,7 @@ export default function SourcesPage() {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">API Key</label>
+            <label className="block text-xs font-medium text-ink-500 mb-1">API Key</label>
             <Input
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
@@ -146,7 +146,7 @@ export default function SourcesPage() {
               onChange={(e) => setIsActive(e.target.checked)}
               className="rounded"
             />
-            <span className="text-sm text-slate-600">启用</span>
+            <span className="text-sm text-ink-600">启用</span>
           </label>
           <Button onClick={handleSave}>{editing ? "更新" : "创建"}</Button>
         </div>
@@ -160,26 +160,26 @@ export default function SourcesPage() {
             <div key={s.id} className="card flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-slate-800">{s.name}</span>
+                  <span className="font-medium text-ink-800">{s.name}</span>
                   <span
                     className={`rounded-full px-2 py-0.5 text-xs ${
                       s.is_active
                         ? "bg-green-50 text-green-600"
-                        : "bg-slate-100 text-slate-400"
+                        : "bg-ink-100 text-ink-400"
                     }`}
                   >
                     {s.is_active ? "启用" : "禁用"}
                   </span>
                 </div>
-                {s.api_url && <p className="mt-0.5 text-xs text-slate-400">{s.api_url}</p>}
+                {s.api_url && <p className="mt-0.5 text-xs text-ink-400">{s.api_url}</p>}
               </div>
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => handleEdit(s)}
-                  className="p-2 rounded hover:bg-slate-100"
+                  className="p-2 rounded hover:bg-ink-100"
                   title="编辑"
                 >
-                  <Settings className="h-4 w-4 text-slate-400" />
+                  <Settings className="h-4 w-4 text-ink-400" />
                 </button>
                 <button
                   onClick={() => handleDelete(s.id)}

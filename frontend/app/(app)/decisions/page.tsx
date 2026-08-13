@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import {
   Plus,
   Pencil,
@@ -13,6 +14,9 @@ import {
   AlertCircle,
   Sparkles,
   History,
+  Route,
+  RotateCw,
+  ArrowRight,
 } from "lucide-react";
 import { decisionsApi, decisionJournalApi, useApi, useInvalidate } from "@/lib/api";
 import { formatDate, levelStars, cn } from "@/lib/utils";
@@ -477,7 +481,7 @@ export default function DecisionsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="page-title">去向决策</h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-ink-500 mt-1">
             记录毕业去向的决策过程与理由
           </p>
         </div>
@@ -571,65 +575,103 @@ export default function DecisionsPage() {
             </>
           ) : (
             decisions.map((d) => (
-              <div key={d.id} className="card hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-3 min-w-0">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-600 shrink-0">
-                      <Compass className="h-5 w-5" />
-                    </span>
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="font-semibold text-slate-800">
-                          {DESTINATION_TYPE_LABEL[d.destination_type]}
-                        </h3>
-                        <Badge color={STATUS_BADGE[d.status]}>
-                          {DECISION_STATUS_LABEL[d.status]}
-                        </Badge>
+              <div key={d.id} className="space-y-2">
+                <div className="card hover:shadow-md transition-shadow">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-600 shrink-0">
+                        <Compass className="h-5 w-5" />
+                      </span>
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="font-semibold text-ink-800">
+                            {DESTINATION_TYPE_LABEL[d.destination_type]}
+                          </h3>
+                          <Badge color={STATUS_BADGE[d.status]}>
+                            {DECISION_STATUS_LABEL[d.status]}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-ink-400 mt-0.5">
+                          {formatDate(d.decision_date)}
+                        </p>
                       </div>
-                      <p className="text-xs text-slate-400 mt-0.5">
-                        {formatDate(d.decision_date)}
-                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={() => openEdit(d)}
+                        className="p-1.5 rounded-md text-ink-400 hover:bg-ink-100 hover:text-brand-600"
+                        aria-label="编辑"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(d)}
+                        className="p-1.5 rounded-md text-ink-400 hover:bg-red-50 hover:text-red-600"
+                        aria-label="删除"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    <button
-                      onClick={() => openEdit(d)}
-                      className="p-1.5 rounded-md text-slate-400 hover:bg-slate-100 hover:text-brand-600"
-                      aria-label="编辑"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(d)}
-                      className="p-1.5 rounded-md text-slate-400 hover:bg-red-50 hover:text-red-600"
-                      aria-label="删除"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+
+                  {detailSummary(d) && (
+                    <p className="mt-3 text-sm text-ink-600 bg-ink-50 rounded-lg px-3 py-2">
+                      {detailSummary(d)}
+                    </p>
+                  )}
+
+                  {d.reasoning && (
+                    <p className="mt-2 text-sm text-ink-500 line-clamp-3">
+                      <span className="text-ink-400">理由：</span>
+                      {d.reasoning}
+                    </p>
+                  )}
+
+                  <div className="mt-3 flex items-center gap-2 text-sm text-ink-500">
+                    <Star className="h-4 w-4 text-amber-400" />
+                    <span>信心度</span>
+                    <span className="text-amber-500 tracking-wide">
+                      {levelStars(d.confidence)}
+                    </span>
+                    <span className="text-xs text-ink-400">{d.confidence}/5</span>
                   </div>
                 </div>
 
-                {detailSummary(d) && (
-                  <p className="mt-3 text-sm text-slate-600 bg-slate-50 rounded-lg px-3 py-2">
-                    {detailSummary(d)}
-                  </p>
+                {/* 已执行决策：引导记录上岸结果与复盘 */}
+                {d.status === "executed" && (
+                  <div className="card flex flex-col sm:flex-row sm:items-center gap-3 border-brand-200 bg-gradient-to-r from-brand-50/60 to-paper-50 py-3">
+                    <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-100 text-brand-700">
+                        <Route className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-ink-800">
+                          决策已执行，下一步？
+                        </p>
+                        <p className="text-xs text-ink-500 mt-0.5">
+                          记录实际结果做对比，或做一次复盘沉淀经验。
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Link
+                        href={`/outcome-report?from=decision&decision_id=${d.id}`}
+                        className="inline-flex items-center gap-1 rounded-lg border border-brand-300 bg-white px-3 py-1.5 text-xs font-medium text-brand-700 transition-colors hover:bg-brand-50"
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        记录上岸结果
+                        <ArrowRight className="h-3 w-3" />
+                      </Link>
+                      <Link
+                        href={`/retrospectives?from=decision&decision_id=${d.id}`}
+                        className="inline-flex items-center gap-1 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-700"
+                      >
+                        <RotateCw className="h-3.5 w-3.5" />
+                        做一次复盘
+                      </Link>
+                    </div>
+                  </div>
                 )}
-
-                {d.reasoning && (
-                  <p className="mt-2 text-sm text-slate-500 line-clamp-3">
-                    <span className="text-slate-400">理由：</span>
-                    {d.reasoning}
-                  </p>
-                )}
-
-                <div className="mt-3 flex items-center gap-2 text-sm text-slate-500">
-                  <Star className="h-4 w-4 text-amber-400" />
-                  <span>信心度</span>
-                  <span className="text-amber-500 tracking-wide">
-                    {levelStars(d.confidence)}
-                  </span>
-                  <span className="text-xs text-slate-400">{d.confidence}/5</span>
-                </div>
               </div>
             ))
           )}
@@ -645,7 +687,7 @@ export default function DecisionsPage() {
 
         {/* 分布饼图 */}
         <div className="card h-fit lg:sticky lg:top-6">
-          <h2 className="font-semibold text-slate-800 mb-2">去向类型分布</h2>
+          <h2 className="font-semibold text-ink-800 mb-2">去向类型分布</h2>
           {pieData.length === 0 ? (
             <EmptyState title="暂无数据" description="创建决策后将显示分布" />
           ) : (

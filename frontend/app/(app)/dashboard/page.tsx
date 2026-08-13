@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import {
   Compass,
@@ -9,25 +9,25 @@ import {
   ClipboardList,
   Plus,
   ArrowRight,
-  MapPin,
   Bot,
   Flame,
   Sparkles,
   Lightbulb,
-  Bell,
   AlertTriangle,
-  PartyPopper,
-  Search,
   AlertCircle,
   Clock,
   Target,
+  ListChecks,
+  TrendingUp,
+  Calendar,
 } from "lucide-react";
 import {
   proactiveInsightsApi,
   useApi,
+  darkKnowledgePushApi,
+  microActionApi,
 } from "@/lib/api";
 import { streaksApi } from "@/lib/api/gamification";
-import { gamificationApi } from "@/lib/api/gamification";
 import { formatDate, cn } from "@/lib/utils";
 import {
   DESTINATION_TYPE_LABEL,
@@ -36,7 +36,6 @@ import {
 import { StatCard } from "@/components/stat-card";
 import { EmptyState } from "@/components/ui/empty";
 import { Button, Badge } from "@/components/ui/form-controls";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   StreakBar,
   StreakCalendar,
@@ -50,37 +49,49 @@ import type {
   DashboardOverview,
   ReminderItem,
   StreakStats,
-  ProactiveInsight,
   ProactiveInsightSummary,
-  PulseOverview,
-  PulseActiveDecision,
   PulseFull,
+  AssessmentResponse,
+  CareerPlan,
+  WeeklyRecap,
+  GamificationProfile,
 } from "@/types";
+import type { MicroActionPlanResponse } from "@/types/micro-action";
+import type { OnboardingStatusResponse } from "@/types/decision-copilot";
 import { useToast } from "@/components/ui/toast";
+import {
+  DashboardSkeleton,
+  TimelineList,
+  InsightCard,
+  CareerGalaxy,
+  CareerFitScoreCard,
+  calculateCareerFitScore,
+  DarkKnowledgeCard,
+  MicroActionCard,
+  OnboardingQuest,
+  NextStepRecommender,
+  CollapsibleSection,
+  PeerMirrorCard,
+  DarkKnowledgeGapCard,
+} from "@/components/dashboard";
+import type { UserState } from "@/components/dashboard";
 
-/** Dashboard骨架屏 — 结构化占位，替代空白spinner */
-function DashboardSkeleton() {
-  return (
-    <div className="space-y-6 animate-pulse">
-      <div className="flex items-center justify-between">
-        <div><Skeleton className="h-8 w-32 mb-2" /><Skeleton className="h-4 w-48" /></div>
-      </div>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[1,2,3,4].map(i => (
-          <div key={`skel-${i}`} className="card p-5">
-            <Skeleton className="h-10 w-10 rounded-lg mb-3" />
-            <Skeleton className="h-4 w-16 mb-1" />
-            <Skeleton className="h-6 w-12" />
-          </div>
-        ))}
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Skeleton className="h-48 rounded-xl" />
-        <Skeleton className="h-48 rounded-xl" />
-        <Skeleton className="h-48 rounded-xl" />
-      </div>
-    </div>
-  );
+// 个人情报总览（/api/dashboard/personal-intel）— 字段与后端 personal_intel_service 返回一致
+interface PersonalIntel {
+  profile_completeness: number;
+  directions: { name: string; progress: number; hint?: string }[];
+  competitiveness_radar: { axis: string; value: number }[];
+  risks: string[];
+  profile_gaps: string[];
+}
+
+/** 计算距今多少天（用于"上次更新"显示） */
+function daysAgo(dateStr: string | null | undefined): number | null {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return null;
+  const diff = Date.now() - d.getTime();
+  return Math.floor(diff / (1000 * 60 * 60 * 24));
 }
 
 export default function DashboardPage() {
@@ -91,7 +102,7 @@ export default function DashboardPage() {
   const { data, error: overviewError, isLoading: overviewLoading } = useApi<DashboardOverview>("/api/dashboard/overview");
   const { data: streakData, error: streakError, isLoading: streakLoading, mutate: mutateStreak } = useApi<StreakStats>("/api/streaks/stats");
   const { data: remindersData, error: remindersError, isLoading: remindersLoading } = useApi<ReminderItem[]>("/api/career-plans/reminders");
-  const { data: pulseData, error: pulseError, isLoading: pulseLoading } = useApi<PulseFull>("/api/decision-pulse");
+  const { data: pulseData, error: pulseError, isLoading: pulseLoading, mutate: mutatePulse } = useApi<PulseFull>("/api/decision-pulse");
 
   const coreLoading = overviewLoading || streakLoading || remindersLoading || pulseLoading;
 
@@ -165,17 +176,72 @@ export default function DashboardPage() {
   // 第二批：次要数据 — 等核心数据就绪后再触发（保持两批加载语义）
   const batch1Ready = !coreLoading;
   const { data: insightsSummary, mutate: mutateInsights } = useApi<ProactiveInsightSummary>(batch1Ready ? "/api/proactive-insights/summary" : null);
-  const { data: personalIntel } = useApi<any>(batch1Ready ? "/api/dashboard/personal-intel" : null);
-  const { data: weeklyRecap } = useApi<any>(batch1Ready ? "/api/dashboard/weekly-recap" : null);
-  const { data: gamificationProfile } = useApi<any>(batch1Ready ? "/api/gamification/profile" : null);
+  const { data: personalIntel } = useApi<PersonalIntel>(batch1Ready ? "/api/dashboard/personal-intel" : null);
+  const { data: weeklyRecap } = useApi<WeeklyRecap>(batch1Ready ? "/api/dashboard/weekly-recap" : null);
+  const { data: gamificationProfile } = useApi<GamificationProfile>(batch1Ready ? "/api/gamification/profile" : null);
 
-  // 错误提示（核心接口失败时提示用户）
+  // 第三批：星系/活档案/微行动依赖数据 — 复用 batch1Ready 闸门
+  const { data: assessmentHistory } = useApi<AssessmentResponse[]>(batch1Ready ? "/api/assessment/history" : null);
+  const { data: microPlanData, mutate: mutateMicroPlan } = useApi<MicroActionPlanResponse | null>(batch1Ready ? "/api/micro-actions/plans/current" : null);
+
+  // 新手引导：onboarding 状态 + 职业规划列表（用于 NextStepRecommender）
+  const { data: onboardingStatusData } = useApi<OnboardingStatusResponse>(batch1Ready ? "/api/onboarding/status" : null);
+  const { data: careerPlansData } = useApi<CareerPlan[]>(batch1Ready ? "/api/career-plans" : null);
+
+  // 模拟器使用记录（localStorage 兜底，无对应历史 API）
+  const [hasSimulation, setHasSimulation] = useState(false);
   useEffect(() => {
-    if (overviewError) toast.push(overviewError.message || "加载看板失败", "error");
-  }, [overviewError, toast]);
+    if (typeof window === "undefined") return;
+    try {
+      const stored = localStorage.getItem("gradpath_simulated_paths");
+      const parsed = stored ? JSON.parse(stored) : [];
+      setHasSimulation(Array.isArray(parsed) && parsed.length > 0);
+    } catch {
+      setHasSimulation(false);
+    }
+  }, []);
+
+  // Career Fit Score 活档案 — 5 维度聚合计算（必须在条件返回之前调用以保持 hooks 顺序稳定）
+  const careerFitScore = useMemo(() => calculateCareerFitScore({
+    assessmentCount: assessmentHistory?.length ?? 0,
+    skillsCount: data?.skills_count ?? 0,
+    decisionsCount: data?.decisions_count ?? 0,
+    completedMilestones: weeklyRecap?.total_milestones_done ?? 0,
+    retrospectivesCount: data?.retrospectives_count ?? 0,
+  }), [assessmentHistory, data?.skills_count, data?.decisions_count, weeklyRecap, data?.retrospectives_count]);
+
+  // "上次更新" — 取最近一次活动日期（必须在条件返回之前调用）
+  const lastUpdatedDays = useMemo(() => {
+    if (!data) return null;
+    const candidates = [
+      data.latest_retrospective?.period_end,
+      data.recent_events[0]?.event_date,
+      data.latest_decision?.decision_date,
+      microPlanData?.started_at,
+    ].filter(Boolean) as string[];
+    if (candidates.length === 0) return null;
+    const days = candidates.map(daysAgo).filter((d): d is number => d !== null);
+    return days.length > 0 ? Math.min(...days) : null;
+  }, [data, microPlanData]);
+
+  // 新手引导：用户状态聚合（必须在条件返回之前调用以保持 hooks 顺序稳定）
+  const userState: UserState = useMemo(() => ({
+    hasOnboarding: onboardingStatusData?.completed ?? false,
+    hasAssessment: (assessmentHistory?.length ?? 0) > 0,
+    hasSimulation,
+    hasDecision: (data?.decisions_count ?? 0) > 0,
+    hasPlan: (careerPlansData?.length ?? 0) > 0,
+  }), [onboardingStatusData, assessmentHistory, hasSimulation, data?.decisions_count, careerPlansData]);
+
+  // 错误提示（核心接口失败时提示用户）— 使用 ref 持有 toast 避免依赖不稳定导致无限更新
+  const toastRef = useRef(toast);
+  useEffect(() => { toastRef.current = toast; }, [toast]);
   useEffect(() => {
-    if (pulseError) toast.push(pulseError.message || "加载决策副驾驶数据失败", "error");
-  }, [pulseError, toast]);
+    if (overviewError) toastRef.current.push(overviewError.message || "加载看板失败", "error");
+  }, [overviewError]);
+  useEffect(() => {
+    if (pulseError) toastRef.current.push(pulseError.message || "加载决策副驾驶数据失败", "error");
+  }, [pulseError]);
 
   if (coreLoading) return <DashboardSkeleton />;
   if (!data) return null;
@@ -190,6 +256,13 @@ export default function DashboardPage() {
   const unreadInsightCount =
     insightsSummary?.unread_count ??
     insights.filter((i) => !i.is_read).length;
+
+  // 暗知识推送 — 从 pulse 派生未读列表
+  const darkKnowledgeFeed = pulseData?.dark_knowledge_feed ?? [];
+  const unreadDarkKnowledge = darkKnowledgeFeed.find((k) => !k.is_read) ?? null;
+
+  // 微行动计划
+  const microPlan = microPlanData ?? null;
 
   // 点击洞察卡片标记为已读（乐观更新，失败静默回滚）
   const handleMarkAsRead = async (id: string) => {
@@ -222,6 +295,35 @@ export default function DashboardPage() {
     }
   };
 
+  // 暗知识"已了解" — 标记已读并刷新 pulse
+  const handleDarkKnowledgeRead = async (pushId: string) => {
+    mutatePulse(
+      (prev) => prev ? {
+        ...prev,
+        dark_knowledge_feed: prev.dark_knowledge_feed.map((k) =>
+          k.push_id === pushId ? { ...k, is_read: true, read_at: new Date().toISOString() } : k,
+        ),
+      } : prev,
+      { revalidate: false },
+    );
+    try {
+      await darkKnowledgePushApi.markRead(pushId);
+    } catch {
+      mutatePulse();
+    }
+  };
+
+  // 微行动快速完成 — 传入默认记录并刷新
+  const handleMicroTaskQuickComplete = async (taskId: string) => {
+    try {
+      await microActionApi.completeTask(taskId, { user_response: "通过看板快速完成" });
+      toast.success("任务已完成");
+      mutateMicroPlan();
+    } catch {
+      toast.push("操作失败，请重试", "error");
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -232,6 +334,12 @@ export default function DashboardPage() {
           </p>
         </div>
       </div>
+
+      {/* 新手任务清单 — 10 个核心任务引导新用户上手 */}
+      <OnboardingQuest />
+
+      {/* 智能下一步推荐 — 基于用户当前进度推荐 1-3 个行动 */}
+      <NextStepRecommender state={userState} />
 
       {/* 统计卡片 */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -299,6 +407,31 @@ export default function DashboardPage() {
             ))}
           </ul>
         )}
+
+        {/* 三中心入口（轻量） */}
+        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-paper-100 pt-3">
+          <Link
+            href="/actions"
+            className="inline-flex items-center gap-1.5 rounded-full bg-paper-100 px-3 py-1 text-xs font-medium text-ink-600 hover:bg-paper-200 transition-colors"
+          >
+            <ListChecks className="h-3.5 w-3.5 text-brand-600" />
+            行动任务中心
+          </Link>
+          <Link
+            href="/growth/archive"
+            className="inline-flex items-center gap-1.5 rounded-full bg-paper-100 px-3 py-1 text-xs font-medium text-ink-600 hover:bg-paper-200 transition-colors"
+          >
+            <TrendingUp className="h-3.5 w-3.5 text-brand-600" />
+            成长档案
+          </Link>
+          <Link
+            href="/retrospectives"
+            className="inline-flex items-center gap-1.5 rounded-full bg-paper-100 px-3 py-1 text-xs font-medium text-ink-600 hover:bg-paper-200 transition-colors"
+          >
+            <Calendar className="h-3.5 w-3.5 text-brand-600" />
+            阶段复盘
+          </Link>
+        </div>
       </section>
 
       {/* 决策副驾驶护城河看板 */}
@@ -307,6 +440,24 @@ export default function DashboardPage() {
       {/* 决策副驾驶：活跃决策 */}
       <ActiveDecisionsSection items={pulseActiveDecisions} loading={pulseLoading} />
 
+      {/* 创意功能：同路人镜像 — 和你同阶段的人怎么选、结果如何 */}
+      <PeerMirrorCard />
+
+      {/* 职业星系可视化 — 全局视角（下移：先看行动，再看全景） */}
+      <CareerGalaxy
+        timeline={data.timeline}
+        latestDecision={data.latest_decision}
+        microPlan={microPlan}
+      />
+
+      {/* Career Fit Score 活档案 */}
+      <CareerFitScoreCard
+        score={careerFitScore}
+        lastUpdatedDays={lastUpdatedDays}
+      />
+
+      {/* ===== 详细数据（折叠） ===== */}
+      <CollapsibleSection title="详细数据面板" subtitle="情报总览、连续打卡、等级进度">
       {/* 个人情报总览（护城河：跨库聚合） */}
       {personalIntel && (
         <section className="card p-5 animate-fade-in">
@@ -325,7 +476,7 @@ export default function DashboardPage() {
             <div>
               <p className="mb-2 text-sm font-medium text-ink-600">三大方向进度</p>
               <div className="space-y-2">
-                {personalIntel.directions?.map((d: any) => (
+                {personalIntel.directions?.map((d) => (
                   <div key={d.name}>
                     <div className="flex justify-between text-xs text-ink-500">
                       <span>{d.name}</span>
@@ -346,7 +497,7 @@ export default function DashboardPage() {
             <div>
               <p className="mb-2 text-sm font-medium text-ink-600">竞争力雷达</p>
               <div className="space-y-2">
-                {personalIntel.competitiveness_radar?.map((r: any) => (
+                {personalIntel.competitiveness_radar?.map((r) => (
                   <div key={r.axis}>
                     <div className="flex justify-between text-xs text-ink-500">
                       <span>{r.axis}</span>
@@ -431,16 +582,16 @@ export default function DashboardPage() {
               <div className="mt-1 h-2 w-full rounded-full bg-paper-200">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-brand-400 to-purple-400 transition-all"
-                  style={{ width: `${Math.min(gamificationProfile.progress ?? 0, 100)}%` }}
+                  style={{ width: `${Math.min(gamificationProfile.progress?.percent ?? 0, 100)}%` }}
                 />
               </div>
               <p className="mt-1 text-xs text-ink-400">
-                {gamificationProfile.xp ?? 0}XP · 距下一级还差 {gamificationProfile.xp_to_next ?? "?"}XP
+                {gamificationProfile.xp ?? 0}XP · 距下一级还差 {Math.max(0, (gamificationProfile.progress?.needed ?? 0) - (gamificationProfile.progress?.current ?? 0))}XP
               </p>
             </div>
             {gamificationProfile.earned_badges?.length > 0 && (
               <div className="flex -space-x-2">
-                {gamificationProfile.earned_badges.slice(0, 5).map((b: any, i: number) => (
+                {gamificationProfile.earned_badges.slice(0, 5).map((b, i) => (
                   <div
                     key={i}
                     className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 border-2 border-white text-xs"
@@ -454,6 +605,24 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+      </CollapsibleSection>
+
+      {/* ===== AI 洞察与成长记录（折叠） ===== */}
+      <CollapsibleSection title="AI 洞察与成长记录" subtitle="暗知识、微行动、AI 洞察、时间线">
+      {/* 增强 3：暗知识推送 — AI 洞察区域附近 */}
+      <DarkKnowledgeCard
+        item={unreadDarkKnowledge}
+        onMarkRead={handleDarkKnowledgeRead}
+      />
+
+      {/* 创意功能：暗知识缺口雷达 — 你还没看到但同路人都看的关键信息 */}
+      <DarkKnowledgeGapCard />
+
+      {/* 增强 4：本周成长微行动 */}
+      <MicroActionCard
+        plan={microPlan}
+        onQuickComplete={handleMicroTaskQuickComplete}
+      />
 
       {/* AI 主动洞察 */}
       <div className="space-y-3 animate-fade-in">
@@ -624,7 +793,7 @@ export default function DashboardPage() {
           {weeklyRecap.upcoming_deadlines?.length > 0 && (
             <div className="mt-3 space-y-1.5">
               <p className="text-xs font-medium text-ink-500">即将到期</p>
-              {weeklyRecap.upcoming_deadlines.slice(0, 3).map((d: any, i: number) => (
+              {weeklyRecap.upcoming_deadlines.slice(0, 3).map((d, i) => (
                 <div key={i} className="flex items-center justify-between text-xs">
                   <span className="text-ink-600 truncate max-w-[200px]">
                     {d.milestone_title}
@@ -697,163 +866,8 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
-    </div>
-  );
-}
 
-function TimelineList({
-  items,
-}: {
-  items: DashboardOverview["timeline"];
-}) {
-  return (
-    <ol className="relative space-y-4 before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-px before:bg-paper-300">
-      {items.map((item) => {
-        const isDecision = item.type === "decision";
-        return (
-          <li key={`${item.type}-${item.id}`} className="relative pl-7">
-            <span
-              className={cn(
-                "absolute left-0 top-1.5 flex h-[15px] w-[15px] items-center justify-center rounded-full ring-4 ring-white",
-                isDecision ? "bg-brand-500" : "bg-brand-300",
-              )}
-            />
-            <div className="flex items-baseline justify-between gap-2">
-              <p className="text-sm font-medium text-ink-800">
-                {isDecision
-                  ? `去向决策: ${DESTINATION_TYPE_LABEL[item.title.replace("去向决策: ", "") as keyof typeof DESTINATION_TYPE_LABEL] ?? item.title.replace("去向决策: ", "")}`
-                  : item.title}
-                {item.subtitle && (
-                  <span className="ml-2 text-ink-400 font-normal">
-                    {isDecision
-                      ? item.subtitle
-                      : EVENT_TYPE_LABEL[item.subtitle as keyof typeof EVENT_TYPE_LABEL] ?? item.subtitle}
-                  </span>
-                )}
-              </p>
-              <span className="text-xs text-ink-400 whitespace-nowrap">
-                {formatDate(item.date)}
-              </span>
-            </div>
-            <p className="text-xs text-ink-400 mt-0.5 flex items-center gap-1">
-              <MapPin className="h-3 w-3" />
-              {isDecision ? "去向决策" : "成长事件"}
-            </p>
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
-
-// ===== AI 主动洞察：辅助函数 =====
-
-/** 洞察类型对应图标 */
-function getInsightIcon(type: ProactiveInsight["insight_type"]) {
-  switch (type) {
-    case "pattern":
-      return <Search className="h-4 w-4" />;
-    case "reminder":
-      return <Bell className="h-4 w-4" />;
-    case "celebration":
-      return <PartyPopper className="h-4 w-4" />;
-    case "warning":
-      return <AlertTriangle className="h-4 w-4" />;
-    case "suggestion":
-      return <Lightbulb className="h-4 w-4" />;
-    default:
-      return <Sparkles className="h-4 w-4" />;
-  }
-}
-
-/** 洞察类型对应的图标背景配色 */
-function getInsightIconBg(type: ProactiveInsight["insight_type"]) {
-  switch (type) {
-    case "pattern":
-      return "bg-blue-50 text-blue-600";
-    case "reminder":
-      return "bg-amber-50 text-amber-600";
-    case "celebration":
-      return "bg-green-50 text-green-600";
-    case "warning":
-      return "bg-red-50 text-red-600";
-    case "suggestion":
-      return "bg-brand-50 text-brand-600";
-    default:
-      return "bg-paper-100 text-ink-500";
-  }
-}
-
-/** 优先级对应的左侧色条：5=红 4=琥珀 3=品牌 2=蓝 1=灰 */
-function getPriorityBorder(priority: number) {
-  switch (priority) {
-    case 5:
-      return "border-l-red-500";
-    case 4:
-      return "border-l-amber-500";
-    case 3:
-      return "border-l-brand-500";
-    case 2:
-      return "border-l-blue-500";
-    default:
-      return "border-l-ink-300";
-  }
-}
-
-/** 单条 AI 洞察卡片：点击标记已读，未读有品牌色底，按优先级显示左色条 */
-function InsightCard({
-  insight,
-  onRead,
-}: {
-  insight: ProactiveInsight;
-  onRead: (id: string) => void;
-}) {
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={() => !insight.is_read && onRead(insight.id)}
-      onKeyDown={(e) => {
-        if ((e.key === "Enter" || e.key === " ") && !insight.is_read) {
-          e.preventDefault();
-          onRead(insight.id);
-        }
-      }}
-      className={cn(
-        "group cursor-pointer rounded-xl border border-l-4 border-paper-200 px-4 py-3 transition-all hover:border-paper-300 hover:shadow-card-hover",
-        getPriorityBorder(insight.priority),
-        insight.is_read ? "bg-white" : "bg-brand-50/60",
-      )}
-    >
-      <div className="flex items-start gap-3">
-        <div
-          className={cn(
-            "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg",
-            getInsightIconBg(insight.insight_type),
-          )}
-        >
-          {getInsightIcon(insight.insight_type)}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="text-sm font-semibold text-ink-800">
-              {insight.title}
-            </p>
-            {!insight.is_read && (
-              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand-500" />
-            )}
-          </div>
-          <p className="mt-0.5 text-xs leading-relaxed text-ink-500">
-            {insight.content}
-          </p>
-          {insight.action_suggestion && (
-            <p className="mt-1.5 inline-flex items-center gap-1 text-xs font-medium text-brand-600 group-hover:underline">
-              {insight.action_suggestion}
-              <ArrowRight className="h-3 w-3" />
-            </p>
-          )}
-        </div>
-      </div>
+      </CollapsibleSection>
     </div>
   );
 }

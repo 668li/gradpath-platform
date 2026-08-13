@@ -3,7 +3,6 @@
 每个导师从不同角度分析同一个问题，避免单一视角盲区。
 用户可以选择一个或多个导师视角来获得建议。
 """
-from app.services.ai_service import AIService
 from app.services.ai_orchestrator import AIOrchestrator
 
 # 4 个导师人格定义

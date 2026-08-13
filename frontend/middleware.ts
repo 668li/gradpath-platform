@@ -48,6 +48,7 @@ const PROTECTED_PREFIXES = [
   "/learning-methods",
   "/learning-resources",
   "/life-design",
+  "/micro-actions",
   "/notifications",
   "/outcome-report",
   "/pipeline",
@@ -55,6 +56,8 @@ const PROTECTED_PREFIXES = [
   "/search",
   "/study-plans",
   "/timeline",
+  "/failure-cases",
+  "/family-dialogue",
 ];
 
 // 公开路径前缀（无需登录即可访问）

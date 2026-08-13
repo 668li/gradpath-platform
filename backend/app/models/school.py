@@ -10,7 +10,7 @@ class School(UUIDMixin, TimestampMixin, Base):
     __tablename__ = "schools"
     __table_args__ = (
         Index("ix_school_province_level", "province", "level"),
-        {"info": "院校表 — 存储院校基础信息。"},
+        {"info": {"description": "院校表 — 存储院校基础信息。"}},
     )
 
     name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)

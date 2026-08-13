@@ -1,0 +1,24 @@
+# ======================================================================
+# 开发模式 override：使用 Turbopack dev mode + 源码挂载
+# ======================================================================
+# 使用方式：
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+# 说明：
+#   - 覆盖 docker-compose.yml 中 frontend 服务的 production 配置
+#   - 恢复 command: npm run dev（Turbopack dev mode，支持热更新）
+#   - 挂载 ./frontend:/app 源码目录，代码变更即时生效
+#   - 匿名卷 /app/node_modules 隔离容器内依赖，避免宿主覆盖
+#   - NODE_ENV=development 启用开发时调试信息
+#
+# 注意：dev mode 下首次访问页面会触发 Turbopack 按需编译，存在 5-30s 延迟
+# ======================================================================
+
+services:
+  frontend:
+    command: npm run dev
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      NODE_ENV: development

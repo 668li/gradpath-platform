@@ -22,6 +22,7 @@ export const kaoyanCommunityApi = {
       tag?: string;
       status?: string;
       search?: string;
+      source_platform?: string;
     }) =>
       request<PaginatedResponse<ExperiencePostResponse>>(
         `/api/kaoyan/experience-posts${buildQuery((params as Record<string, string | undefined | null>) || {})}`,

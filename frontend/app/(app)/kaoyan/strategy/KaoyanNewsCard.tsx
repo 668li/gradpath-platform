@@ -2,6 +2,7 @@
 
 import { ExternalLink, Calendar, Tag, Newspaper } from "lucide-react";
 import { Badge } from "@/components/ui/form-controls";
+import { SourceBadge } from "@/components/ui/source-badge";
 import { cn } from "@/lib/utils";
 import type { KaoyanNewsResponse } from "@/types";
 
@@ -41,7 +42,7 @@ export function KaoyanNewsCard({ news, className }: KaoyanNewsCardProps) {
       <div className="flex flex-wrap items-center gap-2 text-xs text-ink-400">
         <span className="flex items-center gap-1">
           <Newspaper className="h-3 w-3" />
-          {news.source_platform || "网页"}
+          <SourceBadge sourceUrl={news.source_url} sourcePlatform={news.source_platform} showPlatform={false} />
         </span>
         {dateText && (
           <span className="flex items-center gap-1">
