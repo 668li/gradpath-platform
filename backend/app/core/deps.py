@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.core.cache import cache
 from app.core.security import decode_token
 from app.database import get_db
-from app.models.user import User
+from app.models.user import User, UserStatus
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
@@ -37,6 +37,9 @@ def _serialize_user(user: User) -> dict:
         "major": user.major,
         "graduation_year": user.graduation_year,
         "is_admin": bool(user.is_admin),
+        "status": user.status.value if user.status else UserStatus.active.value,
+        "banned_at": user.banned_at.isoformat() if user.banned_at else None,
+        "ban_reason": user.ban_reason,
         "created_at": user.created_at.isoformat() if user.created_at else None,
         "updated_at": user.updated_at.isoformat() if user.updated_at else None,
     }
@@ -58,6 +61,27 @@ def _deserialize_user(data: dict) -> User:
             payload[field] = datetime.fromisoformat(val)
     # current_stage 是 str enum，直接传字符串即可
     return User(**payload)
+
+
+def _ensure_active(user: User) -> None:
+    """封禁校验：banned 用户拒绝所有受保护请求（403）。
+
+    缓存命中与 DB 直查两条路径都调用，保证封禁即时生效
+    （配合封禁时主动 invalidate_user_cache 清缓存）。
+    """
+    if user.status == UserStatus.banned:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="账号已被封禁，请联系管理员",
+        )
+
+
+def invalidate_user_cache(user_id: uuid.UUID) -> None:
+    """封禁/解封后立即失效用户缓存，保证状态即时生效。"""
+    try:
+        cache.delete(f"user:{user_id}")
+    except Exception as e:
+        logger.debug("user cache delete failed: %s", e)
 
 
 def get_current_user(
@@ -87,13 +111,16 @@ def get_current_user(
     try:
         cached = cache.get(cache_key)
         if cached:
-            return _deserialize_user(cached)
+            cached_user = _deserialize_user(cached)
+            _ensure_active(cached_user)
+            return cached_user
     except Exception as e:
         logger.debug("user cache get failed: %s", e)
 
     user = db.query(User).filter(User.id == user_uuid).first()
     if user is None:
         raise creds_error
+    _ensure_active(user)
 
     # 写缓存（失败不阻塞业务）
     try:

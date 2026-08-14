@@ -44,6 +44,20 @@ export const kaoyanCommunityApi = {
       request<{ message: string; like_count: number }>(`/api/kaoyan/experience-posts/${id}/like`, {
         method: "POST",
       }),
+    // --- 管理端审核/置顶（自动带 Authorization，修复裸 fetch 无 token 的 bug）---
+    approve: (id: string) =>
+      request<{ message: string; post_id: string }>(`/api/kaoyan/experience-posts/${id}/approve`, {
+        method: "POST",
+      }),
+    reject: (id: string) =>
+      request<{ message: string; post_id: string }>(`/api/kaoyan/experience-posts/${id}/reject`, {
+        method: "POST",
+      }),
+    pin: (id: string, isPinned: boolean) =>
+      request<{ message: string; post_id: string; is_pinned: boolean }>(`/api/kaoyan/experience-posts/${id}/pin`, {
+        method: "POST",
+        body: JSON.stringify({ is_pinned: isPinned }),
+      }),
   },
 
   // --- 问答 ---
@@ -88,6 +102,15 @@ export const kaoyanCommunityApi = {
       }),
     likeAnswer: (answerId: string) =>
       request<{ message: string; like_count: number }>(`/api/kaoyan/qa/answers/${answerId}/like`, {
+        method: "POST",
+      }),
+    // --- 管理端审核（自动带 Authorization）---
+    approve: (id: string) =>
+      request<QAResponse>(`/api/kaoyan/qa/${id}/approve`, {
+        method: "POST",
+      }),
+    reject: (id: string) =>
+      request<QAResponse>(`/api/kaoyan/qa/${id}/reject`, {
         method: "POST",
       }),
   },

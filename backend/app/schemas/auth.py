@@ -30,6 +30,8 @@ class UserResponse(BaseModel):
     id: UUID
     email: str
     name: str
+    nickname: str | None = None
+    bio: str | None = None
     current_stage: UserStage | None = None
     school: str | None = None
     major: str | None = None
@@ -38,6 +40,18 @@ class UserResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class UpdateMeRequest(BaseModel):
+    """轻量设置页可编辑字段（C2；改密码/头像不在本轮范围）。
+
+    全部可空：None 表示清除该字段，未传字段保持原值（exclude_unset）。
+    """
+    nickname: str | None = Field(default=None, max_length=50)
+    school: str | None = Field(default=None, max_length=255)
+    major: str | None = Field(default=None, max_length=255)
+    graduation_year: int | None = Field(default=None, ge=1970, le=2100)
+    bio: str | None = Field(default=None, max_length=500)
 
 
 class RefreshRequest(BaseModel):

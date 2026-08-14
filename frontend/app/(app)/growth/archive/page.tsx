@@ -228,7 +228,7 @@ export default function GrowthArchivePage() {
 }
 
 // ----------------------------------------------------------------------
-// 三中心档案区块（v1 /api/v1/growth：stats + archive + trajectory）
+// 三中心档案区块（/api/growth：stats + archive + trajectory）
 // ----------------------------------------------------------------------
 const TRAJECTORY_TYPE_META: Record<
   string,

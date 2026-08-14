@@ -48,6 +48,17 @@ export { studyPlanApi, learningResourceApi } from "./study";
 export { aiStudyPlanApi } from "./ai-study-plan";
 export { crawlerApi } from "./crawlers";
 export { researchQueueApi } from "./research-queue";
+export { adminApi, reportsApi } from "./admin";
+export type {
+  AdminUser,
+  AdminUserListResponse,
+  BanResponse,
+  ReportItem,
+  ReportListResponse,
+  ReportTargetType,
+  ReportProcessRequest,
+  ReportProcessResult,
+} from "./admin";
 export { recommendationApi, lifeDesignApi } from "./recommendations";
 export { searchApi } from "./search";
 export { outcomeReportApi } from "./outcome-report";

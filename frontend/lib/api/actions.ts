@@ -11,7 +11,7 @@ import type {
   StreakVO,
 } from "@/types/action-center";
 
-const BASE = "/api/v1/actions";
+const BASE = "/api/actions";
 
 /** 生成幂等键：同一操作重复提交时后端返回首次结果（去重保护） */
 function idemKey(): string {

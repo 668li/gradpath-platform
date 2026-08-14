@@ -14,6 +14,13 @@ class PostTopicType(str, enum.Enum):
     company_position = "company_position"
 
 
+class PostStatus(str, enum.Enum):
+    """讨论帖可见性：active=正常；hidden=举报处理下架。"""
+
+    active = "active"
+    hidden = "hidden"
+
+
 class Post(UUIDMixin, TimestampMixin, Base):
     __tablename__ = "posts"
     # 复合索引：按主题类型+主题键查询帖子是最高频操作（社区讨论区入口）
@@ -33,6 +40,13 @@ class Post(UUIDMixin, TimestampMixin, Base):
     )
     parent_id: Mapped[UUID | None] = mapped_column(
         ForeignKey("posts.id", ondelete="CASCADE"), nullable=True, index=True
+    )
+    # 社区治理：举报处理下架（默认 active，server_default 兼容存量行迁移）
+    status: Mapped[PostStatus] = mapped_column(
+        Enum(PostStatus),
+        nullable=False,
+        default=PostStatus.active,
+        server_default=PostStatus.active.value,
     )
 
     # 自引用关系：顶层帖的 replies 列表

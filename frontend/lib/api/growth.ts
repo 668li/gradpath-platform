@@ -7,7 +7,7 @@ import type {
   GrowthTrajectoryVO,
 } from "@/types/growth-center";
 
-const BASE = "/api/v1/growth";
+const BASE = "/api/growth";
 
 /** 成长档案中心 v1 client */
 export const growthApi = {

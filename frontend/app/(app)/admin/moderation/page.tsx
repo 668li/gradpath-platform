@@ -71,6 +71,7 @@ export default function ModerationDashboardPage() {
       const res = await kaoyanCommunityApi.qa.list({
         page,
         page_size: PAGE_SIZE,
+        status: statusFilter === "pending" ? "pending" : statusFilter,
       });
       setQuestions(res.items);
       setTotal(res.total);
@@ -79,7 +80,7 @@ export default function ModerationDashboardPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, toast]);
+  }, [page, statusFilter, toast]);
 
   useEffect(() => {
     setPage(1);
@@ -93,8 +94,8 @@ export default function ModerationDashboardPage() {
   useEffect(() => {
     (async () => {
       try {
-        const postRes = await kaoyanCommunityApi.experiencePosts.list({ page: 1, page_size: 1 });
-        const qaRes = await kaoyanCommunityApi.qa.list({ page: 1, page_size: 1 });
+        const postRes = await kaoyanCommunityApi.experiencePosts.list({ page: 1, page_size: 1, status: "pending" });
+        const qaRes = await kaoyanCommunityApi.qa.list({ page: 1, page_size: 1, status: "pending" });
         setStats({
           pendingPosts: postRes.total,
           pendingQa: qaRes.total,
@@ -107,11 +108,7 @@ export default function ModerationDashboardPage() {
 
   const handleApprove = async (postId: string) => {
     try {
-      await fetch(`/api/kaoyan/experience-posts/${postId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "approved" }),
-      });
+      await kaoyanCommunityApi.experiencePosts.approve(postId);
       setPosts((prev) => prev.filter((p) => p.id !== postId));
       setStats((s) => ({ ...s, pendingPosts: Math.max(0, s.pendingPosts - 1), approvedToday: s.approvedToday + 1 }));
       toast.push("已通过审核", "success");
@@ -122,11 +119,7 @@ export default function ModerationDashboardPage() {
 
   const handleReject = async (postId: string) => {
     try {
-      await fetch(`/api/kaoyan/experience-posts/${postId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "rejected" }),
-      });
+      await kaoyanCommunityApi.experiencePosts.reject(postId);
       setPosts((prev) => prev.filter((p) => p.id !== postId));
       setStats((s) => ({ ...s, pendingPosts: Math.max(0, s.pendingPosts - 1), rejectedToday: s.rejectedToday + 1 }));
       toast.push("已拒绝", "success");
@@ -137,13 +130,31 @@ export default function ModerationDashboardPage() {
 
   const handlePin = async (postId: string, currentPinned: boolean) => {
     try {
-      await fetch(`/api/kaoyan/experience-posts/${postId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ is_pinned: !currentPinned }),
-      });
+      await kaoyanCommunityApi.experiencePosts.pin(postId, !currentPinned);
       setPosts((prev) => prev.map((p) => p.id === postId ? { ...p, is_pinned: !currentPinned } : p));
       toast.push(currentPinned ? "已取消置顶" : "已置顶", "success");
+    } catch {
+      toast.push("操作失败", "error");
+    }
+  };
+
+  const handleQaApprove = async (questionId: string) => {
+    try {
+      await kaoyanCommunityApi.qa.approve(questionId);
+      setQuestions((prev) => prev.filter((q) => q.id !== questionId));
+      setStats((s) => ({ ...s, pendingQa: Math.max(0, s.pendingQa - 1), approvedToday: s.approvedToday + 1 }));
+      toast.push("已通过审核", "success");
+    } catch {
+      toast.push("操作失败", "error");
+    }
+  };
+
+  const handleQaReject = async (questionId: string) => {
+    try {
+      await kaoyanCommunityApi.qa.reject(questionId);
+      setQuestions((prev) => prev.filter((q) => q.id !== questionId));
+      setStats((s) => ({ ...s, pendingQa: Math.max(0, s.pendingQa - 1), rejectedToday: s.rejectedToday + 1 }));
+      toast.push("已拒绝", "success");
     } catch {
       toast.push("操作失败", "error");
     }
@@ -372,26 +383,51 @@ export default function ModerationDashboardPage() {
                     >
                       <div className="flex items-start justify-between gap-3 mb-2">
                         <h3 className="font-semibold text-ink-900">{q.title}</h3>
-                        {q.is_resolved ? (
-                          <Badge color="green">已解决</Badge>
-                        ) : (
-                          <Badge color="blue">待回答</Badge>
-                        )}
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Badge color={q.status === "approved" ? "green" : q.status === "rejected" ? "red" : "amber"}>
+                            {q.status === "approved" ? "已通过" : q.status === "rejected" ? "已拒绝" : "待审核"}
+                          </Badge>
+                          {q.is_resolved ? (
+                            <Badge color="green">已解决</Badge>
+                          ) : (
+                            <Badge color="blue">待回答</Badge>
+                          )}
+                        </div>
                       </div>
                       <p className="text-sm text-ink-500 mb-3 line-clamp-2">{q.content}</p>
-                      <div className="flex items-center gap-4 text-xs text-ink-400">
-                        <span className="flex items-center gap-1">
-                          <MessageSquare className="h-3 w-3" />
-                          {q.answer_count} 个回答
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Eye className="h-3 w-3" />
-                          {q.view_count} 次浏览
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {new Date(q.created_at).toLocaleDateString("zh-CN")}
-                        </span>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4 text-xs text-ink-400">
+                          <span className="flex items-center gap-1">
+                            <MessageSquare className="h-3 w-3" />
+                            {q.answer_count} 个回答
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Eye className="h-3 w-3" />
+                            {q.view_count} 次浏览
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {new Date(q.created_at).toLocaleDateString("zh-CN")}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            className="bg-green-600 hover:bg-green-700 text-white"
+                            onClick={() => handleQaApprove(q.id)}
+                          >
+                            <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                            通过
+                          </Button>
+                          <Button
+                            variant="danger"
+                            size="sm"
+                            onClick={() => handleQaReject(q.id)}
+                          >
+                            <XCircle className="h-3.5 w-3.5 mr-1" />
+                            拒绝
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))

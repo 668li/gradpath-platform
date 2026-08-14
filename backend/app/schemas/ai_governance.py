@@ -1,9 +1,9 @@
 """AI 服务治理 Schema — 对齐主线 b/F5「AI 治理收口」接口契约（方案 C：契约先行）。
 
 治理面：
-- GET /api/v1/admin/ai/governance-status → GovernanceStatusVO
+- GET /api/admin/ai/governance-status → GovernanceStatusVO
 
-（原 POST /api/v1/ai/orchestrate 统一编排入口已下线 — 方案 C 决策，
+（原 POST /api/ai/orchestrate 统一编排入口已下线 — 方案 C 决策，
 OrchestrateRequest/OrchestrateVO 随之下线。）
 """
 from pydantic import BaseModel, Field

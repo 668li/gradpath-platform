@@ -26,7 +26,7 @@ from app.services.ingestion_service import (
     trigger_ingest,
 )
 
-router = APIRouter(prefix="/api/v1/admin/research", tags=["数据真实性-录入管道"])
+router = APIRouter(prefix="/api/admin/research", tags=["数据真实性-录入管道"])
 
 
 @router.post("/ingest", response_model=IngestRunVO)

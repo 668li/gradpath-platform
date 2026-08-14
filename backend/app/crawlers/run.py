@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 # 导入注册表（触发所有爬虫的 @register_crawler 装饰器）
 # 注意：具体爬虫模块在后续Task中创建，这里先导入空的
 from app.crawlers.registry import list_crawlers, list_crawlers_by_category, get_crawler
+from app.crawlers.compliance import is_allowed_crawler
 from app.crawlers.crawler_config import load_config
 from app.database import SessionLocal
 
@@ -26,7 +27,15 @@ def run_crawler(name: str, dry_run: bool = False):
     if not cls:
         logger.error(f"爬虫 '{name}' 未注册")
         return {"status": "not_found", "source_name": name}
-    
+
+    # 合规护栏（B1 堵旁路）：非 dry-run 只允许白名单爬虫执行（外部数据须人工确认后入库）
+    if not dry_run and not is_allowed_crawler(name):
+        logger.error(
+            f"爬虫 '{name}' 不在合规白名单内，拒绝执行；"
+            "仅允许写入 PENDING 审核队列的爬虫（dry-run 不受限）"
+        )
+        return {"status": "blocked", "source_name": name, "error": "not in compliance whitelist"}
+
     config = load_config(name)
     crawler = cls(config=config)
     

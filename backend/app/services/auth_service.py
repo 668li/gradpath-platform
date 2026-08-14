@@ -12,7 +12,7 @@ from app.core.security import (
     verify_password,
     verify_password_reset_token,
 )
-from app.models.user import User
+from app.models.user import User, UserStatus
 from app.schemas.auth import RegisterRequest
 
 logger = logging.getLogger(__name__)
@@ -54,6 +54,11 @@ def login(db: Session, email: str, password: str) -> dict:
     if not user or not verify_password(password, user.password_hash):
         logger.warning("登录失败: email=%s", email)
         raise AuthenticationError("邮箱或密码错误")
+    # 社区治理：封禁账户拒绝登录（即使密码正确也不放行）
+    if user.status == UserStatus.banned:
+        _invalidate_user_cache(user.id)
+        logger.warning("封禁用户尝试登录: email=%s", email)
+        raise AuthenticationError("账号已被封禁，请联系管理员")
     logger.info("用户登录: email=%s", email)
     return {
         "access_token": create_access_token(str(user.id)),

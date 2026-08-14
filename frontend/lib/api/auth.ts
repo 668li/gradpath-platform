@@ -1,4 +1,4 @@
-import type { RegisterRequest, LoginRequest, TokenResponse, UserResponse } from "@/types";
+import type { LoginRequest, RegisterRequest, TokenResponse, UpdateMeRequest, UserResponse } from "@/types";
 import { request } from "./client";
 
 // ===== Auth =====
@@ -14,4 +14,9 @@ export const authApi = {
       body: JSON.stringify(body),
     }),
   me: () => request<UserResponse>("/api/auth/me"),
+  updateMe: (body: UpdateMeRequest) =>
+    request<UserResponse>("/api/auth/me", {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
 };

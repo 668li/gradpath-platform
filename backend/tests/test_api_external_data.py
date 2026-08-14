@@ -130,13 +130,13 @@ class TestSalaryBenchmarks:
     def test_filter_by_position(self, seeded_db, client):
         """按岗位筛选薪资基准。"""
         resp = client.get(
-            "/api/salary-benchmarks", params={"position": "后端开发"}
+            "/api/salary-benchmarks", params={"position": "自动化测试工程师"}
         )
         assert resp.status_code == 200
         data = resp.json()
         assert len(data) > 0
         for s in data:
-            assert "后端开发" in s["position"]
+            assert "自动化测试工程师" in s["position"]
 
     def test_filter_by_city(self, seeded_db, client):
         """按城市筛选薪资基准。"""
@@ -151,21 +151,21 @@ class TestSalaryBenchmarks:
         """组合筛选（公司+岗位+城市）。"""
         resp = client.get(
             "/api/salary-benchmarks",
-            params={"company": "腾讯", "position": "后端开发", "city": "深圳"},
+            params={"company": "腾讯", "position": "自动化测试工程师", "city": "深圳"},
         )
         assert resp.status_code == 200
         data = resp.json()
         assert len(data) > 0
         for s in data:
             assert s["company"] == "腾讯"
-            assert s["position"] == "后端开发"
+            assert s["position"] == "自动化测试工程师"
             assert s["city"] == "深圳"
 
     def test_experience_level_serialized(self, seeded_db, client):
         """experience_level 枚举应序列化为字符串值。"""
         resp = client.get(
             "/api/salary-benchmarks",
-            params={"company": "腾讯", "position": "后端开发", "city": "深圳"},
+            params={"company": "腾讯", "position": "自动化测试工程师", "city": "深圳"},
         )
         assert resp.status_code == 200
         data = resp.json()

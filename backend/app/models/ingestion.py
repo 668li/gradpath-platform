@@ -121,3 +121,27 @@ class ReviewQueueItem(ContractAuditMixin, Base):
         Index("idx_review_queue_item_status_created_time", "review_status", "created_time"),
         Index("idx_review_queue_item_type_ref", "item_type", "ref_item_id"),
     )
+
+
+class DataFreshness(Base):
+    """数据源新鲜度引擎（data_freshness，B4）。
+
+    列契约与 app/api/data_freshness.py 的 raw SQL 一致（勿改列名/默认值）：
+    - source_name 主键（渠道名，对应 SOURCES 字典键：yanzhao/kaoyan/offcn/...）
+    - last_successful_crawl 最近一次成功抓取/确认时间
+    - records_count 累计确认入库条数
+    - status active / refreshing / unknown
+    - updated_at 回写时间
+    """
+
+    __tablename__ = "data_freshness"
+
+    source_name: Mapped[str] = mapped_column(String(50), primary_key=True)
+    last_successful_crawl: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    records_count: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default=text("0")
+    )
+    status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="unknown", server_default=text("'unknown'")
+    )
+    updated_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

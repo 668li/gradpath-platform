@@ -37,6 +37,11 @@ import {
   HeartCrack,
   ListChecks,
   Command as CommandIcon,
+  ShieldCheck,
+  Flag,
+  Bug,
+  Inbox,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth";
@@ -150,6 +155,7 @@ function getNavSections(): NavSection[] {
       section: "更多",
       children: [
         { href: "/profile", label: "个人档案", icon: UserCircle },
+        { href: "/settings", label: "账户设置", icon: Settings },
         { href: "/family-dialogue", label: "家庭对话", icon: MessageCircle },
       ],
     },
@@ -161,7 +167,28 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
-  const sections = useMemo(() => getNavSections(), []);
+  // 基础导航 + 管理员专属"后台管理"分组（非管理员不渲染）
+  const sections = useMemo(() => {
+    const base = getNavSections();
+    if (!user?.is_admin) return base;
+    return [
+      ...base,
+      {
+        href: "/admin",
+        label: "后台管理",
+        icon: ShieldCheck,
+        section: "更多",
+        children: [
+          { href: "/admin", label: "后台首页", icon: LayoutDashboard },
+          { href: "/admin/moderation", label: "内容审核", icon: ShieldCheck },
+          { href: "/admin/reports", label: "举报管理", icon: Flag },
+          { href: "/admin/users", label: "用户管理", icon: Users },
+          { href: "/admin/crawlers", label: "爬虫管理", icon: Bug },
+          { href: "/admin/research-queue", label: "调研数据", icon: Inbox },
+        ],
+      },
+    ];
+  }, [user]);
 
   const [isMac, setIsMac] = useState(false);
   useEffect(() => {

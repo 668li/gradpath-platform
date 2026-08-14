@@ -15,7 +15,7 @@ def _create_action(client, auth_headers, action_type="read_article", title="读�
     if idempotency:
         headers["X-Idempotency-Key"] = idempotency
     resp = client.post(
-        "/api/v1/actions",
+        "/api/actions",
         headers=headers,
         json={
             "action_type": action_type,
@@ -32,7 +32,7 @@ def _checkin(client, auth_headers, action_id, completed_at=None, idempotency=Non
     if idempotency:
         headers["X-Idempotency-Key"] = idempotency
     resp = client.post(
-        f"/api/v1/actions/{action_id}/checkin",
+        f"/api/actions/{action_id}/checkin",
         headers=headers,
         json={
             "action_id": action_id,
@@ -48,27 +48,27 @@ def _checkin(client, auth_headers, action_id, completed_at=None, idempotency=Non
 # ----------------------------------------------------------------------
 class TestAuthRequired:
     def test_today_requires_auth(self, client):
-        assert client.get("/api/v1/actions/today").status_code == 401
+        assert client.get("/api/actions/today").status_code == 401
 
     def test_create_requires_auth(self, client):
         resp = client.post(
-            "/api/v1/actions",
+            "/api/actions",
             json={"action_type": "read_article", "title": "x", "due_date": _today()},
         )
         assert resp.status_code == 401
 
     def test_checkin_requires_auth(self, client):
         resp = client.post(
-            "/api/v1/actions/1/checkin",
+            "/api/actions/1/checkin",
             json={"action_id": 1, "completed_at": datetime.now(timezone.utc).isoformat()},
         )
         assert resp.status_code == 401
 
     def test_streak_requires_auth(self, client):
-        assert client.get("/api/v1/actions/streaks").status_code == 401
+        assert client.get("/api/actions/streaks").status_code == 401
 
     def test_weights_requires_auth(self, client):
-        assert client.get("/api/v1/actions/weights").status_code == 401
+        assert client.get("/api/actions/weights").status_code == 401
 
 
 # ----------------------------------------------------------------------
@@ -93,7 +93,7 @@ class TestCreateAction:
     def test_duplicate_same_day_type_conflict(self, auth_headers, client):
         _create_action(client, auth_headers, action_type="read_article")
         resp = client.post(
-            "/api/v1/actions",
+            "/api/actions",
             headers=auth_headers,
             json={"action_type": "read_article", "title": "重复", "due_date": _today()},
         )
@@ -107,7 +107,7 @@ class TestCreateAction:
     def test_note_biz_fields_ignored(self, auth_headers, client):
         """note / biz_fields 契约无存储列，创建不报错且忽略。"""
         resp = client.post(
-            "/api/v1/actions",
+            "/api/actions",
             headers=auth_headers,
             json={
                 "action_type": "read_article",
@@ -126,7 +126,7 @@ class TestCreateAction:
 # ----------------------------------------------------------------------
 class TestTodayList:
     def test_empty_list(self, auth_headers, client):
-        resp = client.get("/api/v1/actions/today", headers=auth_headers)
+        resp = client.get("/api/actions/today", headers=auth_headers)
         assert resp.status_code == 200
         body = resp.json()
         assert body["items"] == []
@@ -135,7 +135,7 @@ class TestTodayList:
     def test_sorted_by_weight_desc(self, auth_headers, client):
         _create_action(client, auth_headers, action_type="read_article")  # weight 1
         _create_action(client, auth_headers, action_type="mock_interview")  # weight 15
-        resp = client.get("/api/v1/actions/today", headers=auth_headers)
+        resp = client.get("/api/actions/today", headers=auth_headers)
         items = resp.json()["items"]
         assert [i["action_type"] for i in items] == ["mock_interview", "read_article"]
 
@@ -143,7 +143,7 @@ class TestTodayList:
         yesterday = (datetime.now(timezone.utc).date() - timedelta(days=1)).isoformat()
         _create_action(client, auth_headers, due_date=yesterday)
         _create_action(client, auth_headers, action_type="finish_course")
-        resp = client.get("/api/v1/actions/today", headers=auth_headers)
+        resp = client.get("/api/actions/today", headers=auth_headers)
         items = resp.json()["items"]
         assert len(items) == 1
         assert items[0]["action_type"] == "finish_course"
@@ -162,7 +162,7 @@ class TestTodayList:
         other_headers = {"Authorization": f"Bearer {resp2.json()['access_token']}"}
         _create_action(client, other_headers)
 
-        resp = client.get("/api/v1/actions/today", headers=auth_headers)
+        resp = client.get("/api/actions/today", headers=auth_headers)
         assert resp.json()["total"] == 0
 
 
@@ -173,7 +173,7 @@ class TestUpdateAction:
     def test_update_title_and_status(self, auth_headers, client):
         action = _create_action(client, auth_headers)
         resp = client.put(
-            f"/api/v1/actions/{action['id']}",
+            f"/api/actions/{action['id']}",
             headers=auth_headers,
             json={"title": "改后的标题", "status": "CANCELED"},
         )
@@ -184,14 +184,14 @@ class TestUpdateAction:
 
     def test_update_nonexistent_404(self, auth_headers, client):
         resp = client.put(
-            "/api/v1/actions/999999", headers=auth_headers, json={"title": "x"}
+            "/api/actions/999999", headers=auth_headers, json={"title": "x"}
         )
         assert resp.status_code == 404
 
     def test_note_ignored_on_update(self, auth_headers, client):
         action = _create_action(client, auth_headers)
         resp = client.put(
-            f"/api/v1/actions/{action['id']}",
+            f"/api/actions/{action['id']}",
             headers=auth_headers,
             json={"title": "t", "note": "不落库"},
         )
@@ -213,7 +213,7 @@ class TestCheckin:
         assert checkin["note"] == "已完成"
 
         # 行动状态置 DONE
-        resp = client.get("/api/v1/actions/today", headers=auth_headers)
+        resp = client.get("/api/actions/today", headers=auth_headers)
         assert resp.json()["items"][0]["status"] == "DONE"
 
     def test_checkin_idempotent(self, auth_headers, client):
@@ -232,7 +232,7 @@ class TestCheckin:
         action = _create_action(client, auth_headers)
         _checkin(client, auth_headers, action["id"], idempotency="ch-1")
         _checkin(client, auth_headers, action["id"], idempotency="ch-2")
-        resp = client.get(f"/api/v1/actions/{action['id']}/checkins", headers=auth_headers)
+        resp = client.get(f"/api/actions/{action['id']}/checkins", headers=auth_headers)
         assert resp.status_code == 200
         body = resp.json()
         assert body["total"] == 2
@@ -244,7 +244,7 @@ class TestCheckin:
 # ----------------------------------------------------------------------
 class TestStreak:
     def test_never_when_no_checkin(self, auth_headers, client):
-        resp = client.get("/api/v1/actions/streaks", headers=auth_headers)
+        resp = client.get("/api/actions/streaks", headers=auth_headers)
         assert resp.status_code == 200
         body = resp.json()
         assert body["streak_status"] == "NEVER"
@@ -253,7 +253,7 @@ class TestStreak:
     def test_active_after_first_checkin(self, auth_headers, client):
         action = _create_action(client, auth_headers)
         _checkin(client, auth_headers, action["id"])
-        resp = client.get("/api/v1/actions/streaks", headers=auth_headers)
+        resp = client.get("/api/actions/streaks", headers=auth_headers)
         body = resp.json()
         assert body["current_streak_days"] == 1
         assert body["longest_streak_days"] == 1
@@ -275,7 +275,7 @@ class TestStreak:
             client, auth_headers, a2["id"],
             completed_at=(today - timedelta(days=1)).isoformat(),
         )
-        body = client.get("/api/v1/actions/streaks", headers=auth_headers).json()
+        body = client.get("/api/actions/streaks", headers=auth_headers).json()
         assert body["current_streak_days"] == 2
         assert body["longest_streak_days"] == 2
         assert body["streak_status"] == "ACTIVE"
@@ -285,7 +285,7 @@ class TestStreak:
             client, auth_headers, a3["id"],
             completed_at=(today - timedelta(days=4)).isoformat(),
         )
-        body = client.get("/api/v1/actions/streaks", headers=auth_headers).json()
+        body = client.get("/api/actions/streaks", headers=auth_headers).json()
         assert body["current_streak_days"] == 1
         assert body["streak_status"] == "BROKEN"
 
@@ -293,7 +293,7 @@ class TestStreak:
         """打卡联动写入成长轨迹（event_type=action_checkin）。"""
         action = _create_action(client, auth_headers)
         _checkin(client, auth_headers, action["id"], idempotency="ch-traj")
-        resp = client.get("/api/v1/growth/trajectory", headers=auth_headers)
+        resp = client.get("/api/growth/trajectory", headers=auth_headers)
         items = resp.json()["items"]
         assert len(items) == 1
         assert items[0]["event_type"] == "action_checkin"
@@ -306,7 +306,7 @@ class TestStreak:
 # ----------------------------------------------------------------------
 class TestWeights:
     def test_seeded_weights(self, auth_headers, client):
-        resp = client.get("/api/v1/actions/weights", headers=auth_headers)
+        resp = client.get("/api/actions/weights", headers=auth_headers)
         assert resp.status_code == 200
         body = resp.json()
         assert body["total"] == 7

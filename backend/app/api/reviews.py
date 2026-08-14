@@ -19,7 +19,7 @@ from app.schemas.review import (
 )
 from app.services import review_service
 
-router = APIRouter(prefix="/api/v1/reviews", tags=["复盘中心"])
+router = APIRouter(prefix="/api/reviews", tags=["复盘中心"])
 
 
 @router.post("", response_model=ReviewVO)

@@ -17,7 +17,7 @@ def _create_review(client, auth_headers, idempotency=None, **overrides):
         "mood_score": 4,
         **overrides,
     }
-    return client.post("/api/v1/reviews", headers=headers, json=payload)
+    return client.post("/api/reviews", headers=headers, json=payload)
 
 
 # ----------------------------------------------------------------------
@@ -26,7 +26,7 @@ def _create_review(client, auth_headers, idempotency=None, **overrides):
 class TestAuthRequired:
     def test_create_requires_auth(self, client):
         resp = client.post(
-            "/api/v1/reviews",
+            "/api/reviews",
             json={
                 "review_type": "weekly",
                 "period_start": "2026-08-03",
@@ -37,13 +37,13 @@ class TestAuthRequired:
         assert resp.status_code == 401
 
     def test_list_requires_auth(self, client):
-        assert client.get("/api/v1/reviews").status_code == 401
+        assert client.get("/api/reviews").status_code == 401
 
     def test_detail_requires_auth(self, client):
-        assert client.get("/api/v1/reviews/1").status_code == 401
+        assert client.get("/api/reviews/1").status_code == 401
 
     def test_ai_analyze_requires_auth(self, client):
-        resp = client.post("/api/v1/reviews/1/ai-analyze", json={"review_id": 1})
+        resp = client.post("/api/reviews/1/ai-analyze", json={"review_id": 1})
         assert resp.status_code == 401
 
 
@@ -75,7 +75,7 @@ class TestCreateReview:
     def test_create_writes_growth_trajectory(self, auth_headers, client):
         """创建复盘联动写入成长轨迹（event_type=review_completed）。"""
         _create_review(client, auth_headers, idempotency="review-traj")
-        items = client.get("/api/v1/growth/trajectory", headers=auth_headers).json()["items"]
+        items = client.get("/api/growth/trajectory", headers=auth_headers).json()["items"]
         assert len(items) == 1
         assert items[0]["event_type"] == "review_completed"
         assert items[0]["event_payload"]["review_type"] == "weekly"
@@ -92,14 +92,14 @@ class TestCreateReview:
 class TestReadReview:
     def test_detail(self, auth_headers, client):
         review = _create_review(client, auth_headers).json()
-        resp = client.get(f"/api/v1/reviews/{review['id']}", headers=auth_headers)
+        resp = client.get(f"/api/reviews/{review['id']}", headers=auth_headers)
         assert resp.status_code == 200
         body = resp.json()
         assert body["id"] == review["id"]
         assert body["ai_summary"] is None  # 未分析前为 None
 
     def test_detail_nonexistent_404(self, auth_headers, client):
-        assert client.get("/api/v1/reviews/999999", headers=auth_headers).status_code == 404
+        assert client.get("/api/reviews/999999", headers=auth_headers).status_code == 404
 
     def test_user_isolation(self, auth_headers, client):
         """其他用户的复盘不可读。"""
@@ -114,13 +114,13 @@ class TestReadReview:
         )
         other_headers = {"Authorization": f"Bearer {resp2.json()['access_token']}"}
         assert client.get(
-            f"/api/v1/reviews/{review['id']}", headers=other_headers
+            f"/api/reviews/{review['id']}", headers=other_headers
         ).status_code == 404
 
     def test_list_paginated(self, auth_headers, client):
         for i in range(3):
             _create_review(client, auth_headers, idempotency=f"list-{i}")
-        resp = client.get("/api/v1/reviews?page=1&size=2", headers=auth_headers)
+        resp = client.get("/api/reviews?page=1&size=2", headers=auth_headers)
         body = resp.json()
         assert body["total"] == 3
         assert len(body["items"]) == 2
@@ -133,7 +133,7 @@ class TestAiAnalyze:
     def _analyze(self, client, auth_headers, review_id, **overrides):
         payload = {"review_id": review_id, **overrides}
         return client.post(
-            f"/api/v1/reviews/{review_id}/ai-analyze",
+            f"/api/reviews/{review_id}/ai-analyze",
             headers=auth_headers,
             json=payload,
         )
@@ -172,7 +172,7 @@ class TestAiAnalyze:
 
         review = _create_review(client, auth_headers).json()
         self._analyze(client, auth_headers, review["id"])
-        resp = client.get(f"/api/v1/reviews/{review['id']}/ai-result", headers=auth_headers)
+        resp = client.get(f"/api/reviews/{review['id']}/ai-result", headers=auth_headers)
         assert resp.status_code == 200
         body = resp.json()
         assert body["review_id"] == review["id"]
@@ -211,7 +211,7 @@ class TestReviewActionLinking:
         _checkin(client, auth_headers, action["id"], idempotency="flow-checkin")
         _create_review(client, auth_headers, idempotency="flow-review")
 
-        items = client.get("/api/v1/growth/trajectory", headers=auth_headers).json()["items"]
+        items = client.get("/api/growth/trajectory", headers=auth_headers).json()["items"]
         event_types = sorted(i["event_type"] for i in items)
         assert event_types == ["action_checkin", "review_completed"]
 

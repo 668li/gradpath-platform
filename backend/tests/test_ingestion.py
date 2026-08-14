@@ -1,5 +1,5 @@
 # backend/tests/test_ingestion.py
-"""数据真实性接入层（/api/v1/admin/*）测试 — 方案 C 落地实现验证。
+"""数据真实性接入层（/api/admin/*）测试 — 方案 C 落地实现验证。
 
 覆盖：
 - 来源标注 CRUD（t_data_source）：列表/过滤/更新/404/非管理员 403
@@ -84,7 +84,7 @@ def _seed_queue_item(
 
 
 # ======================================================================
-# 来源标注 CRUD（/api/v1/admin/sources）
+# 来源标注 CRUD（/api/admin/sources）
 # ======================================================================
 
 
@@ -102,7 +102,7 @@ class TestSources:
         )
         db_session.commit()
 
-        resp = client.get("/api/v1/admin/sources", headers=admin_headers)
+        resp = client.get("/api/admin/sources", headers=admin_headers)
         assert resp.status_code == 200
         data = resp.json()
         assert data["total"] == 1
@@ -129,7 +129,7 @@ class TestSources:
         db_session.commit()
 
         resp = client.get(
-            "/api/v1/admin/sources?review_status=PENDING&credibility=model_inferred&page=1&page_size=2",
+            "/api/admin/sources?review_status=PENDING&credibility=model_inferred&page=1&page_size=2",
             headers=admin_headers,
         )
         data = resp.json()
@@ -150,7 +150,7 @@ class TestSources:
         db_session.commit()
 
         resp = client.put(
-            "/api/v1/admin/sources/1",
+            "/api/admin/sources/1",
             json={"credibility": "official_verified", "review_status": "APPROVED", "verify_count": 2},
             headers=admin_headers,
         )
@@ -175,7 +175,7 @@ class TestSources:
         db_session.commit()
 
         resp = client.put(
-            "/api/v1/admin/sources/1",
+            "/api/admin/sources/1",
             json={"review_status": "REJECTED"},
             headers=admin_headers,
         )
@@ -186,7 +186,7 @@ class TestSources:
 
     def test_update_source_missing_404(self, client, admin_headers):
         resp = client.put(
-            "/api/v1/admin/sources/9999",
+            "/api/admin/sources/9999",
             json={"review_status": "APPROVED"},
             headers=admin_headers,
         )
@@ -202,7 +202,7 @@ class TestSources:
             json={"email": "normal@test.com", "password": "Test1234!"},
         )
         headers = {"Authorization": f"Bearer {resp.json()['access_token']}"}
-        r = client.get("/api/v1/admin/sources", headers=headers)
+        r = client.get("/api/admin/sources", headers=headers)
         assert r.status_code == 403
 
 
@@ -215,7 +215,7 @@ class TestTriggerIngest:
     def test_trigger_manual_rejected_400(self, client, admin_headers):
         """manual 来源无爬虫可触发 → 400（应走 POST /confirm 直接确认）。"""
         resp = client.post(
-            "/api/v1/admin/research/ingest",
+            "/api/admin/research/ingest",
             json={"source_system": "manual", "biz_req_no": "MANUAL-001", "url": "https://example.com/a"},
             headers=admin_headers,
         )
@@ -228,7 +228,7 @@ class TestTriggerIngest:
 
         monkeypatch.setattr(svc, "get_crawler", lambda name: None)
         resp = client.post(
-            "/api/v1/admin/research/ingest",
+            "/api/admin/research/ingest",
             json={"source_system": "yanzhao", "biz_req_no": "YZ-001"},
             headers=admin_headers,
         )
@@ -280,7 +280,7 @@ class TestTriggerIngest:
         monkeypatch.setattr(svc, "get_crawler", lambda name: _FakeCrawler)
 
         resp = client.post(
-            "/api/v1/admin/research/ingest",
+            "/api/admin/research/ingest",
             json={"source_system": "yanzhao", "biz_req_no": "YZ-001", "target_type": "program"},
             headers=admin_headers,
         )
@@ -312,7 +312,7 @@ class TestGetIngestRun:
         db_session.commit()
         db_session.refresh(run)
 
-        resp = client.get(f"/api/v1/admin/research/ingest/{run.id}", headers=admin_headers)
+        resp = client.get(f"/api/admin/research/ingest/{run.id}", headers=admin_headers)
         assert resp.status_code == 200
         data = resp.json()
         assert data["run_id"] == str(run.id)
@@ -321,13 +321,13 @@ class TestGetIngestRun:
 
     def test_get_run_missing_404(self, client, admin_headers):
         resp = client.get(
-            "/api/v1/admin/research/ingest/11111111-1111-1111-1111-111111111111",
+            "/api/admin/research/ingest/11111111-1111-1111-1111-111111111111",
             headers=admin_headers,
         )
         assert resp.status_code == 404
 
     def test_get_run_invalid_uuid_404(self, client, admin_headers):
-        resp = client.get("/api/v1/admin/research/ingest/not-a-uuid", headers=admin_headers)
+        resp = client.get("/api/admin/research/ingest/not-a-uuid", headers=admin_headers)
         assert resp.status_code == 404
 
 
@@ -340,7 +340,7 @@ class TestConfirmIngest:
     def test_confirm_promotes_kaoyan_news(self, client, admin_headers, db_session):
         ext, queue = _seed_queue_item(db_session)
         resp = client.post(
-            "/api/v1/admin/research/confirm",
+            "/api/admin/research/confirm",
             json={
                 "run_id": _RUN_ID,
                 "record_id": ext.id,
@@ -399,15 +399,15 @@ class TestConfirmIngest:
             "source_url": "https://yz.chsi.com.cn/2026/kyzs.shtml",
             "source_system": "yanzhao",
         }
-        assert client.post("/api/v1/admin/research/confirm", json=payload, headers=admin_headers).status_code == 200
+        assert client.post("/api/admin/research/confirm", json=payload, headers=admin_headers).status_code == 200
         # 重复确认 → 409
-        resp = client.post("/api/v1/admin/research/confirm", json=payload, headers=admin_headers)
+        resp = client.post("/api/admin/research/confirm", json=payload, headers=admin_headers)
         assert resp.status_code == 409
 
     def test_confirm_run_id_mismatch_409(self, client, admin_headers, db_session):
         ext, _ = _seed_queue_item(db_session)
         resp = client.post(
-            "/api/v1/admin/research/confirm",
+            "/api/admin/research/confirm",
             json={
                 "run_id": "99999999-9999-9999-9999-999999999999",
                 "record_id": ext.id,
@@ -422,7 +422,7 @@ class TestConfirmIngest:
 
     def test_confirm_missing_record_404(self, client, admin_headers):
         resp = client.post(
-            "/api/v1/admin/research/confirm",
+            "/api/admin/research/confirm",
             json={
                 "run_id": _RUN_ID,
                 "record_id": 99999,
@@ -444,7 +444,7 @@ class TestConfirmIngest:
         )
         # 尝试把第二条的来源 URL 改成第一条占用的 → 409
         resp = client.post(
-            "/api/v1/admin/research/confirm",
+            "/api/admin/research/confirm",
             json={
                 "run_id": _RUN_ID,
                 "record_id": ext2.id,
@@ -469,7 +469,7 @@ class TestConfirmIngest:
         )
         headers = {"Authorization": f"Bearer {resp.json()['access_token']}"}
         r = client.post(
-            "/api/v1/admin/research/confirm",
+            "/api/admin/research/confirm",
             json={
                 "run_id": _RUN_ID,
                 "record_id": 1,
@@ -490,16 +490,16 @@ class TestConfirmIngest:
 
 class TestNoAutoIngest:
     def test_orchestrate_endpoint_removed_404(self, client):
-        """统一编排入口已下线：POST /api/v1/ai/orchestrate → 404（不自动入库）。"""
+        """统一编排入口已下线：POST /api/ai/orchestrate → 404（不自动入库）。"""
         resp = client.post(
-            "/api/v1/ai/orchestrate",
+            "/api/ai/orchestrate",
             json={"service_name": "grad_intel_service", "prompt": "分析一下"},
         )
         assert resp.status_code == 404
 
     def test_governance_status_still_served(self, client, admin_headers):
         """治理总览保留（真实动态检测），不受 orchestrate 下线影响。"""
-        resp = client.get("/api/v1/admin/ai/governance-status", headers=admin_headers)
+        resp = client.get("/api/admin/ai/governance-status", headers=admin_headers)
         assert resp.status_code == 200
         data = resp.json()
         assert data["total"] >= 1

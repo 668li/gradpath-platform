@@ -1,4 +1,9 @@
-"""自动生成的社区种子数据 — 2026-07-04"""
+"""自动生成的社区种子数据 — 2026-07-04
+
+【演示数据】本文件为自动生成的演示数据（系统用户 + 硬编码内容），
+仅用于本地开发预览，不代表真实用户内容。生产环境请勿默认注入；
+如需注入演示数据，请使用 --include-demo 参数。
+"""
 from uuid import UUID
 from sqlalchemy.orm import Session
 from app.models.experience_post import ExperiencePost

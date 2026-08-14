@@ -23,7 +23,7 @@ from app.schemas.action import (
 )
 from app.services import action_service
 
-router = APIRouter(prefix="/api/v1/actions", tags=["行动任务中心"])
+router = APIRouter(prefix="/api/actions", tags=["行动任务中心"])
 
 
 @router.get("/today", response_model=ActionListVO)

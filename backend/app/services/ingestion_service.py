@@ -10,7 +10,7 @@
 - ``list_sources`` / ``update_source``：t_data_source 来源与可信度管理。
 
 与 research_queue（/api/admin/research-queue）的审核链路共用 promote 服务，
-本服务是 /api/v1/admin/research 契约端点（方案 C 落地）的实现层。
+本服务是 /api/admin/research 契约端点（方案 C 落地）的实现层。
 """
 import logging
 from datetime import datetime, timezone

@@ -18,7 +18,7 @@ from app.schemas.growth import (
 )
 from app.services import growth_service
 
-router = APIRouter(prefix="/api/v1/growth", tags=["成长档案中心"])
+router = APIRouter(prefix="/api/growth", tags=["成长档案中心"])
 
 
 @router.get("/trajectory", response_model=GrowthTrajectoryListVO)

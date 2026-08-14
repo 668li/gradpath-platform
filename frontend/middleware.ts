@@ -25,6 +25,7 @@ const PROTECTED_PREFIXES = [
   "/kaoyan",
   "/civil-service",
   "/profile",
+  "/settings",
   "/chat",
   "/decisions",
   "/decision-lab",

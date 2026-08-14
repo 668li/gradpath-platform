@@ -516,6 +516,30 @@ export const commands: Command[] = [
 
   // ────────────────────────── 后台/管理 ──────────────────────────
   {
+    id: "admin-home",
+    title: "后台管理",
+    subtitle: "管理",
+    href: "/admin",
+    keywords: ["后台", "管理", "admin", "首页"],
+    icon: "LayoutDashboard",
+  },
+  {
+    id: "admin-reports",
+    title: "举报管理",
+    subtitle: "管理",
+    href: "/admin/reports",
+    keywords: ["举报", "report", "管理", "admin"],
+    icon: "Flag",
+  },
+  {
+    id: "admin-users",
+    title: "用户管理",
+    subtitle: "管理",
+    href: "/admin/users",
+    keywords: ["用户", "封禁", "解封", "users", "admin"],
+    icon: "Users",
+  },
+  {
     id: "admin-crawlers",
     title: "爬虫管理",
     subtitle: "管理",

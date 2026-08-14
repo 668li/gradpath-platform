@@ -72,10 +72,13 @@ from app.models.family_dialogue import FamilyDialogueSession
 from app.models.action_center import ActionCheckin, ActionStreak, ActionWeight, DailyAction
 from app.models.growth_center import GrowthArchive, GrowthTrajectory
 from app.models.review_record import ReviewRecord
-from app.models.ingestion import DataSourceMeta, ExternalResearchItem, ReviewQueueItem
+from app.models.ingestion import DataFreshness, DataSourceMeta, ExternalResearchItem, ReviewQueueItem
+# 社区治理
+from app.models.report import Report, ReportStatus, ReportTargetType
+from app.models.block_relation import BlockRelation
 
 __all__ = [
-    "User", "UserStage",
+    "User", "UserStage", "UserStatus",
     "Assessment",
     "DestinationDecision", "DecisionStatus",
     "CareerEvent", "EventType",
@@ -177,11 +180,16 @@ __all__ = [
     "DataSourceMeta",
     "ExternalResearchItem",
     "ReviewQueueItem",
+    "DataFreshness",
     "CareerTestDrive",
     "Follow",
     "GrowthSnapshot",
     "LearningResource",
     "StudyPlan",
+    "Report",
+    "ReportStatus",
+    "ReportTargetType",
+    "BlockRelation",
 ]
 
 # AI 增强功能

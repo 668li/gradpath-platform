@@ -206,7 +206,7 @@ export default function ActionsPage() {
 }
 
 // ----------------------------------------------------------------------
-// 连击卡片（v1 /api/v1/actions/streaks）
+// 连击卡片（/api/actions/streaks）
 // ----------------------------------------------------------------------
 function StreakCard({ streak }: { streak: StreakVO | null }) {
   if (!streak) return null;

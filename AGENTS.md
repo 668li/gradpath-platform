@@ -13,6 +13,8 @@
 | JS渲染页面 | **Playwright** | 启动浏览器爬取 |
 | B站数据 | **agent-reach bili-cli** | `bili search "考研" --type video` |
 | V2EX数据 | **V2EX API** | `curl https://www.v2ex.com/api/topics/hot.json` |
+| 数据库查询 | **SQLite MCP** | 直接查 `gradpath.db`(schema / SQL / 数据分析),无需写 Python |
+| 库API用法不确定 | **Context7 MCP** | 查 FastAPI/React/依赖库最新文档与示例,防旧 API 幻觉 |
 
 **Firecrawl配置**:
 ```python
@@ -142,3 +144,28 @@ D:\职业规划\职业规划\
 1. **"碰到难题用Sequential Thinking MCP思考"** — 必须遵守
 2. **"所有skill和mcp默认接入"** — 本文件定义规则
 3. **"打破信息差，数据要真实"** — 使用Firecrawl爬取真实数据
+
+## 🏛️ 架构纪律(强制执行)
+
+* 分层必须遵守 `router → service → repository → database`,禁止在 router 中写业务逻辑
+* 数据模型变更必须走 Alembic 迁移,禁止手改表结构
+* 新增 API 用 Pydantic v2 做输入校验,错误响应统一格式
+* 前端组件按 `frontend/components/` 现有模式组织,不重复造轮子
+
+## ✅ 测试纪律
+
+* 新增/修改后端 API 必须配套 pytest 用例,`docker exec gradpath-backend-1 python -m pytest tests/ -q` 全绿才能交付
+* 新增/修改前端页面必须跑 Playwright E2E(`tests/test_e2e_full.py`)
+* 爬虫→入库→API→页面 的关键数据流,每次修改后做一次端到端冒烟
+
+## 🎯 Git 纪律
+
+* commit message 用 `feat:` / `fix:` / `refactor:` / `chore:` 前缀 + 中文简述
+* 单次 commit 不超过 500 行;大改动拆多个 commit
+* 禁止把数据库文件、爬取的大 JSON、运行日志 commit 进仓库
+
+## 🌐 爬虫合规红线(不可违反)
+
+* 只爬公开数据,尊重 `robots.txt`,控制请求频率,不绕验证码、不伪造身份、不撞登录
+* 研招网/论坛数据遵守平台条款;采集数据仅用于本项目,不对外分发
+* 优先用官方 API(Firecrawl / webfetch / V2EX API),减少对目标站点直接压力

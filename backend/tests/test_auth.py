@@ -92,6 +92,63 @@ def test_get_me_unauthorized(client):
     assert resp.status_code == 401
 
 
+def test_update_me_fields(client, auth_headers):
+    """轻量设置（C2）：更新昵称/学校/专业/毕业年份/简介并回读。"""
+    resp = client.put(
+        "/api/auth/me",
+        headers=auth_headers,
+        json={
+            "nickname": "考研小张",
+            "school": "示例大学",
+            "major": "计算机科学与技术",
+            "graduation_year": 2028,
+            "bio": "目标是上岸。",
+        },
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["nickname"] == "考研小张"
+    assert body["school"] == "示例大学"
+    assert body["major"] == "计算机科学与技术"
+    assert body["graduation_year"] == 2028
+    assert body["bio"] == "目标是上岸。"
+    # /me 回读一致（60s 用户缓存已主动失效，否则旧值滞留）
+    me = client.get("/api/auth/me", headers=auth_headers)
+    assert me.json()["nickname"] == "考研小张"
+
+
+def test_update_me_clears_field_with_null(client, auth_headers):
+    """None 表示清除该字段；未传字段保持不变。"""
+    client.put(
+        "/api/auth/me",
+        headers=auth_headers,
+        json={"nickname": "临时昵称", "school": "某校"},
+    )
+    resp = client.put(
+        "/api/auth/me",
+        headers=auth_headers,
+        json={"nickname": None},
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["nickname"] is None
+    assert body["school"] == "某校", "未传字段应保持原值"
+
+
+def test_update_me_rejects_invalid_graduation_year(client, auth_headers):
+    resp = client.put(
+        "/api/auth/me",
+        headers=auth_headers,
+        json={"graduation_year": 1900},
+    )
+    assert resp.status_code == 422
+
+
+def test_update_me_unauthorized(client):
+    resp = client.put("/api/auth/me", json={"nickname": "x"})
+    assert resp.status_code == 401
+
+
 def test_refresh_token_success(client):
     """使用有效的 refresh_token 换取新的 access_token。"""
     client.post(

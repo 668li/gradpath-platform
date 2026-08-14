@@ -14,6 +14,7 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.crawlers.research.transformer import ResearchTransformer, SYSTEM_USER_ID
@@ -23,6 +24,15 @@ from app.models.kaoyan_news import KaoyanNews
 from app.models.user import User
 
 logger = logging.getLogger(__name__)
+
+# data_freshness 渠道别名（app/api/data_freshness.py SOURCES 键）；确认入库时回写新鲜度。
+# 优先级：external_meta.source_channel（unified 聚合包直接带 offcn/sina_edu 等渠道名）
+# > crawler_name 别名映射（通用网页/院校内容归入 kaoyan 渠道）。
+_FRESHNESS_SOURCE_ALIASES = {
+    "web_article_research": "kaoyan",
+    "real_data": "kaoyan",
+    "bilibili_research": "kaoyan",
+}
 
 
 def _ensure_system_user(db: Session) -> None:
@@ -66,6 +76,48 @@ def _backfill_data_source(db: Session, ext_item: ExternalResearchItem, reviewer:
     if ds is not None and ds.review_status != "APPROVED":
         ds.review_status = "APPROVED"
         ds.reviewed_by = reviewer
+
+
+def _touch_data_freshness(db: Session, ext_item: ExternalResearchItem) -> None:
+    """审核 confirm 入库时回写 data_freshness 表（B4）。
+
+    - 渠道匹配：external_meta.source_channel > crawler_name 别名映射
+    - 无匹配渠道则跳过；表不存在（SQLite 未迁移场景）降级跳过，不阻塞审核
+    - 只做 db.execute，不 commit（与调用方同一事务，保证原子）
+    """
+    meta = ext_item.external_meta or {}
+    source_name = meta.get("source_channel") or _FRESHNESS_SOURCE_ALIASES.get(
+        ext_item.crawler_name
+    )
+    if not source_name:
+        return
+    try:
+        row = db.execute(
+            text("SELECT records_count FROM data_freshness WHERE source_name=:n"),
+            {"n": source_name},
+        ).fetchone()
+        if row is None:
+            db.execute(
+                text(
+                    "INSERT INTO data_freshness "
+                    "(source_name, last_successful_crawl, records_count, status, updated_at) "
+                    "VALUES (:n, CURRENT_TIMESTAMP, 1, 'active', CURRENT_TIMESTAMP)"
+                ),
+                {"n": source_name},
+            )
+        else:
+            db.execute(
+                text(
+                    "UPDATE data_freshness SET last_successful_crawl=CURRENT_TIMESTAMP, "
+                    "records_count=records_count+1, status='active', "
+                    "updated_at=CURRENT_TIMESTAMP WHERE source_name=:n"
+                ),
+                {"n": source_name},
+            )
+    except Exception:
+        logger.warning(
+            "[research_promote] 回写 data_freshness 失败（表不存在则跳过）: %s", source_name
+        )
 
 
 def _promote_experience_post(
@@ -215,4 +267,8 @@ def promote_external_item(
             ext_item.item_type,
         )
         return {"promoted": 0, "skipped": 1}
-    return handler(db, ext_item, reviewer)
+    result = handler(db, ext_item, reviewer)
+    if result.get("promoted", 0) > 0:
+        # 确认入库成功 → 回写 data_freshness（同事务，由调用方统一 commit）
+        _touch_data_freshness(db, ext_item)
+    return result

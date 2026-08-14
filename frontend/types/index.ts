@@ -13,12 +13,22 @@ export interface UserResponse {
   id: string;
   email: string;
   name: string;
+  nickname?: string | null;
+  bio?: string | null;
   current_stage?: string | null;
   school?: string | null;
   major?: string | null;
   graduation_year?: number | null;
   is_admin?: boolean;
   created_at: string;
+}
+
+export interface UpdateMeRequest {
+  nickname?: string | null;
+  school?: string | null;
+  major?: string | null;
+  graduation_year?: number | null;
+  bio?: string | null;
 }
 
 export interface TokenResponse {

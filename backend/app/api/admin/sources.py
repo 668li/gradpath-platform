@@ -13,7 +13,7 @@ from app.models.user import User
 from app.schemas.ingestion import DataSourceVO, SourceListVO, SourceUpdateRequest
 from app.services.ingestion_service import list_sources, update_source
 
-router = APIRouter(prefix="/api/v1/admin/sources", tags=["数据真实性-来源管理"])
+router = APIRouter(prefix="/api/admin/sources", tags=["数据真实性-来源管理"])
 
 
 def _to_vo(source: DataSourceMeta) -> DataSourceVO:

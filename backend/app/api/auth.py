@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user
+from app.core.deps import get_current_user, invalidate_user_cache
 from app.core.exceptions import BusinessError
 from app.core.security import create_access_token, verify_refresh_token
 from app.database import get_db
@@ -20,6 +20,7 @@ from app.schemas.auth import (
     RefreshResponse,
     RegisterRequest,
     TokenResponse,
+    UpdateMeRequest,
     UserResponse,
 )
 from app.services.auth_service import (
@@ -88,6 +89,36 @@ def login_endpoint(
 
 @router.get("/me", response_model=UserResponse)
 def me_endpoint(current_user: User = Depends(get_current_user)):
+    return current_user
+
+
+@router.put("/me", response_model=UserResponse)
+def update_me_endpoint(
+    data: UpdateMeRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """轻量设置页（C2）：更新昵称/学校/专业/毕业年份/简介。
+
+    - 只更新显式传入的字段（exclude_unset），None 表示清除该字段
+    - 更新后主动失效 get_current_user 的 60s 缓存，避免旧资料滞留
+    - 不覆盖 name/email/password（改密码不在本轮范围）
+    """
+    updates = data.model_dump(exclude_unset=True)
+    if updates:
+        # get_current_user 可能命中缓存返回脱管实例，这里按 id 重查绑定会话
+        db_user = db.query(User).filter(User.id == current_user.id).first()
+        if db_user is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="用户不存在",
+            )
+        for field, value in updates.items():
+            setattr(db_user, field, value)
+        db.commit()
+        db.refresh(db_user)
+        invalidate_user_cache(current_user.id)
+        return db_user
     return current_user
 
 

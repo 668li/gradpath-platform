@@ -3,11 +3,101 @@
 研招网具有较强的反爬机制，本爬虫使用从公开招生简章整理的预置数据作为数据源，
 覆盖 50 所 985/211 院校的主要专业，包含招生人数、考试科目、学制、报录比估计、
 复试占比、是否保护一志愿等关键字段。
+
+合规（B1 堵旁路）：所有数据只写 PENDING 审核队列（store_research_items），
+不直写 GradSchoolIntel / GradYanzhaoProgram 业务表，由管理员人工确认后才入库。
 """
+import json
+import logging
+
 from sqlalchemy.orm import Session
 
 from app.crawlers.base_crawler import BaseCrawler
 from app.crawlers.registry import register_crawler
+from app.database import SessionLocal
+
+logger = logging.getLogger(__name__)
+
+
+# ===== 合规入库（B1 堵旁路）=====
+# 外部数据一律走 store_research_items 写入 PENDING 审核队列，
+# 由管理员在 admin 端人工确认后才落业务表（合规红线：真实数据仅人工确认入库）。
+
+
+def _review_url(item: dict) -> str:
+    """生成审核条目的 source_url（稳定幂等，重复抓取不产生重复条目）。
+
+    同一院校同一专业可能分属多个院系（如清华计算机系 vs 深圳国际研究生院），
+    键中加入 department 避免院系级条目被错误合并。
+    """
+    school = item.get("school_name") or item.get("university_name") or "unknown"
+    dept = item.get("department") or ""
+    major = item.get("major_name") or ""
+    key = "|".join(part for part in (dept, major) if part) or school
+    return f"https://yz.chsi.com.cn#yanzhao:{school}:{key}"
+
+
+def _to_queue_item(item: dict) -> dict:
+    """把 yanzhao 解析产物映射为审核队列条目（ExternalResearchItem 核心列）。
+
+    仅提供 title / content / source_url 三个核心字段，
+    其余字段由 store_research_items 自动写入 external_meta，保留行级来源元数据。
+    """
+    school = item.get("school_name") or item.get("university_name") or ""
+    major = item.get("major_name") or ""
+    return {
+        "title": f"招生信息：{school} {major}".strip()[:300],
+        "content": json.dumps(item, ensure_ascii=False),
+        "source_url": _review_url(item),
+    }
+
+
+def _store_to_review_queue(crawler: BaseCrawler, items: list[dict], db: Session) -> int:
+    """统一写审核队列：创建运行记录 → store_research_items（PENDING）→ 回写统计。"""
+    from app.models.crawler_run import CrawlerRun
+    from app.services.research_ingestion import store_research_items
+
+    run_record = CrawlerRun(
+        source_name=crawler.name,
+        category=crawler.category,
+        status="running",
+    )
+    db.add(run_record)
+    db.commit()
+    db.refresh(run_record)
+
+    queue_items = [
+        _to_queue_item(item)
+        for item in items
+        if item.get("school_name") or item.get("university_name")
+    ]
+    result = store_research_items(
+        db,
+        crawler_name=crawler.name,
+        item_type="kaoyan_news",
+        items=queue_items,
+        source_platform="web",
+        run_id=str(run_record.id),
+    )
+
+    run_record.status = "success"
+    run_record.items_fetched = crawler.stats.get("fetched", 0)
+    run_record.items_stored = result["inserted"]
+    run_record.items_duplicates = result["duplicated"]
+    run_record.stored_count = result["inserted"]
+    run_record.duplicate_count = result["duplicated"]
+    run_record.source_meta = {
+        "note": "研招网招生数据（预置公开信息）：仅人工确认后入库（PENDING 审核队列）",
+    }
+    db.commit()
+
+    crawler.stats["stored"] = result["inserted"]
+    crawler.stats["duplicates"] += result["duplicated"]
+    logger.info(
+        "[%s] 写入审核队列 %s 条，去重 %s 条",
+        crawler.name, result["inserted"], result["duplicated"],
+    )
+    return result["inserted"]
 
 
 # 预置招生简章数据 — 每条为一个元组，字段顺序如下：
@@ -444,28 +534,15 @@ class YanzhaoCrawler(BaseCrawler):
         return parsed
 
     def store(self, items: list[dict], db: Session) -> int:
-        """按 school_name + major_name 去重入库，使用批量UPSERT提升性能。"""
-        from uuid import UUID
-        from app.models.grad_intel import GradSchoolIntel
+        """写 PENDING 审核队列（B1 堵旁路：不再直写 GradSchoolIntel）。
 
-        SYSTEM_USER_ID = UUID("00000000-0000-0000-0000-000000000000")
-
+        合规红线（仅人工确认入库）：研招网等外部数据一律先写
+        t_external_research_item + t_review_queue_item（review_status=PENDING），
+        由管理员在 admin 端人工确认后才落业务表。
+        """
         if not items:
             return 0
-
-        # 添加user_id到每个item
-        for item in items:
-            item["user_id"] = SYSTEM_USER_ID
-
-        # 使用批量UPSERT：按school_name+major_name去重
-        affected = self.batch_upsert(
-            db=db,
-            model_class=GradSchoolIntel,
-            items=items,
-            unique_key=["school_name", "major_name"],
-            batch_size=200,
-        )
-        return affected
+        return _store_to_review_queue(self, items, db)
 
 
 # ===== 研招网真实专业目录数据 =====
@@ -1179,18 +1256,12 @@ class YanzhaoProgramCrawler(BaseCrawler):
         return parsed
 
     def store(self, items: list[dict], db: Session) -> int:
-        """按 university_name + major_name + year 去重入库，使用批量UPSERT提升性能。"""
-        from app.models.grad_intel import GradYanzhaoProgram
+        """写 PENDING 审核队列（B1 堵旁路：不再直写 GradYanzhaoProgram）。
 
+        合规红线（仅人工确认入库）：研招网等外部数据一律先写
+        t_external_research_item + t_review_queue_item（review_status=PENDING），
+        由管理员在 admin 端人工确认后才落业务表。
+        """
         if not items:
             return 0
-
-        # 使用批量UPSERT：按university_name+major_name+year去重
-        affected = self.batch_upsert(
-            db=db,
-            model_class=GradYanzhaoProgram,
-            items=items,
-            unique_key=["university_name", "major_name", "year"],
-            batch_size=200,
-        )
-        return affected
+        return _store_to_review_queue(self, items, db)

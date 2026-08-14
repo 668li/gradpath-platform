@@ -1,5 +1,7 @@
 import enum
-from sqlalchemy import Boolean, Enum, Integer, String
+from datetime import datetime
+
+from sqlalchemy import Boolean, DateTime, Enum, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -11,6 +13,13 @@ class UserStage(str, enum.Enum):
     graduating = "graduating"
     early_career = "early_career"
     experienced = "experienced"
+
+
+class UserStatus(str, enum.Enum):
+    """账户状态：active=正常；banned=封禁（拒绝登录与所有受保护请求）。"""
+
+    active = "active"
+    banned = "banned"
 
 
 class User(UUIDMixin, TimestampMixin, Base):
@@ -28,3 +37,14 @@ class User(UUIDMixin, TimestampMixin, Base):
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     bio: Mapped[str | None] = mapped_column(String(500), nullable=True)
     avatar_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # 社区治理：账户状态（默认 active，server_default 兼容存量行迁移）
+    status: Mapped[UserStatus] = mapped_column(
+        Enum(UserStatus),
+        nullable=False,
+        default=UserStatus.active,
+        server_default=UserStatus.active.value,
+    )
+    banned_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    ban_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)

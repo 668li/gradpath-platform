@@ -25,6 +25,8 @@ from app.schemas.qa import (
 )
 from app.services.qa_service import (
     accept_best_answer,
+    approve_answer,
+    approve_question,
     create_answer,
     create_question,
     delete_answer,
@@ -36,6 +38,8 @@ from app.services.qa_service import (
     get_questions_cursor,
     increment_question_view,
     like_answer,
+    reject_answer,
+    reject_question,
     update_answer,
     update_question,
 )
@@ -405,3 +409,58 @@ def like_answer_endpoint(
     if not answer:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="回答不存在")
     return {"message": "点赞成功", "like_count": answer.like_count}
+
+
+# ===== 审核端点（管理端，成熟化 A3 补齐）=====
+
+
+@router.post("/{question_id}/approve", response_model=QAResponse)
+def approve_question_endpoint(
+    question_id: UUID,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_admin_user),
+):
+    """审核通过问题（管理员）。"""
+    question = approve_question(db, question_id)
+    if not question:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="问题不存在")
+    return QAResponse.model_validate(question)
+
+
+@router.post("/{question_id}/reject", response_model=QAResponse)
+def reject_question_endpoint(
+    question_id: UUID,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_admin_user),
+):
+    """拒绝问题（管理员）。"""
+    question = reject_question(db, question_id)
+    if not question:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="问题不存在")
+    return QAResponse.model_validate(question)
+
+
+@router.post("/answers/{answer_id}/approve", response_model=QAAnswerResponse)
+def approve_answer_endpoint(
+    answer_id: UUID,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_admin_user),
+):
+    """审核通过回答（管理员）。"""
+    answer = approve_answer(db, answer_id)
+    if not answer:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="回答不存在")
+    return QAAnswerResponse.model_validate(answer)
+
+
+@router.post("/answers/{answer_id}/reject", response_model=QAAnswerResponse)
+def reject_answer_endpoint(
+    answer_id: UUID,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_admin_user),
+):
+    """拒绝回答（管理员）。"""
+    answer = reject_answer(db, answer_id)
+    if not answer:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="回答不存在")
+    return QAAnswerResponse.model_validate(answer)

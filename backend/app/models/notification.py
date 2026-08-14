@@ -19,6 +19,7 @@ class NotificationType(str, enum.Enum):
     reminder = "reminder"
     new_post = "new_post"
     new_follower = "new_follower"
+    moderation = "moderation"  # 举报处理结果 / 内容下架通知
 
 
 class Notification(UUIDMixin, TimestampMixin, Base):

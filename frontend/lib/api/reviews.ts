@@ -7,7 +7,7 @@ import type {
   ReviewVO,
 } from "@/types/review-center";
 
-const BASE = "/api/v1/reviews";
+const BASE = "/api/reviews";
 
 /** 生成幂等键：同一操作重复提交时后端返回首次结果（去重保护） */
 function idemKey(): string {

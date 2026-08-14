@@ -208,8 +208,8 @@ def update_experience_post(
     post_id: UUID,
     data: dict,
 ) -> Optional[ExperiencePost]:
-    """更新经验贴。"""
-    post = get_experience_post(db, post_id)
+    """更新经验贴（作者/管理员对自身或待审帖操作，需 include_unapproved 直查）。"""
+    post = get_experience_post(db, post_id, include_unapproved=True)
     if not post:
         return None
 
@@ -231,8 +231,8 @@ def update_experience_post(
 
 
 def delete_experience_post(db: Session, post_id: UUID) -> bool:
-    """删除经验贴。"""
-    post = get_experience_post(db, post_id)
+    """删除经验贴（作者/管理员删除自身或待审帖，需 include_unapproved 直查）。"""
+    post = get_experience_post(db, post_id, include_unapproved=True)
     if not post:
         return False
     db.delete(post)
@@ -261,8 +261,13 @@ def like_experience_post(db: Session, post_id: UUID) -> Optional[ExperiencePost]
 
 
 def approve_experience_post(db: Session, post_id: UUID) -> Optional[ExperiencePost]:
-    """审核通过经验贴。"""
-    post = get_experience_post(db, post_id)
+    """审核通过经验贴。
+
+    修复（成熟化 A3）：此前经 get_experience_post（默认只查 approved）
+    导致对 pending 帖 approve/reject 返回 404 —— 审核对象恰是待审帖。
+    现在直查任意状态。
+    """
+    post = get_experience_post(db, post_id, include_unapproved=True)
     if not post:
         return None
     post.status = "approved"
@@ -272,11 +277,24 @@ def approve_experience_post(db: Session, post_id: UUID) -> Optional[ExperiencePo
 
 
 def reject_experience_post(db: Session, post_id: UUID) -> Optional[ExperiencePost]:
-    """拒绝经验贴。"""
-    post = get_experience_post(db, post_id)
+    """拒绝经验贴（同上修复：直查任意状态）。"""
+    post = get_experience_post(db, post_id, include_unapproved=True)
     if not post:
         return None
     post.status = "rejected"
+    db.commit()
+    db.refresh(post)
+    return post
+
+
+def set_experience_post_pin(
+    db: Session, post_id: UUID, pinned: bool
+) -> Optional[ExperiencePost]:
+    """置顶/取消置顶经验贴（管理员）。"""
+    post = get_experience_post(db, post_id, include_unapproved=True)
+    if not post:
+        return None
+    post.is_pinned = pinned
     db.commit()
     db.refresh(post)
     return post

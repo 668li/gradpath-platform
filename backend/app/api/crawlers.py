@@ -17,6 +17,7 @@ from app.models.user import User
 from app.models.crawler_run import CrawlerRun
 from app.schemas.crawler_run import CrawlerInfo, CrawlerRunRequest, CrawlerRunResponse
 from app.crawlers.registry import list_crawlers, get_crawler
+from app.crawlers.compliance import is_allowed_crawler
 from app.crawlers.crawler_config import load_config
 from app.core.websocket_manager import manager as ws_manager
 
@@ -28,6 +29,21 @@ router = APIRouter(prefix="/api/crawlers", tags=["爬虫管理"])
 # 原 _task_status dict 进程重启丢失 + 多 worker 不共享
 TASK_CACHE_PREFIX = "crawler_task"
 TASK_CACHE_TTL = 24 * 60 * 60  # 24 hours
+
+
+def _assert_allowed_crawler(source_name: str) -> None:
+    """合规护栏（B1 堵旁路）：仅允许写入 PENDING 审核队列的爬虫被触发。
+
+    直写业务表的旧爬虫（假数据 / 绕过人工审核）一律 403 拒绝，杜绝旁路入库。
+    """
+    if not is_allowed_crawler(source_name):
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                f"爬虫 '{source_name}' 不在合规白名单内："
+                "仅允许写入 PENDING 审核队列的爬虫（外部数据须人工确认后入库）"
+            ),
+        )
 
 
 def _celery_available() -> bool:
@@ -238,6 +254,9 @@ def run_crawler_endpoint(
     if not cls:
         raise HTTPException(status_code=404, detail=f"爬虫 '{body.source_name}' 未注册")
 
+    # 合规护栏（B1 堵旁路）：非白名单爬虫一律拒绝触发
+    _assert_allowed_crawler(body.source_name)
+
     task_id = uuid4().hex[:12]
 
     # 优先投递到 Celery；失败时降级到 BackgroundTasks
@@ -341,6 +360,9 @@ def create_schedule(
     if not cls:
         raise HTTPException(status_code=404, detail=f"爬虫 '{body.source_name}' 未注册")
 
+    # 合规护栏（B1 堵旁路）：非白名单爬虫一律拒绝创建定时任务
+    _assert_allowed_crawler(body.source_name)
+
     job_id = f"crawler_{body.source_name}"
     cron_parts = body.cron.split()
     trigger_kwargs = {
@@ -423,6 +445,11 @@ async def _run_scheduled_crawler(source_name: str):
     修改: A10 — 原 APScheduler 直接同步执行爬虫，多 worker 会重复执行同一任务；
     改为投递到 Celery 队列，由 Celery worker 单一消费保证幂等。
     """
+    # 合规护栏（B1 堵旁路）：存量定时任务若指向直写爬虫，直接跳过不执行
+    if not is_allowed_crawler(source_name):
+        logger.warning("定时爬虫 '%s' 不在合规白名单内，已跳过执行", source_name)
+        return
+
     task_id = uuid4().hex[:12]
     logger.info(f"定时任务触发: {source_name}, task_id={task_id}")
 

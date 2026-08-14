@@ -277,6 +277,55 @@ def delete_answer(db: Session, answer_id: UUID) -> bool:
     return True
 
 
+# ===== 审核（管理端，成熟化 A3）=====
+# 注意：审核对象是待审内容，必须 include_unapproved 直查，
+# 否则对 pending 问题/回答 approve/reject 会 404（与经验贴同款 bug）。
+
+
+def approve_question(db: Session, question_id: UUID) -> Optional[QA]:
+    """审核通过问题。"""
+    question = get_question(db, question_id, include_unapproved=True)
+    if not question:
+        return None
+    question.status = "approved"
+    db.commit()
+    db.refresh(question)
+    return question
+
+
+def reject_question(db: Session, question_id: UUID) -> Optional[QA]:
+    """拒绝问题。"""
+    question = get_question(db, question_id, include_unapproved=True)
+    if not question:
+        return None
+    question.status = "rejected"
+    db.commit()
+    db.refresh(question)
+    return question
+
+
+def approve_answer(db: Session, answer_id: UUID) -> Optional[QAAnswer]:
+    """审核通过回答。"""
+    answer = get_answer(db, answer_id)
+    if not answer:
+        return None
+    answer.status = "approved"
+    db.commit()
+    db.refresh(answer)
+    return answer
+
+
+def reject_answer(db: Session, answer_id: UUID) -> Optional[QAAnswer]:
+    """拒绝回答。"""
+    answer = get_answer(db, answer_id)
+    if not answer:
+        return None
+    answer.status = "rejected"
+    db.commit()
+    db.refresh(answer)
+    return answer
+
+
 def accept_best_answer(db: Session, question_id: UUID, answer_id: UUID) -> Optional[QA]:
     """采纳最佳回答。"""
     question = get_question(db, question_id)

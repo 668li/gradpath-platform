@@ -1,8 +1,8 @@
 """AI 服务治理收口 API — 主线 b/F5（契约先行，方案 C）。
 
-- GET  /api/v1/admin/ai/governance-status → 真实动态检测：扫描 11 个 AI 服务，
+- GET  /api/admin/ai/governance-status → 真实动态检测：扫描 11 个 AI 服务，
   判定其源码是否统一接入 ``AIOrchestrator``，返回治理总览。
-  （原 POST /api/v1/ai/orchestrate 统一编排入口已下线 — 方案 C 决策，
+  （原 POST /api/ai/orchestrate 统一编排入口已下线 — 方案 C 决策，
   统一编排不落地，服务仍各自直连。）
 
 检测口径：``importlib.import_module`` + ``inspect.getsource(module)`` 中
@@ -18,7 +18,7 @@ from app.schemas.ai_governance import GovernanceStatusVO, ServiceGovernanceVO
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/v1", tags=["AI服务治理"])
+router = APIRouter(prefix="/api", tags=["AI服务治理"])
 
 # 纳入治理的 11 个 AI 服务（主线 b/F5 治理清单）
 _GOVERNED_SERVICES: tuple[str, ...] = (

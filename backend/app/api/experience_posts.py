@@ -30,6 +30,7 @@ from app.services.experience_post_service import (
     increment_experience_post_view,
     like_experience_post,
     reject_experience_post,
+    set_experience_post_pin,
     update_experience_post,
 )
 
@@ -182,7 +183,8 @@ def update_experience_post_endpoint(
     user: User = Depends(get_current_user),
 ):
     """更新经验贴（作者或管理员）。"""
-    post = get_experience_post(db, post_id)
+    # include_unapproved：作者可编辑自己待审的草稿（审核前的修正）
+    post = get_experience_post(db, post_id, include_unapproved=True)
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="经验贴不存在")
     _check_post_owner(post, user)
@@ -198,7 +200,8 @@ def delete_experience_post_endpoint(
     user: User = Depends(get_current_user),
 ):
     """删除经验贴（作者或管理员）。"""
-    post = get_experience_post(db, post_id)
+    # include_unapproved：作者可删除自己待审的草稿
+    post = get_experience_post(db, post_id, include_unapproved=True)
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="经验贴不存在")
     _check_post_owner(post, user)
@@ -247,3 +250,18 @@ def reject_experience_post_endpoint(
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="经验贴不存在")
     return {"message": "已拒绝", "post_id": str(post.id)}
+
+
+@router.post("/{post_id}/pin")
+def pin_experience_post_endpoint(
+    post_id: UUID,
+    body: Optional[dict] = None,
+    db: Session = Depends(get_db),
+    admin: User = Depends(get_admin_user),
+):
+    """置顶/取消置顶经验贴（管理员）。body: {"is_pinned": true|false}"""
+    pinned = bool((body or {}).get("is_pinned", True))
+    post = set_experience_post_pin(db, post_id, pinned)
+    if not post:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="经验贴不存在")
+    return {"message": "已置顶" if pinned else "已取消置顶", "post_id": str(post.id), "is_pinned": post.is_pinned}

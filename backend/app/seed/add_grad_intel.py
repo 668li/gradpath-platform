@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Add 90 more GRAD_INTEL entries to reach 1000 total."""
+"""Add 90 more GRAD_INTEL entries to reach 1000 total.
+
+【演示数据】本脚本为扩充演示数据的辅助脚本（凑 1000 条），
+写入的是 seed_grad_intel.py 中的演示数据列表，不代表真实考研录取数据。
+"""
 
 import random
 
