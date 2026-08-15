@@ -51,3 +51,6 @@ class KaoyanNews(UUIDMixin, TimestampMixin, Base):
     is_expired: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
     )  # 时效过期标记（关键时间点已过或超过 180 天）
+    structured_meta: Mapped[dict | None] = mapped_column(
+        JSONB, nullable=True
+    )  # 决策数据卡 {enrollment_count/exam_subjects/reference_books}（Phase G 规则抽取）

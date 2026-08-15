@@ -51,6 +51,14 @@ class ExperiencePostResponse(ExperiencePostBase):
     updated_at: datetime
     author_name: Optional[str] = Field(None, description="作者显示名")
     author_avatar: Optional[str] = Field(None, description="作者头像URL")
+    # Phase G 提纯字段：质量分/软广标注/结构化元信息（LLM 摘要挂载点，未启用时为 None）
+    quality_score: Optional[int] = Field(None, description="质量分 0-100")
+    quality_grade: Optional[str] = Field(None, max_length=2, description="质量等级 A/B/C/D")
+    ai_summary: Optional[str] = Field(None, description="LLM 生成摘要（挂载点，未启用为 None）")
+    structured_meta: Optional[dict] = Field(None, description="结构化元信息（方法/适用人群/学科/阶段/院校/目标分）")
+    is_promotion: Optional[bool] = Field(None, description="是否疑似软广/引流（标注不下架）")
+    promotion_confidence: Optional[float] = Field(None, description="软广置信度 0-1")
+    promotion_reason: Optional[str] = Field(None, description="软广判定依据")
 
     model_config = ConfigDict(from_attributes=True)
 

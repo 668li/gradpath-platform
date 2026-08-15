@@ -18,6 +18,12 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.crawlers.research.experience_quality import (
+    detect_promotion,
+    extract_experience_meta,
+    score_experience_item,
+)
+from app.crawlers.research.news_meta import extract_news_structured_meta
 from app.crawlers.research.quality import score_item
 from app.crawlers.research.transformer import ResearchTransformer, SYSTEM_USER_ID
 from app.models.experience_post import ExperiencePost
@@ -261,7 +267,12 @@ def _touch_data_freshness(db: Session, ext_item: ExternalResearchItem) -> None:
 def _promote_experience_post(
     db: Session, ext_item: ExternalResearchItem, reviewer: str
 ) -> dict:
-    """落 ExperiencePost：复用 transform_bilibili 清洗，status=approved，source_url 幂等。"""
+    """落 ExperiencePost：复用 transform_bilibili 清洗，status=approved，source_url 幂等。
+
+    Phase G 提纯：落库时注入质量分（打分器五维：来源可信度/完整度/互动/
+    可溯源/反软广）、软广标注（detect_promotion，命中标注但不下架）、
+    结构化元信息（extract_experience_meta：学科/阶段/院校/目标分/方法）。
+    """
     # 幂等去重：业务表已存在同 URL → 跳过
     exists = (
         db.query(ExperiencePost.id)
@@ -306,6 +317,36 @@ def _promote_experience_post(
 
     payload = payloads[0]
     payload["status"] = "approved"  # 管理员显式确认后落库
+
+    # ---- Phase G 提纯注入（规则版，零 LLM 成本）----
+    title = ext_item.title
+    raw_content = ext_item.content or ""
+    tags = [t for t in (payload.get("tags") or []) if isinstance(t, str)]
+
+    # 1) 软广检测：命中标注但不下架（管理员已人工审核通过，前端知情降权）
+    is_promotion, promo_conf, promo_reason = detect_promotion(title, raw_content, tags)
+
+    # 2) 质量分：采集期 meta 已带则沿用，缺失则现场规则计算
+    quality_score, quality_grade = meta.get("quality_score"), meta.get("quality_grade")
+    if not isinstance(quality_score, (int, float)) or not isinstance(quality_grade, str):
+        quality_score, quality_grade = score_experience_item(
+            title=title,
+            content=raw_content,
+            source_platform=ext_item.source_platform,
+            source_url=ext_item.source_url,
+            external_view_count=int(meta.get("view_count") or payload.get("external_view_count") or 0),
+            external_like_count=int(meta.get("like_count") or payload.get("external_like_count") or 0),
+            is_promotion=is_promotion,
+        )
+    payload["quality_score"] = int(quality_score)
+    payload["quality_grade"] = quality_grade
+
+    # 3) 结构化元信息：学科/阶段/院校/目标分/方法（决策数据卡）
+    payload["structured_meta"] = extract_experience_meta(title, raw_content, tags)
+    payload["is_promotion"] = is_promotion
+    payload["promotion_confidence"] = promo_conf
+    payload["promotion_reason"] = promo_reason
+
     _ensure_system_user(db)
     db.add(ExperiencePost(**payload))
     _backfill_data_source(db, ext_item, reviewer)
@@ -353,6 +394,9 @@ def _promote_kaoyan_news(
     key_dates = extract_key_dates(ext_item.title, content)
     is_expired = _compute_is_expired(published_at, crawled_at, key_dates)
 
+    # 结构化元信息（决策数据卡：招生人数/考试科目/参考书；Phase G 规则抽取）
+    structured_meta = extract_news_structured_meta(ext_item.title, content)
+
     db.add(
         KaoyanNews(
             title=ext_item.title,
@@ -370,6 +414,7 @@ def _promote_kaoyan_news(
             quality_grade=quality_grade,
             key_dates=key_dates,
             is_expired=is_expired,
+            structured_meta=structured_meta,
         )
     )
     _backfill_data_source(db, ext_item, reviewer)

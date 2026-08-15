@@ -13,6 +13,8 @@ import {
   ShieldCheck,
   FileText,
   AlertTriangle,
+  BarChart3,
+  BookText,
 } from "lucide-react";
 import { kaoyanNewsApi } from "@/lib/api";
 import { Badge } from "@/components/ui/form-controls";
@@ -20,7 +22,7 @@ import { LoadingState, EmptyState } from "@/components/ui/empty";
 import { SourceBadge } from "@/components/ui/source-badge";
 import { QualityBadge } from "@/components/ui/quality-badge";
 import { countdownOf, formatDate } from "../key-dates";
-import type { KaoyanNewsResponse, KaoyanKeyDate } from "@/types";
+import type { KaoyanNewsResponse, KaoyanKeyDate, NewsStructuredMeta } from "@/types";
 import { cn } from "@/lib/utils";
 
 function KeyDateRow({ kd }: { kd: KaoyanKeyDate }) {
@@ -60,6 +62,61 @@ function KeyDateRow({ kd }: { kd: KaoyanKeyDate }) {
         {info.text}
       </span>
     </div>
+  );
+}
+
+/** 决策数据卡（Phase G）：资讯结构化元信息（招生人数/考试科目/参考书目）。
+ *  规则抽取；三个维度全抽不到时不渲染（诚实降级），不影响 key_dates 逻辑。 */
+function NewsStructuredCard({ meta }: { meta?: NewsStructuredMeta | null }) {
+  if (!meta) return null;
+  const has =
+    meta.enrollment_count != null ||
+    (meta.exam_subjects?.length ?? 0) > 0 ||
+    (meta.reference_books?.length ?? 0) > 0;
+  if (!has) return null;
+  return (
+    <section className="px-5 mt-5">
+      <h2 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-ink-800">
+        <BarChart3 className="h-4 w-4 text-brand-600" />
+        决策数据卡
+      </h2>
+      <div className="space-y-3 rounded-lg border border-paper-200 bg-paper-50/60 p-4">
+        {meta.enrollment_count != null && (
+          <div className="flex items-baseline gap-2">
+            <span className="w-16 shrink-0 text-xs text-ink-400">招生人数</span>
+            <span className="text-lg font-bold text-brand-700">
+              {meta.enrollment_count}
+              <span className="ml-1 text-xs font-normal text-ink-400">人</span>
+            </span>
+          </div>
+        )}
+        {meta.exam_subjects && meta.exam_subjects.length > 0 && (
+          <div className="flex items-start gap-2">
+            <span className="w-16 shrink-0 pt-0.5 text-xs text-ink-400">考试科目</span>
+            <div className="flex flex-wrap gap-1.5">
+              {meta.exam_subjects.map((s) => (
+                <Badge key={s} color="blue" className="text-xs">
+                  {s}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+        {meta.reference_books && meta.reference_books.length > 0 && (
+          <div className="flex items-start gap-2">
+            <span className="w-16 shrink-0 pt-0.5 text-xs text-ink-400">参考书目</span>
+            <ul className="space-y-1">
+              {meta.reference_books.map((b) => (
+                <li key={b} className="inline-flex items-center gap-1 text-sm text-ink-700">
+                  <BookText className="h-3.5 w-3.5 shrink-0 text-ink-400" />
+                  《{b}》
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -187,6 +244,9 @@ export default function KaoyanNewsDetailPage() {
             </div>
           </section>
         )}
+
+        {/* 决策数据卡（Phase G：招生人数/科目/参考书，抽不到不渲染） */}
+        <NewsStructuredCard meta={news.structured_meta} />
 
         {/* 正文 */}
         <section className="p-5">

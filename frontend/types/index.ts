@@ -1879,6 +1879,21 @@ export interface MentorReviewCreate {
 }
 
 // ===== 考研社区交流系统 =====
+export interface ExperienceStructuredMeta {
+  /** 学科（如 408 / 数学 / 英语） */
+  subject?: string | null;
+  /** 阶段（择校/备考/初试/复试/调剂/上岸/二战） */
+  stage?: string | null;
+  /** 院校（上岸 XX大学） */
+  school?: string | null;
+  /** 目标/初试分数 */
+  target_score?: number | null;
+  /** 可执行方法关键词（刷题/真题/笔记/复盘…） */
+  methods?: string[];
+  /** 适用人群（一战/二战/跨考/在职…） */
+  audience?: string | null;
+}
+
 export interface ExperiencePostResponse {
   id: string;
   user_id: string;
@@ -1900,6 +1915,18 @@ export interface ExperiencePostResponse {
   external_view_count: number;
   external_like_count: number;
   is_verified: boolean;
+  /** Phase G 经验质量分 0-100（规则打分器注入） */
+  quality_score?: number | null;
+  /** Phase G 质量分级 A/B/C/D */
+  quality_grade?: string | null;
+  /** Phase G 结构化元信息（决策数据卡） */
+  structured_meta?: ExperienceStructuredMeta | null;
+  /** Phase G 疑似软广标注（命中但不下架） */
+  is_promotion?: boolean | null;
+  /** Phase G 软广置信度 0-1 */
+  promotion_confidence?: number | null;
+  /** Phase G 软广标注原因（命中关键词） */
+  promotion_reason?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -2094,6 +2121,18 @@ export interface KaoyanNewsResponse {
   quality_grade?: string | null;
   key_dates?: KaoyanKeyDate[];
   is_expired?: boolean;
+  /** Phase G 决策数据卡：招生人数/考试科目/参考书目 */
+  structured_meta?: NewsStructuredMeta | null;
+}
+
+/** Phase G 资讯结构化元信息（决策数据卡，规则抽取；抽不到保持 null/[] 诚实降级） */
+export interface NewsStructuredMeta {
+  /** 招生人数 */
+  enrollment_count?: number | null;
+  /** 考试科目名列表 */
+  exam_subjects?: string[];
+  /** 参考书目列表 */
+  reference_books?: string[];
 }
 
 export interface KaoyanNewsListParams {

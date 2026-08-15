@@ -23,6 +23,7 @@ import { useToast } from "@/components/ui/toast";
 import { kaoyanCommunityApi } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { ExperiencePostResponse, QAResponse } from "@/types";
+import { QualityBadge } from "@/components/ui/quality-badge";
 import { ExternalExperienceCard } from "./ExternalExperienceCard";
 
 const tabs = [
@@ -39,6 +40,9 @@ const externalCategories = [
   { value: "复试", label: "复试" },
   { value: "调剂", label: "调剂" },
   { value: "复习", label: "复习" },
+  // Phase H：信息差高频维度（transformer 分类细化后落库的新分类）
+  { value: "心态", label: "心态" },
+  { value: "避坑", label: "避坑" },
 ];
 
 function isExternalPost(post: ExperiencePostResponse): boolean {
@@ -243,9 +247,12 @@ function CommunityPageContent() {
                     >
                       <div className="flex items-start justify-between gap-3 mb-2">
                         <h3 className="font-semibold text-ink-900">{post.title}</h3>
-                        <Badge color={post.category === "问答" ? "blue" : "green"}>
-                          {post.category === "general" ? "经验贴" : post.category}
-                        </Badge>
+                        <div className="flex shrink-0 items-center gap-2">
+                          <QualityBadge grade={post.quality_grade} score={post.quality_score} />
+                          <Badge color={post.category === "问答" ? "blue" : "green"}>
+                            {post.category === "general" ? "经验贴" : post.category}
+                          </Badge>
+                        </div>
                       </div>
                       <p className="text-sm text-ink-500 mb-3 line-clamp-2">
                         {post.summary || post.content.slice(0, 120)}

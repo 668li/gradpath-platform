@@ -125,3 +125,61 @@ def enhance_kaoyan_news_batch(limit: int = 5):
         return {"status": "failed", "error": str(e)}
     finally:
         db.close()
+
+
+@celery_app.task(name="app.tasks.ai_tasks.enhance_experience_post_batch")
+def enhance_experience_post_batch(limit: int = 5):
+    """批量增强考研经验贴（Phase G 挂载点）：LLM 生成 ai_summary + 分类修正。
+
+    串行处理已审核入库且缺 ai_summary 的外部经验贴（按质量分降序），
+    单条失败自动降级保留规则版结果（research_promote 落库时已算），
+    不影响其他条目。默认不投递（schedule_experience_enhancement 以
+    LLM_API_KEY + REDIS_URL 为 gate），配好 key 后自动启用。
+
+    Args:
+        limit: 单批最多增强条数（默认 5）
+    """
+    db = SessionLocal()
+    try:
+        from app.models.experience_post import ExperiencePost
+        from app.services.experience_enhance import enhance_experience_item
+
+        rows = (
+            db.query(ExperiencePost)
+            .filter(
+                ExperiencePost.status == "approved",
+                ExperiencePost.ai_summary.is_(None),
+                ExperiencePost.source_platform != "user",
+            )
+            .order_by(ExperiencePost.quality_score.desc())
+            .limit(limit)
+            .all()
+        )
+        if not rows:
+            logger.info("[experience_enhance] 无待增强经验贴（limit=%d）", limit)
+            return {"status": "skipped", "enhanced": 0, "degraded": 0}
+
+        import asyncio
+
+        enhanced = degraded = 0
+        for post in rows:
+            try:
+                result = asyncio.run(enhance_experience_item(db, post))
+            except Exception as e:  # noqa: BLE001
+                logger.warning("[experience_enhance] 单条增强异常降级 %s: %s", post.id, e)
+                result = {"status": "degraded"}
+            if result.get("status") == "enhanced":
+                enhanced += 1
+            else:
+                degraded += 1
+            # 逐条提交：单条失败不回滚整批
+            db.commit()
+
+        logger.info("[experience_enhance] 批量完成 enhanced=%d degraded=%d", enhanced, degraded)
+        return {"status": "success", "enhanced": enhanced, "degraded": degraded}
+    except Exception as e:
+        logger.error("[experience_enhance] 批量增强失败: %s", e)
+        db.rollback()
+        return {"status": "failed", "error": str(e)}
+    finally:
+        db.close()

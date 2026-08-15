@@ -1,8 +1,9 @@
 "use client";
 
-import { ExternalLink, Eye, ThumbsUp, Video, Globe, Newspaper } from "lucide-react";
+import { ExternalLink, Eye, ThumbsUp, Video, Globe, Newspaper, AlertTriangle, Target } from "lucide-react";
 import { Badge } from "@/components/ui/form-controls";
 import { SourceBadge } from "@/components/ui/source-badge";
+import { QualityBadge } from "@/components/ui/quality-badge";
 import { cn } from "@/lib/utils";
 import type { ExperiencePostResponse } from "@/types";
 
@@ -31,6 +32,14 @@ function getPlatformInfo(platform: string) {
 export function ExternalExperienceCard({ post, className }: ExternalExperienceCardProps) {
   const platform = getPlatformInfo(post.source_platform);
   const PlatformIcon = platform.icon;
+  // Phase G 结构化摘要（决策数据卡：学科/院校/目标分，抽不到不渲染）
+  const meta = post.structured_meta || {};
+  const isPromo = Boolean(post.is_promotion);
+  const structuredChips: string[] = [];
+  if (meta.subject) structuredChips.push(`学科 ${meta.subject}`);
+  if (meta.school) structuredChips.push(meta.school);
+  if (meta.target_score) structuredChips.push(`目标 ${meta.target_score} 分`);
+  if (meta.audience) structuredChips.push(meta.audience);
 
   const handleTitleClick = () => {
     if (post.source_url) {
@@ -42,6 +51,7 @@ export function ExternalExperienceCard({ post, className }: ExternalExperienceCa
     <div
       className={cn(
         "rounded-xl border border-paper-200 bg-white p-5 shadow-sm transition-all hover:shadow-md",
+        isPromo && "border-amber-200",
         className,
       )}
     >
@@ -68,6 +78,34 @@ export function ExternalExperienceCard({ post, className }: ExternalExperienceCa
           <SourceBadge sourceUrl={post.source_url} sourcePlatform={post.source_platform} showPlatform={false} />
         </div>
       </div>
+
+      {/* Phase G：质量徽章 + 疑似软广标注（标注不隐藏，让用户知情） */}
+      <div className="flex flex-wrap items-center gap-2 mb-2">
+        <QualityBadge grade={post.quality_grade} score={post.quality_score} />
+        {isPromo && (
+          <span
+            className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-700"
+            title={post.promotion_reason ? `命中：${post.promotion_reason}` : "疑似广告/引流内容"}
+          >
+            <AlertTriangle className="h-3 w-3" />
+            疑似推广
+          </span>
+        )}
+      </div>
+
+      {structuredChips.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 mb-2">
+          {structuredChips.map((chip) => (
+            <span
+              key={chip}
+              className="inline-flex items-center gap-1 rounded-md border border-paper-200 bg-paper-50 px-1.5 py-0.5 text-xs text-ink-600"
+            >
+              <Target className="h-3 w-3 text-brand-500" />
+              {chip}
+            </span>
+          ))}
+        </div>
+      )}
 
       <p className="text-sm text-ink-500 mb-3 line-clamp-2">
         {post.summary || post.content.slice(0, 120)}

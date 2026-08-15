@@ -27,7 +27,7 @@ class TestBilibiliResearchCrawler:
     def test_fetch_and_parse_returns_expected_fields(self):
         """mock B站搜索 API，验证 fetch/parse 输出字段。"""
         crawler = BilibiliResearchCrawler(
-            config={"keyword": "408 计算机考研", "pages": 1}
+            config={"keywords": ["408 计算机考研"], "pages": 1}
         )
 
         search_response = MagicMock()
@@ -92,7 +92,7 @@ class TestBilibiliResearchCrawler:
     def test_fetch_handles_api_error(self):
         """API 返回非 0 code 时统计错误并继续。"""
         crawler = BilibiliResearchCrawler(
-            config={"keyword": "考研", "pages": 1}
+            config={"keywords": ["考研"], "pages": 1}
         )
         error_response = MagicMock()
         error_response.json.return_value = {

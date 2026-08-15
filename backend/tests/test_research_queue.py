@@ -223,6 +223,106 @@ class TestApprove:
         assert r.status_code == 403
 
 
+class TestPromotePurity(TestApprove):
+    """Phase G：approve 落库时注入质量分/反软广/结构化元信息。"""
+
+    def test_experience_post_injects_quality_and_promo(self, client, admin_headers, db_session):
+        """含引流词的经验贴 → 标注软广（不下架）+ 质量分 + 结构化 meta。"""
+        ext, queue = _seed_queue_item(
+            db_session,
+            source_url="https://example.com/posts/promo1",
+            title="408 计算机考研上岸经验（附领资料）",
+            content="我加微信领资料，一战考了 380 分上岸，刷题笔记分享",
+            external_meta={
+                "author": "UP主",
+                "view_count": 50000,
+                "like_count": 300,
+                "tags": ["408", "上岸"],
+            },
+        )
+        resp = client.post(
+            f"/api/admin/research-queue/{queue.id}/approve",
+            json={},
+            headers=admin_headers,
+        )
+        assert resp.status_code == 200
+        assert resp.json()["promoted"] == 1
+
+        post = db_session.query(ExperiencePost).filter(
+            ExperiencePost.source_url == ext.source_url
+        ).first()
+        assert post is not None
+        # 反软广：命中引流词 → 标注但不下架
+        assert post.is_promotion is True
+        assert post.promotion_confidence > 0
+        assert post.promotion_reason.startswith("疑似软广:")
+        # 质量分：规则打分器注入（0-100 + A-D）
+        assert 0 <= post.quality_score <= 100
+        assert post.quality_grade in ("A", "B", "C", "D")
+        # 结构化 meta：学科/阶段/院校/目标分
+        meta = post.structured_meta or {}
+        assert meta.get("subject") is not None
+        assert meta.get("target_score") == 380
+
+    def test_clean_experience_post_not_flagged(self, client, admin_headers, db_session):
+        """无引流词经验贴 → 不标注，仍有质量分。"""
+        ext, queue = _seed_queue_item(
+            db_session,
+            source_url="https://example.com/posts/clean1",
+            title="408 一战上岸北京理工大学经验",
+            content="我每天刷 4 小时真题，错题整理成笔记反复复盘，最终初试考了 380 分" * 20,
+            external_meta={
+                "author": "UP主",
+                "view_count": 30000,
+                "like_count": 500,
+                "tags": ["408", "北京理工大学"],
+            },
+        )
+        client.post(
+            f"/api/admin/research-queue/{queue.id}/approve",
+            json={},
+            headers=admin_headers,
+        )
+        post = db_session.query(ExperiencePost).filter(
+            ExperiencePost.source_url == ext.source_url
+        ).first()
+        assert post.is_promotion is False
+        assert post.promotion_confidence == 0.0
+        assert post.quality_grade == "A"
+        assert (post.structured_meta or {}).get("school") == "北京理工大学"
+
+    def test_kaoyan_news_injects_structured_meta(self, client, admin_headers, db_session):
+        """资讯 approve → 注入 structured_meta（招生人数/科目/参考书）决策数据卡。"""
+        ext, queue = _seed_queue_item(
+            db_session,
+            item_type="kaoyan_news",
+            source_platform="rss",
+            source_url="https://news.example.com/2026/08/zhang",
+            title="2026年XX大学计算机考研招生简章",
+            content="计算机学院拟招收 120 人。初试科目：①101思想政治理论②201英语一"
+                    "③301数学一④408计算机学科专业基础。参考书：《数据结构（C语言版）》。",
+            external_meta={
+                "summary": "招生简章",
+                "category": "招生简章",
+                "tags": ["考研"],
+                "crawled_at": "2026-08-12T08:00:00Z",
+            },
+        )
+        client.post(
+            f"/api/admin/research-queue/{queue.id}/approve",
+            json={},
+            headers=admin_headers,
+        )
+        news = db_session.query(KaoyanNews).filter(
+            KaoyanNews.source_url == ext.source_url
+        ).first()
+        assert news is not None
+        meta = news.structured_meta or {}
+        assert meta.get("enrollment_count") == 120
+        assert "思想政治理论" in meta.get("exam_subjects", [])
+        assert "数据结构（C语言版）" in meta.get("reference_books", [])
+
+
 class TestReject:
     def test_reject_with_reason(self, client, admin_headers, db_session):
         _, queue = _seed_queue_item(db_session)

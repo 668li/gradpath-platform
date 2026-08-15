@@ -9,7 +9,7 @@
 """
 from uuid import UUID
 
-from sqlalchemy import Boolean, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import Boolean, Float, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -57,3 +57,14 @@ class ExperiencePost(UUIDMixin, TimestampMixin, Base):
     source_platform: Mapped[str] = mapped_column(String(100), nullable=False, default="user")  # user/crawler/zhihu/xiaohongshu
     source_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     is_verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+    # === 提纯与质量（Phase G 经验闭环核心） ===
+    quality_score: Mapped[int | None] = mapped_column(Integer, nullable=True)  # 0-100，规则打分器计算
+    quality_grade: Mapped[str | None] = mapped_column(String(2), nullable=True)  # A/B/C/D
+    ai_summary: Mapped[str | None] = mapped_column(Text, nullable=True)  # LLM 可选增强摘要（未配置则 NULL，诚实降级）
+    structured_meta: Mapped[dict | None] = mapped_column(
+        JSONB, nullable=True, default=dict
+    )  # 结构化元信息 {subject/stage/school/target_score/methods/audience}
+    is_promotion: Mapped[bool | None] = mapped_column(Boolean, nullable=True, default=False)  # 疑似软广标注（不下架；NULL=未检测）
+    promotion_confidence: Mapped[float | None] = mapped_column(Float, nullable=True, default=0.0)  # 软广置信度 0-1
+    promotion_reason: Mapped[str | None] = mapped_column(String(200), nullable=True)  # 命中关键词说明

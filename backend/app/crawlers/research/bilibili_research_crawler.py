@@ -23,10 +23,26 @@ from app.services.research_ingestion import store_research_items
 
 logger = logging.getLogger(__name__)
 
+# Phase H 默认关键词集（信息差高频维度，config 可覆盖；每次运行逐词抓取）
+DEFAULT_KEYWORDS = [
+    "408 计算机考研",
+    "考研数学经验",
+    "考研英语经验",
+    "考研择校",
+    "考研复试经验",
+    "考研调剂",
+    "备考时间规划",
+    "考研二战 心态",
+]
+
 
 @register_crawler
 class BilibiliResearchCrawler(BaseCrawler):
-    """通过 B站搜索 API 抓取考研经验视频元数据，用于外部调研。"""
+    """通过 B站搜索 API 抓取考研经验视频元数据，用于外部调研。
+
+    Phase H：支持多关键词（config.keywords 列表 / CLI 逗号分隔），
+    逐词分页抓取；合规不变 —— 只存元数据+简介+外链，不搬视频全文。
+    """
 
     name = "bilibili_research"
     category = "research"
@@ -34,7 +50,14 @@ class BilibiliResearchCrawler(BaseCrawler):
 
     def __init__(self, config: dict = None):
         super().__init__(config)
-        self.keyword = self.config.get("keyword", "408 计算机考研")
+        raw_keywords = self.config.get("keywords") or []
+        if isinstance(raw_keywords, str):
+            raw_keywords = raw_keywords.split(",")
+        self.keywords = [
+            k.strip() for k in raw_keywords if k and k.strip()
+        ] or DEFAULT_KEYWORDS
+        # 兼容旧字段：keyword 取第一个关键词（CLI 单关键词用法、source_meta 展示）
+        self.keyword = self.keywords[0]
         self.pages = int(self.config.get("pages", 1))
         # 基类会按 _rate_limit 做固定睡眠，这里由本类自行控制 1-3 秒随机间隔
         self._rate_limit = 0
@@ -49,7 +72,7 @@ class BilibiliResearchCrawler(BaseCrawler):
         })
 
     def fetch(self) -> list[dict]:
-        """调用 B站搜索 API，分页抓取视频搜索结果。"""
+        """调用 B站搜索 API，逐关键词分页抓取视频搜索结果。"""
         raw_items: list[dict] = []
 
         # 先访问首页获取必要的设备 Cookie（如 buvid3），降低被风控概率
@@ -59,36 +82,42 @@ class BilibiliResearchCrawler(BaseCrawler):
         except Exception as e:
             logger.warning(f"[{self.name}] 首页预热失败: {e}")
 
-        for page in range(1, self.pages + 1):
-            url = (
-                "https://api.bilibili.com/x/web-interface/search/type?"
-                f"keyword={urllib.parse.quote(self.keyword)}"
-                f"&search_type=video&page={page}"
-            )
-            try:
-                resp = self._request(url, method="GET")
-                data = resp.json()
-                if data.get("code") != 0:
-                    logger.error(
-                        f"[{self.name}] 第{page}页 API 错误 "
-                        f"code={data.get('code')}: {data.get('message')}"
+        for keyword in self.keywords:
+            for page in range(1, self.pages + 1):
+                url = (
+                    "https://api.bilibili.com/x/web-interface/search/type?"
+                    f"keyword={urllib.parse.quote(keyword)}"
+                    f"&search_type=video&page={page}"
+                )
+                try:
+                    resp = self._request(url, method="GET")
+                    data = resp.json()
+                    if data.get("code") != 0:
+                        logger.error(
+                            f"[{self.name}] 关键词[{keyword}] 第{page}页 API 错误 "
+                            f"code={data.get('code')}: {data.get('message')}"
+                        )
+                        self.stats["errors"] += 1
+                        continue
+
+                    result = data.get("data", {}).get("result", [])
+                    if not result:
+                        logger.info(f"[{self.name}] 关键词[{keyword}] 第{page}页无结果，结束分页")
+                        break
+
+                    raw_items.extend(result)
+                    logger.info(
+                        f"[{self.name}] 关键词[{keyword}] 第{page}页获取 {len(result)} 条原始数据"
                     )
+                except Exception as e:
+                    logger.error(f"[{self.name}] 关键词[{keyword}] 第{page}页请求失败: {e}")
                     self.stats["errors"] += 1
-                    continue
 
-                result = data.get("data", {}).get("result", [])
-                if not result:
-                    logger.info(f"[{self.name}] 第{page}页无结果，结束分页")
-                    break
-
-                raw_items.extend(result)
-                logger.info(f"[{self.name}] 第{page}页获取 {len(result)} 条原始数据")
-            except Exception as e:
-                logger.error(f"[{self.name}] 第{page}页请求失败: {e}")
-                self.stats["errors"] += 1
-
-            if page < self.pages:
-                time.sleep(random.uniform(1, 3))
+                if page < self.pages:
+                    time.sleep(random.uniform(1, 3))
+            # 换关键词间隔拉长，降低风控概率
+            if keyword != self.keywords[-1]:
+                time.sleep(random.uniform(2, 4))
 
         return raw_items
 
@@ -161,7 +190,7 @@ class BilibiliResearchCrawler(BaseCrawler):
             run_record.stored_count = result["inserted"]
             run_record.duplicate_count = result["duplicated"]
             run_record.source_meta = {
-                "keyword": self.keyword,
+                "keywords": self.keywords,
                 "pages": self.pages,
                 "platform": "bilibili",
             }
@@ -207,20 +236,31 @@ def _setup_logging() -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="B站考研经验视频调研爬虫")
-    parser.add_argument("--keyword", required=True, help="搜索关键词")
-    parser.add_argument("--pages", type=int, default=1, help="抓取页数")
+    parser.add_argument(
+        "--keyword",
+        action="append",
+        default=[],
+        help="搜索关键词（可多次传，或用逗号分隔多个；缺省用默认关键词集）",
+    )
+    parser.add_argument("--pages", type=int, default=1, help="每个关键词抓取页数")
     args = parser.parse_args()
 
     _setup_logging()
+    keywords: list[str] = []
+    for group in args.keyword:
+        keywords.extend(k.strip() for k in group.split(",") if k.strip())
     crawler = BilibiliResearchCrawler(
-        config={"keyword": args.keyword, "pages": args.pages}
+        config={"keywords": keywords or DEFAULT_KEYWORDS, "pages": args.pages}
     )
 
     raw = crawler.fetch()
     items = crawler.parse(raw)
     stored = crawler.store(items, db=None)
 
-    print(f"抓取完成：原始 {len(raw)} 条，解析 {len(items)} 条，入库 {stored} 条")
+    print(
+        f"抓取完成：关键词 {len(crawler.keywords)} 个，"
+        f"原始 {len(raw)} 条，解析 {len(items)} 条，入库 {stored} 条"
+    )
 
 
 if __name__ == "__main__":
