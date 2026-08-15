@@ -25,13 +25,12 @@ from app.services.research_ingestion import store_research_items
 
 logger = logging.getLogger(__name__)
 
-# 默认订阅源：优先选择与考研、研究生教育相关的公开 RSS。
-# 教育部、研招网等官方站点未提供原生 RSS，因此选用新浪教育考研频道、
-# Reddit 研究生社区等可用源作为替代。
+# 默认订阅源：仅保留与考研直接相关的公开 RSS。
+# 教育部、研招网等官方站点未提供原生 RSS，因此选用新浪教育考研频道；
+# Reddit 研究生社区 / Hacker News 与考研信息差无关，已于 2026-08 移除
+# （考研资讯由 eol_kaoyan / official_announce 采集器提供）。
 DEFAULT_FEEDS: list[str] = [
     "http://rss.sina.com.cn/edu/kaoyan.xml",  # 新浪教育-考研
-    "https://www.reddit.com/r/GradSchool/.rss",  # Reddit 研究生社区
-    "https://news.ycombinator.com/rss",  # Hacker News（作为通用技术/教育资讯补充）
 ]
 
 # 默认不过滤关键词，确保默认运行能拿到足够条目

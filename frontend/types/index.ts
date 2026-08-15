@@ -2068,6 +2068,12 @@ export interface LearningResourceUpdate {
 }
 
 // ===== 考研资讯 =====
+export interface KaoyanKeyDate {
+  label: string;
+  date: string;
+  end_date?: string | null;
+}
+
 export interface KaoyanNewsResponse {
   id: string;
   title: string;
@@ -2082,6 +2088,22 @@ export interface KaoyanNewsResponse {
   status: string;
   created_at: string;
   updated_at: string;
+  // === 提纯与质量（信息差升级） ===
+  ai_summary?: string | null;
+  quality_score?: number | null;
+  quality_grade?: string | null;
+  key_dates?: KaoyanKeyDate[];
+  is_expired?: boolean;
+}
+
+export interface KaoyanNewsListParams {
+  page?: number;
+  page_size?: number;
+  category?: string;
+  search?: string;
+  sort?: "latest" | "quality";
+  quality_grade?: string;
+  source_platform?: string;
 }
 
 export interface KaoyanNewsListResponse {
@@ -2089,6 +2111,143 @@ export interface KaoyanNewsListResponse {
   total: number;
   page: number;
   page_size: number;
+}
+
+// ===== 国考职位 =====
+export interface GwyPositionResponse {
+  id: string;
+  year: number;
+  exam_type: string;
+  dept_code: string | null;
+  dept_name: string | null;
+  bureau: string | null;
+  agency_type: string | null;
+  position_name: string | null;
+  position_attr: string | null;
+  position_distribution: string | null;
+  position_desc: string | null;
+  position_code: string;
+  org_level: string | null;
+  exam_category: string | null;
+  recruit_count: number | null;
+  major_req: string | null;
+  education_req: string | null;
+  degree_req: string | null;
+  political_status: string | null;
+  min_work_years: string | null;
+  grassroots_exp_req: string | null;
+  professional_test: string | null;
+  interview_ratio: string | null;
+  work_location: string | null;
+  settle_location: string | null;
+  remarks: string | null;
+  dept_website: string | null;
+  phone1: string | null;
+  phone2: string | null;
+  phone3: string | null;
+  sheet_name: string | null;
+  source_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GwyPositionListResponse {
+  items: GwyPositionResponse[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface GwyPositionStatsGroup {
+  key: string;
+  count: number;
+}
+
+export interface GwyPositionStatsResponse {
+  total: number;
+  by_province: GwyPositionStatsGroup[];
+  by_education: GwyPositionStatsGroup[];
+  by_org_level: GwyPositionStatsGroup[];
+  by_exam_category: GwyPositionStatsGroup[];
+}
+
+// ===== 省考职位 =====
+export interface GwyProvincePositionResponse {
+  id: string;
+  year: number;
+  province: string;
+  dept_name: string | null;
+  dept_code: string | null;
+  position_name: string | null;
+  position_code: string;
+  position_desc: string | null;
+  position_type: string | null;
+  recruit_count: number | null;
+  education_req: string | null;
+  degree_req: string | null;
+  major_req_grad: string | null;
+  major_req_undergrad: string | null;
+  major_req_junior: string | null;
+  grassroots_exp_req: string | null;
+  psych_test: string | null;
+  fresh_grad_only: string | null;
+  other_requirements: string | null;
+  exam_region: string | null;
+  sheet_name: string | null;
+  source_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GwyProvincePositionListResponse {
+  items: GwyProvincePositionResponse[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface GwyProvincePositionStatsResponse {
+  total: number;
+  total_recruit: number;
+  by_sheet: GwyPositionStatsGroup[];
+  by_education: GwyPositionStatsGroup[];
+  by_region: GwyPositionStatsGroup[];
+  by_fresh_grad_only: GwyPositionStatsGroup[];
+}
+
+// ===== 国考进面分数线 =====
+export interface GwyScoreLineResponse {
+  id: string;
+  year: number;
+  batch: string;
+  dept_name: string | null;
+  dept_code: string | null;
+  bureau: string | null;
+  position_name: string | null;
+  position_code: string;
+  min_score: number | null;
+  source_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface GwyScoreLineListResponse {
+  items: GwyScoreLineResponse[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface GwyScoreLineStatsGroup {
+  key: string;
+  count: number;
+}
+
+export interface GwyScoreLineStatsResponse {
+  total: number;
+  avg_score: number | null;
+  by_batch: GwyScoreLineStatsGroup[];
+  by_year: GwyScoreLineStatsGroup[];
 }
 
 export interface CommentResponse {

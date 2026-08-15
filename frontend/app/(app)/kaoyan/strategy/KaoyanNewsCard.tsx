@@ -1,6 +1,6 @@
 "use client";
 
-import { ExternalLink, Calendar, Tag, Newspaper } from "lucide-react";
+import { ArrowRight, Calendar, Tag, Newspaper } from "lucide-react";
 import { Badge } from "@/components/ui/form-controls";
 import { SourceBadge } from "@/components/ui/source-badge";
 import { cn } from "@/lib/utils";
@@ -20,9 +20,7 @@ export function KaoyanNewsCard({ news, className }: KaoyanNewsCardProps) {
 
   return (
     <a
-      href={news.source_url}
-      target="_blank"
-      rel="noopener noreferrer"
+      href={`/kaoyan/news/${news.id}`}
       className={cn(
         "group block rounded-xl border border-paper-200 bg-white p-4 shadow-sm transition-all hover:shadow-md hover:border-brand-200",
         className,
@@ -32,7 +30,7 @@ export function KaoyanNewsCard({ news, className }: KaoyanNewsCardProps) {
         <h4 className="font-semibold text-ink-900 line-clamp-2 group-hover:text-brand-600 transition-colors">
           {news.title}
         </h4>
-        <ExternalLink className="h-3.5 w-3.5 shrink-0 text-ink-300 group-hover:text-brand-500 mt-1" />
+        <ArrowRight className="h-3.5 w-3.5 shrink-0 text-ink-300 group-hover:text-brand-500 mt-1" />
       </div>
 
       {news.summary && (

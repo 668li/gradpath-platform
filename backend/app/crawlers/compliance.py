@@ -17,6 +17,8 @@ ALLOWED_CRAWLER_SOURCES: frozenset[str] = frozenset({
     "bilibili_research",      # research：B站考研视频 → PENDING 队列
     "web_article_research",   # research：网页文章 → PENDING 队列
     "rss_news_research",      # research：RSS 新闻 → PENDING 队列（注册名，勿写模块文件名）
+    "eol_kaoyan",             # research：中国教育在线考研频道 → PENDING 队列
+    "official_announce",      # research：高校研究生院官方公告 → PENDING 队列
 })
 
 

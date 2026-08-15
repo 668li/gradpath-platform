@@ -1,7 +1,7 @@
 """考研外部资讯模型 — 聚合 RSS/爬虫获取的政策、调剂、招生简章、复试等新闻。"""
 from datetime import datetime
 
-from sqlalchemy import DateTime, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -36,7 +36,18 @@ class KaoyanNews(UUIDMixin, TimestampMixin, Base):
     )  # pending/approved/rejected
     category: Mapped[str] = mapped_column(
         String(50), nullable=False, default="general", index=True
-    )  # general/政策/调剂/招生简章/复试
+    )  # general/政策/调剂/招生简章/复试/复试线/推免/报录比/择校/备考
 
     # === 标签 ===
     tags: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+
+    # === 提纯与质量（信息差升级） ===
+    ai_summary: Mapped[str | None] = mapped_column(Text, nullable=True)  # AI 摘要（LLM 可选增强）
+    quality_score: Mapped[int | None] = mapped_column(Integer, nullable=True)  # 0-100
+    quality_grade: Mapped[str | None] = mapped_column(String(2), nullable=True)  # A/B/C/D
+    key_dates: Mapped[list] = mapped_column(
+        JSONB, nullable=False, default=list
+    )  # 关键时间点 [{label, date}]：报名/确认/考试/调剂窗口
+    is_expired: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )  # 时效过期标记（关键时间点已过或超过 180 天）

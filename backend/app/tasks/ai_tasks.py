@@ -70,3 +70,58 @@ def batch_generate_advice(decision_ids: list[str], user_id: str):
         result = generate_ai_advice_async.run(user_id, did)
         results.append({"decision_id": did, "result": result})
     return results
+
+
+@celery_app.task(name="app.tasks.ai_tasks.enhance_kaoyan_news_batch")
+def enhance_kaoyan_news_batch(limit: int = 5):
+    """批量增强考研资讯（Phase C2）：LLM 生成 ai_summary + 精确 key_dates。
+
+    串行处理已审核入库且缺 ai_summary 的资讯（按质量分降序），单条失败
+    自动降级保留规则版结果（research_promote 落库时已算），不影响其他条目。
+
+    Args:
+        limit: 单批最多增强条数（默认 5，避免 LLM 配额瞬时打满）
+    """
+    db = SessionLocal()
+    try:
+        from app.models.kaoyan_news import KaoyanNews
+        from app.services.news_enhance import enhance_news_item
+
+        rows = (
+            db.query(KaoyanNews)
+            .filter(
+                KaoyanNews.status == "approved",
+                KaoyanNews.ai_summary.is_(None),
+            )
+            .order_by(KaoyanNews.quality_score.desc())
+            .limit(limit)
+            .all()
+        )
+        if not rows:
+            logger.info("[news_enhance] 无待增强资讯（limit=%d）", limit)
+            return {"status": "skipped", "enhanced": 0, "degraded": 0}
+
+        import asyncio
+
+        enhanced = degraded = 0
+        for news in rows:
+            try:
+                result = asyncio.run(enhance_news_item(db, news))
+            except Exception as e:  # noqa: BLE001
+                logger.warning("[news_enhance] 单条增强异常降级 %s: %s", news.id, e)
+                result = {"status": "degraded"}
+            if result.get("status") == "enhanced":
+                enhanced += 1
+            else:
+                degraded += 1
+            # 逐条提交：单条失败不回滚整批
+            db.commit()
+
+        logger.info("[news_enhance] 批量完成 enhanced=%d degraded=%d", enhanced, degraded)
+        return {"status": "success", "enhanced": enhanced, "degraded": degraded}
+    except Exception as e:
+        logger.error("[news_enhance] 批量增强失败: %s", e)
+        db.rollback()
+        return {"status": "failed", "error": str(e)}
+    finally:
+        db.close()

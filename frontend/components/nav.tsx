@@ -42,6 +42,8 @@ import {
   Bug,
   Inbox,
   Settings,
+  Landmark,
+  Newspaper,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth";
@@ -89,7 +91,9 @@ function getNavSections(): NavSection[] {
       section: "旅程",
       children: [
         { href: "/kaoyan", label: "考研情报", icon: BookOpen },
+        { href: "/kaoyan/news", label: "考研资讯", icon: Newspaper },
         { href: "/civil-service", label: "考公情报", icon: Building2 },
+        { href: "/civil-service/positions", label: "国考职位", icon: Landmark },
         { href: "/employment", label: "就业情报", icon: Briefcase },
         { href: "/interview", label: "面试经验", icon: MessageSquare },
         { href: "/failure-cases", label: "失败案例库", icon: HeartCrack },

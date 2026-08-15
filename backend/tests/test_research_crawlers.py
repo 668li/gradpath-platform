@@ -339,10 +339,14 @@ class TestResearchTransformer:
         payload = payloads[0]
         assert payload["title"] == "高校发布复试通知"
         assert payload["source_platform"] == "rss"
-        assert payload["category"] == "招生简章"
+        # 智能分类（Phase A3）：标题关键词优先于 raw category，"复试"命中复试规则
+        assert payload["category"] == "复试"
         assert isinstance(payload["published_at"], datetime)
         assert isinstance(payload["crawled_at"], datetime)
         assert "复试" in payload["tags"]
+        # 提纯质量分（Phase A2）：transform_rss 注入 quality_score/quality_grade
+        assert payload["quality_score"] >= 0
+        assert payload["quality_grade"] in {"A", "B", "C", "D"}
 
     def test_ad_filtering(self):
         """含广告关键词的内容应被过滤。"""

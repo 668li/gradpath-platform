@@ -308,6 +308,21 @@ async def _init_ws_pubsub():
 
 
 # ----------------------------------------------------------------------
+# APScheduler 默认按日定时任务补齐（Phase B3）
+# 新源（eol_kaoyan / official_announce）随启动自动注册每日 cron；
+# 幂等实现：已存在的 job 跳过，管理员可在 /schedules 改期/停用。
+# ----------------------------------------------------------------------
+@app.on_event("startup")
+async def _seed_default_crawler_schedules():
+    """补齐新源默认每日 cron 定时任务。"""
+    try:
+        from app.api.crawlers import seed_default_schedules
+        seed_default_schedules()
+    except Exception as e:
+        logger.warning("补齐默认按日定时任务失败（不影响启动）: %s", e)
+
+
+# ----------------------------------------------------------------------
 # 全局异常处理器（C2 改造）— 把 BusinessError 转为统一 JSON 响应
 # {code, message, details, detail}，并对未捕获 Exception 返回 500。
 # ----------------------------------------------------------------------

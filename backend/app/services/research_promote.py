@@ -11,12 +11,14 @@
 由调用方（API 端点或 auto_approve）统一提交，保证"队列状态 + 业务数据"原子。
 """
 import logging
-from datetime import datetime, timezone
+import re
+from datetime import date, datetime, timezone
 from typing import Any
 
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.crawlers.research.quality import score_item
 from app.crawlers.research.transformer import ResearchTransformer, SYSTEM_USER_ID
 from app.models.experience_post import ExperiencePost
 from app.models.ingestion import DataSourceMeta, ExternalResearchItem
@@ -33,6 +35,142 @@ _FRESHNESS_SOURCE_ALIASES = {
     "real_data": "kaoyan",
     "bilibili_research": "kaoyan",
 }
+
+# ----------------------------------------------------------------------
+# 关键时间点规则抽取（Phase C1 同步兜底；LLM 增强见 news_enhance.py）
+# 覆盖信息差核心窗口：报名 / 网上确认 / 截止 / 初试 / 复试 / 调剂
+# ----------------------------------------------------------------------
+# 中文日期模式：20xx年X月X日 或 X月X日（"日"字可选，支持 1-2 位月日）
+_CHINESE_DATE = r"(?:20\d{2}年)?(?:1[0-2]|0?[1-9])月(?:3[01]|[12]\d|0?[1-9])日?"
+# 标签 → 日期：标签后 15 字符内出现日期（非贪婪，避免跨句误配）
+_LABEL_DATE_RE = re.compile(
+    r"(?P<label>网上确认|报名|截止|初试|复试|调剂|确认)"
+    r"[^。；\n]{0,15}?"
+    r"(?P<date>" + _CHINESE_DATE + r")"
+)
+# 日期区间：X月X日 至/—/~/到 X月X日（报名窗口、调剂系统开放期等）
+_RANGE_RE = re.compile(
+    r"(?P<date1>" + _CHINESE_DATE + r")\s*(?:至|—|–|-|~|到)\s*(?P<date2>" + _CHINESE_DATE + r")"
+)
+
+# 无年份日期按"最近的该月日"推断年份（未来优先）：10 月报名/12 月初试落在当年，
+# 3-4 月复试/调剂落次年的场景可正确归属；规则版近似，LLM 增强版会精确化。
+def _resolve_year(month: int, day: int) -> int:
+    today = date.today()
+    year = today.year
+    if date(year, month, day) < today:
+        year += 1
+    return year
+
+
+def _parse_chinese_date(text: str, default_year: int | None = None) -> date | None:
+    """解析 '2025年10月9日' / '10月9日' → date；格式不符返回 None。
+
+    default_year：无显式年份时的年份兜底（区间第二个日期继承首日期年份用）。
+    """
+    m = re.match(
+        r"(?:20\d{2}年)?(?:1[0-2]|0?[1-9])月(?:3[01]|[12]\d|0?[1-9])日?", text
+    )
+    if not m:
+        return None
+    token = m.group(0)
+    year = None
+    ym = re.match(r"(20\d{2})年", token)
+    if ym:
+        year = int(ym.group(1))
+    md = re.search(r"(1[0-2]|0?[1-9])月(3[01]|[12]\d|0?[1-9])日?", token)
+    if not md:
+        return None
+    month, day = int(md.group(1)), int(md.group(2))
+    if month < 1 or month > 12 or day < 1 or day > 31:
+        return None
+    if year is None:
+        year = default_year if default_year is not None else _resolve_year(month, day)
+    try:
+        return date(year, month, day)
+    except ValueError:
+        return None
+
+
+def _iso_date(d: date) -> str:
+    return d.isoformat()
+
+
+def extract_key_dates(title: str, content: str) -> list[dict]:
+    """从标题+正文抽取关键时间点（规则版，同步零成本）。
+
+    返回 [{label, date, end_date?}, ...]：date/end_date 为 ISO 日期字符串。
+    同一 (label, date) 去重；区间优先（报名/调剂窗口含起止）。
+    """
+    text_ = f"{title or ''}\n{(content or '')[:3000]}"
+    results: list[dict] = []
+
+    def _add(label: str, d1: date, d2: date | None = None) -> None:
+        item = {"label": label, "date": _iso_date(d1)}
+        if d2:
+            item["end_date"] = _iso_date(d2)
+        if item not in results:
+            results.append(item)
+
+    # 1) 区间：先找日期范围（如"2025年10月9日至10月28日"）
+    for m in _RANGE_RE.finditer(text_):
+        d1 = _parse_chinese_date(m.group("date1"))
+        # 区间第二个日期无显式年份时继承首日期年份（"10月15日至10月28日"同年）
+        d2 = _parse_chinese_date(m.group("date2"), default_year=d1.year if d1 else None)
+        if d1 and d2:
+            # 尝试向前找标签（如"报名时间："）
+            prefix = text_[max(0, m.start() - 12): m.start()]
+            label = None
+            for cand in ("网上确认", "报名", "截止", "初试", "复试", "调剂", "确认"):
+                if cand in prefix:
+                    label = cand
+                    break
+            _add(label or "窗口", d1, d2)
+
+    # 2) 标签→日期：单点关键时间（初试/复试/截止）
+    for m in _LABEL_DATE_RE.finditer(text_):
+        d = _parse_chinese_date(m.group("date"))
+        if not d:
+            continue
+        label = m.group("label")
+        if label == "确认" and "网上确认" in text_[max(0, m.start() - 6): m.start() + 8]:
+            label = "网上确认"
+        # 区间已覆盖的日期不再重复（避免报名窗口拆成单点）
+        if any(r["label"] == label and r["date"] == d.isoformat() for r in results):
+            continue
+        _add(label, d)
+
+    return results
+
+
+def _compute_is_expired(
+    published_at: datetime | None,
+    crawled_at: datetime | None,
+    key_dates: list[dict],
+) -> bool:
+    """时效过期判定：有关键日期则全部已过 → 过期；否则按发布时间超 180 天。"""
+    now = datetime.now(timezone.utc)
+    dates: list[datetime] = []
+    for kd in key_dates:
+        for field in ("end_date", "date"):
+            raw = kd.get(field)
+            if not raw:
+                continue
+            try:
+                d = datetime.fromisoformat(raw)
+                if d.tzinfo is None:
+                    d = d.replace(tzinfo=timezone.utc)
+                dates.append(d)
+            except ValueError:
+                continue
+    if dates:
+        return all(d < now for d in dates)
+    ts = published_at or crawled_at
+    if not ts:
+        return False
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=timezone.utc)
+    return (now - ts).days > 180
 
 
 def _ensure_system_user(db: Session) -> None:
@@ -177,7 +315,12 @@ def _promote_experience_post(
 def _promote_kaoyan_news(
     db: Session, ext_item: ExternalResearchItem, reviewer: str
 ) -> dict:
-    """落 KaoyanNews：status=approved，source_url 幂等。"""
+    """落 KaoyanNews：status=approved，source_url 幂等。
+
+    Phase C1 提纯：落库时补齐 quality_score/grade（采集期已算则沿用，
+    缺失则规则版现场计算）、key_dates（规则正则抽取，LLM 增强见 news_enhance）、
+    is_expired 时效标记，保证审核确认后前端拿到的是提纯后的结构化数据。
+    """
     exists = (
         db.query(KaoyanNews.id)
         .filter(KaoyanNews.source_url == ext_item.source_url)
@@ -189,18 +332,44 @@ def _promote_kaoyan_news(
 
     meta = ext_item.external_meta or {}
     crawled_at = _parse_dt(meta.get("crawled_at")) or datetime.now(timezone.utc)
+    published_at = _parse_dt(meta.get("published_at"))
+    summary = (meta.get("summary") or ext_item.content[:500]) or ""
+    content = ext_item.content or ""
+
+    # 质量分：采集期 transform_rss 已注入则沿用；缺失（老数据/兜底路径）现场规则计算
+    quality_score, quality_grade = meta.get("quality_score"), meta.get("quality_grade")
+    if not isinstance(quality_score, (int, float)) or not isinstance(quality_grade, str):
+        quality_score, quality_grade = score_item(
+            title=ext_item.title,
+            content=content,
+            summary=summary,
+            source_url=ext_item.source_url,
+            published_at=published_at,
+            crawled_at=crawled_at,
+        )
+    quality_score = int(quality_score)
+
+    # 关键时间点 + 时效标记（同步规则版，零成本兜底）
+    key_dates = extract_key_dates(ext_item.title, content)
+    is_expired = _compute_is_expired(published_at, crawled_at, key_dates)
+
     db.add(
         KaoyanNews(
             title=ext_item.title,
-            summary=(meta.get("summary") or ext_item.content[:500]),
-            content=ext_item.content,
+            summary=summary or None,
+            content=content or None,
             source_platform=ext_item.source_platform,
             source_url=ext_item.source_url,
-            published_at=_parse_dt(meta.get("published_at")),
+            published_at=published_at,
             crawled_at=crawled_at,
             status="approved",
             category=(meta.get("category") or "general"),
             tags=[t for t in (meta.get("tags") or []) if isinstance(t, str)],
+            ai_summary=meta.get("ai_summary"),
+            quality_score=quality_score,
+            quality_grade=quality_grade,
+            key_dates=key_dates,
+            is_expired=is_expired,
         )
     )
     _backfill_data_source(db, ext_item, reviewer)
@@ -271,4 +440,12 @@ def promote_external_item(
     if result.get("promoted", 0) > 0:
         # 确认入库成功 → 回写 data_freshness（同事务，由调用方统一 commit）
         _touch_data_freshness(db, ext_item)
+        # Phase C2：kaoyan_news 落库后异步投递 LLM 增强（失败自动降级规则版）
+        if ext_item.item_type == "kaoyan_news":
+            try:
+                from app.services.news_enhance import schedule_news_enhancement
+
+                schedule_news_enhancement(limit=5)
+            except Exception:  # noqa: BLE001 — 增强投递失败不影响审核主流程
+                logger.warning("[research_promote] 投递资讯增强任务失败，已忽略")
     return result

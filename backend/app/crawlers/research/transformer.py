@@ -8,6 +8,8 @@ from datetime import datetime, timezone
 from typing import Any
 from uuid import UUID
 
+from app.crawlers.research.quality import score_item
+
 # 系统用户 ID，用于发布种子/系统内容
 SYSTEM_USER_ID = UUID("00000000-0000-0000-0000-000000000000")
 
@@ -59,6 +61,20 @@ CATEGORY_RULES = [
     ("择校", ["择校", "选校"]),
     ("备考", ["备考", "初试"]),
     ("复习", ["复习"]),
+]
+
+# 考研资讯专用分类（信息差维度，按优先级排序——命中前面的关键词优先归类）。
+# 与 CATEGORY_RULES（经验贴）分离：资讯维度更细，且"复试分数线"应归"复试线"而非"复试"。
+KAOYAN_CATEGORY_RULES = [
+    ("调剂", ["调剂", "调剂系统", "调剂名额", "调剂信息"]),
+    ("复试线", ["复试线", "国家线", "自划线", "分数线", "院线", "校线"]),
+    ("复试", ["复试", "面试", "复试名单", "拟录取"]),
+    ("招生简章", ["招生简章", "招生章程", "招生计划", "招生目录", "专业目录", "硕士招生", "博士招生"]),
+    ("推免", ["推免", "保研", "推荐免试", "免试攻读"]),
+    ("报录比", ["报录比", "录取比例", "报考人数", "报名人数", "录取人数"]),
+    ("政策", ["政策", "报名", "初试", "考试时间", "考试大纲", "网报", "网上确认", "报考", "教育部", "通知"]),
+    ("择校", ["择校", "选校", "院校选择"]),
+    ("备考", ["备考", "复习", "真题", "资料", "经验"]),
 ]
 
 # 用于判断 RSS 非中文条目是否与考研相关
@@ -113,6 +129,15 @@ class ResearchTransformer:
         """根据标题关键词推断经验贴分类。"""
         title_lower = title.lower()
         for category, keywords in CATEGORY_RULES:
+            if any(kw.lower() in title_lower for kw in keywords):
+                return category
+        return "general"
+
+    @classmethod
+    def _infer_news_category(cls, title: str) -> str:
+        """按标题关键词推断考研资讯分类（信息差维度，优先级排序）。"""
+        title_lower = title.lower()
+        for category, keywords in KAOYAN_CATEGORY_RULES:
             if any(kw.lower() in title_lower for kw in keywords):
                 return category
         return "general"
@@ -284,9 +309,12 @@ class ResearchTransformer:
             extracted_tags = cls._extract_tags(f"{title} {summary} {content}")
             tags = list(dict.fromkeys(existing_tags + extracted_tags))
 
-            category = raw.get("category", "general") or "general"
-            if isinstance(category, str) and len(category) > 50:
-                category = "general"
+            # 分类：信息差维度规则优先；规则未命中时沿用采集器自带栏目（若为已知维度）
+            category = cls._infer_news_category(title)
+            if category == "general":
+                raw_category = raw.get("category", "")
+                if isinstance(raw_category, str) and raw_category in dict(KAOYAN_CATEGORY_RULES):
+                    category = raw_category
 
             published_at = raw.get("published_at")
             if isinstance(published_at, str):
@@ -306,6 +334,15 @@ class ResearchTransformer:
             if not isinstance(crawled_at, datetime):
                 crawled_at = datetime.now(timezone.utc)
 
+            quality_score, quality_grade = score_item(
+                title=title,
+                content=content,
+                summary=summary,
+                source_url=source_url,
+                published_at=published_at,
+                crawled_at=crawled_at,
+            )
+
             payloads.append(
                 {
                     "title": title,
@@ -318,6 +355,8 @@ class ResearchTransformer:
                     "status": "pending",
                     "category": category,
                     "tags": tags,
+                    "quality_score": quality_score,
+                    "quality_grade": quality_grade,
                 }
             )
 

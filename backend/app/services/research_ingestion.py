@@ -5,17 +5,25 @@
 同时由各爬虫 store() 维护 crawler_runs 运行统计。
 """
 import logging
-from hashlib import md5
+from datetime import datetime
+from hashlib import sha256
+from typing import Any
 from urllib.parse import urlparse
 
 from sqlalchemy.orm import Session
 
+from app.crawlers.research.dedup import compute_simhash, find_similar, normalize_url
 from app.models.ingestion import ExternalResearchItem, ReviewQueueItem
+from app.models.kaoyan_news import KaoyanNews
 
 logger = logging.getLogger(__name__)
 
 # 直接映射到 ExternalResearchItem 核心列的字段；其余 parse 产物进 external_meta（来源元数据 F11）
 _CORE_FIELDS = {"title", "content", "source_url", "source_platform"}
+
+# 质量下限（D 级拒收）：kaoyan_news 入库前质量过滤阈值。
+# transform_rss 已注入 quality_score（规则计算），低于该值直接不占审核队列。
+QUALITY_MIN_SCORE = 35
 
 # credibility 分级规则（P2）：官方域名 → official_verified；社区平台 → user_reported；其余 → model_inferred
 _OFFICIAL_DOMAINS = ("edu.cn", "yz.chsi.com.cn", "gov.cn")
@@ -40,13 +48,66 @@ def _infer_credibility(source_url: str, source_platform: str) -> str:
 
 
 def _normalize_biz_req_no(crawler_name: str, source_url: str) -> str:
-    """生成审核队列幂等键：research:{crawler_name}:{md5(source_url)[:12]}。
+    """生成审核队列幂等键：research:{crawler_name}:{sha256(source_url)[:12]}。
 
     同 URL 幂等：重复写入同一 URL 时 biz_req_no 相同，
     uk_review_queue_item_biz_req_no 唯一索引兜底。
     """
-    digest = md5(source_url.encode("utf-8")).hexdigest()[:12]
+    digest = sha256(source_url.encode("utf-8")).hexdigest()[:12]
     return f"research:{crawler_name}:{digest}"
+
+
+def _json_safe(value: Any) -> Any:
+    """external_meta 写入 JSONB 列前保证 JSON 可序列化。
+
+    parse 产物（如 transform_rss）可能携带 datetime 等非 JSON 原生类型，
+    SQLite/Postgres JSONB 均不接受 → 统一转 isoformat 字符串。
+    """
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if isinstance(value, dict):
+        return {k: _json_safe(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(v) for v in value]
+    return value
+
+
+def _load_kaoyan_dedup_baseline(db: Session) -> tuple[list[int], set[str]]:
+    """加载库内已收录考研资讯的提纯基线（SimHash + 归一化 URL）。
+
+    纳入范围（与库内已有条目比对，杜绝相似重复，Phase A5）：
+    - KaoyanNews.status == 'approved'（已上线正文）的 title+summary
+    - ExternalResearchItem.item_type == 'kaoyan_news'（含待审队列）的 title
+    - 两类来源的 source_url（normalize_url 归一化后）
+
+    仅 kaoyan_news 类型调用；其他类型继续走精确 URL 幂等。
+    """
+    hashes: list[int] = []
+    norm_urls: set[str] = set()
+
+    for row in (
+        db.query(KaoyanNews.title, KaoyanNews.summary)
+        .filter(KaoyanNews.status == "approved")
+        .all()
+    ):
+        text = f"{row[0] or ''} {row[1] or ''}".strip()
+        if text:
+            hashes.append(compute_simhash(text))
+
+    for row in db.query(ExternalResearchItem.title).filter(
+        ExternalResearchItem.item_type == "kaoyan_news"
+    ).all():
+        if row[0]:
+            hashes.append(compute_simhash(row[0]))
+
+    for row in db.query(KaoyanNews.source_url).all():
+        norm_urls.add(normalize_url(row[0]))
+    for row in db.query(ExternalResearchItem.source_url).filter(
+        ExternalResearchItem.item_type == "kaoyan_news"
+    ).all():
+        norm_urls.add(normalize_url(row[0]))
+
+    return hashes, norm_urls
 
 
 def store_research_items(
@@ -82,6 +143,12 @@ def store_research_items(
     inserted = 0
     duplicated = 0
     try:
+        # 提纯基线：仅 kaoyan_news 启用（库内已收录条目的 simhash + 归一化 URL，批次内增量比对）
+        kaoyan_hashes: list[int] = []
+        kaoyan_norm_urls: set[str] = set()
+        if item_type == "kaoyan_news":
+            kaoyan_hashes, kaoyan_norm_urls = _load_kaoyan_dedup_baseline(db)
+
         for item in items:
             source_url = (item.get("source_url") or "").strip()
             if not source_url:
@@ -103,8 +170,40 @@ def store_research_items(
 
             title = (item.get("title") or "")[:300]
             content = item.get("content") or ""
-            # 除核心列外的 parse 产物全部进 external_meta，保留行级来源元数据（F11）
-            external_meta = {k: v for k, v in item.items() if k not in _CORE_FIELDS}
+
+            # === 提纯去重（Phase A5：先提纯再入库）===
+            # kaoyan_news 信息差管线：与库内已收录条目比对——
+            # 归一化 URL 命中 / simhash 相似 → 拒收（duplicated+1）；
+            # quality_score < QUALITY_MIN_SCORE（D 级）→ 直接不占审核队列。
+            if item_type == "kaoyan_news":
+                norm_url = normalize_url(source_url)
+                if norm_url in kaoyan_norm_urls:
+                    logger.info("[research_ingestion] kaoyan_news 归一化 URL 重复拒收: %s", norm_url)
+                    duplicated += 1
+                    continue
+                sim_text = f"{title} {content[:500]}".strip()
+                if sim_text and find_similar(sim_text, kaoyan_hashes) is not None:
+                    logger.info("[research_ingestion] kaoyan_news simhash 相似拒收: %s", title[:40])
+                    duplicated += 1
+                    continue
+                quality_score = item.get("quality_score")
+                if isinstance(quality_score, (int, float)) and int(quality_score) < QUALITY_MIN_SCORE:
+                    logger.info(
+                        "[research_ingestion] kaoyan_news 质量分 %s < %s 拒收: %s",
+                        int(quality_score), QUALITY_MIN_SCORE, title[:40],
+                    )
+                    continue
+                # 批次内去重：本次已通过的新条目纳入 simhash 比对基线
+                # （norm_url 不纳入基线：不同条目可能共享同一来源页 URL，
+                #  归一化去重仅针对库内已收录条目，批次内由精确 URL 幂等兜底）
+                if sim_text:
+                    kaoyan_hashes.append(compute_simhash(sim_text))
+
+            # 除核心列外的 parse 产物全部进 external_meta，保留行级来源元数据（F11）；
+            # datetime 等非 JSON 原生类型先转 isoformat（JSONB 列要求）
+            external_meta = _json_safe(
+                {k: v for k, v in item.items() if k not in _CORE_FIELDS}
+            )
 
             ext_item = ExternalResearchItem(
                 crawler_name=crawler_name,

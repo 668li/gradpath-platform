@@ -47,6 +47,9 @@ from app.models.mentor_review import MentorReview
 from app.models.experience_post import ExperiencePost
 from app.models.failure_case import FailureCase
 from app.models.kaoyan_news import KaoyanNews
+from app.models.gwy_position import GwyPosition
+from app.models.gwy_score_line import GwyScoreLine
+from app.models.gwy_province_position import GwyProvincePosition
 from app.models.qa import QA
 from app.models.qa_answer import QAAnswer
 from app.models.bookmark import Bookmark, BookmarkTargetType
@@ -142,6 +145,12 @@ __all__ = [
     "FailureCase",
     # 考研外部资讯
     "KaoyanNews",
+    # 国考职位
+    "GwyPosition",
+    # 国考进面分数线
+    "GwyScoreLine",
+    # 省考职位
+    "GwyProvincePosition",
     # 收藏
     "Bookmark", "BookmarkTargetType",
     # 评论

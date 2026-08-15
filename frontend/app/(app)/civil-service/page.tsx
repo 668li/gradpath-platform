@@ -2,6 +2,7 @@
 
 import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import {
   Building2,
   MapPin,
@@ -15,6 +16,7 @@ import {
   Clock,
   Sparkles,
   Loader2,
+  Landmark,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { civilServiceIntelApi } from "@/lib/api/ai";
@@ -429,6 +431,40 @@ function CivilServicePageContent() {
         <h1 className="text-3xl font-bold text-ink-800 mb-2">考公中心</h1>
         <p className="text-ink-500">岗位情报、竞争力评估、暗知识与备考工具</p>
       </div>
+
+      {/* 国考职位检索入口 */}
+      <Link
+        href="/civil-service/positions"
+        className="group mb-4 flex items-center gap-4 rounded-xl border border-blue-200 bg-gradient-to-r from-blue-50 to-white p-5 hover:shadow-md hover:border-blue-300 transition-all"
+      >
+        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 text-white shrink-0">
+          <Landmark className="h-6 w-6" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-display font-bold text-ink-800 mb-0.5">2026 国考职位检索</p>
+          <p className="text-sm text-ink-500">
+            官方职位表 2 万余职位：按地区 / 学历 / 政治面貌 / 层级筛选，查看招考条件与联系方式
+          </p>
+        </div>
+        <ChevronRight className="h-5 w-5 text-ink-300 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all shrink-0" />
+      </Link>
+
+      {/* 省考职位检索入口 */}
+      <Link
+        href="/civil-service/province-positions"
+        className="group mb-8 flex items-center gap-4 rounded-xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-white p-5 hover:shadow-md hover:border-emerald-300 transition-all"
+      >
+        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-600 text-white shrink-0">
+          <Landmark className="h-6 w-6" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-display font-bold text-ink-800 mb-0.5">2026 省考职位检索</p>
+          <p className="text-sm text-ink-500">
+            广东 2026 省考官方职位表 9344 个职位：按招录系统 / 学历 / 考区 / 应届限制筛选
+          </p>
+        </div>
+        <ChevronRight className="h-5 w-5 text-ink-300 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all shrink-0" />
+      </Link>
 
       {/* Tab 切换 */}
       <div className="flex gap-2 mb-8 border-b border-paper-200 overflow-x-auto">

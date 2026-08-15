@@ -504,6 +504,52 @@ async def _run_scheduled_crawler(source_name: str):
         db.close()
 
 
+# ----------------------------------------------------------------------
+# 默认按日定时任务（新源随启动补齐，管理员可在 /schedules 改期/停用）
+# ----------------------------------------------------------------------
+DEFAULT_DAILY_SCHEDULES: dict[str, str] = {
+    "eol_kaoyan": "0 2 * * *",          # 每天 02:00 抓取中国教育在线考研频道
+    "official_announce": "0 2 * * *",   # 每天 02:00 抓取高校研究生院官方公告
+}
+
+
+def seed_default_schedules() -> None:
+    """启动时补齐默认每日 cron（幂等：已存在的 job 跳过）。
+
+    - 仅对合规白名单内的爬虫生效（绕过白名单的直接跳过并告警）
+    - Redis jobstore 场景进程重启不丢任务；MemoryJobStore（开发环境）
+      重启后由本函数重新补齐
+    - 管理员仍可在管理端 /schedules 改期、停用或删除
+    """
+    scheduler = get_scheduler()
+    if not scheduler:
+        logger.warning("APScheduler 未可用，跳过默认按日定时任务补齐")
+        return
+
+    for source_name, cron in DEFAULT_DAILY_SCHEDULES.items():
+        job_id = f"crawler_{source_name}"
+        if scheduler.get_job(job_id):
+            continue
+        if not is_allowed_crawler(source_name):
+            logger.warning("跳过非白名单源 %s 的默认按日定时任务", source_name)
+            continue
+
+        minute, hour, day, month, day_of_week = cron.split()
+        scheduler.add_job(
+            _run_scheduled_crawler,
+            "cron",
+            id=job_id,
+            kwargs={"source_name": source_name},
+            replace_existing=True,
+            minute=minute,
+            hour=hour,
+            day=day,
+            month=month,
+            day_of_week=day_of_week,
+        )
+        logger.info("已补齐默认按日定时任务: %s (%s)", source_name, cron)
+
+
 async def _notify_data_update(source_name: str, items_stored: int):
     """发送数据更新通知（WebSocket + 外部webhook）。"""
     import httpx

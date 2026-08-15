@@ -1,0 +1,141 @@
+"""资讯质量分级 — 信源权威度 × 时效性 × 内容完整度 → 0-100 分 + A/B/C/D 级。
+
+用于入库前过滤低质资讯、审核队列排序、前端质量徽章展示。
+维度（外部调研结论）：
+1. 信源权威度：edu.cn/gov.cn 官方 > 门户教育频道/官方媒体 > 培训机构/社区 > 其他
+2. 时效性：考研资讯价值随时间衰减（报名/调剂窗口过期即失效）
+3. 内容完整度：有正文（content）优于只有标题/摘要
+4. 可溯源：source_url 有效才计分
+"""
+from datetime import datetime, timezone
+from urllib.parse import urlparse
+
+# 官方域名（含子域）
+_OFFICIAL_SUFFIXES = (".edu.cn", ".gov.cn", ".ac.cn")
+# 门户教育频道 / 官方媒体（信息差价值高的聚合源）
+_PORTAL_DOMAINS = {
+    "sina.com.cn",
+    "sina.cn",
+    "eol.cn",
+    "sohu.com",
+    "163.com",
+    "qq.com",
+    "people.com.cn",
+    "xinhuanet.com",
+    "chinanews.com",
+    "huqiu.com",
+}
+# 培训机构 / 社区平台（有一定专业度但权威性弱）
+_COMMUNITY_DOMAINS = {
+    "offcn.com",
+    "huatu.com",
+    "fenbi.com",
+    "mofangge.com",
+    "gaokao.cn",
+    "zhihu.com",
+    "bilibili.com",
+}
+
+# 权威度分（总分 40）
+_AUTHORITY_OFFICIAL = 40
+_AUTHORITY_PORTAL = 25
+_AUTHORITY_COMMUNITY = 15
+_AUTHORITY_OTHER = 10
+# 时效分（总分 30）
+_FRESHNESS_MAX = 30
+# 完整度分（总分 20）
+_COMPLETENESS_MAX = 20
+# 可溯源源（总分 10）
+_TRACEABLE = 10
+
+# 分级阈值（score >= 75 → A，>= 55 → B，>= 35 → C，其余 D）
+GRADE_A = 75
+GRADE_B = 55
+GRADE_C = 35
+
+_GRADES = ((GRADE_A, "A"), (GRADE_B, "B"), (GRADE_C, "C"))
+
+
+def _authority_score(source_url: str) -> int:
+    """按来源域名分级权威度。"""
+    hostname = (urlparse(source_url or "").hostname or "").lower()
+    if not hostname:
+        return 0
+    if any(hostname.endswith(s) for s in _OFFICIAL_SUFFIXES):
+        return _AUTHORITY_OFFICIAL
+    if any(hostname == d or hostname.endswith("." + d) for d in _PORTAL_DOMAINS):
+        return _AUTHORITY_PORTAL
+    if any(hostname == d or hostname.endswith("." + d) for d in _COMMUNITY_DOMAINS):
+        return _AUTHORITY_COMMUNITY
+    return _AUTHORITY_OTHER
+
+
+def _freshness_score(published_at: datetime | None, crawled_at: datetime | None) -> int:
+    """时效评分：24h 内满分，随天数衰减；未知发布时间给中性保守分。"""
+    ts = published_at or crawled_at
+    if not ts:
+        return 0
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=timezone.utc)
+    hours = (datetime.now(timezone.utc) - ts).total_seconds() / 3600
+    if hours < 24:
+        return _FRESHNESS_MAX
+    if hours < 7 * 24:
+        return 25
+    if hours < 30 * 24:
+        return 18
+    if hours < 90 * 24:
+        return 10
+    if hours < 180 * 24:
+        return 5
+    return 0
+
+
+def _completeness_score(content: str, summary: str) -> int:
+    """内容完整度：正文长度为主，有摘要加分。"""
+    content = content or ""
+    summary = summary or ""
+    if len(content) >= 1000:
+        base = _COMPLETENESS_MAX
+    elif len(content) >= 500:
+        base = 15
+    elif len(content) >= 100:
+        base = 10
+    elif content:
+        base = 5
+    else:
+        base = 0
+    if summary and base < _COMPLETENESS_MAX:
+        base += 2
+    return min(base, _COMPLETENESS_MAX)
+
+
+def grade_of(score: int) -> str:
+    """score -> A/B/C/D。"""
+    for threshold, grade in _GRADES:
+        if score >= threshold:
+            return grade
+    return "D"
+
+
+def score_item(
+    *,
+    title: str,
+    content: str = "",
+    summary: str = "",
+    source_url: str = "",
+    published_at: datetime | None = None,
+    crawled_at: datetime | None = None,
+) -> tuple[int, str]:
+    """综合评分一条资讯，返回 (quality_score 0-100, grade A/B/C/D)。
+
+    规则纯本地计算（零 LLM 成本），入库前/审核时调用。
+    """
+    authority = _authority_score(source_url)
+    freshness = _freshness_score(published_at, crawled_at)
+    completeness = _completeness_score(content, summary)
+    traceable = _TRACEABLE if source_url.startswith(("http://", "https://")) else 0
+
+    score = authority + freshness + completeness + traceable
+    score = max(0, min(100, score))
+    return score, grade_of(score)

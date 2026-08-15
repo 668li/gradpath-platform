@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   BookOpen,
   Target,
@@ -772,14 +773,22 @@ export default function StrategyPage() {
                   <Newspaper className="h-4 w-4 text-brand-600" />
                   <h3 className="text-sm font-semibold text-ink-800">最新资讯</h3>
                 </div>
-                <button
-                  onClick={loadNews}
-                  disabled={newsLoading}
-                  className="flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700 disabled:text-ink-300"
-                >
-                  <RefreshCw className={cn("h-3 w-3", newsLoading && "animate-spin")} />
-                  刷新
-                </button>
+                <div className="flex items-center gap-3">
+                  <Link
+                    href="/kaoyan/news"
+                    className="text-xs text-brand-600 hover:text-brand-700"
+                  >
+                    进入资讯中心 →
+                  </Link>
+                  <button
+                    onClick={loadNews}
+                    disabled={newsLoading}
+                    className="flex items-center gap-1 text-xs text-brand-600 hover:text-brand-700 disabled:text-ink-300"
+                  >
+                    <RefreshCw className={cn("h-3 w-3", newsLoading && "animate-spin")} />
+                    刷新
+                  </button>
+                </div>
               </div>
 
               {newsLoading ? (
@@ -907,6 +916,9 @@ function RiskAssessmentPanel({ positioning }: { positioning: PositioningResponse
       <div className="flex items-center gap-2 mb-4">
         <BarChart3 className="h-4 w-4 text-ink-700" />
         <h4 className="text-sm font-semibold text-ink-900">风险评估</h4>
+        <span className="ml-1 rounded bg-ink-200/70 px-1.5 py-0.5 text-[10px] font-medium text-ink-600">
+          AI 估算
+        </span>
       </div>
 
       <div className="grid gap-3 grid-cols-1 sm:grid-cols-3">
@@ -924,10 +936,12 @@ function RiskAssessmentPanel({ positioning }: { positioning: PositioningResponse
             <div>
               <p className="text-xs text-ink-600">预估报录比</p>
               <p className="text-sm font-semibold text-ink-900">{estimateRatio(avgReachProb)}</p>
+              <p className="text-[10px] text-ink-400">基于概率估算 · 非官方数据</p>
             </div>
             <div>
               <p className="text-xs text-ink-600">复试淘汰率</p>
               <p className="text-sm font-semibold text-ink-900">{estimateRetestElimination(avgReachProb)}</p>
+              <p className="text-[10px] text-ink-400">基于概率估算 · 非官方数据</p>
             </div>
           </div>
         </div>
@@ -946,10 +960,12 @@ function RiskAssessmentPanel({ positioning }: { positioning: PositioningResponse
             <div>
               <p className="text-xs text-ink-600">预估报录比</p>
               <p className="text-sm font-semibold text-ink-900">{estimateRatio(avgTargetProb)}</p>
+              <p className="text-[10px] text-ink-400">基于概率估算 · 非官方数据</p>
             </div>
             <div>
               <p className="text-xs text-ink-600">复试淘汰率</p>
               <p className="text-sm font-semibold text-ink-900">{estimateRetestElimination(avgTargetProb)}</p>
+              <p className="text-[10px] text-ink-400">基于概率估算 · 非官方数据</p>
             </div>
           </div>
         </div>
@@ -968,10 +984,12 @@ function RiskAssessmentPanel({ positioning }: { positioning: PositioningResponse
             <div>
               <p className="text-xs text-ink-600">预估报录比</p>
               <p className="text-sm font-semibold text-ink-900">{estimateRatio(avgSafetyProb)}</p>
+              <p className="text-[10px] text-ink-400">基于概率估算 · 非官方数据</p>
             </div>
             <div>
               <p className="text-xs text-ink-600">复试淘汰率</p>
               <p className="text-sm font-semibold text-ink-900">{estimateRetestElimination(avgSafetyProb)}</p>
+              <p className="text-[10px] text-ink-400">基于概率估算 · 非官方数据</p>
             </div>
           </div>
         </div>

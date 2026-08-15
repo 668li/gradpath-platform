@@ -8,6 +8,7 @@ import type {
   QAAnswerCreate,
   KaoyanNewsListResponse,
   KaoyanNewsResponse,
+  KaoyanNewsListParams,
 } from "@/types";
 import { request, buildQuery } from "./client";
 
@@ -118,14 +119,11 @@ export const kaoyanCommunityApi = {
 
 // ===== 考研资讯 =====
 export const kaoyanNewsApi = {
-  list: (params?: {
-    page?: number;
-    page_size?: number;
-    category?: string;
-    search?: string;
-  }) =>
+  list: (params?: KaoyanNewsListParams) =>
     request<KaoyanNewsListResponse>(
       `/api/kaoyan-news${buildQuery((params as Record<string, string | undefined | null>) || {})}`,
     ),
   get: (id: string) => request<KaoyanNewsResponse>(`/api/kaoyan-news/${id}`),
+  categories: () =>
+    request<{ categories: string[] }>(`/api/kaoyan-news/categories`),
 };
