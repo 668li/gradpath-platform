@@ -21,7 +21,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from app.database import SessionLocal
 from app.models.company import Company, CompanySize
 
-DATA = Path(__file__).resolve().parent.parent / "app" / "crawlers" / "real_data" / "company_public_data.json"
+DATA = (
+    Path(sys.argv[1])
+    if len(sys.argv) > 1
+    else Path(__file__).resolve().parent.parent / "app" / "crawlers" / "real_data" / "company_public_data.json"
+)
 
 
 def _parse_size(size_str: str) -> CompanySize | None:

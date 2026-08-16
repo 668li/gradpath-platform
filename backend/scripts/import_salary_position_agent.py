@@ -23,7 +23,11 @@ sys.path.insert(0, str(BACKEND_ROOT))
 from app.database import SessionLocal
 from app.models.salary_benchmark import ExperienceLevel, SalaryBenchmark
 
-DATA_FILE = BACKEND_ROOT / "app" / "crawlers" / "real_data" / "salary_position_data.json"
+DATA_FILE = (
+    Path(sys.argv[1])
+    if len(sys.argv) > 1
+    else BACKEND_ROOT / "app" / "crawlers" / "real_data" / "salary_position_data.json"
+)
 
 EXP_MAP = {
     "1年以下": ExperienceLevel.entry,
