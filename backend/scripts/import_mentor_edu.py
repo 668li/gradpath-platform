@@ -27,7 +27,8 @@ DATA_FILE = BACKEND_ROOT / "app" / "crawlers" / "real_data" / "mentor_edu_data.j
 
 
 def main() -> None:
-    rows = json.loads(DATA_FILE.read_text(encoding="utf-8"))
+    target = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else DATA_FILE
+    rows = json.loads(target.read_text(encoding="utf-8"))
     inserted = duplicated = 0
     with SessionLocal() as db:
         for r in rows:
