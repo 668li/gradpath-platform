@@ -71,7 +71,16 @@ DEFAULT_ROUTES: list[str] = [
     "tongji/yjs",                 # 同济大学研究生院
     "upc/yjs",                    # 中国石油大学研究生院
     "gov/moe/policy_anal",        # 教育部政策解读（gov.cn）
+    # 资讯流（杠杆 #5，2026-08-16）：知乎日报/想法热榜，只存标题+摘要+链接，正文跳原文
+    "zhihu/daily",                # 知乎日报（30 条/次，实测 200）
+    "zhihu/pin/hotlist",          # 知乎想法热榜（15 条/次，实测 200）
 ]
+
+# 资讯流路由 → 资讯分类（研招公告路由保持原分类；未知资讯流路由回落原逻辑）
+_ROUTE_CATEGORY: dict[str, str] = {
+    "zhihu/daily": "资讯·知乎日报",
+    "zhihu/pin/hotlist": "资讯·知乎热榜",
+}
 
 # 每个路由拉取条数（RSSHub ?limit= 参数）
 LIMIT = 15
@@ -174,13 +183,20 @@ class RSSHubCrawler(BaseCrawler):
                 "source_url": source_url,
                 "published_at": published_at.isoformat() if published_at else None,
                 "tags": [],
-                "category": f"研招公告·{feed_title}"[:50],
+                "category": self._category_for(raw["_route"], feed_title),
                 "source_platform": "rsshub",
                 "crawled_at": datetime.now(timezone.utc).isoformat(),
                 "status": "pending",
             }
             parsed.append(item)
         return parsed
+
+    def _category_for(self, route: str, feed_title: str) -> str:
+        """资讯流路由按映射分类；研招公告路由保持「研招公告·{源}」原格式。"""
+        for prefix, cat in _ROUTE_CATEGORY.items():
+            if route.startswith(prefix):
+                return cat[:50]
+        return f"研招公告·{feed_title}"[:50]
 
     def _matches_keywords(self, item: dict) -> bool:
         """标题或摘要包含任一关键词时保留；无关键词时全部保留。"""
