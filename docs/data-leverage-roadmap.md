@@ -36,6 +36,7 @@
 | 分数线 | 811 | 真实数据（含国家线） | ✅ |
 | 公司 | 1693 | 财富500/ISC100/深交所 | ✅ |
 | 政府薪资 | 1185 | 人社局公告 PDF/网页 | ✅ |
+| 宏观就业面（公报） | 32 | 国家统计局年度统计公报文本（2022-2025） | ✅ 本轮 |
 | 职位薪资 | 1046 | 人社局工资价位（广深杭/长三角） | ✅ |
 | 暗知识 | 38 | 真实经验贴提取（带来源 tag） | ✅ |
 | 国考职位 | 20714 | 官方 xlsx 年度入库 | ✅ |
@@ -50,7 +51,7 @@
 | 1 | **自建 RSSHub（19 路由实测可用）+ /gov/moe/policy_anal** | 逐校爬研招公告 | ✅ **已落地**（246 条真公告入库，232 通过审核；chsi 路由禁用） |
 | 2 | **软科公开 JSON API + province-city-china(MIT)** | 自爬榜单/行政区划 | ✅ **已落地**（cb5dc82） |
 | 3 | **官方职位表 xlsx 通用管道 + gongkao-search 专业映射** | 国考/省考职位爬虫 | ✅ **已落地**（yaml 驱动列映射，国考/省考即插即用，幂等可重跑） |
-| 4 | **authority-data 统计年鉴(GPL) + /gov/stats** | 自爬统计年鉴 | 🔲 待做 |
+| 4 | **国家统计局公报文本通道**（年度公报 2 月底发布，URL 模式稳定；统计年鉴表格为 jpg 图片，authority-data 仓库数据行核实后可用） | 自爬统计年鉴/统计局查询 API（403） | ✅ **已落地**（32 条宏观就业面指标入库，2022-2025 四年序列，URL 白名单 + 注释标记容忍） |
 | 5 | **微信公众号多源路由 + 知乎/微博路由** | B站/公众号自爬资讯流 | 🔲 待做 |
 
 **红线确认**：RSSHub `/chsi/*` 三个路由源码级确认硬编码抓 yz.chsi.com.cn —— 绝不可用，与项目红线一致。
@@ -65,8 +66,9 @@
 
 1. ~~**建 RSSHub 自建实例**~~ ✅ **已完成**（19 路由实测可用，40 路由探测结果见下）——日常增量更新由 `schedule: daily` 采集器承担
 2. ~~**职位表 xlsx 通用管道**~~ ✅ **已完成**（写一次管道告别职位爬虫）——`scripts/import_position_xlsx.py` + 国考/省考两个 yaml 映射即插即用
-3. **authority-data 统计年鉴入库**（宏观薪资/就业面一次入库）
+3. ~~**统计公报就业面入库**~~ ✅ **已完成**（32 条宏观就业面指标，2022-2025 序列；2026-02-28 发布后重跑采集器即可 +4 年）——`stats_gongbao_scraper.py` 每年 2 月底后重跑
 4. **MCP server 自建**（大陆教育/薪资空白区先发）—— 中期
+5. **微信公众号多源路由 + 知乎/微博路由**（杠杆 #5，资讯流扩面）
 
 ## 本轮新增资产（可复跑）
 
@@ -77,6 +79,8 @@
 - `scripts/import_mentor_edu.py`（支持 argv 覆盖）`/ scripts/import_schools_ruanke.py`（name 幂等 upsert）
 - `scripts/import_position_xlsx.py` —— 通用职位表 xlsx 管道（表头行自动定位、yaml 列映射、业务键幂等、参数绑定）
 - `app/crawlers/config/position_xlsx/guokao_2026.yaml`（国考，5 字段业务键）`/ shengkao_gd_2026.yaml`（广东省考，position_code 业务键）
+- `app/crawlers/real_data/stats_gongbao_scraper.py` —— 统计公报采集器（4 年 URL 白名单 + 正则抽就业面 8 指标，注释标记容忍，`py -3.13 stats_gongbao_scraper.py` 重跑即增量）
+- `scripts/import_stats_gongbao.py` —— 公报入库（幂等键与 import_salary_gov_market 一致，纯增量追加）
 - 经验沉淀：`data-pipeline-lessons.md`（等待纪律/合成鉴别/Mimosa 绕过/批量审核模式等 11 条）
 
 ## 合规护栏（全程生效）
