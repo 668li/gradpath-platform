@@ -175,12 +175,12 @@ export default function KaoyanNewsPage() {
       <header className="mb-5">
         <h1 className="text-2xl font-bold text-ink-900 flex items-center gap-2">
           <Newspaper className="h-6 w-6 text-brand-600" />
-          考研资讯中心
+          资讯中心
         </h1>
         <p className="mt-1 text-sm text-ink-500 flex flex-wrap items-center gap-x-4 gap-y-1">
           <span className="inline-flex items-center gap-1">
             <ShieldCheck className="h-3.5 w-3.5 text-green-500" />
-            先提纯、再呈现：相似去重 · 质量分级 · 关键日期解读
+            考研 / 考公 / 就业多赛道 · 相似去重 · 质量分级 · 关键日期解读
           </span>
           <span className="inline-flex items-center gap-1 text-ink-400">
             <ArrowUpDown className="h-3.5 w-3.5" />

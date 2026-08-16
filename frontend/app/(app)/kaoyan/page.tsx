@@ -28,7 +28,7 @@ const tabs = [
   { id: "mentors", label: "导师情报", href: "/kaoyan/mentors", icon: UserCheck },
   { id: "dark-knowledge", label: "暗知识", href: "/kaoyan/dark-knowledge", icon: Lightbulb },
   { id: "strategy", label: "备考策略", href: "/kaoyan/strategy", icon: BookOpen },
-  { id: "news", label: "考研资讯", href: "/kaoyan/news", icon: Newspaper },
+  { id: "news", label: "资讯中心", href: "/kaoyan/news", icon: Newspaper },
   { id: "community", label: "社区交流", href: "/kaoyan/community", icon: Users },
   { id: "plans", label: "学习计划", href: "/study-plans", icon: Calendar },
   { id: "outcome", label: "上岸报告", href: "/outcome-report", icon: Trophy },

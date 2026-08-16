@@ -91,7 +91,7 @@ function getNavSections(): NavSection[] {
       section: "旅程",
       children: [
         { href: "/kaoyan", label: "考研情报", icon: BookOpen },
-        { href: "/kaoyan/news", label: "考研资讯", icon: Newspaper },
+        { href: "/kaoyan/news", label: "资讯中心", icon: Newspaper },
         { href: "/civil-service", label: "考公情报", icon: Building2 },
         { href: "/civil-service/positions", label: "国考职位", icon: Landmark },
         { href: "/employment", label: "就业情报", icon: Briefcase },
