@@ -6,7 +6,7 @@
  * 关键日期 fixture 用「相对今天」动态生成，避免硬编码日期失效。
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, fireEvent, screen, waitFor } from "@testing-library/react";
 import KaoyanNewsPage from "@/app/(app)/kaoyan/news/page";
 import KaoyanNewsDetailPage from "@/app/(app)/kaoyan/news/[id]/page";
 import type {
@@ -24,6 +24,10 @@ const mocks = vi.hoisted(() => ({
   apiListMock: vi.fn(),
   apiCategoriesMock: vi.fn(),
   apiGetMock: vi.fn(),
+  // Phase I 反馈闭环：登录态 + qualityFeedbackApi.post + toast
+  authState: { user: null as { id: string } | null },
+  feedbackPostMock: vi.fn(),
+  toast: { push: vi.fn() },
 }));
 
 vi.mock("next/navigation", () => ({
@@ -42,6 +46,19 @@ vi.mock("@/lib/api", () => ({
     categories: mocks.apiCategoriesMock,
     get: mocks.apiGetMock,
   },
+}));
+
+vi.mock("@/components/ui/toast", () => ({
+  useToast: () => mocks.toast,
+}));
+
+// Phase I：详情页内嵌 QualityFeedback 依赖登录态 + qualityFeedbackApi
+vi.mock("@/stores/auth", () => ({
+  useAuthStore: (sel: (s: { user: { id: string } | null }) => unknown) => sel(mocks.authState),
+}));
+
+vi.mock("@/lib/api/kaoyan", () => ({
+  qualityFeedbackApi: { post: mocks.feedbackPostMock },
 }));
 
 /** 今天 +days 天的 yyyy-mm-dd（本地时区，与 key-dates.daysUntil 同基准）。 */
@@ -187,6 +204,9 @@ describe("考研资讯中心列表页", () => {
 describe("考研资讯详情页", () => {
   beforeEach(() => {
     mocks.apiGetMock.mockReset();
+    mocks.authState.user = null;
+    mocks.feedbackPostMock.mockReset();
+    mocks.toast.push.mockClear();
   });
 
   it("渲染 AI 解读、关键时间点与来源溯源卡", async () => {
@@ -222,5 +242,80 @@ describe("考研资讯详情页", () => {
     render(<KaoyanNewsDetailPage />);
     await screen.findByText("资讯不存在");
     expect(screen.getByText("返回资讯中心")).toBeTruthy();
+  });
+
+  it("详情页渲染数据年份徽章与「提取依据」证据链（Phase I）", async () => {
+    mocks.apiGetMock.mockResolvedValue(
+      makeNews({
+        structured_meta: {
+          enrollment_count: 120,
+          exam_subjects: ["408 计算机学科专业基础"],
+          evidence: { enrollment_count: "拟招收 120 人" },
+          confidence: { enrollment_count: 0.8 },
+          effective_year: 2026,
+        },
+      }),
+    );
+    const { container } = render(<KaoyanNewsDetailPage />);
+    await screen.findByText("2026 考研网上报名时间公布");
+    // 年份徽章（如「2026 年数据」）
+    expect(screen.getByText("2026 年数据")).toBeTruthy();
+    expect(container.textContent).toContain("决策数据卡");
+    // 提取依据 details：字段 · 原文「…」 · 置信度
+    expect(container.textContent).toContain("提取依据（原文证据 · 置信度）");
+    expect(container.textContent).toContain("enrollment_count · 原文「拟招收 120 人」 · 置信度 80%");
+  });
+
+  it("effective_year 为空时不出年份徽章（诚实降级）", async () => {
+    mocks.apiGetMock.mockResolvedValue(
+      makeNews({ structured_meta: { enrollment_count: 120 } }),
+    );
+    const { container } = render(<KaoyanNewsDetailPage />);
+    await screen.findByText("2026 考研网上报名时间公布");
+    expect(container.textContent).not.toContain("年数据");
+  });
+
+  it("质量徽章 hover title 显示实际扣分原因（逐行）", async () => {
+    mocks.apiGetMock.mockResolvedValue(
+      makeNews({
+        quality_grade: "A",
+        quality_score: 84,
+        quality_reasons: ["内容完整度 24/30：正文约 600 字", "反软广 10/10：未命中"],
+      }),
+    );
+    const { container } = render(<KaoyanNewsDetailPage />);
+    await screen.findByText("2026 考研网上报名时间公布");
+    const badge = container.querySelector('[title*="内容完整度 24/30"]');
+    expect(badge).toBeTruthy();
+    // reasons 以换行合并进 title
+    expect(badge!.getAttribute("title")).toContain("反软广 10/10：未命中");
+  });
+
+  it("无 reasons 的质量徽章回退通用文案", async () => {
+    mocks.apiGetMock.mockResolvedValue(makeNews({ quality_reasons: null }));
+    const { container } = render(<KaoyanNewsDetailPage />);
+    await screen.findByText("2026 考研网上报名时间公布");
+    // 注：nwsapi 对含「+」的属性选择器字符串匹配异常，改用不含 + 的前缀定位
+    const badge = container.querySelector('[title*="权威来源"]');
+    expect(badge).toBeTruthy();
+    // 回退通用文案（A 级），而非扣分原因格式（含「：」）
+    expect(badge!.getAttribute("title")).toBe("权威来源 + 新鲜 + 内容完整（质量分 ≥75）");
+  });
+
+  it("详情页点「不准确」→ POST 反馈 + 成功 toast", async () => {
+    mocks.authState.user = { id: "u-1" };
+    mocks.feedbackPostMock.mockResolvedValue({ id: "f-1", message: "ok" });
+    mocks.apiGetMock.mockResolvedValue(makeNews());
+    render(<KaoyanNewsDetailPage />);
+    await screen.findByText("2026 考研网上报名时间公布");
+    fireEvent.click(screen.getByText("不准确"));
+    await waitFor(() => expect(mocks.feedbackPostMock).toHaveBeenCalledTimes(1));
+    expect(mocks.feedbackPostMock).toHaveBeenCalledWith({
+      target_type: "kaoyan_news",
+      target_id: mocks.paramsId,
+      feedback_type: "unhelpful",
+      reason: null,
+    });
+    expect(mocks.toast.push).toHaveBeenCalledWith("已收到反馈", "success");
   });
 });

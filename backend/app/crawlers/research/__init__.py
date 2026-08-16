@@ -11,5 +11,7 @@ from app.crawlers.research import eol_kaoyan_crawler  # noqa: F401
 from app.crawlers.research import github_kaoyan  # noqa: F401
 from app.crawlers.research import official_announce_crawler  # noqa: F401
 from app.crawlers.research import rss_news_crawler  # noqa: F401
+from app.crawlers.research import tieba_research_crawler  # noqa: F401
 from app.crawlers.research import v2ex_knowledge  # noqa: F401
 from app.crawlers.research import web_article_crawler  # noqa: F401
+from app.crawlers.research import zhihu_research_crawler  # noqa: F401

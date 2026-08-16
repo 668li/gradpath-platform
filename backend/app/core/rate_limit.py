@@ -39,6 +39,7 @@ class RateLimitConfig:
     QA_ANSWER_CREATE: str = "5/minute"  # 回答创建：5次/分钟
     COMMUNITY_LIKE: str = "30/minute"  # 社区点赞：30次/分钟
     COMMENT_CREATE: str = "10/minute"  # 评论创建：10次/分钟
+    QUALITY_FEEDBACK_CREATE: str = "5/minute"  # 质量分反馈：5次/分钟（Phase I）
 
     # ===== 默认限流 =====
     DEFAULT: str = "60/minute"  # 默认：60次/分钟

@@ -322,6 +322,98 @@ class TestPromotePurity(TestApprove):
         assert "思想政治理论" in meta.get("exam_subjects", [])
         assert "数据结构（C语言版）" in meta.get("reference_books", [])
 
+    def test_experience_post_injects_evidence_chain(self, client, admin_headers, db_session):
+        """Phase I：approve 后 quality_reasons 非空 + structured_meta 挂证据链。"""
+        ext, queue = _seed_queue_item(
+            db_session,
+            source_url="https://example.com/posts/evidence1",
+            title="408 一战上岸清华大学经验",
+            content="初试考了 380 分，每天刷真题，错题整理成笔记复盘" * 30,
+            external_meta={
+                "author": "UP主",
+                "view_count": 30000,
+                "like_count": 500,
+                "tags": ["408", "清华大学"],
+            },
+        )
+        client.post(
+            f"/api/admin/research-queue/{queue.id}/approve",
+            json={},
+            headers=admin_headers,
+        )
+        post = db_session.query(ExperiencePost).filter(
+            ExperiencePost.source_url == ext.source_url
+        ).first()
+        assert post is not None
+        # 可解释扣分原因：质量徽章 hover 数据源
+        reasons = post.quality_reasons or []
+        assert len(reasons) >= 1
+        assert all(isinstance(r, str) and "：" in r for r in reasons)
+        # 证据链：evidence 原文片段 + confidence 规则置信度
+        meta = post.structured_meta or {}
+        evidence = meta.get("evidence") or {}
+        confidence = meta.get("confidence") or {}
+        assert evidence.get("school", "").startswith("原文「")
+        assert evidence.get("target_score", "").startswith("原文「")
+        assert confidence.get("school") == 0.85
+        assert confidence.get("target_score") == 0.8
+        assert "380" in evidence.get("target_score", "")
+        # API 层回归（schema 缺 quality_reasons 曾导致前端收不到）：
+        # 外部经验列表响应须带 quality_reasons + structured_meta.evidence
+        resp = client.get("/api/kaoyan/experience-posts", params={"source_platform": "external"})
+        assert resp.status_code == 200
+        items = [i for i in resp.json()["items"] if i["id"] == str(post.id)]
+        assert items, "approved 外部经验应出现在列表"
+        api_item = items[0]
+        assert api_item.get("quality_reasons"), "响应缺 quality_reasons（schema 回归）"
+        api_meta = api_item.get("structured_meta") or {}
+        assert (api_meta.get("evidence") or {}).get("school", "").startswith("原文「")
+
+    def test_kaoyan_news_injects_evidence_and_year(self, client, admin_headers, db_session):
+        """Phase I：资讯 approve 后 quality_reasons 非空 + evidence/effective_year。"""
+        ext, queue = _seed_queue_item(
+            db_session,
+            item_type="kaoyan_news",
+            source_platform="rss",
+            source_url="https://news.example.com/2026/08/year1",
+            title="2026年XX大学计算机考研招生简章",
+            content="计算机学院拟招收 120 人。初试科目：①101思想政治理论②201英语一"
+                    "③301数学一④408计算机学科专业基础。参考书：《数据结构（C语言版）》。",
+            external_meta={
+                "summary": "招生简章",
+                "category": "招生简章",
+                "tags": ["考研"],
+                "crawled_at": "2026-08-12T08:00:00Z",
+            },
+        )
+        client.post(
+            f"/api/admin/research-queue/{queue.id}/approve",
+            json={},
+            headers=admin_headers,
+        )
+        news = db_session.query(KaoyanNews).filter(
+            KaoyanNews.source_url == ext.source_url
+        ).first()
+        assert news is not None
+        reasons = news.quality_reasons or []
+        assert len(reasons) >= 1
+        meta = news.structured_meta or {}
+        evidence = meta.get("evidence") or {}
+        confidence = meta.get("confidence") or {}
+        assert evidence.get("enrollment_count", "").startswith("原文「")
+        assert confidence.get("enrollment_count") == 0.8
+        assert meta.get("effective_year") == 2026
+        assert evidence.get("effective_year", "").startswith("原文「")
+        # API 层回归（schema 缺 quality_reasons 曾导致前端收不到）：
+        # 详情响应须带 quality_reasons + structured_meta.evidence/effective_year
+        resp = client.get(f"/api/kaoyan-news/{news.id}")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body.get("quality_reasons"), "响应缺 quality_reasons（schema 回归）"
+        api_meta = body.get("structured_meta") or {}
+        assert (api_meta.get("evidence") or {}).get("enrollment_count", "").startswith("原文「")
+        assert api_meta.get("effective_year") == 2026
+
 
 class TestReject:
     def test_reject_with_reason(self, client, admin_headers, db_session):

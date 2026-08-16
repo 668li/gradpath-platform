@@ -6,11 +6,17 @@
 - ``rate_limit`` 请求间隔（默认 1s），配合 max_retries 已内置
 - 所有入库必须经人工确认（PENDING 审核队列），基类不提供绕过手段
 """
-import time
+import ipaddress
 import logging
+import socket
+import time
+import urllib.error
+import urllib.request
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone
 from typing import Any, Optional
+from urllib.parse import urlparse
+from urllib.robotparser import RobotFileParser
 import requests
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -25,15 +31,20 @@ class BaseCrawler(ABC):
     name: str = ""           # 爬虫名称（唯一标识）
     category: str = ""       # 分类: grad/civil/career/reports
     description: str = ""    # 描述
+
+    # 外发请求标识：robots.txt 按此 UA 判定；子类可覆盖（如 B站爬虫换浏览器 UA）
+    USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) GradPathCrawler/1.0"
+    # SSRF 护栏：免解析即拒的保留主机名（其余经 socket 解析逐 IP 判定）
+    _BLOCKED_HOSTNAMES = frozenset({"localhost", "localhost.localdomain"})
     
     def __init__(self, config: dict = None):
         self.config = config or {}
         self.session = requests.Session()
-        self.session.headers.update({
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) GradPathCrawler/1.0"
-        })
+        self.session.headers.update({"User-Agent": self.USER_AGENT})
         self.stats = {"fetched": 0, "stored": 0, "errors": 0, "duplicates": 0}
         self._rate_limit = self.config.get("rate_limit", 1.0)  # 默认1秒间隔
+        # robots.txt 解析缓存（按 host 缓存一次，单次运行内不重复拉取）
+        self._robots_cache: dict[str, RobotFileParser] = {}
         # 合规护栏：单次任务抓取上限（0 表示不限制，研招网来源必须显式配置）
         self._max_pages = int(self.config.get("max_pages", 0))
         self._max_items = int(self.config.get("max_items", 0))
@@ -96,7 +107,18 @@ class BaseCrawler(ABC):
                 db.close()
     
     def _request(self, url: str, method: str = "GET", **kwargs) -> requests.Response:
-        """带限速和重试的HTTP请求。"""
+        """带限速和重试的HTTP请求。
+
+        外发安全护栏（Mimosa 约束）：发请求前校验 host（仅 http/https，
+        拒绝 localhost/环回/私有/保留地址，DNS 解析失败 fail-safe 拒绝）；
+        robots.txt 不允许则跳过该 URL 并如实记录。
+        """
+        ok, reason = self._validate_outbound_url(url)
+        if not ok:
+            logger.warning(f"[{self.name}] 拒绝外发请求: {url} | {reason}")
+            raise requests.RequestException(f"外发 URL 校验失败: {reason}")
+        if not self._check_robots_allowed(url):
+            raise requests.RequestException(f"robots.txt 不允许抓取: {url}")
         max_retries = self.config.get("max_retries", 3)
         for attempt in range(max_retries):
             try:
@@ -111,6 +133,127 @@ class BaseCrawler(ABC):
                     time.sleep(wait)
                 else:
                     raise
+
+    # ===== 外发请求安全校验（Mimosa 强制约束：仅 http/https，拒绝内网/保留地址） =====
+
+    def _validate_outbound_url(self, url: str) -> tuple[bool, str]:
+        """校验外发 URL 是否安全。
+
+        - 仅允许 http/https；拒绝 localhost/环回/私有/链路本地/多播/保留/未指定地址
+        - 域名先字面判定，再 socket 解析逐一校验每个解析结果
+        - 解析失败 / 解析到受限地址 → fail-safe 拒绝（不发起请求）
+        Returns: (ok, reason)
+        """
+        try:
+            parsed = urlparse(url)
+        except ValueError as e:
+            return False, f"URL 解析失败: {e}"
+        if parsed.scheme not in ("http", "https"):
+            return False, f"仅允许 http/https，收到: {parsed.scheme or '空'}"
+        host = (parsed.hostname or "").lower()
+        if not host:
+            return False, "URL 缺少主机名"
+        if host in self._BLOCKED_HOSTNAMES:
+            return False, f"拒绝保留主机名: {host}"
+
+        try:
+            ips = [ipaddress.ip_address(host)]
+        except ValueError:
+            ips = self._resolve_host(host)
+            if not ips:
+                return False, f"域名解析失败（fail-safe 拒绝）: {host}"
+
+        for ip in ips:
+            if self._is_restricted_ip(ip):
+                return False, f"目标解析到受限地址 {ip}（{host}）"
+        return True, ""
+
+    @staticmethod
+    def _resolve_host(host: str) -> list:
+        """解析域名为 IP 列表；解析失败返回空列表（调用方 fail-safe）。"""
+        try:
+            infos = socket.getaddrinfo(host, None)
+        except (socket.gaierror, OSError):
+            return []
+        ips: list = []
+        for info in infos:
+            addr = info[4][0]
+            try:
+                ips.append(ipaddress.ip_address(addr))
+            except ValueError:
+                continue
+        return ips
+
+    @staticmethod
+    def _is_restricted_ip(ip) -> bool:
+        """是否受限地址：环回/私有/链路本地/多播/保留/未指定。
+
+        IPv4 映射的 IPv6（::ffff:127.0.0.1）先解映射再判定，防绕过。
+        """
+        if ip.version == 6 and ip.ipv4_mapped is not None:
+            ip = ip.ipv4_mapped
+        return (
+            ip.is_loopback
+            or ip.is_private
+            or ip.is_link_local
+            or ip.is_multicast
+            or ip.is_reserved
+            or ip.is_unspecified
+        )
+
+    # ===== robots.txt 合规（不绕过验证码、不爬登录内容；不允许即跳过） =====
+
+    def _check_robots_allowed(self, url: str) -> bool:
+        """robots.txt 合规检查：按 USER_AGENT 判定该 URL 是否允许抓取。
+
+        只对 http/https 生效；robots 获取失败或明确禁止 → fail-safe 返回 False
+        （调用方跳过该 URL 并如实记录）。robots.txt 每主机拉取一次并缓存。
+        """
+        try:
+            parsed = urlparse(url)
+        except ValueError:
+            return False
+        if parsed.scheme not in ("http", "https"):
+            return False
+        host = (parsed.hostname or "").lower()
+        if not host:
+            return False
+
+        cache_key = f"{parsed.scheme}://{host}"
+        rp = self._robots_cache.get(cache_key)
+        if rp is None:
+            rp = self._fetch_robots_parser(cache_key)
+            if rp is None:
+                return False  # robots 取不到 → fail-safe 拒绝
+            self._robots_cache[cache_key] = rp
+        allowed = rp.can_fetch(self.USER_AGENT, url)
+        if not allowed:
+            logger.warning(f"[{self.name}] robots.txt 禁止抓取: {url}")
+        return allowed
+
+    def _fetch_robots_parser(self, robots_url: str) -> RobotFileParser | None:
+        """拉取并解析 robots.txt；失败返回 None（fail-safe）。
+
+        4xx（404/401 等）视为该站点无 robots.txt → 无规则放行；
+        5xx / 网络失败 / 超时 → 无法确认，fail-safe 拒绝。
+        """
+        req = urllib.request.Request(robots_url, headers={"User-Agent": self.USER_AGENT})
+        try:
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                body = resp.read().decode("utf-8", errors="replace")
+        except urllib.error.HTTPError as e:
+            if e.code >= 500:
+                logger.warning(
+                    f"[{self.name}] robots.txt 服务器错误 {e.code}（fail-safe 拒绝）: {robots_url}"
+                )
+                return None
+            body = ""  # 404/401 等 → 视为无 robots.txt，放行
+        except Exception as e:
+            logger.warning(f"[{self.name}] robots.txt 获取失败（fail-safe 拒绝）: {robots_url} | {e}")
+            return None
+        rp = RobotFileParser()
+        rp.parse(body.splitlines())
+        return rp
     
     def _dedup_key(self, item: dict) -> str:
         """生成去重键，子类可覆盖。默认用所有字段拼接。"""

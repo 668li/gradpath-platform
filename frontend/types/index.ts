@@ -1892,6 +1892,10 @@ export interface ExperienceStructuredMeta {
   methods?: string[];
   /** 适用人群（一战/二战/跨考/在职…） */
   audience?: string | null;
+  /** Phase I 证据链：字段 → 原文片段（≤40 字，从原始 title/content 抽取） */
+  evidence?: Record<string, string> | null;
+  /** Phase I 证据链：字段 → 抽取置信度 0-1 */
+  confidence?: Record<string, number> | null;
 }
 
 export interface ExperiencePostResponse {
@@ -1927,6 +1931,8 @@ export interface ExperiencePostResponse {
   promotion_confidence?: number | null;
   /** Phase G 软广标注原因（命中关键词） */
   promotion_reason?: string | null;
+  /** Phase I 质量扣分原因（逐维可解释，如 ["内容完整度 24/30：正文约 600 字", …]） */
+  quality_reasons?: string[] | null;
   created_at: string;
   updated_at: string;
 }
@@ -2123,6 +2129,8 @@ export interface KaoyanNewsResponse {
   is_expired?: boolean;
   /** Phase G 决策数据卡：招生人数/考试科目/参考书目 */
   structured_meta?: NewsStructuredMeta | null;
+  /** Phase I 质量扣分原因（逐维可解释） */
+  quality_reasons?: string[] | null;
 }
 
 /** Phase G 资讯结构化元信息（决策数据卡，规则抽取；抽不到保持 null/[] 诚实降级） */
@@ -2133,6 +2141,12 @@ export interface NewsStructuredMeta {
   exam_subjects?: string[];
   /** 参考书目列表 */
   reference_books?: string[];
+  /** Phase I 证据链：字段 → 原文片段（≤40 字） */
+  evidence?: Record<string, string> | null;
+  /** Phase I 证据链：字段 → 抽取置信度 0-1 */
+  confidence?: Record<string, number> | null;
+  /** Phase I 数据年份（如 2026 年拟招生；抽不到为 null 诚实降级） */
+  effective_year?: number | null;
 }
 
 export interface KaoyanNewsListParams {
@@ -2150,6 +2164,29 @@ export interface KaoyanNewsListResponse {
   total: number;
   page: number;
   page_size: number;
+}
+
+// ===== Phase I 质量反馈闭环（双键快捷反馈：👍有帮助 / 👎不准确） =====
+export type QualityFeedbackTargetType = "experience_post" | "kaoyan_news";
+export type QualityFeedbackType = "helpful" | "unhelpful";
+
+export interface QualityFeedbackCreate {
+  target_type: QualityFeedbackTargetType;
+  /** 条目 UUID（hex 32 位） */
+  target_id: string;
+  feedback_type: QualityFeedbackType;
+  /** 选填原因（≤200 字） */
+  reason?: string | null;
+}
+
+export interface QualityFeedbackResponse {
+  id: string;
+  target_type: QualityFeedbackTargetType;
+  target_id: string;
+  feedback_type: QualityFeedbackType;
+  reason?: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 // ===== 国考职位 =====

@@ -14,6 +14,7 @@ from app.crawlers.research.news_meta import (
     _extract_exam_subjects,
     _extract_reference_books,
     extract_news_structured_meta,
+    extract_news_structured_meta_with_evidence,
 )
 
 
@@ -138,3 +139,90 @@ class TestExtractStructuredMeta:
         assert meta["enrollment_count"] is None
         assert meta["exam_subjects"] == []
         assert meta["reference_books"] == []
+
+
+class TestEvidenceChain:
+    """Phase I：资讯证据链（evidence 原文片段 + confidence + effective_year）。"""
+
+    def test_full_evidence_and_year(self):
+        meta, evidence, confidence, effective_year = (
+            extract_news_structured_meta_with_evidence(
+                "2026年XX大学计算机考研招生简章",
+                "计算机学院拟招收 120 人。初试科目：①101思想政治理论②201英语一。"
+                "参考书：《数据结构（C语言版）》。",
+            )
+        )
+        # meta 与旧版一致
+        assert meta["enrollment_count"] == 120
+        assert "思想政治理论" in meta["exam_subjects"]
+        # effective_year：招/录/名额上下文中的 20xx 年
+        assert effective_year == 2026
+        # evidence：命中字段都有原文片段（≤40 字）
+        assert evidence["enrollment_count"].startswith("原文「")
+        assert "120" in evidence["enrollment_count"]
+        assert evidence["effective_year"].startswith("原文「")
+        assert "2026" in evidence["effective_year"]
+        # confidence：人数 0.8 / 科目 0.7 / 参考书 0.85 / 年份 0.8
+        assert confidence["enrollment_count"] == 0.8
+        assert confidence["exam_subjects"] == 0.7
+        assert confidence["reference_books"] == 0.85
+        assert confidence["effective_year"] == 0.8
+
+    def test_no_signal_honest_empty(self):
+        meta, evidence, confidence, effective_year = (
+            extract_news_structured_meta_with_evidence("普通资讯", "无结构化信息")
+        )
+        assert evidence == {}
+        assert confidence == {}
+        assert effective_year is None
+        assert meta["enrollment_count"] is None
+
+    def test_thin_wrapper_consistent(self):
+        """extract_news_structured_meta 是证据链版薄壳：meta 完全一致。"""
+        title = "2026年XX大学计算机考研招生简章"
+        content = "计算机学院拟招收 120 人。参考书：《数据结构（C语言版）》。"
+        plain = extract_news_structured_meta(title, content)
+        meta, _, _, _ = extract_news_structured_meta_with_evidence(title, content)
+        assert meta == plain
+
+
+class TestEffectiveYear:
+    """数据年份抽取 + 年号护栏（仅招/录/名额/简章/统考/调剂上下文才算）。"""
+
+    def test_year_zhang_sheng_jian_zhang(self):
+        _, _, _, year = extract_news_structured_meta_with_evidence(
+            "2026年招生简章发布", "详见附件"
+        )
+        assert year == 2026
+
+    def test_year_nizhaosheng(self):
+        _, _, _, year = extract_news_structured_meta_with_evidence(
+            "招生公告", "2026 年拟招收 120 人"
+        )
+        assert year == 2026
+
+    def test_year_luqu(self):
+        _, _, _, year = extract_news_structured_meta_with_evidence(
+            "拟录取名单", "2026年拟录取 45 人"
+        )
+        assert year == 2026
+
+    def test_bare_year_without_context_rejected(self):
+        """无招/录/名额等上下文 → 年号护栏拦截，不误标数据年份。"""
+        _, _, _, year = extract_news_structured_meta_with_evidence(
+            "复试线公布", "截至2026年3月陆续公布"
+        )
+        assert year is None
+
+    def test_year_in_date_phrase_rejected(self):
+        """「2025年1月1日调剂系统」中 年 后紧跟日期而非招/录 → 不匹配。"""
+        _, _, _, year = extract_news_structured_meta_with_evidence(
+            "调剂公告", "2025年1月1日调剂系统开放"
+        )
+        assert year is None
+
+    def test_no_year_returns_none(self):
+        _, _, _, year = extract_news_structured_meta_with_evidence(
+            "复试线公布", "各院校陆续公布分数线，无年份信息"
+        )
+        assert year is None

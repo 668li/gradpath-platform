@@ -20,11 +20,11 @@ from sqlalchemy.orm import Session
 
 from app.crawlers.research.experience_quality import (
     detect_promotion,
-    extract_experience_meta,
-    score_experience_item,
+    extract_experience_meta_with_evidence,
+    score_experience_item_detailed,
 )
-from app.crawlers.research.news_meta import extract_news_structured_meta
-from app.crawlers.research.quality import score_item
+from app.crawlers.research.news_meta import extract_news_structured_meta_with_evidence
+from app.crawlers.research.quality import score_item_detailed
 from app.crawlers.research.transformer import ResearchTransformer, SYSTEM_USER_ID
 from app.models.experience_post import ExperiencePost
 from app.models.ingestion import DataSourceMeta, ExternalResearchItem
@@ -326,23 +326,35 @@ def _promote_experience_post(
     # 1) 软广检测：命中标注但不下架（管理员已人工审核通过，前端知情降权）
     is_promotion, promo_conf, promo_reason = detect_promotion(title, raw_content, tags)
 
-    # 2) 质量分：采集期 meta 已带则沿用，缺失则现场规则计算
+    # 2) 质量分（可解释，Phase I）：采集期 meta 已带则沿用分数，原因明细规则版
+    #    重算（同一打分器输入一致，分数与采集期一致；reasons 供质量徽章 hover）
+    score_detail = score_experience_item_detailed(
+        title=title,
+        content=raw_content,
+        source_platform=ext_item.source_platform,
+        source_url=ext_item.source_url,
+        external_view_count=int(meta.get("view_count") or payload.get("external_view_count") or 0),
+        external_like_count=int(meta.get("like_count") or payload.get("external_like_count") or 0),
+        is_promotion=is_promotion,
+        promotion_reason=promo_reason,
+    )
     quality_score, quality_grade = meta.get("quality_score"), meta.get("quality_grade")
     if not isinstance(quality_score, (int, float)) or not isinstance(quality_grade, str):
-        quality_score, quality_grade = score_experience_item(
-            title=title,
-            content=raw_content,
-            source_platform=ext_item.source_platform,
-            source_url=ext_item.source_url,
-            external_view_count=int(meta.get("view_count") or payload.get("external_view_count") or 0),
-            external_like_count=int(meta.get("like_count") or payload.get("external_like_count") or 0),
-            is_promotion=is_promotion,
-        )
+        quality_score, quality_grade = score_detail["score"], score_detail["grade"]
     payload["quality_score"] = int(quality_score)
     payload["quality_grade"] = quality_grade
+    payload["quality_reasons"] = score_detail["reasons"]
 
-    # 3) 结构化元信息：学科/阶段/院校/目标分/方法（决策数据卡）
-    payload["structured_meta"] = extract_experience_meta(title, raw_content, tags)
+    # 3) 结构化元信息（决策数据卡）+ 证据链（Phase I）：学科/阶段/院校/目标分/方法，
+    #    evidence=原文片段（≤40 字）、confidence=规则置信度（关键词 0.9/院校 0.85/分数 0.8）
+    structured_meta, evidence, confidence = extract_experience_meta_with_evidence(
+        title, raw_content, tags
+    )
+    payload["structured_meta"] = {
+        **structured_meta,
+        "evidence": evidence,
+        "confidence": confidence,
+    }
     payload["is_promotion"] = is_promotion
     payload["promotion_confidence"] = promo_conf
     payload["promotion_reason"] = promo_reason
@@ -377,25 +389,37 @@ def _promote_kaoyan_news(
     summary = (meta.get("summary") or ext_item.content[:500]) or ""
     content = ext_item.content or ""
 
-    # 质量分：采集期 transform_rss 已注入则沿用；缺失（老数据/兜底路径）现场规则计算
+    # 质量分（可解释，Phase I）：采集期 transform_rss 已注入则沿用分数，
+    # 原因明细规则版重算；缺失（老数据/兜底路径）现场规则计算
+    score_detail = score_item_detailed(
+        title=ext_item.title,
+        content=content,
+        summary=summary,
+        source_url=ext_item.source_url,
+        published_at=published_at,
+        crawled_at=crawled_at,
+    )
     quality_score, quality_grade = meta.get("quality_score"), meta.get("quality_grade")
     if not isinstance(quality_score, (int, float)) or not isinstance(quality_grade, str):
-        quality_score, quality_grade = score_item(
-            title=ext_item.title,
-            content=content,
-            summary=summary,
-            source_url=ext_item.source_url,
-            published_at=published_at,
-            crawled_at=crawled_at,
-        )
+        quality_score, quality_grade = score_detail["score"], score_detail["grade"]
     quality_score = int(quality_score)
 
     # 关键时间点 + 时效标记（同步规则版，零成本兜底）
     key_dates = extract_key_dates(ext_item.title, content)
     is_expired = _compute_is_expired(published_at, crawled_at, key_dates)
 
-    # 结构化元信息（决策数据卡：招生人数/考试科目/参考书；Phase G 规则抽取）
-    structured_meta = extract_news_structured_meta(ext_item.title, content)
+    # 结构化元信息（决策数据卡：招生人数/考试科目/参考书）+ 证据链（Phase I）：
+    # evidence=原文片段（≤40 字）、confidence=规则置信度、effective_year=数据年份
+    # （如"2026 年招生计划"→ 2026，取不到为 None 前端诚实降级）
+    structured_meta, evidence, confidence, effective_year = (
+        extract_news_structured_meta_with_evidence(ext_item.title, content)
+    )
+    structured_meta = {
+        **structured_meta,
+        "evidence": evidence,
+        "confidence": confidence,
+        "effective_year": effective_year,
+    }
 
     db.add(
         KaoyanNews(
@@ -412,6 +436,7 @@ def _promote_kaoyan_news(
             ai_summary=meta.get("ai_summary"),
             quality_score=quality_score,
             quality_grade=quality_grade,
+            quality_reasons=score_detail["reasons"],
             key_dates=key_dates,
             is_expired=is_expired,
             structured_meta=structured_meta,

@@ -188,8 +188,14 @@ class ResearchTransformer:
         return result
 
     @classmethod
-    def transform_bilibili(cls, items: list[dict]) -> list[dict]:
-        """将 B站视频转换为 ExperiencePost payload。"""
+    def transform_bilibili(
+        cls, items: list[dict], source_platform: str = "bilibili"
+    ) -> list[dict]:
+        """将 B站/知乎/贴吧经验内容转换为 ExperiencePost payload。
+
+        source_platform 可选参（默认 "bilibili" 保兼容）：
+        知乎专栏（zhihu）/ 贴吧避坑帖（tieba）复用同一清洗/去重逻辑。
+        """
         payloads: list[dict] = []
         for raw in items:
             title = cls._clean_text(cls._strip_html(raw.get("title", "")))
@@ -205,7 +211,7 @@ class ResearchTransformer:
             raw_summary = cls._clean_text(raw.get("summary") or raw.get("content") or title)
             raw_content = cls._clean_text(raw.get("content") or raw.get("summary") or title)
 
-            if not cls._is_quality_ok(title, raw_content, "bilibili"):
+            if not cls._is_quality_ok(title, raw_content, source_platform):
                 continue
 
             summary = raw_summary[:500]
@@ -231,7 +237,7 @@ class ResearchTransformer:
                     "content": content,
                     "tags": tags,
                     "category": category,
-                    "source_platform": "bilibili",
+                    "source_platform": source_platform,
                     "source_url": source_url,
                     "external_view_count": view_count,
                     "external_like_count": like_count,

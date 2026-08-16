@@ -79,6 +79,12 @@ from app.models.ingestion import DataFreshness, DataSourceMeta, ExternalResearch
 # 社区治理
 from app.models.report import Report, ReportStatus, ReportTargetType
 from app.models.block_relation import BlockRelation
+# 质量分反馈闭环（Phase I）
+from app.models.quality_feedback import (
+    QualityFeedback,
+    QualityFeedbackTargetType,
+    QualityFeedbackType,
+)
 
 __all__ = [
     "User", "UserStage", "UserStatus",
@@ -199,6 +205,9 @@ __all__ = [
     "ReportStatus",
     "ReportTargetType",
     "BlockRelation",
+    "QualityFeedback",
+    "QualityFeedbackTargetType",
+    "QualityFeedbackType",
 ]
 
 # AI 增强功能

@@ -1,0 +1,27 @@
+# 百度贴吧考研避坑帖调研爬虫配置（Phase I）
+name: tieba_research
+category: research
+description: 百度贴吧考研避坑帖调研爬虫（公开列表页 + robots + 控频，写入 PENDING 审核队列）
+enabled: true
+schedule: weekly  # 每周更新（公开帖免登录，控频 1-3s 随机间隔）
+max_retries: 3
+timeout_seconds: 30
+pages: 1  # 列表页抓取页数（每页约 50 帖）
+max_items: 50  # 帖子抓取条数上限，防单次任务抓取量失控
+forum: 考研
+# 避坑/教训类关键词（信息差高频维度；标题命中才抓正文，降低噪音）
+keywords:
+  - 避坑
+  - 踩坑
+  - 教训
+  - 劝退
+  - 避雷
+  - 别报
+  - 不要报
+  - 不建议
+notes: |
+  数据源：百度贴吧「考研」吧公开列表页（tieba.baidu.com/f?kw=考研）按避坑关键词
+  过滤标题 → 抓公开帖子首页正文（免登录公开内容）。
+  合规：登录内容不爬、正文含「登录后查看/安全验证」标记 → 如实丢弃；
+  robots.txt 不允许/取不到 → fail-safe 跳过并如实记录 0 结果；
+  入库走 store_research_items → PENDING 审核队列，管理员确认后才落业务表。

@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/form-controls";
 import { LoadingState, EmptyState } from "@/components/ui/empty";
 import { SourceBadge } from "@/components/ui/source-badge";
 import { QualityBadge } from "@/components/ui/quality-badge";
+import { QualityFeedback } from "@/components/kaoyan/quality-feedback";
 import { countdownOf, formatDate } from "../key-dates";
 import type { KaoyanNewsResponse, KaoyanKeyDate, NewsStructuredMeta } from "@/types";
 import { cn } from "@/lib/utils";
@@ -66,19 +67,31 @@ function KeyDateRow({ kd }: { kd: KaoyanKeyDate }) {
 }
 
 /** 决策数据卡（Phase G）：资讯结构化元信息（招生人数/考试科目/参考书目）。
- *  规则抽取；三个维度全抽不到时不渲染（诚实降级），不影响 key_dates 逻辑。 */
+ *  Phase I：+ 数据年份徽章（effective_year）+ 提取依据（evidence 原文证据）。
+ *  规则抽取；所有维度全抽不到时不渲染（诚实降级），不影响 key_dates 逻辑。 */
 function NewsStructuredCard({ meta }: { meta?: NewsStructuredMeta | null }) {
   if (!meta) return null;
+  const evidenceEntries = meta.evidence ? Object.entries(meta.evidence) : [];
   const has =
     meta.enrollment_count != null ||
     (meta.exam_subjects?.length ?? 0) > 0 ||
-    (meta.reference_books?.length ?? 0) > 0;
+    (meta.reference_books?.length ?? 0) > 0 ||
+    meta.effective_year != null ||
+    evidenceEntries.length > 0;
   if (!has) return null;
   return (
     <section className="px-5 mt-5">
       <h2 className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-ink-800">
         <BarChart3 className="h-4 w-4 text-brand-600" />
         决策数据卡
+        {meta.effective_year != null && (
+          <span
+            className="inline-flex items-center rounded-md border border-brand-200 bg-brand-50 px-1.5 py-0.5 text-xs font-medium text-brand-700"
+            title="数据对应年份（规则抽取，抽不到不展示）"
+          >
+            {meta.effective_year} 年数据
+          </span>
+        )}
       </h2>
       <div className="space-y-3 rounded-lg border border-paper-200 bg-paper-50/60 p-4">
         {meta.enrollment_count != null && (
@@ -114,6 +127,26 @@ function NewsStructuredCard({ meta }: { meta?: NewsStructuredMeta | null }) {
               ))}
             </ul>
           </div>
+        )}
+        {evidenceEntries.length > 0 && (
+          <details className="rounded-md border border-paper-200 bg-white px-2 py-1.5 text-xs text-ink-600">
+            <summary className="cursor-pointer font-medium text-ink-700">
+              提取依据（原文证据 · 置信度）
+            </summary>
+            <ul className="mt-1 space-y-0.5">
+              {evidenceEntries.map(([field, snippet]) => (
+                <li key={field}>
+                  {field} · 原文「{snippet}」
+                  {meta.confidence?.[field] != null && (
+                    <span className="text-ink-400">
+                      {" "}
+                      · 置信度 {Math.round(meta.confidence![field] * 100)}%
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </details>
         )}
       </div>
     </section>
@@ -188,7 +221,11 @@ export default function KaoyanNewsDetailPage() {
         {/* 头部 */}
         <header className="border-b border-paper-100 p-5">
           <div className="flex flex-wrap items-center gap-2 mb-3">
-            <QualityBadge grade={news.quality_grade} score={news.quality_score} />
+            <QualityBadge
+              grade={news.quality_grade}
+              score={news.quality_score}
+              reasons={news.quality_reasons}
+            />
             {news.category && news.category !== "general" && (
               <Badge color="blue" className="text-xs">{news.category}</Badge>
             )}
@@ -199,6 +236,9 @@ export default function KaoyanNewsDetailPage() {
                 </Badge>
               </span>
             )}
+            <div className="ml-auto">
+              <QualityFeedback targetType="kaoyan_news" targetId={news.id} />
+            </div>
           </div>
 
           <h1 className="text-xl font-bold text-ink-900 leading-snug mb-3">

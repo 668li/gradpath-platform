@@ -43,6 +43,7 @@ class KaoyanNewsResponse(KaoyanNewsBase):
     ai_summary: Optional[str] = Field(None, description="AI 摘要（LLM 增强；无则为规则版摘要或空）")
     quality_score: Optional[int] = Field(None, ge=0, le=100, description="质量分 0-100")
     quality_grade: Optional[str] = Field(None, description="质量等级 A/B/C/D")
+    quality_reasons: Optional[list[str]] = Field(None, description="质量扣分原因（Phase I 逐维可解释，徽章 hover 展示）")
     key_dates: list[dict] = Field(default_factory=list, description="关键时间点 [{label, date, end_date?}]")
     structured_meta: Optional[dict] = Field(None, description="结构化元信息（Phase G 规则抽取：招生人数/考试科目/参考书目）")
     is_expired: bool = Field(default=False, description="时效过期标记")

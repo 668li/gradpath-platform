@@ -69,7 +69,17 @@ class WebArticleCrawler(BaseCrawler):
         return raw_items
 
     def _fetch_with_retry(self, url: str) -> tuple[str, str | None]:
-        """带超时与重试的 HTTP 请求，返回 (text, error_message)。"""
+        """带超时与重试的 HTTP 请求，返回 (text, error_message)。
+
+        直连 session.request 的唯一例外：同样补外发校验
+        （host 校验 + robots.txt，与基类 _request 一致）。
+        """
+        ok, reason = self._validate_outbound_url(url)
+        if not ok:
+            logger.warning(f"[{self.name}] 拒绝外发请求: {url} | {reason}")
+            return "", f"外发 URL 校验失败: {reason}"
+        if not self._check_robots_allowed(url):
+            return "", f"robots.txt 不允许抓取: {url}"
         max_retries = self.config.get("max_retries", 2)
         last_error = ""
         for attempt in range(max_retries + 1):

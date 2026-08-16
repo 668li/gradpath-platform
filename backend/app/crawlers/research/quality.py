@@ -118,6 +118,116 @@ def grade_of(score: int) -> str:
     return "D"
 
 
+def _authority_reason(points: int) -> str:
+    """信源权威度的逐级说明（可解释徽章用，Phase I）。"""
+    if points >= _AUTHORITY_OFFICIAL:
+        return "官方来源（edu.cn/gov.cn/ac.cn）"
+    if points >= _AUTHORITY_PORTAL:
+        return "门户/官方媒体（sina/eol/sohu 等）"
+    if points >= _AUTHORITY_COMMUNITY:
+        return "社区/培训机构（zhihu/bilibili/offcn 等）"
+    if points > 0:
+        return "普通站点"
+    return "无来源链接"
+
+
+def _freshness_reason(
+    published_at: datetime | None, crawled_at: datetime | None
+) -> str:
+    """时效性说明（发布时间未知/衰减档位）。"""
+    ts = published_at or crawled_at
+    if not ts:
+        return "发布时间未知"
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=timezone.utc)
+    hours = (datetime.now(timezone.utc) - ts).total_seconds() / 3600
+    if hours < 24:
+        return "发布 24 小时内"
+    if hours < 7 * 24:
+        return "发布一周内"
+    if hours < 30 * 24:
+        return "发布一个月内"
+    if hours < 90 * 24:
+        return "发布三个月内"
+    if hours < 180 * 24:
+        return "发布半年内"
+    return "发布超过半年"
+
+
+def score_item_detailed(
+    *,
+    title: str,
+    content: str = "",
+    summary: str = "",
+    source_url: str = "",
+    published_at: datetime | None = None,
+    crawled_at: datetime | None = None,
+) -> dict:
+    """综合评分一条资讯并给出可解释明细（Phase I）。
+
+    Returns:
+        {"score": 0-100, "grade": A/B/C/D,
+         "dimensions": [{"name","label","max","points","reason"}],
+         "reasons": [str]} —— reasons 为未拿满维度的扣分说明，供质量徽章 hover。
+    """
+    authority = _authority_score(source_url)
+    freshness = _freshness_score(published_at, crawled_at)
+    completeness = _completeness_score(content, summary)
+    traceable = _TRACEABLE if source_url.startswith(("http://", "https://")) else 0
+
+    score = authority + freshness + completeness + traceable
+    score = max(0, min(100, score))
+
+    completeness_detail = (
+        f"正文约 {len(content or '')} 字" if content else "无正文"
+    )
+    if summary and completeness < _COMPLETENESS_MAX:
+        completeness_detail += "，有摘要加分"
+
+    dimensions = [
+        {
+            "name": "authority",
+            "label": "信源权威度",
+            "max": _AUTHORITY_OFFICIAL,
+            "points": authority,
+            "reason": _authority_reason(authority),
+        },
+        {
+            "name": "freshness",
+            "label": "时效性",
+            "max": _FRESHNESS_MAX,
+            "points": freshness,
+            "reason": _freshness_reason(published_at, crawled_at),
+        },
+        {
+            "name": "completeness",
+            "label": "内容完整度",
+            "max": _COMPLETENESS_MAX,
+            "points": completeness,
+            "reason": completeness_detail,
+        },
+        {
+            "name": "traceable",
+            "label": "可溯源",
+            "max": _TRACEABLE,
+            "points": traceable,
+            "reason": "无原文链接，不可溯源",
+        },
+    ]
+
+    reasons = [
+        f"{d['label']} {d['points']}/{d['max']}：{d['reason']}"
+        for d in dimensions
+        if d["points"] < d["max"]
+    ]
+    return {
+        "score": score,
+        "grade": grade_of(score),
+        "dimensions": dimensions,
+        "reasons": reasons,
+    }
+
+
 def score_item(
     *,
     title: str,
@@ -130,12 +240,14 @@ def score_item(
     """综合评分一条资讯，返回 (quality_score 0-100, grade A/B/C/D)。
 
     规则纯本地计算（零 LLM 成本），入库前/审核时调用。
+    可解释明细见 score_item_detailed（Phase I）。
     """
-    authority = _authority_score(source_url)
-    freshness = _freshness_score(published_at, crawled_at)
-    completeness = _completeness_score(content, summary)
-    traceable = _TRACEABLE if source_url.startswith(("http://", "https://")) else 0
-
-    score = authority + freshness + completeness + traceable
-    score = max(0, min(100, score))
-    return score, grade_of(score)
+    detailed = score_item_detailed(
+        title=title,
+        content=content,
+        summary=summary,
+        source_url=source_url,
+        published_at=published_at,
+        crawled_at=crawled_at,
+    )
+    return detailed["score"], detailed["grade"]

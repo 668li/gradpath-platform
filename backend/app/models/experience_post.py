@@ -68,3 +68,6 @@ class ExperiencePost(UUIDMixin, TimestampMixin, Base):
     is_promotion: Mapped[bool | None] = mapped_column(Boolean, nullable=True, default=False)  # 疑似软广标注（不下架；NULL=未检测）
     promotion_confidence: Mapped[float | None] = mapped_column(Float, nullable=True, default=0.0)  # 软广置信度 0-1
     promotion_reason: Mapped[str | None] = mapped_column(String(200), nullable=True)  # 命中关键词说明
+    quality_reasons: Mapped[list | None] = mapped_column(
+        JSONB, nullable=True, default=list
+    )  # 质量分扣分原因逐条（可解释徽章，Phase I）：["内容完整度 24/30：…", "反软广 0/10：疑似软广(命中:课程)"]

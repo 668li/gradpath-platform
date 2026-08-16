@@ -120,40 +120,76 @@ def _first_match(keywords: list[str], text_lower: str) -> str | None:
     return None
 
 
-def extract_experience_meta(
+def _clip(text: str, limit: int = 40) -> str:
+    """裁剪原文证据片段（去多余空白，超长截断加省略号）。"""
+    text = re.sub(r"\s+", " ", text or "").strip()
+    if len(text) <= limit:
+        return text
+    return text[:limit] + "…"
+
+
+def extract_experience_meta_with_evidence(
     title: str,
     content: str,
     tags: list[str] | None = None,
-) -> dict:
-    """从标题+正文+标签抽取结构化元信息（规则版，全部 JSON 安全）。
+) -> tuple[dict, dict, dict]:
+    """抽取结构化元信息并附带证据链（Phase I）。
 
-    返回：{"subject": str|None, "stage": str|None, "school": str|None,
-           "target_score": int|None, "methods": [str], "audience": str|None}
-    无命中字段为 None / []，前端按需渲染（诚实，不编造）。
+    Returns:
+        (meta, evidence, confidence)
+        - meta: {"subject","stage","school","target_score","methods","audience"}
+        - evidence: {字段: "原文「…」"} —— 未命中字段无键，前端诚实渲染
+        - confidence: {字段: 0-1} —— 规则型置信度：关键词命中 0.9 /
+          院校正则 0.85 / 分数正则 0.8；methods 的 evidence 为命中词列表
     """
     text = f"{title or ''}\n{(content or '')[:3000]}"
     text_lower = text.lower()
 
+    meta: dict = {
+        "subject": None,
+        "stage": None,
+        "school": None,
+        "target_score": None,
+        "methods": [],
+        "audience": None,
+    }
+    evidence: dict[str, str] = {}
+    confidence: dict[str, float] = {}
+
     subject = _first_match(SUBJECT_KEYWORDS, text_lower)
+    if subject:
+        meta["subject"] = subject
+        evidence["subject"] = f"原文含「{subject}」"
+        confidence["subject"] = 0.9
+
     stage = _first_match(STAGE_KEYWORDS, text_lower)
+    if stage:
+        meta["stage"] = stage
+        evidence["stage"] = f"原文含「{stage}」"
+        confidence["stage"] = 0.9
+
     audience = _first_match(_AUDIENCE_KEYWORDS, text_lower)
+    if audience:
+        meta["audience"] = audience
+        evidence["audience"] = f"原文含「{audience}」"
+        confidence["audience"] = 0.9
 
-    school = None
     m = _SCHOOL_AFTER.search(text)
-    if m:
-        school = m.group(1).strip()
-    else:
+    if not m:
         m = _ANY_SCHOOL.search(text)
-        if m:
-            school = m.group(1).strip()
+    if m:
+        meta["school"] = m.group(1).strip()
+        evidence["school"] = f"原文「{_clip(m.group(0))}」"
+        confidence["school"] = 0.85
 
-    target_score = None
     m = _SCORE_TARGET.search(text)
     if m:
         try:
-            target_score = int(m.group(1))
+            meta["target_score"] = int(m.group(1))
+            evidence["target_score"] = f"原文「{_clip(m.group(0))}」"
+            confidence["target_score"] = 0.8
         except (TypeError, ValueError):
-            target_score = None
+            pass
 
     methods = [kw for kw in _METHOD_KEYWORDS if kw.lower() in text_lower]
     # 去重保序，限制条数
@@ -164,15 +200,28 @@ def extract_experience_meta(
             seen.add(kw)
             methods_unique.append(kw)
     methods = methods_unique[:8]
+    meta["methods"] = methods
+    if methods:
+        evidence["methods"] = _clip("原文含「" + "、".join(methods) + "」")
+        confidence["methods"] = 0.9
 
-    return {
-        "subject": subject,
-        "stage": stage,
-        "school": school,
-        "target_score": target_score,
-        "methods": methods,
-        "audience": audience,
-    }
+    return meta, evidence, confidence
+
+
+def extract_experience_meta(
+    title: str,
+    content: str,
+    tags: list[str] | None = None,
+) -> dict:
+    """从标题+正文+标签抽取结构化元信息（规则版，全部 JSON 安全）。
+
+    返回：{"subject": str|None, "stage": str|None, "school": str|None,
+           "target_score": int|None, "methods": [str], "audience": str|None}
+    无命中字段为 None / []，前端按需渲染（诚实，不编造）。
+    证据链版本见 extract_experience_meta_with_evidence（Phase I）。
+    """
+    meta, _, _ = extract_experience_meta_with_evidence(title, content, tags)
+    return meta
 
 
 # ----------------------------------------------------------------------
@@ -194,7 +243,9 @@ _TRACEABLE = 10
 # 反软广（总分 10）：非推广才给满分
 _ANTI_PROMO = 10
 
-_COMMUNITY_PLATFORMS = {"bilibili", "zhihu", "bilibili_research"}
+_COMMUNITY_PLATFORMS = {"bilibili", "zhihu", "bilibili_research", "tieba"}
+# 社区域名（含贴吧：tieba.baidu.com，Phase I 新增数据源）
+_COMMUNITY_HOSTS = ("bilibili.com", "zhihu.com", "tieba.baidu.com")
 
 
 def _trust_score(source_url: str, source_platform: str) -> int:
@@ -202,8 +253,7 @@ def _trust_score(source_url: str, source_platform: str) -> int:
     if any(hostname.endswith(s) for s in _OFFICIAL_SUFFIXES):
         return _TRUST_OFFICIAL
     if source_platform in _COMMUNITY_PLATFORMS or any(
-        hostname == d or hostname.endswith("." + d)
-        for d in ("bilibili.com", "zhihu.com")
+        hostname == d or hostname.endswith("." + d) for d in _COMMUNITY_HOSTS
     ):
         return _TRUST_COMMUNITY
     if source_platform in ("user", "") or source_platform is None:
@@ -247,7 +297,18 @@ def _engagement_score(view_count: int, like_count: int) -> int:
     return min(score, _ENGAGE_MAX)
 
 
-def score_experience_item(
+def _trust_reason(points: int, source_platform: str) -> str:
+    """来源可信度的逐级说明（可解释徽章用，Phase I）。"""
+    if points >= _TRUST_OFFICIAL:
+        return "官方来源（edu.cn/gov.cn/ac.cn）"
+    if points >= _TRUST_COMMUNITY:
+        return f"社区来源（{source_platform or 'bilibili/知乎/贴吧'}）"
+    if points >= _TRUST_USER:
+        return "站内用户投稿"
+    return f"其他来源（{source_platform or '未知'}）"
+
+
+def score_experience_item_detailed(
     *,
     title: str,
     content: str = "",
@@ -256,8 +317,14 @@ def score_experience_item(
     external_view_count: int = 0,
     external_like_count: int = 0,
     is_promotion: bool = False,
-) -> tuple[int, str]:
-    """综合评分一条经验贴，返回 (quality_score 0-100, grade A/B/C/D)。
+    promotion_reason: str = "",
+) -> dict:
+    """综合评分一条经验贴并给出可解释明细（Phase I）。
+
+    Returns:
+        {"score": 0-100, "grade": A/B/C/D,
+         "dimensions": [{"name","label","max","points","reason"}],
+         "reasons": [str]} —— reasons 为未拿满维度的扣分说明，供质量徽章 hover。
 
     五维：来源可信度 30 + 内容完整度 30 + 互动信号 20 + 可溯源 10 +
     反软广 10。软广经验贴标注（is_promotion=True）→ 反软广维度为 0，
@@ -271,4 +338,85 @@ def score_experience_item(
 
     score = trust + completeness + engagement + traceable + anti_promo
     score = max(0, min(100, score))
-    return score, grade_of(score)
+
+    dimensions = [
+        {
+            "name": "trust",
+            "label": "来源可信度",
+            "max": 30,
+            "points": trust,
+            "reason": _trust_reason(trust, source_platform),
+        },
+        {
+            "name": "completeness",
+            "label": "内容完整度",
+            "max": 30,
+            "points": completeness,
+            "reason": f"正文约 {len(content or '')} 字",
+        },
+        {
+            "name": "engagement",
+            "label": "互动信号",
+            "max": 20,
+            "points": engagement,
+            "reason": (
+                f"外部互动（播放 {int(external_view_count or 0)} / "
+                f"点赞 {int(external_like_count or 0)}）折算"
+            ),
+        },
+        {
+            "name": "traceable",
+            "label": "可溯源",
+            "max": 10,
+            "points": traceable,
+            "reason": "无原文链接，不可溯源",
+        },
+        {
+            "name": "anti_promo",
+            "label": "反软广",
+            "max": 10,
+            "points": anti_promo,
+            "reason": (
+                f"命中推广词：{promotion_reason}" if promotion_reason else "命中推广词"
+            ),
+        },
+    ]
+
+    reasons = [
+        f"{d['label']} {d['points']}/{d['max']}：{d['reason']}"
+        for d in dimensions
+        if d["points"] < d["max"]
+    ]
+    return {
+        "score": score,
+        "grade": grade_of(score),
+        "dimensions": dimensions,
+        "reasons": reasons,
+    }
+
+
+def score_experience_item(
+    *,
+    title: str,
+    content: str = "",
+    source_platform: str = "bilibili",
+    source_url: str = "",
+    external_view_count: int = 0,
+    external_like_count: int = 0,
+    is_promotion: bool = False,
+) -> tuple[int, str]:
+    """综合评分一条经验贴，返回 (quality_score 0-100, grade A/B/C/D)。
+
+    五维：来源可信度 30 + 内容完整度 30 + 互动信号 20 + 可溯源 10 +
+    反软广 10。可解释明细见 score_experience_item_detailed（Phase I）。
+    """
+    detailed = score_experience_item_detailed(
+        title=title,
+        content=content,
+        source_platform=source_platform,
+        source_url=source_url,
+        external_view_count=external_view_count,
+        external_like_count=external_like_count,
+        is_promotion=is_promotion,
+    )
+    return detailed["score"], detailed["grade"]

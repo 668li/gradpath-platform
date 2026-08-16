@@ -9,6 +9,8 @@ import type {
   KaoyanNewsListResponse,
   KaoyanNewsResponse,
   KaoyanNewsListParams,
+  QualityFeedbackCreate,
+  QualityFeedbackResponse,
 } from "@/types";
 import { request, buildQuery } from "./client";
 
@@ -126,4 +128,14 @@ export const kaoyanNewsApi = {
   get: (id: string) => request<KaoyanNewsResponse>(`/api/kaoyan-news/${id}`),
   categories: () =>
     request<{ categories: string[] }>(`/api/kaoyan-news/categories`),
+};
+
+// ===== Phase I 质量反馈闭环（双键快捷反馈：👍有帮助 / 👎不准确） =====
+export const qualityFeedbackApi = {
+  /** 提交/更新对某条经验贴或资讯的质量反馈（同用户同条目 upsert，自动带 Authorization） */
+  post: (body: QualityFeedbackCreate) =>
+    request<QualityFeedbackResponse>("/api/kaoyan/quality-feedback", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
 };

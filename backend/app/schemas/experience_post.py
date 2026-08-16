@@ -54,6 +54,7 @@ class ExperiencePostResponse(ExperiencePostBase):
     # Phase G 提纯字段：质量分/软广标注/结构化元信息（LLM 摘要挂载点，未启用时为 None）
     quality_score: Optional[int] = Field(None, description="质量分 0-100")
     quality_grade: Optional[str] = Field(None, max_length=2, description="质量等级 A/B/C/D")
+    quality_reasons: Optional[list[str]] = Field(None, description="质量扣分原因（Phase I 逐维可解释，徽章 hover 展示）")
     ai_summary: Optional[str] = Field(None, description="LLM 生成摘要（挂载点，未启用为 None）")
     structured_meta: Optional[dict] = Field(None, description="结构化元信息（方法/适用人群/学科/阶段/院校/目标分）")
     is_promotion: Optional[bool] = Field(None, description="是否疑似软广/引流（标注不下架）")

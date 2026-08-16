@@ -11,7 +11,9 @@ import pytest
 from app.crawlers.research.experience_quality import (
     detect_promotion,
     extract_experience_meta,
+    extract_experience_meta_with_evidence,
     score_experience_item,
+    score_experience_item_detailed,
 )
 
 
@@ -183,4 +185,110 @@ class TestExtractExperienceMeta:
         assert meta["subject"] is None
         assert meta["school"] is None
         assert meta["target_score"] is None
+        assert meta["methods"] == []
+
+
+class TestScoreExperienceDetailed:
+    """Phase I：可解释打分（dimensions + reasons 供质量徽章 hover）。"""
+
+    def test_dimensions_cover_five_dims_and_sum_to_score(self):
+        detail = score_experience_item_detailed(
+            title="408 计算机考研一战上岸经验",
+            content="计划" + "具体到每天的刷题安排和错题复盘。" * 100,
+            source_platform="bilibili",
+            source_url="https://www.bilibili.com/video/BV1xxx",
+            external_view_count=120_000,
+            external_like_count=2000,
+            is_promotion=False,
+        )
+        assert detail["score"] == 90
+        assert detail["grade"] == "A"
+        names = [d["name"] for d in detail["dimensions"]]
+        assert names == ["trust", "completeness", "engagement", "traceable", "anti_promo"]
+        # 各维度 points 之和 = score；max 之和 = 100
+        assert sum(d["points"] for d in detail["dimensions"]) == detail["score"]
+        assert sum(d["max"] for d in detail["dimensions"]) == 100
+        # 每维都有可读说明
+        assert all(d["reason"] for d in detail["dimensions"])
+
+    def test_reasons_only_for_deducted_dims(self):
+        """满分的维度不进 reasons；未拿满的维度逐条给出扣分说明。"""
+        detail = score_experience_item_detailed(
+            title="408 计算机考研一战上岸经验",
+            content="计划" + "具体到每天的刷题安排和错题复盘。" * 100,
+            source_platform="bilibili",
+            source_url="https://www.bilibili.com/video/BV1xxx",
+            external_view_count=120_000,
+            external_like_count=2000,
+            is_promotion=False,
+        )
+        # 90 分：trust 20/30、completeness 30/30、engagement 20/20、
+        # traceable 10/10、anti_promo 10/10 → 只有来源可信度扣 10
+        assert detail["reasons"] == ["来源可信度 20/30：社区来源（bilibili）"]
+
+    def test_promotion_reason_lands_in_reasons(self):
+        detail = score_experience_item_detailed(
+            title="考研数学经验",
+            content="笔记" + "刷题复盘方法。" * 200,
+            source_platform="bilibili",
+            source_url="https://www.bilibili.com/video/BV1yyy",
+            external_view_count=120_000,
+            is_promotion=True,
+            promotion_reason="疑似软广: 加微信",
+        )
+        anti = next(d for d in detail["dimensions"] if d["name"] == "anti_promo")
+        assert anti["points"] == 0
+        assert any("反软广 0/10" in r and "加微信" in r for r in detail["reasons"])
+
+    def test_detailed_matches_thin_wrapper(self):
+        """score_experience_item 是 detailed 的薄壳：分数/等级完全一致。"""
+        kwargs = dict(
+            title="408 一战上岸清华大学经验",
+            content="每天刷真题 + 错题复盘。" * 60,
+            source_platform="zhihu",
+            source_url="https://zhuanlan.zhihu.com/p/1",
+            external_view_count=5000,
+            external_like_count=200,
+            is_promotion=False,
+        )
+        score, grade = score_experience_item(**kwargs)
+        detail = score_experience_item_detailed(**kwargs)
+        assert detail["score"] == score
+        assert detail["grade"] == grade
+
+
+class TestExtractExperienceMetaEvidence:
+    """Phase I：结构化元信息证据链（evidence 原文片段 + confidence 置信度）。"""
+
+    def test_positive_evidence_with_confidence(self):
+        meta, evidence, confidence = extract_experience_meta_with_evidence(
+            "408 一战上岸清华大学经验",
+            "初试考了 380 分，每天刷真题，错题整理成笔记复盘",
+            tags=["408"],
+        )
+        # meta 与旧版一致
+        assert meta["school"] == "清华大学"
+        assert meta["target_score"] == 380
+        assert "真题" in meta["methods"]
+        # evidence：命中字段都有原文片段（≤40 字）
+        assert evidence["school"].startswith("原文「")
+        assert evidence["target_score"].startswith("原文「")
+        assert "380" in evidence["target_score"]
+        assert evidence["subject"].startswith("原文含「")
+        assert evidence["methods"].startswith("原文含「")
+        # confidence：院校正则 0.85 / 分数正则 0.8 / 关键词命中 0.9
+        assert confidence["school"] == 0.85
+        assert confidence["target_score"] == 0.8
+        assert confidence["subject"] == 0.9
+        assert confidence["methods"] == 0.9
+
+    def test_no_evidence_honest_empty(self):
+        """无命中 → evidence/confidence 均为空字典（前端诚实降级）。"""
+        meta, evidence, confidence = extract_experience_meta_with_evidence(
+            "随便一段话", "没有干货内容"
+        )
+        assert evidence == {}
+        assert confidence == {}
+        assert meta["subject"] is None
+        assert meta["school"] is None
         assert meta["methods"] == []

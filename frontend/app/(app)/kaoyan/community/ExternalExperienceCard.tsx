@@ -4,6 +4,7 @@ import { ExternalLink, Eye, ThumbsUp, Video, Globe, Newspaper, AlertTriangle, Ta
 import { Badge } from "@/components/ui/form-controls";
 import { SourceBadge } from "@/components/ui/source-badge";
 import { QualityBadge } from "@/components/ui/quality-badge";
+import { QualityFeedback } from "@/components/kaoyan/quality-feedback";
 import { cn } from "@/lib/utils";
 import type { ExperiencePostResponse } from "@/types";
 
@@ -16,6 +17,7 @@ const platformConfig: Record<string, { label: string; icon: typeof Video; color:
   bilibili: { label: "B站", icon: Video, color: "text-pink-600 bg-pink-50 border-pink-200" },
   zhihu: { label: "知乎", icon: Newspaper, color: "text-blue-600 bg-blue-50 border-blue-200" },
   xiaohongshu: { label: "小红书", icon: Newspaper, color: "text-red-600 bg-red-50 border-red-200" },
+  tieba: { label: "贴吧", icon: Globe, color: "text-orange-600 bg-orange-50 border-orange-200" },
   crawler: { label: "网页", icon: Globe, color: "text-green-600 bg-green-50 border-green-200" },
 };
 
@@ -28,6 +30,16 @@ function getPlatformInfo(platform: string) {
     }
   );
 }
+
+/** Phase I 证据链字段名 → 中文标签（提取依据展示） */
+const EVIDENCE_LABELS: Record<string, string> = {
+  subject: "学科",
+  stage: "阶段",
+  school: "院校",
+  target_score: "目标分",
+  methods: "方法",
+  audience: "适用人群",
+};
 
 export function ExternalExperienceCard({ post, className }: ExternalExperienceCardProps) {
   const platform = getPlatformInfo(post.source_platform);
@@ -79,9 +91,9 @@ export function ExternalExperienceCard({ post, className }: ExternalExperienceCa
         </div>
       </div>
 
-      {/* Phase G：质量徽章 + 疑似软广标注（标注不隐藏，让用户知情） */}
+      {/* Phase G：质量徽章 + 疑似软广标注（标注不隐藏，让用户知情）；Phase I：双键反馈 */}
       <div className="flex flex-wrap items-center gap-2 mb-2">
-        <QualityBadge grade={post.quality_grade} score={post.quality_score} />
+        <QualityBadge grade={post.quality_grade} score={post.quality_score} reasons={post.quality_reasons} />
         {isPromo && (
           <span
             className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-700"
@@ -91,7 +103,32 @@ export function ExternalExperienceCard({ post, className }: ExternalExperienceCa
             疑似推广
           </span>
         )}
+        <div className="ml-auto">
+          <QualityFeedback targetType="experience_post" targetId={post.id} />
+        </div>
       </div>
+
+      {/* Phase I 证据链：structured_meta.evidence 非空时展示「提取依据」原文证据 */}
+      {meta.evidence && Object.keys(meta.evidence).length > 0 && (
+        <details className="mb-2 rounded-md border border-paper-200 bg-paper-50 px-2 py-1.5 text-xs text-ink-600">
+          <summary className="cursor-pointer font-medium text-ink-700">
+            提取依据（原文证据 · 置信度）
+          </summary>
+          <ul className="mt-1 space-y-0.5">
+            {Object.entries(meta.evidence).map(([field, snippet]) => (
+              <li key={field}>
+                {EVIDENCE_LABELS[field] ?? field} · 原文「{snippet}」
+                {meta.confidence?.[field] != null && (
+                  <span className="text-ink-400">
+                    {" "}
+                    · 置信度 {Math.round(meta.confidence![field] * 100)}%
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
 
       {structuredChips.length > 0 && (
         <div className="flex flex-wrap items-center gap-1.5 mb-2">

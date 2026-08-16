@@ -53,4 +53,7 @@ class KaoyanNews(UUIDMixin, TimestampMixin, Base):
     )  # 时效过期标记（关键时间点已过或超过 180 天）
     structured_meta: Mapped[dict | None] = mapped_column(
         JSONB, nullable=True
-    )  # 决策数据卡 {enrollment_count/exam_subjects/reference_books}（Phase G 规则抽取）
+    )  # 决策数据卡 {enrollment_count/exam_subjects/reference_books/evidence/confidence/effective_year}（Phase G 规则抽取 + Phase I 证据链）
+    quality_reasons: Mapped[list | None] = mapped_column(
+        JSONB, nullable=True, default=list
+    )  # 质量分扣分原因逐条（可解释徽章，Phase I）

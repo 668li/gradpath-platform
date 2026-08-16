@@ -5,7 +5,7 @@
  * useState+useEffect 直连 API，不走 swr）+ @/components/ui/toast。
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, fireEvent, screen } from "@testing-library/react";
+import { render, fireEvent, screen, waitFor } from "@testing-library/react";
 import CommunityPage from "@/app/(app)/kaoyan/community/page";
 import type { ExperiencePostResponse } from "@/types";
 
@@ -16,6 +16,9 @@ const mocks = vi.hoisted(() => ({
   toast: { push: vi.fn() },
   experienceListMock: vi.fn(),
   qaListMock: vi.fn(),
+  // Phase I 反馈闭环：登录态（测试中改值）+ qualityFeedbackApi.post
+  authState: { user: null as { id: string } | null },
+  feedbackPostMock: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -32,6 +35,15 @@ vi.mock("@/lib/api", () => ({
     experiencePosts: { list: mocks.experienceListMock },
     qa: { list: mocks.qaListMock },
   },
+}));
+
+// Phase I：QualityFeedback 依赖登录态 + qualityFeedbackApi（外部经验卡内嵌反馈按钮）
+vi.mock("@/stores/auth", () => ({
+  useAuthStore: (sel: (s: { user: { id: string } | null }) => unknown) => sel(mocks.authState),
+}));
+
+vi.mock("@/lib/api/kaoyan", () => ({
+  qualityFeedbackApi: { post: mocks.feedbackPostMock },
 }));
 
 function makePost(overrides: Partial<ExperiencePostResponse> = {}): ExperiencePostResponse {
@@ -77,6 +89,8 @@ describe("考研社区页（Phase G/H）", () => {
     mocks.experienceListMock.mockReset();
     mocks.qaListMock.mockReset();
     mocks.qaListMock.mockResolvedValue({ items: [], total: 0, page: 1, page_size: 10 });
+    mocks.authState.user = null;
+    mocks.feedbackPostMock.mockReset();
   });
 
   it("站内经验贴渲染 A/B 质量徽章与分类 tab", async () => {
@@ -167,5 +181,117 @@ describe("考研社区页（Phase G/H）", () => {
     await screen.findByText("考研社区");
     fireEvent.click(screen.getByText("外部经验精选"));
     await screen.findByText("暂无外部经验");
+  });
+});
+
+describe("考研社区页（Phase I 证据链与反馈闭环）", () => {
+  beforeEach(() => {
+    mocks.pushMock.mockClear();
+    mocks.toast.push.mockClear();
+    mocks.experienceListMock.mockReset();
+    mocks.qaListMock.mockReset();
+    mocks.qaListMock.mockResolvedValue({ items: [], total: 0, page: 1, page_size: 10 });
+    mocks.authState.user = null;
+    mocks.feedbackPostMock.mockReset();
+  });
+
+  /** 渲染外部 tab 单条帖子，返回 container。 */
+  async function renderExternalTab(post: ExperiencePostResponse) {
+    stubExperienceList([post], []);
+    const { container } = render(<CommunityPage />);
+    await screen.findByText("考研社区");
+    fireEvent.click(screen.getByText("外部经验精选"));
+    await screen.findByText(post.title);
+    return container;
+  }
+
+  it("外部卡渲染「提取依据」原文证据（字段 · 原文 · 置信度）", async () => {
+    const container = await renderExternalTab(
+      makePost({
+        id: "e-ev",
+        title: "北理工 408 上岸复盘",
+        source_platform: "zhihu",
+        structured_meta: {
+          subject: "408",
+          school: "北京理工大学",
+          target_score: 380,
+          evidence: {
+            subject: "考的408统考",
+            school: "本科985，目标北理工",
+            target_score: "目标分数 380",
+          },
+          confidence: { school: 0.85, target_score: 0.8 },
+        },
+      }),
+    );
+    expect(container.textContent).toContain("提取依据（原文证据 · 置信度）");
+    // 有置信度的字段渲染百分比（「 · 置信度」前有空格）
+    expect(container.textContent).toContain("院校 · 原文「本科985，目标北理工」 · 置信度 85%");
+    expect(container.textContent).toContain("目标分 · 原文「目标分数 380」 · 置信度 80%");
+    // 无置信度的字段（诚实降级）不渲染置信度
+    expect(container.textContent).toContain("学科 · 原文「考的408统考」");
+    expect(container.textContent).not.toContain("置信度 90%");
+  });
+
+  it("无 evidence 的帖子不渲染「提取依据」块", async () => {
+    const container = await renderExternalTab(
+      makePost({
+        id: "e-noev",
+        title: "纯经验分享",
+        source_platform: "tieba",
+        structured_meta: { subject: "408", school: "北京理工大学" },
+      }),
+    );
+    expect(container.textContent).not.toContain("提取依据");
+  });
+
+  it("已登录点「有帮助」→ POST 反馈 + 成功 toast + 原因行出现", async () => {
+    mocks.authState.user = { id: "u-1" };
+    mocks.feedbackPostMock.mockResolvedValue({ id: "f-1", message: "ok" });
+    const container = await renderExternalTab(
+      makePost({ id: "e-fb", title: "二战逆袭心得", source_platform: "bilibili" }),
+    );
+    fireEvent.click(screen.getByText("有帮助"));
+    await waitFor(() => expect(mocks.feedbackPostMock).toHaveBeenCalledTimes(1));
+    expect(mocks.feedbackPostMock).toHaveBeenCalledWith({
+      target_type: "experience_post",
+      target_id: "e-fb",
+      feedback_type: "helpful",
+      reason: null,
+    });
+    expect(mocks.toast.push).toHaveBeenCalledWith("感谢反馈", "success");
+    // 选填原因输入行展开
+    expect(screen.getByPlaceholderText(/选填原因/)).toBeTruthy();
+    // 当前 UI 渲染在容器内
+    expect(container.textContent).toContain("二战逆袭心得");
+  });
+
+  it("填原因提交 → 二次 POST 带 reason（后端 upsert）", async () => {
+    mocks.authState.user = { id: "u-1" };
+    mocks.feedbackPostMock.mockResolvedValue({ id: "f-1", message: "ok" });
+    await renderExternalTab(
+      makePost({ id: "e-fb", title: "二战逆袭心得", source_platform: "bilibili" }),
+    );
+    fireEvent.click(screen.getByText("有帮助"));
+    await waitFor(() => expect(mocks.feedbackPostMock).toHaveBeenCalledTimes(1));
+    fireEvent.change(screen.getByPlaceholderText(/选填原因/), { target: { value: "路线可复制" } });
+    fireEvent.click(screen.getByText("提交"));
+    await waitFor(() => expect(mocks.feedbackPostMock).toHaveBeenCalledTimes(2));
+    expect(mocks.feedbackPostMock).toHaveBeenLastCalledWith({
+      target_type: "experience_post",
+      target_id: "e-fb",
+      feedback_type: "helpful",
+      reason: "路线可复制",
+    });
+    expect(mocks.toast.push).toHaveBeenCalledWith("原因已保存", "success");
+  });
+
+  it("未登录点反馈 → 提示先登录且不发请求", async () => {
+    await renderExternalTab(
+      makePost({ id: "e-fb2", title: "裸考出分", source_platform: "tieba" }),
+    );
+    fireEvent.click(screen.getByText("有帮助"));
+    expect(mocks.toast.push).toHaveBeenCalledWith("请先登录", "error");
+    expect(mocks.feedbackPostMock).not.toHaveBeenCalled();
   });
 });

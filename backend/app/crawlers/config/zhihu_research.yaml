@@ -1,0 +1,20 @@
+# 知乎公开专栏（zhuanlan）考研经验文章调研爬虫配置（Phase I）
+name: zhihu_research
+category: research
+description: 知乎公开专栏考研经验文章调研爬虫（公开页 + robots + 控频，写入 PENDING 审核队列）
+enabled: true
+schedule: weekly  # 每周更新（公开专栏页免登录，控频 1-3s 随机间隔）
+max_retries: 3
+timeout_seconds: 30
+pages: 1  # 归档页解析文章数上限（0 表示不限）
+# 种子 URL：公开 zhuanlan.zhihu.com/p/* 文章，或专栏归档页（自动解析其中的文章链接）。
+# 仅填已人工确认公开可访问的文章/专栏；登录内容不爬。
+seed_urls:
+  - https://zhuanlan.zhihu.com/p/363676204   # 【408考研138分】总分400+科软上岸经验贴
+  - https://zhuanlan.zhihu.com/p/705316307   # 24考研11408一战北大软微403分经验及被刷反思
+  - https://zhuanlan.zhihu.com/p/618604292   # 23一战跨考11408浙大计算机考研经验贴442分
+notes: |
+  数据源：知乎公开专栏文章页（zhuanlan.zhihu.com/p/*，免登录公开内容）。
+  合规：正文含「登录后查看/安全验证」等标记 → 如实丢弃，绝不绕过验证码；
+  robots.txt 不允许/取不到 → fail-safe 跳过并如实记录 0 结果；
+  入库走 store_research_items → PENDING 审核队列，管理员确认后才落业务表。

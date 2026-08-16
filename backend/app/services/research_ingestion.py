@@ -27,7 +27,7 @@ QUALITY_MIN_SCORE = 35
 
 # credibility 分级规则（P2）：官方域名 → official_verified；社区平台 → user_reported；其余 → model_inferred
 _OFFICIAL_DOMAINS = ("edu.cn", "yz.chsi.com.cn", "gov.cn")
-_COMMUNITY_PLATFORMS = {"bilibili", "v2ex", "github", "zhihu"}
+_COMMUNITY_PLATFORMS = {"bilibili", "v2ex", "github", "zhihu", "tieba"}
 
 
 def _infer_credibility(source_url: str, source_platform: str) -> str:
@@ -35,7 +35,7 @@ def _infer_credibility(source_url: str, source_platform: str) -> str:
 
     规则（合规红线：外部数据须来源标注）：
     - 官方域名（edu.cn / yz.chsi.com.cn / gov.cn，含子域）→ official_verified
-    - 社区平台（bilibili / v2ex / github / zhihu，平台名或 URL 域名命中）→ user_reported
+    - 社区平台（bilibili / v2ex / github / zhihu / tieba，平台名或 URL 域名命中）→ user_reported
     - 其余 → model_inferred（默认，需人工/模型核验后才可信任）
     """
     hostname = (urlparse(source_url).hostname or "").lower()
