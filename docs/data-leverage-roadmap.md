@@ -49,7 +49,7 @@
 |---|---|---|---|
 | 1 | **自建 RSSHub（19 路由实测可用）+ /gov/moe/policy_anal** | 逐校爬研招公告 | ✅ **已落地**（246 条真公告入库，232 通过审核；chsi 路由禁用） |
 | 2 | **软科公开 JSON API + province-city-china(MIT)** | 自爬榜单/行政区划 | ✅ **已落地**（cb5dc82） |
-| 3 | **官方职位表 xlsx 管道 + gongkao-search 专业映射** | 国考/省考职位爬虫 | 🔲 部分落地（数据已有，管道待通用化） |
+| 3 | **官方职位表 xlsx 通用管道 + gongkao-search 专业映射** | 国考/省考职位爬虫 | ✅ **已落地**（yaml 驱动列映射，国考/省考即插即用，幂等可重跑） |
 | 4 | **authority-data 统计年鉴(GPL) + /gov/stats** | 自爬统计年鉴 | 🔲 待做 |
 | 5 | **微信公众号多源路由 + 知乎/微博路由** | B站/公众号自爬资讯流 | 🔲 待做 |
 
@@ -64,7 +64,7 @@
 ## 下一步候选（按杠杆性价比排序）
 
 1. ~~**建 RSSHub 自建实例**~~ ✅ **已完成**（19 路由实测可用，40 路由探测结果见下）——日常增量更新由 `schedule: daily` 采集器承担
-2. **职位表 xlsx 通用管道**（官方本来就是结构化 Excel，写一次管道告别职位爬虫）
+2. ~~**职位表 xlsx 通用管道**~~ ✅ **已完成**（写一次管道告别职位爬虫）——`scripts/import_position_xlsx.py` + 国考/省考两个 yaml 映射即插即用
 3. **authority-data 统计年鉴入库**（宏观薪资/就业面一次入库）
 4. **MCP server 自建**（大陆教育/薪资空白区先发）—— 中期
 
@@ -75,6 +75,8 @@
 - `app/crawlers/research/rsshub_research_crawler.py` + `config/rsshub_research.yaml` —— 自建 RSSHub 聚合（19 路由，白名单校验，schedule: daily）
 - `scripts/fix_rsshub_dirty_summary.py` —— RSSHub summary HTML 超长修复（幂等，对齐 transform_rss 清洗语义）
 - `scripts/import_mentor_edu.py`（支持 argv 覆盖）`/ scripts/import_schools_ruanke.py`（name 幂等 upsert）
+- `scripts/import_position_xlsx.py` —— 通用职位表 xlsx 管道（表头行自动定位、yaml 列映射、业务键幂等、参数绑定）
+- `app/crawlers/config/position_xlsx/guokao_2026.yaml`（国考，5 字段业务键）`/ shengkao_gd_2026.yaml`（广东省考，position_code 业务键）
 - 经验沉淀：`data-pipeline-lessons.md`（等待纪律/合成鉴别/Mimosa 绕过/批量审核模式等 11 条）
 
 ## 合规护栏（全程生效）

@@ -1,0 +1,31 @@
+# 省考职位表通用映射（杠杆化 #2，2026-08-16）
+# 首例：广东省 2026 考试录用公务员职位表（6 sheet：县以上机关/公安/法院/检察院/监狱戒毒/乡镇机关）。
+# 各 sheet 表头行与列数略有差异（15~17 列），按列名关键词映射，缺列置 NULL（与既有采集语义一致）。
+# 幂等：业务键 = year + province + position_code（广东 position_code 全表唯一）。
+name: shengkao_gd_2026
+target_table: gwy_province_position
+year: 2026
+province: 广东
+source_url: "https://www.gdzz.gov.cn/gwygz/lypytzgg/content/post_24017.html"
+dedup_fields:
+  - position_code
+int_fields:
+  - recruit_count
+column_map:
+  dept_name: [招考单位, 单位名称]
+  dept_code: [单位代码]
+  position_name: [招考职位, 职位名称]
+  position_code: [职位代码]
+  position_desc: [职位简介, 职位描述]
+  position_type: [职位类型, 职位类别]
+  recruit_count: [录用人数, 招录人数, 招考人数]
+  education_req: [学历]
+  degree_req: [学位]
+  major_req_grad: [研究生专业, 研究生专业名称及代码]
+  major_req_undergrad: [本科专业, 本科专业名称及代码]
+  major_req_junior: [大专专业, 大专专业名称及代码, 专科专业]
+  grassroots_exp_req: [基层工作经历, 基层工作年限]
+  psych_test: [心理素质测评, 心理测评]
+  fresh_grad_only: [应届毕业生, 应届生, 是否应届]
+  other_requirements: [其他要求, 其他条件]
+  exam_region: [考区, 笔试考区]

@@ -1,0 +1,46 @@
+# 国考职位表通用映射（杠杆化 #2，2026-08-16）
+# 目标：官方招考简章 xlsx 即插即用。表头行定位：前 5 行内含「职位代码」。
+# 幂等：业务键 = year + exam_type + dedup_fields 组合（position_code 不唯一，
+#       同一 code 按 用人司局/专业/学历/学位 区分多行），已存在即跳过。
+name: guokao_2026
+target_table: gwy_position
+year: 2026
+exam_type: 国考
+source_url: "http://dl.scs.gov.cn/download/8a81f6d19780e4080199e13f881f0153"
+dedup_fields:
+  - position_code
+  - bureau
+  - major_req
+  - education_req
+  - degree_req
+int_fields:
+  - recruit_count
+# 官方表头关键词 → 模型字段（一字段多别名，表头含关键词即命中；缺失列置 NULL）
+column_map:
+  dept_code: [部门代码]
+  dept_name: [部门名称]
+  bureau: [用人司局]
+  agency_type: [机构性质]
+  position_name: [招考职位]
+  position_attr: [职位属性]
+  position_distribution: [职位分布]
+  position_desc: [职位简介]
+  position_code: [职位代码]
+  org_level: [机构层级]
+  exam_category: [考试类别]
+  recruit_count: [招考人数]
+  major_req: [专业]
+  education_req: [学历]
+  degree_req: [学位]
+  political_status: [政治面貌]
+  min_work_years: [基层工作最低年限]
+  grassroots_exp_req: [服务基层项目工作经历]
+  professional_test: [是否在面试阶段组织专业能力测试]
+  interview_ratio: [面试人员比例]
+  work_location: [工作地点]
+  settle_location: [落户地点]
+  remarks: [备注]
+  dept_website: [部门网站]
+  phone1: [咨询电话1]
+  phone2: [咨询电话2]
+  phone3: [咨询电话3]
