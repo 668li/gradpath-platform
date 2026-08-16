@@ -21,6 +21,7 @@ ALLOWED_CRAWLER_SOURCES: frozenset[str] = frozenset({
     "official_announce",      # research：高校研究生院官方公告 → PENDING 队列
     "zhihu_research",         # research：知乎公开专栏文章 → PENDING 队列（Phase I）
     "tieba_research",         # research：贴吧考研避坑帖 → PENDING 队列（Phase I）
+    "rsshub_research",        # research：自建 RSSHub 研招/教育部公告聚合 → PENDING 队列（杠杆化）
 })
 
 

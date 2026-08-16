@@ -29,7 +29,7 @@
 
 | 数据域 | 数据量 | 来源方式 | 状态 |
 |---|---|---|---|
-| 资讯（多赛道） | 2082 | 真实 RSS/公告，全带 evidence | ✅ |
+| 资讯（多赛道） | 2314 | 真实 RSS/公告 + RSSHub 研招聚合（+232 本轮） | ✅ |
 | 经验贴 | 1766 | 外部审核队列，全部过评分 | ✅ |
 | 导师 | **1730** | .edu.cn 官方师资系统（华科/浙大/深大/同济） | ✅ |
 | 院校字典 | **616** | 软科主榜公开 API（985×41/211×89/双一流×128） | ✅ 本轮 |
@@ -47,7 +47,7 @@
 
 | # | 杠杆 | 替代什么 | 状态 |
 |---|---|---|---|
-| 1 | **自建 RSSHub + 60+ 研招路由 + /gov/moe + cpta** | 逐校爬研招公告 | 🔲 待做（需 docker） |
+| 1 | **自建 RSSHub（19 路由实测可用）+ /gov/moe/policy_anal** | 逐校爬研招公告 | ✅ **已落地**（246 条真公告入库，232 通过审核；chsi 路由禁用） |
 | 2 | **软科公开 JSON API + province-city-china(MIT)** | 自爬榜单/行政区划 | ✅ **已落地**（cb5dc82） |
 | 3 | **官方职位表 xlsx 管道 + gongkao-search 专业映射** | 国考/省考职位爬虫 | 🔲 部分落地（数据已有，管道待通用化） |
 | 4 | **authority-data 统计年鉴(GPL) + /gov/stats** | 自爬统计年鉴 | 🔲 待做 |
@@ -63,7 +63,7 @@
 
 ## 下一步候选（按杠杆性价比排序）
 
-1. **建 RSSHub 自建实例**（最大杠杆，需 docker 环境确认）——订阅 60+ 研招路由，资讯/分数线「活更新」
+1. ~~**建 RSSHub 自建实例**~~ ✅ **已完成**（19 路由实测可用，40 路由探测结果见下）——日常增量更新由 `schedule: daily` 采集器承担
 2. **职位表 xlsx 通用管道**（官方本来就是结构化 Excel，写一次管道告别职位爬虫）
 3. **authority-data 统计年鉴入库**（宏观薪资/就业面一次入库）
 4. **MCP server 自建**（大陆教育/薪资空白区先发）—— 中期
@@ -72,6 +72,8 @@
 
 - `app/crawlers/real_data/mentor_edu_expand.py` —— 导师扩量采集器（断点续采，候选 2440）
 - `app/crawlers/real_data/ruanke_rank_scraper.py` —— 软科 API 采集器（host 白名单 + robots）
+- `app/crawlers/research/rsshub_research_crawler.py` + `config/rsshub_research.yaml` —— 自建 RSSHub 聚合（19 路由，白名单校验，schedule: daily）
+- `scripts/fix_rsshub_dirty_summary.py` —— RSSHub summary HTML 超长修复（幂等，对齐 transform_rss 清洗语义）
 - `scripts/import_mentor_edu.py`（支持 argv 覆盖）`/ scripts/import_schools_ruanke.py`（name 幂等 upsert）
 - 经验沉淀：`data-pipeline-lessons.md`（等待纪律/合成鉴别/Mimosa 绕过/批量审核模式等 11 条）
 

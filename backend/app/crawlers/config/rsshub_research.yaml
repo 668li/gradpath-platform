@@ -1,0 +1,33 @@
+# 自建 RSSHub 聚合订阅爬虫配置（2026-08-16 杠杆化：替代逐校爬研招公告）
+# 数据源：本机 docker RSSHub 实例（http://127.0.0.1:1200）
+# 路由均为实测 200 可用的高校研究生院/研招办公开公告（edu.cn/gov.cn）
+name: rsshub_research
+category: research
+description: 自建 RSSHub 聚合（19 个研招/教育部公告路由，PENDING 审核队列）
+enabled: true
+schedule: daily  # 研招公告时效性强，每日更新一次
+max_retries: 2
+timeout_seconds: 30
+rate_limit: 1.0
+limit: 15  # 每个路由拉取条数
+# 白名单路由（硬编码，采集器不接受外部注入；禁 /chsi/* 红线站）
+routes:
+  - cau/yjs                 # 中国农业大学研究生院
+  - dhu/yjs/news            # 东华大学研究生院
+  - ecnu/yjs                # 华东师范大学研究生院
+  - hust/yjs                # 华中科技大学研究生院
+  - nankai/yzb              # 南开大学研究生招生
+  - nenu/yjsy               # 东北师范大学研究生院
+  - nudt/yjszs              # 国防科技大学研究生招生
+  - scnu/yjs                # 华南师范大学研究生院
+  - scut/yjs                # 华南理工大学研究生院
+  - sdu/cs/yjsgz            # 山东大学计算机学院研究生工作
+  - sdust/yjsy/zhaosheng    # 山东科技大学研究生招生
+  - seu/yjs                 # 东南大学研究生院
+  - snnu/yjs                # 陕西师范大学研究生院
+  - sustech/yjs             # 南方科技大学研究生院
+  - swjtu/gsee/yjs          # 西南交大地球科学与环境工程研究生
+  - tju/yzb                 # 天津大学研究生招生
+  - tongji/yjs              # 同济大学研究生院
+  - upc/yjs                 # 中国石油大学研究生院
+  - gov/moe/policy_anal     # 教育部政策解读
