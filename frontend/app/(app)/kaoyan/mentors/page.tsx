@@ -198,7 +198,10 @@ export default function MentorListPage() {
 function MentorCard({ mentor }: { mentor: MentorResponse }) {
   // 修复 P1 bug: 后端可能返回 null，导致 .toFixed()/.length 崩溃
   const avgRating = mentor.avg_rating ?? 0;
-  const researchDirs = mentor.research_directions || [];
+  // src: 前缀是数据溯源标记（导入时写入），不作为研究方向展示
+  const researchDirs = (mentor.research_directions || []).filter(
+    (d: string) => !d.startsWith("src:"),
+  );
   const tags = mentor.tags || [];
   const ratingColor =
     avgRating >= 4.5

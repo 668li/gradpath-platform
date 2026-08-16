@@ -429,11 +429,12 @@ function Tab2Salary() {
         grouped[s.position].count++;
       }
     });
+    // 统一换算为万元/年（数据库存储单位为元）
     return Object.entries(grouped).map(([position, data]) => ({
       position,
-      min: data.min,
-      max: data.max,
-      median: Math.round(data.median),
+      min: Math.round(data.min / 1000) / 10,
+      max: Math.round(data.max / 1000) / 10,
+      median: Math.round(data.median / 1000) / 10,
     }));
   }, [salaries]);
 
@@ -477,7 +478,7 @@ function Tab2Salary() {
       {/* 薪资分布图 */}
       {filteredChart.length > 0 && (
         <div className="bg-white rounded-xl border border-paper-200 p-5">
-          <h3 className="font-bold text-ink-800 mb-4">岗位薪资分布（单位：k）</h3>
+          <h3 className="font-bold text-ink-800 mb-4">岗位薪资分布（单位：万元/年）</h3>
           <ResponsiveContainer width="100%" height={300}>
             <ReBarChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" stroke={SALARY_CHART_GRID_COLOR} />
@@ -485,7 +486,7 @@ function Tab2Salary() {
               <YAxis tick={SALARY_CHART_TICK} />
               <Tooltip
                 contentStyle={SALARY_CHART_TOOLTIP_STYLE}
-                formatter={(value: number) => [`${value}k`, ""]}
+                formatter={(value: number) => [`${value.toFixed(1)}万`, ""]}
               />
               <Bar dataKey="median" fill="#3377f6" radius={[4, 4, 0, 0]} name="中位数" />
             </ReBarChart>
@@ -576,8 +577,8 @@ function SalaryTable({
                     </td>
                     <td className="px-4 py-3 text-ink-600">{s.city || "-"}</td>
                     <td className="px-4 py-3 text-ink-600">{s.experience_level}</td>
-                    <td className="px-4 py-3 text-right text-ink-800">{s.salary_min}-{s.salary_max}k</td>
-                    <td className="px-4 py-3 text-right font-medium text-green-600">{s.salary_median}k</td>
+                    <td className="px-4 py-3 text-right text-ink-800">{(s.salary_min / 10000).toFixed(1)}-{(s.salary_max / 10000).toFixed(1)}万</td>
+                    <td className="px-4 py-3 text-right font-medium text-green-600">{(s.salary_median / 10000).toFixed(1)}万</td>
                   </tr>
                 );
               })}
