@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { PieChart, Sparkles, RotateCcw, ArrowRight, Target } from "lucide-react";
 import { lifeWheelApi } from "@/lib/api";
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 import { LoadingState } from "@/components/ui/empty";
 import { Button, Textarea } from "@/components/ui/form-controls";
 import { useToast } from "@/components/ui/toast";
@@ -46,13 +46,6 @@ function scoreLevel(score: number): { label: string; color: string } {
   if (score >= 6) return { label: "良好", color: "text-brand-500" };
   if (score >= 4) return { label: "一般", color: "text-amber-600" };
   return { label: "待提升", color: "text-red-500" };
-}
-
-/** 将 ISO 日期格式化为「2024年1月15日」 */
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return iso;
-  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
 }
 
 export default function LifeWheelPage() {

@@ -12,6 +12,15 @@ class PathInput(BaseModel):
     target_role: str = Field(..., min_length=1, max_length=100, description="目标角色，如 '后端开发'")
 
 
+class EvidenceItem(BaseModel):
+    """单条证据 — 每个数字的溯源（source_url 或来源说明）。"""
+
+    label: str = Field(..., description="证据标题，如 '分数线 · 中山大学 2025'")
+    value: str = Field(..., description="证据内容")
+    source_url: str | None = Field(default=None, description="来源链接（无链接则为 None）")
+    note: str | None = Field(default=None, description="补充说明（如无链接时的来源字段）")
+
+
 class PathMetrics(BaseModel):
     """单条路径的量化指标。"""
 
@@ -28,6 +37,8 @@ class PathMetrics(BaseModel):
     match_description: str = Field(..., description="匹配度说明")
     pros: list[str] = Field(default_factory=list, description="优势列表")
     cons: list[str] = Field(default_factory=list, description="劣势列表")
+    # 决策引擎扩展：每条指标的溯源证据（老接口不传则为空，向后兼容）
+    evidence: list[EvidenceItem] = Field(default_factory=list, description="证据溯源列表")
 
     @field_validator("risk_level")
     @classmethod
@@ -65,3 +76,27 @@ class PathComparisonRecord(ComparisonResponse):
     """完整对比记录（含用户 ID），用于内部传递。"""
 
     user_id: UUID
+
+
+# ----------------------------------------------------------------------
+# 三路对比决策引擎 Schemas
+# ----------------------------------------------------------------------
+class DecisionEngineRequest(BaseModel):
+    """三路对比请求体 — 用户学生档案。"""
+
+    major: str = Field(..., min_length=1, max_length=100, description="专业关键词，如 '计算机'")
+    region: str | None = Field(default=None, max_length=50, description="地区（省/市），如 '广东'")
+    school_tier: str | None = Field(default=None, max_length=20, description="学校层次：985/211/双一流/普通")
+    graduation_year: int | None = Field(default=None, ge=2000, le=2100, description="毕业年份，默认 2026")
+
+
+class DecisionEngineResponse(BaseModel):
+    """三路对比响应体。"""
+
+    id: str = Field(..., description="对比记录 ID")
+    metrics: list[PathMetrics] = Field(..., description="三路量化指标（含证据溯源）")
+    recommendation: str = Field(..., description="综合建议（自然语言）")
+    input: dict = Field(default_factory=dict, description="实际使用的输入档案")
+    created_at: datetime = Field(..., description="创建时间")
+
+    model_config = {"from_attributes": True}

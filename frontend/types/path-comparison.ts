@@ -17,6 +17,14 @@ export interface PathInput {
   target_role: string;
 }
 
+/** 单条证据 — 每个数字的溯源（source_url 或来源说明） */
+export interface EvidenceItem {
+  label: string;
+  value: string;
+  source_url: string | null;
+  note?: string | null;
+}
+
 export interface PathMetrics {
   path_type: PathType;
   target_role: string;
@@ -31,11 +39,30 @@ export interface PathMetrics {
   match_description: string;
   pros: string[];
   cons: string[];
+  /** 决策引擎扩展：每条指标的溯源证据（老接口为空数组） */
+  evidence?: EvidenceItem[];
 }
 
 export interface ComparisonResponse {
   id: string;
   metrics: PathMetrics[];
   recommendation: string;
+  created_at: string;
+}
+
+/** 三路对比决策引擎输入 — 用户学生档案 */
+export interface DecisionEngineInput {
+  major: string;
+  region?: string;
+  school_tier?: string;
+  graduation_year?: number;
+}
+
+/** 三路对比决策引擎响应 */
+export interface DecisionEngineResponse {
+  id: string;
+  metrics: PathMetrics[];
+  recommendation: string;
+  input: Record<string, string | number>;
   created_at: string;
 }

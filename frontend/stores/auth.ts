@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import { authApi, setToken, clearToken, getToken, clearQueryCache } from "@/lib/api";
+import { authApi, setToken, clearToken, getToken } from "@/lib/api";
 import type { UserResponse } from "@/types";
 
 interface AuthState {
@@ -33,7 +33,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setUser: (user) => set({ user }),
   logout: () => {
     clearToken();
-    clearQueryCache();
+    // 清空 SWR 内存缓存，避免切换账号后读到旧账号数据
+    void import("swr").then(({ mutate }) =>
+      mutate(() => true, undefined, { revalidate: false }),
+    );
     set({ token: null, user: null });
   },
   fetchUser: async () => {

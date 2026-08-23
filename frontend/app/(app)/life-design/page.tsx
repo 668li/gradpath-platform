@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Rocket, Sparkles, CheckCircle2, ArrowRight, ArrowLeft, Calendar, Target, Zap } from "lucide-react";
 import { lifeDesignApi } from "@/lib/api";
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 import { LoadingState, EmptyState } from "@/components/ui/empty";
 import { Button, Input, Textarea, Field } from "@/components/ui/form-controls";
 import { useToast } from "@/components/ui/toast";
@@ -39,12 +39,6 @@ const DOMAIN_ICONS: Record<string, string> = {
 const ALL_DOMAINS = ["career", "finance", "health", "relationships", "growth"];
 
 type Phase = "intro" | "audit" | "vision" | "sprint" | "dashboard";
-
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return iso;
-  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
-}
 
 function todayISO(): string {
   return new Date().toISOString().split("T")[0];

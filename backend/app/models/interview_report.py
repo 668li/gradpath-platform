@@ -10,16 +10,6 @@ from app.database import Base
 from app.models.base import JSONB, TimestampMixin, UUIDMixin
 
 
-class InterviewDimension(str, enum.Enum):
-    algorithm = "algorithm"
-    system_design = "system_design"
-    project_depth = "project_depth"
-    culture_fit = "culture_fit"
-    communication = "communication"
-    domain_knowledge = "domain"
-    behavior = "behavior"
-
-
 class InterviewResult(str, enum.Enum):
     offer = "offer"
     rejected = "rejected"

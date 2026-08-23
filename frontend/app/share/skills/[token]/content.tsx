@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { GraduationCap, Share2, Lock } from "lucide-react";
-import { exportApi } from "@/lib/api";
+import { fetchShareSkills } from "@/lib/api";
 import type { ShareableSkills } from "@/types";
 
 /**
@@ -24,7 +24,7 @@ export function ShareContent({ token }: { token: string }) {
     }
     let active = true;
     (async () => {
-      const result = await exportApi.fetchShareSkills(token);
+      const result = await fetchShareSkills(token);
       if (!active) return;
       if (result) {
         setData(result);

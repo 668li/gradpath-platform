@@ -28,13 +28,3 @@ class DocumentEmbedding(UUIDMixin, TimestampMixin, Base):
     # embedding 列由 pgvector 提供，这里用 Text 存储以兼容迁移
     # 实际查询时使用原生 SQL + vector 类型
     embedding_vector: Mapped[str | None] = mapped_column(Text, nullable=True)
-
-
-class RAGStats(UUIDMixin, TimestampMixin, Base):
-    """RAG 系统统计 — 记录向量化进度和统计信息。"""
-    __tablename__ = "rag_stats"
-
-    total_documents: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    total_embeddings: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    last_rebuild_at: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    source_counts: Mapped[dict] = mapped_column(CustomJSONB, nullable=False, default=dict)

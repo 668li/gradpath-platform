@@ -10,7 +10,6 @@ export {
 } from "./client";
 export type { ApiError } from "./client";
 
-export { cachedRequest, invalidateCache, clearQueryCache } from "./query-cache";
 export {
   SWR_GLOBAL_CONFIG,
   apiFetcher,
@@ -20,6 +19,7 @@ export {
 } from "./swr-config";
 
 export { authApi } from "./auth";
+export { fetchShareSkills } from "./export";
 export { dashboardApi } from "./dashboard";
 export { decisionsApi, decisionJournalApi, decisionAnalysisApi } from "./decisions";
 export { eventsApi } from "./events";
@@ -34,7 +34,6 @@ export type { NotificationResponse, NotificationListResponse } from "./notificat
 export type { BookmarkResponse, BookmarkListResponse, BookmarkCreate } from "./bookmarks";
 export { aiApi, careerIntelApi, civilServiceIntelApi, proactiveInsightsApi } from "./ai";
 export { gamificationApi, streaksApi } from "./gamification";
-export { exportApi } from "./export";
 export { exportV2Api } from "./exportV2";
 export { chatApi } from "./chat";
 export { knowledgeApi } from "./knowledge";
@@ -66,6 +65,12 @@ export { careerSimulatorApi } from "./career-simulator";
 export type { PathConfig, PathResult, YearResult, SimulateResponse, Preset, CityTier, Industry } from "./career-simulator";
 export { pathComparisonApi } from "./path-comparison";
 export type { PathInput, PathMetrics, ComparisonResponse, RiskLevel, PathType } from "@/types/path-comparison";
+export { pathDecisionApi } from "./path-decision";
+export type {
+  DecisionEngineInput,
+  DecisionEngineResponse,
+  EvidenceItem,
+} from "@/types/path-comparison";
 
 export { microActionApi } from "./micro-action";
 export type {

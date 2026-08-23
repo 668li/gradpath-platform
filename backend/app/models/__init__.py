@@ -23,14 +23,13 @@ from app.models.career_intel import CareerDarkKnowledge, CareerPositioning, Comp
 from app.models.civil_service_intel import CivilServiceDarkKnowledge, CivilServicePositioning, PostIntel
 from app.models.employment_data import Degree, EmploymentData
 from app.models.growth_insight import GrowthInsight
-from app.models.interview_report import InterviewDimension, InterviewReport, InterviewResult
+from app.models.interview_report import InterviewReport, InterviewResult
 from app.models.knowledge_article import KnowledgeArticle
 from app.models.market_data import MarketData
 from app.models.milestone_log import MilestoneLog
 from app.models.pipeline_enums import ContentType, SourceType
 from app.models.post import Post, PostTopicType
 from app.models.proactive_insight import ProactiveInsight
-from app.models.reference_snapshot import ReferenceSnapshot, SnapshotSource
 from app.models.report_record import ParseStatus, ReportRecord
 from app.models.retrospective import PeriodType, Retrospective
 from app.models.salary_benchmark import ExperienceLevel, SalaryBenchmark
@@ -93,12 +92,11 @@ __all__ = [
     "CareerEvent", "EventType",
     "SkillNode",
     "Retrospective", "PeriodType",
-    "ReferenceSnapshot", "SnapshotSource",
     "School",
     "ReportRecord", "ParseStatus",
     "EmploymentData", "Degree",
     "CommunityReport", "DestinationType", "SalaryRange",
-    "InterviewReport", "InterviewDimension", "InterviewResult",
+    "InterviewReport", "InterviewResult",
     "DataSource",
     "CrawlerRun",
     "SourceType", "ContentType",
@@ -211,7 +209,7 @@ __all__ = [
 ]
 
 # AI 增强功能
-from app.models.embedding_model import DocumentEmbedding, RAGStats
+from app.models.embedding_model import DocumentEmbedding
 
 # 独立表模型（原未导出，导致 alembic autogenerate 漏检这 5 张表；
 # 需在 Base.metadata 注册后才能生成对应迁移）

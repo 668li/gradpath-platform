@@ -1019,10 +1019,6 @@ export interface Criterion {
   weight: number;
 }
 
-export interface MatrixOption {
-  name: string;
-  scores: Record<string, number>;
-}
 
 export interface PremortemReason {
   reason: string;
@@ -1066,10 +1062,6 @@ export interface DecisionAnalysisResponse {
   created_at: string;
 }
 
-export interface MatrixComputeRequest {
-  criteria: Criterion[];
-  matrix_scores: MatrixOption[];
-}
 
 export interface PremortemAnalyzeRequest {
   title: string;
@@ -1413,10 +1405,6 @@ export type EducationBarrierLevel = "none" | "mild" | "moderate" | "severe" | "u
 export type SalaryHonestyLevel = "honest" | "exaggerated" | "misleading" | "unknown";
 export type CultureLevel = "good" | "neutral" | "toxic" | "unknown";
 
-export interface CompanyIntelQueryRequest {
-  company_name: string;
-  position_name: string;
-}
 
 export interface AICompanyIntelResult {
   company_name: string;
@@ -1948,15 +1936,6 @@ export interface ExperiencePostCreate {
   source_url?: string | null;
 }
 
-export interface ExperiencePostUpdate {
-  title?: string;
-  summary?: string | null;
-  content?: string;
-  tags?: string[];
-  category?: string;
-  is_anonymous?: boolean;
-  source_url?: string | null;
-}
 
 export interface QAAnswerResponse {
   id: string;
@@ -2000,13 +1979,6 @@ export interface QACreate {
   tags?: string[];
 }
 
-export interface QAUpdate {
-  title?: string;
-  content?: string;
-  tags?: string[];
-}
-
-// ===== 用户公开主页 =====
 export interface UserProfile {
   id: string;
   nickname: string | null;
