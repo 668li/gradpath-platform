@@ -64,6 +64,8 @@
 
 ## 下一步候选（按杠杆性价比排序）
 
+0. ~~**三路对比决策引擎（Phase J）**~~ ✅ **已完成**（真实数据聚合 + 溯源闭环：`POST /api/path-decision/analyze`，纯规则引擎零 LLM 依赖）——`path_decision_engine.py` 聚合考研分数线/报录比、国考省考岗位与进面分、就业薪资/就业率，每条数字带 source_url 证据；前端 `/decision-engine` 独立页面；pytest 1445 全绿、tsc 零错误；commit 5763e27 + 数据质量修复 a71f6b7
+
 1. ~~**建 RSSHub 自建实例**~~ ✅ **已完成**（19 路由实测可用，40 路由探测结果见下）——日常增量更新由 `schedule: daily` 采集器承担
 2. ~~**职位表 xlsx 通用管道**~~ ✅ **已完成**（写一次管道告别职位爬虫）——`scripts/import_position_xlsx.py` + 国考/省考两个 yaml 映射即插即用
 3. ~~**统计公报就业面入库**~~ ✅ **已完成**（32 条宏观就业面指标，2022-2025 序列；2026-02-28 发布后重跑采集器即可 +4 年）——`stats_gongbao_scraper.py` 每年 2 月底后重跑
@@ -82,6 +84,7 @@
 - `app/crawlers/config/position_xlsx/guokao_2026.yaml`（国考，5 字段业务键）`/ shengkao_gd_2026.yaml`（广东省考，position_code 业务键）
 - `app/crawlers/real_data/stats_gongbao_scraper.py` —— 统计公报采集器（4 年 URL 白名单 + 正则抽就业面 8 指标，注释标记容忍，`py -3.13 stats_gongbao_scraper.py` 重跑即增量）
 - `scripts/import_stats_gongbao.py` —— 公报入库（幂等键与 import_salary_gov_market 一致，纯增量追加）
+- `backend/app/services/path_decision_engine.py` + `backend/app/api/path_decision.py` —— 三路对比决策引擎（纯规则、参数绑定、复用 PathComparison JSONB 持久化）
 - 经验沉淀：`data-pipeline-lessons.md`（等待纪律/合成鉴别/Mimosa 绕过/批量审核模式等 11 条）
 
 ## 合规护栏（全程生效）
