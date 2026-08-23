@@ -122,8 +122,12 @@ def _build_kaoyan_path(
     if total == 0:
         return _empty_path("kaoyan", "考研深造", "该专业暂无分数线数据，可尝试更宽泛的关键词（如只输入学科大类）。")
 
-    # 分数线聚合
-    line_agg = base.with_entities(
+    # 分数线聚合（total_score_line=0 为脏数据占位，视为未公布，排除后再聚合）
+    line_base = base.filter(
+        GradScorelineRecord.total_score_line.isnot(None),
+        GradScorelineRecord.total_score_line > 0,
+    )
+    line_agg = line_base.with_entities(
         func.avg(GradScorelineRecord.total_score_line),
         func.min(GradScorelineRecord.total_score_line),
         func.max(GradScorelineRecord.total_score_line),
@@ -154,9 +158,9 @@ def _build_kaoyan_path(
             sources=row.data_sources,
         ))
 
-    # 分数证据
+    # 分数证据（同样排除 0 分占位脏数据）
     line_rows = (
-        base.order_by(GradScorelineRecord.year.desc())
+        line_base.order_by(GradScorelineRecord.year.desc())
         .limit(SCORELINE_LIMIT)
         .all()
     )
@@ -508,6 +512,7 @@ def _evidence(
 def _format_line(avg_line, min_line, max_line) -> str:
     if avg_line is None:
         return "未公布"
+    # 注意 min/max 可能为 None（部分记录无总分线），此时回退平均分
     if min_line is not None and max_line is not None and min_line != max_line:
         return f"{min_line:.0f}-{max_line:.0f} 分"
     return f"{avg_line:.0f} 分"
@@ -550,13 +555,13 @@ def _build_recommendation(metrics: list[dict[str, Any]], input_summary: dict) ->
             continue
         if m["path_type"] == "kaoyan":
             lines.append(
-                f"- 考研：相关分数线记录 {m['pros'][0] if m['pros'] else ''}，"
+                f"- 考研：{m['pros'][0] if m['pros'] else '数据有限'}，"
                 f"难度评估 {m['risk_level']}。"
             )
         elif m["path_type"] == "civil_service":
             lines.append(
                 f"- 考公：{m['pros'][0] if m['pros'] else '岗位数据有限'}，"
-                f"平均进面最低分见卡片，竞争激烈。"
+                f"竞争激烈，岗位明细见卡片。"
             )
         else:
             lines.append(
