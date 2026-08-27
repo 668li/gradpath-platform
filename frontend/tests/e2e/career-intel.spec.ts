@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { registerAndLandOnDashboard, uniqueEmail } from "./helpers";
 
 /**
  * 公司情报查询完整流端到端测试
@@ -13,7 +14,6 @@ import { test, expect } from "@playwright/test";
 test.describe("公司情报查询完整流", () => {
   test.setTimeout(30000);
 
-  const TEST_EMAIL = `e2e-intel-${Date.now()}-${Math.floor(Math.random() * 10000)}@test.com`;
   const TEST_COMPANY = "字节跳动";
   const TEST_POSITION = "前端工程师";
 
@@ -72,22 +72,8 @@ test.describe("公司情报查询完整流", () => {
       });
     });
 
-    // 注册新用户（走完整流程，确保 onboarding 已完成或被 mock 跳过）
-    await page.goto("/register");
-    await page.fill('input[name="name"]', "E2E Intel User");
-    await page.fill('input[type="email"]', TEST_EMAIL);
-    await page.fill('input[type="password"]', "Test1234!");
-    await page.check('input[name="agree_terms"]');
-    await page.click('button[type="submit"]');
-
-    // 注册后跳转 onboarding 或 dashboard（取决于后端）
-    // 跳过 onboarding（如果在 onboarding 页面）
-    await page.waitForURL(/\/(onboarding|dashboard)/, { timeout: 15000 });
-    const url = page.url();
-    if (url.includes("/onboarding")) {
-      await page.locator('[data-testid="onboarding-skip-button"]').click();
-      await page.waitForURL("**/dashboard**", { timeout: 15000 });
-    }
+    // 注册新用户并完成 onboarding（每个 test 独立邮箱，避免 409）
+    await registerAndLandOnDashboard(page, "E2E Intel User", uniqueEmail("intel"));
   });
 
   test("访问 war-room 并切换到 career tab 查看公司列表", async ({ page }) => {

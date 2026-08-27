@@ -12,7 +12,6 @@ import { test, expect } from "@playwright/test";
 test.describe("决策助手完整流", () => {
   test.setTimeout(30000);
 
-  const TEST_EMAIL = `e2e-decision-${Date.now()}-${Math.floor(Math.random() * 10000)}@test.com`;
   const DECISION_TITLE = "字节 vs 阿里 offer 选择";
   const OPTION_A = "字节跳动";
   const OPTION_B = "阿里巴巴";
@@ -116,10 +115,11 @@ test.describe("决策助手完整流", () => {
       });
     });
 
-    // 注册并跳过 onboarding
+    // 注册并跳过 onboarding（每个 test 用独立邮箱，避免共享 TEST_EMAIL 二次注册 409）
     await page.goto("/register");
+    const email = `e2e-decision-${Date.now()}-${Math.floor(Math.random() * 10000)}@test.com`;
     await page.fill('input[name="name"]', "E2E Decision User");
-    await page.fill('input[type="email"]', TEST_EMAIL);
+    await page.fill('input[type="email"]', email);
     await page.fill('input[type="password"]', "Test1234!");
     await page.check('input[name="agree_terms"]');
     await page.click('button[type="submit"]');

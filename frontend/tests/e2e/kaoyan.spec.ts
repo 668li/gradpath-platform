@@ -1,9 +1,16 @@
 import { test, expect } from "@playwright/test";
+import { registerAndLandOnDashboard, uniqueEmail } from "./helpers";
 
 /**
  * 考研数据浏览端到端测试
  * 覆盖院校情报、分数线、调剂信息等关键路径。
  */
+// /kaoyan 等路由受 middleware 保护：未登录访问被重定向到 /login，
+// 每个 test 都先注册新用户并完成 onboarding
+test.beforeEach(async ({ page }) => {
+  await registerAndLandOnDashboard(page, "E2E Kaoyan User", uniqueEmail("kaoyan"));
+});
+
 test.describe("考研数据浏览", () => {
   test("考研页面应正确渲染", async ({ page }) => {
     await page.goto("/kaoyan");

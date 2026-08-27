@@ -1,9 +1,16 @@
 import { test, expect } from "@playwright/test";
+import { registerAndLandOnDashboard, uniqueEmail } from "./helpers";
 
 /**
  * 个人看板端到端测试
  * 覆盖看板概览、图表渲染、数据展示等关键路径。
  */
+// /dashboard 是受保护路由：middleware 会把未登录访问重定向到 /login，
+// 因此每个 test 都先注册新用户并完成 onboardin
+test.beforeEach(async ({ page }) => {
+  await registerAndLandOnDashboard(page, "E2E Dashboard User", uniqueEmail("dashboard"));
+});
+
 test.describe("个人看板", () => {
   test("看板页面应正确渲染", async ({ page }) => {
     await page.goto("/dashboard");

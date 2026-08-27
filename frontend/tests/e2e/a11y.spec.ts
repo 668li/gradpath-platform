@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { registerAndLandOnDashboard, uniqueEmail } from './helpers';
 
 /**
  * 无障碍扫描测试
@@ -35,12 +36,8 @@ test.describe('无障碍扫描 - 公开页面', () => {
 
 test.describe('无障碍扫描 - 需登录页面', () => {
   test.beforeEach(async ({ page }) => {
-    // 登录
-    await page.goto('/login');
-    await page.fill('input[type="email"]', 'test@example.com');
-    await page.fill('input[type="password"]', 'Test1234!');
-    await page.click('button[type="submit"]');
-    await page.waitForURL('**/dashboard');
+    // CI Postgres 为空库（无 test@example.com 种子用户），每个 test 注册独立新用户
+    await registerAndLandOnDashboard(page, 'E2E A11y User', uniqueEmail('a11y'));
   });
 
   test('Dashboard 无障碍', async ({ page }) => {

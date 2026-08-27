@@ -185,8 +185,15 @@ export default function OnboardingPage() {
     }
   };
 
-  const handleFinish = () => {
-    router.replace("/dashboard");
+  // "稍后再生成"与"跳过"同语义：标记 onboarding 完成（persist skipped），
+  // 否则布局层看到 completed=false 会把用户从 /dashboard 踢回 /onboarding（死循环）
+  const handleFinish = async () => {
+    try {
+      await onboardingApi.skip();
+      markSkipped();
+    } finally {
+      router.replace("/dashboard");
+    }
   };
 
   // ===== 结果页 =====

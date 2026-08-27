@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { registerAndLandOnDashboard, uniqueEmail } from "./helpers";
 
 /**
  * 上岸报告完整流端到端测试
@@ -9,7 +10,6 @@ import { test, expect } from "@playwright/test";
 test.describe("上岸报告完整流", () => {
   test.setTimeout(30000);
 
-  const TEST_EMAIL = `e2e-outcome-${Date.now()}-${Math.floor(Math.random() * 10000)}@test.com`;
   const TARGET_SCHOOL = "北京大学";
   const TARGET_MAJOR = "计算机科学";
   const ACTUAL_SCHOOL = "清华大学";
@@ -53,20 +53,8 @@ test.describe("上岸报告完整流", () => {
       });
     });
 
-    // 注册并跳过 onboarding
-    await page.goto("/register");
-    await page.fill('input[name="name"]', "E2E Outcome User");
-    await page.fill('input[type="email"]', TEST_EMAIL);
-    await page.fill('input[type="password"]', "Test1234!");
-    await page.check('input[name="agree_terms"]');
-    await page.click('button[type="submit"]');
-
-    await page.waitForURL(/\/(onboarding|dashboard)/, { timeout: 15000 });
-    const url = page.url();
-    if (url.includes("/onboarding")) {
-      await page.locator('[data-testid="onboarding-skip-button"]').click();
-      await page.waitForURL("**/dashboard**", { timeout: 15000 });
-    }
+    // 注册新用户并完成 onboarding（每个 test 独立邮箱，避免 409）
+    await registerAndLandOnDashboard(page, "E2E Outcome User", uniqueEmail("outcome"));
   });
 
   test("上岸报告页面应正确渲染", async ({ page }) => {
