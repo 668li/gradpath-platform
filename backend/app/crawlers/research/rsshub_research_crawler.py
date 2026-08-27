@@ -1,6 +1,6 @@
 """RSSHub 聚合订阅爬虫 — 批量订阅研招/教育部公告路由，走 PENDING 审核队列。
 
-数据源：自建 RSSHub 实例（docker，http://127.0.0.1:1200）。
+数据源：自建 RSSHub 实例（docker，地址由 RSSHUB_BASE_URL 配置，默认本机 1200）。
   - 一次性订阅 19 个实测可用的研究生院/研招网路由 + 教育部政策解读，
     替代「逐校爬研招官网公告」（原 30-60 分钟/源 → 5 分钟/源）
   - 上游源站全部为高校官网/教育部公开公告（edu.cn / gov.cn）
@@ -8,8 +8,8 @@
 合规（对齐项目红线 + Mimosa 约束）：
 - **本机白名单放行**：RSSHub 是项目自建可信实例。路由必须来自内置常量
   DEFAULT_ROUTES 集合（硬编码、不接受任何外部输入），URL 严格形如
-  http://127.0.0.1:1200/{route}?limit=N；其余 URL 一律走父类严格校验
-  （拒绝 localhost/私有地址）→ 不存在 SSRF 注入面
+  {RSSHUB_BASE}/{route}?limit=N（仅配置来源，非外部输入）；其余 URL 一律走
+  父类严格校验（拒绝 localhost/私有地址）→ 不存在 SSRF 注入面
 - **robots**：RSSHub 本机实例无 robots.txt，白名单路由跳过 robots 检查
   （上游源站合规由 RSSHub 路由配置承担，项目自身不直接请求源站）；
   非白名单 URL 的 robots 检查保持父类 fail-safe 逻辑
@@ -35,6 +35,7 @@ if __name__ == "__main__":
 import feedparser
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.crawlers.base_crawler import BaseCrawler
 from app.crawlers.registry import register_crawler
 from app.crawlers.research.rss_news_crawler import _extract_text, _parse_time_struct
@@ -45,9 +46,10 @@ from app.services.research_ingestion import store_research_items
 
 logger = logging.getLogger(__name__)
 
-# 本机 RSSHub 实例（项目自建，docker run -p 1200:1200 diygod/rsshub）
-RSSHUB_BASE = "http://127.0.0.1:1200"
-RSSHUB_HOST = "127.0.0.1"
+# RSSHub 实例地址来自配置（默认本机 1200；Docker 部署由 compose 覆盖为
+# http://rsshub:1200）。放行主机名从配置 URL 推导，白名单路由校验逻辑不变。
+RSSHUB_BASE = settings.RSSHUB_BASE_URL.rstrip("/")
+RSSHUB_HOST = urlparse(RSSHUB_BASE).hostname or "127.0.0.1"
 
 # 实测可用路由（2026-08-16 逐路由 HTTP 200 验证；503=上游暂不可达，保留待恢复）。
 # 全部为高校研究生院/研招办公开公告，来源域名 edu.cn。

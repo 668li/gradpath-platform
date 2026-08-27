@@ -39,7 +39,8 @@ class GwyPosition(TimestampMixin, Base):
     degree_req: Mapped[str | None] = mapped_column(String(100), nullable=True)
     political_status: Mapped[str | None] = mapped_column(String(50), nullable=True)
     min_work_years: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    grassroots_exp_req: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    # String(100)：官方“四项目人员”完整分类文本实测 68 字符，50 会截断真实数据
+    grassroots_exp_req: Mapped[str | None] = mapped_column(String(100), nullable=True)
     professional_test: Mapped[str | None] = mapped_column(String(50), nullable=True)
     interview_ratio: Mapped[str | None] = mapped_column(String(50), nullable=True)
     work_location: Mapped[str | None] = mapped_column(String(200), nullable=True)

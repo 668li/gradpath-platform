@@ -123,6 +123,7 @@ services:
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
       CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/1
       CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@redis:6379/2
+      RSSHUB_BASE_URL: http://rsshub:1200
     depends_on:
       db:
         condition: service_healthy
@@ -178,6 +179,38 @@ services:
     restart: unless-stopped
 
   # ======================================================================
+  # rsshub — 自建 RSSHub（研招公告聚合数据源；仅内网，不暴露端口）
+  # 爬虫经 RSSHUB_BASE_URL=http://rsshub:1200 访问，白名单路由校验不变
+  # ======================================================================
+  rsshub:
+    image: diygod/rsshub:latest
+    environment:
+      NODE_ENV: production
+      CACHE_TYPE: redis
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/3
+    expose:
+      - "1200"
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:1200/healthz >/dev/null 2>&1 || exit 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging: *default-logging
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+          cpus: "0.5"
+        reservations:
+          memory: 128M
+          cpus: "0.1"
+    restart: unless-stopped
+
+  # ======================================================================
   # celery-worker — 异步任务执行（爬虫队列 + AI 队列）
   # ======================================================================
   celery-worker:
@@ -199,6 +232,7 @@ services:
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
       CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/1
       CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@redis:6379/2
+      RSSHUB_BASE_URL: http://rsshub:1200
       PROMETHEUS_MULTIPROC_DIR: /tmp/prometheus_multiproc
     depends_on:
       db:

@@ -1,6 +1,7 @@
 """爬虫管理 API — 管理员专用。支持异步执行、APScheduler定时任务和WebSocket通知。"""
 
 import logging
+from datetime import datetime
 from uuid import uuid4
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
@@ -486,6 +487,26 @@ async def _run_scheduled_crawler(source_name: str):
         return
 
     task_id = uuid4().hex[:12]
+
+    # 多 uvicorn worker 共享 Redis jobstore 时，同一 cron 会被各 worker 的
+    # 调度器各触发一次（APScheduler 无跨实例互斥）。用 Redis 分钟桶分布式锁
+    # 保证同一分钟内同源只投递一次；Redis 不可用时退化为原行为（开发单进程）。
+    try:
+        import redis as _redis
+
+        if settings.REDIS_URL:
+            _client = _redis.from_url(settings.REDIS_URL)
+            _lock_key = (
+                f"crawler_schedule_lock:{source_name}:"
+                f"{datetime.now().strftime('%Y%m%d%H%M')}"
+            )
+            if not _client.set(_lock_key, task_id, nx=True, ex=3300):
+                logger.info(
+                    "定时任务 %s 本分钟已由其他实例触发，跳过投递", source_name)
+                return
+    except Exception as e:  # noqa: BLE001 — 锁失败不阻断采集主流程
+        logger.warning("定时任务分布式锁获取失败，按未锁处理: %s", e)
+
     logger.info(f"定时任务触发: {source_name}, task_id={task_id}")
 
     # 优先投递到 Celery 队列
@@ -546,6 +567,8 @@ async def _run_scheduled_crawler(source_name: str):
 DEFAULT_DAILY_SCHEDULES: dict[str, str] = {
     "eol_kaoyan": "0 2 * * *",  # 每天 02:00 抓取中国教育在线考研频道
     "official_announce": "0 2 * * *",  # 每天 02:00 抓取高校研究生院官方公告
+    # 每天 02:30 抓自建 RSSHub 研招公告聚合（19 路由）；错峰避开上面两个源
+    "rsshub_research": "30 2 * * *",
 }
 
 

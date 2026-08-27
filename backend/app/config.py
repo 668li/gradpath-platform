@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     # Redis (optional)
     REDIS_URL: str | None = None
 
+    # 自建 RSSHub 实例（研招公告聚合）。默认本机实例；Docker 部署时由
+    # compose 注入 http://rsshub:1200。爬虫按此 URL 推导放行主机名。
+    RSSHUB_BASE_URL: str = "http://127.0.0.1:1200"
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
     @model_validator(mode="after")
