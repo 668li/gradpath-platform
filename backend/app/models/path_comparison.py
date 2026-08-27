@@ -5,9 +5,10 @@
 选 2-3 条路径，量化对比收入 / 风险 / 成长性 / 时间成本 / 匹配度。
 """
 
+from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Text
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -34,3 +35,15 @@ class PathComparison(UUIDMixin, TimestampMixin, Base):
     user_context: Mapped[dict | None] = mapped_column(JSONB, nullable=True, default=None)
     # 综合建议自然语言文本（冗余字段，便于直接展示）
     recommendation: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # === 决策飞轮：结果回传（仿 destination_decisions）===
+    # 用户当时选择的路径/目标角色（kaoyan / civil_service / employment）
+    selected_path: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    selected_label: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    # 结果状态: pending / following / achieved / abandoned
+    outcome_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # 实际结果描述（如"进面未上岸""25 考研上岸 XX 大学"）
+    actual_outcome: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # 综合满意度 1-5
+    satisfaction: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

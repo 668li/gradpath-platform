@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timezone
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -467,6 +468,31 @@ def list_history(db: Session, user_id) -> list[PathComparison]:
         .order_by(PathComparison.created_at.desc())
         .all()
     )
+
+
+def submit_outcome(
+    db: Session, record_id: str, user_id, payload: dict[str, Any]
+) -> PathComparison | None:
+    """写入结果回传字段（决策飞轮闭环）。
+
+    记录不存在或不属于该用户时返回 None（由调用方转 404）。
+    """
+    record = (
+        db.query(PathComparison)
+        .filter(PathComparison.id == record_id, PathComparison.user_id == user_id)
+        .first()
+    )
+    if record is None:
+        return None
+    record.selected_path = payload.get("selected_path")
+    record.selected_label = payload.get("selected_label")
+    record.outcome_status = payload.get("outcome_status")
+    record.actual_outcome = payload.get("actual_outcome")
+    record.satisfaction = payload.get("satisfaction")
+    record.reviewed_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(record)
+    return record
 
 
 def to_response(record: PathComparison) -> dict[str, Any]:
