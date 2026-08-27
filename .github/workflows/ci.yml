@@ -267,7 +267,8 @@ jobs:
           ENVIRONMENT=development \
           SECRET_KEY=ci-test-secret-key-min-32-characters-long-aaaa-bbbb \
           uvicorn app.main:app --host 0.0.0.0 --port 8001 &
-          npx wait-on http://localhost:8001/health --timeout 30000
+          # /health 只注册了 GET（HEAD 返回 405），wait-on 默认发 HEAD 会一直等待
+          npx wait-on --method GET http://localhost:8001/health --timeout 30000
 
       - name: Start frontend
         working-directory: frontend

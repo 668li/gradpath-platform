@@ -9,6 +9,7 @@
 """
 
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -19,16 +20,22 @@ from app.models.salary_benchmark import SalaryBenchmark
 SOURCE = "market_research"
 YEAR = 2025
 
-# 真实数据文件路径（backend/app/crawlers/real_data/）
-_REAL_DATA_DIR = Path(__file__).resolve().parents[2] / "app" / "crawlers" / "real_data"
 _SALARY_FILES = ["salary_real.json", "salary_expand.json"]
+
+
+def _real_data_dir() -> Path:
+    """真实数据目录。可用 GRADPATH_REAL_DATA_DIR 覆盖（CI 无本地抓取数据时指向仓库内样本夹具）。"""
+    override = os.environ.get("GRADPATH_REAL_DATA_DIR")
+    if override:
+        return Path(override)
+    return Path(__file__).resolve().parents[2] / "app" / "crawlers" / "real_data"
 
 
 def _load_real_salaries() -> list[dict[str, Any]]:
     """加载真实薪资 JSON，返回与 SalaryBenchmark 模型字段一致的数据列表。"""
     records: list[dict[str, Any]] = []
     for filename in _SALARY_FILES:
-        path = _REAL_DATA_DIR / filename
+        path = _real_data_dir() / filename
         if not path.exists():
             raise FileNotFoundError(
                 f"真实薪资数据文件不存在: {path}（请确认 real_data 数据已就位）"

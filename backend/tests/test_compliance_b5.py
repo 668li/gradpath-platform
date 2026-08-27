@@ -49,7 +49,14 @@ def admin_headers(client, db_session):
 
 
 def test_import_script_dry_run_parses_real_data(monkeypatch, capsys):
-    """dry-run --json：真实数据可解析出条目，无单文件解析错误。"""
+    """dry-run --json：真实数据可解析出条目，无单文件解析错误。
+
+    该测试校验的是本地完整抓取快照的数据完整性；real_data 不在仓库内，
+    CI/无数据环境下诚实跳过（web 组任一源文件存在才运行）。
+    """
+    web_files = {e[0] for e in b3.SOURCE_REGISTRY if e[2] == "web"}
+    if not any((b3.REAL_DATA_DIR / f).exists() for f in web_files):
+        pytest.skip("本地无 real_data 抓取快照（CI），数据完整性校验仅在数据就位时运行")
     monkeypatch.setattr(
         sys,
         "argv",

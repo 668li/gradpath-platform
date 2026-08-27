@@ -27,11 +27,13 @@
 
 import argparse
 import json
+import os
 import re
 import sys
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 from urllib.parse import urlparse
 
 # 允许直接从 backend/ 目录运行：python scripts/import_real_data_to_queue.py
@@ -41,7 +43,13 @@ from app.database import SessionLocal
 from app.models.crawler_run import CrawlerRun
 from app.services.research_ingestion import store_research_items
 
-REAL_DATA_DIR = Path(__file__).resolve().parents[1] / "app" / "crawlers" / "real_data"
+# 数据目录：可用 GRADPATH_REAL_DATA_DIR 覆盖（CI 无本地抓取数据时指向仓库内样本夹具）
+_REAL_DATA_OVERRIDE = os.environ.get("GRADPATH_REAL_DATA_DIR")
+REAL_DATA_DIR = (
+    Path(_REAL_DATA_OVERRIDE)
+    if _REAL_DATA_OVERRIDE
+    else Path(__file__).resolve().parents[1] / "app" / "crawlers" / "real_data"
+)
 
 # 内容正文上限（防止整页 HTML dump 撑爆审核队列；确认入库时可再编辑）
 MAX_CONTENT_CHARS = 20_000
@@ -635,7 +643,7 @@ def main() -> None:
         if args.json:
             print(json.dumps(summary, ensure_ascii=False, indent=2))
             return
-        print(f"=== dry-run（未写库）===")
+        print("=== dry-run（未写库）===")
         for tag, info in per_file.items():
             if "error" in info:
                 print(f"  [{info['group']:10s}] {tag:45s} ERROR {info['error']}")

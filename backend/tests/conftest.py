@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -7,6 +10,15 @@ from sqlalchemy.pool import StaticPool
 from app.core.cache import cache
 from app.database import Base, get_db
 from app.main import app, limiter
+
+# CI/无本地抓取数据的机器上，把种子数据目录指向仓库内的小尺寸真实样本夹具；
+# 本地存在完整 real_data 时沿用真实数据（最大保真，不做覆盖）。
+_REAL_DATA_DIR = Path(__file__).resolve().parents[1] / "app" / "crawlers" / "real_data"
+if not (_REAL_DATA_DIR / "salary_real.json").exists():
+    os.environ.setdefault(
+        "GRADPATH_REAL_DATA_DIR",
+        str(Path(__file__).resolve().parent / "fixtures" / "real_data"),
+    )
 
 
 @pytest.fixture(autouse=True)
