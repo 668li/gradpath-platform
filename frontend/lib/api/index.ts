@@ -41,7 +41,7 @@ export { careerPlansApi, careerProfileApi, planTemplatesApi } from "./career";
 export { assessmentApi, lifeWheelApi } from "./assessment";
 export { mentorsApi, growthPatternsApi, mentorApi } from "./mentors";
 export { gradIntelApi, gradVisualizationApi, schoolAnalystApi, schoolCompareApi } from "./grad";
-export type { AnalystReportRequest, AnalystReportResponse, CompareRequest, CompareResponse, SchoolAnalysis } from "./grad";
+export type { AnalystReportRequest, AnalystReportResponse, CompareRequest, CompareResponse } from "./grad";
 export { kaoyanCommunityApi, kaoyanNewsApi } from "./kaoyan";
 export { studyPlanApi, learningResourceApi } from "./study";
 export { aiStudyPlanApi } from "./ai-study-plan";
@@ -69,7 +69,13 @@ export { pathDecisionApi } from "./path-decision";
 export type {
   DecisionEngineInput,
   DecisionEngineResponse,
+  DecisionOutcomeSubmit,
+  DecisionOutcomeInfo,
   EvidenceItem,
+  PositionAnalysis,
+  TopPosition,
+  SchoolAnalysis,
+  SchoolCompetitionItem,
 } from "@/types/path-comparison";
 
 export { microActionApi } from "./micro-action";

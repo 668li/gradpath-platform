@@ -2,15 +2,33 @@
 
 // frontend/app/(app)/decision-engine/page.tsx
 // 三路决策引擎 — 输入学生档案，对比考研/考公/就业（每个数字可溯源）
+// 决策飞轮第一圈：个人条件 → 可报岗位/院校竞争分析 → 结果回传
 
 import { useState } from "react";
 import { Lightbulb } from "lucide-react";
 import { pathDecisionApi } from "@/lib/api";
 import { EngineForm } from "@/components/decision-engine/engine-form";
 import { PathResultCard } from "@/components/decision-engine/path-result-card";
+import { PositionAnalysisCard } from "@/components/decision-engine/position-analysis-card";
+import { SchoolAnalysisCard } from "@/components/decision-engine/school-analysis-card";
+import { OutcomeForm } from "@/components/decision-engine/outcome-form";
 import { EmptyState, LoadingState } from "@/components/ui/empty";
 import { useToast } from "@/components/ui/toast";
 import type { DecisionEngineInput, DecisionEngineResponse } from "@/types/path-comparison";
+
+/** 档案摘要 chip 的 key → 中文标签（含个人条件字段） */
+const INPUT_LABELS: Record<string, string> = {
+  major: "专业",
+  region: "地区",
+  school_tier: "层次",
+  graduation_year: "届别",
+  fresh_status: "应届状态",
+  party_status: "政治面貌",
+  education: "学历",
+  has_grassroots: "基层经历",
+  gender: "性别",
+  estimated_score: "预估分",
+};
 
 export default function DecisionEnginePage() {
   const toast = useToast();
@@ -31,6 +49,10 @@ export default function DecisionEnginePage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleOutcomeSaved = (outcome: NonNullable<DecisionEngineResponse["outcome"]>) => {
+    setResult((prev) => (prev ? { ...prev, outcome } : prev));
   };
 
   return (
@@ -58,7 +80,7 @@ export default function DecisionEnginePage() {
             <span className="font-medium text-ink-700">当前档案：</span>
             {Object.entries(result.input).map(([k, v]) => (
               <span key={k} className="rounded-full bg-white border border-paper-200 px-2 py-0.5">
-                {k === "major" ? "专业" : k === "region" ? "地区" : k === "school_tier" ? "层次" : "届别"}：{String(v)}
+                {INPUT_LABELS[k] ?? k}：{String(v)}
               </span>
             ))}
           </div>
@@ -69,6 +91,10 @@ export default function DecisionEnginePage() {
               <PathResultCard key={m.path_type} metric={m} />
             ))}
           </div>
+
+          {/* 个人化深挖：考公岗位级 + 考研院校级（有条件才有） */}
+          {result.position_analysis && <PositionAnalysisCard analysis={result.position_analysis} />}
+          {result.school_analysis && <SchoolAnalysisCard analysis={result.school_analysis} />}
 
           {/* 综合建议 */}
           <div className="rounded-xl border border-purple-200 bg-gradient-to-br from-purple-50 via-fuchsia-50 to-indigo-50 p-5">
@@ -84,6 +110,9 @@ export default function DecisionEnginePage() {
               </div>
             </div>
           </div>
+
+          {/* 结果回传（决策飞轮闭环第一圈） */}
+          <OutcomeForm decisionId={result.id} outcome={result.outcome} onSaved={handleOutcomeSaved} />
         </div>
       )}
 
