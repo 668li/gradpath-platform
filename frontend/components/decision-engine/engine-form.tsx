@@ -1,7 +1,7 @@
 "use client";
 
 // frontend/components/decision-engine/engine-form.tsx
-// 三路决策引擎输入表单 — 学生档案（专业/地区/学校层次/毕业年份）
+// 三路决策引擎输入表单 — 学生档案（专业/地区/学校层次/毕业年份）+ 个人条件包（考公可报边界）
 
 import { useState } from "react";
 import { Compass, Play } from "lucide-react";
@@ -18,6 +18,40 @@ const SCHOOL_TIERS = [
 
 const GRADUATION_YEARS = [2026, 2027, 2028, 2029];
 
+// 决策飞轮：个人条件可报边界（全部可选，未填即该维度不过滤）
+const FRESH_STATUSES = [
+  { value: "", label: "不限" },
+  { value: "应届", label: "应届毕业生" },
+  { value: "非应届", label: "非应届" },
+];
+
+const PARTY_STATUSES = [
+  { value: "", label: "不限" },
+  { value: "中共党员", label: "中共党员" },
+  { value: "党员或团员", label: "中共党员或共青团员" },
+  { value: "群众", label: "群众" },
+];
+
+const EDUCATIONS = [
+  { value: "", label: "不限" },
+  { value: "本科", label: "本科" },
+  { value: "硕士", label: "硕士" },
+  { value: "博士", label: "博士" },
+  { value: "大专", label: "大专" },
+];
+
+const GENDERS = [
+  { value: "", label: "不限" },
+  { value: "男", label: "男" },
+  { value: "女", label: "女" },
+];
+
+const GRASSROOTS = [
+  { value: "", label: "不限" },
+  { value: "yes", label: "已满足" },
+  { value: "no", label: "不满足" },
+];
+
 interface EngineFormProps {
   loading: boolean;
   onSubmit: (input: DecisionEngineInput) => void;
@@ -31,6 +65,16 @@ export function EngineForm({ loading, onSubmit, initial }: EngineFormProps) {
   const [graduationYear, setGraduationYear] = useState(
     initial?.graduation_year?.toString() ?? "",
   );
+  const [freshStatus, setFreshStatus] = useState(initial?.fresh_status ?? "");
+  const [partyStatus, setPartyStatus] = useState(initial?.party_status ?? "");
+  const [education, setEducation] = useState(initial?.education ?? "");
+  const [gender, setGender] = useState(initial?.gender ?? "");
+  const [grassroots, setGrassroots] = useState(
+    initial?.has_grassroots === undefined ? "" : initial.has_grassroots ? "yes" : "no",
+  );
+  const [estimatedScore, setEstimatedScore] = useState(
+    initial?.estimated_score?.toString() ?? "",
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,6 +84,13 @@ export function EngineForm({ loading, onSubmit, initial }: EngineFormProps) {
       region: region.trim() || undefined,
       school_tier: schoolTier || undefined,
       graduation_year: graduationYear ? Number(graduationYear) : undefined,
+      fresh_status: freshStatus || undefined,
+      party_status: partyStatus || undefined,
+      education: education || undefined,
+      gender: gender || undefined,
+      has_grassroots:
+        grassroots === "" ? undefined : grassroots === "yes",
+      estimated_score: estimatedScore ? Number(estimatedScore) : undefined,
     });
   };
 
@@ -100,6 +151,61 @@ export function EngineForm({ loading, onSubmit, initial }: EngineFormProps) {
             ))}
           </Select>
         </Field>
+      </div>
+
+      {/* 决策飞轮：个人条件包（参与考公可报边界过滤与岗位分级） */}
+      <div className="mt-4 border-t border-paper-100 pt-4">
+        <p className="mb-2 text-xs font-medium text-ink-600">
+          个人条件（可选）—— 用于考公路的可报岗位过滤与竞争力分级
+        </p>
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
+          <Field label="应届状态">
+            <Select value={freshStatus} onChange={(e) => setFreshStatus(e.target.value)} disabled={loading}>
+              {FRESH_STATUSES.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="政治面貌">
+            <Select value={partyStatus} onChange={(e) => setPartyStatus(e.target.value)} disabled={loading}>
+              {PARTY_STATUSES.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="最高学历">
+            <Select value={education} onChange={(e) => setEducation(e.target.value)} disabled={loading}>
+              {EDUCATIONS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="性别">
+            <Select value={gender} onChange={(e) => setGender(e.target.value)} disabled={loading}>
+              {GENDERS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="基层经历">
+            <Select value={grassroots} onChange={(e) => setGrassroots(e.target.value)} disabled={loading}>
+              {GRASSROOTS.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="预估总分" hint="行测+申论 200 分制">
+            <Input
+              type="number"
+              min={0}
+              max={200}
+              value={estimatedScore}
+              onChange={(e) => setEstimatedScore(e.target.value)}
+              placeholder="如 128"
+              disabled={loading}
+            />
+          </Field>
+        </div>
       </div>
 
       <div className="mt-4 flex items-center justify-between">
