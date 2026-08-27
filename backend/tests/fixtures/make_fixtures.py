@@ -63,8 +63,9 @@ def main() -> None:
         sample = build_sample(raw, limit)
         out = DST / name
         out.write_text(
-            json.dumps(sample, ensure_ascii=False, indent=1),
+            json.dumps(sample, ensure_ascii=False, indent=1) + "\n",
             encoding="utf-8",
+            newline="\n",
         )
         print(f"{name}: {len(raw)} -> {len(sample)} 条 -> {out}")
 
