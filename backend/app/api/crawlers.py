@@ -497,12 +497,10 @@ async def _run_scheduled_crawler(source_name: str):
         if settings.REDIS_URL:
             _client = _redis.from_url(settings.REDIS_URL)
             _lock_key = (
-                f"crawler_schedule_lock:{source_name}:"
-                f"{datetime.now().strftime('%Y%m%d%H%M')}"
+                f"crawler_schedule_lock:{source_name}:" f"{datetime.now().strftime('%Y%m%d%H%M')}"
             )
             if not _client.set(_lock_key, task_id, nx=True, ex=3300):
-                logger.info(
-                    "定时任务 %s 本分钟已由其他实例触发，跳过投递", source_name)
+                logger.info("定时任务 %s 本分钟已由其他实例触发，跳过投递", source_name)
                 return
     except Exception as e:  # noqa: BLE001 — 锁失败不阻断采集主流程
         logger.warning("定时任务分布式锁获取失败，按未锁处理: %s", e)
