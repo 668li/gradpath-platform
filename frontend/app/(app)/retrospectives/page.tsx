@@ -92,7 +92,7 @@ export default function RetrospectivesPage() {
   }, [load]);
 
   /** 用示例模板预填复盘表单（不写库，仅作为创建起点） */
-  const useTemplate = (tpl: typeof RETRO_TEMPLATES[number]) => {
+  const applyTemplate = (tpl: typeof RETRO_TEMPLATES[number]) => {
     const today = new Date().toISOString().slice(0, 10);
     const start = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
     setEditing({
@@ -247,7 +247,7 @@ export default function RetrospectivesPage() {
                   <Button
                     size="sm"
                     variant="secondary"
-                    onClick={() => useTemplate(tpl)}
+                    onClick={() => applyTemplate(tpl)}
                     className="mt-auto"
                   >
                     以此为例
