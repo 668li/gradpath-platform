@@ -1,5 +1,6 @@
 # backend/app/skills/grad_school_planning.py
 """考研规划 Skill — 生成结构化考研备考规划。"""
+
 from __future__ import annotations
 
 import json
@@ -9,7 +10,13 @@ from app.skills.base import BaseSkill
 
 # 激活关键词
 ACTIVATE_KEYWORDS = [
-    "考研", "保研", "研究生", "读研", "学硕", "专硕", "硕士",
+    "考研",
+    "保研",
+    "研究生",
+    "读研",
+    "学硕",
+    "专硕",
+    "硕士",
 ]
 
 # 期望的 LLM JSON 输出格式说明

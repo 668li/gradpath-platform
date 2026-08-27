@@ -3,6 +3,7 @@
 Injects standard security headers to prevent clickjacking, MIME sniffing,
 and downgrade attacks.
 """
+
 from __future__ import annotations
 
 import logging

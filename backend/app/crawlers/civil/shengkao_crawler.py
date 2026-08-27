@@ -4,6 +4,7 @@
 公开招录信息整理的预置数据，覆盖 15 个省份的省直机关与地市级机关，共 200 条
 省考职位记录。
 """
+
 import random
 from uuid import UUID
 
@@ -19,9 +20,21 @@ SYSTEM_USER_ID = UUID("00000000-0000-0000-0000-000000000000")
 
 # 15 个省份
 _PROVINCES = [
-    "山东", "河南", "四川", "湖北", "湖南",
-    "福建", "安徽", "江西", "陕西", "辽宁",
-    "吉林", "黑龙江", "云南", "贵州", "甘肃",
+    "山东",
+    "河南",
+    "四川",
+    "湖北",
+    "湖南",
+    "福建",
+    "安徽",
+    "江西",
+    "陕西",
+    "辽宁",
+    "吉林",
+    "黑龙江",
+    "云南",
+    "贵州",
+    "甘肃",
 ]
 
 # 各省主要城市（用于地市级机关）
@@ -64,28 +77,54 @@ _PROVINCE_EXAM_URL = {
 
 # 省考部门类型（10 类）
 _DEPT_TYPES_SHENG = [
-    "财政", "审计", "教育", "公安", "人社",
-    "自然资源", "市场监管", "发改委", "司法", "住建",
+    "财政",
+    "审计",
+    "教育",
+    "公安",
+    "人社",
+    "自然资源",
+    "市场监管",
+    "发改委",
+    "司法",
+    "住建",
 ]
 
 # 省直机关用"厅"后缀
 _DEPT_FULL = {
-    "财政": "财政厅", "审计": "审计厅", "教育": "教育厅", "公安": "公安厅",
-    "人社": "人社厅", "自然资源": "自然资源厅", "市场监管": "市场监管局",
-    "发改委": "发改委", "司法": "司法厅", "住建": "住建厅",
+    "财政": "财政厅",
+    "审计": "审计厅",
+    "教育": "教育厅",
+    "公安": "公安厅",
+    "人社": "人社厅",
+    "自然资源": "自然资源厅",
+    "市场监管": "市场监管局",
+    "发改委": "发改委",
+    "司法": "司法厅",
+    "住建": "住建厅",
 }
 
 # 地市级机关用"局"后缀
 _DEPT_BUREAU = {
-    "财政": "财政局", "审计": "审计局", "教育": "教育局", "公安": "公安局",
-    "人社": "人社局", "自然资源": "自然资源局", "市场监管": "市场监管局",
-    "发改委": "发改委", "司法": "司法局", "住建": "住建局",
+    "财政": "财政局",
+    "审计": "审计局",
+    "教育": "教育局",
+    "公安": "公安局",
+    "人社": "人社局",
+    "自然资源": "自然资源局",
+    "市场监管": "市场监管局",
+    "发改委": "发改委",
+    "司法": "司法局",
+    "住建": "住建局",
 }
 
 # 职位名称候选
 _POST_NAMES = [
-    "一级科员", "二级科员", "一级主任科员及以下", "二级主任科员及以下",
-    "三级主任科员及以下", "一级行政执法员",
+    "一级科员",
+    "二级科员",
+    "一级主任科员及以下",
+    "二级主任科员及以下",
+    "三级主任科员及以下",
+    "一级行政执法员",
 ]
 
 # 学历要求候选
@@ -93,9 +132,16 @@ _EDU_REQUIREMENTS = ["大专及以上", "本科", "本科及以上", "硕士研�
 
 # 专业要求候选
 _MAJOR_REQUIREMENTS = [
-    "经济学类", "法学类", "计算机类", "中国语言文学类",
-    "工商管理类", "统计学类", "会计学", "公共管理类",
-    "新闻传播学类", "不限专业",
+    "经济学类",
+    "法学类",
+    "计算机类",
+    "中国语言文学类",
+    "工商管理类",
+    "统计学类",
+    "会计学",
+    "公共管理类",
+    "新闻传播学类",
+    "不限专业",
 ]
 
 # 政治面貌要求候选
@@ -165,27 +211,29 @@ class ShengkaoCrawler(BaseCrawler):
                 hiring = random.randint(1, 5)
                 register = random.randint(30, 400)
                 ratio = round(register / hiring)
-                raw.append({
-                    "region": region,
-                    "department": department,
-                    "department_type": dept_type,
-                    "dept_tier": dept_tier,
-                    "post_name": _POST_NAMES[i % len(_POST_NAMES)],
-                    "post_code": str(post_code_seq),
-                    "hiring_count": hiring,
-                    "register_count": register,
-                    "admission_ratio_num": ratio,
-                    "education_requirement": random.choice(_EDU_REQUIREMENTS),
-                    "major_requirement": random.choice(_MAJOR_REQUIREMENTS),
-                    "political_requirement": random.choice(_POLITICAL_REQUIREMENTS),
-                    "age_requirement": "18-35周岁",
-                    "work_year_requirement": random.choice(_WORK_YEAR_REQUIREMENTS),
-                    "exam_subjects": "行政职业能力测验,申论",
-                    "salary_low": random.randint(6000, 10000),
-                    "salary_high": random.randint(11000, 16000),
-                    "source_url": source_url,
-                    "province": province,
-                })
+                raw.append(
+                    {
+                        "region": region,
+                        "department": department,
+                        "department_type": dept_type,
+                        "dept_tier": dept_tier,
+                        "post_name": _POST_NAMES[i % len(_POST_NAMES)],
+                        "post_code": str(post_code_seq),
+                        "hiring_count": hiring,
+                        "register_count": register,
+                        "admission_ratio_num": ratio,
+                        "education_requirement": random.choice(_EDU_REQUIREMENTS),
+                        "major_requirement": random.choice(_MAJOR_REQUIREMENTS),
+                        "political_requirement": random.choice(_POLITICAL_REQUIREMENTS),
+                        "age_requirement": "18-35周岁",
+                        "work_year_requirement": random.choice(_WORK_YEAR_REQUIREMENTS),
+                        "exam_subjects": "行政职业能力测验,申论",
+                        "salary_low": random.randint(6000, 10000),
+                        "salary_high": random.randint(11000, 16000),
+                        "source_url": source_url,
+                        "province": province,
+                    }
+                )
                 post_code_seq += 1
         return raw
 
@@ -209,27 +257,29 @@ class ShengkaoCrawler(BaseCrawler):
                 f"笔试科目：{r['exam_subjects']}",
                 f"数据来源：{r['source_url']}",
             ]
-            parsed.append({
-                "region": r["region"],
-                "department": r["department"],
-                "post_name": r["post_name"],
-                "exam_type": "省考",
-                "real_competition": _competition_level(ratio),
-                "treatment_level": "medium",
-                "promotion_speed": "medium",
-                "workload": "medium",
-                "radish_post": "medium",
-                "service_period": "3年",
-                "admission_ratio": f"{ratio}:1",
-                "salary_estimate": salary,
-                "department_tier": r["dept_tier"],
-                "work_content": _WORK_CONTENT[r["department_type"]],
-                "insider_notes": "\n".join(notes_lines),
-                "risk_warnings": [],
-                "data_sources": [f"{r['province']}人事考试网", r["source_url"]],
-                "tags": ["省考", r["province"], r["department_type"]],
-                "ai_summary": f"{r['department']}{r['post_name']}岗位，报录比{ratio}:1，薪资{salary}",
-            })
+            parsed.append(
+                {
+                    "region": r["region"],
+                    "department": r["department"],
+                    "post_name": r["post_name"],
+                    "exam_type": "省考",
+                    "real_competition": _competition_level(ratio),
+                    "treatment_level": "medium",
+                    "promotion_speed": "medium",
+                    "workload": "medium",
+                    "radish_post": "medium",
+                    "service_period": "3年",
+                    "admission_ratio": f"{ratio}:1",
+                    "salary_estimate": salary,
+                    "department_tier": r["dept_tier"],
+                    "work_content": _WORK_CONTENT[r["department_type"]],
+                    "insider_notes": "\n".join(notes_lines),
+                    "risk_warnings": [],
+                    "data_sources": [f"{r['province']}人事考试网", r["source_url"]],
+                    "tags": ["省考", r["province"], r["department_type"]],
+                    "ai_summary": f"{r['department']}{r['post_name']}岗位，报录比{ratio}:1，薪资{salary}",
+                }
+            )
         return parsed
 
     def store(self, items: list[dict], db: Session) -> int:

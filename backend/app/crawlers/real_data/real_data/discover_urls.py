@@ -1,10 +1,10 @@
-# -*- coding: utf-8 -*-
 """Phase 1: Crawl kaoyan.com to discover article URLs."""
-import os
+
 import json
+import logging
+import os
 import re
 import time
-import logging
 from pathlib import Path
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -19,6 +19,7 @@ URLS_FILE = OUTPUT_DIR / "discovered_urls.json"
 
 def main():
     from firecrawl import FirecrawlApp
+
     app = FirecrawlApp(api_key=FIRECRAWL_API_KEY)
 
     all_urls = set()
@@ -39,7 +40,7 @@ def main():
                 scrape_options={"formats": ["markdown"]},
             )
 
-            if not hasattr(result, 'data') or not result.data:
+            if not hasattr(result, "data") or not result.data:
                 logger.warning(f"  No data from {target_url}")
                 time.sleep(5)
                 continue
@@ -52,21 +53,20 @@ def main():
                 meta = page.metadata
                 url = ""
                 if meta:
-                    url = getattr(meta, 'source_url', '') or getattr(meta, 'url', '') or ""
+                    url = getattr(meta, "source_url", "") or getattr(meta, "url", "") or ""
 
                 # Extract article links from markdown
                 article_links = re.findall(
-                    r'https://www\.kaoyan\.com/article/\d+/\d+/[a-f0-9]+',
-                    md
+                    r"https://www\.kaoyan\.com/article/\d+/\d+/[a-f0-9]+", md
                 )
                 for link in article_links:
                     # Remove query params
-                    link = link.split('?')[0]
+                    link = link.split("?")[0]
                     all_urls.add(link)
 
                 # Also check if current page is an article
-                if url and '/article/' in url:
-                    url = url.split('?')[0]
+                if url and "/article/" in url:
+                    url = url.split("?")[0]
                     all_urls.add(url)
 
             time.sleep(5)
@@ -77,7 +77,7 @@ def main():
 
     # Save discovered URLs
     urls_list = sorted(all_urls)
-    with open(URLS_FILE, 'w', encoding='utf-8') as f:
+    with open(URLS_FILE, "w", encoding="utf-8") as f:
         json.dump({"total": len(urls_list), "urls": urls_list}, f, ensure_ascii=False, indent=2)
 
     print(f"\nDiscovered {len(urls_list)} article URLs")

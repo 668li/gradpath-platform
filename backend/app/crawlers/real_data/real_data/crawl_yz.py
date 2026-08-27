@@ -1,4 +1,6 @@
-import os, json, time
+import json
+import os
+import time
 
 FIRECRAWL_API_KEY = os.getenv("FIRECRAWL_API_KEY", "")
 if not FIRECRAWL_API_KEY:
@@ -24,22 +26,22 @@ for name, url in sections.items():
     print(f"\n=== Starting crawl: {name} ({url}) ===", flush=True)
     try:
         job = app.start_crawl(url, limit=50)
-        job_id = job.id if hasattr(job, 'id') else job.get('id')
+        job_id = job.id if hasattr(job, "id") else job.get("id")
         print(f"  Job started: {job_id}", flush=True)
 
         while True:
             status = app.get_crawl_status(job_id)
-            state = status.status if hasattr(status, 'status') else status.get('status', '')
-            total = getattr(status, 'total', 0) or 0
-            completed = getattr(status, 'completed', 0) or 0
+            state = status.status if hasattr(status, "status") else status.get("status", "")
+            total = getattr(status, "total", 0) or 0
+            completed = getattr(status, "completed", 0) or 0
             print(f"  Status: {state} ({completed}/{total})", flush=True)
 
-            if state in ('completed', 'failed', 'canceled'):
+            if state in ("completed", "failed", "canceled"):
                 break
             time.sleep(10)
 
-        if state == 'failed':
-            error = getattr(status, 'error', 'unknown')
+        if state == "failed":
+            error = getattr(status, "error", "unknown")
             print(f"  FAILED: {error}", flush=True)
             results[name] = {"error": str(error)}
             summary[name] = {"pages": 0, "chars": 0, "error": str(error)}
@@ -49,7 +51,7 @@ for name, url in sections.items():
         pc = PaginationConfig(auto_paginate=True, max_results=200, max_pages=10)
         status = app.get_crawl_status(job_id, pagination_config=pc)
 
-        all_data = status.data if hasattr(status, 'data') else []
+        all_data = status.data if hasattr(status, "data") else []
         if all_data:
             all_pages.extend(all_data)
 
@@ -74,19 +76,23 @@ for name, url in sections.items():
                 source_url = p["metadata"].get("sourceURL", "")
 
             char_count += len(content)
-            entries.append({
-                "url": source_url,
-                "title": title,
-                "content": content,
-                "content_length": len(content),
-            })
+            entries.append(
+                {
+                    "url": source_url,
+                    "title": title,
+                    "content": content,
+                    "content_length": len(content),
+                }
+            )
 
         results[name] = entries
         summary[name] = {"pages": len(all_pages), "chars": char_count}
         total_chars += char_count
         print(f"  Done: {len(all_pages)} pages, {char_count} chars", flush=True)
     except Exception as e:
-        import traceback; traceback.print_exc()
+        import traceback
+
+        traceback.print_exc()
         results[name] = {"error": str(e)}
         summary[name] = {"pages": 0, "chars": 0, "error": str(e)}
 
@@ -101,7 +107,7 @@ out_path = r"D:\职业规划\职业规划\backend\app\crawlers\real_data\yz_craw
 with open(out_path, "w", encoding="utf-8") as f:
     json.dump(output, f, ensure_ascii=False, indent=2)
 
-print(f"\n=== SUMMARY ===", flush=True)
+print("\n=== SUMMARY ===", flush=True)
 for name, s in summary.items():
     print(f"  {name}: {s.get('pages',0)} pages, {s.get('chars',0)} chars", flush=True)
 print(f"  TOTAL: {output['total_pages']} pages, {total_chars} chars", flush=True)

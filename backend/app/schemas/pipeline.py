@@ -1,8 +1,7 @@
 # backend/app/schemas/pipeline.py
 """Pipeline Pydantic schemas。"""
+
 from datetime import datetime
-from typing import Any
-from uuid import UUID
 
 from pydantic import BaseModel, field_validator, model_validator
 
@@ -100,6 +99,7 @@ class DataSourceResponse(BaseModel):
     修复: FASTAPI-RESP-001 — 不再返回 api_key 字段，避免敏感凭证泄漏给客户端。
     保留 has_api_key 布尔值方便前端展示"已配置"状态。
     """
+
     id: str
     name: str
     source_type: str

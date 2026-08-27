@@ -10,6 +10,7 @@
 - scan_user(user_id) -> {profile, plan, generated_at, llm_enriched}
 - route_agent(user_id, message, web_search, conversation_id) -> AgentResponse 风格字典
 """
+
 from __future__ import annotations
 
 import logging
@@ -39,6 +40,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # 数据聚合
 # ---------------------------------------------------------------------------
+
 
 def _count(db: Session, model, user_id: UUID, **filters) -> int:
     stmt = select(func.count()).select_from(model).where(model.user_id == user_id)
@@ -84,61 +86,77 @@ def _build_action_plan(profile: dict) -> list[dict]:
     gaps = profile["gaps"]
 
     if inv["assessments"] == 0:
-        plan.append({
-            "priority": "high",
-            "title": "完成职业测评",
-            "why": "尚无霍兰德测评，无法标定方向",
-            "action": "前往「职业规划 → 测评」完成霍兰德评估，获取推荐方向。",
-        })
+        plan.append(
+            {
+                "priority": "high",
+                "title": "完成职业测评",
+                "why": "尚无霍兰德测评，无法标定方向",
+                "action": "前往「职业规划 → 测评」完成霍兰德评估，获取推荐方向。",
+            }
+        )
     if inv["decisions"] == 0:
-        plan.append({
-            "priority": "high",
-            "title": "做出第一个去向决策",
-            "why": "尚未记录任何考研/考公/就业决策",
-            "action": "在「决策实验室」记录你的目标去向并评估置信度。",
-        })
+        plan.append(
+            {
+                "priority": "high",
+                "title": "做出第一个去向决策",
+                "why": "尚未记录任何考研/考公/就业决策",
+                "action": "在「决策实验室」记录你的目标去向并评估置信度。",
+            }
+        )
     if inv["career_plans"] == 0:
-        plan.append({
-            "priority": "medium",
-            "title": "创建一份职业规划",
-            "why": "有决策但无落地路径",
-            "action": "基于决策创建含里程碑的规划，设定时间线。",
-        })
+        plan.append(
+            {
+                "priority": "medium",
+                "title": "创建一份职业规划",
+                "why": "有决策但无落地路径",
+                "action": "基于决策创建含里程碑的规划，设定时间线。",
+            }
+        )
     elif not profile["active_plans"]:
-        plan.append({
-            "priority": "medium",
-            "title": "推进停滞的规划",
-            "why": "存在规划但无进行中状态",
-            "action": "将一份规划置为 active 并标记已完成里程碑。",
-        })
+        plan.append(
+            {
+                "priority": "medium",
+                "title": "推进停滞的规划",
+                "why": "存在规划但无进行中状态",
+                "action": "将一份规划置为 active 并标记已完成里程碑。",
+            }
+        )
     if inv["skills"] == 0:
-        plan.append({
-            "priority": "medium",
-            "title": "建立技能树",
-            "why": "竞争力无法量化",
-            "action": "在「技能」页登记你的核心技能与等级。",
-        })
+        plan.append(
+            {
+                "priority": "medium",
+                "title": "建立技能树",
+                "why": "竞争力无法量化",
+                "action": "在「技能」页登记你的核心技能与等级。",
+            }
+        )
     if inv["retrospectives"] == 0 and inv["decisions"] > 0:
-        plan.append({
-            "priority": "low",
-            "title": "做一次阶段复盘",
-            "why": "有决策但从未复盘",
-            "action": "在「复盘」页总结上一阶段并给出满意度。",
-        })
+        plan.append(
+            {
+                "priority": "low",
+                "title": "做一次阶段复盘",
+                "why": "有决策但从未复盘",
+                "action": "在「复盘」页总结上一阶段并给出满意度。",
+            }
+        )
     for g in gaps:
-        plan.append({
-            "priority": "medium",
-            "title": f"补齐：{g}",
-            "why": "画像数据缺失，影响 AI 判断精度",
-            "action": f"在个人中心补充「{g}」信息。",
-        })
+        plan.append(
+            {
+                "priority": "medium",
+                "title": f"补齐：{g}",
+                "why": "画像数据缺失，影响 AI 判断精度",
+                "action": f"在个人中心补充「{g}」信息。",
+            }
+        )
     if not plan:
-        plan.append({
-            "priority": "low",
-            "title": "保持节奏",
-            "why": "数据较完整",
-            "action": "维持打卡与复盘，AI 将基于历史给出更精准洞察。",
-        })
+        plan.append(
+            {
+                "priority": "low",
+                "title": "保持节奏",
+                "why": "数据较完整",
+                "action": "维持打卡与复盘，AI 将基于历史给出更精准洞察。",
+            }
+        )
     return plan
 
 
@@ -170,14 +188,17 @@ def _active_plan_summary(db: Session, user_id: UUID) -> list[dict]:
     for p in plans:
         total = len(p.milestones or [])
         done = sum(
-            1 for m in (p.milestones or [])
+            1
+            for m in (p.milestones or [])
             if isinstance(m, dict) and m.get("status") == "completed"
         )
-        out.append({
-            "goal": p.goal_text,
-            "progress": f"{done}/{total}",
-            "timeline_months": p.timeline_months,
-        })
+        out.append(
+            {
+                "goal": p.goal_text,
+                "progress": f"{done}/{total}",
+                "timeline_months": p.timeline_months,
+            }
+        )
     return out
 
 
@@ -201,6 +222,7 @@ def _latest_assessment_summary(db: Session, user_id: UUID) -> dict | None:
 # ---------------------------------------------------------------------------
 # 对外 API
 # ---------------------------------------------------------------------------
+
 
 async def scan_user(db: Session, user_id: UUID) -> dict:
     """扫描用户全量数据，返回结构化画像 + 行动清单。
@@ -237,9 +259,7 @@ async def _llm_enrich(profile: dict, plan: list[dict]) -> tuple[dict, list[dict]
         "输出一段 200 字以内的鼓励性总结（不要新增事实）。\n"
         f"画像: {profile}\n方案: {plan}"
     )
-    summary = await ai.chat(
-        "你只做总结润色，不编造数据。", prompt, timeout=20
-    )
+    summary = await ai.chat("你只做总结润色，不编造数据。", prompt, timeout=20)
     profile = dict(profile)
     profile["summary"] = summary
     return profile, plan
@@ -257,7 +277,7 @@ def route_agent(
     返回与 AgentResponse 兼容的字典。
     """
     # 延迟导入避免循环依赖
-    from app.api.ai_agent import _db_search, _classify_intent
+    from app.api.ai_agent import _classify_intent, _db_search
     from app.services.web_search import WebSearchService
 
     intent = _classify_intent(message)
@@ -284,7 +304,8 @@ def route_agent(
         "sources": [
             {"type": "db", "title": r["title"], "content": r["content"], "url": r["url"]}
             for r in db_results
-        ] + [
+        ]
+        + [
             {"type": "web", "title": r["title"], "content": r["content"], "url": r["url"]}
             for r in web_results
         ],

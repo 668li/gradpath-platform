@@ -8,7 +8,7 @@
 - 公开浏览接口（院校情报、研招网数据、分数线、调剂、院校汇总）
 - 导师评价（列表、详情、评价列表）
 """
-import time
+
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -16,16 +16,13 @@ from fastapi.testclient import TestClient
 
 from app.core.cache import cache
 from app.models.grad_intel import (
-    DarkKnowledge,
     GradAdjustmentInfo,
     GradSchoolIntel,
     GradScorelineRecord,
     GradYanzhaoProgram,
-    SelfPositioning,
 )
 from app.models.mentor import Mentor
 from app.models.mentor_review import MentorReview
-from app.services import grad_intel_service
 
 
 # ======================================================================
@@ -101,17 +98,13 @@ class TestIntelCRUD:
             headers=auth_headers,
         )
         intel_id = save_resp.json()["id"]
-        resp = client.delete(
-            f"/api/grad-intel/intel/{intel_id}", headers=auth_headers
-        )
+        resp = client.delete(f"/api/grad-intel/intel/{intel_id}", headers=auth_headers)
         assert resp.status_code == 200
         assert resp.json()["ok"] is True
 
     def test_delete_intel_not_found(self, client: TestClient, auth_headers):
         fake_id = str(uuid4())
-        resp = client.delete(
-            f"/api/grad-intel/intel/{fake_id}", headers=auth_headers
-        )
+        resp = client.delete(f"/api/grad-intel/intel/{fake_id}", headers=auth_headers)
         assert resp.status_code == 404
 
 
@@ -140,9 +133,7 @@ class TestIntelQuery:
             "ai_summary": "顶级院校",
         }
         # 修复: grad_intel_service 使用 AIOrchestrator 而非 AIService
-        with patch(
-            "app.services.grad_intel_service.AIOrchestrator"
-        ) as MockOrch:
+        with patch("app.services.grad_intel_service.AIOrchestrator") as MockOrch:
             mock_orch = MagicMock()
             mock_orch.chat = AsyncMock(return_value=__import__("json").dumps(mock_result))
             MockOrch.return_value = mock_orch
@@ -157,9 +148,7 @@ class TestIntelQuery:
         assert data["school_name"] == "清华大学"
 
     def test_query_intel_llm_failure_returns_503(self, client: TestClient, auth_headers):
-        with patch(
-            "app.services.grad_intel_service.AIOrchestrator"
-        ) as MockOrch:
+        with patch("app.services.grad_intel_service.AIOrchestrator") as MockOrch:
             mock_orch = MagicMock()
             mock_orch.chat = AsyncMock(side_effect=Exception("LLM 连接失败"))
             MockOrch.return_value = mock_orch
@@ -222,35 +211,27 @@ class TestPositioning:
 
     def test_get_latest_positioning(self, client: TestClient, auth_headers):
         self._create_positioning(client, auth_headers)
-        resp = client.get(
-            "/api/grad-intel/positioning/latest", headers=auth_headers
-        )
+        resp = client.get("/api/grad-intel/positioning/latest", headers=auth_headers)
         assert resp.status_code == 200
         data = resp.json()
         assert data is not None
         assert data["undergrad_tier"] == "985"
 
     def test_get_latest_positioning_empty(self, client: TestClient, auth_headers):
-        resp = client.get(
-            "/api/grad-intel/positioning/latest", headers=auth_headers
-        )
+        resp = client.get("/api/grad-intel/positioning/latest", headers=auth_headers)
         assert resp.status_code == 200
         assert resp.json() is None
 
     def test_get_positioning_history(self, client: TestClient, auth_headers):
         self._create_positioning(client, auth_headers)
-        resp = client.get(
-            "/api/grad-intel/positioning/history", headers=auth_headers
-        )
+        resp = client.get("/api/grad-intel/positioning/history", headers=auth_headers)
         assert resp.status_code == 200
         data = resp.json()
         assert isinstance(data, list)
         assert len(data) >= 1
 
     def test_clear_positioning_cache(self, client: TestClient, auth_headers):
-        resp = client.post(
-            "/api/grad-intel/positioning/clear-cache", headers=auth_headers
-        )
+        resp = client.post("/api/grad-intel/positioning/clear-cache", headers=auth_headers)
         assert resp.status_code == 200
         assert "缓存已清除" in resp.json()["message"]
 
@@ -297,9 +278,7 @@ class TestDarkKnowledge:
         self._seed_dark_knowledge(client, auth_headers)
         cache.clear()
 
-        resp = client.get(
-            "/api/grad-intel/dark-knowledge/list", params={"stage": "decision"}
-        )
+        resp = client.get("/api/grad-intel/dark-knowledge/list", params={"stage": "decision"})
         assert resp.status_code == 200
         data = resp.json()
         assert isinstance(data, dict)
@@ -320,21 +299,15 @@ class TestDarkKnowledge:
         assert "count" in data[0]
 
     def test_seed_dark_knowledge(self, client: TestClient, auth_headers):
-        resp = client.post(
-            "/api/grad-intel/dark-knowledge/seed", headers=auth_headers
-        )
+        resp = client.post("/api/grad-intel/dark-knowledge/seed", headers=auth_headers)
         assert resp.status_code == 200
         data = resp.json()
         assert "seeded" in data
         assert "total" in data
 
     def test_seed_dark_knowledge_idempotent(self, client: TestClient, auth_headers):
-        resp1 = client.post(
-            "/api/grad-intel/dark-knowledge/seed", headers=auth_headers
-        )
-        resp2 = client.post(
-            "/api/grad-intel/dark-knowledge/seed", headers=auth_headers
-        )
+        resp1 = client.post("/api/grad-intel/dark-knowledge/seed", headers=auth_headers)
+        resp2 = client.post("/api/grad-intel/dark-knowledge/seed", headers=auth_headers)
         assert resp1.status_code == 200
         assert resp2.status_code == 200
         assert resp1.json()["seeded"] > 0
@@ -383,9 +356,7 @@ class TestPublicIntel:
         user = db_session.query(User).first()
         self._seed_intel(db_session, user.id)
         cache.clear()
-        resp = client.get(
-            "/api/grad-intel/intel/public", params={"school_name": "北京"}
-        )
+        resp = client.get("/api/grad-intel/intel/public", params={"school_name": "北京"})
         assert resp.status_code == 200
         data = resp.json()
         assert all("北京" in i["school_name"] for i in data)
@@ -396,9 +367,7 @@ class TestPublicIntel:
         user = db_session.query(User).first()
         self._seed_intel(db_session, user.id)
         cache.clear()
-        resp = client.get(
-            "/api/grad-intel/intel/public", params={"school_tier": "985"}
-        )
+        resp = client.get("/api/grad-intel/intel/public", params={"school_tier": "985"})
         assert resp.status_code == 200
         data = resp.json()
         assert all(i["school_tier"] == "985" for i in data)
@@ -605,9 +574,7 @@ class TestSchoolSummary:
     def test_school_summary(self, client: TestClient, db_session):
         self._seed_school_data(db_session)
         cache.clear()
-        resp = client.get(
-            "/api/grad-intel/schools/中国科学技术大学/summary"
-        )
+        resp = client.get("/api/grad-intel/schools/中国科学技术大学/summary")
         assert resp.status_code == 200
         data = resp.json()
         assert data["university_name"] == "中国科学技术大学"
@@ -618,9 +585,7 @@ class TestSchoolSummary:
 
     def test_school_summary_empty(self, client: TestClient):
         cache.clear()
-        resp = client.get(
-            "/api/grad-intel/schools/不存在的大学/summary"
-        )
+        resp = client.get("/api/grad-intel/schools/不存在的大学/summary")
         assert resp.status_code == 200
         data = resp.json()
         assert data["program_count"] == 0

@@ -9,20 +9,18 @@
 - 配额计数按日期隔离
 - 配额计数按用户隔离
 """
+
 from datetime import date
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
 
-from app.services.ai_quota_service import (
-    AILLMQuotaExceeded,
-    AIQuotaService,
-)
-
+from app.services.ai_quota_service import AILLMQuotaExceeded, AIQuotaService
 
 # ======================================================================
 # 辅助：构造带 mock Redis 的 AIQuotaService
 # ======================================================================
+
 
 def _make_service_with_redis(redis_mock, quota=100):
     """构造一个使用 mock Redis 的 AIQuotaService（绕过 _init_redis）。"""
@@ -47,6 +45,7 @@ def _make_redis_mock(get_value="0", incr_value=1):
 # ======================================================================
 # 配额检查：未超额
 # ======================================================================
+
 
 class TestCheckQuotaNotExceeded:
     @pytest.mark.asyncio
@@ -82,6 +81,7 @@ class TestCheckQuotaNotExceeded:
 # ======================================================================
 # 配额检查：超额
 # ======================================================================
+
 
 class TestCheckQuotaExceeded:
     @pytest.mark.asyncio
@@ -119,6 +119,7 @@ class TestCheckQuotaExceeded:
 # ======================================================================
 # 配额递增
 # ======================================================================
+
 
 class TestIncrQuota:
     @pytest.mark.asyncio
@@ -168,10 +169,12 @@ class TestIncrQuota:
 # Redis 不可用时降级
 # ======================================================================
 
+
 class TestRedisUnavailable:
     def test_no_redis_url_degrades_to_unlimited(self, monkeypatch):
         """REDIS_URL 未配置时，服务降级到不限制模式。"""
         from app.config import settings
+
         monkeypatch.setattr(settings, "REDIS_URL", None)
 
         svc = AIQuotaService()
@@ -212,6 +215,7 @@ class TestRedisUnavailable:
 # ======================================================================
 # Key 格式与隔离
 # ======================================================================
+
 
 class TestQuotaKeyIsolation:
     @pytest.mark.asyncio
@@ -256,6 +260,7 @@ class TestQuotaKeyIsolation:
 # ======================================================================
 # reset 方法
 # ======================================================================
+
 
 class TestReset:
     @pytest.mark.asyncio

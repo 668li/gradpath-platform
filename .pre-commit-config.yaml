@@ -36,27 +36,29 @@ repos:
         name: 检测敏感信息 (API Key / Token / 密码)
 
   # Python 导入排序
+  # 钩子范围与 CI lint job 对齐（app/tests/pipeline）：scripts/ 为一次性/归档脚本，
+  # 不承担 lint 门禁；archive 目录含历史坏文件，纳入只会制造噪音
   - repo: https://github.com/PyCQA/isort
     rev: 5.13.2
     hooks:
       - id: isort
-        files: ^backend/.*\.py$
+        files: ^backend/(app|tests|pipeline)/.*\.py$
         args: ["--profile", "black", "--line-length", "100"]
 
   # Python 代码格式化
   - repo: https://github.com/psf/black
-    rev: 24.4.2
+    rev: 26.5.1
     hooks:
       - id: black
-        files: ^backend/.*\.py$
+        files: ^backend/(app|tests|pipeline)/.*\.py$
         args: ["--line-length", "100", "--target-version", "py310"]
 
-  # Python Linter
+  # Python Linter（版本与 CI 的 pip ruff 对齐）
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.5.0
+    rev: v0.16.4
     hooks:
       - id: ruff
-        files: ^backend/.*\.py$
+        files: ^backend/(app|tests|pipeline)/.*\.py$
         args: ["--fix", "--exit-non-zero-on-fix"]
 
   # 类型检查
@@ -73,7 +75,9 @@ repos:
         stages: [manual]
 
 # 全局配置
+# CI runner 为 Python 3.11（见 .github/workflows/ci.yml），
+# 指定具体小版本号（如 python3.10）会在 runner 上找不到解释器导致 job 失败
 default_language_version:
-  python: python3.10
+  python: python3
 
 default_stages: [pre-commit]

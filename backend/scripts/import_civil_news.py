@@ -10,6 +10,7 @@
 bulk_review_real_data.py 质量门槛批量审核。
 合规：chsi URL 拒收。幂等：source_url 去重（store 内建）。
 """
+
 import json
 import sys
 from pathlib import Path
@@ -25,7 +26,13 @@ from app.services.research_ingestion import store_research_items
 DATA_FILE = BACKEND_ROOT / "app" / "crawlers" / "real_data" / "unified_scrape_results.json"
 CHSI_HOST = "yz.chsi.com.cn"
 CIVIL_SOURCES = {
-    "offcn", "huatu", "fenbi", "offcn_shengkao", "offcn_teacher", "offcn_accounting", "51job",
+    "offcn",
+    "huatu",
+    "fenbi",
+    "offcn_shengkao",
+    "offcn_teacher",
+    "offcn_accounting",
+    "51job",
 }
 
 

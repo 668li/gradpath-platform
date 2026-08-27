@@ -3,6 +3,7 @@
 覆盖 20 家公司 × 5 个岗位 × 2 个级别（初级/高级），共 200 条薪资数据。
 高级别薪资显著高于初级别，数据偏真实。字段映射到 SalaryBenchmark 表。
 """
+
 import random
 from uuid import UUID
 
@@ -13,7 +14,6 @@ from app.crawlers.base_crawler import BaseCrawler
 from app.crawlers.registry import register_crawler
 from app.models.company import Company, CompanySize
 from app.models.salary_benchmark import ExperienceLevel, SalaryBenchmark
-
 
 SYSTEM_USER_ID = UUID("00000000-0000-0000-0000-000000000000")
 
@@ -202,17 +202,19 @@ class SalaryCrawler(BaseCrawler):
                 adjusted_max = int(sal_max_k * jitter * 1000)
                 adjusted_median = (adjusted_min + adjusted_max) // 2
                 source = rng.choice(_SOURCES)
-                raw.append({
-                    "company_name": company_name,
-                    "company_info": company_info,
-                    "city": city,
-                    "position": position,
-                    "experience_level": level,
-                    "salary_min": adjusted_min,
-                    "salary_max": adjusted_max,
-                    "salary_median": adjusted_median,
-                    "source": source,
-                })
+                raw.append(
+                    {
+                        "company_name": company_name,
+                        "company_info": company_info,
+                        "city": city,
+                        "position": position,
+                        "experience_level": level,
+                        "salary_min": adjusted_min,
+                        "salary_max": adjusted_max,
+                        "salary_median": adjusted_median,
+                        "source": source,
+                    }
+                )
         return raw
 
     def parse(self, raw_items: list[dict]) -> list[dict]:
@@ -220,21 +222,23 @@ class SalaryCrawler(BaseCrawler):
         parsed: list[dict] = []
         for r in raw_items:
             info = r["company_info"]
-            parsed.append({
-                "company_name": r["company_name"],
-                "industry": info[1],
-                "size": info[2],
-                "stage": info[3],
-                "headquarters": info[4],
-                "company": r["company_name"],
-                "city": r["city"],
-                "position": r["position"],
-                "experience_level": r["experience_level"],
-                "salary_min": r["salary_min"],
-                "salary_max": r["salary_max"],
-                "salary_median": r["salary_median"],
-                "source": r["source"],
-            })
+            parsed.append(
+                {
+                    "company_name": r["company_name"],
+                    "industry": info[1],
+                    "size": info[2],
+                    "stage": info[3],
+                    "headquarters": info[4],
+                    "company": r["company_name"],
+                    "city": r["city"],
+                    "position": r["position"],
+                    "experience_level": r["experience_level"],
+                    "salary_min": r["salary_min"],
+                    "salary_max": r["salary_max"],
+                    "salary_median": r["salary_median"],
+                    "source": r["source"],
+                }
+            )
         return parsed
 
     def store(self, items: list[dict], db: Session) -> int:
@@ -246,9 +250,11 @@ class SalaryCrawler(BaseCrawler):
         new_count = 0
         for item in items:
             # 1. 确保 Company 记录存在
-            existing_company = db.execute(
-                select(Company).where(Company.name == item["company_name"])
-            ).scalars().first()
+            existing_company = (
+                db.execute(select(Company).where(Company.name == item["company_name"]))
+                .scalars()
+                .first()
+            )
             if existing_company is None:
                 company = Company(
                     name=item["company_name"],
@@ -262,14 +268,18 @@ class SalaryCrawler(BaseCrawler):
                 db.flush()  # 立即刷新，使后续 select 能查到新公司（autoflush=False 需手动 flush）
 
             # 2. 写入 SalaryBenchmark（去重：company + position + experience_level + city）
-            existing_salary = db.execute(
-                select(SalaryBenchmark).where(
-                    SalaryBenchmark.company == item["company"],
-                    SalaryBenchmark.position == item["position"],
-                    SalaryBenchmark.experience_level == item["experience_level"],
-                    SalaryBenchmark.city == item["city"],
+            existing_salary = (
+                db.execute(
+                    select(SalaryBenchmark).where(
+                        SalaryBenchmark.company == item["company"],
+                        SalaryBenchmark.position == item["position"],
+                        SalaryBenchmark.experience_level == item["experience_level"],
+                        SalaryBenchmark.city == item["city"],
+                    )
                 )
-            ).scalars().first()
+                .scalars()
+                .first()
+            )
             if existing_salary is None:
                 salary = SalaryBenchmark(
                     company=item["company"],

@@ -113,9 +113,7 @@ class TestReadReview:
             json={"email": "other2@example.com", "password": "Test1234!"},
         )
         other_headers = {"Authorization": f"Bearer {resp2.json()['access_token']}"}
-        assert client.get(
-            f"/api/reviews/{review['id']}", headers=other_headers
-        ).status_code == 404
+        assert client.get(f"/api/reviews/{review['id']}", headers=other_headers).status_code == 404
 
     def test_list_paginated(self, auth_headers, client):
         for i in range(3):
@@ -140,8 +138,8 @@ class TestAiAnalyze:
 
     def test_template_fallback(self, auth_headers, client, monkeypatch):
         """LLM 不可用（未配置）→ 模板降级，仍写回并 status=COMPLETED。"""
-        from app.services.ai_service import AIServiceNotConfigured
         from app.services import review_service
+        from app.services.ai_service import AIServiceNotConfigured
 
         class _StubOrchestrator:
             def chat(self, *args, **kwargs):
@@ -161,8 +159,8 @@ class TestAiAnalyze:
         assert body["created_at"]  # 契约 created_at 已映射
 
     def test_ai_result_endpoint(self, auth_headers, client, monkeypatch):
-        from app.services.ai_service import AIServiceNotConfigured
         from app.services import review_service
+        from app.services.ai_service import AIServiceNotConfigured
 
         class _StubOrchestrator:
             def chat(self, *args, **kwargs):
@@ -181,8 +179,8 @@ class TestAiAnalyze:
     def test_reanalyze_returns_existing(self, auth_headers, client, monkeypatch):
         """已 COMPLETED 的复盘重复触发 AI 分析 → 直接返回既有结果（幂等）。"""
         calls = {"n": 0}
-        from app.services.ai_service import AIServiceNotConfigured
         from app.services import review_service
+        from app.services.ai_service import AIServiceNotConfigured
 
         class _StubOrchestrator:
             def chat(self, *args, **kwargs):
@@ -217,8 +215,11 @@ class TestReviewActionLinking:
 
         # 复盘可关联真实行动 ID（先建行动再复盘）
         review = _create_review(
-            client, auth_headers, idempotency="flow-review-2",
-            period_start="2026-08-10", period_end="2026-08-12",
+            client,
+            auth_headers,
+            idempotency="flow-review-2",
+            period_start="2026-08-10",
+            period_end="2026-08-12",
             action_refs=[action["id"]],
         ).json()
         assert review["action_refs"] == {"action_ids": [action["id"]]}

@@ -5,6 +5,7 @@
 职位记录，包含职位代码、招录人数、报名人数、报录比、学历/专业/政治面貌/年龄/
 工作年限要求、笔试科目、薪资估计等关键字段。
 """
+
 import random
 from uuid import UUID
 
@@ -52,9 +53,17 @@ _EDU_REQUIREMENTS = ["本科", "本科及以上", "硕士研究生"]
 
 # 专业要求候选
 _MAJOR_REQUIREMENTS = [
-    "经济学类", "法学类", "计算机类", "中国语言文学类",
-    "工商管理类", "统计学类", "会计学", "财政学类",
-    "新闻传播学类", "公共管理类", "不限专业",
+    "经济学类",
+    "法学类",
+    "计算机类",
+    "中国语言文学类",
+    "工商管理类",
+    "统计学类",
+    "会计学",
+    "财政学类",
+    "新闻传播学类",
+    "公共管理类",
+    "不限专业",
 ]
 
 # 政治面貌要求候选
@@ -122,25 +131,27 @@ class GuokaoCrawler(BaseCrawler):
                     hiring = random.randint(1, 5)
                     register = random.randint(50, 500)
                     ratio = round(register / hiring)
-                    raw.append({
-                        "region": region,
-                        "department": department,
-                        "department_type": dept_type,
-                        "post_name": _POST_NAMES[(combo_index + i) % len(_POST_NAMES)],
-                        "post_code": str(post_code_seq),
-                        "hiring_count": hiring,
-                        "register_count": register,
-                        "admission_ratio_num": ratio,
-                        "education_requirement": random.choice(_EDU_REQUIREMENTS),
-                        "major_requirement": random.choice(_MAJOR_REQUIREMENTS),
-                        "political_requirement": random.choice(_POLITICAL_REQUIREMENTS),
-                        "age_requirement": "18-35周岁",
-                        "work_year_requirement": random.choice(_WORK_YEAR_REQUIREMENTS),
-                        "exam_subjects": "行政职业能力测验,申论",
-                        "salary_low": random.randint(8000, 12000),
-                        "salary_high": random.randint(13000, 20000),
-                        "source_url": "https://www.scs.gov.cn/",
-                    })
+                    raw.append(
+                        {
+                            "region": region,
+                            "department": department,
+                            "department_type": dept_type,
+                            "post_name": _POST_NAMES[(combo_index + i) % len(_POST_NAMES)],
+                            "post_code": str(post_code_seq),
+                            "hiring_count": hiring,
+                            "register_count": register,
+                            "admission_ratio_num": ratio,
+                            "education_requirement": random.choice(_EDU_REQUIREMENTS),
+                            "major_requirement": random.choice(_MAJOR_REQUIREMENTS),
+                            "political_requirement": random.choice(_POLITICAL_REQUIREMENTS),
+                            "age_requirement": "18-35周岁",
+                            "work_year_requirement": random.choice(_WORK_YEAR_REQUIREMENTS),
+                            "exam_subjects": "行政职业能力测验,申论",
+                            "salary_low": random.randint(8000, 12000),
+                            "salary_high": random.randint(13000, 20000),
+                            "source_url": "https://www.scs.gov.cn/",
+                        }
+                    )
                     post_code_seq += 1
         return raw
 
@@ -166,27 +177,29 @@ class GuokaoCrawler(BaseCrawler):
                 f"笔试科目：{r['exam_subjects']}",
                 f"数据来源：{r['source_url']}",
             ]
-            parsed.append({
-                "region": r["region"],
-                "department": r["department"],
-                "post_name": r["post_name"],
-                "exam_type": "国考",
-                "real_competition": _competition_level(ratio),
-                "treatment_level": "medium",
-                "promotion_speed": "medium",
-                "workload": "medium",
-                "radish_post": "medium",
-                "service_period": "5年",
-                "admission_ratio": f"{ratio}:1",
-                "salary_estimate": salary,
-                "department_tier": "中央部委" if r["region"] == "中央" else "中央直属",
-                "work_content": _WORK_CONTENT[r["department_type"]],
-                "insider_notes": "\n".join(notes_lines),
-                "risk_warnings": [],
-                "data_sources": ["国家公务员局", r["source_url"]],
-                "tags": ["国考", r["region"], r["department_type"]],
-                "ai_summary": f"{r['department']}{r['post_name']}岗位，报录比{ratio}:1，薪资{salary}",
-            })
+            parsed.append(
+                {
+                    "region": r["region"],
+                    "department": r["department"],
+                    "post_name": r["post_name"],
+                    "exam_type": "国考",
+                    "real_competition": _competition_level(ratio),
+                    "treatment_level": "medium",
+                    "promotion_speed": "medium",
+                    "workload": "medium",
+                    "radish_post": "medium",
+                    "service_period": "5年",
+                    "admission_ratio": f"{ratio}:1",
+                    "salary_estimate": salary,
+                    "department_tier": "中央部委" if r["region"] == "中央" else "中央直属",
+                    "work_content": _WORK_CONTENT[r["department_type"]],
+                    "insider_notes": "\n".join(notes_lines),
+                    "risk_warnings": [],
+                    "data_sources": ["国家公务员局", r["source_url"]],
+                    "tags": ["国考", r["region"], r["department_type"]],
+                    "ai_summary": f"{r['department']}{r['post_name']}岗位，报录比{ratio}:1，薪资{salary}",
+                }
+            )
         return parsed
 
     def store(self, items: list[dict], db: Session) -> int:

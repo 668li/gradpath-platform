@@ -18,7 +18,6 @@ from starlette.middleware.gzip import GZipMiddleware
 
 from app.config import settings
 from app.core.deps import get_current_user
-from app.core.exceptions import BusinessError
 from app.core.logging import correlation_id_var, request_id_var, setup_logging
 from app.core.security_headers import SecurityHeadersMiddleware
 from app.core.websocket_manager import manager as ws_manager
@@ -69,6 +68,7 @@ _storage_uri = "memory://"
 if settings.REDIS_URL:
     try:
         import redis as _redis_check
+
         _r = _redis_check.from_url(settings.REDIS_URL)
         _r.ping()
         _storage_uri = settings.REDIS_URL
@@ -127,6 +127,7 @@ CACHE_CONTROL_MAP: dict[str, str] = {
     "/api/career-profile": "private, max-age=60",
 }
 
+
 @app.middleware("http")
 async def cache_control_middleware(request: Request, call_next):
     response = await call_next(request)
@@ -137,6 +138,7 @@ async def cache_control_middleware(request: Request, call_next):
                 response.headers["Cache-Control"] = directive
                 break
     return response
+
 
 # ----------------------------------------------------------------------
 # 请求日志中间件 — 为每个请求注入 request_id 并记录方法/路径/状态/耗时
@@ -165,6 +167,7 @@ async def request_logging_middleware(request: Request, call_next):
     # Record metrics — 同时写入 prometheus_client 与旧版 /api/metrics
     try:
         from app.metrics import record_http_request
+
         record_http_request(
             request.method,
             request.url.path,
@@ -191,15 +194,19 @@ def prometheus_metrics_endpoint(
     多 worker 模式下通过 MultiProcessCollector 聚合所有 worker 指标。
     """
     from app.metrics import render_metrics
+
     body, content_type = render_metrics()
     return Response(content=body, media_type=content_type)
+
 
 # ----------------------------------------------------------------------
 # 路由自动发现：扫描 app.api 下所有模块的 router 并注册
 # 新增 API 端点只需创建带 router 的 .py 文件，无需修改 main.py
 # ----------------------------------------------------------------------
 from app.api import auto_discover_routers
+
 auto_discover_routers(app)
+
 
 # ----------------------------------------------------------------------
 # MCP Server — 暴露核心 GradPath 工具给 AI 代理
@@ -220,8 +227,9 @@ class MCPAuthMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(self, request: Request, call_next):
-        from app.core.security import decode_token
         from jose.exceptions import JWTError
+
+        from app.core.security import decode_token
 
         # 优先从 Authorization 头解析 Bearer token
         auth_header = request.headers.get("authorization") or ""
@@ -245,12 +253,14 @@ class MCPAuthMiddleware(BaseHTTPMiddleware):
         request.state.user_id = payload.get("sub")
         # 安全修复 C1: 同步写入 ContextVar，MCP 工具只能访问认证用户自己的数据
         from app.services.mcp_service import set_mcp_user_id
+
         set_mcp_user_id(payload.get("sub"))
         return await call_next(request)
 
 
 try:
     from mcp.server.fastmcp import FastMCP
+
     from app.services.mcp_service import register_mcp_tools
 
     mcp = FastMCP("GradPath", instructions="GradPath 职业规划平台 — 考研/考公/就业一体化工具集")
@@ -285,13 +295,12 @@ if settings.ENVIRONMENT == "development":
 if settings.REDIS_URL:
     try:
         import redis as _redis_module
+
         _r = _redis_module.from_url(settings.REDIS_URL)
         _r.ping()
         logger.info("Redis 启动检查通过")
     except Exception as _e:
-        logger.warning(
-            "Redis 启动检查失败（不阻止启动，Redis 可能稍后启动）: %s", _e
-        )
+        logger.warning("Redis 启动检查失败（不阻止启动，Redis 可能稍后启动）: %s", _e)
 
 
 # ----------------------------------------------------------------------
@@ -317,6 +326,7 @@ async def _seed_default_crawler_schedules():
     """补齐新源默认每日 cron 定时任务。"""
     try:
         from app.api.crawlers import seed_default_schedules
+
         seed_default_schedules()
     except Exception as e:
         logger.warning("补齐默认按日定时任务失败（不影响启动）: %s", e)
@@ -377,7 +387,12 @@ def ready(db: Session = Depends(get_db)):
     # Redis (optional)
     try:
         import redis
-        r = redis.from_url(settings.REDIS_URL) if hasattr(settings, "REDIS_URL") and settings.REDIS_URL else None
+
+        r = (
+            redis.from_url(settings.REDIS_URL)
+            if hasattr(settings, "REDIS_URL") and settings.REDIS_URL
+            else None
+        )
         if r:
             r.ping()
             checks["redis"] = "connected"
@@ -416,7 +431,7 @@ async def websocket_endpoint(
     for sub in sec_protocol.split(","):
         sub = sub.strip()
         if sub.startswith("bearer."):
-            token = sub[len("bearer."):]
+            token = sub[len("bearer.") :]
             break
 
     if not token:
@@ -427,6 +442,7 @@ async def websocket_endpoint(
     # 验证 token 并确认 user_id 与 token 指向的用户一致
     try:
         from app.core.security import decode_token
+
         payload = decode_token(token)
         if payload.get("type") != "access":
             await websocket.close(code=4003, reason="Invalid token type")
@@ -447,6 +463,7 @@ async def websocket_endpoint(
     try:
         from app.database import SessionLocal
         from app.models.notification import Notification as NotificationModel
+
         db = SessionLocal()
         try:
             unread_count = (
@@ -454,10 +471,14 @@ async def websocket_endpoint(
                 .filter(NotificationModel.user_id == user_id, NotificationModel.read == False)
                 .count()
             )
-            await websocket.send_text(json.dumps({
-                "type": "notification_init",
-                "unread_count": unread_count,
-            }))
+            await websocket.send_text(
+                json.dumps(
+                    {
+                        "type": "notification_init",
+                        "unread_count": unread_count,
+                    }
+                )
+            )
         finally:
             db.close()
     except Exception as e:
@@ -471,41 +492,54 @@ async def websocket_endpoint(
             try:
                 message = json.loads(data)
             except json.JSONDecodeError:
-                await websocket.send_text(json.dumps({
-                    "type": "error",
-                    "detail": "invalid json",
-                }))
+                await websocket.send_text(
+                    json.dumps(
+                        {
+                            "type": "error",
+                            "detail": "invalid json",
+                        }
+                    )
+                )
                 continue
 
             if not isinstance(message, dict) or not isinstance(message.get("action"), str):
-                await websocket.send_text(json.dumps({
-                    "type": "error",
-                    "detail": "invalid message format",
-                }))
+                await websocket.send_text(
+                    json.dumps(
+                        {
+                            "type": "error",
+                            "detail": "invalid message format",
+                        }
+                    )
+                )
                 continue
 
             action = message["action"]
             if action not in {"subscribe_task", "ping", "get_unread_count"}:
-                await websocket.send_text(json.dumps({
-                    "type": "error",
-                    "detail": f"unknown action: {action}",
-                }))
+                await websocket.send_text(
+                    json.dumps(
+                        {
+                            "type": "error",
+                            "detail": f"unknown action: {action}",
+                        }
+                    )
+                )
                 continue
 
             # 处理订阅任务状态
             if action == "subscribe_task":
                 task_id = message.get("task_id")
                 if not isinstance(task_id, str) or not task_id or len(task_id) > 64:
-                    await websocket.send_text(json.dumps({
-                        "type": "error",
-                        "detail": "invalid task_id",
-                    }))
+                    await websocket.send_text(
+                        json.dumps(
+                            {
+                                "type": "error",
+                                "detail": "invalid task_id",
+                            }
+                        )
+                    )
                     continue
                 ws_manager.subscribe_task(websocket, task_id)
-                await websocket.send_text(json.dumps({
-                    "type": "subscribed",
-                    "task_id": task_id
-                }))
+                await websocket.send_text(json.dumps({"type": "subscribed", "task_id": task_id}))
 
             # 处理心跳
             elif action == "ping":
@@ -516,16 +550,19 @@ async def websocket_endpoint(
                 try:
                     from app.database import get_db
                     from app.models.notification import Notification as _NM
+
                     with next(get_db()) as _db:
                         _cnt = (
-                            _db.query(_NM)
-                            .filter(_NM.user_id == user_id, _NM.read == False)
-                            .count()
+                            _db.query(_NM).filter(_NM.user_id == user_id, _NM.read == False).count()
                         )
-                        await websocket.send_text(json.dumps({
-                            "type": "notification_init",
-                            "unread_count": _cnt,
-                        }))
+                        await websocket.send_text(
+                            json.dumps(
+                                {
+                                    "type": "notification_init",
+                                    "unread_count": _cnt,
+                                }
+                            )
+                        )
                 except Exception as e:
                     logger.warning("获取未读通知数失败: %s", e)
     except WebSocketDisconnect:

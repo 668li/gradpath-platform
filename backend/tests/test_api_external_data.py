@@ -1,18 +1,19 @@
 # backend/tests/test_api_external_data.py
 """外部数据查询 API 测试 — 公司/薪资/市场数据。"""
+
 import pytest
 
-from app.models.company import Company, CompanySize
+from app.models.company import Company
 from app.models.market_data import MarketData
-from app.models.salary_benchmark import ExperienceLevel, SalaryBenchmark
+from app.models.salary_benchmark import SalaryBenchmark
 from app.seed.seed_companies import seed_companies
 from app.seed.seed_market_data import seed_market_data
 from app.seed.seed_salary_benchmarks import seed_salary_benchmarks
 
-
 # ======================================================================
 # 辅助函数
 # ======================================================================
+
 
 @pytest.fixture
 def seeded_db(db_session):
@@ -26,6 +27,7 @@ def seeded_db(db_session):
 # ======================================================================
 # 公司列表查询
 # ======================================================================
+
 
 class TestCompanies:
     def test_list_companies_default(self, seeded_db, client):
@@ -102,6 +104,7 @@ class TestCompanies:
 # 薪资基准查询
 # ======================================================================
 
+
 class TestSalaryBenchmarks:
     def test_list_salary_default(self, seeded_db, client):
         """默认查询返回薪资基准列表。"""
@@ -118,9 +121,7 @@ class TestSalaryBenchmarks:
 
     def test_filter_by_company(self, seeded_db, client):
         """按公司筛选薪资基准。"""
-        resp = client.get(
-            "/api/salary-benchmarks", params={"company": "腾讯"}
-        )
+        resp = client.get("/api/salary-benchmarks", params={"company": "腾讯"})
         assert resp.status_code == 200
         data = resp.json()
         assert len(data) > 0
@@ -129,9 +130,7 @@ class TestSalaryBenchmarks:
 
     def test_filter_by_position(self, seeded_db, client):
         """按岗位筛选薪资基准。"""
-        resp = client.get(
-            "/api/salary-benchmarks", params={"position": "自动化测试工程师"}
-        )
+        resp = client.get("/api/salary-benchmarks", params={"position": "自动化测试工程师"})
         assert resp.status_code == 200
         data = resp.json()
         assert len(data) > 0
@@ -181,6 +180,7 @@ class TestSalaryBenchmarks:
 # ======================================================================
 # 市场数据查询
 # ======================================================================
+
 
 class TestMarketData:
     def test_list_market_data_default(self, seeded_db, client):
@@ -233,6 +233,7 @@ class TestMarketData:
 # 种子数据加载验证
 # ======================================================================
 
+
 class TestSeedDataLoaded:
     def test_companies_seed_loaded(self, seeded_db):
         """种子数据加载后公司数据存在。"""
@@ -240,7 +241,16 @@ class TestSeedDataLoaded:
         assert count >= 50
         # 验证知名公司存在
         names = {c.name for c in seeded_db.query(Company).all()}
-        for expected in ["腾讯", "阿里巴巴", "字节跳动", "华为", "工商银行", "微软", "国家电网", "大疆"]:
+        for expected in [
+            "腾讯",
+            "阿里巴巴",
+            "字节跳动",
+            "华为",
+            "工商银行",
+            "微软",
+            "国家电网",
+            "大疆",
+        ]:
             assert expected in names, f"缺失公司: {expected}"
 
     def test_salary_benchmarks_seed_loaded(self, seeded_db):
@@ -248,13 +258,9 @@ class TestSeedDataLoaded:
         count = seeded_db.query(SalaryBenchmark).count()
         assert count >= 200
         # 验证覆盖多公司多岗位
-        companies = {
-            s.company for s in seeded_db.query(SalaryBenchmark).all()
-        }
+        companies = {s.company for s in seeded_db.query(SalaryBenchmark).all()}
         assert len(companies) >= 20
-        positions = {
-            s.position for s in seeded_db.query(SalaryBenchmark).all()
-        }
+        positions = {s.position for s in seeded_db.query(SalaryBenchmark).all()}
         assert len(positions) >= 10
 
     def test_market_data_seed_loaded(self, seeded_db):

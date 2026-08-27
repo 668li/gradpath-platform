@@ -9,7 +9,7 @@ with sync_playwright() as p:
     browser = p.chromium.launch(headless=True)
     ctx = browser.new_context(viewport={"width": 1280, "height": 900})
     page = ctx.new_page()
-    
+
     # Login
     page.goto('http://localhost:3000/login', wait_until='networkidle', timeout=30000)
     page.wait_for_timeout(1000)
@@ -24,7 +24,7 @@ with sync_playwright() as p:
                 break
     page.wait_for_timeout(3000)
     print(f'Login: {page.url}')
-    
+
     # Test 1: Grad War Room - Dark Knowledge with expanded data
     page.goto('http://localhost:3000/grad-war-room', wait_until='networkidle', timeout=30000)
     page.wait_for_timeout(2000)
@@ -36,13 +36,13 @@ with sync_playwright() as p:
         body = page.inner_text('body')
         stages = sum(1 for s in ['决策', '择校', '备考', '复试', '调剂', '职业', '心理'] if s in body)
         print(f'Dark Knowledge: {stages} stages visible')
-    
+
     # Test 2: Crawler Dashboard
     page.goto('http://localhost:3000/admin/crawlers', wait_until='networkidle', timeout=30000)
     page.wait_for_timeout(2000)
     page.screenshot(path=f'{SS}\\final-crawler-dashboard.png', full_page=True)
     print(f'Crawler dashboard: loaded')
-    
+
     # Test 3: Kaoyan Schools (more schools)
     page.goto('http://localhost:3000/kaoyan/schools', wait_until='networkidle', timeout=30000)
     page.wait_for_timeout(2000)
@@ -50,7 +50,7 @@ with sync_playwright() as p:
     body = page.inner_text('body')
     has_data = '大学' in body
     print(f'Schools page: has data = {has_data}')
-    
+
     # Test 4: API data verification
     import urllib.request, json
     endpoints = {
@@ -61,7 +61,7 @@ with sync_playwright() as p:
         'Experience Posts': 'http://localhost:8001/api/kaoyan/experience-posts',
         'QA': 'http://localhost:8001/api/kaoyan/qa',
     }
-    
+
     print('\nAPI Data:')
     for name, url in endpoints.items():
         try:
@@ -77,6 +77,6 @@ with sync_playwright() as p:
             print(f'  {name}: {count}')
         except Exception as e:
             print(f'  {name}: ERROR - {str(e)[:60]}')
-    
+
     browser.close()
     print('\nAll verification complete!')

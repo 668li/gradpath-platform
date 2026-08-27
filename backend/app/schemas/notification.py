@@ -1,6 +1,6 @@
 """通知的 Pydantic Schema 定义。"""
+
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, field_validator
 
@@ -12,7 +12,7 @@ class NotificationResponse(BaseModel):
     content: str
     read: bool
     archived: bool = False
-    archived_at: Optional[datetime] = None
+    archived_at: datetime | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -47,5 +47,6 @@ class NotificationCreate(BaseModel):
 
 class NotificationArchiveResponse(BaseModel):
     """归档操作响应。"""
+
     message: str
     archived_count: int = 0

@@ -1,4 +1,5 @@
 """用户屏蔽关系模型 — 社区治理。"""
+
 import uuid
 
 from sqlalchemy import ForeignKey, UniqueConstraint
@@ -12,9 +13,7 @@ class BlockRelation(UUIDMixin, TimestampMixin, Base):
     """blocker_id 屏蔽 blocked_id（单向）。"""
 
     __tablename__ = "block_relations"
-    __table_args__ = (
-        UniqueConstraint("blocker_id", "blocked_id", name="uq_block_relation_pair"),
-    )
+    __table_args__ = (UniqueConstraint("blocker_id", "blocked_id", name="uq_block_relation_pair"),)
 
     blocker_id: Mapped[uuid.UUID] = mapped_column(
         GUID(), ForeignKey("users.id"), nullable=False, index=True

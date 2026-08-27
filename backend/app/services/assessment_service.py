@@ -9,6 +9,7 @@
 题目内置在 `app/services/assessment_data/` 下，无需数据库表。
 提交答案后按测评类型调用对应计算函数，生成结果编码、摘要与推荐方向。
 """
+
 from collections import Counter
 
 from app.services.assessment_data.big_five_questions import (
@@ -16,18 +17,9 @@ from app.services.assessment_data.big_five_questions import (
     BIG_FIVE_ITEM_DIMENSIONS,
     BIG_FIVE_QUESTIONS,
 )
-from app.services.assessment_data.disc_questions import (
-    DISC_QUESTIONS,
-    DISC_TYPES,
-)
-from app.services.assessment_data.holland_questions import (
-    HOLLAND_DESCRIPTIONS,
-    HOLLAND_QUESTIONS,
-)
-from app.services.assessment_data.mbti_questions import (
-    MBTI_QUESTIONS,
-    MBTI_TYPES,
-)
+from app.services.assessment_data.disc_questions import DISC_QUESTIONS, DISC_TYPES
+from app.services.assessment_data.holland_questions import HOLLAND_DESCRIPTIONS, HOLLAND_QUESTIONS
+from app.services.assessment_data.mbti_questions import MBTI_QUESTIONS, MBTI_TYPES
 
 # ----------------------------------------------------------------------
 # 向后兼容：保留 HOLLAND_QUESTIONS 顶级导出
@@ -57,7 +49,7 @@ def calculate_holland_result(answers: dict) -> dict:
     for code in top3:
         info = HOLLAND_DESCRIPTIONS.get(code, {})
         parts.append(f"{info.get('name', code)}({code})：{info.get('desc', '')}")
-        directions.extend(info.get('directions', []))
+        directions.extend(info.get("directions", []))
 
     summary = "你的职业兴趣类型为 " + result_code + "。\n" + "；".join(parts)
 

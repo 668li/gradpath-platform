@@ -1,4 +1,5 @@
 import psycopg2
+
 conn = psycopg2.connect("postgresql://gradpath:changeme@db:5432/gradpath")
 cur = conn.cursor()
 # 获取test2用户id
@@ -16,4 +17,5 @@ if uid:
     # 经验帖
     cur.execute("SELECT count(*) FROM experience_posts WHERE user_id=%s", (uid,))
     print("experience_posts:", cur.fetchone()[0])
-cur.close(); conn.close()
+cur.close()
+conn.close()

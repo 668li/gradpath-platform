@@ -22,9 +22,18 @@ def _paths_three() -> list[dict]:
 
 # Holland RIA 答案 — 推荐技术/研究类方向
 _RIA_ANSWERS = {
-    "q1": "R", "q2": "I", "q3": "A", "q4": "R",
-    "q5": "I", "q6": "A", "q7": "R", "q8": "I",
-    "q9": "A", "q10": "R", "q11": "I", "q12": "A",
+    "q1": "R",
+    "q2": "I",
+    "q3": "A",
+    "q4": "R",
+    "q5": "I",
+    "q6": "A",
+    "q7": "R",
+    "q8": "I",
+    "q9": "A",
+    "q10": "R",
+    "q11": "I",
+    "q12": "A",
 }
 
 
@@ -107,12 +116,19 @@ class TestComparePaths:
         )
         data = resp.json()
         required = {
-            "path_type", "target_role",
-            "income_1y", "income_3y", "income_5y",
-            "risk_level", "risk_description",
-            "growth_score", "time_cost_months",
-            "match_score", "match_description",
-            "pros", "cons",
+            "path_type",
+            "target_role",
+            "income_1y",
+            "income_3y",
+            "income_5y",
+            "risk_level",
+            "risk_description",
+            "growth_score",
+            "time_cost_months",
+            "match_score",
+            "match_description",
+            "pros",
+            "cons",
         }
         for m in data["metrics"]:
             missing = required - set(m.keys())
@@ -247,20 +263,34 @@ class TestServiceLayer:
 
         metrics = [
             {
-                "path_type": "kaoyan", "target_role": "算法工程师",
-                "income_1y": "0-5万", "income_3y": "15-25万", "income_5y": "25-40万",
-                "risk_level": "high", "risk_description": "录取率低",
-                "growth_score": 7, "time_cost_months": 12,
-                "match_score": 65, "match_description": "匹配",
-                "pros": [], "cons": [],
+                "path_type": "kaoyan",
+                "target_role": "算法工程师",
+                "income_1y": "0-5万",
+                "income_3y": "15-25万",
+                "income_5y": "25-40万",
+                "risk_level": "high",
+                "risk_description": "录取率低",
+                "growth_score": 7,
+                "time_cost_months": 12,
+                "match_score": 65,
+                "match_description": "匹配",
+                "pros": [],
+                "cons": [],
             },
             {
-                "path_type": "big_tech", "target_role": "大厂后端",
-                "income_1y": "20-35万", "income_3y": "35-55万", "income_5y": "50-80万",
-                "risk_level": "medium", "risk_description": "竞争激烈",
-                "growth_score": 9, "time_cost_months": 4,
-                "match_score": 70, "match_description": "匹配",
-                "pros": [], "cons": [],
+                "path_type": "big_tech",
+                "target_role": "大厂后端",
+                "income_1y": "20-35万",
+                "income_3y": "35-55万",
+                "income_5y": "50-80万",
+                "risk_level": "medium",
+                "risk_description": "竞争激烈",
+                "growth_score": 9,
+                "time_cost_months": 4,
+                "match_score": 70,
+                "match_description": "匹配",
+                "pros": [],
+                "cons": [],
             },
         ]
         rec = get_recommendation(metrics, holland_code="RIA")

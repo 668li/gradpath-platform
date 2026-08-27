@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Unified import script for ALL real scraped data into GradPath database.
 
 Reads all available JSON files, deduplicates, and imports into:
@@ -9,24 +8,26 @@ Reads all available JSON files, deduplicates, and imports into:
 Usage (inside Docker):
     docker exec gradpath-backend-1 python /app/app/crawlers/real_data/import_all_real.py
 """
-import sys
+
 import json
 import os
 import re
+import sys
 import uuid
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
 
 backend_dir = Path(__file__).parent.parent.parent.parent
 if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
+
 from app.database import Base, SessionLocal, engine
-from app.models.user import User
 from app.models.experience_post import ExperiencePost
 from app.models.knowledge_article import KnowledgeArticle
 from app.models.school import School
+from app.models.user import User
 
 SEED_USER_EMAIL = "realdata_seed@gradpath.local"
 SEED_USER_NAME = "真实数据采集"
@@ -61,12 +62,12 @@ DATA_DIR = os.path.dirname(os.path.abspath(__file__))
 def clean_content(raw):
     if not raw:
         return ""
-    text = re.sub(r'\{[^}]*\}', '', raw)
-    text = re.sub(r'/\*!.*?\*/', '', text)
-    text = re.sub(r'--tw-[^:]+:[^;]+;', '', text)
-    text = re.sub(r'!\[.*?\]\(.*?\)', '', text)
-    text = re.sub(r'\n{3,}', '\n\n', text)
-    text = re.sub(r' {2,}', ' ', text)
+    text = re.sub(r"\{[^}]*\}", "", raw)
+    text = re.sub(r"/\*!.*?\*/", "", text)
+    text = re.sub(r"--tw-[^:]+:[^;]+;", "", text)
+    text = re.sub(r"!\[.*?\]\(.*?\)", "", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    text = re.sub(r" {2,}", " ", text)
     return text.strip()
 
 
@@ -95,7 +96,7 @@ def load_json_file(filename):
         print(f"  [SKIP] {filename} not found")
         return None
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             data = json.load(f)
         print(f"  [OK] Loaded {filename}")
         return data
@@ -180,16 +181,18 @@ def collect_all_articles(sources):
             if year:
                 full_content += f"\n年份: {year}"
 
-            articles.append({
-                "title": title[:200],
-                "url": f"kaoyan_seed_{uuid.uuid4().hex[:8]}",
-                "content": full_content,
-                "summary": content[:200].replace("\n", " ").strip(),
-                "tags": ["经验分享", "kaoyan.com", university, major],
-                "category": "general",
-                "source": "kaoyan.com",
-                "scraped_at": "",
-            })
+            articles.append(
+                {
+                    "title": title[:200],
+                    "url": f"kaoyan_seed_{uuid.uuid4().hex[:8]}",
+                    "content": full_content,
+                    "summary": content[:200].replace("\n", " ").strip(),
+                    "tags": ["经验分享", "kaoyan.com", university, major],
+                    "category": "general",
+                    "source": "kaoyan.com",
+                    "scraped_at": "",
+                }
+            )
 
     return articles
 
@@ -345,7 +348,7 @@ def import_schools(db, sources, existing_school_names):
 
             key_majors = [m.get("name", "") for m in majors_list[:10]]
 
-            slug = re.sub(r'[^\w\u4e00-\u9fff]', '', name)[:50]
+            slug = re.sub(r"[^\w\u4e00-\u9fff]", "", name)[:50]
 
             school = School(
                 id=uuid.uuid4(),
@@ -442,6 +445,7 @@ def main():
         print(f"\nERROR: 导入失败: {e}")
         db.rollback()
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
     finally:

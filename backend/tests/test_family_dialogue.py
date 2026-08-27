@@ -309,10 +309,7 @@ class TestServiceLayer:
 
     def test_all_archetypes_have_replies(self, db_session):
         """4 种父母类型都有预设回复模板。"""
-        from app.services.family_dialogue_service import (
-            PARENT_ARCHETYPE_LABELS,
-            _PRACTICE_REPLIES,
-        )
+        from app.services.family_dialogue_service import _PRACTICE_REPLIES, PARENT_ARCHETYPE_LABELS
 
         for archetype in PARENT_ARCHETYPE_LABELS:
             assert archetype in _PRACTICE_REPLIES

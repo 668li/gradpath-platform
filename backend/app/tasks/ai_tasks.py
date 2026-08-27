@@ -2,6 +2,7 @@
 
 任务路由：app.tasks.ai_tasks.* → ai 队列
 """
+
 from __future__ import annotations
 
 import logging
@@ -34,18 +35,21 @@ def generate_ai_advice_async(user_id: str, decision_id: str):
     db = SessionLocal()
     try:
         # 延迟导入避免循环依赖
-        from app.services.decision_advice_service import generate_advice_for_decision
         from app.core.websocket_manager import manager as ws_manager
+        from app.services.decision_advice_service import generate_advice_for_decision
 
         advice = generate_advice_for_decision(db, user_uuid, decision_uuid)
 
         # 推送结果给前端
         try:
-            ws_manager.send_personal_sync(str(user_uuid), {
-                "type": "ai_advice_ready",
-                "decision_id": str(decision_uuid),
-                "advice": advice,
-            })
+            ws_manager.send_personal_sync(
+                str(user_uuid),
+                {
+                    "type": "ai_advice_ready",
+                    "decision_id": str(decision_uuid),
+                    "advice": advice,
+                },
+            )
         except Exception as e:
             logger.warning("AI 建议推送失败: %s", e)
 

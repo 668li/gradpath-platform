@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Phase 2: Scrape individual article pages discovered in Phase 1.
 
 Reads discovered_urls.json, scrapes each article, saves to firecrawl_scraped.json.
@@ -6,12 +5,13 @@ Reads discovered_urls.json, scrapes each article, saves to firecrawl_scraped.jso
 Usage:
     python -m app.crawlers.real_data.scrape_articles
 """
-import os
-import sys
+
 import json
-import re
-import time
 import logging
+import os
+import re
+import sys
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -42,21 +42,21 @@ def clean_markdown(content: str) -> str:
     """Remove CSS noise and clean markdown."""
     if not content:
         return ""
-    text = re.sub(r'\{[^}]*\}', '', content)
-    text = re.sub(r'/\*!.*?\*/', '', text)
-    text = re.sub(r'--tw-[^:]+:[^;]+;', '', text)
-    text = re.sub(r'\n{3,}', '\n\n', text)
-    text = re.sub(r' {2,}', ' ', text)
-    lines = text.split('\n')
+    text = re.sub(r"\{[^}]*\}", "", content)
+    text = re.sub(r"/\*!.*?\*/", "", text)
+    text = re.sub(r"--tw-[^:]+:[^;]+;", "", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    text = re.sub(r" {2,}", " ", text)
+    lines = text.split("\n")
     clean_lines = []
     for line in lines:
         stripped = line.strip()
-        if stripped.startswith('{') or stripped.startswith('}') or stripped.startswith('/*'):
+        if stripped.startswith("{") or stripped.startswith("}") or stripped.startswith("/*"):
             continue
-        if 'font-family' in stripped or 'font-size' in stripped:
+        if "font-family" in stripped or "font-size" in stripped:
             continue
         clean_lines.append(line)
-    return '\n'.join(clean_lines).strip()
+    return "\n".join(clean_lines).strip()
 
 
 def classify_article(title: str, content: str) -> str:
@@ -70,15 +70,15 @@ def classify_article(title: str, content: str) -> str:
 
 def extract_title(md: str) -> str:
     """Extract title from markdown."""
-    for line in md.split('\n'):
+    for line in md.split("\n"):
         stripped = line.strip()
-        if stripped.startswith('# ') or stripped.startswith('## '):
-            t = stripped.lstrip('# ').strip()
-            if len(t) > 4 and not t.startswith('{') and not t.startswith('!'):
+        if stripped.startswith("# ") or stripped.startswith("## "):
+            t = stripped.lstrip("# ").strip()
+            if len(t) > 4 and not t.startswith("{") and not t.startswith("!"):
                 return t[:200]
     # Try to find title from link text
-    for line in md.split('\n'):
-        m = re.search(r'\[([^\]]{10,})\]\(https://www\.kaoyan\.com/article/', line)
+    for line in md.split("\n"):
+        m = re.search(r"\[([^\]]{10,})\]\(https://www\.kaoyan\.com/article/", line)
         if m:
             return m.group(1)[:200]
     return ""
@@ -94,13 +94,14 @@ def main():
         print(f"ERROR: {URLS_FILE} not found. Run discover_urls.py first.")
         sys.exit(1)
 
-    with open(URLS_FILE, 'r', encoding='utf-8') as f:
+    with open(URLS_FILE, encoding="utf-8") as f:
         url_data = json.load(f)
 
-    urls = url_data['urls']
+    urls = url_data["urls"]
     print(f"\nLoaded {len(urls)} URLs to scrape")
 
     from firecrawl import FirecrawlApp
+
     app = FirecrawlApp(api_key=FIRECRAWL_API_KEY)
 
     articles = []
@@ -111,10 +112,10 @@ def main():
         logger.info(f"[{i+1}/{len(urls)}] Scraping: {url}")
         try:
             result = app.scrape(url, formats=["markdown"])
-            md = getattr(result, 'markdown', '') or ""
+            md = getattr(result, "markdown", "") or ""
 
             if not md or len(md) < 100:
-                logger.warning(f"  Empty/short content, skipping")
+                logger.warning("  Empty/short content, skipping")
                 errors += 1
                 continue
 
@@ -122,14 +123,16 @@ def main():
             content = clean_markdown(md)
             category = classify_article(title, content)
 
-            articles.append({
-                "title": title[:200] if title else "未命名文章",
-                "url": url,
-                "category": category,
-                "content": content,
-                "source": "kaoyan.com",
-                "scraped_at": datetime.now().isoformat(),
-            })
+            articles.append(
+                {
+                    "title": title[:200] if title else "未命名文章",
+                    "url": url,
+                    "category": category,
+                    "content": content,
+                    "source": "kaoyan.com",
+                    "scraped_at": datetime.now().isoformat(),
+                }
+            )
 
             logger.info(f"  OK: {title[:50]} ({len(content)} chars)")
 
@@ -145,7 +148,7 @@ def main():
             time.sleep(2)
 
     # Also scrape yanzhao
-    print(f"\nScraping yanzhao...")
+    print("\nScraping yanzhao...")
     yanzhao_urls = [
         "https://yz.chsi.com.cn/kyzx/",
         "https://yz.chsi.com.cn/zsml/",
@@ -153,18 +156,20 @@ def main():
     for url in yanzhao_urls:
         try:
             result = app.scrape(url, formats=["markdown"])
-            md = getattr(result, 'markdown', '') or ""
+            md = getattr(result, "markdown", "") or ""
             if md and len(md) > 100:
                 title = extract_title(md) or "研招网信息"
                 content = clean_markdown(md)
-                articles.append({
-                    "title": title[:200],
-                    "url": url,
-                    "category": "政策",
-                    "content": content,
-                    "source": "yz.chsi.com.cn",
-                    "scraped_at": datetime.now().isoformat(),
-                })
+                articles.append(
+                    {
+                        "title": title[:200],
+                        "url": url,
+                        "category": "政策",
+                        "content": content,
+                        "source": "yz.chsi.com.cn",
+                        "scraped_at": datetime.now().isoformat(),
+                    }
+                )
             time.sleep(3)
         except Exception as e:
             logger.error(f"Yanzhao failed: {e}")
@@ -183,13 +188,13 @@ def main():
     cats = {}
     titled = 0
     for a in articles:
-        cat = a.get('category', '?')
+        cat = a.get("category", "?")
         cats[cat] = cats.get(cat, 0) + 1
-        if a['title'] != '未命名文章':
+        if a["title"] != "未命名文章":
             titled += 1
 
     print(f"\n{'=' * 60}")
-    print(f"Scraping complete!")
+    print("Scraping complete!")
     print(f"  Total: {len(articles)} articles")
     print(f"  Titled: {titled}")
     print(f"  Errors: {errors}")

@@ -22,6 +22,7 @@ Docker 调用:
     3. server_default 仅在模型显式声明时写入 SQL，不臆造默认值
     4. 默认行为是 --check，不修改任何东西
 """
+
 from __future__ import annotations
 
 import argparse
@@ -139,9 +140,7 @@ def compile_server_default(col_obj: Any) -> str | None:
     # SQLAlchemy 表达式对象（func.now()、text()、ColumnElement 等）
     if hasattr(arg, "compile"):
         try:
-            return str(
-                arg.compile(dialect=dialect, compile_kwargs={"literal_binds": True})
-            ).strip()
+            return str(arg.compile(dialect=dialect, compile_kwargs={"literal_binds": True})).strip()
         except Exception as exc:  # noqa: BLE001
             return f"<server_default compile failed: {exc}>"
 
@@ -233,18 +232,14 @@ def main() -> int:
         ),
     )
     mode = parser.add_mutually_exclusive_group()
-    mode.add_argument(
-        "--check", action="store_true", help="仅检测不一致（CI/CD 友好，退出码 0/1）"
-    )
+    mode.add_argument("--check", action="store_true", help="仅检测不一致（CI/CD 友好，退出码 0/1）")
     mode.add_argument(
         "--generate", action="store_true", help="生成 ALTER TABLE SQL，输出到 stdout，不执行"
     )
     mode.add_argument(
         "--apply", action="store_true", help="执行 ALTER TABLE ADD COLUMN（每表独立事务）"
     )
-    mode.add_argument(
-        "--dry-run", action="store_true", help="显示会执行什么 SQL，但不实际执行"
-    )
+    mode.add_argument("--dry-run", action="store_true", help="显示会执行什么 SQL，但不实际执行")
     args = parser.parse_args()
 
     # 默认行为：--check

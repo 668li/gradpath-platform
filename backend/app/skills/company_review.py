@@ -1,5 +1,6 @@
 # backend/app/skills/company_review.py
 """公司评价分析 Skill — 分析用户对公司的评价，提取关键信息，帮助其他用户了解公司真实情况。"""
+
 from __future__ import annotations
 
 import json
@@ -8,8 +9,14 @@ import re
 from app.skills.base import BaseSkill
 
 ACTIVATE_KEYWORDS = [
-    "公司评价", "公司口碑", "公司怎么样", "company review",
-    "工作体验", "公司评价分析", "公司测评", "工作环境评价",
+    "公司评价",
+    "公司口碑",
+    "公司怎么样",
+    "company review",
+    "工作体验",
+    "公司评价分析",
+    "公司测评",
+    "工作环境评价",
 ]
 
 OUTPUT_FORMAT = """\
@@ -118,6 +125,7 @@ def _safe_parse_json(content: str) -> dict:
 
 def _coerce_company_review(raw: dict) -> dict:
     """将解析后的 company_review dict 强制转换为标准结构。"""
+
     def _as_list(v) -> list:
         return v if isinstance(v, list) else []
 

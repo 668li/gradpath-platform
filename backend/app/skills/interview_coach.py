@@ -1,5 +1,6 @@
 # backend/app/skills/interview_coach.py
 """面试教练 Skill — 提供面试技巧指导、常见问题解析、面试心态调整建议。"""
+
 from __future__ import annotations
 
 import json
@@ -8,7 +9,11 @@ import re
 from app.skills.base import BaseSkill
 
 ACTIVATE_KEYWORDS = [
-    "面试技巧", "面试准备", "面试心态", "面试指导", "interview coach",
+    "面试技巧",
+    "面试准备",
+    "面试心态",
+    "面试指导",
+    "interview coach",
 ]
 
 OUTPUT_FORMAT = """\
@@ -110,6 +115,7 @@ def _safe_parse_json(content: str) -> dict:
 
 def _coerce_coach(raw: dict) -> dict:
     """将解析后的 interview_coach dict 强制转换为标准结构。"""
+
     def _as_list(v) -> list:
         return v if isinstance(v, list) else []
 

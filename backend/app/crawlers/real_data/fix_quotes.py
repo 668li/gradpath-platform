@@ -1,5 +1,4 @@
-import re
-with open("knowledge_expand.py", "r", encoding="utf-8") as f:
+with open("knowledge_expand.py", encoding="utf-8") as f:
     content = f.read()
 # Replace Chinese double quotes with corner brackets
 content = content.replace("\u201c", "\u300c").replace("\u201d", "\u300d")
@@ -20,9 +19,9 @@ for line in lines:
             inner = inner[:-1]
         # Check if inner content has unescaped double quotes
         if '"' in inner:
-            inner = inner.replace('"', '\u300c').replace('"', '\u300d')
+            inner = inner.replace('"', "\u300c").replace('"', "\u300d")
             # Rebuild the line
-            indent = line[:len(line) - len(line.lstrip())]
+            indent = line[: len(line) - len(line.lstrip())]
             line = f'{indent}"{inner}",' if s.endswith('",') else f'{indent}"{inner}"'
     fixed.append(line)
 content = "\n".join(fixed)

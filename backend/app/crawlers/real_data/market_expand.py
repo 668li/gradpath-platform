@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Market data expansion — generate 500 market indicators for GradPath.
 
 Covers 20 industries with salary trends, employment rates, and recruitment demand.
@@ -7,28 +6,46 @@ Generates market_expand.json and imports into the market_data table.
 Usage (inside Docker):
     docker exec gradpath-backend-1 python /app/app/crawlers/real_data/market_expand.py
 """
+
 import json
 import os
 import random
 import sys
 import uuid
 
-sys.stdout.reconfigure(encoding='utf-8')
+sys.stdout.reconfigure(encoding="utf-8")
 
 DATA_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_FILE = os.path.join(DATA_DIR, "market_expand.json")
-sys.path.insert(0, os.path.join(DATA_DIR, '..', '..', '..'))
+sys.path.insert(0, os.path.join(DATA_DIR, "..", "..", ".."))
 
-from sqlalchemy import text, func, select
-from app.database import SessionLocal, engine, Base
+from sqlalchemy import func, select, text
+
+from app.database import Base, SessionLocal, engine
 from app.models.market_data import MarketData
 
 # ── Industries (20) ───────────────────────────────────────────────────
 INDUSTRIES = [
-    "IT/互联网", "金融/银行", "教育/培训", "医疗/健康", "制造/工程",
-    "零售/电商", "物流/供应链", "餐饮/食品", "能源/环保", "传媒/文化",
-    "法律/咨询", "建筑/房地产", "农业/食品", "旅游/酒店", "体育/健身",
-    "政府/公共事业", "科研/学术", "人力资源", "广告/公关", "汽车",
+    "IT/互联网",
+    "金融/银行",
+    "教育/培训",
+    "医疗/健康",
+    "制造/工程",
+    "零售/电商",
+    "物流/供应链",
+    "餐饮/食品",
+    "能源/环保",
+    "传媒/文化",
+    "法律/咨询",
+    "建筑/房地产",
+    "农业/食品",
+    "旅游/酒店",
+    "体育/健身",
+    "政府/公共事业",
+    "科研/学术",
+    "人力资源",
+    "广告/公关",
+    "汽车",
 ]
 
 # ── Indicator templates ───────────────────────────────────────────────
@@ -281,16 +298,18 @@ def generate_market_data(target_count: int = 500) -> list[dict]:
             else:
                 value = round(base_value, 2)
 
-            records.append({
-                "indicator": indicator,
-                "category": ind_info["category"],
-                "value": value,
-                "unit": ind_info["unit"],
-                "region": region,
-                "industry": industry,
-                "year": year,
-                "source": "market_research",
-            })
+            records.append(
+                {
+                    "indicator": indicator,
+                    "category": ind_info["category"],
+                    "value": value,
+                    "unit": ind_info["unit"],
+                    "region": region,
+                    "industry": industry,
+                    "year": year,
+                    "source": "market_research",
+                }
+            )
 
     random.shuffle(records)
     return records[:target_count]
@@ -298,9 +317,7 @@ def generate_market_data(target_count: int = 500) -> list[dict]:
 
 def import_market_data(db, records: list[dict]) -> tuple[int, int]:
     existing_keys = set()
-    rows = db.execute(
-        text("SELECT indicator, industry, year, region FROM market_data")
-    ).fetchall()
+    rows = db.execute(text("SELECT indicator, industry, year, region FROM market_data")).fetchall()
     for row in rows:
         existing_keys.add((row[0], row[1], row[2], row[3]))
     print(f"  DB already has {len(existing_keys)} market data records")
@@ -345,7 +362,7 @@ def main():
     records = generate_market_data(500)
 
     # Save JSON
-    with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
+    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(records, f, ensure_ascii=False, indent=2)
     print(f"Generated {len(records)} market data records → {OUTPUT_FILE}")
 
@@ -368,7 +385,9 @@ def main():
         # Category breakdown
         print("\n--- Market Data by Category ---")
         rows = db.execute(
-            text("SELECT category, COUNT(*) FROM market_data GROUP BY category ORDER BY COUNT(*) DESC")
+            text(
+                "SELECT category, COUNT(*) FROM market_data GROUP BY category ORDER BY COUNT(*) DESC"
+            )
         ).fetchall()
         for row in rows:
             print(f"  {row[0]}: {row[1]}")
@@ -376,7 +395,9 @@ def main():
         # Industry breakdown
         print("\n--- Market Data by Industry ---")
         rows = db.execute(
-            text("SELECT industry, COUNT(*) FROM market_data GROUP BY industry ORDER BY COUNT(*) DESC")
+            text(
+                "SELECT industry, COUNT(*) FROM market_data GROUP BY industry ORDER BY COUNT(*) DESC"
+            )
         ).fetchall()
         for row in rows:
             print(f"  {row[0]}: {row[1]}")
@@ -390,6 +411,7 @@ def main():
         print(f"\nERROR: {e}")
         db.rollback()
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
     finally:

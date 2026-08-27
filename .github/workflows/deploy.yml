@@ -1,12 +1,9 @@
 name: Deploy
 
+# 2026-08-24 改为仅手动触发：生产部署的服务器 secrets（DEPLOY_HOST/DEPLOY_USER/
+# DEPLOY_SSH_KEY）尚未配置，部署方案（海外灰度 vs 国内备案）仍待拍板，
+# push 自动触发只会让每个 commit 的 Deploy 检查永远失败。等部署决策落地后恢复 on.push。
 on:
-  push:
-    branches: [main]
-    paths-ignore:
-      - '**/*.md'
-      - 'docs/**'
-      - '.vscode/**'
   workflow_dispatch:
     inputs:
       environment:

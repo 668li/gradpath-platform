@@ -1,5 +1,6 @@
 # backend/pipeline/extractors/pdf_extractor.py
 """PDF 文本提取器 — 使用 PyMuPDF (fitz)。"""
+
 import fitz  # PyMuPDF
 
 from app.models.pipeline_enums import ContentType

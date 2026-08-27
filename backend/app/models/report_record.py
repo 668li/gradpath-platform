@@ -1,14 +1,19 @@
 # backend/app/models/report_record.py
 import enum
 from datetime import datetime
+from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
-from app.models.base import UUIDMixin, TimestampMixin
+from app.models.base import TimestampMixin, UUIDMixin
 from app.models.pipeline_enums import ContentType, SourceType
+
+if TYPE_CHECKING:
+    from app.models.employment_data import EmploymentData
+    from app.models.school import School
 
 
 class ParseStatus(str, enum.Enum):
@@ -21,9 +26,7 @@ class ParseStatus(str, enum.Enum):
 
 class ReportRecord(UUIDMixin, TimestampMixin, Base):
     __tablename__ = "report_records"
-    __table_args__ = (
-        UniqueConstraint("school_id", "year", name="uq_school_year"),
-    )
+    __table_args__ = (UniqueConstraint("school_id", "year", name="uq_school_year"),)
 
     school_id: Mapped[UUID] = mapped_column(ForeignKey("schools.id"), nullable=False)
     year: Mapped[int] = mapped_column(Integer, nullable=False)

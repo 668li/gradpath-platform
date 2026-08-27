@@ -1,14 +1,14 @@
 import os
 
-BOT_NAME = 'gradpath_crawlers'
-SPIDER_MODULES = ['app.crawlers.scrapy_grad.spiders']
-NEWSPIDER_MODULE = 'app.crawlers.scrapy_grad.spiders'
+BOT_NAME = "gradpath_crawlers"
+SPIDER_MODULES = ["app.crawlers.scrapy_grad.spiders"]
+NEWSPIDER_MODULE = "app.crawlers.scrapy_grad.spiders"
 
 # Redis for distributed crawling
-SCHEDULER = 'scrapy_redis.scheduler.Scheduler'
-DUPEFILTER_CLASS = 'scrapy_redis.dupefilter.RFPDupeFilter'
+SCHEDULER = "scrapy_redis.scheduler.Scheduler"
+DUPEFILTER_CLASS = "scrapy_redis.dupefilter.RFPDupeFilter"
 # 合规红线：地址一律 env 注入，禁止硬编码（本地默认值兜底，生产必须显式配置）
-REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
 # Performance settings
 DOWNLOAD_DELAY = 2
@@ -18,10 +18,10 @@ DEPTH_LIMIT = 2
 RETRY_TIMES = 3
 
 # Output
-FEED_FORMAT = 'json'
-FEED_URI = 'output/%(name)s_%(time)s.json'
+FEED_FORMAT = "json"
+FEED_URI = "output/%(name)s_%(time)s.json"
 
 # Scrapy-Redis pipeline
 ITEM_PIPELINES = {
-    'scrapy_redis.pipelines.RedisPipeline': 300,
+    "scrapy_redis.pipelines.RedisPipeline": 300,
 }

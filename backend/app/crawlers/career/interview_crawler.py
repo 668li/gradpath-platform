@@ -5,6 +5,7 @@
 (user_id, company, position, interview_year)，因此每公司的 6 条
 面试经验使用不同岗位以保证不冲突。
 """
+
 import random
 from datetime import date, timedelta
 from uuid import UUID
@@ -16,7 +17,6 @@ from app.crawlers.base_crawler import BaseCrawler
 from app.crawlers.registry import register_crawler
 from app.models.company import Company, CompanySize
 from app.models.interview_report import InterviewReport, InterviewResult
-
 
 SYSTEM_USER_ID = UUID("00000000-0000-0000-0000-000000000000")
 
@@ -46,16 +46,32 @@ _COMPANIES = [
 
 # 候选岗位池（每公司从中取 6 个不同岗位，避免唯一约束冲突）
 _POSITIONS = [
-    "前端开发工程师", "后端开发工程师", "算法工程师", "数据分析师",
-    "产品经理", "UI设计师", "测试工程师", "运维工程师",
-    "运营专员", "销售经理",
+    "前端开发工程师",
+    "后端开发工程师",
+    "算法工程师",
+    "数据分析师",
+    "产品经理",
+    "UI设计师",
+    "测试工程师",
+    "运维工程师",
+    "运营专员",
+    "销售经理",
 ]
 
 # 面试题类型池
 _QUESTION_TYPES = [
-    "自我介绍", "项目经验深挖", "算法题（手撕代码）", "系统设计",
-    "八股文基础", "数据库设计", "HR面试", "反问环节",
-    "职业规划", "情景题", "智力题", "技术架构讨论",
+    "自我介绍",
+    "项目经验深挖",
+    "算法题（手撕代码）",
+    "系统设计",
+    "八股文基础",
+    "数据库设计",
+    "HR面试",
+    "反问环节",
+    "职业规划",
+    "情景题",
+    "智力题",
+    "技术架构讨论",
 ]
 
 # 面试感受模板（按结果分类）
@@ -114,19 +130,21 @@ class InterviewCrawler(BaseCrawler):
                 template = rng.choice(_EXPERIENCE_TEMPLATES[result])
                 experience = template.format(rounds=rounds, days=rng.randint(2, 7))
                 source_url = f"https://www.kanzhun.com/interview/{company_name}/{position}/"
-                raw.append({
-                    "company_name": company_name,
-                    "company_info": company_info,
-                    "position": position,
-                    "interview_date": interview_date,
-                    "interview_year": interview_date.year,
-                    "difficulty": difficulty,
-                    "result": result,
-                    "rounds": rounds,
-                    "questions": questions,
-                    "experience": experience,
-                    "source_url": source_url,
-                })
+                raw.append(
+                    {
+                        "company_name": company_name,
+                        "company_info": company_info,
+                        "position": position,
+                        "interview_date": interview_date,
+                        "interview_year": interview_date.year,
+                        "difficulty": difficulty,
+                        "result": result,
+                        "rounds": rounds,
+                        "questions": questions,
+                        "experience": experience,
+                        "source_url": source_url,
+                    }
+                )
         return raw
 
     def parse(self, raw_items: list[dict]) -> list[dict]:
@@ -134,22 +152,24 @@ class InterviewCrawler(BaseCrawler):
         parsed: list[dict] = []
         for r in raw_items:
             info = r["company_info"]
-            parsed.append({
-                "company_name": r["company_name"],
-                "industry": info[1],
-                "size": info[2],
-                "stage": info[3],
-                "headquarters": info[4],
-                "company": r["company_name"],
-                "position": r["position"],
-                "city": info[4],
-                "interview_year": r["interview_year"],
-                "difficulty": r["difficulty"],
-                "result": r["result"],
-                "rounds": r["rounds"],
-                "dimensions": r["questions"],
-                "summary": f"【面试日期】{r['interview_date'].isoformat()}\n【面试感受】{r['experience']}\n【来源】{r['source_url']}",
-            })
+            parsed.append(
+                {
+                    "company_name": r["company_name"],
+                    "industry": info[1],
+                    "size": info[2],
+                    "stage": info[3],
+                    "headquarters": info[4],
+                    "company": r["company_name"],
+                    "position": r["position"],
+                    "city": info[4],
+                    "interview_year": r["interview_year"],
+                    "difficulty": r["difficulty"],
+                    "result": r["result"],
+                    "rounds": r["rounds"],
+                    "dimensions": r["questions"],
+                    "summary": f"【面试日期】{r['interview_date'].isoformat()}\n【面试感受】{r['experience']}\n【来源】{r['source_url']}",
+                }
+            )
         return parsed
 
     def store(self, items: list[dict], db: Session) -> int:
@@ -161,9 +181,11 @@ class InterviewCrawler(BaseCrawler):
         new_count = 0
         for item in items:
             # 1. 确保 Company 记录存在（若公司不存在则创建）
-            existing_company = db.execute(
-                select(Company).where(Company.name == item["company_name"])
-            ).scalars().first()
+            existing_company = (
+                db.execute(select(Company).where(Company.name == item["company_name"]))
+                .scalars()
+                .first()
+            )
             if existing_company is None:
                 company = Company(
                     name=item["company_name"],
@@ -177,14 +199,18 @@ class InterviewCrawler(BaseCrawler):
                 db.flush()  # 立即刷新，使后续 select 能查到新公司（autoflush=False 需手动 flush）
 
             # 2. 写入 InterviewReport（去重：user_id + company + position + interview_year）
-            existing_report = db.execute(
-                select(InterviewReport).where(
-                    InterviewReport.user_id == SYSTEM_USER_ID,
-                    InterviewReport.company == item["company"],
-                    InterviewReport.position == item["position"],
-                    InterviewReport.interview_year == item["interview_year"],
+            existing_report = (
+                db.execute(
+                    select(InterviewReport).where(
+                        InterviewReport.user_id == SYSTEM_USER_ID,
+                        InterviewReport.company == item["company"],
+                        InterviewReport.position == item["position"],
+                        InterviewReport.interview_year == item["interview_year"],
+                    )
                 )
-            ).scalars().first()
+                .scalars()
+                .first()
+            )
             if existing_report is None:
                 report = InterviewReport(
                     user_id=SYSTEM_USER_ID,

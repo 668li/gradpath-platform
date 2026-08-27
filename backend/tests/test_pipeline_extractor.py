@@ -1,15 +1,12 @@
 # backend/tests/test_pipeline_extractor.py
 import asyncio
-import pytest
 import json
-from unittest.mock import patch, MagicMock, AsyncMock
-from uuid import uuid4
+from unittest.mock import AsyncMock, MagicMock, patch
 
+from app.models.employment_data import Degree, EmploymentData
+from app.models.report_record import ParseStatus, ReportRecord
 from app.models.school import School
-from app.models.report_record import ReportRecord, ParseStatus
-from app.models.employment_data import EmploymentData, Degree
-from pipeline.extractor import extract_report, call_llm
-
+from pipeline.extractor import call_llm, extract_report
 
 SAMPLE_REPORT_HTML = """
 <html><body>
@@ -20,55 +17,61 @@ SAMPLE_REPORT_HTML = """
 </body></html>
 """
 
-MOCK_LLM_RESPONSE = json.dumps({
-    "majors": [
-        {
-            "major": "机械工程",
-            "degree": "bachelor",
-            "total_graduates": 120,
-            "employment_rate": 0.45,
-            "further_study_rate": 0.35,
-            "civil_service_rate": 0.10,
-            "abroad_rate": 0.10,
-            "startup_rate": 0.0,
-            "gap_year_rate": 0.0,
-            "employer_ranking": [{"name": "三一重工", "count": 15}],
-            "industry_distribution": {"制造业": 0.4, "互联网": 0.2},
-            "destination_region": {"北京": 0.3, "上海": 0.15},
-            "school_for_further_study": [{"name": "清华大学", "count": 20}]
-        }
-    ]
-})
+MOCK_LLM_RESPONSE = json.dumps(
+    {
+        "majors": [
+            {
+                "major": "机械工程",
+                "degree": "bachelor",
+                "total_graduates": 120,
+                "employment_rate": 0.45,
+                "further_study_rate": 0.35,
+                "civil_service_rate": 0.10,
+                "abroad_rate": 0.10,
+                "startup_rate": 0.0,
+                "gap_year_rate": 0.0,
+                "employer_ranking": [{"name": "三一重工", "count": 15}],
+                "industry_distribution": {"制造业": 0.4, "互联网": 0.2},
+                "destination_region": {"北京": 0.3, "上海": 0.15},
+                "school_for_further_study": [{"name": "清华大学", "count": 20}],
+            }
+        ]
+    }
+)
 
 # 含单个非法 degree 值的 LLM 响应（用于 B3 容错测试）
-MOCK_LLM_RESPONSE_BAD_DEGREE = json.dumps({
-    "majors": [
-        {
-            "major": "坏专业",
-            "degree": "diploma",  # 非法 degree 值，不在 Degree 枚举内
-            "total_graduates": 50,
-            "employment_rate": 0.5,
-        },
-        {
-            "major": "好专业",
-            "degree": "bachelor",
-            "total_graduates": 100,
-            "employment_rate": 0.6,
-        }
-    ]
-})
+MOCK_LLM_RESPONSE_BAD_DEGREE = json.dumps(
+    {
+        "majors": [
+            {
+                "major": "坏专业",
+                "degree": "diploma",  # 非法 degree 值，不在 Degree 枚举内
+                "total_graduates": 50,
+                "employment_rate": 0.5,
+            },
+            {
+                "major": "好专业",
+                "degree": "bachelor",
+                "total_graduates": 100,
+                "employment_rate": 0.6,
+            },
+        ]
+    }
+)
 
 # 只含单个专业的 LLM 响应（用于 W4 幂等性测试，与默认响应不同）
-MOCK_LLM_RESPONSE_SINGLE = json.dumps({
-    "majors": [
-        {
-            "major": "计算机科学",
-            "degree": "master",
-            "total_graduates": 80,
-            "employment_rate": 0.7,
-        }
-    ]
-})
+MOCK_LLM_RESPONSE_SINGLE = json.dumps(
+    {
+        "majors": [
+            {
+                "major": "计算机科学",
+                "degree": "master",
+                "total_graduates": 80,
+                "employment_rate": 0.7,
+            }
+        ]
+    }
+)
 
 
 class TestExtractor:
@@ -181,7 +184,9 @@ class TestExtractor:
         db_session.add(report)
         db_session.commit()
 
-        with patch("pipeline.extractor.call_llm", new=AsyncMock(return_value=MOCK_LLM_RESPONSE_BAD_DEGREE)):
+        with patch(
+            "pipeline.extractor.call_llm", new=AsyncMock(return_value=MOCK_LLM_RESPONSE_BAD_DEGREE)
+        ):
             result = asyncio.run(extract_report(db_session, report_id=report.id))
 
         db_session.refresh(report)
@@ -189,9 +194,7 @@ class TestExtractor:
         assert report.parse_status == ParseStatus.parsed
         assert result is not None
 
-        data = db_session.query(EmploymentData).filter(
-            EmploymentData.report_id == report.id
-        ).all()
+        data = db_session.query(EmploymentData).filter(EmploymentData.report_id == report.id).all()
         # 仅保留合法专业，坏专业被跳过
         majors = {d.major for d in data}
         assert "好专业" in majors
@@ -223,15 +226,15 @@ class TestExtractor:
         db_session.add(old_emp)
         db_session.commit()
 
-        with patch("pipeline.extractor.call_llm", new=AsyncMock(return_value=MOCK_LLM_RESPONSE_SINGLE)):
+        with patch(
+            "pipeline.extractor.call_llm", new=AsyncMock(return_value=MOCK_LLM_RESPONSE_SINGLE)
+        ):
             asyncio.run(extract_report(db_session, report_id=report.id))
 
         db_session.refresh(report)
         assert report.parse_status == ParseStatus.parsed
 
-        data = db_session.query(EmploymentData).filter(
-            EmploymentData.report_id == report.id
-        ).all()
+        data = db_session.query(EmploymentData).filter(EmploymentData.report_id == report.id).all()
         majors = {d.major for d in data}
         # 旧残留数据应被清除
         assert "旧残留专业" not in majors

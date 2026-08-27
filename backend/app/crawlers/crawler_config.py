@@ -1,10 +1,11 @@
 """爬虫配置加载器 — 从YAML文件加载爬虫配置。"""
-import os
+
 from pathlib import Path
-from typing import Any
+
 import yaml
 
 CONFIG_DIR = Path(__file__).parent / "config"
+
 
 def load_config(name: str) -> dict:
     """加载指定爬虫的YAML配置文件。
@@ -15,9 +16,10 @@ def load_config(name: str) -> dict:
     """
     config_path = CONFIG_DIR / f"{name}.yaml"
     if config_path.exists():
-        with open(config_path, "r", encoding="utf-8") as f:
+        with open(config_path, encoding="utf-8") as f:
             return yaml.safe_load(f) or {}
     return {}
+
 
 def list_configs() -> list[dict]:
     """列出所有配置文件。"""

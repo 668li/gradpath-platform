@@ -1,14 +1,11 @@
 """质量分反馈 Pydantic schemas（Phase I 反馈闭环）。"""
+
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models.quality_feedback import (
-    QualityFeedbackTargetType,
-    QualityFeedbackType,
-)
+from app.models.quality_feedback import QualityFeedbackTargetType, QualityFeedbackType
 
 
 class QualityFeedbackCreate(BaseModel):
@@ -24,10 +21,8 @@ class QualityFeedbackCreate(BaseModel):
     target_id: str = Field(
         ..., min_length=32, max_length=64, description="目标条目主键（UUID 字符串）"
     )
-    feedback_type: QualityFeedbackType = Field(
-        ..., description="反馈类型：helpful / unhelpful"
-    )
-    reason: Optional[str] = Field(
+    feedback_type: QualityFeedbackType = Field(..., description="反馈类型：helpful / unhelpful")
+    reason: str | None = Field(
         None, max_length=200, description="选填原因（如证据有误/质量分不合理）"
     )
 
@@ -37,7 +32,7 @@ class QualityFeedbackResponse(BaseModel):
     target_type: QualityFeedbackTargetType
     target_id: str
     feedback_type: QualityFeedbackType
-    reason: Optional[str] = None
+    reason: str | None = None
     created_at: datetime
     updated_at: datetime
 

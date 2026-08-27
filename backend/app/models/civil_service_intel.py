@@ -2,6 +2,7 @@
 
 解决考公/体制内就业的信息不对称：岗位选择、地区待遇、晋升前景、萝卜坑识别、政审体检暗坑。
 """
+
 from sqlalchemy import Boolean, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -11,9 +12,12 @@ from app.models.base import GUID, JSONB, TimestampMixin, UUIDMixin
 
 class PostIntel(UUIDMixin, TimestampMixin, Base):
     """岗位情报 — AI 生成的结构化考公岗位情报画像。"""
+
     __tablename__ = "civil_service_post_intel"
 
-    user_id: Mapped[str] = mapped_column(GUID(), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id: Mapped[str] = mapped_column(
+        GUID(), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     region: Mapped[str] = mapped_column(String(100), nullable=False)
     department: Mapped[str] = mapped_column(String(200), nullable=False)
     post_name: Mapped[str] = mapped_column(String(200), nullable=False)
@@ -49,9 +53,12 @@ class PostIntel(UUIDMixin, TimestampMixin, Base):
 
 class CivilServicePositioning(UUIDMixin, TimestampMixin, Base):
     """考公定位 — 用户背景 + AI 评估 + 三档岗位推荐。"""
+
     __tablename__ = "civil_service_positionings"
 
-    user_id: Mapped[str] = mapped_column(GUID(), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id: Mapped[str] = mapped_column(
+        GUID(), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
 
     # 用户背景
     education_level: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -79,6 +86,7 @@ class CivilServicePositioning(UUIDMixin, TimestampMixin, Base):
 
 class CivilServiceDarkKnowledge(UUIDMixin, TimestampMixin, Base):
     """考公暗知识 — 预填充的考公盲区知识。"""
+
     __tablename__ = "civil_service_dark_knowledge"
 
     stage: Mapped[str] = mapped_column(String(50), nullable=False, index=True)

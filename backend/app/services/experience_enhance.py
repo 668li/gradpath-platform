@@ -10,6 +10,7 @@ is_promotion 等）在 promote 落库时已计算，LLM 是可选增强：
 
 与 news_enhance.py 模式一致，不 commit —— 由调用方统一提交。
 """
+
 import json
 import logging
 import re
@@ -26,17 +27,25 @@ LLM_TIMEOUT = 25
 SUMMARY_MAX_LEN = 160
 # 有效经验贴分类（与 transformer.CATEGORY_RULES 键集一致，含 Phase H 新增维度）
 VALID_CATEGORIES = {
-    "general", "初试", "复试", "调剂", "择校", "复习", "备考", "心态", "避坑",
+    "general",
+    "初试",
+    "复试",
+    "调剂",
+    "择校",
+    "复习",
+    "备考",
+    "心态",
+    "避坑",
 }
 
 _SYSTEM_PROMPT = (
     "你是考研经验内容质量分析师。基于给定的考研经验贴标题与正文，输出严格 JSON（不要任何其他文字）："
-    "{\"summary\": \"≤120字中文摘要，只提炼对备考者有行动价值的干货（时间规划、复习方法、院校选择要点、坑点），不编造原文没有的事实\", "
-    "\"category\": \"经验贴分类，从以下取值：general/初试/复试/调剂/择校/复习/备考/心态/避坑\", "
-    "\"structured_meta\": {\"subject\": \"学科，如数学/英语/政治/408/计算机，原文没有则为 null\", "
-    "\"stage\": \"阶段，如择校/初试/复试/调剂/备考，原文没有则为 null\", "
-    "\"school\": \"院校名，原文没有则为 null\", "
-    "\"target_score\": \"目标分数整数，原文没有则为 null\"}}。"
+    '{"summary": "≤120字中文摘要，只提炼对备考者有行动价值的干货（时间规划、复习方法、院校选择要点、坑点），不编造原文没有的事实", '
+    '"category": "经验贴分类，从以下取值：general/初试/复试/调剂/择校/复习/备考/心态/避坑", '
+    '"structured_meta": {"subject": "学科，如数学/英语/政治/408/计算机，原文没有则为 null", '
+    '"stage": "阶段，如择校/初试/复试/调剂/备考，原文没有则为 null", '
+    '"school": "院校名，原文没有则为 null", '
+    '"target_score": "目标分数整数，原文没有则为 null"}}。'
     "所有字段只从原文提炼，原文没有的一律写 null，禁止编造。"
 )
 
@@ -61,7 +70,7 @@ def _parse_llm_json(text: str) -> dict | None:
     if start < 0 or end <= start:
         return None
     try:
-        return json.loads(cleaned[start:end + 1])
+        return json.loads(cleaned[start : end + 1])
     except (json.JSONDecodeError, ValueError):
         return None
 
@@ -144,7 +153,9 @@ async def enhance_experience_item(db: Session, post: ExperiencePost) -> dict:
 
         logger.info(
             "[experience_enhance] 增强成功 %s (summary=%s, meta_keys=%s)",
-            post.id, bool(post.ai_summary), sorted((post.structured_meta or {}).keys()),
+            post.id,
+            bool(post.ai_summary),
+            sorted((post.structured_meta or {}).keys()),
         )
         return {"status": "enhanced", "meta_keys": sorted(llm_meta.keys())}
     except Exception as e:  # noqa: BLE001 — 降级模式：任何失败保留规则版结果

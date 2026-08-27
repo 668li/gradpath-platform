@@ -3,9 +3,9 @@
 
 Context 注入优先级：用户画像 > 薪资基准 > 社区数据 > 市场趋势。
 """
+
 import json
 import re
-import uuid
 from uuid import UUID
 
 from sqlalchemy import func
@@ -192,12 +192,9 @@ def build_market_context(
     mkt_query = db.query(MarketData)
     if company_obj:
         mkt_query = mkt_query.filter(
-            (MarketData.industry == company_obj.industry)
-            | (MarketData.industry.is_(None))
+            (MarketData.industry == company_obj.industry) | (MarketData.industry.is_(None))
         )
-    market_rows = (
-        mkt_query.order_by(MarketData.year.desc()).limit(MARKET_LIMIT).all()
-    )
+    market_rows = mkt_query.order_by(MarketData.year.desc()).limit(MARKET_LIMIT).all()
     if market_rows:
         lines.append("- 行业宏观数据：")
         for m in market_rows:
@@ -234,18 +231,12 @@ def build_community_context(
                 InterviewReport.position.ilike(f"%{escape_like(position)}%", escape="\\")
             )
         interviews = (
-            int_query.order_by(InterviewReport.interview_year.desc())
-            .limit(INTERVIEW_LIMIT)
-            .all()
+            int_query.order_by(InterviewReport.interview_year.desc()).limit(INTERVIEW_LIMIT).all()
         )
         if interviews:
             total = (
                 db.query(func.count(InterviewReport.id))
-                .filter(
-                    InterviewReport.company.ilike(
-                        f"%{escape_like(company)}%", escape="\\"
-                    )
-                )
+                .filter(InterviewReport.company.ilike(f"%{escape_like(company)}%", escape="\\"))
                 .scalar()
                 or 0
             )
@@ -271,14 +262,10 @@ def build_community_context(
             CommunityReport.employer.ilike(f"%{escape_like(company)}%", escape="\\")
         )
     comm_rows = (
-        comm_query.order_by(CommunityReport.graduation_year.desc())
-        .limit(COMMUNITY_LIMIT)
-        .all()
+        comm_query.order_by(CommunityReport.graduation_year.desc()).limit(COMMUNITY_LIMIT).all()
     )
     if comm_rows:
-        lines.append(
-            f"- 同类人去向（展示前 {len(comm_rows)} 条）："
-        )
+        lines.append(f"- 同类人去向（展示前 {len(comm_rows)} 条）：")
         # 薪资分布聚合
         sal_dist: dict[str, int] = {}
         dest_dist: dict[str, int] = {}
@@ -286,9 +273,7 @@ def build_community_context(
             if c.salary_range:
                 sal_dist[c.salary_range.value] = sal_dist.get(c.salary_range.value, 0) + 1
             if c.destination_type:
-                dest_dist[c.destination_type.value] = (
-                    dest_dist.get(c.destination_type.value, 0) + 1
-                )
+                dest_dist[c.destination_type.value] = dest_dist.get(c.destination_type.value, 0) + 1
         if dest_dist:
             dest_str = ", ".join(f"{k}:{v}" for k, v in dest_dist.items())
             lines.append(f"  去向分布：{dest_str}")
@@ -351,6 +336,7 @@ def _parse_llm_json(content: str) -> dict:
 
 def _coerce_response(data: dict) -> DecisionAdviceResponse:
     """将解析后的 dict 强制转换为 DecisionAdviceResponse，容忍字段缺失/类型错误。"""
+
     def _get_list(key: str) -> list:
         v = data.get(key, [])
         return v if isinstance(v, list) else []
@@ -420,9 +406,7 @@ async def get_decision_advice(
     req_lines.append("请基于以上信息给出结构化的决策建议（严格按 JSON 格式输出）。")
     user_content = "\n".join(req_lines)
 
-    full_content = (
-        f"{user_ctx}\n{market_ctx}\n{community_ctx}\n{user_content}"
-    )
+    full_content = f"{user_ctx}\n{market_ctx}\n{community_ctx}\n{user_content}"
 
     # 调用 LLM
     orchestrator = AIOrchestrator()

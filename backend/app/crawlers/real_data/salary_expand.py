@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Salary data expansion — generate 10687 new salary benchmark records.
 
 More cities (50+), more positions (200+), more companies (300+).
@@ -7,21 +6,23 @@ Generates salary_expand.json and imports into the salary_benchmarks table.
 Usage (inside Docker):
     docker exec gradpath-backend-1 python /app/app/crawlers/real_data/salary_expand.py
 """
+
 import json
 import os
 import random
 import sys
 import uuid
 
-sys.stdout.reconfigure(encoding='utf-8')
+sys.stdout.reconfigure(encoding="utf-8")
 
 DATA_DIR = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_FILE = os.path.join(DATA_DIR, "salary_expand.json")
-sys.path.insert(0, os.path.join(DATA_DIR, '..', '..', '..'))
+sys.path.insert(0, os.path.join(DATA_DIR, "..", "..", ".."))
 
-from sqlalchemy import text, func, select
-from app.database import SessionLocal, engine, Base
-from app.models.salary_benchmark import SalaryBenchmark, ExperienceLevel
+from sqlalchemy import func, select, text
+
+from app.database import Base, SessionLocal, engine
+from app.models.salary_benchmark import ExperienceLevel, SalaryBenchmark
 
 YEAR = 2025
 
@@ -32,20 +33,73 @@ CITY_TIERS = {
         "multiplier": 1.35,
     },
     "新一线": {
-        "cities": ["杭州", "成都", "武汉", "南京", "重庆", "苏州", "西安", "长沙",
-                    "天津", "郑州", "东莞", "佛山", "宁波", "青岛", "沈阳"],
+        "cities": [
+            "杭州",
+            "成都",
+            "武汉",
+            "南京",
+            "重庆",
+            "苏州",
+            "西安",
+            "长沙",
+            "天津",
+            "郑州",
+            "东莞",
+            "佛山",
+            "宁波",
+            "青岛",
+            "沈阳",
+        ],
         "multiplier": 1.05,
     },
     "二线": {
-        "cities": ["大连", "厦门", "合肥", "无锡", "昆明", "福州", "贵阳", "南宁",
-                    "兰州", "太原", "哈尔滨", "长春", "济南", "南昌", "温州",
-                    "珠海", "中山", "常州", "徐州", "嘉兴"],
+        "cities": [
+            "大连",
+            "厦门",
+            "合肥",
+            "无锡",
+            "昆明",
+            "福州",
+            "贵阳",
+            "南宁",
+            "兰州",
+            "太原",
+            "哈尔滨",
+            "长春",
+            "济南",
+            "南昌",
+            "温州",
+            "珠海",
+            "中山",
+            "常州",
+            "徐州",
+            "嘉兴",
+        ],
         "multiplier": 0.88,
     },
     "三线": {
-        "cities": ["绵阳", "泸州", "遵义", "柳州", "宜昌", "襄阳", "洛阳", "海口",
-                    "银川", "西宁", "呼和浩特", "包头", "鄂尔多斯", "唐山", "秦皇岛",
-                    "廊坊", "保定", "大同", "运城", "临汾"],
+        "cities": [
+            "绵阳",
+            "泸州",
+            "遵义",
+            "柳州",
+            "宜昌",
+            "襄阳",
+            "洛阳",
+            "海口",
+            "银川",
+            "西宁",
+            "呼和浩特",
+            "包头",
+            "鄂尔多斯",
+            "唐山",
+            "秦皇岛",
+            "廊坊",
+            "保定",
+            "大同",
+            "运城",
+            "临汾",
+        ],
         "multiplier": 0.72,
     },
 }
@@ -513,63 +567,198 @@ JOB_DATA = {
 # ── Company pools by category ─────────────────────────────────────────
 COMPANIES = {
     "IT/互联网": [
-        "阿里巴巴", "腾讯", "字节跳动", "百度", "美团", "京东", "网易", "华为",
-        "小米", "快手", "拼多多", "滴滴", "B站", "微博", "知乎", "小红书",
-        "得物", "大疆", "商汤科技", "科大讯飞", "海康威视", "中兴通讯", "联想",
-        "携程", "58同城", "贝壳", "汽车之家", "猎豹移动", "搜狗", "迅雷",
+        "阿里巴巴",
+        "腾讯",
+        "字节跳动",
+        "百度",
+        "美团",
+        "京东",
+        "网易",
+        "华为",
+        "小米",
+        "快手",
+        "拼多多",
+        "滴滴",
+        "B站",
+        "微博",
+        "知乎",
+        "小红书",
+        "得物",
+        "大疆",
+        "商汤科技",
+        "科大讯飞",
+        "海康威视",
+        "中兴通讯",
+        "联想",
+        "携程",
+        "58同城",
+        "贝壳",
+        "汽车之家",
+        "猎豹移动",
+        "搜狗",
+        "迅雷",
     ],
     "金融/银行": [
-        "工商银行", "建设银行", "农业银行", "中国银行", "招商银行", "交通银行",
-        "中信银行", "浦发银行", "兴业银行", "平安银行", "高盛", "摩根士丹利",
-        "中金公司", "华泰证券", "国泰君安", "中国人寿", "平安保险", "太平洋保险",
-        "新华保险", "泰康保险",
+        "工商银行",
+        "建设银行",
+        "农业银行",
+        "中国银行",
+        "招商银行",
+        "交通银行",
+        "中信银行",
+        "浦发银行",
+        "兴业银行",
+        "平安银行",
+        "高盛",
+        "摩根士丹利",
+        "中金公司",
+        "华泰证券",
+        "国泰君安",
+        "中国人寿",
+        "平安保险",
+        "太平洋保险",
+        "新华保险",
+        "泰康保险",
     ],
     "公务员/事业单位": [
-        "国家部委", "省级政府", "市级政府", "县级政府", "国务院", "中央部委",
-        "省级厅局", "市直单位", "区县级单位", "乡镇政府",
+        "国家部委",
+        "省级政府",
+        "市级政府",
+        "县级政府",
+        "国务院",
+        "中央部委",
+        "省级厅局",
+        "市直单位",
+        "区县级单位",
+        "乡镇政府",
     ],
     "教育": [
-        "北京大学", "清华大学", "复旦大学", "浙江大学", "南京大学", "新东方",
-        "学而思", "好未来", "猿辅导", "作业帮", "中公教育", "华图教育", "粉笔教育",
+        "北京大学",
+        "清华大学",
+        "复旦大学",
+        "浙江大学",
+        "南京大学",
+        "新东方",
+        "学而思",
+        "好未来",
+        "猿辅导",
+        "作业帮",
+        "中公教育",
+        "华图教育",
+        "粉笔教育",
     ],
     "医疗/健康": [
-        "协和医院", "华西医院", "瑞金医院", "中山医院", "湘雅医院", "齐鲁医院",
-        "同济医院", "301医院", "恒瑞医药", "药明康德", "迈瑞医疗", "爱尔眼科",
+        "协和医院",
+        "华西医院",
+        "瑞金医院",
+        "中山医院",
+        "湘雅医院",
+        "齐鲁医院",
+        "同济医院",
+        "301医院",
+        "恒瑞医药",
+        "药明康德",
+        "迈瑞医疗",
+        "爱尔眼科",
     ],
     "制造/工程": [
-        "中国建筑", "中国中铁", "中国交建", "中国中车", "三一重工", "中联重科",
-        "比亚迪", "宁德时代", "格力电器", "美的集团", "海尔智家",
+        "中国建筑",
+        "中国中铁",
+        "中国交建",
+        "中国中车",
+        "三一重工",
+        "中联重科",
+        "比亚迪",
+        "宁德时代",
+        "格力电器",
+        "美的集团",
+        "海尔智家",
     ],
     "房地产/建筑": [
-        "万科", "碧桂园", "恒大", "融创", "保利发展", "中海地产", "华润置地",
-        "龙湖集团", "绿城中国",
+        "万科",
+        "碧桂园",
+        "恒大",
+        "融创",
+        "保利发展",
+        "中海地产",
+        "华润置地",
+        "龙湖集团",
+        "绿城中国",
     ],
     "传媒/文化": [
-        "中央电视台", "人民日报", "新华社", "澎湃新闻", "字节跳动", "快手",
-        "B站", "芒果TV",
+        "中央电视台",
+        "人民日报",
+        "新华社",
+        "澎湃新闻",
+        "字节跳动",
+        "快手",
+        "B站",
+        "芒果TV",
     ],
     "电商/零售": [
-        "阿里巴巴", "京东", "拼多多", "唯品会", "苏宁", "抖音电商", "快手电商",
-        "得物", "名创优品",
+        "阿里巴巴",
+        "京东",
+        "拼多多",
+        "唯品会",
+        "苏宁",
+        "抖音电商",
+        "快手电商",
+        "得物",
+        "名创优品",
     ],
     "咨询/法律": [
-        "麦肯锡", "BCG", "贝恩", "德勤", "普华永道", "安永", "毕马威", "埃森哲",
-        "金杜律所", "中伦律所",
+        "麦肯锡",
+        "BCG",
+        "贝恩",
+        "德勤",
+        "普华永道",
+        "安永",
+        "毕马威",
+        "埃森哲",
+        "金杜律所",
+        "中伦律所",
     ],
     "物流/交通": [
-        "顺丰", "中通", "圆通", "韵达", "申通", "极兔速递", "德邦快递",
-        "京东物流", "菜鸟",
+        "顺丰",
+        "中通",
+        "圆通",
+        "韵达",
+        "申通",
+        "极兔速递",
+        "德邦快递",
+        "京东物流",
+        "菜鸟",
     ],
     "餐饮/食品": [
-        "海底捞", "呷哺呷哺", "西贝", "外婆家", "全聚德", "喜茶", "奈雪",
-        "瑞幸咖啡", "蜜雪冰城",
+        "海底捞",
+        "呷哺呷哺",
+        "西贝",
+        "外婆家",
+        "全聚德",
+        "喜茶",
+        "奈雪",
+        "瑞幸咖啡",
+        "蜜雪冰城",
     ],
     "能源/环保": [
-        "国电投", "华能集团", "大唐集团", "华电集团", "国家电网", "南方电网",
-        "隆基绿能", "通威股份", "宁德时代",
+        "国电投",
+        "华能集团",
+        "大唐集团",
+        "华电集团",
+        "国家电网",
+        "南方电网",
+        "隆基绿能",
+        "通威股份",
+        "宁德时代",
     ],
     "体育/健身": [
-        "安踏", "李宁", "特步", "361度", "Keep", "乐刻运动", "超级猩猩",
+        "安踏",
+        "李宁",
+        "特步",
+        "361度",
+        "Keep",
+        "乐刻运动",
+        "超级猩猩",
     ],
 }
 
@@ -582,7 +771,9 @@ def flatten_cities() -> list[tuple[str, float]]:
     return result
 
 
-def generate_salary_range(base_min: int, base_max: int, city_mult: float, exp_mult: float) -> tuple[int, int, int]:
+def generate_salary_range(
+    base_min: int, base_max: int, city_mult: float, exp_mult: float
+) -> tuple[int, int, int]:
     adjusted_min = int(base_min * city_mult * exp_mult)
     adjusted_max = int(base_max * city_mult * exp_mult)
     jitter = random.uniform(0.92, 1.08)
@@ -600,7 +791,13 @@ def generate_salary_records(target_count: int = 10687) -> list[dict]:
     records = []
     seen = set()
 
-    exp_map = {"entry": "entry", "junior": "junior", "mid": "mid", "senior": "senior", "lead": "lead"}
+    exp_map = {
+        "entry": "entry",
+        "junior": "junior",
+        "mid": "mid",
+        "senior": "senior",
+        "lead": "lead",
+    }
 
     for category, jobs in JOB_DATA.items():
         companies = COMPANIES.get(category, ["未知公司"])
@@ -625,17 +822,19 @@ def generate_salary_records(target_count: int = 10687) -> list[dict]:
                         base_min, base_max, city_mult, exp_mult
                     )
 
-                    records.append({
-                        "company": company,
-                        "position": position,
-                        "city": city,
-                        "experience_level": exp_level,
-                        "salary_min": salary_min,
-                        "salary_median": salary_median,
-                        "salary_max": salary_max,
-                        "source": "market_research",
-                        "year": YEAR,
-                    })
+                    records.append(
+                        {
+                            "company": company,
+                            "position": position,
+                            "city": city,
+                            "experience_level": exp_level,
+                            "salary_min": salary_min,
+                            "salary_median": salary_median,
+                            "salary_max": salary_max,
+                            "source": "market_research",
+                            "year": YEAR,
+                        }
+                    )
 
                     if len(records) >= target_count:
                         return records[:target_count]
@@ -711,7 +910,7 @@ def main():
     records = generate_salary_records(10687)
 
     # Save JSON
-    with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
+    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(records, f, ensure_ascii=False, indent=2)
     print(f"Generated {len(records)} salary records → {OUTPUT_FILE}")
 
@@ -742,7 +941,9 @@ def main():
         # By experience level
         print("\n--- Salary Benchmarks by Experience Level ---")
         rows = db.execute(
-            text("SELECT experience_level, COUNT(*) FROM salary_benchmarks GROUP BY experience_level ORDER BY experience_level")
+            text(
+                "SELECT experience_level, COUNT(*) FROM salary_benchmarks GROUP BY experience_level ORDER BY experience_level"
+            )
         ).fetchall()
         for row in rows:
             print(f"  {row[0]}: {row[1]}")
@@ -750,7 +951,9 @@ def main():
         # Top cities
         print("\n--- Salary Benchmarks by City (Top 15) ---")
         rows = db.execute(
-            text("SELECT city, COUNT(*) FROM salary_benchmarks GROUP BY city ORDER BY COUNT(*) DESC LIMIT 15")
+            text(
+                "SELECT city, COUNT(*) FROM salary_benchmarks GROUP BY city ORDER BY COUNT(*) DESC LIMIT 15"
+            )
         ).fetchall()
         for row in rows:
             print(f"  {row[0]}: {row[1]}")
@@ -764,6 +967,7 @@ def main():
         print(f"\nERROR: {e}")
         db.rollback()
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
     finally:

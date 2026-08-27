@@ -4,6 +4,7 @@
 路由前缀 /api/career-test-drive。生成接口走 LLM（未配置时回退模板），
 历史与详情接口直接读库。所有接口需登录鉴权。
 """
+
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -12,11 +13,7 @@ from sqlalchemy.orm import Session
 from app.core.deps import get_current_user
 from app.database import get_db
 from app.models.user import User
-from app.schemas.career_test_drive import (
-    CareerTestDriveCreate,
-    CareerTestDriveResponse,
-    TimeBlock,
-)
+from app.schemas.career_test_drive import CareerTestDriveCreate, CareerTestDriveResponse, TimeBlock
 from app.services import career_test_drive_service as svc
 
 router = APIRouter(prefix="/api/career-test-drive", tags=["职业试驾"])

@@ -5,17 +5,14 @@
 - Redis 不可用时降级到进程内广播
 - 消息格式正确性（broadcast / send_to_user / broadcast_all / notify_task）
 """
+
 import asyncio
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.core.websocket_manager import (
-    ConnectionManager,
-    WS_BROADCAST_CHANNEL,
-)
-
+from app.core.websocket_manager import WS_BROADCAST_CHANNEL, ConnectionManager
 
 # ----------------------------------------------------------------------
 # 辅助 fixture
@@ -92,9 +89,7 @@ class TestPublishToRedis:
     @pytest.mark.asyncio
     async def test_notify_task_publishes_broadcast_with_task_channel(self, manager_with_redis):
         """notify_task 应发布 broadcast 类型消息，channel = task:<task_id>。"""
-        await manager_with_redis.notify_task(
-            "task-xyz", "running", {"source_name": "test"}
-        )
+        await manager_with_redis.notify_task("task-xyz", "running", {"source_name": "test"})
 
         args = manager_with_redis._redis.publish.call_args.args
         payload = json.loads(args[1])
@@ -241,11 +236,13 @@ class TestDispatchLocal:
     async def test_dispatch_send_to_user(self, manager):
         ws = make_websocket()
         manager.active_connections["uid"] = {ws}
-        await manager._dispatch_local({
-            "type": "send_to_user",
-            "user_id": "uid",
-            "message": {"a": 1},
-        })
+        await manager._dispatch_local(
+            {
+                "type": "send_to_user",
+                "user_id": "uid",
+                "message": {"a": 1},
+            }
+        )
         ws.send_text.assert_awaited_once()
         assert json.loads(ws.send_text.call_args.args[0]) == {"a": 1}
 
@@ -255,10 +252,12 @@ class TestDispatchLocal:
         ws2 = make_websocket()
         manager.active_connections["u1"] = {ws1}
         manager.active_connections["u2"] = {ws2}
-        await manager._dispatch_local({
-            "type": "broadcast_all",
-            "message": {"x": 1},
-        })
+        await manager._dispatch_local(
+            {
+                "type": "broadcast_all",
+                "message": {"x": 1},
+            }
+        )
         ws1.send_text.assert_awaited_once()
         ws2.send_text.assert_awaited_once()
 
@@ -270,11 +269,13 @@ class TestDispatchLocal:
         manager.task_subscribers["task-99"] = {ws_sub}
         manager.active_connections["user-other"] = {ws_other}
 
-        await manager._dispatch_local({
-            "type": "broadcast",
-            "channel": "task:task-99",
-            "message": {"status": "done"},
-        })
+        await manager._dispatch_local(
+            {
+                "type": "broadcast",
+                "channel": "task:task-99",
+                "message": {"status": "done"},
+            }
+        )
 
         ws_sub.send_text.assert_awaited_once()
         # 普通用户不应收到任务频道消息
@@ -285,17 +286,20 @@ class TestDispatchLocal:
         """type=broadcast 但无 task: 前缀的 channel 应广播给所有人。"""
         ws1 = make_websocket()
         manager.active_connections["u1"] = {ws1}
-        await manager._dispatch_local({
-            "type": "broadcast",
-            "channel": "other:abc",
-            "message": {"x": 1},
-        })
+        await manager._dispatch_local(
+            {
+                "type": "broadcast",
+                "channel": "other:abc",
+                "message": {"x": 1},
+            }
+        )
         ws1.send_text.assert_awaited_once()
 
     @pytest.mark.asyncio
     async def test_dispatch_unknown_type_logs_warning(self, manager, caplog):
         """未知 type 应记录 warning，不抛异常。"""
         import logging
+
         with caplog.at_level(logging.WARNING):
             await manager._dispatch_local({"type": "unknown_type", "message": {}})
         assert any("未知的 WebSocket 广播消息类型" in r.message for r in caplog.records)
@@ -313,6 +317,7 @@ class TestSubscribeLoop:
     async def test_subscribe_loop_without_redis_url_returns_immediately(self, manager, monkeypatch):
         """REDIS_URL 未配置时，subscribe_loop 应立即返回。"""
         from app.config import settings
+
         monkeypatch.setattr(settings, "REDIS_URL", None)
         # 应立即返回不进入循环
         await asyncio.wait_for(manager.subscribe_loop(), timeout=1.0)
@@ -321,6 +326,7 @@ class TestSubscribeLoop:
     async def test_subscribe_loop_dispatches_received_messages(self, manager, monkeypatch):
         """subscribe_loop 收到 Redis 消息后应分发给本进程连接。"""
         from app.config import settings
+
         monkeypatch.setattr(settings, "REDIS_URL", "redis://localhost:6379/0")
 
         # 准备本进程连接
@@ -332,11 +338,13 @@ class TestSubscribeLoop:
             {
                 "type": "message",
                 "channel": WS_BROADCAST_CHANNEL,
-                "data": json.dumps({
-                    "type": "send_to_user",
-                    "user_id": "uid",
-                    "message": {"hello": "from-redis"},
-                }),
+                "data": json.dumps(
+                    {
+                        "type": "send_to_user",
+                        "user_id": "uid",
+                        "message": {"hello": "from-redis"},
+                    }
+                ),
             },
         ]
 
@@ -375,6 +383,7 @@ class TestSubscribeLoop:
     async def test_subscribe_loop_retries_on_failure(self, manager, monkeypatch):
         """Redis 连接失败时，subscribe_loop 应重试而不是退出。"""
         from app.config import settings
+
         monkeypatch.setattr(settings, "REDIS_URL", "redis://localhost:6379/0")
 
         call_count = {"n": 0}
@@ -400,8 +409,10 @@ class TestSubscribeLoop:
         async def fast_sleep(seconds):
             await real_sleep(0)
 
-        with patch("redis.asyncio.from_url", side_effect=fake_from_url), \
-             patch("asyncio.sleep", new=fast_sleep):
+        with (
+            patch("redis.asyncio.from_url", side_effect=fake_from_url),
+            patch("asyncio.sleep", new=fast_sleep),
+        ):
             try:
                 await asyncio.wait_for(manager.subscribe_loop(), timeout=2.0)
             except asyncio.CancelledError:
@@ -430,7 +441,9 @@ class TestNotifyTaskSync:
             return None
 
         with patch.object(manager, "notify_task", return_value=fake_notify_task()) as mock_notify:
-            with patch("app.core.websocket_manager.asyncio.run_coroutine_threadsafe") as mock_schedule:
+            with patch(
+                "app.core.websocket_manager.asyncio.run_coroutine_threadsafe"
+            ) as mock_schedule:
                 mock_schedule.return_value.add_done_callback = MagicMock()
                 manager.notify_task_sync("task-1", "running", {"x": 1})
                 mock_notify.assert_called_once_with("task-1", "running", {"x": 1})
@@ -443,8 +456,10 @@ class TestNotifyTaskSync:
         async def fake_notify_task(*args, **kwargs):
             return None
 
-        with patch.object(manager, "notify_task", return_value=fake_notify_task()) as mock_notify, \
-             patch("app.core.websocket_manager.asyncio.run") as mock_run:
+        with (
+            patch.object(manager, "notify_task", return_value=fake_notify_task()) as mock_notify,
+            patch("app.core.websocket_manager.asyncio.run") as mock_run,
+        ):
             manager.notify_task_sync("task-2", "failed", {"err": "boom"})
             mock_notify.assert_called_once_with("task-2", "failed", {"err": "boom"})
             mock_run.assert_called_once()
@@ -452,13 +467,16 @@ class TestNotifyTaskSync:
     def test_asyncio_run_failure_is_logged_not_raised(self, manager, caplog):
         """asyncio.run 抛异常时，应记录 warning 而不是向上抛。"""
         import logging
+
         manager._main_loop = None
 
         async def fake_notify_task(*args, **kwargs):
             return None
 
-        with patch.object(manager, "notify_task", return_value=fake_notify_task()), \
-             patch("app.core.websocket_manager.asyncio.run", side_effect=RuntimeError("boom")):
+        with (
+            patch.object(manager, "notify_task", return_value=fake_notify_task()),
+            patch("app.core.websocket_manager.asyncio.run", side_effect=RuntimeError("boom")),
+        ):
             with caplog.at_level(logging.WARNING):
                 # 不应抛异常
                 manager.notify_task_sync("t3", "failed")

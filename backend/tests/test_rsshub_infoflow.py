@@ -1,17 +1,12 @@
-# -*- coding: utf-8 -*-
 """RSSHub 资讯流路由（杠杆 #5）单元测试。
 
 覆盖：资讯流路由入白名单、分类映射、白名单校验放行/拒绝、
 fetch 对知乎日报路由的解析（mock _request，不碰真实网络）。
 """
+
 from unittest.mock import MagicMock
 
-import pytest
-
-from app.crawlers.research.rsshub_research_crawler import (
-    DEFAULT_ROUTES,
-    RSSHubCrawler,
-)
+from app.crawlers.research.rsshub_research_crawler import DEFAULT_ROUTES, RSSHubCrawler
 
 ZHIHU_DAILY_RSS = """<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0"><channel>
@@ -30,7 +25,7 @@ ZHIHU_DAILY_RSS = """<?xml version="1.0" encoding="UTF-8"?>
 <guid>https://zhuanlan.zhihu.com/p/87654321</guid>
 <pubDate>Sat, 16 Aug 2026 07:00:00 GMT</pubDate>
 </item>
-</channel></rss>""".encode("utf-8")
+</channel></rss>""".encode()
 
 
 class TestInfoFlowRoutes:
@@ -42,14 +37,12 @@ class TestInfoFlowRoutes:
     def test_validate_allows_infoflow_routes(self):
         crawler = RSSHubCrawler()
         for route in ("zhihu/daily", "zhihu/pin/hotlist"):
-            ok, _ = crawler._validate_outbound_url(
-                f"http://127.0.0.1:1200/{route}?limit=15")
+            ok, _ = crawler._validate_outbound_url(f"http://127.0.0.1:1200/{route}?limit=15")
             assert ok is True
 
     def test_validate_rejects_non_whitelisted_route(self):
         crawler = RSSHubCrawler()
-        ok, msg = crawler._validate_outbound_url(
-            "http://127.0.0.1:1200/zhihu/secret?limit=15")
+        ok, msg = crawler._validate_outbound_url("http://127.0.0.1:1200/zhihu/secret?limit=15")
         assert ok is False
         assert "白名单" in msg
 

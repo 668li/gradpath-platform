@@ -1,4 +1,5 @@
 """人生设计引擎 API — AI Life Design 七步法。"""
+
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -32,7 +33,9 @@ async def generate_vision(
     user: User = Depends(get_current_user),
 ):
     """基于审计问答，AI 生成愿景声明。"""
-    vision = await life_design_service.generate_vision_from_audit(db, user.id, body.get("audit_qa", []))
+    vision = await life_design_service.generate_vision_from_audit(
+        db, user.id, body.get("audit_qa", [])
+    )
     return {"vision_statement": vision}
 
 
@@ -97,7 +100,9 @@ async def generate_sprint_review(
     return {"ai_review": review}
 
 
-@router.post("/weekly-reviews", response_model=WeeklyReviewResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/weekly-reviews", response_model=WeeklyReviewResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_weekly_review(
     body: WeeklyReviewCreate,
     db: Session = Depends(get_db),

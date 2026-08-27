@@ -1,5 +1,7 @@
 from sqlalchemy import text
+
 from app.database import engine
+
 conn = engine.connect()
 cols = conn.execute(text("""
     SELECT column_name, is_nullable, column_default

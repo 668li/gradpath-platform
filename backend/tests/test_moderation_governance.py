@@ -11,6 +11,7 @@
 - QA 审核：approve/reject 问题与回答
 - moderation 回归：经验贴 approve/reject/pin（A3 修复：pending 不再 404）
 """
+
 import uuid
 
 import pytest
@@ -23,14 +24,15 @@ from app.models.qa_answer import QAAnswer
 from app.models.report import Report, ReportStatus
 from app.models.user import User, UserStatus
 
-
 # ======================================================================
 # fixtures
 # ======================================================================
 
+
 @pytest.fixture
 def admin_headers(client, db_session):
     from app.core.security import hash_password
+
     admin = User(
         email="admin@example.org",
         password_hash=hash_password("Admin1234!"),
@@ -100,6 +102,7 @@ def _db_user(db_session, email):
 # ======================================================================
 # 举报提交
 # ======================================================================
+
 
 class TestReportSubmit:
     def test_submit_report_success(self, client, auth_headers, db_session):
@@ -181,6 +184,7 @@ class TestReportSubmit:
 # 管理员举报列表 / 处理
 # ======================================================================
 
+
 class TestAdminReports:
     def test_non_admin_cannot_list(self, client, auth_headers):
         resp = client.get("/api/admin/reports", headers=auth_headers)
@@ -242,7 +246,9 @@ class TestAdminReports:
         assert report.status == ReportStatus.processed
         assert report.processed_note == "核实属实，已下架"
 
-    def test_process_processed_notifies_reporter(self, client, second_user_headers, auth_headers, admin_headers, db_session):
+    def test_process_processed_notifies_reporter(
+        self, client, second_user_headers, auth_headers, admin_headers, db_session
+    ):
         # 作者与举报人分开（作者 user2 会收到"内容被下架"通知，
         # 举报人 test@example.com 只收到"举报处理结果"通知，避免排序歧义）
         post = _create_post(client, second_user_headers)
@@ -317,7 +323,9 @@ class TestAdminReports:
         )
         assert resp.status_code == 409
 
-    def test_process_ban_author_requires_reason(self, client, auth_headers, admin_headers, db_session):
+    def test_process_ban_author_requires_reason(
+        self, client, auth_headers, admin_headers, db_session
+    ):
         post = _create_post(client, auth_headers)
         post_id = post.json()["id"]
         client.post(
@@ -356,7 +364,9 @@ class TestAdminReports:
         assert author.status == UserStatus.banned
         assert author.ban_reason == "发布违规内容"
 
-    def test_process_user_target_bans_user(self, client, auth_headers, second_user_headers, admin_headers, db_session):
+    def test_process_user_target_bans_user(
+        self, client, auth_headers, second_user_headers, admin_headers, db_session
+    ):
         """举报对象为用户：处理即封禁，ban_reason 必填。"""
         target = _db_user(db_session, "user2@example.net")
         client.post(
@@ -384,7 +394,9 @@ class TestAdminReports:
         db_session.refresh(target)
         assert target.status == UserStatus.banned
 
-    def test_process_reports_user_targets(self, client, second_user_headers, admin_headers, db_session):
+    def test_process_reports_user_targets(
+        self, client, second_user_headers, admin_headers, db_session
+    ):
         """举报经验贴 / 评论 / 问答，处理后被置为 rejected 隐藏。"""
         # 经验贴
         ep = _create_experience_post(client, second_user_headers)
@@ -427,8 +439,11 @@ class TestAdminReports:
 # 屏蔽
 # ======================================================================
 
+
 class TestBlockRelations:
-    def test_block_and_list_and_unblock(self, client, auth_headers, second_user_headers, db_session):
+    def test_block_and_list_and_unblock(
+        self, client, auth_headers, second_user_headers, db_session
+    ):
         target = _db_user(db_session, "user2@example.net")
         target_id = str(target.id)
 
@@ -471,6 +486,7 @@ class TestBlockRelations:
 # 封禁 / 解封 / 用户管理
 # ======================================================================
 
+
 class TestBanAndUserManagement:
     def test_ban_rejects_login(self, client, second_user_headers, admin_headers, db_session):
         target = _db_user(db_session, "user2@example.net")
@@ -489,7 +505,9 @@ class TestBanAndUserManagement:
         )
         assert resp.status_code == 401
 
-    def test_ban_takes_effect_immediately(self, client, second_user_headers, admin_headers, db_session):
+    def test_ban_takes_effect_immediately(
+        self, client, second_user_headers, admin_headers, db_session
+    ):
         """已登录用户的 token 在封禁后立即 403（缓存路径也检查 status）。"""
         target = _db_user(db_session, "user2@example.net")
         # 预热 user 缓存
@@ -545,7 +563,9 @@ class TestBanAndUserManagement:
         )
         assert resp.status_code == 422
 
-    def test_user_list_search_and_filter(self, client, auth_headers, second_user_headers, admin_headers, db_session):
+    def test_user_list_search_and_filter(
+        self, client, auth_headers, second_user_headers, admin_headers, db_session
+    ):
         # 关键词搜索
         resp = client.get("/api/admin/users?keyword=二号", headers=admin_headers)
         assert resp.status_code == 200
@@ -567,13 +587,16 @@ class TestBanAndUserManagement:
     def test_non_admin_cannot_access_user_admin(self, client, auth_headers):
         resp = client.get("/api/admin/users", headers=auth_headers)
         assert resp.status_code == 403
-        resp = client.post(f"/api/admin/users/{uuid.uuid4()}/ban", headers=auth_headers, json={"reason": "x"})
+        resp = client.post(
+            f"/api/admin/users/{uuid.uuid4()}/ban", headers=auth_headers, json={"reason": "x"}
+        )
         assert resp.status_code == 403
 
 
 # ======================================================================
 # QA 审核 + moderation 回归（A3 修复）
 # ======================================================================
+
 
 class TestModerationRegression:
     def test_qa_approve_reject(self, client, auth_headers, admin_headers, db_session):
@@ -598,7 +621,9 @@ class TestModerationRegression:
         db_qa2 = db_session.query(QA).filter(QA.id == qa2_id).first()
         assert db_qa2.status == "rejected"
 
-    def test_qa_answer_approve_reject(self, client, auth_headers, second_user_headers, admin_headers, db_session):
+    def test_qa_answer_approve_reject(
+        self, client, auth_headers, second_user_headers, admin_headers, db_session
+    ):
         qa = _create_qa(client, auth_headers)
         qa_id = qa.json()["id"]
         # 管理员先通过问题，再让二号用户回答
@@ -628,7 +653,9 @@ class TestModerationRegression:
         db_answer2 = db_session.query(QAAnswer).filter(QAAnswer.id == answer2_id).first()
         assert db_answer2.status == "rejected"
 
-    def test_experience_post_approve_reject_pin(self, client, auth_headers, admin_headers, db_session):
+    def test_experience_post_approve_reject_pin(
+        self, client, auth_headers, admin_headers, db_session
+    ):
         # approve（修复前 pending 帖 404）
         ep = _create_experience_post(client, auth_headers)
         ep_id = ep.json()["id"]
@@ -648,12 +675,20 @@ class TestModerationRegression:
         assert db_ep2.status == "rejected"
 
         # pin（修复前后端从未实现 setter，PATCH 恒 404）
-        resp = client.post(f"/api/kaoyan/experience-posts/{ep_id}/pin", headers=admin_headers, json={"is_pinned": True})
+        resp = client.post(
+            f"/api/kaoyan/experience-posts/{ep_id}/pin",
+            headers=admin_headers,
+            json={"is_pinned": True},
+        )
         assert resp.status_code == 200
         db_session.refresh(db_ep)
         assert db_ep.is_pinned is True
 
-        resp = client.post(f"/api/kaoyan/experience-posts/{ep_id}/pin", headers=admin_headers, json={"is_pinned": False})
+        resp = client.post(
+            f"/api/kaoyan/experience-posts/{ep_id}/pin",
+            headers=admin_headers,
+            json={"is_pinned": False},
+        )
         assert resp.status_code == 200
         db_session.refresh(db_ep)
         assert db_ep.is_pinned is False

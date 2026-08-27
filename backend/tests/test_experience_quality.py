@@ -6,7 +6,6 @@
 - detect_promotion 软广/引流检测正反例（命中标注、置信度、无证据上浮）
 - extract_experience_meta 结构化抽取（学科/阶段/院校/目标分/方法/适用人群）
 """
-import pytest
 
 from app.crawlers.research.experience_quality import (
     detect_promotion,
@@ -78,30 +77,39 @@ class TestScoreExperience:
         """A≥75 / B≥55 / C≥35，其余 D — 用确定性组合验证边界。"""
         # 74 → B（20 bilibili + 24 完整度500字 + 10 互动1k + 10 溯源 + 10 反软广）
         _, g74 = score_experience_item(
-            title="考研英语经验贴", content="单词记忆方法" * 40,  # 约 600 字
-            source_platform="bilibili", source_url="https://bilibili.com/v/1",
+            title="考研英语经验贴",
+            content="单词记忆方法" * 40,  # 约 600 字
+            source_platform="bilibili",
+            source_url="https://bilibili.com/v/1",
             external_view_count=1500,
         )
         assert g74 == "B"
         # 54 → C（20 + 4 短内容 + 10 互动1k + 10 + 10）
         _, g54 = score_experience_item(
-            title="考研英语经验贴", content="单词要反复背",
-            source_platform="bilibili", source_url="https://bilibili.com/v/1",
+            title="考研英语经验贴",
+            content="单词要反复背",
+            source_platform="bilibili",
+            source_url="https://bilibili.com/v/1",
             external_view_count=1500,
         )
         assert g54 == "C"
         # 25 → D（15 user + 0 完整 + 0 互动 + 0 溯源 + 10 反软广）
         _, g25 = score_experience_item(
-            title="随便一句", content="",
-            source_platform="user", source_url="",
+            title="随便一句",
+            content="",
+            source_platform="user",
+            source_url="",
         )
         assert g25 == "D"
 
     def test_score_clamped_to_100(self):
         score, grade = score_experience_item(
-            title="考研复试经验", content="内容" * 500,
-            source_platform="bilibili", source_url="https://bilibili.com/v/1",
-            external_view_count=999_999, external_like_count=9999,
+            title="考研复试经验",
+            content="内容" * 500,
+            source_platform="bilibili",
+            source_url="https://bilibili.com/v/1",
+            external_view_count=999_999,
+            external_like_count=9999,
         )
         assert score <= 100
         assert grade == "A"

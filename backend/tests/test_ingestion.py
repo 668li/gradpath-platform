@@ -9,9 +9,11 @@
   + 409 冲突（重复确认 / run_id 不一致 / source_url 占用）
 - 合规红线：无自动入库通道（/ai/orchestrate 已下线 → 404）
 """
-import pytest
+
 from datetime import datetime
 from hashlib import md5
+
+import pytest
 from sqlalchemy.orm import Session
 
 from app.models.ingestion import DataSourceMeta, ExternalResearchItem, ReviewQueueItem
@@ -51,12 +53,16 @@ def _seed_queue_item(
     external_meta: dict | None = None,
 ) -> tuple[ExternalResearchItem, ReviewQueueItem]:
     """构造 PENDING 的 t_external_research_item + t_review_queue_item（研招网 kaoyan_news）。"""
-    meta = external_meta if external_meta is not None else {
-        "summary": "研招网复试线资讯",
-        "category": "复试",
-        "tags": ["考研"],
-        "crawled_at": "2026-08-12T08:00:00Z",
-    }
+    meta = (
+        external_meta
+        if external_meta is not None
+        else {
+            "summary": "研招网复试线资讯",
+            "category": "复试",
+            "tags": ["考研"],
+            "crawled_at": "2026-08-12T08:00:00Z",
+        }
+    )
     ext = ExternalResearchItem(
         crawler_name="real_data",
         crawler_run_id=_RUN_ID,
@@ -151,7 +157,11 @@ class TestSources:
 
         resp = client.put(
             "/api/admin/sources/1",
-            json={"credibility": "official_verified", "review_status": "APPROVED", "verify_count": 2},
+            json={
+                "credibility": "official_verified",
+                "review_status": "APPROVED",
+                "verify_count": 2,
+            },
             headers=admin_headers,
         )
         assert resp.status_code == 200
@@ -216,7 +226,11 @@ class TestTriggerIngest:
         """manual 来源无爬虫可触发 → 400（应走 POST /confirm 直接确认）。"""
         resp = client.post(
             "/api/admin/research/ingest",
-            json={"source_system": "manual", "biz_req_no": "MANUAL-001", "url": "https://example.com/a"},
+            json={
+                "source_system": "manual",
+                "biz_req_no": "MANUAL-001",
+                "url": "https://example.com/a",
+            },
             headers=admin_headers,
         )
         assert resp.status_code == 400
@@ -235,7 +249,9 @@ class TestTriggerIngest:
         assert resp.status_code == 400
         assert "未注册" in resp.json()["detail"]
 
-    def test_trigger_applies_guard_and_reports_run(self, client, admin_headers, db_session, monkeypatch):
+    def test_trigger_applies_guard_and_reports_run(
+        self, client, admin_headers, db_session, monkeypatch
+    ):
         """触发 yanzhao → 走 real_data 爬虫，护栏参数强制注入，返回运行状态。"""
         import app.services.ingestion_service as svc
         from app.models.crawler_run import CrawlerRun
@@ -269,13 +285,24 @@ class TestTriggerIngest:
                         content="x",
                         source_url="https://yz.chsi.com.cn/a/b",
                         source_platform="web",
-                        external_meta={"summary": "s", "category": "c", "tags": [], "crawled_at": "2026-08-12T08:00:00Z"},
+                        external_meta={
+                            "summary": "s",
+                            "category": "c",
+                            "tags": [],
+                            "crawled_at": "2026-08-12T08:00:00Z",
+                        },
                         credibility="official_verified",
                         review_status="PENDING",
                     )
                 )
                 db.commit()
-                return {"status": "success", "fetched": 2, "stored": 2, "errors": 0, "duplicates": 0}
+                return {
+                    "status": "success",
+                    "fetched": 2,
+                    "stored": 2,
+                    "errors": 0,
+                    "duplicates": 0,
+                }
 
         monkeypatch.setattr(svc, "get_crawler", lambda name: _FakeCrawler)
 
@@ -364,9 +391,7 @@ class TestConfirmIngest:
         assert data["confirmed_fields"]["scoreline"] == 340
 
         # 落业务表：KaoyanNews + 状态回填
-        news = db_session.query(KaoyanNews).filter(
-            KaoyanNews.source_url == ext.source_url
-        ).first()
+        news = db_session.query(KaoyanNews).filter(KaoyanNews.source_url == ext.source_url).first()
         assert news is not None
         assert news.status == "approved"
         assert news.category == "复试"
@@ -382,9 +407,11 @@ class TestConfirmIngest:
         assert ext.external_meta["confirm_note"] == "已核对研招网公告"
 
         # 来源标注（合规红线：外部数据来源可追溯）+ promote 回填 APPROVED
-        ds = db_session.query(DataSourceMeta).filter(
-            DataSourceMeta.source_url == ext.source_url
-        ).first()
+        ds = (
+            db_session.query(DataSourceMeta)
+            .filter(DataSourceMeta.source_url == ext.source_url)
+            .first()
+        )
         assert ds is not None
         assert ds.review_status == "APPROVED"
         assert ds.reviewed_by == "admin@test.com"
@@ -399,7 +426,12 @@ class TestConfirmIngest:
             "source_url": "https://yz.chsi.com.cn/2026/kyzs.shtml",
             "source_system": "yanzhao",
         }
-        assert client.post("/api/admin/research/confirm", json=payload, headers=admin_headers).status_code == 200
+        assert (
+            client.post(
+                "/api/admin/research/confirm", json=payload, headers=admin_headers
+            ).status_code
+            == 200
+        )
         # 重复确认 → 409
         resp = client.post("/api/admin/research/confirm", json=payload, headers=admin_headers)
         assert resp.status_code == 409

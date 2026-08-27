@@ -1,5 +1,6 @@
 # backend/app/schemas/interview.py
 """公司面试经验报告的 Pydantic Schema 定义。"""
+
 from pydantic import BaseModel, field_validator
 
 

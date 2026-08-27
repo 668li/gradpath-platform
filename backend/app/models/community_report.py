@@ -1,5 +1,6 @@
 # backend/app/models/community_report.py
 """社区毕业去向报告模型 — 用户匿名提交毕业去向，系统聚合后展示"同类人去了哪"。"""
+
 import enum
 from uuid import UUID
 
@@ -35,15 +36,15 @@ class CommunityReport(UUIDMixin, TimestampMixin, Base):
     # - school_name/major/graduation_year：community_service 聚合过滤条件
     # - destination_type：group by 去向类型分布
     # - user_id 已在 UniqueConstraint 中自动索引
-    __table_args__ = (
-        UniqueConstraint("user_id", "graduation_year", name="uq_user_year"),
-    )
+    __table_args__ = (UniqueConstraint("user_id", "graduation_year", name="uq_user_year"),)
 
     school_name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     major: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
     graduation_year: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
     degree: Mapped[Degree] = mapped_column(Enum(Degree), default=Degree.bachelor, nullable=False)
-    destination_type: Mapped[DestinationType] = mapped_column(Enum(DestinationType), nullable=False, index=True)
+    destination_type: Mapped[DestinationType] = mapped_column(
+        Enum(DestinationType), nullable=False, index=True
+    )
     employer: Mapped[str | None] = mapped_column(String(200))
     city: Mapped[str | None] = mapped_column(String(50))
     industry: Mapped[str | None] = mapped_column(String(50))

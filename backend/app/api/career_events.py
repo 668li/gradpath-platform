@@ -3,6 +3,7 @@
 CRUD 端点供前端时间线页面使用。注意：与埋点 API（/api/tracking/events）不同，
 本模块管理用户的职业成长事件（入职、晋升、项目完成等），含 STAR+R 反思。
 """
+
 from datetime import date
 from uuid import UUID
 
@@ -96,9 +97,11 @@ def get_event(
     user: User = Depends(get_current_user),
 ):
     """获取单个职业事件。"""
-    event = db.query(CareerEvent).filter(
-        CareerEvent.id == event_id, CareerEvent.user_id == user.id
-    ).first()
+    event = (
+        db.query(CareerEvent)
+        .filter(CareerEvent.id == event_id, CareerEvent.user_id == user.id)
+        .first()
+    )
     if not event:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="事件不存在")
     return event
@@ -140,9 +143,11 @@ def update_event(
     user: User = Depends(get_current_user),
 ):
     """更新职业事件（部分更新）。"""
-    event = db.query(CareerEvent).filter(
-        CareerEvent.id == event_id, CareerEvent.user_id == user.id
-    ).first()
+    event = (
+        db.query(CareerEvent)
+        .filter(CareerEvent.id == event_id, CareerEvent.user_id == user.id)
+        .first()
+    )
     if not event:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="事件不存在")
 
@@ -162,9 +167,11 @@ def delete_event(
     user: User = Depends(get_current_user),
 ):
     """删除职业事件。"""
-    event = db.query(CareerEvent).filter(
-        CareerEvent.id == event_id, CareerEvent.user_id == user.id
-    ).first()
+    event = (
+        db.query(CareerEvent)
+        .filter(CareerEvent.id == event_id, CareerEvent.user_id == user.id)
+        .first()
+    )
     if not event:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="事件不存在")
     db.delete(event)

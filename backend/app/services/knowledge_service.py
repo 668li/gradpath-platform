@@ -4,6 +4,7 @@
 提供知识条目的分页查询、详情、关键词搜索与管理员 CRUD。
 搜索使用 ILIKE 匹配 title/content，按相关度排序。
 """
+
 from uuid import UUID
 
 from sqlalchemy import or_
@@ -41,9 +42,7 @@ def list_articles(
         # JSON 数组包含任一标签即可（SQLite/PG 通用：逐标签 OR）
         tag_conditions = []
         for t in tags:
-            tag_conditions.append(
-                KnowledgeArticle.tags.like(f'%"{escape_like(t)}"%')
-            )
+            tag_conditions.append(KnowledgeArticle.tags.like(f'%"{escape_like(t)}"%'))
         if tag_conditions:
             query = query.filter(or_(*tag_conditions))
     if q and q.strip():
@@ -57,12 +56,7 @@ def list_articles(
 
     total = query.count()
     offset = (page - 1) * page_size
-    items = (
-        query.order_by(KnowledgeArticle.created_at.desc())
-        .offset(offset)
-        .limit(page_size)
-        .all()
-    )
+    items = query.order_by(KnowledgeArticle.created_at.desc()).offset(offset).limit(page_size).all()
     return items, total
 
 

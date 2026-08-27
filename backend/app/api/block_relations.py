@@ -7,6 +7,7 @@
 屏蔽只影响调用方视角（列表过滤在被屏蔽端查询实现），
 不做跨用户强制隔离，避免破坏既有查询性能与缓存。
 """
+
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -94,10 +95,7 @@ def list_blocks(
     blocked_ids = [r.blocked_id for r in rows]
     users = {}
     if blocked_ids:
-        users = {
-            u.id: u
-            for u in db.query(User).filter(User.id.in_(blocked_ids)).all()
-        }
+        users = {u.id: u for u in db.query(User).filter(User.id.in_(blocked_ids)).all()}
     items = []
     for r in rows:
         u = users.get(r.blocked_id)

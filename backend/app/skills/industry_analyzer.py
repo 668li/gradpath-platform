@@ -1,5 +1,6 @@
 # backend/app/skills/industry_analyzer.py
 """行业分析器 Skill — 分析目标行业的趋势和机会。"""
+
 from __future__ import annotations
 
 import json
@@ -8,8 +9,14 @@ import re
 from app.skills.base import BaseSkill
 
 ACTIVATE_KEYWORDS = [
-    "行业分析", "行业趋势", "行业前景", "industry",
-    "行业分析器", "行业动态", "行业发展", "行业机会",
+    "行业分析",
+    "行业趋势",
+    "行业前景",
+    "industry",
+    "行业分析器",
+    "行业动态",
+    "行业发展",
+    "行业机会",
 ]
 
 OUTPUT_FORMAT = """\
@@ -113,6 +120,7 @@ def _safe_parse_json(content: str) -> dict:
 
 def _coerce_industry_analysis(raw: dict) -> dict:
     """将解析后的 industry_analysis dict 强制转换为标准结构。"""
+
     def _as_list(v) -> list:
         return v if isinstance(v, list) else []
 

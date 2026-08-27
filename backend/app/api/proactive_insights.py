@@ -1,4 +1,5 @@
 """AI 主动洞察 API — 跨数据模式识别，主动生成洞察。"""
+
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
@@ -37,11 +38,15 @@ def list_insights(
     user: User = Depends(get_current_user),
 ):
     """列出用户的主动洞察。"""
-    insights = proactive_insight_service.list_insights(db, user.id, limit=limit, unread_only=unread_only)
+    insights = proactive_insight_service.list_insights(
+        db, user.id, limit=limit, unread_only=unread_only
+    )
     return [ProactiveInsightResponse.model_validate(i) for i in insights]
 
 
-@router.post("/generate", response_model=list[ProactiveInsightResponse], status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/generate", response_model=list[ProactiveInsightResponse], status_code=status.HTTP_201_CREATED
+)
 async def generate_insights(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),

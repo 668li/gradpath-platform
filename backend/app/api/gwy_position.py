@@ -2,7 +2,6 @@
 
 数据来源：2026 国考招考简章职位表（fetch_gwy_positions.py 采集），仅做查询展示。
 """
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, or_
@@ -23,7 +22,7 @@ router = APIRouter(prefix="/api/gwy-positions", tags=["国考职位"])
 
 @router.get("/stats", response_model=GwyPositionStatsResponse)
 def gwy_position_stats(
-    year: Optional[int] = Query(None, description="招考年份（默认全部）"),
+    year: int | None = Query(None, description="招考年份（默认全部）"),
     db: Session = Depends(get_db),
 ):
     """国考职位统计：总数 + 按省份/学历/机构层级/考试类别分组计数。"""
@@ -59,14 +58,14 @@ def gwy_position_stats(
 def list_gwy_positions(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
-    q: Optional[str] = Query(None, description="关键词（职位名称/部门/专业/内设机构 模糊匹配）"),
-    education_req: Optional[str] = Query(None, description="学历要求过滤（如：本科及以上）"),
-    political_status: Optional[str] = Query(None, description="政治面貌过滤（如：中共党员）"),
-    org_level: Optional[str] = Query(None, description="机构层级过滤"),
-    exam_category: Optional[str] = Query(None, description="考试类别过滤"),
-    province: Optional[str] = Query(None, description="省份前缀匹配（如：北京）"),
-    position_code: Optional[str] = Query(None, description="职位代码精确匹配"),
-    year: Optional[int] = Query(None, description="招考年份（默认全部）"),
+    q: str | None = Query(None, description="关键词（职位名称/部门/专业/内设机构 模糊匹配）"),
+    education_req: str | None = Query(None, description="学历要求过滤（如：本科及以上）"),
+    political_status: str | None = Query(None, description="政治面貌过滤（如：中共党员）"),
+    org_level: str | None = Query(None, description="机构层级过滤"),
+    exam_category: str | None = Query(None, description="考试类别过滤"),
+    province: str | None = Query(None, description="省份前缀匹配（如：北京）"),
+    position_code: str | None = Query(None, description="职位代码精确匹配"),
+    year: int | None = Query(None, description="招考年份（默认全部）"),
     db: Session = Depends(get_db),
 ):
     """获取国考职位列表（公开）。"""

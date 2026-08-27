@@ -1,4 +1,5 @@
 """国考进面分数线 Pydantic schemas"""
+
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict

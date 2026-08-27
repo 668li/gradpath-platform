@@ -1,9 +1,11 @@
 # backend/tests/test_export.py
 """数据导出服务与 API 测试 — PDF 时间线、JSON 备份、技能分享。"""
+
 from datetime import date
 
 from app.models.career_event import CareerEvent, EventType
-from app.models.community_report import CommunityReport, DestinationType as CommunityDestType
+from app.models.community_report import CommunityReport
+from app.models.community_report import DestinationType as CommunityDestType
 from app.models.destination_decision import DecisionStatus, DestinationDecision
 from app.models.employment_data import Degree
 from app.models.interview_report import InterviewReport
@@ -17,94 +19,111 @@ from app.services.export_service import (
     get_shareable_skills,
 )
 
-
 # ======================================================================
 # 辅助：构造一份包含全部数据类型的用户档案
 # ======================================================================
 
+
 def _seed_full_profile(db_session, user_id):
     """为某用户创建包含各表的完整测试数据。"""
     # 1 个去向决策
-    db_session.add(DestinationDecision(
-        user_id=user_id,
-        destination_type="employment",
-        status=DecisionStatus.confirmed,
-        decision_date=date(2025, 5, 1),
-        confidence=4,
-        reasoning="大厂平台好",
-        details={"company": "腾讯", "position": "后端"},
-    ))
+    db_session.add(
+        DestinationDecision(
+            user_id=user_id,
+            destination_type="employment",
+            status=DecisionStatus.confirmed,
+            decision_date=date(2025, 5, 1),
+            confidence=4,
+            reasoning="大厂平台好",
+            details={"company": "腾讯", "position": "后端"},
+        )
+    )
     # 2 个职业事件
-    db_session.add(CareerEvent(
-        user_id=user_id,
-        event_date=date(2024, 7, 1),
-        event_type=EventType.onboard,
-        title="入职腾讯",
-        description="后端开发工程师",
-    ))
-    db_session.add(CareerEvent(
-        user_id=user_id,
-        event_date=date(2025, 4, 1),
-        event_type=EventType.promotion,
-        title="晋升 T8",
-    ))
+    db_session.add(
+        CareerEvent(
+            user_id=user_id,
+            event_date=date(2024, 7, 1),
+            event_type=EventType.onboard,
+            title="入职腾讯",
+            description="后端开发工程师",
+        )
+    )
+    db_session.add(
+        CareerEvent(
+            user_id=user_id,
+            event_date=date(2025, 4, 1),
+            event_type=EventType.promotion,
+            title="晋升 T8",
+        )
+    )
     # 2 个技能节点
-    db_session.add(SkillNode(
-        user_id=user_id,
-        name="Python",
-        category="后端",
-        level=4,
-        acquired_date=date(2024, 1, 1),
-        notes="主力语言",
-    ))
-    db_session.add(SkillNode(
-        user_id=user_id,
-        name="FastAPI",
-        category="后端",
-        level=3,
-        acquired_date=date(2024, 8, 1),
-    ))
+    db_session.add(
+        SkillNode(
+            user_id=user_id,
+            name="Python",
+            category="后端",
+            level=4,
+            acquired_date=date(2024, 1, 1),
+            notes="主力语言",
+        )
+    )
+    db_session.add(
+        SkillNode(
+            user_id=user_id,
+            name="FastAPI",
+            category="后端",
+            level=3,
+            acquired_date=date(2024, 8, 1),
+        )
+    )
     # 1 个复盘
-    db_session.add(Retrospective(
-        user_id=user_id,
-        period_type=PeriodType.annual,
-        period_start=date(2024, 1, 1),
-        period_end=date(2024, 12, 31),
-        title="2024 年度复盘",
-        achievements=["完成首个项目"],
-        challenges="时间管理",
-        lessons_learned="优先级很重要",
-        next_steps=["学习系统设计"],
-        satisfaction=4,
-    ))
+    db_session.add(
+        Retrospective(
+            user_id=user_id,
+            period_type=PeriodType.annual,
+            period_start=date(2024, 1, 1),
+            period_end=date(2024, 12, 31),
+            title="2024 年度复盘",
+            achievements=["完成首个项目"],
+            challenges="时间管理",
+            lessons_learned="优先级很重要",
+            next_steps=["学习系统设计"],
+            satisfaction=4,
+        )
+    )
     # 1 个社区报告
-    db_session.add(CommunityReport(
-        user_id=user_id,
-        school_name="测试大学",
-        major="计算机",
-        graduation_year=2024,
-        degree=Degree.bachelor,
-        destination_type=CommunityDestType.employment,
-        employer="腾讯",
-        city="深圳",
-    ))
+    db_session.add(
+        CommunityReport(
+            user_id=user_id,
+            school_name="测试大学",
+            major="计算机",
+            graduation_year=2024,
+            degree=Degree.bachelor,
+            destination_type=CommunityDestType.employment,
+            employer="腾讯",
+            city="深圳",
+        )
+    )
     # 1 个面试报告
-    db_session.add(InterviewReport(
-        user_id=user_id,
-        company="腾讯",
-        position="后端",
-        interview_year=2024,
-        rounds=3,
-        result="offer",
-        difficulty=4,
-        summary="偏算法与系统设计",
-    ))
+    db_session.add(
+        InterviewReport(
+            user_id=user_id,
+            company="腾讯",
+            position="后端",
+            interview_year=2024,
+            rounds=3,
+            result="offer",
+            difficulty=4,
+            summary="偏算法与系统设计",
+        )
+    )
     db_session.commit()
 
 
 # ======================================================================
 # PDF 导出
 # ======================================================================
+
 
 class TestPdfExport:
     def test_pdf_requires_auth(self, client):
@@ -144,6 +163,7 @@ class TestPdfExport:
 # ======================================================================
 # JSON 备份
 # ======================================================================
+
 
 class TestJsonExport:
     def test_json_requires_auth(self, client):
@@ -239,6 +259,7 @@ class TestJsonExport:
 # 公开技能分享
 # ======================================================================
 
+
 class TestShareSkills:
     def test_invalid_token_returns_404(self, client):
         """数据库中不存在的 token 返回 404。"""
@@ -276,20 +297,24 @@ class TestShareSkills:
         )
         db_session.add(setting)
         # 创建技能节点
-        db_session.add(SkillNode(
-            user_id=user.id,
-            name="Python",
-            category="后端",
-            level=4,
-            acquired_date=date(2024, 1, 1),
-            notes="主力语言",
-        ))
-        db_session.add(SkillNode(
-            user_id=user.id,
-            name="React",
-            category="前端",
-            level=3,
-        ))
+        db_session.add(
+            SkillNode(
+                user_id=user.id,
+                name="Python",
+                category="后端",
+                level=4,
+                acquired_date=date(2024, 1, 1),
+                notes="主力语言",
+            )
+        )
+        db_session.add(
+            SkillNode(
+                user_id=user.id,
+                name="React",
+                category="前端",
+                level=3,
+            )
+        )
         db_session.commit()
 
         resp = client.get("/api/share/skills/valid-share-token-456")
@@ -301,8 +326,7 @@ class TestShareSkills:
 
         # 校验技能字段结构
         skill = data["skills"][0]
-        for field in ["id", "name", "category", "level",
-                      "parent_id", "acquired_date", "notes"]:
+        for field in ["id", "name", "category", "level", "parent_id", "acquired_date", "notes"]:
             assert field in skill, f"缺少字段: {field}"
 
         # 不应包含任何个人数据（无 email、无 decisions 等）
@@ -313,11 +337,13 @@ class TestShareSkills:
     def test_share_enabled_no_skills(self, client, db_session, auth_headers):
         """开启分享但用户没有技能 → 200，skills 为空列表。"""
         user = db_session.query(User).first()
-        db_session.add(UserSetting(
-            user_id=user.id,
-            share_skills_enabled=True,
-            share_token="empty-skills-token-789",
-        ))
+        db_session.add(
+            UserSetting(
+                user_id=user.id,
+                share_skills_enabled=True,
+                share_token="empty-skills-token-789",
+            )
+        )
         db_session.commit()
 
         resp = client.get("/api/share/skills/empty-skills-token-789")
@@ -333,17 +359,21 @@ class TestShareSkills:
         assert get_shareable_skills(db_session, "no-such-token") is None
 
         # 有效 token → dict
-        db_session.add(UserSetting(
-            user_id=user.id,
-            share_skills_enabled=True,
-            share_token="direct-call-token",
-        ))
-        db_session.add(SkillNode(
-            user_id=user.id,
-            name="Go",
-            category="后端",
-            level=2,
-        ))
+        db_session.add(
+            UserSetting(
+                user_id=user.id,
+                share_skills_enabled=True,
+                share_token="direct-call-token",
+            )
+        )
+        db_session.add(
+            SkillNode(
+                user_id=user.id,
+                name="Go",
+                category="后端",
+                level=2,
+            )
+        )
         db_session.commit()
         result = get_shareable_skills(db_session, "direct-call-token")
         assert result is not None

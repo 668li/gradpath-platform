@@ -1,8 +1,10 @@
 # backend/tests/test_api_pipeline.py
 """Pipeline API 端点测试。"""
+
 import io
 
 import pytest
+
 from app.models.employment_data import Degree, EmploymentData
 from app.models.report_record import ParseStatus, ReportRecord
 from app.models.school import School
@@ -13,6 +15,7 @@ from app.models.user import User
 def admin_headers(client, db_session):
     """注册管理员用户并返回认证头。"""
     from app.core.security import hash_password
+
     admin = User(
         email="admin@test.com",
         password_hash=hash_password("Admin1234!"),
@@ -78,15 +81,15 @@ class TestReportList:
         # 构造一份已发布报告
         school = _make_school(db_session)
         report = ReportRecord(
-            school_id=school.id, year=2024, source_url="https://example.com",
+            school_id=school.id,
+            year=2024,
+            source_url="https://example.com",
             parse_status=ParseStatus.published,
         )
         db_session.add(report)
         db_session.commit()
 
-        resp = client.get(
-            "/api/pipeline/reports?status=published", headers=admin_headers
-        )
+        resp = client.get("/api/pipeline/reports?status=published", headers=admin_headers)
         assert resp.status_code == 200
         data = resp.json()
         assert all(item["parse_status"] == "published" for item in data["items"])
@@ -97,13 +100,17 @@ class TestReportDetail:
     def test_get_report_detail(self, client, admin_headers, db_session):
         school = _make_school(db_session)
         report = ReportRecord(
-            school_id=school.id, year=2024, source_url="https://example.com",
+            school_id=school.id,
+            year=2024,
+            source_url="https://example.com",
             parse_status=ParseStatus.parsed,
         )
         db_session.add(report)
         db_session.commit()
         emp = EmploymentData(
-            report_id=report.id, major="计算机", degree=Degree.bachelor,
+            report_id=report.id,
+            major="计算机",
+            degree=Degree.bachelor,
             employment_rate=0.5,
         )
         db_session.add(emp)
@@ -122,7 +129,9 @@ class TestReportDelete:
     def test_delete_report(self, client, admin_headers, db_session):
         school = _make_school(db_session)
         report = ReportRecord(
-            school_id=school.id, year=2099, source_url="test",
+            school_id=school.id,
+            year=2099,
+            source_url="test",
             parse_status=ParseStatus.pending,
         )
         db_session.add(report)
@@ -135,7 +144,9 @@ class TestPublishReport:
     def test_publish_report(self, client, admin_headers, db_session):
         school = _make_school(db_session)
         report = ReportRecord(
-            school_id=school.id, year=2098, source_url="test",
+            school_id=school.id,
+            year=2098,
+            source_url="test",
             parse_status=ParseStatus.parsed,
         )
         db_session.add(report)
@@ -149,7 +160,12 @@ class TestIngestURL:
     def test_ingest_url_school_not_found(self, client, admin_headers):
         resp = client.post(
             "/api/pipeline/ingest/url",
-            json={"source_type": "crawl", "school_slug": "nonexistent", "year": 2024, "url": "https://example.com"},
+            json={
+                "source_type": "crawl",
+                "school_slug": "nonexistent",
+                "year": 2024,
+                "url": "https://example.com",
+            },
             headers=admin_headers,
         )
         assert resp.status_code == 404

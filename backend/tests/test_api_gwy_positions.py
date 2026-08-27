@@ -1,4 +1,5 @@
 """国考职位 API 测试 — 列表/筛选/分页/详情/统计。"""
+
 from datetime import datetime, timezone
 
 import pytest
@@ -170,9 +171,7 @@ def test_list_positions_province_filter(client, seed_positions):
 
 
 def test_list_positions_position_code_filter(client, seed_positions):
-    resp = client.get(
-        "/api/gwy-positions", params={"position_code": "130110002001"}
-    )
+    resp = client.get("/api/gwy-positions", params={"position_code": "130110002001"})
     assert resp.status_code == 200
     data = resp.json()
     assert data["total"] == 1

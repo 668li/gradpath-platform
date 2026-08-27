@@ -4,6 +4,7 @@
 若不主动删缓存，被封禁用户最长 60 秒内仍可继续通过受保护接口。
 所有封禁/解封操作必须经本模块，统一在变更后删除缓存。
 """
+
 import logging
 from datetime import datetime, timezone
 
@@ -18,6 +19,7 @@ def ban_user(db, user: User, reason: str) -> None:
     if user.is_admin:
         # 不允许封禁管理员（保护性护栏，避免自锁/越权）
         from fastapi import HTTPException
+
         raise HTTPException(403, "不能封禁管理员账户")
     user.status = UserStatus.banned
     user.banned_at = datetime.now(timezone.utc)

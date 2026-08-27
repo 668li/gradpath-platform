@@ -12,6 +12,7 @@
   - 全程 ORM 参数绑定
   - 幂等：重跑时各表已空则跳过
 """
+
 import json
 import sys
 from pathlib import Path
@@ -20,12 +21,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.database import SessionLocal
 from app.models.company import Company
+from app.models.dark_knowledge_push import DarkKnowledgePushLog
 from app.models.grad_intel import DarkKnowledge
 from app.models.knowledge_article import KnowledgeArticle
 from app.models.mentor import Mentor
 from app.models.mentor_review import MentorReview
 from app.models.salary_benchmark import SalaryBenchmark
-from app.models.dark_knowledge_push import DarkKnowledgePushLog
 
 ARCHIVE = Path(__file__).resolve().parent / "archive" / "synthetic_purge_2026-08-16"
 

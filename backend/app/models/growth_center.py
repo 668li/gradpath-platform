@@ -2,22 +2,15 @@
 
 MVP 方案 C：契约先行、实现延后 — 仅落库建表，业务逻辑后续实现。
 """
+
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import (
-    DateTime,
-    Index,
-    Integer,
-    Numeric,
-    String,
-    UniqueConstraint,
-    text,
-)
+from sqlalchemy import DateTime, Index, Integer, Numeric, String, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
-from app.models.base import JSONB, GUID, BigIntPK, ContractAuditMixin
+from app.models.base import GUID, JSONB, BigIntPK, ContractAuditMixin
 
 
 class GrowthTrajectory(ContractAuditMixin, Base):
@@ -26,6 +19,7 @@ class GrowthTrajectory(ContractAuditMixin, Base):
     event_type：action_checkin / review_completed / milestone。
     event_payload：事件结构化载荷（JSONB）。
     """
+
     __tablename__ = "t_growth_trajectory"
 
     id: Mapped[int] = mapped_column(BigIntPK, primary_key=True, autoincrement=True)
@@ -47,6 +41,7 @@ class GrowthArchive(ContractAuditMixin, Base):
 
     archive_status：ACTIVE / STALE。
     """
+
     __tablename__ = "t_growth_archive"
 
     id: Mapped[int] = mapped_column(BigIntPK, primary_key=True, autoincrement=True)
@@ -71,6 +66,4 @@ class GrowthArchive(ContractAuditMixin, Base):
     )
     # ACTIVE / STALE
 
-    __table_args__ = (
-        UniqueConstraint("user_id", name="uk_growth_archive_user_id"),
-    )
+    __table_args__ = (UniqueConstraint("user_id", name="uk_growth_archive_user_id"),)

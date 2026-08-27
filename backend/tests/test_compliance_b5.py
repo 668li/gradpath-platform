@@ -9,6 +9,7 @@
   白名单内合规爬虫（yanzhao）正常放行
 - 白名单自检：所有白名单源必须是已注册爬虫（防死名单、防名单与实际注册名不符）
 """
+
 import json
 import sys
 
@@ -17,7 +18,6 @@ import pytest
 import app.crawlers.grad  # noqa: F401  — 触发 @register_crawler 注册真实爬虫
 import app.crawlers.research  # noqa: F401
 import scripts.import_real_data_to_queue as b3
-
 from app.crawlers.compliance import ALLOWED_CRAWLER_SOURCES
 from app.crawlers.registry import get_crawler
 from app.models.ingestion import ExternalResearchItem, ReviewQueueItem
@@ -47,10 +47,12 @@ def admin_headers(client, db_session):
 
 # ---------------------------------------------------------------- B3 导入脚本
 
+
 def test_import_script_dry_run_parses_real_data(monkeypatch, capsys):
     """dry-run --json：真实数据可解析出条目，无单文件解析错误。"""
     monkeypatch.setattr(
-        sys, "argv",
+        sys,
+        "argv",
         ["import_real_data_to_queue.py", "--only", "web", "--limit", "5", "--json"],
     )
     b3.main()
@@ -91,11 +93,7 @@ def test_store_research_items_all_pending_and_idempotent(db_session):
         )
         assert ext is not None, "ExternalResearchItem 应存在"
         assert ext.review_status == "PENDING", "外部条目必须进审核队列（PENDING）"
-        q = (
-            db_session.query(ReviewQueueItem)
-            .filter(ReviewQueueItem.source_url == url)
-            .first()
-        )
+        q = db_session.query(ReviewQueueItem).filter(ReviewQueueItem.source_url == url).first()
         assert q is not None, "ReviewQueueItem 应存在"
         assert q.review_status == "PENDING", "审核队列条目必须为 PENDING"
 
@@ -105,6 +103,7 @@ def test_store_research_items_all_pending_and_idempotent(db_session):
 
 
 # ---------------------------------------------------------------- 旁路收口
+
 
 def test_run_endpoint_rejects_registered_non_whitelisted_crawler(client, admin_headers):
     """已注册但不在白名单的爬虫（scoreline 直写业务表）→ /run 必须 403。"""
@@ -138,7 +137,9 @@ def test_run_endpoint_allows_whitelisted_crawler(client, admin_headers, monkeypa
 
 
 def test_schedules_rejects_registered_non_whitelisted_crawler(
-    client, admin_headers, monkeypatch,
+    client,
+    admin_headers,
+    monkeypatch,
 ):
     """定时任务创建同样受白名单护栏约束：非白名单爬虫 → 403。"""
     from types import SimpleNamespace

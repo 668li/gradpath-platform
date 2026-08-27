@@ -6,6 +6,7 @@
 
 注：路由前缀使用 /api/tracking/events 以避免与职业事件 API（/api/events）冲突。
 """
+
 import logging
 from typing import Any
 
@@ -13,7 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user, get_admin_user
+from app.core.deps import get_admin_user, get_current_user
 from app.database import get_db
 from app.models.event import Event
 from app.models.user import User
@@ -26,7 +27,12 @@ router = APIRouter(prefix="/api/tracking/events", tags=["埋点"])
 class EventItem(BaseModel):
     # 修复: FASTAPI-VALID-001 — 埋点字段加 max_length 防止恶意大字段刷量
     session_id: str = Field(..., min_length=1, max_length=128, description="会话ID")
-    event_type: str = Field(..., min_length=1, max_length=50, description="事件类型: page_view/click/dwell/error/web_vital")
+    event_type: str = Field(
+        ...,
+        min_length=1,
+        max_length=50,
+        description="事件类型: page_view/click/dwell/error/web_vital",
+    )
     page: str | None = Field(None, max_length=500)
     element: str | None = Field(None, max_length=500)
     payload: dict[str, Any] | None = None
@@ -93,7 +99,9 @@ def create_events(
         return {"received": len(events)}
     except Exception as e:
         logger.error("事件写入失败: %s", e)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="事件写入失败")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="事件写入失败"
+        )
 
 
 @router.get("/export", response_model=list[EventExportItem])

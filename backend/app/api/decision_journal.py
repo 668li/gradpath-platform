@@ -1,4 +1,5 @@
 """决策日志与回溯 API — 记录决策预测，追踪实际结果。"""
+
 from datetime import date
 from uuid import UUID
 
@@ -58,6 +59,7 @@ async def complete_review(
 # ======================================================================
 # 决策时间胶囊 — 写给未来自己的信，回溯时拆开
 # ======================================================================
+
 
 class TimeCapsuleWrite(BaseModel):
     letter: str = Field(..., min_length=1, max_length=2000, description="写给未来自己的信")

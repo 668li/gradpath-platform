@@ -1,16 +1,15 @@
 """录取预测 API — 基于历史数据的 ML 反馈循环。"""
+
 import logging
 import math
-from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field
-from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
 from app.database import get_db
-from app.models.grad_intel import GradScorelineRecord, GradSchoolIntel
+from app.models.grad_intel import GradSchoolIntel, GradScorelineRecord
 from app.models.user import User
 
 logger = logging.getLogger(__name__)
@@ -25,6 +24,7 @@ def _get_limiter():
     global _limiter
     if _limiter is None:
         from app.main import limiter
+
         _limiter = limiter
     return _limiter
 
@@ -33,8 +33,10 @@ def _get_limiter():
 # Schema 定义
 # ======================================================================
 
+
 class PredictRequest(BaseModel):
     """录取概率预测请求。"""
+
     school_name: str = Field(..., description="目标院校名称")
     major: str = Field(..., description="目标专业名称")
     user_score: int = Field(..., ge=0, le=750, description="用户初试分数（0-750）")
@@ -55,6 +57,7 @@ class SimilarCase(BaseModel):
 
 class PredictResponse(BaseModel):
     """录取概率预测响应。"""
+
     school_name: str
     major: str
     probability: float
@@ -87,31 +90,114 @@ class HistoryResponse(BaseModel):
 # 辅助函数
 # ======================================================================
 
+
 def _classify_university_tier(name: str) -> str:
     """简单启发式判断院校层级。"""
     name_lower = name.lower()
     # 985 高校关键词
-    tier985 = ["清华", "北大", "复旦", "上海交大", "浙江大学", "南京大学", "中国科学技术大学",
-               "武汉大学", "华中科技大学", "中山大学", "哈尔滨工业大学", "西安交通大学",
-               "北京航空航天", "天津大学", "南开大学", "四川大学", "吉林大学", "大连理工",
-               "山东大学", "中南大学", "厦门大学", "同济大学", "华南理工", "重庆大学",
-               "电子科技大学", "西北工业大学", "兰州大学", "东北大学", "湖南大学",
-               "中国农业大学", "西北农林科技", "中央民族大学", "国防科技", "北京理工",
-               "北京师范大学", "东南大学", "华东师范", "中国海洋"]
+    tier985 = [
+        "清华",
+        "北大",
+        "复旦",
+        "上海交大",
+        "浙江大学",
+        "南京大学",
+        "中国科学技术大学",
+        "武汉大学",
+        "华中科技大学",
+        "中山大学",
+        "哈尔滨工业大学",
+        "西安交通大学",
+        "北京航空航天",
+        "天津大学",
+        "南开大学",
+        "四川大学",
+        "吉林大学",
+        "大连理工",
+        "山东大学",
+        "中南大学",
+        "厦门大学",
+        "同济大学",
+        "华南理工",
+        "重庆大学",
+        "电子科技大学",
+        "西北工业大学",
+        "兰州大学",
+        "东北大学",
+        "湖南大学",
+        "中国农业大学",
+        "西北农林科技",
+        "中央民族大学",
+        "国防科技",
+        "北京理工",
+        "北京师范大学",
+        "东南大学",
+        "华东师范",
+        "中国海洋",
+    ]
     # 211 关键词（含 985）
-    tier211 = tier985 + ["北京邮电", "华北电力", "北京交大", "北京工业", "北京化工",
-                         "北京林业", "中国政法", "中央财经", "对外经贸", "中国矿业",
-                         "河海大学", "南京师范", "南京理工", "南京航天", "苏州大学",
-                         "江南大学", "南京农业", "上海大学", "上海财经", "华东理工",
-                         "东华大学", "上海外国语", "上海大学", "暨南大学", "华南师范",
-                         "武汉理工", "华中师范", "中南财经", "西南大学", "西南财经",
-                         "西南交大", "成都理工", "云南大学", "贵州大学", "广西大学",
-                         "海南大学", "西藏大学", "新疆大学", "石河子大学", "宁夏大学",
-                         "内蒙古大学", "延边大学", "东北师范", "东北林业", "东北农业",
-                         "哈尔滨工程", "东北石油"]
+    tier211 = tier985 + [
+        "北京邮电",
+        "华北电力",
+        "北京交大",
+        "北京工业",
+        "北京化工",
+        "北京林业",
+        "中国政法",
+        "中央财经",
+        "对外经贸",
+        "中国矿业",
+        "河海大学",
+        "南京师范",
+        "南京理工",
+        "南京航天",
+        "苏州大学",
+        "江南大学",
+        "南京农业",
+        "上海大学",
+        "上海财经",
+        "华东理工",
+        "东华大学",
+        "上海外国语",
+        "上海大学",
+        "暨南大学",
+        "华南师范",
+        "武汉理工",
+        "华中师范",
+        "中南财经",
+        "西南大学",
+        "西南财经",
+        "西南交大",
+        "成都理工",
+        "云南大学",
+        "贵州大学",
+        "广西大学",
+        "海南大学",
+        "西藏大学",
+        "新疆大学",
+        "石河子大学",
+        "宁夏大学",
+        "内蒙古大学",
+        "延边大学",
+        "东北师范",
+        "东北林业",
+        "东北农业",
+        "哈尔滨工程",
+        "东北石油",
+    ]
     # 双一流关键词
-    tier_yiliu = tier211 + ["南方科技", "上海科技", "中国科学院", "西湖大学", "深圳大学",
-                           "宁波大学", "河南大学", "山西大学", "湘潭大学", "南京信息工程"]
+    tier_yiliu = tier211 + [
+        "南方科技",
+        "上海科技",
+        "中国科学院",
+        "西湖大学",
+        "深圳大学",
+        "宁波大学",
+        "河南大学",
+        "山西大学",
+        "湘潭大学",
+        "南京信息工程",
+    ]
 
     for t in tier985:
         if t in name:
@@ -138,6 +224,7 @@ def _gpa_factor(gpa: float) -> float:
 # ======================================================================
 # 预测端点
 # ======================================================================
+
 
 @router.post("/predict", response_model=PredictResponse)
 @_get_limiter().limit("10/minute")
@@ -201,7 +288,9 @@ def predict_admission(
         avg_score = sum(total_scores) / len(total_scores)
         max_score = max(total_scores)
         min_score = min(total_scores)
-        std_score = (sum((s - avg_score) ** 2 for s in total_scores) / len(total_scores)) ** 0.5 or 1
+        std_score = (
+            sum((s - avg_score) ** 2 for s in total_scores) / len(total_scores)
+        ) ** 0.5 or 1
 
         # 报录比
         app_counts = [r.application_count for r in records if r.application_count]
@@ -218,52 +307,76 @@ def predict_admission(
         z_score = score_diff / std_score
         # 使用 sigmoid 近似概率: 1 / (1 + e^(-z))
         score_prob = 1 / (1 + math.exp(-z_score))
-        score_impact = "positive" if score_diff > 10 else ("negative" if score_diff < -10 else "neutral")
-        factors.append(Factor(
-            factor=f"分数 {body.user_score} vs 历史均分 {avg_score:.0f} (差值 {score_diff:+.0f})",
-            impact=score_impact,
-            weight=0.4,
-        ))
+        score_impact = (
+            "positive" if score_diff > 10 else ("negative" if score_diff < -10 else "neutral")
+        )
+        factors.append(
+            Factor(
+                factor=f"分数 {body.user_score} vs 历史均分 {avg_score:.0f} (差值 {score_diff:+.0f})",
+                impact=score_impact,
+                weight=0.4,
+            )
+        )
 
         # 4b. 院校层级因子 (20%)
         tier = _classify_university_tier(body.school_name)
         tier_w = _university_tier_weight(tier)
-        factors.append(Factor(
-            factor=f"院校层级: {tier}",
-            impact="positive" if tier_w > 1 else ("negative" if tier_w < 1 else "neutral"),
-            weight=0.2,
-        ))
+        factors.append(
+            Factor(
+                factor=f"院校层级: {tier}",
+                impact="positive" if tier_w > 1 else ("negative" if tier_w < 1 else "neutral"),
+                weight=0.2,
+            )
+        )
 
         # 4c. 专业竞争比因子 (20%)
         comp_factor = max(0.3, 1 - competition_ratio / 50)  # 报录比越高，概率越低
-        comp_impact = "positive" if competition_ratio < 8 else ("negative" if competition_ratio > 20 else "neutral")
-        factors.append(Factor(
-            factor=f"竞争比 {competition_ratio:.1f}:1",
-            impact=comp_impact,
-            weight=0.2,
-        ))
+        comp_impact = (
+            "positive"
+            if competition_ratio < 8
+            else ("negative" if competition_ratio > 20 else "neutral")
+        )
+        factors.append(
+            Factor(
+                factor=f"竞争比 {competition_ratio:.1f}:1",
+                impact=comp_impact,
+                weight=0.2,
+            )
+        )
 
         # 4d. GPA / 本科院校因子 (10%)
         gpa_w = _gpa_factor(body.user_gpa)
         undergrad_tier = _classify_university_tier(body.user_university)
         undergrad_w = _university_tier_weight(undergrad_tier)
-        edu_score = (gpa_w * 0.6 + undergrad_w / 1.2 * 0.4)  # 归一化到 ~0-1
-        factors.append(Factor(
-            factor=f"GPA {body.user_gpa} + 本科 {undergrad_tier}",
-            impact="positive" if edu_score > 0.7 else ("negative" if edu_score < 0.5 else "neutral"),
-            weight=0.1,
-        ))
+        edu_score = gpa_w * 0.6 + undergrad_w / 1.2 * 0.4  # 归一化到 ~0-1
+        factors.append(
+            Factor(
+                factor=f"GPA {body.user_gpa} + 本科 {undergrad_tier}",
+                impact=(
+                    "positive"
+                    if edu_score > 0.7
+                    else ("negative" if edu_score < 0.5 else "neutral")
+                ),
+                weight=0.1,
+            )
+        )
 
         # 4e. 调剂友好度因子 (10%)
         transfer_w = 0.5  # 默认中立
         if intel and intel.transfer_friendly:
             transfer_map = {"yes": 0.8, "moderate": 0.5, "no": 0.2}
             transfer_w = transfer_map.get(intel.transfer_friendly, 0.5)
-        factors.append(Factor(
-            factor=f"调剂友好度: {intel.transfer_friendly if intel else '未知'}",
-            impact="positive" if transfer_w > 0.6 else ("negative" if transfer_w < 0.4 else "neutral"),
-            weight=0.1,
-        ))
+        factors.append(
+            Factor(
+                factor=f"调剂友好度: {intel.transfer_friendly if intel else '未知'}",
+                impact=(
+                    "positive"
+                    if transfer_w > 0.6
+                    else ("negative" if transfer_w < 0.4 else "neutral")
+                ),
+                weight=0.1,
+            )
+        )
 
         # 5. 综合概率
         raw_prob = (
@@ -296,6 +409,7 @@ def predict_admission(
         similar_cases = []
         try:
             from app.models.outcome_report import OutcomeReport
+
             outcomes = (
                 db.query(OutcomeReport)
                 .filter(
@@ -308,7 +422,9 @@ def predict_admission(
                 .all()
             )
             for o in outcomes:
-                outcome_label = "admitted" if o.outcome_type.value == "grad_civil_career" else "rejected"
+                outcome_label = (
+                    "admitted" if o.outcome_type.value == "grad_civil_career" else "rejected"
+                )
                 similar_cases.append(SimilarCase(user_score=o.score_total, outcome=outcome_label))
         except Exception as e:
             logger.warning("fetch similar_cases failed: %s", e)
@@ -320,12 +436,18 @@ def predict_admission(
         elif score_diff > 0:
             recommendation_parts.append(f"你的分数略高于历年均分 {score_diff:.0f} 分，有一定优势")
         elif score_diff > -20:
-            recommendation_parts.append(f"你的分数略低于历年均分 {abs(score_diff):.0f} 分，需加强备考")
+            recommendation_parts.append(
+                f"你的分数略低于历年均分 {abs(score_diff):.0f} 分，需加强备考"
+            )
         else:
-            recommendation_parts.append(f"你的分数低于历年均分 {abs(score_diff):.0f} 分，建议考虑调剂方案")
+            recommendation_parts.append(
+                f"你的分数低于历年均分 {abs(score_diff):.0f} 分，建议考虑调剂方案"
+            )
 
         if competition_ratio > 15:
-            recommendation_parts.append(f"该专业竞争激烈（报录比 {competition_ratio:.1f}:1），建议同时准备调剂")
+            recommendation_parts.append(
+                f"该专业竞争激烈（报录比 {competition_ratio:.1f}:1），建议同时准备调剂"
+            )
 
         if intel and intel.background_discrimination in ("moderate", "severe"):
             recommendation_parts.append("该校存在本科歧视倾向，建议同时准备保底院校")
@@ -344,7 +466,7 @@ def predict_admission(
         )
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         # 修复: FASTAPI-RESP-001 — 不向客户端泄漏内部异常信息，仅记录日志
         logger.exception("predict_admission failed")
         raise HTTPException(status_code=500, detail="预测计算失败，请稍后重试")
@@ -353,6 +475,7 @@ def predict_admission(
 # ======================================================================
 # 历史数据端点
 # ======================================================================
+
 
 @router.get("/history/{school}/{major}", response_model=HistoryResponse)
 @_get_limiter().limit("30/minute")
@@ -400,9 +523,15 @@ def get_admission_history(
             "avg_score": round(sum(total_scores) / len(total_scores), 1) if total_scores else None,
             "max_score": max(total_scores) if total_scores else None,
             "min_score": min(total_scores) if total_scores else None,
-            "avg_admission_rate": round(
-                sum(e / a * 100 for e, a in zip(enroll_counts, app_counts) if a) / len(app_counts), 2
-            ) if app_counts else None,
+            "avg_admission_rate": (
+                round(
+                    sum(e / a * 100 for e, a in zip(enroll_counts, app_counts) if a)
+                    / len(app_counts),
+                    2,
+                )
+                if app_counts
+                else None
+            ),
         }
 
         return HistoryResponse(
@@ -411,7 +540,7 @@ def get_admission_history(
             records=history,
             statistics=statistics,
         )
-    except Exception as e:
+    except Exception:
         # 修复: FASTAPI-RESP-001 — 不向客户端泄漏内部异常信息，仅记录日志
         logger.exception("get_admission_history failed")
         raise HTTPException(status_code=500, detail="查询历史数据失败，请稍后重试")

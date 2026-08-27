@@ -1,5 +1,6 @@
 # backend/pipeline/reviewer.py
 """报告审核与发布模块"""
+
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -15,7 +16,9 @@ def review_report(db: Session, report_id: UUID) -> ReportRecord | None:
     """
     report = db.query(ReportRecord).filter(ReportRecord.id == report_id).first()
     if not report or report.parse_status != ParseStatus.parsed:
-        print(f"无法审核：报告不存在或状态不是 parsed（当前: {report.parse_status if report else '不存在'}）")
+        print(
+            f"无法审核：报告不存在或状态不是 parsed（当前: {report.parse_status if report else '不存在'}）"
+        )
         return None
 
     # 输出摘要
@@ -29,11 +32,11 @@ def review_report(db: Session, report_id: UUID) -> ReportRecord | None:
         print(f"    就业率: {data.employment_rate}, 升学率: {data.further_study_rate}")
         print(f"    考公率: {data.civil_service_rate}, 出国率: {data.abroad_rate}")
         if data.employer_ranking:
-            print(f"    Top5 雇主:")
+            print("    Top5 雇主:")
             for emp in data.employer_ranking[:5]:
                 print(f"      - {emp['name']}: {emp['count']}人")
         if data.school_for_further_study:
-            print(f"    Top5 升学去向:")
+            print("    Top5 升学去向:")
             for sch in data.school_for_further_study[:5]:
                 print(f"      - {sch['name']}: {sch['count']}人")
     print(f"\n{'='*60}")
@@ -54,10 +57,10 @@ def publish_report(db: Session, report_id: UUID) -> ReportRecord | None:
     """发布报告，仅 reviewed 状态可发布。"""
     report = db.query(ReportRecord).filter(ReportRecord.id == report_id).first()
     if not report or report.parse_status != ParseStatus.reviewed:
-        print(f"无法发布：报告不存在或状态不是 reviewed")
+        print("无法发布：报告不存在或状态不是 reviewed")
         return None
 
     report.parse_status = ParseStatus.published
     db.commit()
-    print(f"报告已发布，数据对前端搜索可见")
+    print("报告已发布，数据对前端搜索可见")
     return report

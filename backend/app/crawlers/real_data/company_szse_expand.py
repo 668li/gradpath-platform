@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """SZSE listed-company list EXPANSION for GradPath.
 
 Extends the sampled szse_listed source in company_public_scraper.py (3 pages /
@@ -26,10 +25,10 @@ is a NEW company for the GradPath company库.
 
 Run:  py -3.13 company_szse_expand.py [--pages 55] [--min 1000]
 """
+
 from __future__ import annotations
 
 import argparse
-import io
 import json
 import re
 import sys
@@ -60,8 +59,9 @@ class HTTPBlockedError(RuntimeError):
 def robots_allowed(url: str) -> tuple[bool, str]:
     base = "https://www.szse.cn"
     try:
-        resp = requests.get(f"{base}/robots.txt",
-                            headers={"User-Agent": USER_AGENT}, timeout=TIMEOUT)
+        resp = requests.get(
+            f"{base}/robots.txt", headers={"User-Agent": USER_AGENT}, timeout=TIMEOUT
+        )
         if resp.status_code == 200 and resp.text.strip():
             rp = urllib.robotparser.RobotFileParser()
             rp.parse(resp.text.splitlines())
@@ -83,9 +83,9 @@ def fetch_json(page: int) -> list:
     url = SZSE_API.format(page=page)
     time.sleep(POLITE_DELAY)
     # 官网接口要求同站 Referer，属正常请求头（非绕过反爬）
-    resp = requests.get(url, headers={"User-Agent": USER_AGENT,
-                                      "Referer": "https://www.szse.cn/"},
-                        timeout=TIMEOUT)
+    resp = requests.get(
+        url, headers={"User-Agent": USER_AGENT, "Referer": "https://www.szse.cn/"}, timeout=TIMEOUT
+    )
     if resp.status_code in BLOCKING:
         raise HTTPBlockedError(f"HTTP {resp.status_code}（{url}），放弃")
     resp.raise_for_status()
@@ -108,21 +108,19 @@ def row_to_company(row: dict, page_url: str) -> dict | None:
     return {
         "name": name,
         "industry": industry,
-        "size": "",      # 接口未披露员工规模（如实留空）
-        "city": "",      # 接口未披露注册地（如实留空）
+        "size": "",  # 接口未披露员工规模（如实留空）
+        "city": "",  # 接口未披露注册地（如实留空）
         "description": desc + "。",
-        "website": "",   # 接口未披露官网（如实留空）
+        "website": "",  # 接口未披露官网（如实留空）
         "source_url": page_url,
-        "rank": None,    # 列表按代码排序，无榜单排名
+        "rank": None,  # 列表按代码排序，无榜单排名
     }
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="深交所上市公司列表扩容")
-    parser.add_argument("--pages", type=int, default=55,
-                        help="抓取页数（每页20家，默认55）")
-    parser.add_argument("--min", type=int, default=1000,
-                        help="期望去重后最少公司数（默认1000）")
+    parser.add_argument("--pages", type=int, default=55, help="抓取页数（每页20家，默认55）")
+    parser.add_argument("--min", type=int, default=1000, help="期望去重后最少公司数（默认1000）")
     args = parser.parse_args()
 
     allowed, robots_note = robots_allowed(SZSE_API.format(page=1))
@@ -165,21 +163,24 @@ def main() -> int:
             seen.add(key)
             deduped.append(c)
 
-    with io.open(OUT_PATH, "w", encoding="utf-8") as fh:
+    with open(OUT_PATH, "w", encoding="utf-8") as fh:
         json.dump(deduped, fh, ensure_ascii=False, indent=2)
 
     print("=" * 68)
-    print(f"抓取页数: {min(len(seen) and args.pages, args.pages)}"
-          f"（失败页: {failed_pages if failed_pages else '无'}）")
-    print(f"原始条数: {len(companies)}，去除与现有库重复: "
-          f"{len(companies) - len(deduped)}")
+    print(
+        f"抓取页数: {min(len(seen) and args.pages, args.pages)}"
+        f"（失败页: {failed_pages if failed_pages else '无'}）"
+    )
+    print(f"原始条数: {len(companies)}，去除与现有库重复: " f"{len(companies) - len(deduped)}")
     print(f"新增公司: {len(deduped)} 家 -> {OUT_PATH}")
     if deduped:
         print(f"样例: {[c['name'] for c in deduped[:3]]}")
     ok = len(deduped) >= args.min and len(companies) >= 200
     if not ok:
-        print(f"[WARN] 未达到目标（≥{args.pages}页里抓到 {args.pages} 页，"
-              f"≥{args.min}家 vs 实际 {len(deduped)} 家）")
+        print(
+            f"[WARN] 未达到目标（≥{args.pages}页里抓到 {args.pages} 页，"
+            f"≥{args.min}家 vs 实际 {len(deduped)} 家）"
+        )
     return 0 if ok else 1
 
 

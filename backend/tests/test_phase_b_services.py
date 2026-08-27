@@ -5,12 +5,11 @@
 - 使用 db_session fixture（SQLite 内存）
 - 验证核心业务逻辑：CRUD、聚合、反馈、推送
 """
+
 import asyncio
 from datetime import date, datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
-
-import pytest
 
 from app.models.dark_knowledge_push import DarkKnowledgePushLog, PushFeedback
 from app.models.decision_review import DecisionReviewQueue, ReviewStatus
@@ -18,14 +17,6 @@ from app.models.destination_decision import DecisionStatus, DestinationDecision,
 from app.models.grad_intel import DarkKnowledge
 from app.models.onboarding import OnboardingStatus, UserOnboarding
 from app.models.user_memory import MemoryFactType, UserMemoryFact
-from app.services.decision_pulse_service import (
-    get_active_decisions,
-    get_dark_knowledge_feed,
-    get_full_pulse,
-    get_memory_facts_panel,
-    get_pulse_overview,
-    get_review_queue,
-)
 from app.services.dark_knowledge_push_service import (
     get_push_history,
     get_unread_count,
@@ -34,6 +25,13 @@ from app.services.dark_knowledge_push_service import (
     push_for_user,
     record_feedback,
 )
+from app.services.decision_pulse_service import (
+    get_active_decisions,
+    get_dark_knowledge_feed,
+    get_full_pulse,
+    get_pulse_overview,
+    get_review_queue,
+)
 from app.services.onboarding_service import (
     create_onboarding,
     generate_diagnosis,
@@ -41,10 +39,7 @@ from app.services.onboarding_service import (
     is_onboarding_completed,
     skip_onboarding,
 )
-from app.services.user_context_service import (
-    build_context_prompt,
-    get_user_context,
-)
+from app.services.user_context_service import build_context_prompt, get_user_context
 from app.services.user_memory_service import (
     add_user_provided_fact,
     delete_memory_fact,
@@ -53,8 +48,8 @@ from app.services.user_memory_service import (
     update_memory_feedback,
 )
 
-
 # ========== user_context_service 测试 ==========
+
 
 class TestUserContextService:
     def test_empty_user_context(self, db_session):
@@ -89,24 +84,26 @@ class TestUserContextService:
     def test_context_excludes_inactive_facts(self, db_session):
         """is_active=False 的事实不应出现在上下文"""
         user_id = uuid4()
-        db_session.add_all([
-            UserMemoryFact(
-                user_id=user_id,
-                fact_type=MemoryFactType.background,
-                fact_key="gpa",
-                fact_value="3.8",
-                confidence=90,
-                is_active=True,
-            ),
-            UserMemoryFact(
-                user_id=user_id,
-                fact_type=MemoryFactType.background,
-                fact_key="old_gpa",
-                fact_value="3.5",
-                confidence=50,
-                is_active=False,
-            ),
-        ])
+        db_session.add_all(
+            [
+                UserMemoryFact(
+                    user_id=user_id,
+                    fact_type=MemoryFactType.background,
+                    fact_key="gpa",
+                    fact_value="3.8",
+                    confidence=90,
+                    is_active=True,
+                ),
+                UserMemoryFact(
+                    user_id=user_id,
+                    fact_type=MemoryFactType.background,
+                    fact_key="old_gpa",
+                    fact_value="3.5",
+                    confidence=50,
+                    is_active=False,
+                ),
+            ]
+        )
         db_session.commit()
 
         ctx = get_user_context(db_session, user_id)
@@ -123,13 +120,15 @@ class TestUserContextService:
     def test_build_context_prompt_with_data(self, db_session):
         """有数据时应包含画像信息"""
         user_id = uuid4()
-        db_session.add(UserMemoryFact(
-            user_id=user_id,
-            fact_type=MemoryFactType.preference,
-            fact_key="preferred_industry",
-            fact_value="金融科技",
-            confidence=95,
-        ))
+        db_session.add(
+            UserMemoryFact(
+                user_id=user_id,
+                fact_type=MemoryFactType.preference,
+                fact_key="preferred_industry",
+                fact_value="金融科技",
+                confidence=95,
+            )
+        )
         db_session.commit()
 
         prompt = build_context_prompt(db_session, user_id)
@@ -138,6 +137,7 @@ class TestUserContextService:
 
 
 # ========== user_memory_service 测试 ==========
+
 
 class TestUserMemoryService:
     def test_get_user_memory_empty(self, db_session):
@@ -148,22 +148,24 @@ class TestUserMemoryService:
     def test_get_user_memory_with_filter(self, db_session):
         """按 fact_type 过滤"""
         user_id = uuid4()
-        db_session.add_all([
-            UserMemoryFact(
-                user_id=user_id,
-                fact_type=MemoryFactType.preference,
-                fact_key="industry",
-                fact_value="金融",
-                confidence=90,
-            ),
-            UserMemoryFact(
-                user_id=user_id,
-                fact_type=MemoryFactType.background,
-                fact_key="gpa",
-                fact_value="3.8",
-                confidence=80,
-            ),
-        ])
+        db_session.add_all(
+            [
+                UserMemoryFact(
+                    user_id=user_id,
+                    fact_type=MemoryFactType.preference,
+                    fact_key="industry",
+                    fact_value="金融",
+                    confidence=90,
+                ),
+                UserMemoryFact(
+                    user_id=user_id,
+                    fact_type=MemoryFactType.background,
+                    fact_key="gpa",
+                    fact_value="3.8",
+                    confidence=80,
+                ),
+            ]
+        )
         db_session.commit()
 
         # 不带过滤
@@ -223,9 +225,7 @@ class TestUserMemoryService:
         db_session.add(old)
         db_session.commit()
 
-        new = add_user_provided_fact(
-            db_session, user_id, MemoryFactType.background, "gpa", "3.9"
-        )
+        new = add_user_provided_fact(db_session, user_id, MemoryFactType.background, "gpa", "3.9")
         assert new.confidence == 100
         assert new.source == "user_provided"
 
@@ -259,10 +259,10 @@ class TestUserMemoryService:
         """mock LLM 返回 JSON 数组，应正确抽取并存储"""
         user_id = uuid4()
         mock_ai = MagicMock()
-        mock_ai.chat = AsyncMock(return_value='''[
+        mock_ai.chat = AsyncMock(return_value="""[
             {"fact_type": "preference", "fact_key": "preferred_industry", "fact_value": "金融科技", "confidence": 95},
             {"fact_type": "background", "fact_key": "gpa", "fact_value": "3.8", "confidence": 90}
-        ]''')
+        ]""")
         mock_ai_cls.return_value = mock_ai
 
         messages = [
@@ -282,19 +282,21 @@ class TestUserMemoryService:
         """同 fact_key 的新事实应覆盖旧事实"""
         user_id = uuid4()
         # 旧事实
-        db_session.add(UserMemoryFact(
-            user_id=user_id,
-            fact_type=MemoryFactType.background,
-            fact_key="gpa",
-            fact_value="3.5",
-            confidence=70,
-        ))
+        db_session.add(
+            UserMemoryFact(
+                user_id=user_id,
+                fact_type=MemoryFactType.background,
+                fact_key="gpa",
+                fact_value="3.5",
+                confidence=70,
+            )
+        )
         db_session.commit()
 
         mock_ai = MagicMock()
-        mock_ai.chat = AsyncMock(return_value='''[
+        mock_ai.chat = AsyncMock(return_value="""[
             {"fact_type": "background", "fact_key": "gpa", "fact_value": "3.9", "confidence": 95}
-        ]''')
+        ]""")
         mock_ai_cls.return_value = mock_ai
 
         messages = [{"role": "user", "content": "我GPA其实是3.9"}]
@@ -310,6 +312,7 @@ class TestUserMemoryService:
 
 
 # ========== onboarding_service 测试 ==========
+
 
 class TestOnboardingService:
     def test_create_onboarding_new(self, db_session):
@@ -331,12 +334,8 @@ class TestOnboardingService:
     def test_create_onboarding_updates_existing(self, db_session):
         """已有 onboarding 时应更新而非新建"""
         user_id = uuid4()
-        ob1 = create_onboarding(
-            db_session, user_id, "大三", "postgrad", "互联网", {"a": 1}
-        )
-        ob2 = create_onboarding(
-            db_session, user_id, "大四", "employment", "金融", {"b": 2}
-        )
+        ob1 = create_onboarding(db_session, user_id, "大三", "postgrad", "互联网", {"a": 1})
+        ob2 = create_onboarding(db_session, user_id, "大四", "employment", "金融", {"b": 2})
         assert ob1.id == ob2.id
         assert ob2.current_stage == "大四"
         assert ob2.target_direction == "employment"
@@ -398,7 +397,7 @@ class TestOnboardingService:
         ob = create_onboarding(db_session, user_id, "大三", "postgrad", "互联网", {})
 
         mock_ai = MagicMock()
-        mock_ai.chat = AsyncMock(return_value='''{
+        mock_ai.chat = AsyncMock(return_value="""{
             "diagnosis": "用户具备较强技术背景，建议优先准备考研",
             "recommended_path": {
                 "short_term": ["选学校", "买资料"],
@@ -409,7 +408,7 @@ class TestOnboardingService:
                 {"type": "strength", "text": "技术能力强"},
                 {"type": "risk", "text": "英语偏弱"}
             ]
-        }''')
+        }""")
         mock_ai_cls.return_value = mock_ai
 
         result = asyncio.run(generate_diagnosis(db_session, ob.id))
@@ -437,6 +436,7 @@ class TestOnboardingService:
 
 # ========== decision_pulse_service 测试 ==========
 
+
 class TestDecisionPulseService:
     def test_pulse_overview_empty(self, db_session):
         """无数据时应返回零值"""
@@ -453,34 +453,42 @@ class TestDecisionPulseService:
         """有数据时应正确统计"""
         user_id = uuid4()
         # 1 个进行中决策
-        db_session.add(DestinationDecision(
-            user_id=user_id,
-            decision_date=date.today(),
-            destination_type=DestinationType.postgrad,
-            status=DecisionStatus.planned,
-            confidence=4,
-            details={},
-        ))
+        db_session.add(
+            DestinationDecision(
+                user_id=user_id,
+                decision_date=date.today(),
+                destination_type=DestinationType.postgrad,
+                status=DecisionStatus.planned,
+                confidence=4,
+                details={},
+            )
+        )
         # 1 个待回顾任务（已到期）
-        db_session.add(DecisionReviewQueue(
-            user_id=user_id,
-            decision_id=uuid4(),
-            scheduled_at=date.today() - timedelta(days=1),
-            status=ReviewStatus.pending,
-        ))
+        db_session.add(
+            DecisionReviewQueue(
+                user_id=user_id,
+                decision_id=uuid4(),
+                scheduled_at=date.today() - timedelta(days=1),
+                status=ReviewStatus.pending,
+            )
+        )
         # 1 个未读推送
-        db_session.add(DarkKnowledgePushLog(
-            user_id=user_id,
-            dark_knowledge_id=uuid4(),
-            stage="decision",
-        ))
+        db_session.add(
+            DarkKnowledgePushLog(
+                user_id=user_id,
+                dark_knowledge_id=uuid4(),
+                stage="decision",
+            )
+        )
         # 1 条记忆事实
-        db_session.add(UserMemoryFact(
-            user_id=user_id,
-            fact_type=MemoryFactType.fact,
-            fact_key="test",
-            fact_value="value",
-        ))
+        db_session.add(
+            UserMemoryFact(
+                user_id=user_id,
+                fact_type=MemoryFactType.fact,
+                fact_key="test",
+                fact_value="value",
+            )
+        )
         db_session.commit()
 
         overview = get_pulse_overview(db_session, user_id)
@@ -493,24 +501,26 @@ class TestDecisionPulseService:
     def test_get_active_decisions(self, db_session):
         """进行中决策列表"""
         user_id = uuid4()
-        db_session.add_all([
-            DestinationDecision(
-                user_id=user_id,
-                decision_date=date.today(),
-                destination_type=DestinationType.postgrad,
-                status=DecisionStatus.planned,
-                confidence=4,
-                details={},
-            ),
-            DestinationDecision(
-                user_id=user_id,
-                decision_date=date.today(),
-                destination_type=DestinationType.employment,
-                status=DecisionStatus.executed,
-                confidence=5,
-                details={},
-            ),
-        ])
+        db_session.add_all(
+            [
+                DestinationDecision(
+                    user_id=user_id,
+                    decision_date=date.today(),
+                    destination_type=DestinationType.postgrad,
+                    status=DecisionStatus.planned,
+                    confidence=4,
+                    details={},
+                ),
+                DestinationDecision(
+                    user_id=user_id,
+                    decision_date=date.today(),
+                    destination_type=DestinationType.employment,
+                    status=DecisionStatus.executed,
+                    confidence=5,
+                    details={},
+                ),
+            ]
+        )
         db_session.commit()
 
         active = get_active_decisions(db_session, user_id)
@@ -520,12 +530,14 @@ class TestDecisionPulseService:
     def test_get_review_queue_overdue(self, db_session):
         """过期回顾任务应标记 is_overdue"""
         user_id = uuid4()
-        db_session.add(DecisionReviewQueue(
-            user_id=user_id,
-            decision_id=uuid4(),
-            scheduled_at=date.today() - timedelta(days=5),
-            status=ReviewStatus.pending,
-        ))
+        db_session.add(
+            DecisionReviewQueue(
+                user_id=user_id,
+                decision_id=uuid4(),
+                scheduled_at=date.today() - timedelta(days=5),
+                status=ReviewStatus.pending,
+            )
+        )
         db_session.commit()
 
         queue = get_review_queue(db_session, user_id)
@@ -537,21 +549,25 @@ class TestDecisionPulseService:
         """暗知识推送流"""
         user_id = uuid4()
         dk_id = uuid4()
-        db_session.add(DarkKnowledge(
-            stage="decision",
-            category="测试",
-            title="测试暗知识",
-            content="这是测试内容",
-            importance="high",
-        ))
+        db_session.add(
+            DarkKnowledge(
+                stage="decision",
+                category="测试",
+                title="测试暗知识",
+                content="这是测试内容",
+                importance="high",
+            )
+        )
         db_session.commit()
         # 需要获取 dk.id
         dk = db_session.query(DarkKnowledge).filter(DarkKnowledge.title == "测试暗知识").first()
-        db_session.add(DarkKnowledgePushLog(
-            user_id=user_id,
-            dark_knowledge_id=dk.id,
-            stage="decision",
-        ))
+        db_session.add(
+            DarkKnowledgePushLog(
+                user_id=user_id,
+                dark_knowledge_id=dk.id,
+                stage="decision",
+            )
+        )
         db_session.commit()
 
         feed = get_dark_knowledge_feed(db_session, user_id)
@@ -571,6 +587,7 @@ class TestDecisionPulseService:
 
 # ========== dark_knowledge_push_service 测试 ==========
 
+
 class TestDarkKnowledgePushService:
     def test_push_for_user_no_candidates(self, db_session):
         """无候选暗知识时应返回空"""
@@ -582,14 +599,16 @@ class TestDarkKnowledgePushService:
         user_id = uuid4()
         # 创建 3 条暗知识
         for i in range(3):
-            db_session.add(DarkKnowledge(
-                stage="decision",
-                category=f"分类{i}",
-                title=f"标题{i}",
-                content=f"内容{i}",
-                importance="high",
-                sort_order=i,
-            ))
+            db_session.add(
+                DarkKnowledge(
+                    stage="decision",
+                    category=f"分类{i}",
+                    title=f"标题{i}",
+                    content=f"内容{i}",
+                    importance="high",
+                    sort_order=i,
+                )
+            )
         db_session.commit()
 
         result = push_for_user(db_session, user_id, stage="decision", limit=2)
@@ -620,18 +639,18 @@ class TestDarkKnowledgePushService:
         """决策触发推送"""
         user_id = uuid4()
         decision_id = uuid4()
-        db_session.add(DarkKnowledge(
-            stage="decision",
-            category="决策相关",
-            title="决策必知",
-            content="内容",
-            importance="high",
-        ))
+        db_session.add(
+            DarkKnowledge(
+                stage="decision",
+                category="决策相关",
+                title="决策必知",
+                content="内容",
+                importance="high",
+            )
+        )
         db_session.commit()
 
-        result = push_for_decision(
-            db_session, user_id, decision_id, "postgrad", limit=2
-        )
+        result = push_for_decision(db_session, user_id, decision_id, "postgrad", limit=2)
         assert len(result) == 1
         assert result[0].push_reason["trigger"] == "decision_created"
         assert result[0].push_reason["decision_id"] == str(decision_id)
@@ -681,19 +700,21 @@ class TestDarkKnowledgePushService:
     def test_get_unread_count(self, db_session):
         """未读数统计"""
         user_id = uuid4()
-        db_session.add_all([
-            DarkKnowledgePushLog(
-                user_id=user_id,
-                dark_knowledge_id=uuid4(),
-                stage="decision",
-            ),
-            DarkKnowledgePushLog(
-                user_id=user_id,
-                dark_knowledge_id=uuid4(),
-                stage="preparation",
-                read_at=datetime.now(timezone.utc),
-            ),
-        ])
+        db_session.add_all(
+            [
+                DarkKnowledgePushLog(
+                    user_id=user_id,
+                    dark_knowledge_id=uuid4(),
+                    stage="decision",
+                ),
+                DarkKnowledgePushLog(
+                    user_id=user_id,
+                    dark_knowledge_id=uuid4(),
+                    stage="preparation",
+                    read_at=datetime.now(timezone.utc),
+                ),
+            ]
+        )
         db_session.commit()
 
         assert get_unread_count(db_session, user_id) == 1
@@ -701,19 +722,21 @@ class TestDarkKnowledgePushService:
     def test_get_push_history_only_unread(self, db_session):
         """只看未读"""
         user_id = uuid4()
-        db_session.add_all([
-            DarkKnowledgePushLog(
-                user_id=user_id,
-                dark_knowledge_id=uuid4(),
-                stage="decision",
-            ),
-            DarkKnowledgePushLog(
-                user_id=user_id,
-                dark_knowledge_id=uuid4(),
-                stage="preparation",
-                read_at=datetime.now(timezone.utc),
-            ),
-        ])
+        db_session.add_all(
+            [
+                DarkKnowledgePushLog(
+                    user_id=user_id,
+                    dark_knowledge_id=uuid4(),
+                    stage="decision",
+                ),
+                DarkKnowledgePushLog(
+                    user_id=user_id,
+                    dark_knowledge_id=uuid4(),
+                    stage="preparation",
+                    read_at=datetime.now(timezone.utc),
+                ),
+            ]
+        )
         db_session.commit()
 
         history = get_push_history(db_session, user_id, only_unread=True)

@@ -1,14 +1,11 @@
-# -*- coding: utf-8 -*-
 """Crawl 新东方考研 and 考研学长学姐经验 using httpx (Firecrawl credits exhausted)."""
-import os
+
 import json
-import re
-import time
 import logging
+import time
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import urljoin
-from typing import Optional
 
 import httpx
 from bs4 import BeautifulSoup
@@ -25,7 +22,7 @@ HEADERS = {
 }
 
 
-def fetch_page(client: httpx.Client, url: str) -> Optional[str]:
+def fetch_page(client: httpx.Client, url: str) -> str | None:
     """Fetch a single page, return HTML or None."""
     try:
         resp = client.get(url, follow_redirects=True, timeout=30)
@@ -53,7 +50,10 @@ def extract_article_links(html: str, base_url: str) -> list[dict]:
             continue
         if full_url in seen:
             continue
-        if any(x in href for x in ["javascript:", "#", "mailto:", ".jpg", ".png", ".gif", ".css", ".js"]):
+        if any(
+            x in href
+            for x in ["javascript:", "#", "mailto:", ".jpg", ".png", ".gif", ".css", ".js"]
+        ):
             continue
 
         seen.add(full_url)
@@ -76,7 +76,17 @@ def extract_article_content(html: str) -> dict:
 
     content_parts = []
     # Try common content selectors
-    for sel in [".article-content", ".post-content", ".content", ".entry-content", "article", ".detail-content", "#content", ".main-content", ".news-content"]:
+    for sel in [
+        ".article-content",
+        ".post-content",
+        ".content",
+        ".entry-content",
+        "article",
+        ".detail-content",
+        "#content",
+        ".main-content",
+        ".news-content",
+    ]:
         els = soup.select(sel)
         for el in els:
             text = el.get_text(separator="\n", strip=True)
@@ -131,7 +141,13 @@ def crawl_koolearn(limit: int = 30) -> list[dict]:
             url = link["url"]
             title = link["title"]
             # Keep links that look like articles (contain /news/, /zx/, article patterns, or long enough)
-            if any(kw in url for kw in ["news", "zx", "kaoyan", "article", "post", "jy", "info", "detail"]) or len(title) > 8:
+            if (
+                any(
+                    kw in url
+                    for kw in ["news", "zx", "kaoyan", "article", "post", "jy", "info", "detail"]
+                )
+                or len(title) > 8
+            ):
                 article_links.append(link)
 
         # If not enough filtered links, use all
@@ -146,12 +162,14 @@ def crawl_koolearn(limit: int = 30) -> list[dict]:
             page_html = fetch_page(client, url)
             if page_html:
                 content = extract_article_content(page_html)
-                results.append({
-                    "source": "新东方考研",
-                    "url": url,
-                    "title": content["title"] or link["title"],
-                    "markdown": content["content"],
-                })
+                results.append(
+                    {
+                        "source": "新东方考研",
+                        "url": url,
+                        "title": content["title"] or link["title"],
+                        "markdown": content["content"],
+                    }
+                )
             time.sleep(1)
 
     return results
@@ -183,12 +201,14 @@ def crawl_kaoyan_senior(limit: int = 20) -> list[dict]:
             page_html = fetch_page(client, url)
             if page_html:
                 content = extract_article_content(page_html)
-                results.append({
-                    "source": "学长学姐经验",
-                    "url": url,
-                    "title": content["title"] or link["title"],
-                    "markdown": content["content"],
-                })
+                results.append(
+                    {
+                        "source": "学长学姐经验",
+                        "url": url,
+                        "title": content["title"] or link["title"],
+                        "markdown": content["content"],
+                    }
+                )
             time.sleep(1)
 
     return results

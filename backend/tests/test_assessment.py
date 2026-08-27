@@ -1,12 +1,20 @@
 # backend/tests/test_assessment.py
 """职业测评 API 测试 — 霍兰德职业兴趣测评。"""
 
-
 # 一组覆盖 R/I/A/S 四个维度的完整答案（每维度 3 次）
 _SAMPLE_ANSWERS = {
-    "q1": "R", "q2": "I", "q3": "A", "q4": "R",
-    "q5": "S", "q6": "A", "q7": "R", "q8": "I",
-    "q9": "S", "q10": "I", "q11": "A", "q12": "S",
+    "q1": "R",
+    "q2": "I",
+    "q3": "A",
+    "q4": "R",
+    "q5": "S",
+    "q6": "A",
+    "q7": "R",
+    "q8": "I",
+    "q9": "S",
+    "q10": "I",
+    "q11": "A",
+    "q12": "S",
 }
 
 
@@ -25,11 +33,7 @@ class TestAssessmentQuestions:
     def test_get_questions_returns_all_dimensions(self, client):
         """题目选项覆盖霍兰德 6 个维度。"""
         resp = client.get("/api/assessment/questions")
-        values = {
-            opt["value"]
-            for q in resp.json()
-            for opt in q["options"]
-        }
+        values = {opt["value"] for q in resp.json() for opt in q["options"]}
         assert values == {"R", "I", "A", "S", "E", "C"}
 
 

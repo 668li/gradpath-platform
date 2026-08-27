@@ -1,4 +1,5 @@
 """成长快照模型 — 让成长模式分析可持久化、可跨期对比（护城河补充）。"""
+
 from datetime import datetime, timezone
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text

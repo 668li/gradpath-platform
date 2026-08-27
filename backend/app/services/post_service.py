@@ -1,9 +1,9 @@
 """讨论帖服务层 — 发帖、回复、编辑、删除、列表查询。"""
+
 import uuid
 from uuid import UUID
 
 from fastapi import HTTPException, status
-from sqlalchemy import func
 from sqlalchemy.orm import Session, selectinload
 
 from app.models.post import Post, PostTopicType
@@ -14,9 +14,7 @@ from app.schemas.post import PostCreate, PostListResponse, PostResponse, PostUpd
 def _to_response(post: Post, author: User | None = None) -> PostResponse:
     """将 Post ORM 对象转为 PostResponse，附带作者信息。"""
     author_name = author.name if author else "未知用户"
-    replies = [
-        _to_reply_dict(r) for r in sorted(post.replies, key=lambda x: x.created_at)
-    ]
+    replies = [_to_reply_dict(r) for r in sorted(post.replies, key=lambda x: x.created_at)]
     return PostResponse(
         id=str(post.id),
         topic_type=post.topic_type.value if hasattr(post.topic_type, "value") else post.topic_type,
@@ -36,7 +34,9 @@ def _to_reply_dict(reply: Post) -> dict:
     """将回复帖转为 dict（不含嵌套 replies）。"""
     return {
         "id": str(reply.id),
-        "topic_type": reply.topic_type.value if hasattr(reply.topic_type, "value") else reply.topic_type,
+        "topic_type": (
+            reply.topic_type.value if hasattr(reply.topic_type, "value") else reply.topic_type
+        ),
         "topic_key": reply.topic_key,
         "content": reply.content,
         "author_id": str(reply.user_id),
@@ -89,10 +89,7 @@ def list_posts(
     user_ids = {p.user_id for p in top_posts}
     for p in top_posts:
         user_ids.update(r.user_id for r in p.replies)
-    users = (
-        db.query(User).filter(User.id.in_(list(user_ids))).all()
-        if user_ids else []
-    )
+    users = db.query(User).filter(User.id.in_(list(user_ids))).all() if user_ids else []
     user_map = {u.id: u.name for u in users}
 
     items = []
@@ -100,14 +97,10 @@ def list_posts(
         resp = _to_response(p)
         resp.author_name = user_map.get(p.user_id, "未知用户")
         for r in resp.replies:
-            r.author_name = user_map.get(
-                uuid.UUID(r.author_id), "未知用户"
-            )
+            r.author_name = user_map.get(uuid.UUID(r.author_id), "未知用户")
         items.append(resp)
 
-    return PostListResponse(
-        items=items, total=total, page=page, page_size=page_size
-    )
+    return PostListResponse(items=items, total=total, page=page, page_size=page_size)
 
 
 def create_post(db: Session, user: User, data: PostCreate) -> PostResponse:
@@ -162,22 +155,16 @@ def create_post(db: Session, user: User, data: PostCreate) -> PostResponse:
     return resp
 
 
-def update_post(
-    db: Session, user: User, post_id: str, data: PostUpdate
-) -> PostResponse:
+def update_post(db: Session, user: User, post_id: str, data: PostUpdate) -> PostResponse:
     """编辑帖子内容（仅作者）。"""
     try:
         pid = uuid.UUID(post_id)
     except (ValueError, TypeError):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="帖子不存在"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="帖子不存在")
 
     post = db.query(Post).filter(Post.id == pid).first()
     if not post:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="帖子不存在"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="帖子不存在")
     if post.user_id != user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -199,15 +186,11 @@ def delete_post(db: Session, user: User, post_id: str) -> None:
     try:
         pid = uuid.UUID(post_id)
     except (ValueError, TypeError):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="帖子不存在"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="帖子不存在")
 
     post = db.query(Post).filter(Post.id == pid).first()
     if not post:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="帖子不存在"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="帖子不存在")
     if post.user_id != user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -236,17 +219,9 @@ def list_public_posts(
             )
     total = q.count()
     offset = (page - 1) * page_size
-    top_posts = (
-        q.order_by(Post.created_at.desc())
-        .offset(offset)
-        .limit(page_size)
-        .all()
-    )
+    top_posts = q.order_by(Post.created_at.desc()).offset(offset).limit(page_size).all()
     user_ids = {p.user_id for p in top_posts}
-    users = (
-        db.query(User).filter(User.id.in_(list(user_ids))).all()
-        if user_ids else []
-    )
+    users = db.query(User).filter(User.id.in_(list(user_ids))).all() if user_ids else []
     user_map = {u.id: (u.nickname or u.username or u.name) for u in users}
 
     items = []
@@ -255,6 +230,4 @@ def list_public_posts(
         resp.author_name = user_map.get(p.user_id, "未知用户")
         items.append(resp)
 
-    return PostListResponse(
-        items=items, total=total, page=page, page_size=page_size
-    )
+    return PostListResponse(items=items, total=total, page=page, page_size=page_size)

@@ -1,5 +1,6 @@
 # backend/app/models/market_data.py
 """市场宏观数据模型 — 国家统计局等行业宏观指标，供 AI 决策指导与查询接口使用。"""
+
 from uuid import UUID
 
 from sqlalchemy import Float, ForeignKey, Integer, String, Text

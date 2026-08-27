@@ -1,4 +1,5 @@
 """B站考研视频爬虫 — 搜索考研相关视频并写入 knowledge_articles 表。"""
+
 import argparse
 import logging
 import re
@@ -32,15 +33,17 @@ class BilibiliKaoyanCrawler(BaseCrawler):
         self.pages = int(self.config.get("pages", 5))
         # 禁用基类限速，由 fetch 自行控制2秒间隔
         self._rate_limit = 0
-        self.session.headers.update({
-            "User-Agent": (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-            ),
-            "Referer": "https://search.bilibili.com/",
-            "Accept": "application/json, text/plain, */*",
-            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-        })
+        self.session.headers.update(
+            {
+                "User-Agent": (
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                ),
+                "Referer": "https://search.bilibili.com/",
+                "Accept": "application/json, text/plain, */*",
+                "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+            }
+        )
 
     def fetch(self) -> list[dict]:
         raw_items: list[dict] = []
@@ -53,7 +56,9 @@ class BilibiliKaoyanCrawler(BaseCrawler):
                 resp = self._request(url)
                 data = resp.json()
                 if data.get("code") != 0:
-                    logger.error(f"[{self.name}] 第{page}页 API错误 code={data.get('code')}: {data.get('message')}")
+                    logger.error(
+                        f"[{self.name}] 第{page}页 API错误 code={data.get('code')}: {data.get('message')}"
+                    )
                     self.stats["errors"] += 1
                     continue
                 result = data.get("data", {}).get("result", [])
@@ -84,22 +89,24 @@ class BilibiliKaoyanCrawler(BaseCrawler):
             tags_str = raw.get("tag") or ""
             tags = [t.strip() for t in tags_str.split(",") if t.strip()]
 
-            parsed.append({
-                "title": title,
-                "content": description if description and description != "-" else title,
-                "tags": tags,
-                "source": "bilibili",
-                "metadata": {
-                    "source_type": "video",
-                    "bvid": bvid,
-                    "author": author,
-                    "play": play,
-                    "created": created,
-                    "source_url": f"https://www.bilibili.com/video/{bvid}" if bvid else "",
-                },
-                "category": "education_path",
-                "is_published": True,
-            })
+            parsed.append(
+                {
+                    "title": title,
+                    "content": description if description and description != "-" else title,
+                    "tags": tags,
+                    "source": "bilibili",
+                    "metadata": {
+                        "source_type": "video",
+                        "bvid": bvid,
+                        "author": author,
+                        "play": play,
+                        "created": created,
+                        "source_url": f"https://www.bilibili.com/video/{bvid}" if bvid else "",
+                    },
+                    "category": "education_path",
+                    "is_published": True,
+                }
+            )
         return parsed
 
     def store(self, items: list[dict], db) -> int:
@@ -112,11 +119,14 @@ class BilibiliKaoyanCrawler(BaseCrawler):
         existing_bvids = set()
         if bvids:
             from sqlalchemy import text
+
             # 用JSONB @> 操作符查询已存在的bvid
             for bvid in bvids:
                 rows = db.execute(
-                    text("SELECT 1 FROM knowledge_articles WHERE metadata->>'bvid' = :bvid LIMIT 1"),
-                    {"bvid": bvid}
+                    text(
+                        "SELECT 1 FROM knowledge_articles WHERE metadata->>'bvid' = :bvid LIMIT 1"
+                    ),
+                    {"bvid": bvid},
                 ).fetchall()
                 if rows:
                     existing_bvids.add(bvid)
@@ -138,7 +148,7 @@ class BilibiliKaoyanCrawler(BaseCrawler):
         stored = 0
         batch_size = 200
         for i in range(0, len(new_items), batch_size):
-            batch = new_items[i:i + batch_size]
+            batch = new_items[i : i + batch_size]
             try:
                 db.bulk_insert_mappings(KnowledgeArticle, batch)
                 db.flush()
@@ -167,11 +177,9 @@ def main():
     parser.add_argument("--pages", type=int, default=5, help="抓取页数(每页50条)")
     args = parser.parse_args()
 
-    crawler = BilibiliKaoyanCrawler(
-        config={"keyword": args.keyword, "pages": args.pages}
-    )
+    crawler = BilibiliKaoyanCrawler(config={"keyword": args.keyword, "pages": args.pages})
     result = crawler.run()
-    print(f"\n===== 爬取报告 =====")
+    print("\n===== 爬取报告 =====")
     print(f"爬取条数: {result.get('fetched', 0)}")
     print(f"导入条数: {result.get('stored', 0)}")
     print(f"去重条数: {result.get('duplicates', 0)}")

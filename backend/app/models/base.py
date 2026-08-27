@@ -1,12 +1,11 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, Boolean, DateTime, Integer, BigInteger, String, false, func
+from sqlalchemy import JSON, BigInteger, Boolean, DateTime, Integer, String, false, func
 from sqlalchemy.dialects.postgresql import JSONB as _PG_JSONB
 from sqlalchemy.dialects.postgresql import UUID as _PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import TypeDecorator
-
 
 # 跨方言 BIGINT 自增主键：
 # - PostgreSQL：BIGINT（配合 autoincrement=True 生成 BIGSERIAL 语义）
@@ -91,9 +90,7 @@ class TimestampMixin:
 
 
 class UUIDMixin:
-    id: Mapped[uuid.UUID] = mapped_column(
-        GUID(), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(GUID(), primary_key=True, default=uuid.uuid4)
 
 
 class ContractAuditMixin:

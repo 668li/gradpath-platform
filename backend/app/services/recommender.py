@@ -19,10 +19,11 @@
 EE探索:
   Thompson Sampling风格 — 对新内容/低曝光内容分配探索额度
 """
+
 import logging
 import math
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from uuid import UUID
 
 from sqlalchemy import func
@@ -32,7 +33,6 @@ from app.models.assessment import Assessment
 from app.models.bookmark import Bookmark, BookmarkTargetType
 from app.models.experience_post import ExperiencePost
 from app.models.knowledge_article import KnowledgeArticle
-from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -91,6 +91,7 @@ _RULE_REASONS = {
 
 # ==================== 用户画像 ====================
 
+
 def build_user_profile(db: Session, user_id: UUID) -> dict[str, float]:
     """构建用户学习画像 — 加权tag权重（抖音兴趣建模）。
 
@@ -112,11 +113,7 @@ def build_user_profile(db: Session, user_id: UUID) -> dict[str, float]:
     )
     now = datetime.now(timezone.utc)
     for bm in bookmarks:
-        article = (
-            db.query(KnowledgeArticle)
-            .filter(KnowledgeArticle.id == bm.target_id)
-            .first()
-        )
+        article = db.query(KnowledgeArticle).filter(KnowledgeArticle.id == bm.target_id).first()
         if article and article.tags:
             # 时间衰减: 越近的收藏权重越高
             age_days = 0
@@ -152,12 +149,7 @@ def build_user_profile(db: Session, user_id: UUID) -> dict[str, float]:
                             tag_weights[tag] = tag_weights.get(tag, 0) + 3 * 5
 
     # 3. 经验帖兴趣（权重=1）
-    posts = (
-        db.query(ExperiencePost)
-        .filter(ExperiencePost.user_id == user_id)
-        .limit(20)
-        .all()
-    )
+    posts = db.query(ExperiencePost).filter(ExperiencePost.user_id == user_id).limit(20).all()
     for post in posts:
         if post.tags:
             for tag in post.tags:
@@ -173,6 +165,7 @@ def build_user_profile(db: Session, user_id: UUID) -> dict[str, float]:
 
 # ==================== 多路召回 ====================
 
+
 def _match_learning_tag(text: str) -> str | None:
     """从文本匹配学习方法tag（关键词匹配）。"""
     for kw, tag in _KEYWORD_TO_TAG.items():
@@ -181,7 +174,9 @@ def _match_learning_tag(text: str) -> str | None:
     return None
 
 
-def recall_itemcf(db: Session, user_id: UUID, candidate_pool: list, top_k: int = 50) -> dict[str, float]:
+def recall_itemcf(
+    db: Session, user_id: UUID, candidate_pool: list, top_k: int = 50
+) -> dict[str, float]:
     """ItemCF协同过滤 — 基于相似学法的共现。
 
     思路: 用户收藏的学法A → 找到与A相似的学法B（共现于同一用户的收藏集合）→ 推荐B
@@ -225,7 +220,9 @@ def recall_itemcf(db: Session, user_id: UUID, candidate_pool: list, top_k: int =
             for other_item in user_to_items[u]:
                 if other_item not in user_bookmarked_ids:
                     # 相似度 = 1 / (1 + 用户收藏数), 降低热门item影响
-                    other_article = next((a for a in candidate_pool if str(a.id) == other_item), None)
+                    other_article = next(
+                        (a for a in candidate_pool if str(a.id) == other_item), None
+                    )
                     if other_article:
                         scores[str(other_article.id)] += 1.0 / (1 + len(user_to_items[u]))
 
@@ -237,7 +234,9 @@ def recall_itemcf(db: Session, user_id: UUID, candidate_pool: list, top_k: int =
     return dict(sorted(scores.items(), key=lambda x: x[1], reverse=True)[:top_k])
 
 
-def recall_content(db: Session, profile: dict[str, float], candidate_pool: list, top_k: int = 50) -> dict[str, float]:
+def recall_content(
+    db: Session, profile: dict[str, float], candidate_pool: list, top_k: int = 50
+) -> dict[str, float]:
     """内容召回 — 用户画像tag × 文章tag加权。"""
     scores: dict[str, float] = {}
     if not profile:
@@ -264,7 +263,9 @@ def recall_content(db: Session, profile: dict[str, float], candidate_pool: list,
     return dict(sorted(scores.items(), key=lambda x: x[1], reverse=True)[:top_k])
 
 
-def recall_sequence(db: Session, user_id: UUID, candidate_pool: list, top_k: int = 50) -> dict[str, float]:
+def recall_sequence(
+    db: Session, user_id: UUID, candidate_pool: list, top_k: int = 50
+) -> dict[str, float]:
     """行为序列召回 — 最近收藏/浏览的next-item预测（时间衰减）。
 
     思路: 用户行为序列 [a1, a2, a3, ..., an] → 预测 next item
@@ -343,6 +344,7 @@ def recall_popular(db: Session, candidate_pool: list, top_k: int = 20) -> dict[s
 
 # ==================== 精排 ====================
 
+
 def rank_wide_deep(
     db: Session,
     profile: dict[str, float],
@@ -358,7 +360,7 @@ def rank_wide_deep(
     融合: score = α * wide_score + β * deep_score
     """
     ALPHA = 0.6  # Wide权重
-    BETA = 0.4   # Deep权重
+    BETA = 0.4  # Deep权重
 
     # 计算每路召回的归一化分数
     merged_recall: dict[str, float] = defaultdict(float)
@@ -395,6 +397,7 @@ def rank_wide_deep(
 
 
 # ==================== 多样性重排 (MMR) ====================
+
 
 def rerank_mmr(
     ranked: list[tuple[KnowledgeArticle, float]],
@@ -448,6 +451,7 @@ def _tag_similarity(a: KnowledgeArticle, b: KnowledgeArticle) -> float:
 
 # ==================== EE探索 (Thompson Sampling) ====================
 
+
 def apply_ee_exploration(
     ranked: list[tuple[KnowledgeArticle, float]],
     profile: dict[str, float],
@@ -462,6 +466,7 @@ def apply_ee_exploration(
       3. exploration_rate比例的slot用于探索（非用户偏好tag的文章）
     """
     import random
+
     if not ranked:
         return ranked
 
@@ -475,12 +480,10 @@ def apply_ee_exploration(
     # 探索候选（不属于用户强偏好tag的文章）
     user_top_tags = set(sorted(profile.keys(), key=lambda t: profile[t], reverse=True)[:3])
     explore_pool = [
-        (article, s) for article, s in ranked
-        if not (set(article.tags or []) & user_top_tags)
+        (article, s) for article, s in ranked if not (set(article.tags or []) & user_top_tags)
     ]
     exploit_pool = [
-        (article, s) for article, s in ranked
-        if set(article.tags or []) & user_top_tags
+        (article, s) for article, s in ranked if set(article.tags or []) & user_top_tags
     ]
 
     n_explore = max(1, int(top_k * exploration_rate))
@@ -498,7 +501,10 @@ def apply_ee_exploration(
     tag_limit = max(1, int(top_k * 0.4))  # 每个tag最多占40%
 
     exploit_indices = list(range(len(exploit_pool)))
-    while len([x for x in selected if set(x[0].tags or []) & user_top_tags]) < n_exploit and exploit_indices:
+    while (
+        len([x for x in selected if set(x[0].tags or []) & user_top_tags]) < n_exploit
+        and exploit_indices
+    ):
         # 按概率采样一个候选
         candidate_probs = [probs[ranked.index(exploit_pool[i])] for i in exploit_indices]
         p_total = sum(candidate_probs)
@@ -517,12 +523,13 @@ def apply_ee_exploration(
     if len(selected) < top_k:
         remaining = [x for x in ranked if x not in selected]
         random.shuffle(remaining)
-        selected.extend(remaining[:top_k - len(selected)])
+        selected.extend(remaining[: top_k - len(selected)])
 
     return selected[:top_k]
 
 
 # ==================== 推荐理由生成 ====================
+
 
 def _generate_rule_reason(profile: dict[str, float], article_tags: list[str]) -> str:
     """规则生成推荐理由。"""
@@ -565,6 +572,7 @@ async def _generate_ai_reason(profile: dict[str, float], article: KnowledgeArtic
 
 
 # ==================== 主入口 ====================
+
 
 async def recommend_personalized(
     db: Session, user_id: UUID, limit: int = 10

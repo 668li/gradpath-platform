@@ -2,22 +2,15 @@
 
 MVP 方案 C：契约先行、实现延后 — 仅落库建表，业务逻辑后续实现。
 """
+
 from datetime import date
 from uuid import UUID
 
-from sqlalchemy import (
-    Date,
-    Index,
-    Integer,
-    Numeric,
-    String,
-    Text,
-    text,
-)
+from sqlalchemy import Date, Index, Integer, Numeric, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
-from app.models.base import JSONB, GUID, BigIntPK, ContractAuditMixin
+from app.models.base import GUID, JSONB, BigIntPK, ContractAuditMixin
 
 
 class ReviewRecord(ContractAuditMixin, Base):
@@ -27,6 +20,7 @@ class ReviewRecord(ContractAuditMixin, Base):
     status 状态机：DRAFT → PENDING → COMPLETED / FAILED。
     mood_score：1~5 分。
     """
+
     __tablename__ = "t_review_record"
 
     id: Mapped[int] = mapped_column(BigIntPK, primary_key=True, autoincrement=True)

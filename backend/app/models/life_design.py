@@ -6,10 +6,11 @@
 每个 sprint 代表一个季度，用户选择一个主攻领域集中投入，
 其余领域进入维护模式（守住底线不恶化）。
 """
+
 from datetime import date
 from uuid import UUID
 
-from sqlalchemy import Boolean, Date, ForeignKey, Integer, String, Text
+from sqlalchemy import Date, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -18,6 +19,7 @@ from app.models.base import JSONB, TimestampMixin, UUIDMixin
 
 class LifeDesignSprint(UUIDMixin, TimestampMixin, Base):
     """90 天冲刺 — 季度聚焦一个主攻领域。"""
+
     __tablename__ = "life_design_sprints"
 
     user_id: Mapped[UUID] = mapped_column(
@@ -51,6 +53,7 @@ class LifeDesignSprint(UUIDMixin, TimestampMixin, Base):
 
 class WeeklyReview(UUIDMixin, TimestampMixin, Base):
     """周复盘 — 每周回顾目标执行情况，AI 辅助分析。"""
+
     __tablename__ = "weekly_reviews"
 
     user_id: Mapped[UUID] = mapped_column(

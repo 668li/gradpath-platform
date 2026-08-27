@@ -1,10 +1,9 @@
 # backend/tests/test_api_employment.py
-import pytest
 from sqlalchemy import event
 
+from app.models.employment_data import Degree, EmploymentData
+from app.models.report_record import ParseStatus, ReportRecord
 from app.models.school import School
-from app.models.report_record import ReportRecord, ParseStatus
-from app.models.employment_data import EmploymentData, Degree
 from app.services.employment_service import get_stats, list_majors, list_schools
 
 
@@ -16,33 +15,52 @@ def _seed_employment_data(db_session):
 
     for year in [2023, 2024]:
         report = ReportRecord(
-            school_id=school.id, year=year, source_url=f"url-{year}",
+            school_id=school.id,
+            year=year,
+            source_url=f"url-{year}",
             parse_status=ParseStatus.published,
         )
         db_session.add(report)
         db_session.commit()
-        db_session.add(EmploymentData(
-            report_id=report.id, major="机械工程", degree=Degree.bachelor,
-            total_graduates=120, employment_rate=0.45 + (2024 - year) * 0.05,
-            further_study_rate=0.35, civil_service_rate=0.10, abroad_rate=0.10,
-            employer_ranking=[{"name": "三一重工", "count": 15}, {"name": "比亚迪", "count": 12}],
-            industry_distribution={"制造业": 0.4, "互联网": 0.2},
-            destination_region={"北京": 0.3, "上海": 0.15},
-            school_for_further_study=[{"name": "清华大学", "count": 20}],
-        ))
+        db_session.add(
+            EmploymentData(
+                report_id=report.id,
+                major="机械工程",
+                degree=Degree.bachelor,
+                total_graduates=120,
+                employment_rate=0.45 + (2024 - year) * 0.05,
+                further_study_rate=0.35,
+                civil_service_rate=0.10,
+                abroad_rate=0.10,
+                employer_ranking=[
+                    {"name": "三一重工", "count": 15},
+                    {"name": "比亚迪", "count": 12},
+                ],
+                industry_distribution={"制造业": 0.4, "互联网": 0.2},
+                destination_region={"北京": 0.3, "上海": 0.15},
+                school_for_further_study=[{"name": "清华大学", "count": 20}],
+            )
+        )
         db_session.commit()
 
     # 未发布的报告不应出现在搜索结果
     unpublished = ReportRecord(
-        school_id=school.id, year=2022, source_url="url-2022",
+        school_id=school.id,
+        year=2022,
+        source_url="url-2022",
         parse_status=ParseStatus.parsed,
     )
     db_session.add(unpublished)
     db_session.commit()
-    db_session.add(EmploymentData(
-        report_id=unpublished.id, major="机械工程", degree=Degree.bachelor,
-        total_graduates=100, employment_rate=0.50,
-    ))
+    db_session.add(
+        EmploymentData(
+            report_id=unpublished.id,
+            major="机械工程",
+            degree=Degree.bachelor,
+            total_graduates=100,
+            employment_rate=0.50,
+        )
+    )
     db_session.commit()
 
 
@@ -173,9 +191,9 @@ class TestListSchoolsPerformance:
         result, query_count = _count_queries(db_session, lambda: list_schools(db_session))
 
         # 3 所学校 -> N+1 模式下为 1 + 3*2 = 7 次查询；聚合后应 <= 2
-        assert query_count <= 2, (
-            f"list_schools 执行了 {query_count} 次查询，疑似 N+1（期望单条聚合 <=2）"
-        )
+        assert (
+            query_count <= 2
+        ), f"list_schools 执行了 {query_count} 次查询，疑似 N+1（期望单条聚合 <=2）"
         assert len(result) == 2  # 只有清华、北大有已发布报告
 
     def test_list_schools_aggregation_correctness(self, db_session):
@@ -216,9 +234,7 @@ class TestGetStatsPerformance:
             lower = stmt.lower()
             if "report_records" in lower and lower.lstrip().startswith("select"):
                 has_agg = any(fn in lower for fn in ("count(", "min(", "max("))
-                assert has_agg, (
-                    f"get_stats 存在全表载入查询（缺少聚合函数）: {stmt}"
-                )
+                assert has_agg, f"get_stats 存在全表载入查询（缺少聚合函数）: {stmt}"
 
     def test_get_stats_empty_db(self, db_session):
         """空数据库时 year_range 应为 [None, None]，不应因 min/max 空序列报错"""
@@ -234,7 +250,7 @@ class TestGetStatsPerformance:
         stats = get_stats(db_session)
         assert stats["school_count"] == 2  # 清华 + 北大（DISTINCT school_id）
         assert stats["report_count"] == 4  # 2 校 * 2 年
-        assert stats["major_count"] == 2   # 专业1 + 专业2（DISTINCT major）
+        assert stats["major_count"] == 2  # 专业1 + 专业2（DISTINCT major）
         assert stats["year_range"] == [2023, 2024]
 
 
@@ -244,14 +260,17 @@ class TestGetStatsPerformance:
 class TestEscapeLike:
     def test_escape_like_percent(self):
         from app.services.employment_service import escape_like
+
         assert escape_like("100%") == "100\\%"
 
     def test_escape_like_underscore(self):
         from app.services.employment_service import escape_like
+
         assert escape_like("a_b") == "a\\_b"
 
     def test_escape_like_normal_string(self):
         from app.services.employment_service import escape_like
+
         assert escape_like("清华") == "清华"
 
     def test_search_employment_escapes_percent(self, client, db_session):
@@ -285,9 +304,8 @@ class TestResponseModel:
     def test_all_endpoints_declare_response_model(self):
         """所有 employment 端点均应声明 response_model"""
         from app.api.employment import router
-        missing = [
-            route.path for route in router.routes if route.response_model is None
-        ]
+
+        missing = [route.path for route in router.routes if route.response_model is None]
         assert not missing, f"以下端点未声明 response_model: {missing}"
 
 
@@ -298,11 +316,13 @@ class TestSearchBodyLocation:
     def test_search_body_defined_in_schemas(self):
         """SearchBody 应定义在 app.schemas.employment，而非 api 路由文件"""
         from app.api.employment import SearchBody
+
         assert SearchBody.__module__ == "app.schemas.employment"
 
     def test_search_body_importable_from_schemas(self):
         """SearchBody 应能从 app.schemas.employment 直接导入"""
         from app.schemas.employment import SearchBody
+
         body = SearchBody(school="清华", major="机械")
         assert body.school == "清华"
         assert body.major == "机械"

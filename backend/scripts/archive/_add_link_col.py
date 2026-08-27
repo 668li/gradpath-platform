@@ -1,7 +1,10 @@
 import psycopg2
+
 conn = psycopg2.connect("postgresql://gradpath:changeme@db:5432/gradpath")
 cur = conn.cursor()
-cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name='notifications' AND column_name='link'")
+cur.execute(
+    "SELECT column_name FROM information_schema.columns WHERE table_name='notifications' AND column_name='link'"
+)
 if cur.fetchone():
     print("link column already exists")
 else:

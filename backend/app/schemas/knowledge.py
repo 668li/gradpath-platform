@@ -4,6 +4,7 @@
 注意：模型中字段名为 ``metadata_``（因 ``metadata`` 被 SQLAlchemy 保留），
 对应数据库列 ``metadata``。Schema 统一使用 ``metadata_`` 字段名对外暴露。
 """
+
 from datetime import datetime
 from uuid import UUID
 

@@ -6,6 +6,7 @@ POST /api/user-memory/{fact_id}/feedback: 用户反馈
 DELETE /api/user-memory/{fact_id}: 删除事实
 POST /api/user-memory/extract: 从对话中抽取事实（管理员触发）
 """
+
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -61,7 +62,9 @@ def list_memory(
         "items": [
             {
                 "id": str(f.id),
-                "fact_type": f.fact_type.value if hasattr(f.fact_type, "value") else str(f.fact_type),
+                "fact_type": (
+                    f.fact_type.value if hasattr(f.fact_type, "value") else str(f.fact_type)
+                ),
                 "fact_key": f.fact_key,
                 "fact_value": f.fact_value,
                 "confidence": f.confidence,
@@ -92,7 +95,9 @@ def add_fact(
     fact = add_user_provided_fact(db, user.id, ft, req.fact_key, req.fact_value)
     return {
         "id": str(fact.id),
-        "fact_type": fact.fact_type.value if hasattr(fact.fact_type, "value") else str(fact.fact_type),
+        "fact_type": (
+            fact.fact_type.value if hasattr(fact.fact_type, "value") else str(fact.fact_type)
+        ),
         "fact_key": fact.fact_key,
         "fact_value": fact.fact_value,
         "confidence": fact.confidence,
@@ -146,7 +151,9 @@ async def extract(
         "items": [
             {
                 "id": str(f.id),
-                "fact_type": f.fact_type.value if hasattr(f.fact_type, "value") else str(f.fact_type),
+                "fact_type": (
+                    f.fact_type.value if hasattr(f.fact_type, "value") else str(f.fact_type)
+                ),
                 "fact_key": f.fact_key,
                 "fact_value": f.fact_value,
                 "confidence": f.confidence,

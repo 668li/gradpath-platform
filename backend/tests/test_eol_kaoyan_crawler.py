@@ -7,8 +7,6 @@
 - parse：transform_rss 输出标准 payload（含 quality_score/quality_grade 注入）
 - store：mock 采集产物 → ExternalResearchItem + ReviewQueueItem 入 PENDING 队列
 """
-import pytest
-from sqlalchemy.orm import Session
 
 from app.crawlers.research.eol_kaoyan_crawler import (
     DEFAULT_LIST_URL,
@@ -127,12 +125,14 @@ class TestParse:
         monkeypatch.setattr(EolKaoyanCrawler, "_request", lambda *a, **kw: _FakeResponse(""))
         crawler = EolKaoyanCrawler(config={"fetch_detail": False, "rate_limit": 0})
 
-        raw = [{
-            "title": "2026考研报名时间公布",
-            "url": "https://kaoyan.eol.cn/nnews/news/20260815/1.shtml",
-            "published_at": _parse_date("2026-08-15"),
-            "detail_text": "",
-        }]
+        raw = [
+            {
+                "title": "2026考研报名时间公布",
+                "url": "https://kaoyan.eol.cn/nnews/news/20260815/1.shtml",
+                "published_at": _parse_date("2026-08-15"),
+                "detail_text": "",
+            }
+        ]
         parsed = crawler.parse(raw)
         assert len(parsed) == 1
         item = parsed[0]
@@ -151,19 +151,21 @@ class TestStore:
     def test_store_creates_pending_queue_items(self, db_session):
         """store 走 store_research_items：外部条目 + 审核队列（PENDING）。"""
         crawler = EolKaoyanCrawler(config={"fetch_detail": False, "rate_limit": 0})
-        items = [{
-            "title": "2026考研报名时间公布",
-            "summary": "网上报名 10 月 15 日启动",
-            "content": "网上报名时间为2025年10月15日至10月28日。",
-            "source_url": "https://kaoyan.eol.cn/nnews/news/20260815/1.shtml",
-            "published_at": "2026-08-15T00:00:00Z",
-            "crawled_at": "2026-08-15T08:00:00Z",
-            "category": "考研快讯",
-            "tags": [],
-            "source_platform": "eol",
-            "quality_score": 80,
-            "quality_grade": "A",
-        }]
+        items = [
+            {
+                "title": "2026考研报名时间公布",
+                "summary": "网上报名 10 月 15 日启动",
+                "content": "网上报名时间为2025年10月15日至10月28日。",
+                "source_url": "https://kaoyan.eol.cn/nnews/news/20260815/1.shtml",
+                "published_at": "2026-08-15T00:00:00Z",
+                "crawled_at": "2026-08-15T08:00:00Z",
+                "category": "考研快讯",
+                "tags": [],
+                "source_platform": "eol",
+                "quality_score": 80,
+                "quality_grade": "A",
+            }
+        ]
 
         inserted = crawler.store(items, db=db_session)
         assert inserted == 1
@@ -178,9 +180,7 @@ class TestStore:
         assert ext.crawler_name == "eol_kaoyan"
 
         queue = (
-            db_session.query(ReviewQueueItem)
-            .filter(ReviewQueueItem.ref_item_id == ext.id)
-            .first()
+            db_session.query(ReviewQueueItem).filter(ReviewQueueItem.ref_item_id == ext.id).first()
         )
         assert queue is not None
         assert queue.review_status == "PENDING"
@@ -193,19 +193,21 @@ class TestStore:
         from datetime import datetime, timezone
 
         crawler = EolKaoyanCrawler(config={"fetch_detail": False, "rate_limit": 0})
-        items = [{
-            "title": "2026考研复试线公布",
-            "summary": "复试线公布",
-            "content": "各院校陆续公布复试分数线，请关注报考院校官网。",
-            "source_url": "https://kaoyan.eol.cn/nnews/news/20260816/3.shtml",
-            "published_at": datetime(2026, 8, 16, tzinfo=timezone.utc),
-            "crawled_at": datetime(2026, 8, 16, 8, 0, tzinfo=timezone.utc),
-            "category": "考研快讯",
-            "tags": [],
-            "source_platform": "eol",
-            "quality_score": 80,
-            "quality_grade": "A",
-        }]
+        items = [
+            {
+                "title": "2026考研复试线公布",
+                "summary": "复试线公布",
+                "content": "各院校陆续公布复试分数线，请关注报考院校官网。",
+                "source_url": "https://kaoyan.eol.cn/nnews/news/20260816/3.shtml",
+                "published_at": datetime(2026, 8, 16, tzinfo=timezone.utc),
+                "crawled_at": datetime(2026, 8, 16, 8, 0, tzinfo=timezone.utc),
+                "category": "考研快讯",
+                "tags": [],
+                "source_platform": "eol",
+                "quality_score": 80,
+                "quality_grade": "A",
+            }
+        ]
 
         assert crawler.store(items, db=db_session) == 1
         ext = (

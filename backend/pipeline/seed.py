@@ -1,12 +1,11 @@
 # backend/pipeline/seed.py
 """种子数据脚本：导入 seed_data 中的常量并执行数据库写入。"""
-from sqlalchemy import func
 
 from app.database import SessionLocal
+from app.models.employment_data import Degree, EmploymentData
+from app.models.report_record import ParseStatus, ReportRecord
 from app.models.school import School
-from app.models.report_record import ReportRecord, ParseStatus
-from app.models.employment_data import EmploymentData, Degree
-from pipeline.seed_data import SEED_SCHOOLS, SEED_DATA, SEED_DATA_2023, SEED_DATA_2022
+from pipeline.seed_data import SEED_DATA, SEED_DATA_2022, SEED_DATA_2023, SEED_SCHOOLS
 
 
 def run_seed():
@@ -41,10 +40,14 @@ def run_seed():
                 if not school:
                     continue
 
-                report = db.query(ReportRecord).filter(
-                    ReportRecord.school_id == school.id,
-                    ReportRecord.year == year,
-                ).first()
+                report = (
+                    db.query(ReportRecord)
+                    .filter(
+                        ReportRecord.school_id == school.id,
+                        ReportRecord.year == year,
+                    )
+                    .first()
+                )
                 if not report:
                     report = ReportRecord(
                         school_id=school.id,
@@ -55,11 +58,15 @@ def run_seed():
                     db.add(report)
                     db.commit()
 
-                existing_emp = db.query(EmploymentData).filter(
-                    EmploymentData.report_id == report.id,
-                    EmploymentData.major == major,
-                    EmploymentData.degree == Degree(degree),
-                ).first()
+                existing_emp = (
+                    db.query(EmploymentData)
+                    .filter(
+                        EmploymentData.report_id == report.id,
+                        EmploymentData.major == major,
+                        EmploymentData.degree == Degree(degree),
+                    )
+                    .first()
+                )
                 if existing_emp:
                     continue
 
@@ -82,9 +89,13 @@ def run_seed():
                 db.add(emp)
                 db.commit()
 
-        print(f"种子数据导入完成")
+        print("种子数据导入完成")
         sc = db.query(School).count()
-        rc = db.query(ReportRecord).filter(ReportRecord.parse_status == ParseStatus.published).count()
+        rc = (
+            db.query(ReportRecord)
+            .filter(ReportRecord.parse_status == ParseStatus.published)
+            .count()
+        )
         ec = db.query(EmploymentData).count()
         print(f"学校: {sc}, 已发布报告: {rc}, 就业数据记录: {ec}")
     finally:

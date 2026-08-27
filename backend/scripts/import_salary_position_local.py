@@ -11,6 +11,7 @@
 
 幂等：(position, year, company) 去重。全 ORM 参数绑定。
 """
+
 import json
 import re
 import sys
@@ -59,6 +60,7 @@ def main() -> None:
             if exists:
                 duplicated += 1
                 continue
+
             # 取分位：优先 10/50/90，缺档用最近档
             def pick(prefer: list[int]) -> int:
                 for p in prefer:

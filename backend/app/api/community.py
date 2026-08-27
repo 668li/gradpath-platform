@@ -1,5 +1,6 @@
 # backend/app/api/community.py
 """社区毕业去向报告 API 路由。"""
+
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 

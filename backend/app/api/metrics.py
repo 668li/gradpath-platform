@@ -2,9 +2,9 @@
 
 C9: 新增 POST /api/metrics/web-vitals 端点接收前端 web-vitals 上报。
 """
+
 from collections import defaultdict
 from threading import Lock
-from typing import Optional
 
 from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel, Field, field_validator
@@ -14,11 +14,7 @@ from starlette.responses import PlainTextResponse
 from app.core.deps import get_current_user
 from app.database import get_db
 from app.models.user import User
-from app.services.web_vitals_service import (
-    ALLOWED_RATINGS,
-    ALLOWED_VITAL_NAMES,
-    record_web_vital,
-)
+from app.services.web_vitals_service import ALLOWED_RATINGS, ALLOWED_VITAL_NAMES, record_web_vital
 
 router = APIRouter(prefix="/api/metrics", tags=["metrics"])
 
@@ -34,10 +30,10 @@ def record_request(method: str, path: str, status_code: int, duration_ms: float)
     """Record a request for metrics collection. Called by middleware."""
     status = "error" if status_code >= 400 else "success"
     with _lock:
-        _request_count[f'{method}:{path}'] += 1
+        _request_count[f"{method}:{path}"] += 1
         _request_count["__total__"] += 1
         if status == "error":
-            _error_count[f'{method}:{path}'] += 1
+            _error_count[f"{method}:{path}"] += 1
             _error_count["__total__"] += 1
         _response_times.append(duration_ms)
         if len(_response_times) > 10000:
@@ -70,15 +66,15 @@ def metrics_endpoint():
     lines = [
         "# HELP gradpath_requests_total Total number of requests",
         "# TYPE gradpath_requests_total counter",
-        f'gradpath_requests_total {total}',
+        f"gradpath_requests_total {total}",
         "",
         "# HELP gradpath_errors_total Total number of error responses",
         "# TYPE gradpath_errors_total counter",
-        f'gradpath_errors_total {errors}',
+        f"gradpath_errors_total {errors}",
         "",
         "# HELP gradpath_error_rate Error rate (errors / total)",
         "# TYPE gradpath_error_rate gauge",
-        f'gradpath_error_rate {errors / total:.4f}' if total > 0 else "gradpath_error_rate 0.0",
+        f"gradpath_error_rate {errors / total:.4f}" if total > 0 else "gradpath_error_rate 0.0",
         "",
         "# HELP gradpath_response_time_ms Response time histogram",
         "# TYPE gradpath_response_time_ms histogram",
@@ -88,9 +84,7 @@ def metrics_endpoint():
         for upper, count in buckets:
             label = "+Inf" if upper == float("inf") else str(int(upper))
             lines.append(f'gradpath_response_time_ms_bucket{{le="{label}"}} {count}')
-        lines.append(
-            f"gradpath_response_time_ms_sum {sum(times):.1f}"
-        )
+        lines.append(f"gradpath_response_time_ms_sum {sum(times):.1f}")
         lines.append(f"gradpath_response_time_ms_count {len(times)}")
     else:
         lines.append('gradpath_response_time_ms_bucket{le="+Inf"} 0')
@@ -105,8 +99,10 @@ def metrics_endpoint():
 # C9 Web Vitals 上报端点
 # ----------------------------------------------------------------------
 
+
 class WebVitalReport(BaseModel):
     """前端 web-vitals 上报请求体。"""
+
     name: str = Field(
         ...,
         min_length=1,
@@ -127,7 +123,7 @@ class WebVitalReport(BaseModel):
     id: str = Field("", max_length=128, description="web-vitals 库生成的指标 ID")
     page: str = Field("", max_length=500, description="触发指标的页面路径")
     session_id: str = Field("", max_length=128, description="前端会话 ID")
-    timestamp: Optional[str] = Field(
+    timestamp: str | None = Field(
         None,
         max_length=64,
         description="前端 ISO 8601 时间戳",
@@ -138,9 +134,7 @@ class WebVitalReport(BaseModel):
     def _validate_name(cls, v: str) -> str:
         v_norm = (v or "").upper().strip()
         if v_norm not in ALLOWED_VITAL_NAMES:
-            raise ValueError(
-                f"不支持的指标名 {v}，仅允许 {sorted(ALLOWED_VITAL_NAMES)}"
-            )
+            raise ValueError(f"不支持的指标名 {v}，仅允许 {sorted(ALLOWED_VITAL_NAMES)}")
         return v_norm
 
     @field_validator("rating")
@@ -148,14 +142,13 @@ class WebVitalReport(BaseModel):
     def _validate_rating(cls, v: str) -> str:
         v_norm = (v or "").lower().strip()
         if v_norm not in ALLOWED_RATINGS:
-            raise ValueError(
-                f"不支持的评级 {v}，仅允许 {sorted(ALLOWED_RATINGS)}"
-            )
+            raise ValueError(f"不支持的评级 {v}，仅允许 {sorted(ALLOWED_RATINGS)}")
         return v_norm
 
 
 class WebVitalResponse(BaseModel):
     """web-vitals 上报响应。"""
+
     received: bool = True
     name: str
     value: float
@@ -212,8 +205,8 @@ def report_web_vitals(
 
 @router.get("/web-vitals/summary")
 def get_web_vitals_summary_endpoint(
-    page: Optional[str] = Query(None, max_length=500, description="按页面路径过滤"),
-    session_id: Optional[str] = Query(None, max_length=128, description="按会话 ID 过滤"),
+    page: str | None = Query(None, max_length=500, description="按页面路径过滤"),
+    session_id: str | None = Query(None, max_length=128, description="按会话 ID 过滤"),
     limit: int = Query(1000, ge=1, le=10000, description="聚合样本上限"),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

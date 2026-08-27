@@ -7,6 +7,7 @@
 - 行动打卡：X-Idempotency-Key → t_action_checkin.biz_req_no（唯一索引兜底），
   命中返回已有打卡记录；缺省时服务端生成 UUID
 """
+
 import logging
 import uuid
 from datetime import date, datetime, timezone
@@ -15,18 +16,9 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.models.action_center import (
-    ActionCheckin,
-    ActionStreak,
-    ActionWeight,
-    DailyAction,
-)
+from app.models.action_center import ActionCheckin, ActionStreak, ActionWeight, DailyAction
 from app.models.growth_center import GrowthTrajectory
-from app.schemas.action import (
-    ActionCreateRequest,
-    ActionUpdateRequest,
-    CheckinRequest,
-)
+from app.schemas.action import ActionCreateRequest, ActionUpdateRequest, CheckinRequest
 
 logger = logging.getLogger(__name__)
 
@@ -50,9 +42,7 @@ def _get_action(db: Session, user_id: UUID, action_id: int) -> DailyAction:
     return action
 
 
-def list_today_actions(
-    db: Session, user_id: UUID, today: date | None = None
-) -> list[DailyAction]:
+def list_today_actions(db: Session, user_id: UUID, today: date | None = None) -> list[DailyAction]:
     """今日行动清单：按权重降序、创建时间升序。"""
     day = today or datetime.now(timezone.utc).date()
     return (
@@ -79,11 +69,7 @@ def create_action(
     注：ActionCreateRequest.note / biz_fields 契约无存储列，创建时忽略（docstring 声明）。
     """
     if idempotency_key:
-        existing = (
-            db.query(DailyAction)
-            .filter(DailyAction.biz_req_no == idempotency_key)
-            .first()
-        )
+        existing = db.query(DailyAction).filter(DailyAction.biz_req_no == idempotency_key).first()
         if existing:
             return existing
 
@@ -108,11 +94,7 @@ def create_action(
     from app.seed.seed_action_weight import seed_action_weight
 
     seed_action_weight(db)
-    weight_row = (
-        db.query(ActionWeight)
-        .filter(ActionWeight.action_type == data.action_type)
-        .first()
-    )
+    weight_row = db.query(ActionWeight).filter(ActionWeight.action_type == data.action_type).first()
     weight = weight_row.weight if weight_row else 1
 
     action = DailyAction(
@@ -151,9 +133,7 @@ def update_action(
     return action
 
 
-def _refresh_streak(
-    db: Session, user_id: UUID, checkin_date: date
-) -> ActionStreak:
+def _refresh_streak(db: Session, user_id: UUID, checkin_date: date) -> ActionStreak:
     """打卡后刷新连击统计（连击计算 + ACTIVE/BROKEN/NEVER 状态）。"""
     today = datetime.now(timezone.utc).date()
     streak = db.query(ActionStreak).filter(ActionStreak.user_id == user_id).first()
@@ -176,14 +156,10 @@ def _refresh_streak(
             streak.current_streak_days += 1
         else:
             streak.current_streak_days = 1
-        streak.longest_streak_days = max(
-            streak.longest_streak_days, streak.current_streak_days
-        )
+        streak.longest_streak_days = max(streak.longest_streak_days, streak.current_streak_days)
         streak.last_checkin_date = checkin_date
     # 状态相对「今天」判定：昨天/今天打卡为 ACTIVE，间隔为 BROKEN
-    streak.streak_status = (
-        "ACTIVE" if (today - checkin_date).days <= 1 else "BROKEN"
-    )
+    streak.streak_status = "ACTIVE" if (today - checkin_date).days <= 1 else "BROKEN"
     db.commit()
     db.refresh(streak)
     return streak
@@ -275,8 +251,4 @@ def list_action_weights(db: Session) -> list[ActionWeight]:
     from app.seed.seed_action_weight import seed_action_weight
 
     seed_action_weight(db)
-    return (
-        db.query(ActionWeight)
-        .order_by(ActionWeight.weight.asc())
-        .all()
-    )
+    return db.query(ActionWeight).order_by(ActionWeight.weight.asc()).all()

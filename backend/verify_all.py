@@ -1,11 +1,13 @@
 from sqlalchemy import text
+
 from app.database import engine
+
 tables = [
-    ('dark_knowledge', 'Dark Knowledge'),
-    ('grad_scoreline_records', 'Scorelines'),
-    ('grad_school_intel', 'School Intel'),
-    ('grad_experience_posts', 'Experience Posts'),
-    ('users', 'Users'),
+    ("dark_knowledge", "Dark Knowledge"),
+    ("grad_scoreline_records", "Scorelines"),
+    ("grad_school_intel", "School Intel"),
+    ("grad_experience_posts", "Experience Posts"),
+    ("users", "Users"),
 ]
 conn = engine.connect()
 print("=" * 60)

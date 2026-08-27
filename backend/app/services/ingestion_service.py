@@ -12,6 +12,7 @@
 与 research_queue（/api/admin/research-queue）的审核链路共用 promote 服务，
 本服务是 /api/admin/research 契约端点（方案 C 落地）的实现层。
 """
+
 import logging
 from datetime import datetime, timezone
 from uuid import UUID
@@ -122,9 +123,7 @@ def _ensure_source_meta(db: Session, ext_item: ExternalResearchItem, source_syst
     并回填审核人（前提是本函数先于 promote 调用）。
     """
     existing = (
-        db.query(DataSourceMeta)
-        .filter(DataSourceMeta.source_url == ext_item.source_url)
-        .first()
+        db.query(DataSourceMeta).filter(DataSourceMeta.source_url == ext_item.source_url).first()
     )
     if existing is not None:
         return
@@ -176,7 +175,10 @@ def trigger_ingest(
     crawler = cls(config=config)
     logger.info(
         "人工触发爬虫 source_system=%s crawler=%s url=%s target_type=%s",
-        source_system, crawler_name, url, target_type,
+        source_system,
+        crawler_name,
+        url,
+        target_type,
     )
     result = crawler.run(db=db)  # 同步执行；store() 写 PENDING 队列并建 CrawlerRun
 
@@ -211,7 +213,11 @@ def get_ingest_run(db: Session, run_id: str) -> dict:
     run_id_str = str(run_record.id)
     return {
         "run_id": run_id_str,
-        "source_system": "yanzhao" if run_record.source_name in _SOURCE_CRAWLER_MAP.values() else run_record.source_name,
+        "source_system": (
+            "yanzhao"
+            if run_record.source_name in _SOURCE_CRAWLER_MAP.values()
+            else run_record.source_name
+        ),
         "status": run_record.status,
         "total_items": run_record.stored_count,
         "pending_items": _pending_count(db, run_id_str),
@@ -242,11 +248,7 @@ def confirm_ingest(
 
     Returns: 与 IngestRecordVO 对齐的 dict。
     """
-    ext_item = (
-        db.query(ExternalResearchItem)
-        .filter(ExternalResearchItem.id == record_id)
-        .first()
-    )
+    ext_item = db.query(ExternalResearchItem).filter(ExternalResearchItem.id == record_id).first()
     if ext_item is None:
         raise LookupError("待确认记录不存在")
     if ext_item.review_status != "PENDING":
@@ -300,7 +302,9 @@ def confirm_ingest(
     db.commit()
     logger.info(
         "人工确认入库 record_id=%s reviewer=%s source_url=%s",
-        ext_item.id, reviewer, ext_item.source_url,
+        ext_item.id,
+        reviewer,
+        ext_item.source_url,
     )
     return {
         "record_id": ext_item.id,

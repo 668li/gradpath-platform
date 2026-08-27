@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """生成 9986 条 QA 数据并导入 GradPath qas + qa_answers 表。
 
 覆盖: 考研择校, 专业选择, 备考方法, 调剂, 复试, 就业, 考公, 薪资
@@ -12,20 +11,20 @@ Or locally:
     cd backend
     python -m app.crawlers.real_data.qa_expand
 """
-import json
+
 import os
 import random
-import re
 import sys
 import uuid
 
-sys.stdout.reconfigure(encoding='utf-8')
+sys.stdout.reconfigure(encoding="utf-8")
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(SCRIPT_DIR, '..', '..', '..'))
+sys.path.insert(0, os.path.join(SCRIPT_DIR, "..", "..", ".."))
 
-from sqlalchemy import select, func, text
-from app.database import SessionLocal, engine, Base
+from sqlalchemy import func, select, text
+
+from app.database import Base, SessionLocal, engine
 from app.models.qa import QA
 from app.models.qa_answer import QAAnswer
 from app.models.user import User
@@ -650,13 +649,15 @@ def generate_qa_data(target_count=9986):
             if i % 10 == 0:
                 qa_tags.append("热门")
 
-            all_qa.append({
-                "question": q,
-                "answer": a,
-                "tags": qa_tags,
-                "difficulty": difficulty,
-                "category": category,
-            })
+            all_qa.append(
+                {
+                    "question": q,
+                    "answer": a,
+                    "tags": qa_tags,
+                    "difficulty": difficulty,
+                    "category": category,
+                }
+            )
 
     # 补充到目标数量
     while len(all_qa) < target_count:
@@ -664,13 +665,15 @@ def generate_qa_data(target_count=9986):
         config = QA_CATEGORIES[cat]
         q = random.choice(config["questions"])
         a = random.choice(config["answers"])
-        all_qa.append({
-            "question": q,
-            "answer": a,
-            "tags": config["tags"][:2] + ["medium"],
-            "difficulty": "medium",
-            "category": cat,
-        })
+        all_qa.append(
+            {
+                "question": q,
+                "answer": a,
+                "tags": config["tags"][:2] + ["medium"],
+                "difficulty": "medium",
+                "category": cat,
+            }
+        )
 
     random.shuffle(all_qa)
     return all_qa[:target_count]
@@ -679,9 +682,7 @@ def generate_qa_data(target_count=9986):
 def import_qa(db, seed_user, qa_data):
     """导入 QA 数据到 qas 和 qa_answers 表"""
     # 获取已有问题去重
-    existing_titles = set(
-        row[0] for row in db.query(QA.title).all()
-    )
+    existing_titles = set(row[0] for row in db.query(QA.title).all())
     print(f"  DB already has {len(existing_titles)} QA questions")
 
     qa_count = 0
@@ -751,7 +752,7 @@ def main():
         # Before counts
         qa_before = db.execute(select(func.count(QA.id))).scalar()
         ans_before = db.execute(select(func.count(QAAnswer.id))).scalar()
-        print(f"\n--- Before Import ---")
+        print("\n--- Before Import ---")
         print(f"  qas: {qa_before}")
         print(f"  qa_answers: {ans_before}")
 
@@ -782,14 +783,16 @@ def main():
         # After counts
         qa_after = db.execute(select(func.count(QA.id))).scalar()
         ans_after = db.execute(select(func.count(QAAnswer.id))).scalar()
-        print(f"\n--- After Import ---")
+        print("\n--- After Import ---")
         print(f"  qas: {qa_after} (+{qa_after - qa_before})")
         print(f"  qa_answers: {ans_after} (+{ans_after - ans_before})")
 
         # Tag breakdown
         print("\n--- QA Tags Distribution ---")
         rows = db.execute(
-            text("SELECT jsonb_array_elements_text(tags) as tag, COUNT(*) FROM qas GROUP BY tag ORDER BY COUNT(*) DESC LIMIT 15")
+            text(
+                "SELECT jsonb_array_elements_text(tags) as tag, COUNT(*) FROM qas GROUP BY tag ORDER BY COUNT(*) DESC LIMIT 15"
+            )
         ).fetchall()
         for row in rows:
             print(f"  {row[0]}: {row[1]}")
@@ -806,6 +809,7 @@ def main():
         print(f"\nERROR: {e}")
         db.rollback()
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
     finally:

@@ -10,16 +10,10 @@
 - 已登录用户修改密码
 - 修改密码时当前密码错误（应失败）
 """
-import time
-from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
-from app.core.security import (
-    create_password_reset_token,
-    verify_password,
-    verify_password_reset_token,
-)
+from app.core.security import create_password_reset_token, verify_password_reset_token
 from app.models.user import User
 
 
@@ -40,7 +34,12 @@ def test_forgot_password_existing_user(client: TestClient, db_session):
     assert "message" in data
     # 应返回确认消息（开发环境含令牌，生产/测试环境返回通用消息）
     msg = data["message"].lower()
-    assert "令牌" in data["message"] or "token" in msg or "邮件" in data["message"] or "重置" in data["message"]
+    assert (
+        "令牌" in data["message"]
+        or "token" in msg
+        or "邮件" in data["message"]
+        or "重置" in data["message"]
+    )
 
 
 def test_forgot_password_nonexistent_user(client: TestClient):
@@ -55,9 +54,6 @@ def test_forgot_password_nonexistent_user(client: TestClient):
 
 def test_reset_password_with_valid_token(client: TestClient, db_session):
     """使用有效令牌重置密码：应成功。"""
-    from uuid import uuid4
-
-    from app.models.user import User
 
     # 注册用户
     client.post(

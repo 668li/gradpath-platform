@@ -4,6 +4,7 @@ BOSS 直聘具有较强的反爬机制，本爬虫使用按真实数据格式整
 覆盖 15 个主要城市的 10 类岗位，生成公司信息与薪资基准数据。
 字段映射到 Company 表与 SalaryBenchmark 表。
 """
+
 import random
 from uuid import UUID
 
@@ -15,16 +16,35 @@ from app.crawlers.registry import register_crawler
 from app.models.company import Company, CompanySize
 from app.models.salary_benchmark import ExperienceLevel, SalaryBenchmark
 
-
 SYSTEM_USER_ID = UUID("00000000-0000-0000-0000-000000000000")
 
 # 25 个城市
 _CITIES = [
-    "北京", "上海", "深圳", "广州", "杭州", "成都",
-    "南京", "武汉", "西安", "苏州", "天津", "重庆",
-    "长沙", "青岛", "大连",
-    "宁波", "厦门", "福州", "无锡", "合肥",
-    "郑州", "沈阳", "哈尔滨", "济南", "南昌",
+    "北京",
+    "上海",
+    "深圳",
+    "广州",
+    "杭州",
+    "成都",
+    "南京",
+    "武汉",
+    "西安",
+    "苏州",
+    "天津",
+    "重庆",
+    "长沙",
+    "青岛",
+    "大连",
+    "宁波",
+    "厦门",
+    "福州",
+    "无锡",
+    "合肥",
+    "郑州",
+    "沈阳",
+    "哈尔滨",
+    "济南",
+    "南昌",
 ]
 
 # 10 个岗位类型: (岗位名, 经验级别, 薪资基线下限 k, 薪资基线上限 k)
@@ -43,13 +63,31 @@ _POSITIONS = [
 
 # 城市薪资系数（一线 > 新一线 > 二线）
 _CITY_MULTIPLIER = {
-    "北京": 1.20, "上海": 1.20, "深圳": 1.20, "杭州": 1.15,
-    "广州": 1.00, "成都": 0.90, "南京": 1.00, "武汉": 0.85,
-    "西安": 0.85, "苏州": 0.95, "天津": 0.85, "重庆": 0.85,
-    "长沙": 0.80, "青岛": 0.80, "大连": 0.80,
-    "宁波": 0.85, "厦门": 0.80, "福州": 0.78, "无锡": 0.85,
-    "合肥": 0.80, "郑州": 0.78, "沈阳": 0.75, "哈尔滨": 0.72,
-    "济南": 0.78, "南昌": 0.72,
+    "北京": 1.20,
+    "上海": 1.20,
+    "深圳": 1.20,
+    "杭州": 1.15,
+    "广州": 1.00,
+    "成都": 0.90,
+    "南京": 1.00,
+    "武汉": 0.85,
+    "西安": 0.85,
+    "苏州": 0.95,
+    "天津": 0.85,
+    "重庆": 0.85,
+    "长沙": 0.80,
+    "青岛": 0.80,
+    "大连": 0.80,
+    "宁波": 0.85,
+    "厦门": 0.80,
+    "福州": 0.78,
+    "无锡": 0.85,
+    "合肥": 0.80,
+    "郑州": 0.78,
+    "沈阳": 0.75,
+    "哈尔滨": 0.72,
+    "济南": 0.78,
+    "南昌": 0.72,
 }
 
 # 公司池: (公司名, 行业, 规模, 阶段, 总部)
@@ -167,20 +205,22 @@ class BossCrawler(BaseCrawler):
                 adjusted_min = int(sal_min_k * multiplier * 1000)
                 adjusted_max = int(sal_max_k * multiplier * 1000)
                 adjusted_median = (adjusted_min + adjusted_max) // 2
-                raw.append({
-                    "company_name": company[0],
-                    "industry": company[1],
-                    "size": company[2],
-                    "stage": company[3],
-                    "headquarters": company[4],
-                    "city": city,
-                    "position": position,
-                    "experience_level": level,
-                    "salary_min": adjusted_min,
-                    "salary_max": adjusted_max,
-                    "salary_median": adjusted_median,
-                    "source": "BOSS直聘",
-                })
+                raw.append(
+                    {
+                        "company_name": company[0],
+                        "industry": company[1],
+                        "size": company[2],
+                        "stage": company[3],
+                        "headquarters": company[4],
+                        "city": city,
+                        "position": position,
+                        "experience_level": level,
+                        "salary_min": adjusted_min,
+                        "salary_max": adjusted_max,
+                        "salary_median": adjusted_median,
+                        "source": "BOSS直聘",
+                    }
+                )
         return raw
 
     def parse(self, raw_items: list[dict]) -> list[dict]:
@@ -196,9 +236,11 @@ class BossCrawler(BaseCrawler):
         new_count = 0
         for item in items:
             # 1. 确保 Company 记录存在（按 name 去重，已存在则跳过）
-            existing_company = db.execute(
-                select(Company).where(Company.name == item["company_name"])
-            ).scalars().first()
+            existing_company = (
+                db.execute(select(Company).where(Company.name == item["company_name"]))
+                .scalars()
+                .first()
+            )
             if existing_company is None:
                 company = Company(
                     name=item["company_name"],
@@ -212,16 +254,20 @@ class BossCrawler(BaseCrawler):
                 db.flush()  # 立即刷新，使后续 select 能查到新公司（autoflush=False 需手动 flush）
 
             # 2. 写入 SalaryBenchmark（去重：company + position + city + experience_level + year）
-            existing_salary = db.execute(
-                select(SalaryBenchmark).where(
-                    SalaryBenchmark.company == item["company_name"],
-                    SalaryBenchmark.position == item["position"],
-                    SalaryBenchmark.city == item["city"],
-                    SalaryBenchmark.experience_level == item["experience_level"],
-                    SalaryBenchmark.year == 2026,
-                    SalaryBenchmark.source == "BOSS直聘",
+            existing_salary = (
+                db.execute(
+                    select(SalaryBenchmark).where(
+                        SalaryBenchmark.company == item["company_name"],
+                        SalaryBenchmark.position == item["position"],
+                        SalaryBenchmark.city == item["city"],
+                        SalaryBenchmark.experience_level == item["experience_level"],
+                        SalaryBenchmark.year == 2026,
+                        SalaryBenchmark.source == "BOSS直聘",
+                    )
                 )
-            ).scalars().first()
+                .scalars()
+                .first()
+            )
             if existing_salary is None:
                 salary = SalaryBenchmark(
                     company=item["company_name"],

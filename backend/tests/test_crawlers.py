@@ -2,22 +2,20 @@
 
 使用 mock 替代真实 HTTP 请求，覆盖 RealDataCrawler 的抓取、解析、存储逻辑。
 """
-import pytest
-from unittest.mock import MagicMock, patch, AsyncMock
-from datetime import datetime, timezone
+
+from unittest.mock import MagicMock, patch
 
 import httpx
 
 from app.crawlers.grad.real_data_crawler import (
-    RealDataCrawler,
-    _get_random_headers,
-    _fetch_with_retry,
-    _parse_yanzhao_search,
-    _parse_cdgdc_rank,
-    _SCHOOL_CACHE,
     _PROGRAM_CACHE,
+    _SCHOOL_CACHE,
+    RealDataCrawler,
+    _fetch_with_retry,
+    _get_random_headers,
+    _parse_cdgdc_rank,
+    _parse_yanzhao_search,
 )
-
 
 # ======================================================================
 # 辅助函数测试
@@ -106,9 +104,11 @@ class TestRealDataCrawler:
         crawler = RealDataCrawler(config={"use_cache": False})
 
         # Mock all real data fetches to fail
-        with patch.object(crawler, "_fetch_yanzhao_data", return_value=[]), \
-             patch.object(crawler, "_fetch_school_data", return_value=[]), \
-             patch.object(crawler, "_fetch_discipline_data", return_value=[]):
+        with (
+            patch.object(crawler, "_fetch_yanzhao_data", return_value=[]),
+            patch.object(crawler, "_fetch_school_data", return_value=[]),
+            patch.object(crawler, "_fetch_discipline_data", return_value=[]),
+        ):
             raw = crawler.fetch()
 
         # Should fall back to cache
@@ -221,8 +221,16 @@ class TestRealDataCrawler:
         crawler = RealDataCrawler()
         raw_items = [
             {"source": "cache", "type": "school", "data": {"name": "清华大学", "tier": "985"}},
-            {"source": "研招网", "type": "program", "data": {"university": "北京大学", "major": "软件工程"}},
-            {"source": "学位网", "type": "discipline", "data": {"discipline": "计算机", "university": "清华", "rating": "A+"}},
+            {
+                "source": "研招网",
+                "type": "program",
+                "data": {"university": "北京大学", "major": "软件工程"},
+            },
+            {
+                "source": "学位网",
+                "type": "discipline",
+                "data": {"discipline": "计算机", "university": "清华", "rating": "A+"},
+            },
         ]
 
         parsed = crawler.parse(raw_items)
@@ -256,7 +264,9 @@ class TestRealDataCrawler:
             mock_instance.__exit__ = MagicMock(return_value=False)
             mock_client.return_value = mock_instance
 
-            result = _fetch_with_retry(mock_instance, "https://example.com", max_retries=2, base_delay=0.1)
+            result = _fetch_with_retry(
+                mock_instance, "https://example.com", max_retries=2, base_delay=0.1
+            )
 
         assert result is None
 
@@ -268,8 +278,7 @@ class TestRealDataCrawler:
         success_response = MagicMock()
         success_response.status_code = 200
 
-        with patch("httpx.Client") as mock_client, \
-             patch("time.sleep"):
+        with patch("httpx.Client") as mock_client, patch("time.sleep"):
             mock_instance = MagicMock()
             mock_instance.get.side_effect = [rate_limit_response, success_response]
             mock_instance.__enter__ = MagicMock(return_value=mock_instance)
@@ -314,18 +323,21 @@ class TestRealDataCrawler:
         count = crawler.store(items, db_session)
 
         assert count == 1
-        ext = db_session.query(ExternalResearchItem).filter(
-            ExternalResearchItem.source_url == "https://yz.chsi.com.cn#real_data:test:测试大学:计算机科学"
-        ).first()
+        ext = (
+            db_session.query(ExternalResearchItem)
+            .filter(
+                ExternalResearchItem.source_url
+                == "https://yz.chsi.com.cn#real_data:test:测试大学:计算机科学"
+            )
+            .first()
+        )
         assert ext is not None
         assert ext.review_status == "PENDING"
         assert ext.item_type == "kaoyan_news"
         assert ext.crawler_name == "real_data"
         # 审核队列同步写入
         assert (
-            db_session.query(ReviewQueueItem)
-            .filter(ReviewQueueItem.ref_item_id == ext.id)
-            .count()
+            db_session.query(ReviewQueueItem).filter(ReviewQueueItem.ref_item_id == ext.id).count()
             == 1
         )
         # 合规红线：不直接落业务表
@@ -359,22 +371,35 @@ class TestRealDataCrawler:
         # Mock all fetch methods to return cache data
         cache_data = [
             {"source": "cache", "type": "school", "data": {"name": "测试大学", "tier": "985"}},
-            {"source": "cache", "type": "program", "data": {"university": "测试大学", "major": "计算机", "degree_type": "学硕", "quota": 10}},
+            {
+                "source": "cache",
+                "type": "program",
+                "data": {
+                    "university": "测试大学",
+                    "major": "计算机",
+                    "degree_type": "学硕",
+                    "quota": 10,
+                },
+            },
         ]
 
-        with patch.object(crawler, "_fetch_yanzhao_data", return_value=[]), \
-             patch.object(crawler, "_fetch_school_data", return_value=[]), \
-             patch.object(crawler, "_fetch_discipline_data", return_value=[]), \
-             patch.object(crawler, "_get_cached_data", return_value=cache_data):
+        with (
+            patch.object(crawler, "_fetch_yanzhao_data", return_value=[]),
+            patch.object(crawler, "_fetch_school_data", return_value=[]),
+            patch.object(crawler, "_fetch_discipline_data", return_value=[]),
+            patch.object(crawler, "_get_cached_data", return_value=cache_data),
+        ):
             result = crawler.run(db=db_session)
 
         assert result["status"] == "success"
         assert result["fetched"] == 2
         assert result["stored"] == 2
         # 合规红线：2 条全部进 PENDING 审核队列，业务表为零
-        pending = db_session.query(ExternalResearchItem).filter(
-            ExternalResearchItem.review_status == "PENDING"
-        ).count()
+        pending = (
+            db_session.query(ExternalResearchItem)
+            .filter(ExternalResearchItem.review_status == "PENDING")
+            .count()
+        )
         assert pending == 2
         assert db_session.query(GradSchoolIntel).count() == 0
 

@@ -1,12 +1,14 @@
 """文档向量模型 — 存储 Embedding 用于 RAG 检索。"""
+
 import uuid
 
-from sqlalchemy import Column, Float, Index, Integer, String, Text
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy import Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
-from app.models.base import GUID, JSONB as CustomJSONB, TimestampMixin, UUIDMixin
+from app.models.base import GUID
+from app.models.base import JSONB as CustomJSONB
+from app.models.base import TimestampMixin, UUIDMixin
 
 
 class DocumentEmbedding(UUIDMixin, TimestampMixin, Base):
@@ -14,6 +16,7 @@ class DocumentEmbedding(UUIDMixin, TimestampMixin, Base):
 
     用于 RAG 检索，支持向量相似度搜索和元数据过滤。
     """
+
     __tablename__ = "document_embeddings"
     __table_args__ = (
         Index("ix_embedding_source", "source_table", "source_id"),

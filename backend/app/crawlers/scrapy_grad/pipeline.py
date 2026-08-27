@@ -4,7 +4,9 @@ from datetime import datetime
 
 class SaveToJSONPipeline:
     def open_spider(self, spider):
-        self.file = open(f'output/{spider.name}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json', 'w')
+        self.file = open(
+            f'output/{spider.name}_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json', "w"
+        )
         self.items = []
 
     def process_item(self, item, spider):

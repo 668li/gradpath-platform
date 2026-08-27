@@ -1,5 +1,6 @@
 # backend/app/models/interview_report.py
 """公司面试经验报告模型 — 用户匿名分享面试经历，聚合后展示"这家公司面试官看重什么"。"""
+
 import enum
 from uuid import UUID
 
@@ -20,7 +21,10 @@ class InterviewReport(UUIDMixin, TimestampMixin, Base):
     __tablename__ = "interview_reports"
     __table_args__ = (
         UniqueConstraint(
-            "user_id", "company", "position", "interview_year",
+            "user_id",
+            "company",
+            "position",
+            "interview_year",
             name="uq_user_company_pos_year",
         ),
     )

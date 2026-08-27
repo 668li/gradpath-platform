@@ -1,6 +1,3 @@
-from datetime import date
-
-
 def test_create_event(auth_headers, client):
     resp = client.post(
         "/api/events",

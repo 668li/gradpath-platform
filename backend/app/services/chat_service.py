@@ -14,6 +14,7 @@
 10. CareerPlan 持久化
 11. AI 消息持久化（含 skill_used 与 context_snapshot）
 """
+
 import logging
 from uuid import UUID
 
@@ -29,7 +30,7 @@ from app.models.skill_node import SkillNode
 from app.models.user import User
 from app.services.ai_orchestrator import AIOrchestrator
 from app.services.knowledge_service import search_articles
-from app.skills.registry import find_skill, get_skill, get_skill_instance, find_skill_instance
+from app.skills.registry import find_skill_instance, get_skill_instance
 
 logger = logging.getLogger(__name__)
 
@@ -61,12 +62,7 @@ def list_conversations(
     query = db.query(Conversation).filter(Conversation.user_id == user_id)
     total = query.count()
     offset = (page - 1) * page_size
-    items = (
-        query.order_by(Conversation.updated_at.desc())
-        .offset(offset)
-        .limit(page_size)
-        .all()
-    )
+    items = query.order_by(Conversation.updated_at.desc()).offset(offset).limit(page_size).all()
     return items, total
 
 
@@ -140,9 +136,7 @@ def build_user_context(db: Session, user_id: UUID) -> str:
     lines = ["【用户画像】"]
     if user:
         lines.append(f"- 姓名：{user.name}")
-        lines.append(
-            f"- 当前阶段：{user.current_stage.value if user.current_stage else '未知'}"
-        )
+        lines.append(f"- 当前阶段：{user.current_stage.value if user.current_stage else '未知'}")
         if user.school:
             lines.append(f"- 学校：{user.school}")
         if user.major:
@@ -154,11 +148,8 @@ def build_user_context(db: Session, user_id: UUID) -> str:
 
     # 职业画像（教育背景 + 目标方向 + 自我评估）
     from app.models.career_profile import CareerProfile
-    profile = (
-        db.query(CareerProfile)
-        .filter(CareerProfile.user_id == user_id)
-        .first()
-    )
+
+    profile = db.query(CareerProfile).filter(CareerProfile.user_id == user_id).first()
     if profile:
         lines.append("【职业画像】")
         if profile.education_level:
@@ -184,6 +175,7 @@ def build_user_context(db: Session, user_id: UUID) -> str:
 
     # 最新职业测评结果（霍兰德）
     from app.models.assessment import Assessment
+
     latest_assessment = (
         db.query(Assessment)
         .filter(Assessment.user_id == user_id)
@@ -196,9 +188,7 @@ def build_user_context(db: Session, user_id: UUID) -> str:
         lines.append(f"- 兴趣编码：{latest_assessment.result_code}")
         lines.append(f"- 结果摘要：{latest_assessment.result_summary}")
         if latest_assessment.recommended_directions:
-            lines.append(
-                f"- 推荐方向：{', '.join(latest_assessment.recommended_directions)}"
-            )
+            lines.append(f"- 推荐方向：{', '.join(latest_assessment.recommended_directions)}")
 
     # 当前职业规划（active 状态，最多 3 条）
     active_plans = (
@@ -281,9 +271,7 @@ def build_user_context(db: Session, user_id: UUID) -> str:
     lines.append("【阶段复盘】")
     if retros:
         for r in retros:
-            lines.append(
-                f"- {r.title}({r.period_start}~{r.period_end}) 满意度={r.satisfaction}"
-            )
+            lines.append(f"- {r.title}({r.period_start}~{r.period_end}) 满意度={r.satisfaction}")
     else:
         lines.append("（暂无记录）")
 
@@ -361,18 +349,19 @@ async def send_message(
     # 5. Skill 匹配
     context = {"conversation": conv, "history": history}
     skill = None
-    
+
     # Try to get skill by hint first
     if skill_hint:
         skill = get_skill_instance(skill_hint)
-    
+
     # Fallback to content-based matching
     if skill is None:
         skill = find_skill_instance(content, context)
-    
+
     # Final fallback to DefaultSkill
     if skill is None:
         from app.skills.default_skill import DefaultSkill
+
         skill = DefaultSkill()
 
     # 6. 知识库 RAG 检索（top 3）

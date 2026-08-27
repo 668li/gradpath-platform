@@ -9,10 +9,11 @@ Redis 不可用时降级为进程内广播（仅本 worker 用户能收到）。
     {"type": "broadcast_all",                                "message": {...}}
     {"type": "send_to_user",  "user_id": "uuid",       "message": {...}}
 """
+
 import asyncio
 import json
 import logging
-from typing import Dict, Set
+
 from fastapi import WebSocket
 
 logger = logging.getLogger(__name__)
@@ -26,9 +27,9 @@ class ConnectionManager:
 
     def __init__(self):
         # 活跃连接 {user_id: set(websocket)}
-        self.active_connections: Dict[str, Set[WebSocket]] = {}
+        self.active_connections: dict[str, set[WebSocket]] = {}
         # 任务状态订阅 {task_id: set(websocket)}
-        self.task_subscribers: Dict[str, Set[WebSocket]] = {}
+        self.task_subscribers: dict[str, set[WebSocket]] = {}
         # Redis 异步客户端（None 表示 Redis 不可用，降级为进程内广播）
         self._redis = None
         # 主事件循环引用 — 供 sync 上下文通过 run_coroutine_threadsafe 调度协程
@@ -42,6 +43,7 @@ class ConnectionManager:
         """
         try:
             from app.metrics import set_active_websockets
+
             total = sum(len(conns) for conns in self.active_connections.values())
             set_active_websockets(total)
         except Exception:
@@ -58,10 +60,12 @@ class ConnectionManager:
         """
         try:
             from app.config import settings
+
             if not settings.REDIS_URL:
                 logger.info("REDIS_URL 未配置，WebSocket 仅支持进程内广播")
                 return
             import redis.asyncio as aioredis
+
             self._redis = aioredis.from_url(
                 settings.REDIS_URL,
                 decode_responses=True,
@@ -99,11 +103,13 @@ class ConnectionManager:
         被取消时（asyncio.CancelledError）立即退出。
         """
         from app.config import settings
+
         if not settings.REDIS_URL:
             logger.info("REDIS_URL 未配置，subscribe_loop 不启动")
             return
 
         import redis.asyncio as aioredis
+
         while True:
             pubsub = None
             try:
@@ -155,7 +161,7 @@ class ConnectionManager:
         if msg_type == "broadcast":
             channel = payload.get("channel")
             if channel and channel.startswith("task:"):
-                task_id = channel[len("task:"):]
+                task_id = channel[len("task:") :]
                 await self._send_to_task_subscribers(task_id, message)
             else:
                 await self._send_to_all(message)

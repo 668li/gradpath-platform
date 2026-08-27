@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """真实研究生导师公开简介 —— 大规模扩量采集器（在 mentor_edu_scraper.py 试点基础上扩量）。
 
 合规红线（与 mentor_edu_scraper.py 完全一致，务必遵守）：
@@ -40,10 +39,10 @@
   py -3.13 mentor_edu_expand.py --unis zju,szu,tongji --per-uni 60
   py -3.13 mentor_edu_expand.py --merge a.json,b.json --out final.json   # 仅合并去重
 """
+
 from __future__ import annotations
 
 import argparse
-import io
 import json
 import random
 import re
@@ -72,9 +71,7 @@ DEFAULT_STAGING = HERE / "mentor_edu_expand.staging.jsonl"
 
 # --------------------------- 源 1：华中科技大学 --------------------------- #
 HUST_BASE = "http://faculty.hust.edu.cn/"  # 站点仅 HTTP 可访问（HTTPS 握手失败）
-HUST_LIST_API = (
-    "http://faculty.hust.edu.cn/system/resource/tsites/asy/asyqueryteacher.jsp"
-)
+HUST_LIST_API = "http://faculty.hust.edu.cn/system/resource/tsites/asy/asyqueryteacher.jsp"
 HUST_LIST_REFERER = (
     "http://faculty.hust.edu.cn/pyjs.jsp"
     "?urltype=tsites.PinYinTeacherList&wbtreeid=1001&py={py}&lang=zh_CN"
@@ -114,9 +111,7 @@ ZJU_BMS_URL_TMPL = "https://bms.zju.edu.cn/{fid}/list.htm"
 # --------------------- 源 3：深圳大学 土木与交通工程学院 --------------------- #
 SZU_CE_BASE = "https://ce.szu.edu.cn/"
 SZU_CE_LIST_API = "https://ce.szu.edu.cn/system/resource/tsites/portal/queryteacher.jsp"
-SZU_CE_LIST_PAGE = (
-    "https://ce.szu.edu.cn/jsfc1.jsp?urltype=tree.TreeTempUrl&wbtreeid=1405"
-)
+SZU_CE_LIST_PAGE = "https://ce.szu.edu.cn/jsfc1.jsp?urltype=tree.TreeTempUrl&wbtreeid=1405"
 # tsites_load_data_options（jsfc1.jsp 页面源码）中的渲染配置
 SZU_CE_VIEW = {
     "collegeid": 0,
@@ -296,9 +291,7 @@ class Scraper:
         if m_res and "暂无" not in m_res.group(1):
             research = self._clean(self._strip_tags(m_res.group(1)))
         if not research:
-            m_res2 = re.search(
-                r"研究方向\s*[：:]\s*(\S[^。；;]{4,200}?)(?:。|；|$)", plain
-            )
+            m_res2 = re.search(r"研究方向\s*[：:]\s*(\S[^。；;]{4,200}?)(?:。|；|$)", plain)
             if m_res2 and "暂无" not in m_res2.group(1):
                 research = self._clean(m_res2.group(1))
         if not research:
@@ -328,7 +321,7 @@ class Scraper:
         # 断点续采：已抓过的教师主页直接复用，不重复请求
         done: dict[str, dict] = {}
         if staging.exists():
-            with io.open(staging, "r", encoding="utf-8") as f:
+            with open(staging, encoding="utf-8") as f:
                 for line in f:
                     line = line.strip()
                     if not line:
@@ -356,9 +349,7 @@ class Scraper:
             pageindex = 1
             while True:
                 self._polite_sleep()
-                params = dict(
-                    HUST_VIEW_PARAMS, py=py, pageindex=pageindex, pagesize=HUST_PAGE_SIZE
-                )
+                params = dict(HUST_VIEW_PARAMS, py=py, pageindex=pageindex, pagesize=HUST_PAGE_SIZE)
                 try:
                     payload = self.fetch(
                         HUST_LIST_API,
@@ -438,10 +429,8 @@ class Scraper:
             }
             mentors.append(m)
             done[m["homepage_url"]] = m
-            with io.open(staging, "a", encoding="utf-8") as f:
-                f.write(
-                    json.dumps({"source": "hust", "mentor": m}, ensure_ascii=False) + "\n"
-                )
+            with open(staging, "a", encoding="utf-8") as f:
+                f.write(json.dumps({"source": "hust", "mentor": m}, ensure_ascii=False) + "\n")
         rep.count = len(mentors)
         rep.status = "ok" if mentors else ("error" if not rep.detail else "partial")
         rep.detail = (
@@ -494,14 +483,14 @@ class Scraper:
                 if not m_name:
                     continue
                 name = self._clean(m_name.group(1))
-                key = f"浙江大学|{re.sub(r'\s+', '', name)}"
+                key = "浙江大学|" + re.sub(r"\s+", "", name)
                 if not name or not re.search(r"[\u4e00-\u9fa5A-Za-z]", name) or key in seen:
                     continue
                 seen.add(key)
                 m_title = re.search(r"</h3>\s*<span>([^<]*)</span>", chunk)
                 m_res = re.search(r"研究方向</strong>[^<]*<span>([^<]*)</span>", chunk)
                 m_home = re.search(
-                    r'个人主页</strong>[^<]*<span>[^<]*</span></a>'
+                    r"个人主页</strong>[^<]*<span>[^<]*</span></a>"
                     r'<a href="(https?://[^"]+)"[^>]*>',
                     chunk,
                 )
@@ -559,12 +548,17 @@ class Scraper:
                     profilelen=100,
                 )
                 try:
-                    payload = self.fetch(SZU_CE_LIST_API, referer=SZU_CE_LIST_PAGE, params=params).json()
+                    payload = self.fetch(
+                        SZU_CE_LIST_API, referer=SZU_CE_LIST_PAGE, params=params
+                    ).json()
                 except HTTPBlockedError as exc:
                     rep.status, rep.detail = "blocked", str(exc)
                     return []
                 except (requests.RequestException, json.JSONDecodeError) as exc:
-                    rep.status, rep.detail = "error", f"列表接口失败 {exc.__class__.__name__}: {exc}"
+                    rep.status, rep.detail = (
+                        "error",
+                        f"列表接口失败 {exc.__class__.__name__}: {exc}",
+                    )
                     return []
                 rows = payload.get("teacherData", []) if isinstance(payload, dict) else []
                 for r in rows:  # email 等字段一律不取
@@ -600,7 +594,9 @@ class Scraper:
                     self._polite_sleep()
                     try:
                         sub = self._decode(
-                            self.fetch(urljoin(c["detail_url"], m_sub.group(1)), referer=c["detail_url"])
+                            self.fetch(
+                                urljoin(c["detail_url"], m_sub.group(1)), referer=c["detail_url"]
+                            )
                         )
                         # 子页正文：<div class="content"><div class="subs"><p>研究方向…</p>
                         m_txt = re.search(
@@ -674,9 +670,7 @@ class Scraper:
                 ):
                     name, unit = self._clean(m.group(2)), self._clean(m.group(3))
                     if name and re.search(r"[\u4e00-\u9fa5A-Za-z]", name):
-                        cards.append(
-                            {"name": name, "unit": unit, "detail_url": m.group(1)}
-                        )
+                        cards.append({"name": name, "unit": unit, "detail_url": m.group(1)})
                 m_total = re.search(r"共(\d+)条.*?(\d+)/(\d+)", html)
                 if not m_total or page >= int(m_total.group(3)) or len(cards) >= limit + 10:
                     break
@@ -700,9 +694,7 @@ class Scraper:
             plain = self._strip_tags(html)
             dept, research = self.parse_tsites_detail(html)
             if not research:
-                m_rd = re.search(
-                    r"主要研究方向[为是：:]+\s*([^。；;]{4,150})", plain
-                )
+                m_rd = re.search(r"主要研究方向[为是：:]+\s*([^。；;]{4,150})", plain)
                 if m_rd:
                     research = self._clean(m_rd.group(1))
             # 职称：个人简介文本中的「××教授/研究员，博士生导师」模式
@@ -740,12 +732,12 @@ class Scraper:
 # 汇总：去重 + 隐私复查 + 写文件
 # --------------------------------------------------------------------------- #
 def dedup_key(m: dict) -> str:
-    return f"{m.get('university', '')}|{re.sub(r'\s+', '', m.get('name', ''))}"
+    return m.get("university", "") + "|" + re.sub(r"\s+", "", m.get("name", ""))
 
 
 def load_existing() -> list[dict]:
     if EXISTING_PATH.exists():
-        with io.open(EXISTING_PATH, "r", encoding="utf-8") as f:
+        with open(EXISTING_PATH, encoding="utf-8") as f:
             return json.load(f)
     return []
 
@@ -775,7 +767,7 @@ def finalize(mentors: list[dict], out_path: Path, scraper_reports: list[SourceRe
             seen.add(key)
             deduped.append(m)
 
-    with io.open(out_path, "w", encoding="utf-8") as f:
+    with open(out_path, "w", encoding="utf-8") as f:
         json.dump(deduped, f, ensure_ascii=False, indent=2)
 
     # ---------------------------- 运行报告 ---------------------------- #
@@ -797,11 +789,15 @@ def finalize(mentors: list[dict], out_path: Path, scraper_reports: list[SourceRe
         print(f"  {uni}: {n} 位")
     n_leak, leak_samples = audit_leaks(deduped)
     n_dup_existing = len([1 for m in mentors if dedup_key(m) in existing_keys])
-    print(f"现有库 {len(existing)} 条（mentor_edu_data.json），与现有库重复剔除 {n_dup_existing} 条，"
-          f"批内重复剔除 {len(mentors) - n_dup_existing - len(deduped)} 条")
+    print(
+        f"现有库 {len(existing)} 条（mentor_edu_data.json），与现有库重复剔除 {n_dup_existing} 条，"
+        f"批内重复剔除 {len(mentors) - n_dup_existing - len(deduped)} 条"
+    )
     print(f"合计（与现有 45 条去重后的净新增）: {len(deduped)} 位 → {out_path}")
-    print(f"联系方式泄漏复查（邮箱/电话正则）: {n_leak} 处"
-          + (f"，样例: {leak_samples}" if n_leak else "，通过（0 泄漏）"))
+    print(
+        f"联系方式泄漏复查（邮箱/电话正则）: {n_leak} 处"
+        + (f"，样例: {leak_samples}" if n_leak else "，通过（0 泄漏）")
+    )
     print("=" * 72)
     return 0 if deduped else 1
 
@@ -809,25 +805,25 @@ def finalize(mentors: list[dict], out_path: Path, scraper_reports: list[SourceRe
 def main() -> int:
     parser = argparse.ArgumentParser(description="真实研究生导师公开简介 · 大规模扩量采集")
     parser.add_argument(
-        "--unis", default="hust,zju,szu,tongji",
+        "--unis",
+        default="hust,zju,szu,tongji",
         help="逗号分隔：hust / zju / szu / tongji（zju=基础医学系各学科系，szu=土木与交通工程学院）",
     )
     parser.add_argument(
         "--per-uni", type=int, default=60, help="小规模源每源条数（zju/szu/tongji，默认 60）"
     )
+    parser.add_argument("--hust-limit", type=int, default=1600, help="HUST 目标条数（默认 1600）")
     parser.add_argument(
-        "--hust-limit", type=int, default=1600, help="HUST 目标条数（默认 1600）"
-    )
-    parser.add_argument(
-        "--max-runtime", type=int, default=0,
+        "--max-runtime",
+        type=int,
+        default=0,
         help="软超时秒数（0=不限），到点后优雅收尾，可配合 staging 断点续采",
     )
     parser.add_argument("--out", default=str(DEFAULT_OUT), help="输出 JSON 路径")
+    parser.add_argument("--staging", default=str(DEFAULT_STAGING), help="HUST 断点续采 JSONL 路径")
     parser.add_argument(
-        "--staging", default=str(DEFAULT_STAGING), help="HUST 断点续采 JSONL 路径"
-    )
-    parser.add_argument(
-        "--merge", default="",
+        "--merge",
+        default="",
         help="仅合并模式：逗号分隔的多个结果 JSON，合并去重后写入 --out（不联网）",
     )
     args = parser.parse_args()
@@ -837,7 +833,7 @@ def main() -> int:
         for p in args.merge.split(","):
             fp = Path(p.strip())
             if fp.exists():
-                with io.open(fp, "r", encoding="utf-8") as f:
+                with open(fp, encoding="utf-8") as f:
                     merged.extend(json.load(f))
             else:
                 print(f"[merge] 跳过不存在的结果文件: {fp}")
@@ -856,9 +852,7 @@ def main() -> int:
     if "tongji" in wanted:
         mentors.extend(scraper.scrape_tongji(args.per_uni))
     if "hust" in wanted:
-        mentors.extend(
-            scraper.scrape_hust(args.hust_limit, Path(args.staging))
-        )
+        mentors.extend(scraper.scrape_hust(args.hust_limit, Path(args.staging)))
     mentors = [scraper.sanitized(m) for m in mentors]
     return finalize(mentors, Path(args.out), scraper.reports)
 

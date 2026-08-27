@@ -5,6 +5,7 @@
 - 走应用自身 ORM + hash_password，参数绑定，无 SQL 拼接。
 - 仅供本地开发环境使用，不包含任何个人数据。
 """
+
 import secrets
 import sys
 from pathlib import Path

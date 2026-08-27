@@ -1,5 +1,6 @@
 # backend/app/skills/career_planning.py
 """职业路径规划 Skill — 生成结构化职业规划。"""
+
 from __future__ import annotations
 
 import json
@@ -9,8 +10,16 @@ from app.skills.base import BaseSkill
 
 # 激活关键词
 ACTIVATE_KEYWORDS = [
-    "规划", "路径", "怎么进", "如何准备", "目标", "进大厂",
-    "职业规划", "发展路径", "career plan", "career",
+    "规划",
+    "路径",
+    "怎么进",
+    "如何准备",
+    "目标",
+    "进大厂",
+    "职业规划",
+    "发展路径",
+    "career plan",
+    "career",
 ]
 
 # 期望的 LLM JSON 输出格式说明

@@ -1,13 +1,17 @@
 """讨论帖 API 测试。"""
-import pytest
 
 TOPIC_SCHOOL = "清华大学|计算机科学与技术"
 TOPIC_COMPANY = "腾讯|后端开发"
 
 
-def _create_post(client, headers, topic_type="school_major",
-                 topic_key=TOPIC_SCHOOL, content="测试帖子内容",
-                 parent_id=None):
+def _create_post(
+    client,
+    headers,
+    topic_type="school_major",
+    topic_key=TOPIC_SCHOOL,
+    content="测试帖子内容",
+    parent_id=None,
+):
     """通过 API 发帖，返回响应。"""
     payload = {
         "topic_type": topic_type,
@@ -21,6 +25,7 @@ def _create_post(client, headers, topic_type="school_major",
 # ======================================================================
 # 发帖
 # ======================================================================
+
 
 class TestCreatePost:
     def test_create_top_level_post(self, auth_headers, client):
@@ -42,8 +47,7 @@ class TestCreatePost:
         top = _create_post(client, auth_headers)
         top_id = top.json()["id"]
 
-        resp = _create_post(client, auth_headers, content="这是一条回复",
-                            parent_id=top_id)
+        resp = _create_post(client, auth_headers, content="这是一条回复", parent_id=top_id)
         assert resp.status_code == 201
         data = resp.json()
         assert data["parent_id"] == top_id
@@ -70,26 +74,25 @@ class TestCreatePost:
         top = _create_post(client, auth_headers)
         top_id = top.json()["id"]
 
-        resp = _create_post(client, auth_headers,
-                            topic_key="其他学校|其他专业",
-                            parent_id=top_id)
+        resp = _create_post(client, auth_headers, topic_key="其他学校|其他专业", parent_id=top_id)
         assert resp.status_code == 422
 
     def test_reply_to_reply_rejected(self, auth_headers, client):
         """回复回复帖（多级嵌套）返回 422。"""
         top = _create_post(client, auth_headers)
         top_id = top.json()["id"]
-        reply = _create_post(client, auth_headers, parent_id=top_id,
-                             content="第一条回复")
+        reply = _create_post(client, auth_headers, parent_id=top_id, content="第一条回复")
         reply_id = reply.json()["id"]
 
-        resp = _create_post(client, auth_headers, parent_id=reply_id,
-                            content="回复回复")
+        resp = _create_post(client, auth_headers, parent_id=reply_id, content="回复回复")
         assert resp.status_code == 422
 
     def test_anonymous_create_fails(self, client):
         """未登录不能发帖。"""
-        resp = _create_post(client, {}, )
+        resp = _create_post(
+            client,
+            {},
+        )
         assert resp.status_code == 401
 
 
@@ -97,13 +100,15 @@ class TestCreatePost:
 # 列表查询
 # ======================================================================
 
+
 class TestListPosts:
     def test_list_posts_with_replies(self, auth_headers, client):
         """列表返回顶层帖及其回复。"""
         top1 = _create_post(client, auth_headers, content="第一个帖子")
         top2 = _create_post(client, auth_headers, content="第二个帖子")
-        reply = _create_post(client, auth_headers, content="回复第一个",
-                             parent_id=top1.json()["id"])
+        reply = _create_post(
+            client, auth_headers, content="回复第一个", parent_id=top1.json()["id"]
+        )
 
         resp = client.get(
             "/api/posts",
@@ -128,8 +133,7 @@ class TestListPosts:
         """无帖时返回空列表。"""
         resp = client.get(
             "/api/posts",
-            params={"topic_type": "company_position",
-                    "topic_key": "字节跳动|算法工程师"},
+            params={"topic_type": "company_position", "topic_key": "字节跳动|算法工程师"},
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -143,8 +147,12 @@ class TestListPosts:
 
         resp = client.get(
             "/api/posts",
-            params={"topic_type": "school_major", "topic_key": TOPIC_SCHOOL,
-                    "page": 1, "page_size": 1},
+            params={
+                "topic_type": "school_major",
+                "topic_key": TOPIC_SCHOOL,
+                "page": 1,
+                "page_size": 1,
+            },
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -165,6 +173,7 @@ class TestListPosts:
 # ======================================================================
 # 编辑
 # ======================================================================
+
 
 class TestUpdatePost:
     def test_update_own_post(self, auth_headers, client):
@@ -189,8 +198,7 @@ class TestUpdatePost:
         # 注册第二个账号
         client.post(
             "/api/auth/register",
-            json={"email": "other@example.com", "password": "Test1234!",
-                  "name": "其他用户"},
+            json={"email": "other@example.com", "password": "Test1234!", "name": "其他用户"},
         )
         resp_login = client.post(
             "/api/auth/login",
@@ -219,6 +227,7 @@ class TestUpdatePost:
 # ======================================================================
 # 删除
 # ======================================================================
+
 
 class TestDeletePost:
     def test_delete_own_post(self, auth_headers, client):
@@ -262,8 +271,7 @@ class TestDeletePost:
         # 注册第二个账号
         client.post(
             "/api/auth/register",
-            json={"email": "other2@example.com", "password": "Test1234!",
-                  "name": "其他用户2"},
+            json={"email": "other2@example.com", "password": "Test1234!", "name": "其他用户2"},
         )
         resp_login = client.post(
             "/api/auth/login",

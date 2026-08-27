@@ -1,4 +1,5 @@
 import psycopg2
+
 conn = psycopg2.connect("postgresql://gradpath:changeme@db:5432/gradpath")
 cur = conn.cursor()
 cur.execute("SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename")

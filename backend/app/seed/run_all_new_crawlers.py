@@ -9,18 +9,19 @@ adjustment_real / admission_ratio / retest_experience），绕过 PENDING 审核
 
 生产数据请改用导入脚本把真实数据写入审核队列（PENDING）后人工确认。
 """
+
 import os
 import sys
 
 # 确保可以导入 app 模块
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.database import SessionLocal
-from app.crawlers.grad.dark_knowledge_crawler import DarkKnowledgeCrawler
-from app.crawlers.grad.forum_experience_crawler import ForumExperienceCrawler
 from app.crawlers.grad.adjustment_real_crawler import AdjustmentRealCrawler
 from app.crawlers.grad.admission_ratio_crawler import AdmissionRatioCrawler
+from app.crawlers.grad.dark_knowledge_crawler import DarkKnowledgeCrawler
+from app.crawlers.grad.forum_experience_crawler import ForumExperienceCrawler
 from app.crawlers.grad.retest_experience_crawler import RetestExperienceCrawler
+from app.database import SessionLocal
 
 _LEGACY_DISABLED_MSG = (
     "[BLOCKED] run_all_new_crawlers 已禁用（B1 合规收口）："

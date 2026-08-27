@@ -7,6 +7,7 @@
     GET /api/export-v2/profile-report       个人报告 PDF
     GET /api/export-v2/data-export          数据导出 CSV/JSON
 """
+
 import csv
 import io
 import json
@@ -25,6 +26,7 @@ router = APIRouter(tags=["导出V2"])
 # 院校报告 PDF
 # ======================================================================
 
+
 @router.get("/api/export-v2/school-report")
 def school_report_pdf(
     school_id: str | None = Query(None, description="院校 ID"),
@@ -39,6 +41,7 @@ def school_report_pdf(
         )
 
     from app.services.pdf_service import generate_school_report_pdf
+
     pdf_bytes = generate_school_report_pdf(db, school_id=school_id, school_name=school_name)
 
     # 文件名：使用院校名称
@@ -56,6 +59,7 @@ def school_report_pdf(
 # 职业报告 PDF
 # ======================================================================
 
+
 @router.get("/api/export-v2/career-report")
 def career_report_pdf(
     user: User = Depends(get_current_user),
@@ -63,6 +67,7 @@ def career_report_pdf(
 ):
     """导出职业规划报告为 PDF（需认证）。"""
     from app.services.pdf_service import generate_career_report_pdf
+
     pdf_bytes = generate_career_report_pdf(db, user.id)
 
     return Response(
@@ -76,6 +81,7 @@ def career_report_pdf(
 # 个人报告 PDF
 # ======================================================================
 
+
 @router.get("/api/export-v2/profile-report")
 def profile_report_pdf(
     user: User = Depends(get_current_user),
@@ -83,6 +89,7 @@ def profile_report_pdf(
 ):
     """导出个人综合报告为 PDF（需认证）。"""
     from app.services.pdf_service import generate_profile_report_pdf
+
     pdf_bytes = generate_profile_report_pdf(db, user.id)
 
     return Response(
@@ -95,6 +102,7 @@ def profile_report_pdf(
 # ======================================================================
 # 数据导出 CSV/JSON
 # ======================================================================
+
 
 @router.get("/api/export-v2/data-export")
 def data_export(
@@ -141,13 +149,15 @@ def data_export(
     if decisions:
         writer.writerow(["日期", "类型", "状态", "信心", "说明"])
         for d in decisions:
-            writer.writerow([
-                d.get("decision_date", ""),
-                d.get("destination_type", ""),
-                d.get("status", ""),
-                d.get("confidence", ""),
-                d.get("reasoning", ""),
-            ])
+            writer.writerow(
+                [
+                    d.get("decision_date", ""),
+                    d.get("destination_type", ""),
+                    d.get("status", ""),
+                    d.get("confidence", ""),
+                    d.get("reasoning", ""),
+                ]
+            )
     writer.writerow([])
 
     # 事件记录
@@ -156,12 +166,14 @@ def data_export(
     if events:
         writer.writerow(["日期", "类型", "标题", "描述"])
         for e in events:
-            writer.writerow([
-                e.get("event_date", ""),
-                e.get("event_type", ""),
-                e.get("title", ""),
-                e.get("description", ""),
-            ])
+            writer.writerow(
+                [
+                    e.get("event_date", ""),
+                    e.get("event_type", ""),
+                    e.get("title", ""),
+                    e.get("description", ""),
+                ]
+            )
     writer.writerow([])
 
     # 技能
@@ -170,12 +182,14 @@ def data_export(
     if skills:
         writer.writerow(["名称", "类别", "等级", "获得日期"])
         for s in skills:
-            writer.writerow([
-                s.get("name", ""),
-                s.get("category", ""),
-                s.get("level", ""),
-                s.get("acquired_date", ""),
-            ])
+            writer.writerow(
+                [
+                    s.get("name", ""),
+                    s.get("category", ""),
+                    s.get("level", ""),
+                    s.get("acquired_date", ""),
+                ]
+            )
     writer.writerow([])
 
     # 复盘
@@ -184,12 +198,14 @@ def data_export(
     if retros:
         writer.writerow(["周期开始", "周期结束", "标题", "满意度"])
         for r in retros:
-            writer.writerow([
-                r.get("period_start", ""),
-                r.get("period_end", ""),
-                r.get("title", ""),
-                r.get("satisfaction", ""),
-            ])
+            writer.writerow(
+                [
+                    r.get("period_start", ""),
+                    r.get("period_end", ""),
+                    r.get("title", ""),
+                    r.get("satisfaction", ""),
+                ]
+            )
 
     csv_content = buf.getvalue()
     return Response(

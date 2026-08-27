@@ -7,11 +7,11 @@
     from app.services.pdf_converter import convert_pdf_to_markdown
     markdown = convert_pdf_to_markdown("path/to/file.pdf")
 """
+
 from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -133,8 +133,8 @@ def convert_epub_to_markdown(file_path: str | Path) -> str:
 
     try:
         import ebooklib  # type: ignore[import-not-found]
-        from ebooklib import epub  # type: ignore[import-not-found]
         from bs4 import BeautifulSoup  # type: ignore[import-not-found]
+        from ebooklib import epub  # type: ignore[import-not-found]
     except ImportError:
         raise RuntimeError(
             "EPUB 转换需要安装 ebooklib 和 beautifulsoup4：pip install ebooklib beautifulsoup4"

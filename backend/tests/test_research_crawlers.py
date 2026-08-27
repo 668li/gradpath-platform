@@ -3,20 +3,15 @@
 使用 mock 替代真实 HTTP 请求，覆盖 B站、网页文章、RSS 三个 crawler
 以及 ResearchTransformer 的清洗/转换逻辑。
 """
-import json
-import tempfile
-import urllib.parse
-from datetime import datetime, timezone
-from pathlib import Path
-from unittest.mock import MagicMock, patch
 
-import pytest
+import json
+from datetime import datetime, timezone
+from unittest.mock import MagicMock, patch
 
 from app.crawlers.research.bilibili_research_crawler import BilibiliResearchCrawler
 from app.crawlers.research.rss_news_crawler import RssNewsCrawler
 from app.crawlers.research.transformer import ResearchTransformer
 from app.crawlers.research.web_article_crawler import WebArticleCrawler
-
 
 # ======================================================================
 # BilibiliResearchCrawler
@@ -26,9 +21,7 @@ from app.crawlers.research.web_article_crawler import WebArticleCrawler
 class TestBilibiliResearchCrawler:
     def test_fetch_and_parse_returns_expected_fields(self):
         """mock B站搜索 API，验证 fetch/parse 输出字段。"""
-        crawler = BilibiliResearchCrawler(
-            config={"keywords": ["408 计算机考研"], "pages": 1}
-        )
+        crawler = BilibiliResearchCrawler(config={"keywords": ["408 计算机考研"], "pages": 1})
 
         search_response = MagicMock()
         search_response.json.return_value = {
@@ -36,7 +29,7 @@ class TestBilibiliResearchCrawler:
             "data": {
                 "result": [
                     {
-                        "title": "<em class=\"keyword\">408</em> 计算机考研经验分享",
+                        "title": '<em class="keyword">408</em> 计算机考研经验分享',
                         "bvid": "BV1Test1234",
                         "arcurl": "https://www.bilibili.com/video/BV1Test1234",
                         "description": "这是我的考研复习经验，包含数据结构和操作系统。",
@@ -50,9 +43,7 @@ class TestBilibiliResearchCrawler:
         }
         homepage_response = MagicMock()
 
-        crawler._request = MagicMock(
-            side_effect=[homepage_response, search_response]
-        )
+        crawler._request = MagicMock(side_effect=[homepage_response, search_response])
 
         raw = crawler.fetch()
         assert len(raw) == 1
@@ -76,7 +67,7 @@ class TestBilibiliResearchCrawler:
         crawler = BilibiliResearchCrawler(config={"keyword": "考研"})
         raw = [
             {
-                "title": "<em class=\"keyword\">考研</em> <b>复试</b>经验",
+                "title": '<em class="keyword">考研</em> <b>复试</b>经验',
                 "bvid": "BVHtml",
                 "description": "<p>这是正文</p>",
                 "author": "作者",
@@ -91,18 +82,14 @@ class TestBilibiliResearchCrawler:
 
     def test_fetch_handles_api_error(self):
         """API 返回非 0 code 时统计错误并继续。"""
-        crawler = BilibiliResearchCrawler(
-            config={"keywords": ["考研"], "pages": 1}
-        )
+        crawler = BilibiliResearchCrawler(config={"keywords": ["考研"], "pages": 1})
         error_response = MagicMock()
         error_response.json.return_value = {
             "code": -500,
             "message": "系统错误",
         }
         homepage_response = MagicMock()
-        crawler._request = MagicMock(
-            side_effect=[homepage_response, error_response]
-        )
+        crawler._request = MagicMock(side_effect=[homepage_response, error_response])
 
         raw = crawler.fetch()
         assert raw == []
@@ -128,7 +115,9 @@ class TestWebArticleCrawler:
         )
 
         with patch.object(
-            crawler.session, "request", return_value=MagicMock(text=jina_text, raise_for_status=MagicMock())
+            crawler.session,
+            "request",
+            return_value=MagicMock(text=jina_text, raise_for_status=MagicMock()),
         ) as mock_request:
             raw = crawler.fetch()
 
@@ -219,7 +208,9 @@ class TestRssNewsCrawler:
         )
         parsed_feed.entries = [entry1, entry2]
 
-        with patch("app.crawlers.research.rss_news_crawler.feedparser.parse", return_value=parsed_feed):
+        with patch(
+            "app.crawlers.research.rss_news_crawler.feedparser.parse", return_value=parsed_feed
+        ):
             raw = crawler.fetch()
 
         assert len(raw) == 2
@@ -249,9 +240,7 @@ class TestRssNewsCrawler:
 
     def test_keyword_filter(self):
         """关键词过滤：未命中关键词的条目应被丢弃。"""
-        crawler = RssNewsCrawler(
-            config={"feeds": [], "keywords": ["计算机", "408"]}
-        )
+        crawler = RssNewsCrawler(config={"feeds": [], "keywords": ["计算机", "408"]})
         items = [
             {"title": "计算机考研大纲发布", "summary": "包含 408 内容"},
             {"title": "教育新闻", "summary": "与考研无关"},

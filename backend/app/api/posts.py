@@ -1,5 +1,5 @@
 """讨论帖 API 路由。"""
-from typing import Optional
+
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -13,13 +13,7 @@ from app.models.follow import Follow
 from app.models.post import Post, PostTopicType
 from app.models.user import User
 from app.schemas.common import CursorPaginatedResponse
-from app.schemas.post import (
-    PostCreate,
-    PostListResponse,
-    PostQuery,
-    PostResponse,
-    PostUpdate,
-)
+from app.schemas.post import PostCreate, PostListResponse, PostQuery, PostResponse, PostUpdate
 from app.services.post_service import (
     create_post,
     delete_post,
@@ -27,7 +21,6 @@ from app.services.post_service import (
     list_public_posts,
     update_post,
 )
-from app.api.notifications import create_notification
 
 router = APIRouter(prefix="/api/posts", tags=["讨论帖"])
 
@@ -54,7 +47,7 @@ def list_public(
 @router.get("/public/cursor", response_model=CursorPaginatedResponse[PostResponse])
 def list_public_cursor(
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
-    cursor: Optional[str] = Query(None, description="游标（cursor 分页）"),
+    cursor: str | None = Query(None, description="游标（cursor 分页）"),
     topic_type: str | None = Query(None, description="主题类型过滤"),
     db: Session = Depends(get_db),
 ):
@@ -68,9 +61,7 @@ def list_public_cursor(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=f"无效的 topic_type: {topic_type}",
             )
-    query = apply_cursor_filter(
-        query, cursor, time_col=Post.created_at, id_col=Post.id
-    )
+    query = apply_cursor_filter(query, cursor, time_col=Post.created_at, id_col=Post.id)
     items = (
         query.options(selectinload(Post.replies))
         .order_by(Post.created_at.desc())
@@ -80,15 +71,15 @@ def list_public_cursor(
     has_more = len(items) > page_size
     if has_more:
         items = items[:page_size]
-    next_cursor = encode_cursor(items[-1].created_at, str(items[-1].id)) if has_more and items else None
+    next_cursor = (
+        encode_cursor(items[-1].created_at, str(items[-1].id)) if has_more and items else None
+    )
     # 批量查询作者名（与 list_public_posts 一致），避免 PostResponse 校验失败
     user_ids = {p.user_id for p in items}
-    users = (
-        db.query(User).filter(User.id.in_(list(user_ids))).all()
-        if user_ids else []
-    )
+    users = db.query(User).filter(User.id.in_(list(user_ids))).all() if user_ids else []
     user_map = {u.id: (u.nickname or u.username or u.name) for u in users}
     from app.services.post_service import _to_response
+
     resp_items = []
     for p in items:
         resp = _to_response(p)
@@ -140,22 +131,15 @@ def batch_posts(
             continue
     if not parsed_ids:
         return []
-    items = (
-        db.query(Post)
-        .options(selectinload(Post.replies))
-        .filter(Post.id.in_(parsed_ids))
-        .all()
-    )
+    items = db.query(Post).options(selectinload(Post.replies)).filter(Post.id.in_(parsed_ids)).all()
     # PostResponse 需要 author_id/author_name，但 Post ORM 没有 author_name 字段。
     # 直接 model_validate 会触发 2 validation errors（缺 author_id/author_name）。
     # 这里与 list_public_cursor 一致：批量查 User，调用 _to_response 填充 author_name。
     user_ids = {p.user_id for p in items}
-    users = (
-        db.query(User).filter(User.id.in_(list(user_ids))).all()
-        if user_ids else []
-    )
+    users = db.query(User).filter(User.id.in_(list(user_ids))).all() if user_ids else []
     user_map = {u.id: (u.nickname or u.username or u.name) for u in users}
     from app.services.post_service import _to_response
+
     resp_items = []
     for p in items:
         resp = _to_response(p)
@@ -174,11 +158,8 @@ def create(
     # 通知粉丝：有新帖子（性能优化：批量写入，消除 N+1 flush）
     try:
         from app.models.notification import Notification, NotificationType
-        follower_ids = (
-            db.query(Follow.follower_id)
-            .filter(Follow.followee_id == str(user.id))
-            .all()
-        )
+
+        follower_ids = db.query(Follow.follower_id).filter(Follow.followee_id == str(user.id)).all()
         if follower_ids:
             notifications = [
                 Notification(

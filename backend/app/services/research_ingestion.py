@@ -4,6 +4,7 @@
 共用本服务：写入 t_external_research_item + t_review_queue_item，
 同时由各爬虫 store() 维护 crawler_runs 运行统计。
 """
+
 import logging
 from datetime import datetime
 from hashlib import sha256
@@ -86,25 +87,27 @@ def _load_kaoyan_dedup_baseline(db: Session) -> tuple[list[int], set[str]]:
     norm_urls: set[str] = set()
 
     for row in (
-        db.query(KaoyanNews.title, KaoyanNews.summary)
-        .filter(KaoyanNews.status == "approved")
-        .all()
+        db.query(KaoyanNews.title, KaoyanNews.summary).filter(KaoyanNews.status == "approved").all()
     ):
         text = f"{row[0] or ''} {row[1] or ''}".strip()
         if text:
             hashes.append(compute_simhash(text))
 
-    for row in db.query(ExternalResearchItem.title).filter(
-        ExternalResearchItem.item_type == "kaoyan_news"
-    ).all():
+    for row in (
+        db.query(ExternalResearchItem.title)
+        .filter(ExternalResearchItem.item_type == "kaoyan_news")
+        .all()
+    ):
         if row[0]:
             hashes.append(compute_simhash(row[0]))
 
     for row in db.query(KaoyanNews.source_url).all():
         norm_urls.add(normalize_url(row[0]))
-    for row in db.query(ExternalResearchItem.source_url).filter(
-        ExternalResearchItem.item_type == "kaoyan_news"
-    ).all():
+    for row in (
+        db.query(ExternalResearchItem.source_url)
+        .filter(ExternalResearchItem.item_type == "kaoyan_news")
+        .all()
+    ):
         norm_urls.add(normalize_url(row[0]))
 
     return hashes, norm_urls
@@ -114,10 +117,10 @@ def store_research_items(
     db: Session,
     *,
     crawler_name: str,
-    item_type: str,           # experience_post / dark_knowledge / kaoyan_news
-    items: list[dict],        # 爬虫 parse 产物
-    source_platform: str,     # bilibili / web / rss
-    run_id: str,              # CrawlerRun.id (UUID hex)
+    item_type: str,  # experience_post / dark_knowledge / kaoyan_news
+    items: list[dict],  # 爬虫 parse 产物
+    source_platform: str,  # bilibili / web / rss
+    run_id: str,  # CrawlerRun.id (UUID hex)
 ) -> dict:
     """落盘爬虫改入库：写入 t_external_research_item + t_review_queue_item。
 
@@ -178,7 +181,9 @@ def store_research_items(
             if item_type == "kaoyan_news":
                 norm_url = normalize_url(source_url)
                 if norm_url in kaoyan_norm_urls:
-                    logger.info("[research_ingestion] kaoyan_news 归一化 URL 重复拒收: %s", norm_url)
+                    logger.info(
+                        "[research_ingestion] kaoyan_news 归一化 URL 重复拒收: %s", norm_url
+                    )
                     duplicated += 1
                     continue
                 sim_text = f"{title} {content[:500]}".strip()
@@ -187,10 +192,15 @@ def store_research_items(
                     duplicated += 1
                     continue
                 quality_score = item.get("quality_score")
-                if isinstance(quality_score, (int, float)) and int(quality_score) < QUALITY_MIN_SCORE:
+                if (
+                    isinstance(quality_score, (int, float))
+                    and int(quality_score) < QUALITY_MIN_SCORE
+                ):
                     logger.info(
                         "[research_ingestion] kaoyan_news 质量分 %s < %s 拒收: %s",
-                        int(quality_score), QUALITY_MIN_SCORE, title[:40],
+                        int(quality_score),
+                        QUALITY_MIN_SCORE,
+                        title[:40],
                     )
                     continue
                 # 批次内去重：本次已通过的新条目纳入 simhash 比对基线
@@ -201,9 +211,7 @@ def store_research_items(
 
             # 除核心列外的 parse 产物全部进 external_meta，保留行级来源元数据（F11）；
             # datetime 等非 JSON 原生类型先转 isoformat（JSONB 列要求）
-            external_meta = _json_safe(
-                {k: v for k, v in item.items() if k not in _CORE_FIELDS}
-            )
+            external_meta = _json_safe({k: v for k, v in item.items() if k not in _CORE_FIELDS})
 
             ext_item = ExternalResearchItem(
                 crawler_name=crawler_name,

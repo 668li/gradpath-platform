@@ -7,6 +7,7 @@
   缺失时自动聚合生成；契约 updated_at 无模型列 → 手动映射审计 updated_time
 - weighted_action_score：加权行动完成分 = DONE 权重和 / 总权重和 × 100（0~100）
 """
+
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -14,20 +15,14 @@ from sqlalchemy.orm import Session
 
 from app.models.action_center import ActionStreak, DailyAction
 from app.models.growth_center import GrowthArchive, GrowthTrajectory
-from app.schemas.growth import (
-    GrowthArchiveVO,
-    GrowthTrajectoryCreateRequest,
-    GrowthTrajectoryVO,
-)
+from app.schemas.growth import GrowthArchiveVO, GrowthTrajectoryCreateRequest, GrowthTrajectoryVO
 
 
 def _not_found(detail: str) -> HTTPException:
     return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=detail)
 
 
-def list_trajectory(
-    db: Session, user_id: UUID
-) -> tuple[list[GrowthTrajectory], int]:
+def list_trajectory(db: Session, user_id: UUID) -> tuple[list[GrowthTrajectory], int]:
     """成长轨迹时间轴（按事件发生时间倒序）。"""
     items = (
         db.query(GrowthTrajectory)
@@ -73,13 +68,15 @@ def _aggregate(db: Session, user_id: UUID) -> dict:
         DailyAction.deleted.is_(False),
     )
     total = base_query.count()
-    done = (
-        base_query.filter(DailyAction.status == "DONE").count()
+    done = base_query.filter(DailyAction.status == "DONE").count()
+    rows = (
+        db.query(DailyAction.weight, DailyAction.status)
+        .filter(
+            DailyAction.user_id == user_id,
+            DailyAction.deleted.is_(False),
+        )
+        .all()
     )
-    rows = db.query(DailyAction.weight, DailyAction.status).filter(
-        DailyAction.user_id == user_id,
-        DailyAction.deleted.is_(False),
-    ).all()
     total_weight = sum(w for w, _ in rows)
     done_weight = sum(w for w, s in rows if s == "DONE")
     streak = db.query(ActionStreak).filter(ActionStreak.user_id == user_id).first()
@@ -99,11 +96,7 @@ def _aggregate(db: Session, user_id: UUID) -> dict:
 def refresh_growth_archive(db: Session, user_id: UUID) -> GrowthArchive:
     """手动触发档案聚合刷新（upsert 单行快照）。"""
     agg = _aggregate(db, user_id)
-    archive = (
-        db.query(GrowthArchive)
-        .filter(GrowthArchive.user_id == user_id)
-        .first()
-    )
+    archive = db.query(GrowthArchive).filter(GrowthArchive.user_id == user_id).first()
     if archive is None:
         archive = GrowthArchive(user_id=user_id, **agg)
         db.add(archive)
@@ -117,11 +110,7 @@ def refresh_growth_archive(db: Session, user_id: UUID) -> GrowthArchive:
 
 def get_growth_archive(db: Session, user_id: UUID) -> GrowthArchive:
     """读取档案聚合；缺失时自动聚合生成。"""
-    archive = (
-        db.query(GrowthArchive)
-        .filter(GrowthArchive.user_id == user_id)
-        .first()
-    )
+    archive = db.query(GrowthArchive).filter(GrowthArchive.user_id == user_id).first()
     if archive is None:
         archive = refresh_growth_archive(db, user_id)
     return archive

@@ -1,5 +1,6 @@
 # backend/app/schemas/community.py
 """社区毕业去向报告的 Pydantic Schema 定义。"""
+
 from pydantic import BaseModel, field_validator
 
 from app.models.community_report import DestinationType, SalaryRange

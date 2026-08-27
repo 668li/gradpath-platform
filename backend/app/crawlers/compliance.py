@@ -8,21 +8,24 @@
 直写业务表的旧爬虫（假数据 / 绕过人工审核）一律拒绝，杜绝旁路入库。
 新增合规爬虫时需同步加入名单，并保证其 store() 只走 store_research_items。
 """
+
 from __future__ import annotations
 
-ALLOWED_CRAWLER_SOURCES: frozenset[str] = frozenset({
-    "real_data",              # grad：研招网/高校官网/学位网 → PENDING 队列
-    "yanzhao",                # grad：招生简章预置数据 → PENDING 队列（B1 改造后）
-    "yanzhao_program",        # grad：专业目录预置数据 → PENDING 队列（B1 改造后）
-    "bilibili_research",      # research：B站考研视频 → PENDING 队列
-    "web_article_research",   # research：网页文章 → PENDING 队列
-    "rss_news_research",      # research：RSS 新闻 → PENDING 队列（注册名，勿写模块文件名）
-    "eol_kaoyan",             # research：中国教育在线考研频道 → PENDING 队列
-    "official_announce",      # research：高校研究生院官方公告 → PENDING 队列
-    "zhihu_research",         # research：知乎公开专栏文章 → PENDING 队列（Phase I）
-    "tieba_research",         # research：贴吧考研避坑帖 → PENDING 队列（Phase I）
-    "rsshub_research",        # research：自建 RSSHub 研招/教育部公告聚合 → PENDING 队列（杠杆化）
-})
+ALLOWED_CRAWLER_SOURCES: frozenset[str] = frozenset(
+    {
+        "real_data",  # grad：研招网/高校官网/学位网 → PENDING 队列
+        "yanzhao",  # grad：招生简章预置数据 → PENDING 队列（B1 改造后）
+        "yanzhao_program",  # grad：专业目录预置数据 → PENDING 队列（B1 改造后）
+        "bilibili_research",  # research：B站考研视频 → PENDING 队列
+        "web_article_research",  # research：网页文章 → PENDING 队列
+        "rss_news_research",  # research：RSS 新闻 → PENDING 队列（注册名，勿写模块文件名）
+        "eol_kaoyan",  # research：中国教育在线考研频道 → PENDING 队列
+        "official_announce",  # research：高校研究生院官方公告 → PENDING 队列
+        "zhihu_research",  # research：知乎公开专栏文章 → PENDING 队列（Phase I）
+        "tieba_research",  # research：贴吧考研避坑帖 → PENDING 队列（Phase I）
+        "rsshub_research",  # research：自建 RSSHub 研招/教育部公告聚合 → PENDING 队列（杠杆化）
+    }
+)
 
 
 def is_allowed_crawler(source_name: str) -> bool:

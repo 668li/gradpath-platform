@@ -1,4 +1,5 @@
 """省考职位 Pydantic schemas — 对应 gwy_province_position 表一行。"""
+
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict

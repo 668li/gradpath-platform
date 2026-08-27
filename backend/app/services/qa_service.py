@@ -1,5 +1,5 @@
 """考研问答服务层 — 社区交流系统。"""
-from typing import Optional
+
 from uuid import UUID
 
 from sqlalchemy import or_
@@ -10,16 +10,10 @@ from app.models.qa import QA
 from app.models.qa_answer import QAAnswer
 
 
-def _atomic_increment(
-    db: Session, model_cls, item_id: UUID, column: str, delta: int = 1
-) -> bool:
+def _atomic_increment(db: Session, model_cls, item_id: UUID, column: str, delta: int = 1) -> bool:
     """原子 UPDATE — 避免 read-modify-write 在高并发下丢失更新。"""
     col = getattr(model_cls, column)
-    rows = (
-        db.query(model_cls)
-        .filter(model_cls.id == item_id)
-        .update({col: col + delta})
-    )
+    rows = db.query(model_cls).filter(model_cls.id == item_id).update({col: col + delta})
     return rows > 0
 
 
@@ -42,13 +36,9 @@ def create_question(
     return question
 
 
-def get_question(db: Session, question_id: UUID, include_unapproved: bool = False) -> Optional[QA]:
+def get_question(db: Session, question_id: UUID, include_unapproved: bool = False) -> QA | None:
     """获取单个问题。安全修复 M1: 默认只返回已审核通过的问题。"""
-    query = (
-        db.query(QA)
-        .options(selectinload(QA.answers))
-        .filter(QA.id == question_id)
-    )
+    query = db.query(QA).options(selectinload(QA.answers)).filter(QA.id == question_id)
     if not include_unapproved:
         query = query.filter(QA.status == "approved")
     return query.first()
@@ -58,10 +48,10 @@ def get_questions(
     db: Session,
     page: int = 1,
     page_size: int = 20,
-    tag: Optional[str] = None,
-    status: Optional[str] = None,
-    search: Optional[str] = None,
-    is_resolved: Optional[bool] = None,
+    tag: str | None = None,
+    status: str | None = None,
+    search: str | None = None,
+    is_resolved: bool | None = None,
 ) -> tuple[list[QA], int]:
     """获取问题列表（支持筛选）。
 
@@ -101,12 +91,12 @@ def get_questions_cursor(
     db: Session,
     *,
     page_size: int = 20,
-    cursor: Optional[str] = None,
-    tag: Optional[str] = None,
-    status: Optional[str] = None,
-    search: Optional[str] = None,
-    is_resolved: Optional[bool] = None,
-) -> tuple[list[QA], Optional[str], bool]:
+    cursor: str | None = None,
+    tag: str | None = None,
+    status: str | None = None,
+    search: str | None = None,
+    is_resolved: bool | None = None,
+) -> tuple[list[QA], str | None, bool]:
     """游标分页获取问题列表。
 
     Returns:
@@ -157,7 +147,7 @@ def update_question(
     db: Session,
     question_id: UUID,
     data: dict,
-) -> Optional[QA]:
+) -> QA | None:
     """更新问题。"""
     question = get_question(db, question_id)
     if not question:
@@ -185,9 +175,7 @@ def delete_question(db: Session, question_id: UUID) -> bool:
 def increment_question_view(db: Session, question_id: UUID) -> bool:
     """增加问题浏览数。"""
     # C3: 原子 UPDATE 替换 question.view_count += 1
-    return _atomic_increment(db, QA, question_id, "view_count", 1) and (
-        db.commit() or True
-    )
+    return _atomic_increment(db, QA, question_id, "view_count", 1) and (db.commit() or True)
 
 
 # ===== 回答相关 =====
@@ -216,7 +204,7 @@ def create_answer(
     return answer
 
 
-def get_answer(db: Session, answer_id: UUID) -> Optional[QAAnswer]:
+def get_answer(db: Session, answer_id: UUID) -> QAAnswer | None:
     """获取单个回答。"""
     return db.query(QAAnswer).filter(QAAnswer.id == answer_id).first()
 
@@ -226,7 +214,7 @@ def get_answers(
     question_id: UUID,
     page: int = 1,
     page_size: int = 20,
-    status: Optional[str] = None,
+    status: str | None = None,
 ) -> tuple[list[QAAnswer], int]:
     """获取问题回答列表。"""
     query = db.query(QAAnswer).filter(QAAnswer.qa_id == question_id)
@@ -251,7 +239,7 @@ def update_answer(
     db: Session,
     answer_id: UUID,
     data: dict,
-) -> Optional[QAAnswer]:
+) -> QAAnswer | None:
     """更新回答。"""
     answer = get_answer(db, answer_id)
     if not answer:
@@ -282,7 +270,7 @@ def delete_answer(db: Session, answer_id: UUID) -> bool:
 # 否则对 pending 问题/回答 approve/reject 会 404（与经验贴同款 bug）。
 
 
-def approve_question(db: Session, question_id: UUID) -> Optional[QA]:
+def approve_question(db: Session, question_id: UUID) -> QA | None:
     """审核通过问题。"""
     question = get_question(db, question_id, include_unapproved=True)
     if not question:
@@ -293,7 +281,7 @@ def approve_question(db: Session, question_id: UUID) -> Optional[QA]:
     return question
 
 
-def reject_question(db: Session, question_id: UUID) -> Optional[QA]:
+def reject_question(db: Session, question_id: UUID) -> QA | None:
     """拒绝问题。"""
     question = get_question(db, question_id, include_unapproved=True)
     if not question:
@@ -304,7 +292,7 @@ def reject_question(db: Session, question_id: UUID) -> Optional[QA]:
     return question
 
 
-def approve_answer(db: Session, answer_id: UUID) -> Optional[QAAnswer]:
+def approve_answer(db: Session, answer_id: UUID) -> QAAnswer | None:
     """审核通过回答。"""
     answer = get_answer(db, answer_id)
     if not answer:
@@ -315,7 +303,7 @@ def approve_answer(db: Session, answer_id: UUID) -> Optional[QAAnswer]:
     return answer
 
 
-def reject_answer(db: Session, answer_id: UUID) -> Optional[QAAnswer]:
+def reject_answer(db: Session, answer_id: UUID) -> QAAnswer | None:
     """拒绝回答。"""
     answer = get_answer(db, answer_id)
     if not answer:
@@ -326,7 +314,7 @@ def reject_answer(db: Session, answer_id: UUID) -> Optional[QAAnswer]:
     return answer
 
 
-def accept_best_answer(db: Session, question_id: UUID, answer_id: UUID) -> Optional[QA]:
+def accept_best_answer(db: Session, question_id: UUID, answer_id: UUID) -> QA | None:
     """采纳最佳回答。"""
     question = get_question(db, question_id)
     if not question:
@@ -352,7 +340,7 @@ def accept_best_answer(db: Session, question_id: UUID, answer_id: UUID) -> Optio
     return question
 
 
-def like_answer(db: Session, answer_id: UUID) -> Optional[QAAnswer]:
+def like_answer(db: Session, answer_id: UUID) -> QAAnswer | None:
     """点赞回答。"""
     answer = get_answer(db, answer_id)
     if not answer:

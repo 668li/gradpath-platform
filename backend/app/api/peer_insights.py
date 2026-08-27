@@ -6,6 +6,7 @@
 - GET /api/peer-insights/dark-knowledge-gap 暗知识缺口雷达（你还没看到的关键信息）
 - GET /api/peer-insights/regret-lessons     前车之鉴（过来人的后悔与教训）
 """
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 

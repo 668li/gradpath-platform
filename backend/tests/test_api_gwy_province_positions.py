@@ -1,4 +1,5 @@
 """省考职位 API 测试 — 列表/筛选/分页/详情/统计（数据源：广东省 2026 省考职位表）。"""
+
 from datetime import datetime, timezone
 
 import pytest
@@ -143,9 +144,7 @@ def test_list_positions_pagination(client, seed_positions):
     assert len(data["items"]) == 2
     assert data["page_size"] == 2
 
-    resp2 = client.get(
-        "/api/gwy-province-positions", params={"page": 3, "page_size": 2}
-    )
+    resp2 = client.get("/api/gwy-province-positions", params={"page": 3, "page_size": 2})
     data2 = resp2.json()
     assert data2["total"] == 4
     assert len(data2["items"]) == 0
@@ -170,9 +169,7 @@ def test_list_positions_keyword_filter(client, seed_positions):
 
 
 def test_list_positions_education_filter(client, seed_positions):
-    resp = client.get(
-        "/api/gwy-province-positions", params={"education_req": "研究生"}
-    )
+    resp = client.get("/api/gwy-province-positions", params={"education_req": "研究生"})
     assert resp.status_code == 200
     data = resp.json()
     assert data["total"] == 1
@@ -196,9 +193,7 @@ def test_list_positions_sheet_filter(client, seed_positions):
 
 
 def test_list_positions_fresh_grad_filter(client, seed_positions):
-    resp = client.get(
-        "/api/gwy-province-positions", params={"fresh_grad_only": "是"}
-    )
+    resp = client.get("/api/gwy-province-positions", params={"fresh_grad_only": "是"})
     assert resp.status_code == 200
     data = resp.json()
     assert data["total"] == 1
@@ -206,9 +201,7 @@ def test_list_positions_fresh_grad_filter(client, seed_positions):
 
 
 def test_list_positions_position_code_filter(client, seed_positions):
-    resp = client.get(
-        "/api/gwy-province-positions", params={"position_code": "19900072641001"}
-    )
+    resp = client.get("/api/gwy-province-positions", params={"position_code": "19900072641001"})
     assert resp.status_code == 200
     data = resp.json()
     assert data["total"] == 1
@@ -223,9 +216,7 @@ def test_list_positions_province_and_year_filter(client, seed_positions):
     assert resp.status_code == 200
     assert resp.json()["total"] == 0
 
-    resp2 = client.get(
-        "/api/gwy-province-positions", params={"province": "广东"}
-    )
+    resp2 = client.get("/api/gwy-province-positions", params={"province": "广东"})
     assert resp2.status_code == 200
     assert resp2.json()["total"] == 4
 

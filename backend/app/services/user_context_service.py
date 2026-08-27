@@ -7,6 +7,7 @@
 - get_user_context: 返回结构化 dict，供 API 序列化
 - build_context_prompt: 返回纯文本，供 AI system prompt 注入
 """
+
 import logging
 from typing import Any
 from uuid import UUID
@@ -37,11 +38,7 @@ def get_user_context(db: Session, user_id: UUID) -> dict[str, Any]:
         }
     """
     try:
-        profile = (
-            db.query(CareerProfile)
-            .filter(CareerProfile.user_id == user_id)
-            .first()
-        )
+        profile = db.query(CareerProfile).filter(CareerProfile.user_id == user_id).first()
 
         onboarding = (
             db.query(UserOnboarding)
@@ -103,9 +100,7 @@ def get_user_context(db: Session, user_id: UUID) -> dict[str, Any]:
 def _compute_stats(db: Session, user_id: UUID) -> dict[str, Any]:
     """计算用户决策副驾驶核心统计指标。"""
     total_decisions = (
-        db.query(DestinationDecision)
-        .filter(DestinationDecision.user_id == user_id)
-        .count()
+        db.query(DestinationDecision).filter(DestinationDecision.user_id == user_id).count()
     )
     completed_reviews = (
         db.query(DecisionReviewQueue)
@@ -198,7 +193,11 @@ def _serialize_memory_fact(f: UserMemoryFact) -> dict:
 def _serialize_decision(d: DestinationDecision) -> dict:
     return {
         "id": str(d.id),
-        "destination_type": d.destination_type.value if hasattr(d.destination_type, "value") else str(d.destination_type),
+        "destination_type": (
+            d.destination_type.value
+            if hasattr(d.destination_type, "value")
+            else str(d.destination_type)
+        ),
         "status": d.status.value if hasattr(d.status, "value") else str(d.status),
         "decision_date": d.decision_date.isoformat() if d.decision_date else None,
         "confidence": d.confidence,
@@ -211,7 +210,9 @@ def _serialize_decision(d: DestinationDecision) -> dict:
 def _serialize_report(r: OutcomeReport) -> dict:
     return {
         "id": str(r.id),
-        "outcome_type": r.outcome_type.value if hasattr(r.outcome_type, "value") else str(r.outcome_type),
+        "outcome_type": (
+            r.outcome_type.value if hasattr(r.outcome_type, "value") else str(r.outcome_type)
+        ),
         "target_school": r.target_school,
         "actual_school": r.actual_school,
         "satisfaction_after": r.satisfaction_after,

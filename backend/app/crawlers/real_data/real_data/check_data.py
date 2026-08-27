@@ -1,5 +1,8 @@
 import json
-with open(r"D:\职业规划\职业规划\backend\app\crawlers\real_data\yz_crawled.json", "r", encoding="utf-8") as f:
+
+with open(
+    r"D:\职业规划\职业规划\backend\app\crawlers\real_data\yz_crawled.json", encoding="utf-8"
+) as f:
     d = json.load(f)
 print("=== Summary ===")
 for k, v in d["summary"].items():

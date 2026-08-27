@@ -1,5 +1,6 @@
 # backend/app/skills/career_transition.py
 """职业转型 Skill — 跨行业/跨岗位转型可行性分析与路径规划。"""
+
 from __future__ import annotations
 
 import json
@@ -9,7 +10,11 @@ from app.skills.base import BaseSkill
 
 # 激活关键词
 ACTIVATE_KEYWORDS = [
-    "转行", "转型", "跨行", "换赛道", "跨岗位",
+    "转行",
+    "转型",
+    "跨行",
+    "换赛道",
+    "跨岗位",
 ]
 
 # 期望的 LLM JSON 输出格式说明

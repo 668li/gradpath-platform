@@ -1,7 +1,5 @@
 # backend/tests/test_career_profile.py
 """用户职业画像 API 测试。"""
-from app.models.career_profile import CareerProfile
-from app.models.user import User
 
 
 def _create_payload(**overrides):
@@ -126,9 +124,7 @@ class TestCareerProfileUpdate:
         client.post(
             "/api/career-profile",
             headers=auth_headers,
-            json=_create_payload(
-                communication_skill=4, leadership_skill=4, major="计算机科学"
-            ),
+            json=_create_payload(communication_skill=4, leadership_skill=4, major="计算机科学"),
         )
         resp = client.put(
             "/api/career-profile",

@@ -7,9 +7,9 @@
 - unarchive_notification: 恢复归档通知
 - delete_old_archived: 物理删除已归档超过指定天数的通知
 """
+
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Optional
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -66,7 +66,7 @@ def unarchive_notification(db: Session, user_id: UUID, notification_id: UUID) ->
 def archive_user_notifications(
     db: Session,
     user_id: UUID,
-    notification_ids: Optional[list[UUID]] = None,
+    notification_ids: list[UUID] | None = None,
     only_read: bool = False,
 ) -> int:
     """批量归档用户通知。
@@ -104,7 +104,7 @@ def archive_user_notifications(
 
 
 def archive_old_read_notifications(
-    db: Session, user_id: Optional[UUID] = None, days_old: int = 30
+    db: Session, user_id: UUID | None = None, days_old: int = 30
 ) -> int:
     """自动归档已读且超过指定天数的通知。
 

@@ -15,7 +15,9 @@ class SkillNode(UUIDMixin, TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     category: Mapped[str] = mapped_column(String(100), nullable=False)
     level: Mapped[int] = mapped_column(Integer, nullable=False)
-    parent_id: Mapped[UUID | None] = mapped_column(ForeignKey("skill_nodes.id"), nullable=True, index=True)
+    parent_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("skill_nodes.id"), nullable=True, index=True
+    )
     acquired_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 

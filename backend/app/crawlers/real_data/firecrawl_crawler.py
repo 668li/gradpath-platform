@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Firecrawl-based crawler for real graduate school data.
 
 Scrapes real data from:
@@ -12,16 +11,15 @@ Usage:
     python -m app.crawlers.real_data.firecrawl_crawler --source yanzhao
     python -m app.crawlers.real_data.firecrawl_crawler --source kaoyan
 """
-import os
-import sys
+
+import argparse
 import json
+import logging
+import os
 import re
 import time
-import logging
-import argparse
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +30,7 @@ OUTPUT_FILE = OUTPUT_DIR / "scraped_data.json"
 # ─── Firecrawl imports ───────────────────────────────────────────
 FIRECRAWL_API_KEY = os.getenv("FIRECRAWL_API_KEY", "")
 
+
 def _get_firecrawl_client():
     """Return Firecrawl client or None if not configured."""
     if not FIRECRAWL_API_KEY:
@@ -39,6 +38,7 @@ def _get_firecrawl_client():
         return None
     try:
         from firecrawl import FirecrawlApp
+
         return FirecrawlApp(api_key=FIRECRAWL_API_KEY)
     except ImportError:
         logger.warning("firecrawl-py not installed — using httpx fallback")
@@ -59,10 +59,12 @@ KAOYAN_URLS = [
 
 # ─── HTTP fallback ───────────────────────────────────────────────
 
-def _httpx_scrape(url: str, timeout: int = 30) -> Optional[str]:
+
+def _httpx_scrape(url: str, timeout: int = 30) -> str | None:
     """Fallback scraper using httpx."""
     try:
         import httpx
+
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
@@ -77,16 +79,20 @@ def _httpx_scrape(url: str, timeout: int = 30) -> Optional[str]:
         return None
 
 
-def _firecrawl_scrape(url: str, params: dict = None) -> Optional[dict]:
+def _firecrawl_scrape(url: str, params: dict = None) -> dict | None:
     """Scrape using Firecrawl API."""
     client = _get_firecrawl_client()
     if not client:
         return None
     try:
-        result = client.scrape_url(url, params=params or {
-            "formats": ["markdown", "html"],
-            "timeout": 30000,
-        })
+        result = client.scrape_url(
+            url,
+            params=params
+            or {
+                "formats": ["markdown", "html"],
+                "timeout": 30000,
+            },
+        )
         return result
     except Exception as e:
         logger.error(f"Firecrawl scrape failed for {url}: {e}")
@@ -95,9 +101,11 @@ def _firecrawl_scrape(url: str, params: dict = None) -> Optional[dict]:
 
 # ─── Parse functions ─────────────────────────────────────────────
 
+
 def _parse_yanzhao_html(html: str) -> list[dict]:
     """Parse yanzhao.com.cn HTML for program data."""
     from bs4 import BeautifulSoup
+
     soup = BeautifulSoup(html, "html.parser")
     programs = []
 
@@ -109,12 +117,14 @@ def _parse_yanzhao_html(html: str) -> list[dict]:
             cells = row.find_all(["td", "th"])
             if len(cells) >= 3:
                 text = [c.get_text(strip=True) for c in cells]
-                programs.append({
-                    "university": text[0] if text else "",
-                    "major": text[1] if len(text) > 1 else "",
-                    "department": text[2] if len(text) > 2 else "",
-                    "raw_cells": text,
-                })
+                programs.append(
+                    {
+                        "university": text[0] if text else "",
+                        "major": text[1] if len(text) > 1 else "",
+                        "department": text[2] if len(text) > 2 else "",
+                        "raw_cells": text,
+                    }
+                )
 
     # Also look for div-based listings
     items = soup.find_all("div", class_=re.compile(r"item|result|list"))
@@ -122,10 +132,12 @@ def _parse_yanzhao_html(html: str) -> list[dict]:
         title_el = item.find(["h3", "h4", "a", "span"])
         if title_el:
             title = title_el.get_text(strip=True)
-            programs.append({
-                "title": title,
-                "source": "yanzhao_div",
-            })
+            programs.append(
+                {
+                    "title": title,
+                    "source": "yanzhao_div",
+                }
+            )
 
     return programs
 
@@ -133,6 +145,7 @@ def _parse_yanzhao_html(html: str) -> list[dict]:
 def _parse_kaoyan_html(html: str) -> list[dict]:
     """Parse kaoyan.com HTML for experience posts."""
     from bs4 import BeautifulSoup
+
     soup = BeautifulSoup(html, "html.parser")
     posts = []
 
@@ -153,12 +166,14 @@ def _parse_kaoyan_html(html: str) -> list[dict]:
             desc_el = item.find(["p", "span", "div"], class_=re.compile(r"desc|summary|content"))
             desc = desc_el.get_text(strip=True) if desc_el else ""
 
-            posts.append({
-                "title": title,
-                "link": link,
-                "description": desc,
-                "source": "kaoyan",
-            })
+            posts.append(
+                {
+                    "title": title,
+                    "link": link,
+                    "description": desc,
+                    "source": "kaoyan",
+                }
+            )
 
     return posts
 
@@ -192,6 +207,7 @@ def _parse_markdown_content(content: str, source: str) -> list[dict]:
 
 
 # ─── Scraping pipeline ───────────────────────────────────────────
+
 
 def scrape_yanzhao(client=None) -> list[dict]:
     """Scrape yanzhao.com.cn for program and scoreline data."""
@@ -247,6 +263,7 @@ def scrape_kaoyan(client=None) -> list[dict]:
 
 # ─── Main entry point ────────────────────────────────────────────
 
+
 def run_crawler(source: str = "all") -> dict:
     """Run the Firecrawl crawler and save results."""
     client = _get_firecrawl_client()
@@ -286,8 +303,12 @@ def run_crawler(source: str = "all") -> dict:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Firecrawl real data crawler")
-    parser.add_argument("--source", choices=["all", "yanzhao", "kaoyan"], default="all",
-                        help="Data source to scrape")
+    parser.add_argument(
+        "--source",
+        choices=["all", "yanzhao", "kaoyan"],
+        default="all",
+        help="Data source to scrape",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")

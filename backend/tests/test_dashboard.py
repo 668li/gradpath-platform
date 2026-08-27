@@ -80,6 +80,7 @@ def test_dashboard_skill_categories(auth_headers, client):
 # Phase 12: 周回顾 (weekly-recap)
 # ======================================================================
 
+
 def test_weekly_recap_structure_empty(auth_headers, client):
     """无数据时 weekly-recap 返回正确结构。"""
     resp = client.get("/api/dashboard/weekly-recap", headers=auth_headers)
@@ -157,9 +158,7 @@ def test_weekly_recap_encouragement_with_logs(auth_headers, client, db_session):
         {"title": "已完成任务", "description": "done", "status": "done"},
     ]
     plan = _seed_active_plan(db_session, user.id, milestones)
-    db_session.add(
-        MilestoneLog(plan_id=str(plan.id), milestone_index=0, content="完成记录")
-    )
+    db_session.add(MilestoneLog(plan_id=str(plan.id), milestone_index=0, content="完成记录"))
     db_session.commit()
 
     resp = client.get("/api/dashboard/weekly-recap", headers=auth_headers)

@@ -2,6 +2,7 @@
 
 护城河逻辑：纵向数据随时间累积，越用越准；迁移成本极高。
 """
+
 from datetime import date
 from uuid import UUID
 
@@ -78,7 +79,9 @@ async def complete_review(
 {review_notes or '无'}"""
 
         orchestrator = AIOrchestrator()
-        decision.ai_analysis = await orchestrator.chat(system_prompt=SYSTEM_PROMPT, user_prompt=context, timeout=30)
+        decision.ai_analysis = await orchestrator.chat(
+            system_prompt=SYSTEM_PROMPT, user_prompt=context, timeout=30
+        )
     except Exception:
         # AI 不可用时不阻断回溯流程
         pass

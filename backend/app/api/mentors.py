@@ -1,5 +1,6 @@
 """AI 导师人格库 API — 多视角分析。"""
-from fastapi import APIRouter, Depends, HTTPException, status
+
+from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, Field
 
 from app.core.exceptions import BusinessError, ForbiddenError, NotFoundError, ValidationFailedError
@@ -66,16 +67,16 @@ async def get_multi_perspective(body: MultiPerspectiveRequest):
 # ============================================================================
 # 考研导师评价系统 API
 # ============================================================================
-from typing import Optional
 from uuid import UUID
 
-from fastapi import HTTPException, Query, Request, status
+from fastapi import Query, Request
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
 from app.database import get_db
 from app.models.user import User
+from app.schemas.common import CursorPaginatedResponse
 from app.schemas.mentor import (
     MentorCreate,
     MentorListResponse,
@@ -85,7 +86,6 @@ from app.schemas.mentor import (
     MentorReviewResponse,
     MentorUpdate,
 )
-from app.schemas.common import CursorPaginatedResponse
 from app.services.mentor_service import (
     approve_review,
     check_duplicate_review,
@@ -99,20 +99,20 @@ from app.services.mentor_service import (
     update_mentor,
 )
 
-
 # === 导师查询 API ===
+
 
 @router.get("/kaoyan-mentors", response_model=MentorListResponse, tags=["考研导师评价"])
 def list_kaoyan_mentors(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
-    university: Optional[str] = Query(None, description="院校筛选"),
-    department: Optional[str] = Query(None, description="院系筛选"),
-    research_direction: Optional[str] = Query(None, description="研究方向筛选"),
-    min_rating: Optional[float] = Query(None, ge=0, le=5, description="最低评分"),
-    enrollment_status: Optional[str] = Query(None, description="招生状态"),
-    search: Optional[str] = Query(None, description="搜索关键词"),
-    order_by: Optional[str] = Query(None, description="排序: rating_desc/papers_desc/reviews_desc"),
+    university: str | None = Query(None, description="院校筛选"),
+    department: str | None = Query(None, description="院系筛选"),
+    research_direction: str | None = Query(None, description="研究方向筛选"),
+    min_rating: float | None = Query(None, ge=0, le=5, description="最低评分"),
+    enrollment_status: str | None = Query(None, description="招生状态"),
+    search: str | None = Query(None, description="搜索关键词"),
+    order_by: str | None = Query(None, description="排序: rating_desc/papers_desc/reviews_desc"),
     db: Session = Depends(get_db),
 ):
     """获取考研导师列表（支持多维度筛选 + 排序）"""
@@ -136,16 +136,20 @@ def list_kaoyan_mentors(
     )
 
 
-@router.get("/kaoyan-mentors/cursor", response_model=CursorPaginatedResponse[MentorResponse], tags=["考研导师评价"])
+@router.get(
+    "/kaoyan-mentors/cursor",
+    response_model=CursorPaginatedResponse[MentorResponse],
+    tags=["考研导师评价"],
+)
 def list_kaoyan_mentors_cursor(
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
-    cursor: Optional[str] = Query(None, description="游标（cursor 分页）"),
-    university: Optional[str] = Query(None, description="院校筛选"),
-    department: Optional[str] = Query(None, description="院系筛选"),
-    research_direction: Optional[str] = Query(None, description="研究方向筛选"),
-    min_rating: Optional[float] = Query(None, ge=0, le=5, description="最低评分"),
-    enrollment_status: Optional[str] = Query(None, description="招生状态"),
-    search: Optional[str] = Query(None, description="搜索关键词"),
+    cursor: str | None = Query(None, description="游标（cursor 分页）"),
+    university: str | None = Query(None, description="院校筛选"),
+    department: str | None = Query(None, description="院系筛选"),
+    research_direction: str | None = Query(None, description="研究方向筛选"),
+    min_rating: float | None = Query(None, ge=0, le=5, description="最低评分"),
+    enrollment_status: str | None = Query(None, description="招生状态"),
+    search: str | None = Query(None, description="搜索关键词"),
     db: Session = Depends(get_db),
 ):
     """游标分页获取导师列表（适合无限滚动，避免深页性能退化）。
@@ -184,7 +188,9 @@ def list_kaoyan_mentors_cursor(
     has_more = len(items) > page_size
     if has_more:
         items = items[:page_size]
-    next_cursor = encode_cursor(items[-1].created_at, str(items[-1].id)) if has_more and items else None
+    next_cursor = (
+        encode_cursor(items[-1].created_at, str(items[-1].id)) if has_more and items else None
+    )
     return CursorPaginatedResponse(
         items=[MentorResponse.model_validate(m) for m in items],
         next_cursor=next_cursor,
@@ -204,7 +210,12 @@ def get_kaoyan_mentor(
     return MentorResponse.model_validate(mentor)
 
 
-@router.post("/kaoyan-mentors", response_model=MentorResponse, status_code=status.HTTP_201_CREATED, tags=["考研导师评价"])
+@router.post(
+    "/kaoyan-mentors",
+    response_model=MentorResponse,
+    status_code=status.HTTP_201_CREATED,
+    tags=["考研导师评价"],
+)
 def create_kaoyan_mentor(
     mentor_data: MentorCreate,
     db: Session = Depends(get_db),
@@ -231,12 +242,17 @@ def update_kaoyan_mentor(
 
 # === 导师评价 API ===
 
-@router.get("/kaoyan-mentors/{mentor_id}/reviews", response_model=MentorReviewListResponse, tags=["考研导师评价"])
+
+@router.get(
+    "/kaoyan-mentors/{mentor_id}/reviews",
+    response_model=MentorReviewListResponse,
+    tags=["考研导师评价"],
+)
 def list_mentor_reviews(
     mentor_id: UUID,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    status: Optional[str] = Query(None, description="审核状态筛选"),
+    status: str | None = Query(None, description="审核状态筛选"),
     db: Session = Depends(get_db),
 ):
     """获取导师评价列表"""
@@ -249,7 +265,12 @@ def list_mentor_reviews(
     )
 
 
-@router.post("/kaoyan-mentors/{mentor_id}/reviews", response_model=MentorReviewResponse, status_code=status.HTTP_201_CREATED, tags=["考研导师评价"])
+@router.post(
+    "/kaoyan-mentors/{mentor_id}/reviews",
+    response_model=MentorReviewResponse,
+    status_code=status.HTTP_201_CREATED,
+    tags=["考研导师评价"],
+)
 def submit_mentor_review(
     mentor_id: UUID,
     review_data: MentorReviewCreate,
@@ -260,7 +281,7 @@ def submit_mentor_review(
     """提交导师评价（需登录，防刷评）"""
     # 获取客户端 IP
     ip_address = request.client.host if request.client else None
-    
+
     # 检查重复评价
     if check_duplicate_review(db, user.id, mentor_id, ip_address):
         raise BusinessError(
@@ -320,6 +341,7 @@ def reject_mentor_review(
 
 # === 批量查询接口 ===
 
+
 @router.post("/batch", response_model=list[MentorResponse], tags=["考研导师评价"])
 def batch_mentors(
     body: MentorBatchRequest,
@@ -344,4 +366,3 @@ def batch_mentors(
         return []
     items = db.query(MentorModel).filter(MentorModel.id.in_(parsed_ids)).all()
     return [MentorResponse.model_validate(m) for m in items]
-

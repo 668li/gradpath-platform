@@ -4,6 +4,7 @@
 根据用户当前阶段 + 行为画像，主动推送最相关的暗知识，
 并跟踪阅读 + 反馈，形成"推送→阅读→反馈→优化"闭环。
 """
+
 import enum
 from datetime import datetime, timezone
 from uuid import UUID
@@ -17,10 +18,11 @@ from app.models.base import GUID, JSONB, TimestampMixin, UUIDMixin
 
 class PushFeedback(str, enum.Enum):
     """推送反馈 — 用于优化推送策略。"""
-    none = "none"             # 未反馈
-    positive = "positive"     # 有用
-    negative = "negative"     # 无用/不相关
-    later = "later"           # 稍后看
+
+    none = "none"  # 未反馈
+    positive = "positive"  # 有用
+    negative = "negative"  # 无用/不相关
+    later = "later"  # 稍后看
 
 
 def _utcnow() -> datetime:
@@ -36,6 +38,7 @@ class DarkKnowledgePushLog(UUIDMixin, TimestampMixin, Base):
     - feedback + feedback_notes 记录用户反馈
     - 推送策略基于：用户阶段 / 当前决策 / 历史阅读
     """
+
     __tablename__ = "dark_knowledge_push_log"
     __table_args__ = (
         # 索引：按用户+推送时间排序，便于查询用户的推送流
@@ -47,8 +50,7 @@ class DarkKnowledgePushLog(UUIDMixin, TimestampMixin, Base):
         GUID(), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     dark_knowledge_id: Mapped[UUID] = mapped_column(
-        GUID(), ForeignKey("dark_knowledge.id", ondelete="CASCADE"),
-        nullable=False, index=True
+        GUID(), ForeignKey("dark_knowledge.id", ondelete="CASCADE"), nullable=False, index=True
     )
 
     # === 推送上下文 ===

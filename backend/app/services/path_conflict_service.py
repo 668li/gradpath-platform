@@ -8,6 +8,7 @@
 
 LLM 调用可选：未配置 LLM_API_KEY 时使用模板生成选项与计划。
 """
+
 import json
 import logging
 import uuid
@@ -35,7 +36,19 @@ _TRACK_UNKNOWN = "unknown"
 
 # 测评推荐方向关键词 → 赛道
 _DIRECTION_KEYWORDS = {
-    _TRACK_TECHNICAL: ["开发", "工程师", "技术", "程序员", "数据", "算法", "前端", "后端", "AI", "测试", "运维"],
+    _TRACK_TECHNICAL: [
+        "开发",
+        "工程师",
+        "技术",
+        "程序员",
+        "数据",
+        "算法",
+        "前端",
+        "后端",
+        "AI",
+        "测试",
+        "运维",
+    ],
     _TRACK_PUBLIC: ["公务员", "考公", "事业单位", "体制内", "选调"],
     _TRACK_ACADEMIC: ["研究", "考研", "读博", "科研", "学术", "博士", "硕士"],
     _TRACK_BUSINESS: ["创业", "商业", "产品", "运营", "市场", "销售", "管理"],
@@ -142,9 +155,7 @@ def detect_conflict(db: Session, user_id) -> dict[str, Any]:
 
     # 计算赛道
     assessment_track = _map_direction_to_track(assessment.recommended_directions or [])
-    decision_track = _DESTINATION_TRACK.get(
-        decision.destination_type, _TRACK_UNKNOWN
-    )
+    decision_track = _DESTINATION_TRACK.get(decision.destination_type, _TRACK_UNKNOWN)
 
     # 同赛道或任一为未知 → 不冲突
     if assessment_track == _TRACK_UNKNOWN or decision_track == _TRACK_UNKNOWN:
@@ -191,6 +202,7 @@ def generate_options(assessment_summary: dict, situation: dict) -> list[dict]:
     if settings.LLM_API_KEY:
         try:
             import asyncio
+
             options = asyncio.run(_generate_options_via_llm(assessment_summary, situation))
             if options and len(options) == 3:
                 return options
@@ -207,7 +219,9 @@ def _generate_options_template(assessment_summary: dict, situation: dict) -> lis
     assessment_code = assessment_summary.get("result_code", "")
     assessment_type = assessment_summary.get("type", "")
 
-    dest_type = situation.get("destination_type_label") or situation.get("destination_type") or "当前路径"
+    dest_type = (
+        situation.get("destination_type_label") or situation.get("destination_type") or "当前路径"
+    )
     dest_status = situation.get("status_label") or situation.get("status") or "进行中"
 
     return [
@@ -312,6 +326,7 @@ async def _generate_options_via_llm(assessment_summary: dict, situation: dict) -
         data = json.loads(raw)
     except json.JSONDecodeError:
         import re
+
         match = re.search(r"\[.*\]", raw, re.DOTALL)
         if not match:
             return []
@@ -324,15 +339,21 @@ async def _generate_options_via_llm(assessment_summary: dict, situation: dict) -
     for i, item in enumerate(data):
         if not isinstance(item, dict):
             return []
-        normalized.append({
-            "id": i,
-            "title": str(item.get("title", ["坚持现状", "转向推荐", "折中方案"][i])),
-            "description": str(item.get("description", "")),
-            "pros": [str(p) for p in item.get("pros", []) if p],
-            "cons": [str(c) for c in item.get("cons", []) if c],
-            "estimated_timeline": str(item.get("estimated_timeline", "")),
-            "risk_level": str(item.get("risk_level", "medium")) if item.get("risk_level") in ("low", "medium", "high") else "medium",
-        })
+        normalized.append(
+            {
+                "id": i,
+                "title": str(item.get("title", ["坚持现状", "转向推荐", "折中方案"][i])),
+                "description": str(item.get("description", "")),
+                "pros": [str(p) for p in item.get("pros", []) if p],
+                "cons": [str(c) for c in item.get("cons", []) if c],
+                "estimated_timeline": str(item.get("estimated_timeline", "")),
+                "risk_level": (
+                    str(item.get("risk_level", "medium"))
+                    if item.get("risk_level") in ("low", "medium", "high")
+                    else "medium"
+                ),
+            }
+        )
     return normalized
 
 
@@ -390,11 +411,14 @@ def generate_action_plan(resolution: PathConflictResolution) -> dict:
     situation = resolution.current_situation or {}
     directions = assessment.get("directions") or []
     direction_text = "、".join(directions[:3]) if directions else "测评推荐方向"
-    dest_type = situation.get("destination_type_label") or situation.get("destination_type") or "当前路径"
+    dest_type = (
+        situation.get("destination_type_label") or situation.get("destination_type") or "当前路径"
+    )
 
     if settings.LLM_API_KEY:
         try:
             import asyncio
+
             plan = asyncio.run(_generate_action_plan_via_llm(resolution, option_title))
             if plan and plan.get("summary"):
                 return plan
@@ -413,7 +437,10 @@ def _generate_action_plan_template(
         return {
             "summary": f"继续{dest_type}路径，将测评能力转化为差异化优势",
             "milestones": [
-                {"phase": "第 1-2 周", "goal": f"梳理{dest_type}所需能力清单，找出与测评能力（{direction_text}）的交叉点"},
+                {
+                    "phase": "第 1-2 周",
+                    "goal": f"梳理{dest_type}所需能力清单，找出与测评能力（{direction_text}）的交叉点",
+                },
                 {"phase": "第 1 个月", "goal": "制定能力迁移计划，将测评强项应用到当前路径"},
                 {"phase": "第 3 个月", "goal": "在当前路径中找一个能体现测评优势的具体项目/任务"},
                 {"phase": "第 6 个月", "goal": "评估当前路径进展，决定是否继续或调整"},
@@ -433,8 +460,14 @@ def _generate_action_plan_template(
         return {
             "summary": f"转向{direction_text}方向，分阶段完成转型",
             "milestones": [
-                {"phase": "第 1 个月", "goal": f"深入了解{direction_text}方向的职业路径、核心能力要求与市场现状"},
-                {"phase": "第 2-3 个月", "goal": "技能储备：完成 1-2 门核心课程或认证，建立知识体系"},
+                {
+                    "phase": "第 1 个月",
+                    "goal": f"深入了解{direction_text}方向的职业路径、核心能力要求与市场现状",
+                },
+                {
+                    "phase": "第 2-3 个月",
+                    "goal": "技能储备：完成 1-2 门核心课程或认证，建立知识体系",
+                },
                 {"phase": "第 4-6 个月", "goal": "项目积累：完成 2-3 个可展示的项目，构建作品集"},
                 {"phase": "第 7-12 个月", "goal": "求职/申请：投递目标岗位或院校，完成转型"},
             ],
@@ -455,8 +488,14 @@ def _generate_action_plan_template(
         return {
             "summary": f"双轨并行：主路径{dest_type}+ 副路径{direction_text}",
             "milestones": [
-                {"phase": "第 1 个月", "goal": f"制定双轨时间表：主路径投入 70%，副路径（{direction_text}）投入 30%"},
-                {"phase": "第 2-3 个月", "goal": f"副路径试水：完成{direction_text}方向的入门项目或课程"},
+                {
+                    "phase": "第 1 个月",
+                    "goal": f"制定双轨时间表：主路径投入 70%，副路径（{direction_text}）投入 30%",
+                },
+                {
+                    "phase": "第 2-3 个月",
+                    "goal": f"副路径试水：完成{direction_text}方向的入门项目或课程",
+                },
                 {"phase": "第 4-6 个月", "goal": "副路径小成：产出可展示的作品或获得副业收入"},
                 {"phase": "第 6-12 个月", "goal": "评估双轨进展，决定是否全职转向副路径"},
             ],
@@ -480,7 +519,10 @@ async def _generate_action_plan_via_llm(
     """用 LLM 生成个性化行动计划。"""
     from app.services.ai_orchestrator import AIOrchestrator
 
-    system_prompt = """你是一位职业规划执行教练。用户在测评与现状冲突后选择了「""" + option_title + """」路径，请生成详细的行动计划。
+    system_prompt = (
+        """你是一位职业规划执行教练。用户在测评与现状冲突后选择了「"""
+        + option_title
+        + """」路径，请生成详细的行动计划。
 
 严格输出 JSON（不要 markdown，不要解释），结构如下：
 {
@@ -492,6 +534,7 @@ async def _generate_action_plan_via_llm(
   "risks": ["风险1", "风险2"]
 }
 不要输出 JSON 以外的任何内容。"""
+    )
 
     user_prompt = (
         f"用户选择的路径：{option_title}\n"
@@ -507,6 +550,7 @@ async def _generate_action_plan_via_llm(
         return json.loads(raw)
     except json.JSONDecodeError:
         import re
+
         match = re.search(r"\{.*\}", raw, re.DOTALL)
         if match:
             try:
@@ -554,7 +598,11 @@ def _serialize_assessment(a: Assessment) -> dict:
 
 
 def _serialize_decision(d: DestinationDecision) -> dict:
-    dest_type = d.destination_type.value if hasattr(d.destination_type, "value") else str(d.destination_type)
+    dest_type = (
+        d.destination_type.value
+        if hasattr(d.destination_type, "value")
+        else str(d.destination_type)
+    )
     status = d.status.value if hasattr(d.status, "value") else str(d.status)
     return {
         "id": str(d.id),

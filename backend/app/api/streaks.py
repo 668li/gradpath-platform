@@ -1,4 +1,5 @@
 """连续打卡 API — 损失厌恶驱动的留存机制。"""
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 

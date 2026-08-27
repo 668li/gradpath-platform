@@ -1,4 +1,5 @@
 """数据分析 API — 分数线趋势、录取率、报录比、调剂分析。"""
+
 import logging
 
 from fastapi import APIRouter, Depends, Query

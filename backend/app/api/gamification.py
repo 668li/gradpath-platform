@@ -1,5 +1,6 @@
 # backend/app/api/gamification.py
 """游戏化 API 路由 — XP/等级/徽章档案与用户分享设置。"""
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -11,7 +12,7 @@ from app.schemas.gamification import (
     UserSettingResponse,
     UserSettingUpdate,
 )
-from app.services.gamification_service import get_profile, get_or_create_settings, update_settings
+from app.services.gamification_service import get_or_create_settings, get_profile, update_settings
 
 router = APIRouter(tags=["游戏化"])
 

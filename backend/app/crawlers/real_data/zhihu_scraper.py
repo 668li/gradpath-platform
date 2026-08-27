@@ -1,17 +1,16 @@
-# -*- coding: utf-8 -*-
 """知乎考研话题爬虫 — 抓取知乎热门考研话题内容。
 
 尝试通过 httpx 抓取知乎考研话题页面，若被反爬则基于真实话题生成高质量内容。
 输出: zhihu_kaoyan.json
 
 Usage:
-    python D:\职业规划\职业规划\backend\app\crawlers\real_data\zhihu_scraper.py
+    python D:\\职业规划\\职业规划\backend\app\\crawlers\real_data\\zhihu_scraper.py
 """
+
 import json
 import os
 import random
 import sys
-import time
 
 sys.stdout.reconfigure(encoding="utf-8")
 
@@ -20,16 +19,36 @@ OUTPUT_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "zhihu_ka
 # ── 知乎风格文章数据 ──────────────────────────────────────────────────
 
 AUTHORS = [
-    "匿名用户", "考研上岸选手", "二战考生的自述", "北大CS在读",
-    "跨考计算机的工科生", "考研规划师老王", "985研二在读",
-    "普通二本逆袭985", "在职考研成功人士", "考研英语85分选手",
-    "数学140+的理工男", "文科跨考法硕选手", "考研政治90分大神",
-    "复旦微电子上岸", "浙大计算机考研人", "上交电院研一",
-    "华科光电研究生", "西交电气研究生", "南大物理考研上岸",
-    "中科大少年班毕业生", "同济土木考研人", "北航软件工程研究生",
-    "哈工大威海校区考研人", "东北大学计算机考研", "大连理工考研上岸",
-    "考研辅导机构老师", "考研资料分享博主", "考研自习室常客",
-    "图书馆占座专业户", "考研期间谈恋爱的那位",
+    "匿名用户",
+    "考研上岸选手",
+    "二战考生的自述",
+    "北大CS在读",
+    "跨考计算机的工科生",
+    "考研规划师老王",
+    "985研二在读",
+    "普通二本逆袭985",
+    "在职考研成功人士",
+    "考研英语85分选手",
+    "数学140+的理工男",
+    "文科跨考法硕选手",
+    "考研政治90分大神",
+    "复旦微电子上岸",
+    "浙大计算机考研人",
+    "上交电院研一",
+    "华科光电研究生",
+    "西交电气研究生",
+    "南大物理考研上岸",
+    "中科大少年班毕业生",
+    "同济土木考研人",
+    "北航软件工程研究生",
+    "哈工大威海校区考研人",
+    "东北大学计算机考研",
+    "大连理工考研上岸",
+    "考研辅导机构老师",
+    "考研资料分享博主",
+    "考研自习室常客",
+    "图书馆占座专业户",
+    "考研期间谈恋爱的那位",
 ]
 
 CATEGORIES = ["择校", "专业课复习", "公共课复习", "心态调整", "调剂", "复试", "时间规划"]
@@ -242,6 +261,7 @@ def try_fetch_zhihu():
     """尝试通过 httpx 抓取知乎考研话题页面。"""
     try:
         import httpx
+
         url = "https://www.zhihu.com/topic/19552832/hot"
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -263,15 +283,28 @@ def generate_articles():
     articles = []
     for cat, items in ARTICLE_TEMPLATES.items():
         for item in items:
-            tag = random.choice(["考研", "计算机", "考研经验", "考研择校", "考研复习", "考研政治", "考研英语", "考研数学"])
-            articles.append({
-                "title": item["title"],
-                "content": item["content"],
-                "author": random.choice(AUTHORS),
-                "upvotes": item["upvotes"] + random.randint(-200, 200),
-                "source": "zhihu",
-                "tags": [cat, tag, "考研"],
-            })
+            tag = random.choice(
+                [
+                    "考研",
+                    "计算机",
+                    "考研经验",
+                    "考研择校",
+                    "考研复习",
+                    "考研政治",
+                    "考研英语",
+                    "考研数学",
+                ]
+            )
+            articles.append(
+                {
+                    "title": item["title"],
+                    "content": item["content"],
+                    "author": random.choice(AUTHORS),
+                    "upvotes": item["upvotes"] + random.randint(-200, 200),
+                    "source": "zhihu",
+                    "tags": [cat, tag, "考研"],
+                }
+            )
     random.shuffle(articles)
     return articles
 

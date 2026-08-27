@@ -9,6 +9,7 @@
 旧 /api/admin/research 的 pending/approve/reject 端点保留不动
 （社区 UGC 审核语义，向前兼容）。
 """
+
 import logging
 from datetime import datetime, timezone
 
@@ -129,9 +130,7 @@ def list_pending_queue(
         )
         for q, e in rows
     ]
-    return ResearchQueueListResponse(
-        items=items, total=total, page=page, page_size=page_size
-    )
+    return ResearchQueueListResponse(items=items, total=total, page=page, page_size=page_size)
 
 
 @router.post("/{queue_id}/approve", response_model=QueueActionResponse)
@@ -164,7 +163,11 @@ def approve_queue_item(
 
     logger.info(
         "[research_queue] admin=%s approve queue_id=%s ref=%s item_type=%s promoted=%d",
-        admin.id, queue_id, ext_item.id, ext_item.item_type, result["promoted"],
+        admin.id,
+        queue_id,
+        ext_item.id,
+        ext_item.item_type,
+        result["promoted"],
     )
     return QueueActionResponse(
         message="审核通过，已落业务数据",
@@ -188,7 +191,11 @@ def reject_queue_item(
 
     try:
         _apply_review(
-            db, queue_item, ext_item, "REJECTED", admin,
+            db,
+            queue_item,
+            ext_item,
+            "REJECTED",
+            admin,
             reject_reason=body.reject_reason,
         )
         db.commit()
@@ -202,7 +209,9 @@ def reject_queue_item(
 
     logger.info(
         "[research_queue] admin=%s reject queue_id=%s reason=%s",
-        admin.id, queue_id, body.reject_reason,
+        admin.id,
+        queue_id,
+        body.reject_reason,
     )
     return QueueActionResponse(
         message="已驳回",
@@ -236,7 +245,9 @@ def duplicate_queue_item(
 
     logger.info(
         "[research_queue] admin=%s duplicate queue_id=%s duplicate_of=%s",
-        admin.id, queue_id, body.duplicate_of,
+        admin.id,
+        queue_id,
+        body.duplicate_of,
     )
     return QueueActionResponse(
         message="已标记为重复",

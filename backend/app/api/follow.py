@@ -1,14 +1,15 @@
 """关注关系 API — 社区社交图谱的核心。"""
+
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.api.notifications import create_notification
 from app.core.deps import get_current_user
 from app.database import get_db
 from app.models.follow import Follow
 from app.models.user import User
-from app.api.notifications import create_notification
 
 router = APIRouter(prefix="/api/follow", tags=["关注"])
 
@@ -31,9 +32,7 @@ def follow(
         raise HTTPException(status_code=400, detail="不能关注自己")
 
     exists = (
-        db.query(Follow)
-        .filter(Follow.follower_id == user.id, Follow.followee_id == fid)
-        .first()
+        db.query(Follow).filter(Follow.follower_id == user.id, Follow.followee_id == fid).first()
     )
     if exists:
         return {"ok": True, "followed": True, "already": True}
@@ -42,7 +41,9 @@ def follow(
     db.add(f)
     # 通知被关注者
     create_notification(
-        db, UUID(fid), type="new_follower",
+        db,
+        UUID(fid),
+        type="new_follower",
         title="有人关注了你",
         content=f"{user.nickname or user.username or user.name} 关注了你",
     )
@@ -74,12 +75,8 @@ def list_follow(
     user: User = Depends(get_current_user),
 ):
     """返回当前用户的关注/粉丝列表。"""
-    following = (
-        db.query(Follow).filter(Follow.follower_id == user.id).all()
-    )
-    followers = (
-        db.query(Follow).filter(Follow.followee_id == user.id).all()
-    )
+    following = db.query(Follow).filter(Follow.follower_id == user.id).all()
+    followers = db.query(Follow).filter(Follow.followee_id == user.id).all()
     uid = user.id
 
     # 批量查询所有相关用户，避免 N+1
@@ -88,17 +85,12 @@ def list_follow(
     all_user_ids = list(following_ids | follower_ids)
     users_map = {
         str(u.id): u
-        for u in (
-            db.query(User).filter(User.id.in_(all_user_ids)).all()
-            if all_user_ids
-            else []
-        )
+        for u in (db.query(User).filter(User.id.in_(all_user_ids)).all() if all_user_ids else [])
     }
 
     # 批量查询当前用户关注的 ID 集合，避免每条记录查一次
     following_set = {
-        str(f.followee_id)
-        for f in db.query(Follow).filter(Follow.follower_id == uid).all()
+        str(f.followee_id) for f in db.query(Follow).filter(Follow.follower_id == uid).all()
     }
 
     def _load(pairs, me_is_follower: bool):
@@ -108,13 +100,15 @@ def list_follow(
             u = users_map.get(str(other_id))
             if not u:
                 continue
-            out.append({
-                "user_id": str(other_id),
-                "nickname": u.nickname or u.username or u.name,
-                "school": u.school,
-                "major": u.major,
-                "is_following": me_is_follower or str(other_id) in following_set,
-            })
+            out.append(
+                {
+                    "user_id": str(other_id),
+                    "nickname": u.nickname or u.username or u.name,
+                    "school": u.school,
+                    "major": u.major,
+                    "is_following": me_is_follower or str(other_id) in following_set,
+                }
+            )
         return out
 
     return {

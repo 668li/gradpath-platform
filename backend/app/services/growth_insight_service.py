@@ -5,6 +5,7 @@
 缓存策略：相同 user_id + period_start + period_end + event_count 时直接返回
 已缓存的 insight_data，避免重复调用 LLM。
 """
+
 import json
 import re
 from datetime import date, datetime, timezone
@@ -145,8 +146,7 @@ def _build_context(
     if retros:
         for r in retros:
             lines.append(
-                f"- {r.title}({r.period_start}~{r.period_end}) "
-                f"满意度={r.satisfaction}"
+                f"- {r.title}({r.period_start}~{r.period_end}) " f"满意度={r.satisfaction}"
             )
     else:
         lines.append("（暂无记录）")
@@ -244,9 +244,7 @@ async def generate_growth_insight(
         AIServiceNotConfigured: LLM_API_KEY 未配置（由 AIService._check_config 抛出）
     """
     # 组装 context 并获取完整事件计数
-    context_text, event_count = _build_context(
-        db, user_id, period_start, period_end
-    )
+    context_text, event_count = _build_context(db, user_id, period_start, period_end)
 
     # 检查缓存：相同 user_id + period_start + period_end + event_count
     cached = (
@@ -266,8 +264,7 @@ async def generate_growth_insight(
     # 调用 LLM（AIService._check_config 会在 key 为空时抛出 AIServiceNotConfigured）
     orchestrator = AIOrchestrator()
     user_content = (
-        f"{context_text}\n\n"
-        "请基于以上数据生成该时段的成长洞察（严格按 JSON 格式输出）。"
+        f"{context_text}\n\n" "请基于以上数据生成该时段的成长洞察（严格按 JSON 格式输出）。"
     )
     raw = await orchestrator.chat(system_prompt=SYSTEM_PROMPT, user_prompt=user_content, timeout=30)
 

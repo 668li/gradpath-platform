@@ -5,6 +5,7 @@
 - robots.txt 不允许 / 获取失败 → fail-safe 跳过并如实记录 0 结果
 - 入库走 store_research_items → PENDING 审核队列，人工确认后才落业务表
 """
+
 import argparse
 import html
 import html.parser
@@ -14,7 +15,6 @@ import random
 import re
 import sys
 import time
-import urllib.parse
 from pathlib import Path
 
 # 当以脚本直接运行时，确保 backend 目录在 sys.path 中以便 import app
@@ -42,7 +42,9 @@ _ANTI_CRAWL_MARKERS = [
 
 _ARTICLE_LINK_RE = re.compile(r'href="(?:https?:)?//(?:zhuanlan\.)?zhihu\.com/p/(\d+)"')
 # 标题：Post-Title 优先，回退 <title>（去掉 " - 知乎" 后缀）
-_TITLE_RE = re.compile(r'<h1[^>]*class="[^"]*(?:Post-Title|ArticleHeader-Title)[^"]*"[^>]*>(.*?)</h1>', re.S)
+_TITLE_RE = re.compile(
+    r'<h1[^>]*class="[^"]*(?:Post-Title|ArticleHeader-Title)[^"]*"[^>]*>(.*?)</h1>', re.S
+)
 _TITLE_TAG_RE = re.compile(r"<title>(.*?)</title>", re.S)
 
 
@@ -62,7 +64,12 @@ class _ZhuanlanTextExtractor(html.parser.HTMLParser):
 
     def handle_starttag(self, tag, attrs):
         classes = dict(attrs).get("class") if attrs else None
-        if not self._in_container and tag == "div" and classes and "Post-RichTextContainer" in classes.split():
+        if (
+            not self._in_container
+            and tag == "div"
+            and classes
+            and "Post-RichTextContainer" in classes.split()
+        ):
             self._in_container = True
             self._div_depth = 1
             return
@@ -174,14 +181,16 @@ class ZhihuResearchCrawler(BaseCrawler):
             url = raw.get("url", "")
             html_text = raw.get("html", "")
             if raw.get("status") != "ok" or not html_text:
-                parsed_items.append({
-                    "title": url,
-                    "content": "",
-                    "source_url": url,
-                    "source_platform": "zhihu",
-                    "status": "failed",
-                    "error": raw.get("error", "空响应"),
-                })
+                parsed_items.append(
+                    {
+                        "title": url,
+                        "content": "",
+                        "source_url": url,
+                        "source_platform": "zhihu",
+                        "status": "failed",
+                        "error": raw.get("error", "空响应"),
+                    }
+                )
                 continue
 
             title = self._extract_title(html_text) or url
@@ -189,23 +198,27 @@ class ZhihuResearchCrawler(BaseCrawler):
 
             if not content or any(marker in content for marker in _ANTI_CRAWL_MARKERS):
                 logger.warning(f"[{self.name}] 文章无正文或含登录/验证码墙，丢弃: {url}")
-                parsed_items.append({
-                    "title": title,
-                    "content": "",
-                    "source_url": url,
-                    "source_platform": "zhihu",
-                    "status": "failed",
-                    "error": "登录墙/验证码或空正文（合规跳过）",
-                })
+                parsed_items.append(
+                    {
+                        "title": title,
+                        "content": "",
+                        "source_url": url,
+                        "source_platform": "zhihu",
+                        "status": "failed",
+                        "error": "登录墙/验证码或空正文（合规跳过）",
+                    }
+                )
                 continue
 
-            parsed_items.append({
-                "title": title,
-                "content": content,
-                "source_url": url,
-                "source_platform": "zhihu",
-                "status": "ok",
-            })
+            parsed_items.append(
+                {
+                    "title": title,
+                    "content": content,
+                    "source_url": url,
+                    "source_platform": "zhihu",
+                    "status": "ok",
+                }
+            )
         return parsed_items
 
     def _extract_title(self, html_text: str) -> str:

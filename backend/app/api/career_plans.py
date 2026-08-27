@@ -10,6 +10,7 @@
 - GET /api/career-plans/{id}/milestones/{idx}/logs — 列出执行日志（Phase 12）
 - DELETE /api/career-plans/{id}/logs/{log_id} — 删除执行日志（Phase 12）
 """
+
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -110,9 +111,7 @@ def add_log(
     """为指定里程碑添加执行日志。"""
     log = add_milestone_log(db, user.id, plan_id, idx, body.content)
     if not log:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="规划或里程碑不存在"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="规划或里程碑不存在")
     return log
 
 
@@ -140,7 +139,5 @@ def delete_log(
     """删除一条执行日志。"""
     deleted = delete_milestone_log(db, user.id, str(log_id))
     if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="日志不存在"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="日志不存在")
     return None

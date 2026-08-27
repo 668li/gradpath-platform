@@ -7,6 +7,7 @@
 未来接入 pdfplumber / PyMuPDF 后，可替换 fetch() 实现：先用 _request() 下载 PDF
 二进制，再调用 parse_pdf_content() 解析为结构化字段，即可平滑切换到真实抓取。
 """
+
 import random
 from uuid import UUID
 
@@ -16,7 +17,6 @@ from sqlalchemy.orm import Session
 from app.crawlers.base_crawler import BaseCrawler
 from app.crawlers.registry import register_crawler
 from app.models.employment_data import Degree, EmploymentData
-
 
 SYSTEM_USER_ID = UUID("00000000-0000-0000-0000-000000000000")
 
@@ -70,10 +70,36 @@ _SCHOOLS: list[tuple[str, str, str, str]] = [
 
 # 雇主池 — 真实知名雇主，每条记录随机抽取 5 个作为 top_employers
 _EMPLOYERS: list[str] = [
-    "华为", "腾讯", "阿里巴巴", "字节跳动", "百度", "美团", "京东", "拼多多",
-    "网易", "小米", "中国建筑集团", "国家电网", "中国银行", "工商银行", "招商银行",
-    "中兴通讯", "大疆创新", "比亚迪", "宁德时代", "中国移动", "中国电信", "中国平安",
-    "中信证券", "华泰证券", "中国中车", "中国航天科技", "普华永道", "德勤", "毕马威", "安永",
+    "华为",
+    "腾讯",
+    "阿里巴巴",
+    "字节跳动",
+    "百度",
+    "美团",
+    "京东",
+    "拼多多",
+    "网易",
+    "小米",
+    "中国建筑集团",
+    "国家电网",
+    "中国银行",
+    "工商银行",
+    "招商银行",
+    "中兴通讯",
+    "大疆创新",
+    "比亚迪",
+    "宁德时代",
+    "中国移动",
+    "中国电信",
+    "中国平安",
+    "中信证券",
+    "华泰证券",
+    "中国中车",
+    "中国航天科技",
+    "普华永道",
+    "德勤",
+    "毕马威",
+    "安永",
 ]
 
 _YEARS: list[int] = [2023, 2024]
@@ -111,19 +137,21 @@ class PdfReportCrawler(BaseCrawler):
         for school_name, tier, major_category, slug in _SCHOOLS:
             source_url = f"https://career.{slug}.edu.cn/"
             for year in _YEARS:
-                raw.append({
-                    "school_name": school_name,
-                    "school_tier": tier,
-                    "year": year,
-                    "major_category": major_category,
-                    "employment_rate": round(random.uniform(85.0, 99.0), 2),
-                    "further_study_rate": round(random.uniform(5.0, 40.0), 2),
-                    "abroad_rate": round(random.uniform(0.0, 15.0), 2),
-                    "unemployment_rate": round(random.uniform(1.0, 5.0), 2),
-                    "top_employers": random.sample(_EMPLOYERS, 5),
-                    "average_salary": round(random.uniform(5000.0, 15000.0), 2),
-                    "source_url": source_url,
-                })
+                raw.append(
+                    {
+                        "school_name": school_name,
+                        "school_tier": tier,
+                        "year": year,
+                        "major_category": major_category,
+                        "employment_rate": round(random.uniform(85.0, 99.0), 2),
+                        "further_study_rate": round(random.uniform(5.0, 40.0), 2),
+                        "abroad_rate": round(random.uniform(0.0, 15.0), 2),
+                        "unemployment_rate": round(random.uniform(1.0, 5.0), 2),
+                        "top_employers": random.sample(_EMPLOYERS, 5),
+                        "average_salary": round(random.uniform(5000.0, 15000.0), 2),
+                        "source_url": source_url,
+                    }
+                )
         return raw
 
     def parse(self, raw_items: list[dict]) -> list[dict]:

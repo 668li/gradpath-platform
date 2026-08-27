@@ -1,7 +1,7 @@
 # 考研模块浏览器级 E2E 走查报告
 
-> 走查时间：2026-07-04  
-> 环境：后端 `http://localhost:8000`，前端 `http://localhost:3001`（后因鉴权 fallback 到 `http://localhost:3000`）  
+> 走查时间：2026-07-04
+> 环境：后端 `http://localhost:8000`，前端 `http://localhost:3001`（后因鉴权 fallback 到 `http://localhost:3000`）
 > 执行方式：真实浏览器渲染 + 截图 + 控制台/网络监控
 
 ## 总体结论

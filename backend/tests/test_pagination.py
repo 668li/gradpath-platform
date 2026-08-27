@@ -1,11 +1,12 @@
 # backend/tests/test_pagination.py
 """分页接口测试 — 验证 5 个列表端点的分页响应结构。"""
-from datetime import date, timedelta
 
+from datetime import date, timedelta
 
 # ======================================================================
 # 辅助构造函数
 # ======================================================================
+
 
 def _create_decision(client, headers, decision_date: str):
     """通过 API 创建一条去向决策，返回响应 JSON。"""
@@ -81,6 +82,7 @@ def _create_interview_report(client, headers, company: str, position: str, year:
 # 去向决策
 # ======================================================================
 
+
 class TestDecisionPagination:
     def test_decision_first_page(self, auth_headers, client):
         """创建 5 条决策，page=1&page_size=2 返回 2 条，total=5。"""
@@ -89,9 +91,7 @@ class TestDecisionPagination:
             d = (base + timedelta(days=i)).isoformat()
             _create_decision(client, auth_headers, d)
 
-        resp = client.get(
-            "/api/decisions?page=1&page_size=2", headers=auth_headers
-        )
+        resp = client.get("/api/decisions?page=1&page_size=2", headers=auth_headers)
         assert resp.status_code == 200
         data = resp.json()
         assert len(data["items"]) == 2
@@ -106,12 +106,8 @@ class TestDecisionPagination:
             d = (base + timedelta(days=i)).isoformat()
             _create_decision(client, auth_headers, d)
 
-        page1 = client.get(
-            "/api/decisions?page=1&page_size=2", headers=auth_headers
-        ).json()
-        page2 = client.get(
-            "/api/decisions?page=2&page_size=2", headers=auth_headers
-        ).json()
+        page1 = client.get("/api/decisions?page=1&page_size=2", headers=auth_headers).json()
+        page2 = client.get("/api/decisions?page=2&page_size=2", headers=auth_headers).json()
 
         assert len(page2["items"]) == 2
         assert page2["total"] == 5
@@ -125,6 +121,7 @@ class TestDecisionPagination:
 # 职业事件
 # ======================================================================
 
+
 class TestEventPagination:
     def test_event_total_count(self, auth_headers, client):
         """创建 3 条事件，page=1&page_size=10 返回全部 3 条，total=3。"""
@@ -133,9 +130,7 @@ class TestEventPagination:
             d = (base + timedelta(days=i)).isoformat()
             _create_event(client, auth_headers, d, f"事件-{i}")
 
-        resp = client.get(
-            "/api/events?page=1&page_size=10", headers=auth_headers
-        )
+        resp = client.get("/api/events?page=1&page_size=10", headers=auth_headers)
         assert resp.status_code == 200
         data = resp.json()
         assert len(data["items"]) == 3
@@ -150,9 +145,7 @@ class TestEventPagination:
             d = (base + timedelta(days=i)).isoformat()
             _create_event(client, auth_headers, d, f"事件-{i}")
 
-        resp = client.get(
-            "/api/events?page=2&page_size=2", headers=auth_headers
-        )
+        resp = client.get("/api/events?page=2&page_size=2", headers=auth_headers)
         assert resp.status_code == 200
         data = resp.json()
         assert len(data["items"]) == 1
@@ -163,6 +156,7 @@ class TestEventPagination:
 # 阶段复盘
 # ======================================================================
 
+
 class TestRetrospectivePagination:
     def test_retrospective_pagination(self, auth_headers, client):
         """创建 5 条复盘，分页返回正确。"""
@@ -172,18 +166,14 @@ class TestRetrospectivePagination:
             _create_retrospective(client, auth_headers, d, f"复盘-{i}")
 
         # 第 1 页 2 条
-        page1 = client.get(
-            "/api/retrospectives?page=1&page_size=2", headers=auth_headers
-        ).json()
+        page1 = client.get("/api/retrospectives?page=1&page_size=2", headers=auth_headers).json()
         assert len(page1["items"]) == 2
         assert page1["total"] == 5
         assert page1["page"] == 1
         assert page1["page_size"] == 2
 
         # 第 3 页 1 条（5 条：2 + 2 + 1）
-        page3 = client.get(
-            "/api/retrospectives?page=3&page_size=2", headers=auth_headers
-        ).json()
+        page3 = client.get("/api/retrospectives?page=3&page_size=2", headers=auth_headers).json()
         assert len(page3["items"]) == 1
         assert page3["total"] == 5
 
@@ -192,12 +182,11 @@ class TestRetrospectivePagination:
 # 社区数据
 # ======================================================================
 
+
 class TestCommunityPagination:
     def test_community_empty(self, auth_headers, client):
         """无数据时 total=0、items 为空列表。"""
-        resp = client.get(
-            "/api/community/my-reports?page=1&page_size=20", headers=auth_headers
-        )
+        resp = client.get("/api/community/my-reports?page=1&page_size=20", headers=auth_headers)
         assert resp.status_code == 200
         data = resp.json()
         assert data["total"] == 0
@@ -210,17 +199,14 @@ class TestCommunityPagination:
 # 面试经验
 # ======================================================================
 
+
 class TestInterviewPagination:
     def test_interview_total_count(self, auth_headers, client):
         """创建 2 条面试报告，total=2。"""
         _create_interview_report(client, auth_headers, "腾讯", "后端开发", 2024)
-        _create_interview_report(
-            client, auth_headers, "字节跳动", "前端开发", 2023
-        )
+        _create_interview_report(client, auth_headers, "字节跳动", "前端开发", 2023)
 
-        resp = client.get(
-            "/api/interview/my-reports?page=1&page_size=20", headers=auth_headers
-        )
+        resp = client.get("/api/interview/my-reports?page=1&page_size=20", headers=auth_headers)
         assert resp.status_code == 200
         data = resp.json()
         assert len(data["items"]) == 2
@@ -233,20 +219,17 @@ class TestInterviewPagination:
 # page_size 边界
 # ======================================================================
 
+
 class TestPageSizeBoundary:
     def test_page_size_boundary(self, auth_headers, client):
         """page_size=100 通过校验返回 200，page_size=101 超出上限返回 422。"""
         _create_decision(client, auth_headers, "2026-01-01")
 
         # 上限值 100 应通过
-        resp_ok = client.get(
-            "/api/decisions?page=1&page_size=100", headers=auth_headers
-        )
+        resp_ok = client.get("/api/decisions?page=1&page_size=100", headers=auth_headers)
         assert resp_ok.status_code == 200
         assert resp_ok.json()["page_size"] == 100
 
         # 超出上限 101 应被拒绝
-        resp_over = client.get(
-            "/api/decisions?page=1&page_size=101", headers=auth_headers
-        )
+        resp_over = client.get("/api/decisions?page=1&page_size=101", headers=auth_headers)
         assert resp_over.status_code == 422

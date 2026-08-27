@@ -1,4 +1,5 @@
 """7天微行动 Schemas — 与后端 app/models/micro_action.py 对齐。"""
+
 from datetime import datetime
 from uuid import UUID
 

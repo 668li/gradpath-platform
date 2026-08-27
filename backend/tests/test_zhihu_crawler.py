@@ -8,6 +8,7 @@
 - parse：标题/正文提取、正文内 script/style 剔除、登录墙/验证码标记丢弃
 - store：落 t_external_research_item + t_review_queue_item（PENDING 审核队列）
 """
+
 import pytest
 
 from app.crawlers.research.zhihu_research_crawler import ZhihuResearchCrawler
@@ -146,7 +147,9 @@ class TestFetch:
 class TestParse:
     def test_extracts_title_and_content(self):
         c = _make_crawler()
-        parsed = c.parse([{"url": "https://zhuanlan.zhihu.com/p/1", "html": _ARTICLE_HTML, "status": "ok"}])
+        parsed = c.parse(
+            [{"url": "https://zhuanlan.zhihu.com/p/1", "html": _ARTICLE_HTML, "status": "ok"}]
+        )
         assert len(parsed) == 1
         item = parsed[0]
         assert item["title"] == "408 计算机考研一战上岸经验"
@@ -158,7 +161,9 @@ class TestParse:
     def test_script_style_excluded_from_content(self):
         """正文容器内 script/style 内容不混入正文。"""
         c = _make_crawler()
-        parsed = c.parse([{"url": "https://zhuanlan.zhihu.com/p/1", "html": _ARTICLE_HTML, "status": "ok"}])
+        parsed = c.parse(
+            [{"url": "https://zhuanlan.zhihu.com/p/1", "html": _ARTICLE_HTML, "status": "ok"}]
+        )
         content = parsed[0]["content"]
         assert "不该出现" not in content
         assert ".noise" not in content
@@ -172,7 +177,9 @@ class TestParse:
     def test_login_wall_dropped(self):
         """正文含「登录后查看」→ 如实丢弃（合规，不爬登录内容）。"""
         c = _make_crawler()
-        parsed = c.parse([{"url": "https://zhuanlan.zhihu.com/p/1", "html": _LOGIN_WALL_HTML, "status": "ok"}])
+        parsed = c.parse(
+            [{"url": "https://zhuanlan.zhihu.com/p/1", "html": _LOGIN_WALL_HTML, "status": "ok"}]
+        )
         assert parsed[0]["status"] == "failed"
         assert parsed[0]["content"] == ""
         assert "登录墙" in parsed[0]["error"]
@@ -180,7 +187,14 @@ class TestParse:
     def test_fetch_error_item_kept_honestly(self):
         c = _make_crawler()
         parsed = c.parse(
-            [{"url": "https://zhuanlan.zhihu.com/p/1", "html": "", "status": "error", "error": "超时"}]
+            [
+                {
+                    "url": "https://zhuanlan.zhihu.com/p/1",
+                    "html": "",
+                    "status": "error",
+                    "error": "超时",
+                }
+            ]
         )
         assert parsed[0]["status"] == "failed"
         assert "超时" in parsed[0]["error"]
@@ -195,18 +209,22 @@ class TestStoreToReviewQueue:
         inserted = c.store(items, db=db_session)
         assert inserted == 1
 
-        ext = db_session.query(ExternalResearchItem).filter(
-            ExternalResearchItem.source_url == "https://zhuanlan.zhihu.com/p/999"
-        ).first()
+        ext = (
+            db_session.query(ExternalResearchItem)
+            .filter(ExternalResearchItem.source_url == "https://zhuanlan.zhihu.com/p/999")
+            .first()
+        )
         assert ext is not None
         assert ext.review_status == "PENDING"
         assert ext.item_type == "experience_post"
         assert ext.source_platform == "zhihu"
         assert ext.crawler_name == "zhihu_research"
 
-        queue = db_session.query(ReviewQueueItem).filter(
-            ReviewQueueItem.source_url == "https://zhuanlan.zhihu.com/p/999"
-        ).first()
+        queue = (
+            db_session.query(ReviewQueueItem)
+            .filter(ReviewQueueItem.source_url == "https://zhuanlan.zhihu.com/p/999")
+            .first()
+        )
         assert queue is not None
         assert queue.review_status == "PENDING"
 

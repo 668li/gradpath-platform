@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """真实公司公开信息采集器（替换已删除的 53 条合成公司数据）。
 
 合规红线（务必遵守）：
@@ -26,10 +25,10 @@
 
 运行：py -3.13 company_public_scraper.py [--sources fortune,isc,szse] [--szse-pages 3]
 """
+
 from __future__ import annotations
 
 import argparse
-import io
 import json
 import random
 import re
@@ -52,8 +51,7 @@ TIMEOUT = 40
 FORTUNE_URL = "https://www.caifuzhongwen.com/fortune500/rankings/china500/2025/"
 ISC_ARTICLE_URL = "https://www.isc.org.cn/article/27460980540829696.html"
 ISC_PDF_URL = (
-    "https://www.isc.org.cn/profile/2025/12/29/"
-    "f531871d-ded7-4502-bb26-6d829f12707a.pdf"
+    "https://www.isc.org.cn/profile/2025/12/29/" "f531871d-ded7-4502-bb26-6d829f12707a.pdf"
 )
 SZSE_API = (
     "https://www.szse.cn/api/report/ShowReport/data"
@@ -255,9 +253,7 @@ class Scraper:
                 continue  # 尚未进入附件1 名单页
             for table in page.find_tables().tables:
                 for raw_row in table.extract():
-                    cells = [
-                        re.sub(r"\s+", "", str(c)) for c in raw_row if c and str(c).strip()
-                    ]
+                    cells = [re.sub(r"\s+", "", str(c)) for c in raw_row if c and str(c).strip()]
                     cells = [c for c in cells if c not in markers]
                     if not cells:
                         continue
@@ -278,9 +274,7 @@ class Scraper:
                         business = cells[2] if is_ranked else cells[1]
                         if not is_company_name(name):
                             # 名称错位/异常行：尝试从其余单元格找回公司名
-                            fix = next(
-                                (c for c in cells[:-1] if is_company_name(c)), None
-                            )
+                            fix = next((c for c in cells[:-1] if is_company_name(c)), None)
                             if not fix:
                                 continue  # 仍无法识别，宁缺毋滥
                             business = name if business == fix else business
@@ -313,8 +307,10 @@ class Scraper:
                             prev["description"] = prev["description"].rstrip("。") + frag + "。"
         # 采集结果自检：应恰为 100 家，前5名无序号、其余序号 6~100 不重不漏
         ranks = sorted(r["rank"] for r in companies if r["rank"] is not None)
-        if len(companies) != 100 or ranks != list(range(6, 101)) or any(
-            not is_company_name(r["name"]) for r in companies
+        if (
+            len(companies) != 100
+            or ranks != list(range(6, 101))
+            or any(not is_company_name(r["name"]) for r in companies)
         ):
             rep.status = "error"
             rep.detail = (
@@ -409,7 +405,8 @@ def _size_bucket(emp) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(description="真实公司公开信息采集（合规版）")
     parser.add_argument(
-        "--sources", default="fortune,isc,szse",
+        "--sources",
+        default="fortune,isc,szse",
         help="逗号分隔：fortune / isc / szse（默认全部）",
     )
     parser.add_argument("--szse-pages", type=int, default=3, help="深交所采样页数（默认 3）")
@@ -437,7 +434,7 @@ def main() -> int:
             deduped.append(c)
 
     out_path = Path(args.out)
-    with io.open(out_path, "w", encoding="utf-8") as f:
+    with open(out_path, "w", encoding="utf-8") as f:
         json.dump(deduped, f, ensure_ascii=False, indent=2)
 
     # ---------------------------- 运行报告 ---------------------------- #

@@ -4,6 +4,7 @@
 继续深造 / 转行 / 跳槽大厂 / 创业等多场景。本模块是其简化版：让用户
 选 2-3 条路径，量化对比收入 / 风险 / 成长性 / 时间成本 / 匹配度。
 """
+
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, Text

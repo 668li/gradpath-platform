@@ -8,6 +8,7 @@
 
 诊断结果作为后续 AI 个性化的初始基线。
 """
+
 import json
 import logging
 from datetime import datetime, timezone
@@ -111,22 +112,50 @@ _STAGE_LABELS = {
 
 _DIRECTION_ACTIONS: dict[str, dict[str, list[str]]] = {
     "postgrad": {
-        "short_term": ["确定目标院校和专业方向", "收集目标院校历年分数线和报录比", "制定每日复习计划（数学/英语/专业课）"],
+        "short_term": [
+            "确定目标院校和专业方向",
+            "收集目标院校历年分数线和报录比",
+            "制定每日复习计划（数学/英语/专业课）",
+        ],
         "mid_term": ["完成第一轮基础复习", "做 2-3 套真题摸底", "联系目标院校学长学姐获取一手信息"],
-        "long_term": ["冲刺阶段模拟考试", "准备复试材料（简历/科研经历/英语口语）", "关注调剂信息作为保底"],
+        "long_term": [
+            "冲刺阶段模拟考试",
+            "准备复试材料（简历/科研经历/英语口语）",
+            "关注调剂信息作为保底",
+        ],
     },
     "civil_service": {
-        "short_term": ["了解国考/省考时间线和报名条件", "确定目标岗位类型（中央/省级/市级）", "开始行测数量关系和言语理解专项训练"],
+        "short_term": [
+            "了解国考/省考时间线和报名条件",
+            "确定目标岗位类型（中央/省级/市级）",
+            "开始行测数量关系和言语理解专项训练",
+        ],
         "mid_term": ["系统学习行测五大模块", "每周完成 2 套申论真题", "关注目标岗位报录比和分数线"],
         "long_term": ["全真模拟考试训练", "申论热点素材积累", "面试结构化答题训练"],
     },
     "employment": {
-        "short_term": ["明确目标行业和岗位方向", "优化简历（STAR 法则量化经历）", "在目标公司官网/招聘平台投递实习"],
-        "mid_term": ["积累 1-2 段相关实习经历", "建立行业人脉（LinkedIn/校友群）", "准备技术面试或案例分析"],
-        "long_term": ["秋招/春招集中投递", "模拟面试训练（行为面+技术面）", "对比 offer 做最终决策"],
+        "short_term": [
+            "明确目标行业和岗位方向",
+            "优化简历（STAR 法则量化经历）",
+            "在目标公司官网/招聘平台投递实习",
+        ],
+        "mid_term": [
+            "积累 1-2 段相关实习经历",
+            "建立行业人脉（LinkedIn/校友群）",
+            "准备技术面试或案例分析",
+        ],
+        "long_term": [
+            "秋招/春招集中投递",
+            "模拟面试训练（行为面+技术面）",
+            "对比 offer 做最终决策",
+        ],
     },
     "abroad": {
-        "short_term": ["确定目标国家和学校档次", "了解申请时间线和所需材料", "开始语言考试准备（托福/雅思/GRE）"],
+        "short_term": [
+            "确定目标国家和学校档次",
+            "了解申请时间线和所需材料",
+            "开始语言考试准备（托福/雅思/GRE）",
+        ],
         "mid_term": ["完成语言考试达标", "积累科研/实习/志愿者经历", "联系推荐人并准备文书素材"],
         "long_term": ["完成申请文书（PS/CV/RL）", "提交申请并跟踪状态", "准备签证和行前事宜"],
     },
@@ -178,7 +207,9 @@ def _rule_based_diagnosis(ob: UserOnboarding) -> tuple[str, dict, list[dict]]:
     if stage in ("freshman", "sophomore"):
         diagnosis += f"作为{stage_label}学生，你最大的优势是时间充裕。现在最重要的是广泛探索、积累经验，不必过早锁定唯一方向。"
     elif stage == "junior":
-        diagnosis += "大三是关键准备期，距离毕业决策还有约一年。现在是集中发力、积累核心经历的最佳窗口。"
+        diagnosis += (
+            "大三是关键准备期，距离毕业决策还有约一年。现在是集中发力、积累核心经历的最佳窗口。"
+        )
     elif stage in ("senior", "graduated"):
         diagnosis += "时间紧迫，建议立即进入执行模式：减少犹豫，用 2 周时间做出决策，然后全力以赴。"
 
@@ -187,9 +218,18 @@ def _rule_based_diagnosis(ob: UserOnboarding) -> tuple[str, dict, list[dict]]:
 
     # 关键洞察
     insights = [
-        {"type": "strength", "text": f"{strongest[0]}是你的核心竞争力（{strongest[1]}/5），在{dir_label}中要充分利用这一优势。"},
-        {"type": "risk", "text": f"{weakest[0]}（{weakest[1]}/5）可能成为瓶颈，建议每周投入 2-3 小时针对性提升。"},
-        {"type": "opportunity", "text": f"选择{dir_label}方向，平台已为你准备了院校情报、暗知识、社区经验等工具，善用它们打破信息差。"},
+        {
+            "type": "strength",
+            "text": f"{strongest[0]}是你的核心竞争力（{strongest[1]}/5），在{dir_label}中要充分利用这一优势。",
+        },
+        {
+            "type": "risk",
+            "text": f"{weakest[0]}（{weakest[1]}/5）可能成为瓶颈，建议每周投入 2-3 小时针对性提升。",
+        },
+        {
+            "type": "opportunity",
+            "text": f"选择{dir_label}方向，平台已为你准备了院校情报、暗知识、社区经验等工具，善用它们打破信息差。",
+        },
     ]
 
     return diagnosis, path, insights
@@ -200,9 +240,7 @@ async def generate_diagnosis(db: Session, onboarding_id: UUID) -> UserOnboarding
 
     失败时 onboarding 状态保持 in_progress，不阻断流程。
     """
-    onboarding = (
-        db.query(UserOnboarding).filter(UserOnboarding.id == onboarding_id).first()
-    )
+    onboarding = db.query(UserOnboarding).filter(UserOnboarding.id == onboarding_id).first()
     if not onboarding:
         raise ValueError("诊断记录不存在")
 

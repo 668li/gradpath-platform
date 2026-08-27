@@ -10,9 +10,9 @@
 
 LLM 调用可选：未配置 LLM_API_KEY 时使用预设模板生成。
 """
+
 import json
 import logging
-from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -45,8 +45,18 @@ PARENT_ARCHETYPE_SAYINGS = {
 # ----------------------------------------------------------------------
 _SCENARIO_KEYWORDS = {
     "internet_vs_civil": [
-        "互联网", "大厂", "字节", "腾讯", "阿里", "程序员", "开发", "前端", "后端",
-        "算法", "产品经理", "技术",
+        "互联网",
+        "大厂",
+        "字节",
+        "腾讯",
+        "阿里",
+        "程序员",
+        "开发",
+        "前端",
+        "后端",
+        "算法",
+        "产品经理",
+        "技术",
     ],
     "kaoyan_vs_employment": ["考研", "研究生", "读研", "硕士", "保研"],
     "abroad_vs_domestic": ["留学", "出国", "海外", "美国", "英国", "港校"],
@@ -327,18 +337,17 @@ def _generate_understanding(
     if settings.LLM_API_KEY:
         try:
             import asyncio
-            text = asyncio.run(_generate_understanding_via_llm(archetype, parent_concern, user_choice))
+
+            text = asyncio.run(
+                _generate_understanding_via_llm(archetype, parent_concern, user_choice)
+            )
             if text:
                 return text
         except Exception as e:
             logger.warning("LLM 生成理解分析失败，回退到模板: %s", e)
 
     template = _UNDERSTANDING_TEMPLATES.get(archetype, _UNDERSTANDING_TEMPLATES["stability_first"])
-    return (
-        f"【父母担忧】{parent_concern}\n"
-        f"【你的选择】{user_choice}\n\n"
-        f"{template}"
-    )
+    return f"【父母担忧】{parent_concern}\n" f"【你的选择】{user_choice}\n\n" f"{template}"
 
 
 async def _generate_understanding_via_llm(
@@ -354,9 +363,7 @@ async def _generate_understanding_via_llm(
         "语气要共情、客观，不偏袒任何一方。输出纯文本，200-400 字。"
     )
     user_prompt = (
-        f"父母类型：{archetype_label}\n"
-        f"父母担忧：{parent_concern}\n"
-        f"用户选择：{user_choice}"
+        f"父母类型：{archetype_label}\n" f"父母担忧：{parent_concern}\n" f"用户选择：{user_choice}"
     )
     orchestrator = AIOrchestrator()
     return await orchestrator.chat(system_prompt=system_prompt, user_prompt=user_prompt, timeout=30)
@@ -369,6 +376,7 @@ def _generate_arguments(
     if settings.LLM_API_KEY:
         try:
             import asyncio
+
             args = asyncio.run(_generate_arguments_via_llm(archetype, parent_concern, user_choice))
             if args and len(args) >= 3:
                 return args
@@ -404,6 +412,7 @@ async def _generate_arguments_via_llm(
         data = json.loads(raw)
     except json.JSONDecodeError:
         import re
+
         match = re.search(r"\[.*\]", raw, re.DOTALL)
         if not match:
             return []
@@ -418,14 +427,18 @@ async def _generate_arguments_via_llm(
     for item in data:
         if not isinstance(item, dict):
             continue
-        if not all(k in item for k in ("parent_saying", "user_response", "data_backing", "empathy_note")):
+        if not all(
+            k in item for k in ("parent_saying", "user_response", "data_backing", "empathy_note")
+        ):
             continue
-        normalized.append({
-            "parent_saying": str(item["parent_saying"]),
-            "user_response": str(item["user_response"]),
-            "data_backing": str(item["data_backing"]),
-            "empathy_note": str(item["empathy_note"]),
-        })
+        normalized.append(
+            {
+                "parent_saying": str(item["parent_saying"]),
+                "user_response": str(item["user_response"]),
+                "data_backing": str(item["data_backing"]),
+                "empathy_note": str(item["empathy_note"]),
+            }
+        )
     return normalized
 
 
@@ -437,40 +450,27 @@ _PRACTICE_REPLIES: dict[str, list[str]] = {
     "stability_first": [
         "你这孩子，怎么就不听呢？考公多好，铁饭碗，不用担心下岗。"
         "你看你张叔叔家孩子，考上公务员后日子多安稳。",
-        "互联网今天招人明天裁人，哪有铁饭碗踏实？"
-        "我们吃过的盐比你吃过的米多，听爸妈的没错。",
-        "你说的我也听不太懂，我就问你一句：万一被裁了，你怎么办？"
-        "你能保证一辈子不失业吗？",
-        "行，那你说个期限。先去互联网试几年，几年？到时候不行必须考公，"
-        "这是底线，你能答应吗？",
+        "互联网今天招人明天裁人，哪有铁饭碗踏实？" "我们吃过的盐比你吃过的米多，听爸妈的没错。",
+        "你说的我也听不太懂，我就问你一句：万一被裁了，你怎么办？" "你能保证一辈子不失业吗？",
+        "行，那你说个期限。先去互联网试几年，几年？到时候不行必须考公，" "这是底线，你能答应吗？",
     ],
     "prestige_first": [
         "公务员说出去多好听，亲戚问起来爸妈也有面子。"
         "你在大公司打工，说出去人家还以为是流水线工人。",
-        "面子值几个钱？你不懂，人活一张脸。"
-        "你考上了公务员，全家都跟着光彩。",
-        "你表哥考上选调生，过年回来多风光。"
-        "你在大厂再厉害，亲戚们也不知道你在干啥。",
-        "好，那你说说，你那个工作说出去怎么跟亲戚介绍？"
-        "能让爸妈骄傲地跟人说吗？",
+        "面子值几个钱？你不懂，人活一张脸。" "你考上了公务员，全家都跟着光彩。",
+        "你表哥考上选调生，过年回来多风光。" "你在大厂再厉害，亲戚们也不知道你在干啥。",
+        "好，那你说说，你那个工作说出去怎么跟亲戚介绍？" "能让爸妈骄傲地跟人说吗？",
     ],
     "practical_worry": [
-        "现在经济这么差，你看新闻没？大厂都在裁员。"
-        "这时候去互联网，不是往火坑里跳吗？",
-        "我们不是不支持你，是真的担心。家里也不富裕，"
-        "你万一失业了，我们帮不上忙，你怎么办？",
-        "考公至少旱涝保收。你现在年轻不懂，等你有房贷有孩子，"
-        "就知道稳定有多重要了。",
-        "你说的止损线我听懂了，但万一呢？我们这把年纪了，"
-        "经不起你折腾。能不能再考虑考虑？",
+        "现在经济这么差，你看新闻没？大厂都在裁员。" "这时候去互联网，不是往火坑里跳吗？",
+        "我们不是不支持你，是真的担心。家里也不富裕，" "你万一失业了，我们帮不上忙，你怎么办？",
+        "考公至少旱涝保收。你现在年轻不懂，等你有房贷有孩子，" "就知道稳定有多重要了。",
+        "你说的止损线我听懂了，但万一呢？我们这把年纪了，" "经不起你折腾。能不能再考虑考虑？",
     ],
     "supportive": [
-        "你自己决定吧，爸妈相信你。但你真的想清楚了吗？"
-        "能跟爸妈讲讲你为什么这么选吗？",
-        "我们不是反对，就是担心。你说的这些，"
-        "你有没有具体的计划？讲给我们听听。",
-        "行，既然你想好了，我们就支持你。但你要记住，"
-        "遇到困难别一个人扛，随时跟家里说。",
+        "你自己决定吧，爸妈相信你。但你真的想清楚了吗？" "能跟爸妈讲讲你为什么这么选吗？",
+        "我们不是反对，就是担心。你说的这些，" "你有没有具体的计划？讲给我们听听。",
+        "行，既然你想好了，我们就支持你。但你要记住，" "遇到困难别一个人扛，随时跟家里说。",
         "你能把数据摆出来，说明你认真想过。爸妈尊重你的选择，"
         "但你得对得起自己的决定，别半途而废。",
     ],

@@ -4,6 +4,7 @@
 （2020-2024）的历史报录比数据，共 100 条记录，每条记录包含年份、报名人数、
 招录人数、报录比及竞争情况说明。
 """
+
 import random
 from uuid import UUID
 
@@ -43,6 +44,7 @@ _HOT_POSTS = [
 
 # 历史年份（每职位生成 5 年数据）
 _YEARS = [2020, 2021, 2022, 2023, 2024]
+
 
 # 竞争情况描述模板（按报录比区间）
 def _ratio_description(ratio: int) -> str:
@@ -93,16 +95,18 @@ class RatioCrawler(BaseCrawler):
                 hiring = random.randint(1, 5)
                 ratio = round(register / hiring)
                 desc = _ratio_description(ratio)
-                raw.append({
-                    "region": region,
-                    "department": department,
-                    "post_name": post_name,
-                    "year": year,
-                    "register_count": register,
-                    "hiring_count": hiring,
-                    "admission_ratio_num": ratio,
-                    "description": desc,
-                })
+                raw.append(
+                    {
+                        "region": region,
+                        "department": department,
+                        "post_name": post_name,
+                        "year": year,
+                        "register_count": register,
+                        "hiring_count": hiring,
+                        "admission_ratio_num": ratio,
+                        "description": desc,
+                    }
+                )
         return raw
 
     def parse(self, raw_items: list[dict]) -> list[dict]:
@@ -118,26 +122,28 @@ class RatioCrawler(BaseCrawler):
                 f"{r['year']}年{r['description']}，报录比 {ratio}:1"
                 f"（报名{r['register_count']}人，招录{r['hiring_count']}人）"
             )
-            parsed.append({
-                "region": r["region"],
-                "department": r["department"],
-                "post_name": r["post_name"],
-                "exam_type": "报录比",
-                "real_competition": _competition_level(ratio),
-                "treatment_level": "unknown",
-                "promotion_speed": "unknown",
-                "workload": "unknown",
-                "radish_post": "unknown",
-                "service_period": "unknown",
-                "admission_ratio": f"{ratio}:1",
-                "department_tier": "热门职位",
-                "work_content": f"{r['department']}{r['post_name']}岗位{r['year']}年度报录情况",
-                "insider_notes": notes,
-                "risk_warnings": [],
-                "data_sources": ["QZZN论坛", "粉笔网"],
-                "tags": ["报录比", "历史数据", str(r["year"])],
-                "ai_summary": f"{r['department']}{r['post_name']}，{r['year']}年报录比{ratio}:1",
-            })
+            parsed.append(
+                {
+                    "region": r["region"],
+                    "department": r["department"],
+                    "post_name": r["post_name"],
+                    "exam_type": "报录比",
+                    "real_competition": _competition_level(ratio),
+                    "treatment_level": "unknown",
+                    "promotion_speed": "unknown",
+                    "workload": "unknown",
+                    "radish_post": "unknown",
+                    "service_period": "unknown",
+                    "admission_ratio": f"{ratio}:1",
+                    "department_tier": "热门职位",
+                    "work_content": f"{r['department']}{r['post_name']}岗位{r['year']}年度报录情况",
+                    "insider_notes": notes,
+                    "risk_warnings": [],
+                    "data_sources": ["QZZN论坛", "粉笔网"],
+                    "tags": ["报录比", "历史数据", str(r["year"])],
+                    "ai_summary": f"{r['department']}{r['post_name']}，{r['year']}年报录比{ratio}:1",
+                }
+            )
         return parsed
 
     def store(self, items: list[dict], db: Session) -> int:

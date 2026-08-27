@@ -4,9 +4,8 @@
 主键为整行 sha256 摘要：官方 position_code 并非唯一（同一 code 对应多条专业/学历
 不同的记录），故以整行哈希作为幂等 upsert 的依据。
 """
-from datetime import datetime
 
-from sqlalchemy import DateTime, Index, Integer, String, Text
+from sqlalchemy import Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base

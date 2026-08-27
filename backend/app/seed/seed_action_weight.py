@@ -3,6 +3,7 @@
 
 7 条默认行动类型权重，幂等 upsert：按 action_type 存在则跳过、缺失则插入。
 """
+
 from sqlalchemy.orm import Session
 
 from app.models.action_center import ActionWeight
@@ -27,11 +28,7 @@ def seed_action_weight(db: Session) -> int:
     """
     inserted = 0
     for action_type, weight, weight_label in ACTION_WEIGHTS:
-        existing = (
-            db.query(ActionWeight)
-            .filter(ActionWeight.action_type == action_type)
-            .first()
-        )
+        existing = db.query(ActionWeight).filter(ActionWeight.action_type == action_type).first()
         if existing:
             continue
         db.add(

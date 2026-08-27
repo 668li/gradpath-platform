@@ -3,6 +3,7 @@
 端点对齐系统设计 §3.2.M10.2 接口清单；实现来源标注 CRUD + 可信度分级。
 合规红线：外部数据来源必须可追溯（source_url / source_system / credibility）。
 """
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 

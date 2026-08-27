@@ -1,5 +1,6 @@
 # backend/app/services/pipeline_service.py
 """Pipeline 业务逻辑。"""
+
 import json
 import logging
 import re
@@ -24,12 +25,12 @@ from app.schemas.pipeline import (
     IngestAPIRequest,
     IngestURLRequest,
 )
+from pipeline.extractor import MAX_TEXT_LENGTH, call_llm
 from pipeline.extractors import ExtractResult
 from pipeline.extractors.csv_extractor import extract_csv
 from pipeline.extractors.excel_extractor import extract_excel
 from pipeline.extractors.html_extractor import extract_html
 from pipeline.extractors.pdf_extractor import extract_pdf
-from pipeline.extractor import call_llm, MAX_TEXT_LENGTH
 from pipeline.router import route_content
 
 logger = logging.getLogger(__name__)
@@ -79,13 +80,21 @@ def _sanitize_filename(name: str) -> str:
 
 
 def get_or_create_report(
-    db: Session, school_id: UUID, year: int, source_url: str = "", source_type: SourceType = SourceType.crawl
+    db: Session,
+    school_id: UUID,
+    year: int,
+    source_url: str = "",
+    source_type: SourceType = SourceType.crawl,
 ) -> ReportRecord:
     """获取或创建报告记录。同校同年存在则返回已有记录。"""
-    existing = db.query(ReportRecord).filter(
-        ReportRecord.school_id == school_id,
-        ReportRecord.year == year,
-    ).first()
+    existing = (
+        db.query(ReportRecord)
+        .filter(
+            ReportRecord.school_id == school_id,
+            ReportRecord.year == year,
+        )
+        .first()
+    )
     if existing:
         return existing
     report = ReportRecord(
@@ -116,8 +125,9 @@ def ingest_url(db: Session, req: IngestURLRequest) -> ReportRecord:
 
     # 抓取内容
     try:
-        resp = httpx.get(req.url, timeout=30, follow_redirects=True,
-                         headers={"User-Agent": "GradPathBot/1.0"})
+        resp = httpx.get(
+            req.url, timeout=30, follow_redirects=True, headers={"User-Agent": "GradPathBot/1.0"}
+        )
         resp.raise_for_status()
         raw_content = resp.text
         mime_type = resp.headers.get("content-type", "").split(";")[0].strip()
@@ -237,7 +247,9 @@ def ingest_api(db: Session, req: IngestAPIRequest) -> ReportRecord:
     return report
 
 
-def _extract_and_parse(db: Session, report: ReportRecord, content_type: ContentType, raw_content: str):
+def _extract_and_parse(
+    db: Session, report: ReportRecord, content_type: ContentType, raw_content: str
+):
     """提取文本（如需要）并运行 LLM 解析。"""
     if content_type == ContentType.html:
         result = extract_html(raw_content)
@@ -369,10 +381,18 @@ def get_report_detail(db: Session, report_id: UUID) -> ReportRecord:
 def get_pipeline_stats(db: Session) -> dict:
     """管道统计。"""
     total = db.query(ReportRecord).count()
-    published = db.query(ReportRecord).filter(ReportRecord.parse_status == ParseStatus.published).count()
-    pending = db.query(ReportRecord).filter(
-        ReportRecord.parse_status.in_([ParseStatus.pending, ParseStatus.parsed, ParseStatus.reviewed])
-    ).count()
+    published = (
+        db.query(ReportRecord).filter(ReportRecord.parse_status == ParseStatus.published).count()
+    )
+    pending = (
+        db.query(ReportRecord)
+        .filter(
+            ReportRecord.parse_status.in_(
+                [ParseStatus.pending, ParseStatus.parsed, ParseStatus.reviewed]
+            )
+        )
+        .count()
+    )
     failed = db.query(ReportRecord).filter(ReportRecord.parse_status == ParseStatus.failed).count()
     return {
         "total_reports": total,
@@ -383,6 +403,7 @@ def get_pipeline_stats(db: Session) -> dict:
 
 
 # ===== DataSource CRUD =====
+
 
 def list_sources(db: Session) -> list[DataSource]:
     return db.query(DataSource).order_by(DataSource.created_at.desc()).all()

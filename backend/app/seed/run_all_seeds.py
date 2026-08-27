@@ -11,18 +11,18 @@
 - 演示种子（考研情报/暗知识、考研社区、生成的社区内容、分数线）已删除，
   不再提供 --include-demo 注入路径；真实数据一律走导入管道 + 人工确认入库。
 """
+
 from uuid import UUID
 
 from app.database import SessionLocal
 from app.models.user import User
-from app.seed.seed_schools import seed_schools
-from app.seed.seed_civil_service import seed_civil_service_intel, seed_civil_service_dark_knowledge
+from app.seed.seed_civil_service import seed_civil_service_dark_knowledge, seed_civil_service_intel
 from app.seed.seed_community import seed_community
 from app.seed.seed_companies import seed_companies
-from app.seed.seed_salary_benchmarks import seed_salary_benchmarks
-from app.seed.seed_market_data import seed_market_data
 from app.seed.seed_knowledge import seed_knowledge
-
+from app.seed.seed_market_data import seed_market_data
+from app.seed.seed_salary_benchmarks import seed_salary_benchmarks
+from app.seed.seed_schools import seed_schools
 
 # 系统用户 UUID（用于无用户关联的种子数据）
 SYSTEM_USER_ID = UUID("00000000-0000-0000-0000-000000000000")

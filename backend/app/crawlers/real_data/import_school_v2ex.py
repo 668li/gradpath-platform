@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Import school_official.json and v2ex_career.json into GradPath DB.
 
 Usage (inside Docker):
@@ -8,11 +7,12 @@ Or locally:
     cd backend
     python -m app.crawlers.real_data.import_school_v2ex
 """
-import sys
+
 import json
 import os
-import uuid
 import re
+import sys
+import uuid
 from pathlib import Path
 
 # Add backend to path if running locally
@@ -20,10 +20,11 @@ backend_dir = Path(__file__).parent.parent.parent.parent
 if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
 
-from sqlalchemy import select, func, text
+from sqlalchemy import func, select
+
 from app.database import Base, SessionLocal, engine
-from app.models.knowledge_article import KnowledgeArticle
 from app.models.experience_post import ExperiencePost
+from app.models.knowledge_article import KnowledgeArticle
 from app.models.user import User
 
 SEED_USER_EMAIL = "seed_data@gradpath.local"
@@ -57,8 +58,8 @@ def clean_content(raw):
     """Clean content."""
     if not raw:
         return ""
-    text = re.sub(r'\n{3,}', '\n\n', raw)
-    text = re.sub(r' {2,}', ' ', text)
+    text = re.sub(r"\n{3,}", "\n\n", raw)
+    text = re.sub(r" {2,}", " ", text)
     return text.strip()
 
 
@@ -69,7 +70,7 @@ def import_school_official(db, seed_user):
         print(f"\n  ✗ File not found: {json_path}")
         return 0
 
-    with open(json_path, "r", encoding="utf-8") as f:
+    with open(json_path, encoding="utf-8") as f:
         records = json.load(f)
     print(f"\n  Loaded {len(records)} school official records")
 
@@ -122,7 +123,7 @@ def import_v2ex(db, seed_user):
         print(f"\n  ✗ File not found: {json_path}")
         return 0, 0
 
-    with open(json_path, "r", encoding="utf-8") as f:
+    with open(json_path, encoding="utf-8") as f:
         posts = json.load(f)
     print(f"\n  Loaded {len(posts)} V2EX posts")
 
@@ -235,6 +236,7 @@ def main():
         print(f"\n✗ 导入失败: {e}")
         db.rollback()
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
     finally:

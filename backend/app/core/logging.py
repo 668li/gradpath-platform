@@ -1,9 +1,9 @@
 """Structured logging — JSON output with request_id and correlation_id tracking."""
+
+import contextvars
 import logging
 import sys
 from logging.config import dictConfig
-
-import contextvars
 
 # Request ID context variable
 request_id_var: contextvars.ContextVar[str] = contextvars.ContextVar("request_id", default="-")
@@ -29,33 +29,35 @@ def setup_logging(log_level: str = "INFO"):
     Uses console formatter for development (human-readable) with request_id;
     JSON formatter available for production log aggregation.
     """
-    dictConfig({
-        "version": 1,
-        "disable_existing_loggers": False,
-        "filters": {
-            "request_id": {
-                "()": RequestIdFilter,
+    dictConfig(
+        {
+            "version": 1,
+            "disable_existing_loggers": False,
+            "filters": {
+                "request_id": {
+                    "()": RequestIdFilter,
+                },
             },
-        },
-        "formatters": {
-            "json": {
-                "class": "pythonjsonlogger.jsonlogger.JsonFormatter",
-                "format": "%(asctime)s %(name)s %(levelname)s %(message)s %(request_id)s %(correlation_id)s",
+            "formatters": {
+                "json": {
+                    "class": "pythonjsonlogger.jsonlogger.JsonFormatter",
+                    "format": "%(asctime)s %(name)s %(levelname)s %(message)s %(request_id)s %(correlation_id)s",
+                },
+                "console": {
+                    "format": "%(asctime)s [%(levelname)s] %(name)s [req=%(request_id)s corr=%(correlation_id)s] %(message)s",
+                },
             },
-            "console": {
-                "format": "%(asctime)s [%(levelname)s] %(name)s [req=%(request_id)s corr=%(correlation_id)s] %(message)s",
+            "handlers": {
+                "console": {
+                    "class": "logging.StreamHandler",
+                    "stream": sys.stderr,
+                    "filters": ["request_id"],
+                    "formatter": "console",
+                },
             },
-        },
-        "handlers": {
-            "console": {
-                "class": "logging.StreamHandler",
-                "stream": sys.stderr,
-                "filters": ["request_id"],
-                "formatter": "console",
+            "root": {
+                "handlers": ["console"],
+                "level": log_level,
             },
-        },
-        "root": {
-            "handlers": ["console"],
-            "level": log_level,
-        },
-    })
+        }
+    )

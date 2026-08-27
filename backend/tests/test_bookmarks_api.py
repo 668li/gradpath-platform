@@ -1,6 +1,6 @@
 # tests/test_bookmarks_api.py
 """收藏 API 集成测试。"""
-import pytest
+
 from fastapi.testclient import TestClient
 
 

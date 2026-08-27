@@ -1,0 +1,2 @@
+# 保留此空目录：frontend/Dockerfile 构建阶段会 COPY ./public，
+# git 不跟踪空目录会导致 CI Docker Build 失败（"/app/public": not found）。

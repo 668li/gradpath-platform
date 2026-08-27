@@ -24,172 +24,329 @@ MBTI_DIMENSIONS = {
 # ----------------------------------------------------------------------
 MBTI_QUESTIONS = [
     # ---------- E/I 维度（q1 ~ q10）----------
-    {"id": "mbti_q1", "question": "在一次聚会结束后，你通常的感觉是？", "options": [
-        {"value": "E", "label": "精力充沛，还想继续与人交流"},
-        {"value": "I", "label": "比较疲惫，需要独处来恢复精力"},
-    ]},
-    {"id": "mbti_q2", "question": "面对一个新想法，你更倾向于？", "options": [
-        {"value": "E", "label": "立刻和别人讨论，边说边想"},
-        {"value": "I", "label": "先自己想清楚，再和别人分享"},
-    ]},
-    {"id": "mbti_q3", "question": "在工作场合，你更享受哪种状态？", "options": [
-        {"value": "E", "label": "频繁与人沟通协作、对外联络"},
-        {"value": "I", "label": "有较长的专注时间独立完成任务"},
-    ]},
-    {"id": "mbti_q4", "question": "面对陌生人多的环境，你通常？", "options": [
-        {"value": "E", "label": "很快能融入并主动结识新朋友"},
-        {"value": "I", "label": "需要时间观察，倾向和熟人待在一起"},
-    ]},
-    {"id": "mbti_q5", "question": "你更喜欢的学习方式是？", "options": [
-        {"value": "E", "label": "小组讨论、角色扮演、互动演练"},
-        {"value": "I", "label": "阅读、独立研究、自学课程"},
-    ]},
-    {"id": "mbti_q6", "question": "遇到问题时，你的第一反应是？", "options": [
-        {"value": "E", "label": "找人聊一聊，边讨论边解决"},
-        {"value": "I", "label": "自己先想清楚，再决定是否求助"},
-    ]},
-    {"id": "mbti_q7", "question": "你更希望被评价为？", "options": [
-        {"value": "E", "label": "热情、活跃、善于社交"},
-        {"value": "I", "label": "沉稳、深思、有内涵"},
-    ]},
-    {"id": "mbti_q8", "question": "周末没有安排时，你更可能？", "options": [
-        {"value": "E", "label": "约朋友出去聚餐或参加活动"},
-        {"value": "I", "label": "在家看书、看电影或做自己的事"},
-    ]},
-    {"id": "mbti_q9", "question": "在团队中，你更常扮演？", "options": [
-        {"value": "E", "label": "主动发言、活跃气氛的人"},
-        {"value": "I", "label": "安静倾听、关键时给出判断的人"},
-    ]},
-    {"id": "mbti_q10", "question": "面对多人会议，你的状态更接近？", "options": [
-        {"value": "E", "label": "踊跃发言，乐于被关注"},
-        {"value": "I", "label": "更愿意观察，发言前会反复斟酌"},
-    ]},
-
+    {
+        "id": "mbti_q1",
+        "question": "在一次聚会结束后，你通常的感觉是？",
+        "options": [
+            {"value": "E", "label": "精力充沛，还想继续与人交流"},
+            {"value": "I", "label": "比较疲惫，需要独处来恢复精力"},
+        ],
+    },
+    {
+        "id": "mbti_q2",
+        "question": "面对一个新想法，你更倾向于？",
+        "options": [
+            {"value": "E", "label": "立刻和别人讨论，边说边想"},
+            {"value": "I", "label": "先自己想清楚，再和别人分享"},
+        ],
+    },
+    {
+        "id": "mbti_q3",
+        "question": "在工作场合，你更享受哪种状态？",
+        "options": [
+            {"value": "E", "label": "频繁与人沟通协作、对外联络"},
+            {"value": "I", "label": "有较长的专注时间独立完成任务"},
+        ],
+    },
+    {
+        "id": "mbti_q4",
+        "question": "面对陌生人多的环境，你通常？",
+        "options": [
+            {"value": "E", "label": "很快能融入并主动结识新朋友"},
+            {"value": "I", "label": "需要时间观察，倾向和熟人待在一起"},
+        ],
+    },
+    {
+        "id": "mbti_q5",
+        "question": "你更喜欢的学习方式是？",
+        "options": [
+            {"value": "E", "label": "小组讨论、角色扮演、互动演练"},
+            {"value": "I", "label": "阅读、独立研究、自学课程"},
+        ],
+    },
+    {
+        "id": "mbti_q6",
+        "question": "遇到问题时，你的第一反应是？",
+        "options": [
+            {"value": "E", "label": "找人聊一聊，边讨论边解决"},
+            {"value": "I", "label": "自己先想清楚，再决定是否求助"},
+        ],
+    },
+    {
+        "id": "mbti_q7",
+        "question": "你更希望被评价为？",
+        "options": [
+            {"value": "E", "label": "热情、活跃、善于社交"},
+            {"value": "I", "label": "沉稳、深思、有内涵"},
+        ],
+    },
+    {
+        "id": "mbti_q8",
+        "question": "周末没有安排时，你更可能？",
+        "options": [
+            {"value": "E", "label": "约朋友出去聚餐或参加活动"},
+            {"value": "I", "label": "在家看书、看电影或做自己的事"},
+        ],
+    },
+    {
+        "id": "mbti_q9",
+        "question": "在团队中，你更常扮演？",
+        "options": [
+            {"value": "E", "label": "主动发言、活跃气氛的人"},
+            {"value": "I", "label": "安静倾听、关键时给出判断的人"},
+        ],
+    },
+    {
+        "id": "mbti_q10",
+        "question": "面对多人会议，你的状态更接近？",
+        "options": [
+            {"value": "E", "label": "踊跃发言，乐于被关注"},
+            {"value": "I", "label": "更愿意观察，发言前会反复斟酌"},
+        ],
+    },
     # ---------- S/N 维度（q11 ~ q20）----------
-    {"id": "mbti_q11", "question": "你更相信哪种信息？", "options": [
-        {"value": "S", "label": "可验证的事实、数据和经验"},
-        {"value": "N", "label": "趋势、灵感、可能性与直觉"},
-    ]},
-    {"id": "mbti_q12", "question": "你更擅长？", "options": [
-        {"value": "S", "label": "关注细节，把当下的事情做扎实"},
-        {"value": "N", "label": "看到全局，设想未来的可能性"},
-    ]},
-    {"id": "mbti_q13", "question": "阅读时你更喜欢？", "options": [
-        {"value": "S", "label": "按部就班、循序渐进地阅读"},
-        {"value": "N", "label": "跳跃式阅读，先看自己感兴趣的部分"},
-    ]},
-    {"id": "mbti_q14", "question": "你对一个新同事的第一印象更多来自？", "options": [
-        {"value": "S", "label": "他穿什么、说什么、做什么的具体细节"},
-        {"value": "N", "label": "整体气质、给人的感觉与潜在可能性"},
-    ]},
-    {"id": "mbti_q15", "question": "你更享受的工作内容是？", "options": [
-        {"value": "S", "label": "把已知方法运用熟练、做出可靠成果"},
-        {"value": "N", "label": "探索没人做过的方向、提出新思路"},
-    ]},
-    {"id": "mbti_q16", "question": "别人形容你时，更可能用？", "options": [
-        {"value": "S", "label": "踏实、严谨、注重细节"},
-        {"value": "N", "label": "富有想象力、有远见、爱创新"},
-    ]},
-    {"id": "mbti_q17", "question": "学习新技能时你更看重？", "options": [
-        {"value": "S", "label": "明确的步骤、可操作的范例"},
-        {"value": "N", "label": "背后的原理与可迁移的模式"},
-    ]},
-    {"id": "mbti_q18", "question": "面对一个新项目，你更先关注？", "options": [
-        {"value": "S", "label": "现状、资源与可执行的步骤"},
-        {"value": "N", "label": "未来可能演化成的样子"},
-    ]},
-    {"id": "mbti_q19", "question": "你更相信哪种判断？", "options": [
-        {"value": "S", "label": "基于过往经验和事实依据"},
-        {"value": "N", "label": "基于灵感与对未来的预感"},
-    ]},
-    {"id": "mbti_q20", "question": "你描述事情时更倾向于？", "options": [
-        {"value": "S", "label": "具体、详尽、按时间顺序"},
-        {"value": "N", "label": "概括、隐喻、跳跃式联想"},
-    ]},
-
+    {
+        "id": "mbti_q11",
+        "question": "你更相信哪种信息？",
+        "options": [
+            {"value": "S", "label": "可验证的事实、数据和经验"},
+            {"value": "N", "label": "趋势、灵感、可能性与直觉"},
+        ],
+    },
+    {
+        "id": "mbti_q12",
+        "question": "你更擅长？",
+        "options": [
+            {"value": "S", "label": "关注细节，把当下的事情做扎实"},
+            {"value": "N", "label": "看到全局，设想未来的可能性"},
+        ],
+    },
+    {
+        "id": "mbti_q13",
+        "question": "阅读时你更喜欢？",
+        "options": [
+            {"value": "S", "label": "按部就班、循序渐进地阅读"},
+            {"value": "N", "label": "跳跃式阅读，先看自己感兴趣的部分"},
+        ],
+    },
+    {
+        "id": "mbti_q14",
+        "question": "你对一个新同事的第一印象更多来自？",
+        "options": [
+            {"value": "S", "label": "他穿什么、说什么、做什么的具体细节"},
+            {"value": "N", "label": "整体气质、给人的感觉与潜在可能性"},
+        ],
+    },
+    {
+        "id": "mbti_q15",
+        "question": "你更享受的工作内容是？",
+        "options": [
+            {"value": "S", "label": "把已知方法运用熟练、做出可靠成果"},
+            {"value": "N", "label": "探索没人做过的方向、提出新思路"},
+        ],
+    },
+    {
+        "id": "mbti_q16",
+        "question": "别人形容你时，更可能用？",
+        "options": [
+            {"value": "S", "label": "踏实、严谨、注重细节"},
+            {"value": "N", "label": "富有想象力、有远见、爱创新"},
+        ],
+    },
+    {
+        "id": "mbti_q17",
+        "question": "学习新技能时你更看重？",
+        "options": [
+            {"value": "S", "label": "明确的步骤、可操作的范例"},
+            {"value": "N", "label": "背后的原理与可迁移的模式"},
+        ],
+    },
+    {
+        "id": "mbti_q18",
+        "question": "面对一个新项目，你更先关注？",
+        "options": [
+            {"value": "S", "label": "现状、资源与可执行的步骤"},
+            {"value": "N", "label": "未来可能演化成的样子"},
+        ],
+    },
+    {
+        "id": "mbti_q19",
+        "question": "你更相信哪种判断？",
+        "options": [
+            {"value": "S", "label": "基于过往经验和事实依据"},
+            {"value": "N", "label": "基于灵感与对未来的预感"},
+        ],
+    },
+    {
+        "id": "mbti_q20",
+        "question": "你描述事情时更倾向于？",
+        "options": [
+            {"value": "S", "label": "具体、详尽、按时间顺序"},
+            {"value": "N", "label": "概括、隐喻、跳跃式联想"},
+        ],
+    },
     # ---------- T/F 维度（q21 ~ q30）----------
-    {"id": "mbti_q21", "question": "做决策时，你更倾向于？", "options": [
-        {"value": "T", "label": "以逻辑、客观标准为依据"},
-        {"value": "F", "label": "以价值观、对人的影响为依据"},
-    ]},
-    {"id": "mbti_q22", "question": "朋友向你倾诉烦恼时，你更可能？", "options": [
-        {"value": "T", "label": "帮他分析问题、给出解决方案"},
-        {"value": "F", "label": "先共情他的情绪、给予陪伴"},
-    ]},
-    {"id": "mbti_q23", "question": "你认为更重要的品质是？", "options": [
-        {"value": "T", "label": "公正、理性、有原则"},
-        {"value": "F", "label": "同理心、温暖、善解人意"},
-    ]},
-    {"id": "mbti_q24", "question": "批评别人时你更在意？", "options": [
-        {"value": "T", "label": "把事实和问题说清楚"},
-        {"value": "F", "label": "不要伤害对方的感受"},
-    ]},
-    {"id": "mbti_q25", "question": "面对冲突，你更倾向于？", "options": [
-        {"value": "T", "label": "就事论事，理清对错"},
-        {"value": "F", "label": "维护关系，寻找双赢"},
-    ]},
-    {"id": "mbti_q26", "question": "你更希望被人评价为？", "options": [
-        {"value": "T", "label": "客观、公正、能力强"},
-        {"value": "F", "label": "善良、体贴、有人情味"},
-    ]},
-    {"id": "mbti_q27", "question": "你看重一位同事的理由更可能是？", "options": [
-        {"value": "T", "label": "他做事专业、判断准确"},
-        {"value": "F", "label": "他为人真诚、关心团队"},
-    ]},
-    {"id": "mbti_q28", "question": "面对一个艰难选择，你更会问自己？", "options": [
-        {"value": "T", "label": "哪个选项更合理、收益更大"},
-        {"value": "F", "label": "哪个选项更符合我的价值观、对大家都好"},
-    ]},
-    {"id": "mbti_q29", "question": "你更不喜欢的反馈风格是？", "options": [
-        {"value": "T", "label": "含糊其辞、不敢直面问题"},
-        {"value": "F", "label": "冷酷直接、不顾及他人感受"},
-    ]},
-    {"id": "mbti_q30", "question": "讨论问题时，你更倾向于？", "options": [
-        {"value": "T", "label": "保持客观距离，挑出逻辑漏洞"},
-        {"value": "F", "label": "站在对方角度，理解其立场与情绪"},
-    ]},
-
+    {
+        "id": "mbti_q21",
+        "question": "做决策时，你更倾向于？",
+        "options": [
+            {"value": "T", "label": "以逻辑、客观标准为依据"},
+            {"value": "F", "label": "以价值观、对人的影响为依据"},
+        ],
+    },
+    {
+        "id": "mbti_q22",
+        "question": "朋友向你倾诉烦恼时，你更可能？",
+        "options": [
+            {"value": "T", "label": "帮他分析问题、给出解决方案"},
+            {"value": "F", "label": "先共情他的情绪、给予陪伴"},
+        ],
+    },
+    {
+        "id": "mbti_q23",
+        "question": "你认为更重要的品质是？",
+        "options": [
+            {"value": "T", "label": "公正、理性、有原则"},
+            {"value": "F", "label": "同理心、温暖、善解人意"},
+        ],
+    },
+    {
+        "id": "mbti_q24",
+        "question": "批评别人时你更在意？",
+        "options": [
+            {"value": "T", "label": "把事实和问题说清楚"},
+            {"value": "F", "label": "不要伤害对方的感受"},
+        ],
+    },
+    {
+        "id": "mbti_q25",
+        "question": "面对冲突，你更倾向于？",
+        "options": [
+            {"value": "T", "label": "就事论事，理清对错"},
+            {"value": "F", "label": "维护关系，寻找双赢"},
+        ],
+    },
+    {
+        "id": "mbti_q26",
+        "question": "你更希望被人评价为？",
+        "options": [
+            {"value": "T", "label": "客观、公正、能力强"},
+            {"value": "F", "label": "善良、体贴、有人情味"},
+        ],
+    },
+    {
+        "id": "mbti_q27",
+        "question": "你看重一位同事的理由更可能是？",
+        "options": [
+            {"value": "T", "label": "他做事专业、判断准确"},
+            {"value": "F", "label": "他为人真诚、关心团队"},
+        ],
+    },
+    {
+        "id": "mbti_q28",
+        "question": "面对一个艰难选择，你更会问自己？",
+        "options": [
+            {"value": "T", "label": "哪个选项更合理、收益更大"},
+            {"value": "F", "label": "哪个选项更符合我的价值观、对大家都好"},
+        ],
+    },
+    {
+        "id": "mbti_q29",
+        "question": "你更不喜欢的反馈风格是？",
+        "options": [
+            {"value": "T", "label": "含糊其辞、不敢直面问题"},
+            {"value": "F", "label": "冷酷直接、不顾及他人感受"},
+        ],
+    },
+    {
+        "id": "mbti_q30",
+        "question": "讨论问题时，你更倾向于？",
+        "options": [
+            {"value": "T", "label": "保持客观距离，挑出逻辑漏洞"},
+            {"value": "F", "label": "站在对方角度，理解其立场与情绪"},
+        ],
+    },
     # ---------- J/P 维度（q31 ~ q40）----------
-    {"id": "mbti_q31", "question": "你更喜欢的工作节奏是？", "options": [
-        {"value": "J", "label": "提前规划、按计划推进、有明确截止"},
-        {"value": "P", "label": "保留弹性、随情况调整、临场发挥"},
-    ]},
-    {"id": "mbti_q32", "question": "面对一项任务，你更可能？", "options": [
-        {"value": "J", "label": "尽早开始、按时完成、避免最后一刻"},
-        {"value": "P", "label": "在最后期限前的高压下效率最高"},
-    ]},
-    {"id": "mbti_q33", "question": "你的桌面/工作区通常是？", "options": [
-        {"value": "J", "label": "整洁有序、物品归位"},
-        {"value": "P", "label": "略显凌乱、但能找到自己要的东西"},
-    ]},
-    {"id": "mbti_q34", "question": "旅行时你更倾向于？", "options": [
-        {"value": "J", "label": "提前订好行程、住宿和门票"},
-        {"value": "P", "label": "走哪算哪、保留即兴空间"},
-    ]},
-    {"id": "mbti_q35", "question": "做决定时你更常？", "options": [
-        {"value": "J", "label": "迅速决定、尽快推进"},
-        {"value": "P", "label": "搜集更多信息、推迟决定以保留选项"},
-    ]},
-    {"id": "mbti_q36", "question": "你更不喜欢的状态是？", "options": [
-        {"value": "J", "label": "事情悬而未决、没有结论"},
-        {"value": "P", "label": "被过早定死、没有调整空间"},
-    ]},
-    {"id": "mbti_q37", "question": "你看待规则的态度更接近？", "options": [
-        {"value": "J", "label": "规则是必要的，应遵守并维护"},
-        {"value": "P", "label": "规则是参考，必要时可以变通"},
-    ]},
-    {"id": "mbti_q38", "question": "你更喜欢怎样的项目计划？", "options": [
-        {"value": "J", "label": "拆解到周/日，有清晰里程碑"},
-        {"value": "P", "label": "只定大方向，过程中灵活调整"},
-    ]},
-    {"id": "mbti_q39", "question": "别人更可能抱怨你？", "options": [
-        {"value": "J", "label": "太较真、不够灵活"},
-        {"value": "P", "label": "太随意、不够确定"},
-    ]},
-    {"id": "mbti_q40", "question": "周末更接近你的理想是？", "options": [
-        {"value": "J", "label": "有清晰的安排，按计划度过"},
-        {"value": "P", "label": "没有计划，看心情决定做什么"},
-    ]},
+    {
+        "id": "mbti_q31",
+        "question": "你更喜欢的工作节奏是？",
+        "options": [
+            {"value": "J", "label": "提前规划、按计划推进、有明确截止"},
+            {"value": "P", "label": "保留弹性、随情况调整、临场发挥"},
+        ],
+    },
+    {
+        "id": "mbti_q32",
+        "question": "面对一项任务，你更可能？",
+        "options": [
+            {"value": "J", "label": "尽早开始、按时完成、避免最后一刻"},
+            {"value": "P", "label": "在最后期限前的高压下效率最高"},
+        ],
+    },
+    {
+        "id": "mbti_q33",
+        "question": "你的桌面/工作区通常是？",
+        "options": [
+            {"value": "J", "label": "整洁有序、物品归位"},
+            {"value": "P", "label": "略显凌乱、但能找到自己要的东西"},
+        ],
+    },
+    {
+        "id": "mbti_q34",
+        "question": "旅行时你更倾向于？",
+        "options": [
+            {"value": "J", "label": "提前订好行程、住宿和门票"},
+            {"value": "P", "label": "走哪算哪、保留即兴空间"},
+        ],
+    },
+    {
+        "id": "mbti_q35",
+        "question": "做决定时你更常？",
+        "options": [
+            {"value": "J", "label": "迅速决定、尽快推进"},
+            {"value": "P", "label": "搜集更多信息、推迟决定以保留选项"},
+        ],
+    },
+    {
+        "id": "mbti_q36",
+        "question": "你更不喜欢的状态是？",
+        "options": [
+            {"value": "J", "label": "事情悬而未决、没有结论"},
+            {"value": "P", "label": "被过早定死、没有调整空间"},
+        ],
+    },
+    {
+        "id": "mbti_q37",
+        "question": "你看待规则的态度更接近？",
+        "options": [
+            {"value": "J", "label": "规则是必要的，应遵守并维护"},
+            {"value": "P", "label": "规则是参考，必要时可以变通"},
+        ],
+    },
+    {
+        "id": "mbti_q38",
+        "question": "你更喜欢怎样的项目计划？",
+        "options": [
+            {"value": "J", "label": "拆解到周/日，有清晰里程碑"},
+            {"value": "P", "label": "只定大方向，过程中灵活调整"},
+        ],
+    },
+    {
+        "id": "mbti_q39",
+        "question": "别人更可能抱怨你？",
+        "options": [
+            {"value": "J", "label": "太较真、不够灵活"},
+            {"value": "P", "label": "太随意、不够确定"},
+        ],
+    },
+    {
+        "id": "mbti_q40",
+        "question": "周末更接近你的理想是？",
+        "options": [
+            {"value": "J", "label": "有清晰的安排，按计划度过"},
+            {"value": "P", "label": "没有计划，看心情决定做什么"},
+        ],
+    },
 ]
 
 

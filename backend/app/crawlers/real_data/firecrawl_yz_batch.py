@@ -1,11 +1,9 @@
-# -*- coding: utf-8 -*-
 """Batch scraper for yz.chsi.com.cn sections using direct HTTP."""
-import os
-import sys
+
 import json
-import time
 import logging
 import re
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -31,6 +29,7 @@ HEADERS = {
 
 def fetch_page(url: str) -> str | None:
     import httpx
+
     try:
         with httpx.Client(headers=HEADERS, timeout=30, follow_redirects=True) as client:
             resp = client.get(url)
@@ -43,6 +42,7 @@ def fetch_page(url: str) -> str | None:
 
 def extract_items_from_html(html: str, section_key: str) -> list[dict]:
     from bs4 import BeautifulSoup
+
     soup = BeautifulSoup(html, "html.parser")
     items = []
 
@@ -56,18 +56,22 @@ def extract_items_from_html(html: str, section_key: str) -> list[dict]:
         if not title or len(title) < 4:
             continue
         # Filter for relevant links
-        if any(seg in href for seg in ["/kyzx/", "/kydt/", "/jybzc/", "/zsjz/", "/fstj/", "/info/"]):
+        if any(
+            seg in href for seg in ["/kyzx/", "/kydt/", "/jybzc/", "/zsjz/", "/fstj/", "/info/"]
+        ):
             full_url = href if href.startswith("http") else BASE_URL + href
             # Try to find date
             date_span = li.find("span", class_=re.compile(r"date|time|pub"))
             date_text = date_span.get_text(strip=True) if date_span else ""
-            items.append({
-                "title": title,
-                "url": full_url,
-                "date": date_text,
-                "section": section_key,
-                "source": "yz.chsi.com.cn",
-            })
+            items.append(
+                {
+                    "title": title,
+                    "url": full_url,
+                    "date": date_text,
+                    "section": section_key,
+                    "source": "yz.chsi.com.cn",
+                }
+            )
 
     # Also check div-based listings
     for div in soup.find_all("div", class_=re.compile(r"list|item|news")):
@@ -78,14 +82,18 @@ def extract_items_from_html(html: str, section_key: str) -> list[dict]:
         href = a["href"]
         if not title or len(title) < 4:
             continue
-        if any(seg in href for seg in ["/kyzx/", "/kydt/", "/jybzc/", "/zsjz/", "/fstj/", "/info/"]):
+        if any(
+            seg in href for seg in ["/kyzx/", "/kydt/", "/jybzc/", "/zsjz/", "/fstj/", "/info/"]
+        ):
             full_url = href if href.startswith("http") else BASE_URL + href
-            items.append({
-                "title": title,
-                "url": full_url,
-                "section": section_key,
-                "source": "yz.chsi.com.cn",
-            })
+            items.append(
+                {
+                    "title": title,
+                    "url": full_url,
+                    "section": section_key,
+                    "source": "yz.chsi.com.cn",
+                }
+            )
 
     # Fallback: find all links with /info/ pattern (article detail pages)
     if not items:
@@ -94,14 +102,18 @@ def extract_items_from_html(html: str, section_key: str) -> list[dict]:
             title = a.get_text(strip=True)
             if not title or len(title) < 6:
                 continue
-            if "/info/" in href or ("kyzx" in href and href.endswith(".html") and "index_" not in href):
+            if "/info/" in href or (
+                "kyzx" in href and href.endswith(".html") and "index_" not in href
+            ):
                 full_url = href if href.startswith("http") else BASE_URL + href
-                items.append({
-                    "title": title,
-                    "url": full_url,
-                    "section": section_key,
-                    "source": "yz.chsi.com.cn",
-                })
+                items.append(
+                    {
+                        "title": title,
+                        "url": full_url,
+                        "section": section_key,
+                        "source": "yz.chsi.com.cn",
+                    }
+                )
 
     return items
 
@@ -151,6 +163,7 @@ def main():
     home_links = []
     if home_html:
         from bs4 import BeautifulSoup
+
         soup = BeautifulSoup(home_html, "html.parser")
         for a in soup.find_all("a", href=True):
             href = a["href"]
@@ -189,7 +202,7 @@ def main():
     OUTPUT_FILE.write_text(json.dumps(output, ensure_ascii=False, indent=2), encoding="utf-8")
     logger.info(f"Saved to {OUTPUT_FILE}")
 
-    print(f"\n=== Done ===")
+    print("\n=== Done ===")
     print(f"Pages scraped: {total_pages}")
     print(f"Total items: {sum(s['count'] for s in results.values())}")
     print(f"Total chars: {total_chars:,}")

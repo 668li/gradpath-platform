@@ -7,11 +7,12 @@
 - GET  /api/learning-methods/recommend     推荐文章（个性化AI推荐）
 - POST /api/learning-methods/bookmark      收藏文章
 """
+
 import logging
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, text
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -19,10 +20,8 @@ from app.core.deps import get_current_user
 from app.database import get_db
 from app.models.assessment import Assessment
 from app.models.bookmark import Bookmark, BookmarkTargetType
-from app.models.experience_post import ExperiencePost
 from app.models.knowledge_article import KnowledgeArticle
 from app.models.user import User
-from app.schemas.common import PaginatedResponse
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +76,7 @@ def _compute_tag_stats(db: Session, limit: int | None = None) -> list[tuple[str,
         if isinstance(tags, str):
             try:
                 import json as _json
+
                 tags = _json.loads(tags)
             except Exception:
                 continue
@@ -111,12 +111,12 @@ for _tag, _keywords in LEARNING_TAGS.items():
 
 # Holland维度 → 学习方法tag映射
 _HOLLAND_TO_TAGS = {
-    "R": ["学习策略", "笔记方法"],       # Realistic: 动手型，适合实践学习
-    "I": ["认知科学", "学习策略"],       # Investigative: 研究型，适合深度学习
-    "A": ["笔记方法", "认知科学"],       # Artistic: 创意型，适合视觉化笔记
-    "S": ["习惯养成", "身心调节"],       # Social: 社交型，适合协作与习惯
-    "E": ["时间管理", "备考策略"],       # Enterprising: 领导型，适合目标管理
-    "C": ["时间管理", "笔记方法"],       # Conventional: 常规型，适合结构化学习
+    "R": ["学习策略", "笔记方法"],  # Realistic: 动手型，适合实践学习
+    "I": ["认知科学", "学习策略"],  # Investigative: 研究型，适合深度学习
+    "A": ["笔记方法", "认知科学"],  # Artistic: 创意型，适合视觉化笔记
+    "S": ["习惯养成", "身心调节"],  # Social: 社交型，适合协作与习惯
+    "E": ["时间管理", "备考策略"],  # Enterprising: 领导型，适合目标管理
+    "C": ["时间管理", "笔记方法"],  # Conventional: 常规型，适合结构化学习
 }
 
 # 职业方向 → 学习方法tag映射
@@ -193,13 +193,7 @@ class RecommendItem(BaseModel):
 
 # ---------- 个性化推荐引擎 ----------
 # 使用独立模块 app/services/recommender.py（抖音四层架构：召回→精排→重排→EE）
-from app.services.recommender import (
-    recommend_personalized,
-    random_recommend,
-    build_user_profile,
-    _generate_rule_reason,
-    _generate_ai_reason,
-)
+from app.services.recommender import random_recommend, recommend_personalized
 
 
 def _match_learning_tag(text: str) -> str | None:
@@ -308,9 +302,7 @@ def get_stats(db: Session = Depends(get_db)):
     tag_rows = _compute_tag_stats(db, limit=10)
     return {
         "total": total or 0,
-        "category_counts": [
-            {"category": t, "count": c} for t, c in tag_rows
-        ],
+        "category_counts": [{"category": t, "count": c} for t, c in tag_rows],
     }
 
 
@@ -419,4 +411,9 @@ def bookmark_article(
     db.add(bookmark)
     db.commit()
     db.refresh(bookmark)
-    return {"id": str(bookmark.id), "target_type": "post", "target_id": str(article_id), "created_at": bookmark.created_at}
+    return {
+        "id": str(bookmark.id),
+        "target_type": "post",
+        "target_id": str(article_id),
+        "created_at": bookmark.created_at,
+    }

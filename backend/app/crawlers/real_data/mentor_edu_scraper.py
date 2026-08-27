@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """真实研究生导师公开简介采集器（3 校试点：浙江大学 / 华中科技大学 / 深圳大学）。
 
 合规红线（务必遵守，模式与 company_public_scraper.py 一致）：
@@ -27,10 +26,10 @@
 
 运行：py -3.13 mentor_edu_scraper.py [--unis zju,hust,szu] [--per-uni 15]
 """
+
 from __future__ import annotations
 
 import argparse
-import io
 import json
 import random
 import re
@@ -39,8 +38,7 @@ import time
 import urllib.robotparser
 from dataclasses import dataclass, field
 from pathlib import Path
-from urllib.parse import urljoin
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 import requests
 
@@ -54,9 +52,7 @@ TIMEOUT = 40
 ZJU_LIST_URL = "https://bms.zju.edu.cn/85230/list.htm"  # 浙大基础医学系博导名录
 
 HUST_BASE = "http://faculty.hust.edu.cn/"  # 站点仅 HTTP 可访问（HTTPS 握手失败）
-HUST_LIST_API = (
-    "http://faculty.hust.edu.cn/system/resource/tsites/asy/asyqueryteacher.jsp"
-)
+HUST_LIST_API = "http://faculty.hust.edu.cn/system/resource/tsites/asy/asyqueryteacher.jsp"
 HUST_LIST_REFERER = (
     "http://faculty.hust.edu.cn/pyjs.jsp"
     "?urltype=tsites.PinYinTeacherList&wbtreeid=1001&py={py}&lang=zh_CN"
@@ -215,8 +211,7 @@ class Scraper:
             m_dept = re.search(r"所在学科系</strong>[^<]*<span>([^<]*)</span>", chunk)
             m_res = re.search(r"研究方向</strong>[^<]*<span>([^<]*)</span>", chunk)
             m_home = re.search(
-                r'个人主页</strong>[^<]*<span>[^<]*</span></a>'
-                r'<a href="(https?://[^"]+)"[^>]*>',
+                r"个人主页</strong>[^<]*<span>[^<]*</span></a>" r'<a href="(https?://[^"]+)"[^>]*>',
                 chunk,
             )
             m_src = re.search(r'<a href="(/2024/\d+/\d+/[^"]+)"', chunk) or re.search(
@@ -287,7 +282,11 @@ class Scraper:
         for i in range(max(len(candidates) // len(HUST_SAMPLE_LETTERS), 1)):
             for py_idx in range(len(HUST_SAMPLE_LETTERS)):
                 idx = i * len(HUST_SAMPLE_LETTERS) + py_idx
-                if idx < len(candidates) and candidates[idx]["name"] and candidates[idx]["homepage_url"]:
+                if (
+                    idx < len(candidates)
+                    and candidates[idx]["name"]
+                    and candidates[idx]["homepage_url"]
+                ):
                     picked.append(candidates[idx])
 
         # 第二步：逐个抓教师主页，补全院系（所在单位）与研究方向（学科/研究方向区块）
@@ -342,7 +341,9 @@ class Scraper:
                 break
         rep.count = len(mentors)
         rep.status = "ok" if len(mentors) >= min(limit, 1) else "error"
-        rep.detail = f"教师主页系统（tsites），字母采样 {HUST_SAMPLE_LETTERS}，详情 {len(mentors)} 位"
+        rep.detail = (
+            f"教师主页系统（tsites），字母采样 {HUST_SAMPLE_LETTERS}，详情 {len(mentors)} 位"
+        )
         return mentors
 
     # ------------------------------------------------------------------ #
@@ -447,13 +448,13 @@ def main() -> int:
     seen: set[str] = set()
     deduped: list[dict] = []
     for m in mentors:
-        key = f"{m['university']}|{re.sub(r'\s+', '', m['name'])}"
+        key = m["university"] + "|" + re.sub(r"\s+", "", m["name"])
         if key not in seen and m["name"]:
             seen.add(key)
             deduped.append(m)
 
     out_path = Path(args.out)
-    with io.open(out_path, "w", encoding="utf-8") as f:
+    with open(out_path, "w", encoding="utf-8") as f:
         json.dump(deduped, f, ensure_ascii=False, indent=2)
 
     # ---------------------------- 运行报告 ---------------------------- #

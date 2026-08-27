@@ -8,6 +8,7 @@
 
 支持的测评类型：holland | mbti | big_five | disc
 """
+
 from collections import Counter
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -18,15 +19,8 @@ from app.core.deps import get_current_user
 from app.database import get_db
 from app.models.assessment import Assessment
 from app.models.user import User
-from app.schemas.assessment import (
-    AssessmentResponse,
-    AssessmentSubmit,
-    Question,
-)
-from app.services.assessment_service import (
-    ASSESSMENT_CALCULATORS,
-    ASSESSMENT_QUESTIONS,
-)
+from app.schemas.assessment import AssessmentResponse, AssessmentSubmit, Question
+from app.services.assessment_service import ASSESSMENT_CALCULATORS, ASSESSMENT_QUESTIONS
 
 router = APIRouter(prefix="/api/assessment", tags=["职业测评"])
 

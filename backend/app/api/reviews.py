@@ -3,6 +3,7 @@
 路径与 DTO 对齐系统设计 §3.2.M4.2 接口清单；
 user_id 一律由登录态 token 推断（get_current_user），不在请求体传。
 """
+
 from fastapi import APIRouter, Depends, Header, Query
 from sqlalchemy.orm import Session
 
@@ -30,9 +31,7 @@ def create_review(
     x_idempotency_key: str | None = Header(default=None, alias="X-Idempotency-Key"),
 ):
     """创建复盘记录（幂等：X-Idempotency-Key → biz_req_no）。"""
-    review = review_service.create_review(
-        db, user.id, body, idempotency_key=x_idempotency_key
-    )
+    review = review_service.create_review(db, user.id, body, idempotency_key=x_idempotency_key)
     return ReviewVO.model_validate(review)
 
 
@@ -56,9 +55,7 @@ def list_reviews(
 ):
     """复盘列表（分页）。"""
     items, total = review_service.list_reviews(db, user.id, page=page, size=size)
-    return ReviewPageResponse(
-        items=[ReviewVO.model_validate(r) for r in items], total=total
-    )
+    return ReviewPageResponse(items=[ReviewVO.model_validate(r) for r in items], total=total)
 
 
 @router.post("/{review_id}/ai-analyze", response_model=AIReviewVO)

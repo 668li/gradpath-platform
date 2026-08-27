@@ -1,7 +1,8 @@
 """评论模型。"""
+
 import uuid
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, ForeignKey, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base

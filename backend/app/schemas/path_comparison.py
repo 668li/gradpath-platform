@@ -1,4 +1,5 @@
 """多路径 What-If 对比 Schemas。"""
+
 from datetime import datetime
 from uuid import UUID
 
@@ -9,7 +10,9 @@ class PathInput(BaseModel):
     """单条待对比路径输入。"""
 
     path_type: str = Field(..., description="路径类型，如 kaoyan/employment/civil_service")
-    target_role: str = Field(..., min_length=1, max_length=100, description="目标角色，如 '后端开发'")
+    target_role: str = Field(
+        ..., min_length=1, max_length=100, description="目标角色，如 '后端开发'"
+    )
 
 
 class EvidenceItem(BaseModel):
@@ -86,8 +89,12 @@ class DecisionEngineRequest(BaseModel):
 
     major: str = Field(..., min_length=1, max_length=100, description="专业关键词，如 '计算机'")
     region: str | None = Field(default=None, max_length=50, description="地区（省/市），如 '广东'")
-    school_tier: str | None = Field(default=None, max_length=20, description="学校层次：985/211/双一流/普通")
-    graduation_year: int | None = Field(default=None, ge=2000, le=2100, description="毕业年份，默认 2026")
+    school_tier: str | None = Field(
+        default=None, max_length=20, description="学校层次：985/211/双一流/普通"
+    )
+    graduation_year: int | None = Field(
+        default=None, ge=2000, le=2100, description="毕业年份，默认 2026"
+    )
 
 
 class DecisionEngineResponse(BaseModel):

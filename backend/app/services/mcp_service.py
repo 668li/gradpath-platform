@@ -6,10 +6,13 @@
 
 工具实现保持原样搬迁，未做行为变更。
 """
+
 import contextvars
 
 # 安全修复 C1: 用 ContextVar 传递认证用户 ID，防止工具接受任意 user_id
-_mcp_user_id: contextvars.ContextVar[str | None] = contextvars.ContextVar("mcp_user_id", default=None)
+_mcp_user_id: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "mcp_user_id", default=None
+)
 
 
 def set_mcp_user_id(user_id: str | None) -> None:
@@ -28,10 +31,12 @@ def register_mcp_tools(mcp):
     Args:
         mcp: FastMCP 实例（已创建，由 main.py 传入）
     """
+
     @mcp.tool()
     async def search_knowledge(query: str) -> str:
         """搜索 GradPath 知识库（经验帖/QA/知识文章/暗知识）"""
         from app.api.ai_agent import _db_search
+
         results = _db_search(query, limit=5)
         if not results:
             return f"未找到与「{query}」相关的内容"
@@ -44,6 +49,7 @@ def register_mcp_tools(mcp):
     async def search_web(query: str) -> str:
         """搜索互联网获取最新信息"""
         from app.services.web_search import WebSearchService
+
         ws = WebSearchService()
         results = await ws.search(query, max_results=5)
         if not results:
@@ -57,8 +63,10 @@ def register_mcp_tools(mcp):
     async def get_my_profile() -> str:
         """获取当前登录用户的职业画像（技能/规划/决策/测评）"""
         from uuid import UUID
+
         from app.database import SessionLocal
         from app.services.chat_service import build_user_context
+
         # 安全修复 C1: 只允许查询认证用户自己的数据，不接受任意 user_id
         uid = get_mcp_user_id()
         if not uid:
@@ -74,16 +82,22 @@ def register_mcp_tools(mcp):
         """查询考研院校情报"""
         from app.database import SessionLocal
         from app.models.grad_intel import GradSchoolIntel
+
         db = SessionLocal()
         try:
-            schools = db.query(GradSchoolIntel).filter(
-                GradSchoolIntel.school_name.contains(school_name)
-            ).limit(3).all()
+            schools = (
+                db.query(GradSchoolIntel)
+                .filter(GradSchoolIntel.school_name.contains(school_name))
+                .limit(3)
+                .all()
+            )
             if not schools:
                 return f"未找到「{school_name}」的情报"
             lines = []
             for s in schools:
-                lines.append(f"{s.school_name} ({s.province}) — {s.major_name}: 分数线{s.min_scoreline or 'N/A'}")
+                lines.append(
+                    f"{s.school_name} ({s.province}) — {s.major_name}: 分数线{s.min_scoreline or 'N/A'}"
+                )
             return "\n".join(lines)
         finally:
             db.close()
@@ -93,6 +107,7 @@ def register_mcp_tools(mcp):
         """查询就业薪资基准数据"""
         from app.database import SessionLocal
         from app.models.market_data import MarketData
+
         db = SessionLocal()
         try:
             q = db.query(MarketData).filter(MarketData.industry.contains(industry))
@@ -103,7 +118,9 @@ def register_mcp_tools(mcp):
                 return f"未找到{industry}行业的薪资数据"
             lines = []
             for i in items:
-                lines.append(f"{i.company or i.industry} — {i.position or ''}: ¥{i.salary_min or 0}-{i.salary_max or 0}")
+                lines.append(
+                    f"{i.company or i.industry} — {i.position or ''}: ¥{i.salary_min or 0}-{i.salary_max or 0}"
+                )
             return "\n".join(lines)
         finally:
             db.close()
@@ -113,6 +130,7 @@ def register_mcp_tools(mcp):
         """查询考公岗位情报"""
         from app.database import SessionLocal
         from app.models.civil_service_intel import CivilServicePostIntel
+
         db = SessionLocal()
         try:
             q = db.query(CivilServicePostIntel)

@@ -1,4 +1,5 @@
 """健康检查端点与 CORS 可配置测试（Task 8）。"""
+
 from unittest.mock import MagicMock
 
 

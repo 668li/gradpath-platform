@@ -1,6 +1,6 @@
 """RAG 管理 API — 管理员专用的向量索引管理。"""
+
 import logging
-from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -18,6 +18,7 @@ router = APIRouter(tags=["RAG 管理"])
 
 class RAGStatsResponse(BaseModel):
     """RAG 系统统计响应。"""
+
     total_embeddings: int
     source_counts: dict
     last_rebuild: str | None
@@ -26,6 +27,7 @@ class RAGStatsResponse(BaseModel):
 
 class RebuildRequest(BaseModel):
     """重建向量索引请求。"""
+
     clear_existing: bool = True
     sources: list[str] | None = None  # None = 全部
 
@@ -78,6 +80,7 @@ def rebuild_rag_index(
 
         # 执行向量化脚本
         import subprocess
+
         result = subprocess.run(
             ["python", "scripts/vectorize_data.py"],
             capture_output=True,
@@ -88,7 +91,9 @@ def rebuild_rag_index(
         if result.returncode != 0:
             # 修复: FASTAPI-RESP-001 — 不向客户端泄漏 subprocess stderr，
             # 内部错误细节仅记录到服务端日志
-            logger.error("向量化脚本执行失败 returncode=%s stderr=%s", result.returncode, result.stderr)
+            logger.error(
+                "向量化脚本执行失败 returncode=%s stderr=%s", result.returncode, result.stderr
+            )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="向量化失败，请查看服务端日志",

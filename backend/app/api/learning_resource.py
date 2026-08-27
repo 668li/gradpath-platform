@@ -1,16 +1,18 @@
 """学习资源 API"""
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+
 from uuid import UUID
 
-from app.database import get_db
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.orm import Session
+
 from app.core.deps import get_current_user
-from app.models.user import User
+from app.database import get_db
 from app.models.learning_resource import LearningResource
+from app.models.user import User
 from app.schemas.learning_resource import (
     LearningResourceCreate,
-    LearningResourceUpdate,
     LearningResourceResponse,
+    LearningResourceUpdate,
 )
 
 router = APIRouter(prefix="/api/learning-resources", tags=["学习资源"])
@@ -41,14 +43,14 @@ def list_resources(
 ):
     """获取学习资源列表（支持筛选）"""
     query = db.query(LearningResource)
-    
+
     if subject:
         query = query.filter(LearningResource.subject == subject)
     if difficulty:
         query = query.filter(LearningResource.difficulty == difficulty)
     if resource_type:
         query = query.filter(LearningResource.resource_type == resource_type)
-    
+
     return query.offset(skip).limit(limit).all()
 
 
@@ -73,7 +75,7 @@ def get_resource(
     resource = db.query(LearningResource).filter(LearningResource.id == resource_id).first()
     if not resource:
         raise HTTPException(status_code=404, detail="资源不存在")
-    
+
     # 增加浏览次数
     resource.view_count += 1
     db.commit()
@@ -94,11 +96,11 @@ def update_resource(
         raise HTTPException(status_code=404, detail="资源不存在")
     if resource.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="无权修改")
-    
+
     update_data = resource_update.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(resource, key, value)
-    
+
     db.commit()
     db.refresh(resource)
     return resource
@@ -116,7 +118,7 @@ def delete_resource(
         raise HTTPException(status_code=404, detail="资源不存在")
     if resource.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="无权删除")
-    
+
     db.delete(resource)
     db.commit()
     return {"message": "资源已删除"}

@@ -1,4 +1,5 @@
 """结构化日志与 request_id 追踪测试（Task 5）。"""
+
 import logging
 
 

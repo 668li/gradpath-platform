@@ -1,6 +1,3 @@
-import secrets
-from typing import Optional
-
 from pydantic import model_validator
 from pydantic_settings import BaseSettings
 
@@ -18,7 +15,7 @@ class Settings(BaseSettings):
     # Environment and runtime
     # ENV: 短别名，供 Sentry / 日志 / 第三方 SDK 使用；未显式设置时派生自 ENVIRONMENT，
     # 避免双默认值相反导致环境判定歧义（_validate_config 中统一）。
-    ENV: Optional[str] = None
+    ENV: str | None = None
     ENVIRONMENT: str = "development"
     LOG_LEVEL: str = "INFO"
     CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
@@ -31,7 +28,7 @@ class Settings(BaseSettings):
     LLM_DAILY_QUOTA: int = 100
 
     # Redis (optional)
-    REDIS_URL: Optional[str] = None
+    REDIS_URL: str | None = None
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 
@@ -56,12 +53,12 @@ class Settings(BaseSettings):
         if not self.SECRET_KEY:
             errors.append(
                 "SECRET_KEY 必须通过环境变量或 .env 配置，禁止为空。"
-                "生成方式: python -c \"import secrets; print(secrets.token_urlsafe(64))\""
+                '生成方式: python -c "import secrets; print(secrets.token_urlsafe(64))"'
             )
         elif len(self.SECRET_KEY) < 32:
             errors.append(
                 "SECRET_KEY 长度必须 >= 32 字符以满足 FASTAPI-AUTH-003 安全要求。"
-                "生成方式: python -c \"import secrets; print(secrets.token_urlsafe(64))\""
+                '生成方式: python -c "import secrets; print(secrets.token_urlsafe(64))"'
             )
 
         # 修复: FASTAPI-AUTH-003 — 显式拒绝 ALGORITHM="none"
@@ -77,7 +74,7 @@ class Settings(BaseSettings):
             if self.SECRET_KEY.startswith("change-me-in-production"):
                 errors.append(
                     "SECRET_KEY must be set to a secure random value in production. "
-                    "Generate one with: python -c \"import secrets; print(secrets.token_urlsafe(64))\""
+                    'Generate one with: python -c "import secrets; print(secrets.token_urlsafe(64))"'
                 )
 
         # 生产环境强制 PostgreSQL + Redis (A15)
@@ -93,8 +90,7 @@ class Settings(BaseSettings):
 
             # REDIS_URL 必须非空且以 redis:// 或 rediss:// 开头
             if not self.REDIS_URL or not (
-                self.REDIS_URL.startswith("redis://")
-                or self.REDIS_URL.startswith("rediss://")
+                self.REDIS_URL.startswith("redis://") or self.REDIS_URL.startswith("rediss://")
             ):
                 errors.append("生产环境必须配置 Redis")
             else:
@@ -102,6 +98,7 @@ class Settings(BaseSettings):
                 # redis://:pass@host / redis://user:pass@host 合法；
                 # redis://:@host 或 redis://user:@host 视为密码为空，拒绝。
                 from urllib.parse import urlparse
+
                 _parsed_redis = urlparse(self.REDIS_URL)
                 if _parsed_redis.password == "":
                     errors.append("生产环境 Redis 密码不能为空字符串")

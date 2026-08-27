@@ -8,6 +8,7 @@
   结果写回 ai_summary / ai_insights / ai_suggestions / uncertainty_score，
   status → COMPLETED；AIReviewVO.created_at 无模型列 → 映射审计 updated_time
 """
+
 import json
 import logging
 import uuid
@@ -62,11 +63,7 @@ def create_review(
     联动：写成长轨迹（event_type=review_completed，source_event_id 复用幂等键）。
     """
     if idempotency_key:
-        existing = (
-            db.query(ReviewRecord)
-            .filter(ReviewRecord.biz_req_no == idempotency_key)
-            .first()
-        )
+        existing = db.query(ReviewRecord).filter(ReviewRecord.biz_req_no == idempotency_key).first()
         if existing:
             return existing
 
@@ -116,10 +113,7 @@ def list_reviews(
     )
     total = query.count()
     items = (
-        query.order_by(ReviewRecord.period_end.desc())
-        .offset((page - 1) * size)
-        .limit(size)
-        .all()
+        query.order_by(ReviewRecord.period_end.desc()).offset((page - 1) * size).limit(size).all()
     )
     return items, total
 
@@ -136,10 +130,7 @@ def _template_analysis(review: ReviewRecord) -> dict:
     """LLM 不可用时的模板降级分析（确定性输出，便于测试）。"""
     preview = (review.content or "")[:120]
     return {
-        "summary": (
-            f"模板降级摘要：{review.review_type} 复盘已记录，"
-            f"内容概览「{preview}…」。"
-        ),
+        "summary": (f"模板降级摘要：{review.review_type} 复盘已记录，" f"内容概览「{preview}…」。"),
         "insights": [
             {
                 "insight": "持续完成复盘本身就是稳定的成长动作",

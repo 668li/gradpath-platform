@@ -1,6 +1,6 @@
 """考研问答 Pydantic schemas"""
+
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -16,14 +16,16 @@ class QABase(BaseModel):
 
 class QACreate(QABase):
     """创建问题"""
+
     pass
 
 
 class QAUpdate(BaseModel):
     """更新问题"""
-    title: Optional[str] = Field(None, min_length=1, max_length=200)
-    content: Optional[str] = Field(None, min_length=1, max_length=20000)
-    tags: Optional[list[str]] = None
+
+    title: str | None = Field(None, min_length=1, max_length=200)
+    content: str | None = Field(None, min_length=1, max_length=20000)
+    tags: list[str] | None = None
 
 
 # === 回答基础信息 ===
@@ -34,16 +36,19 @@ class QAAnswerBase(BaseModel):
 
 class QAAnswerCreate(QAAnswerBase):
     """创建回答"""
+
     pass
 
 
 class QAAnswerUpdate(BaseModel):
     """更新回答"""
-    content: Optional[str] = Field(None, min_length=1, max_length=20000)
+
+    content: str | None = Field(None, min_length=1, max_length=20000)
 
 
 class QAAnswerResponse(QAAnswerBase):
     """回答响应"""
+
     id: UUID
     qa_id: UUID
     user_id: UUID
@@ -52,32 +57,34 @@ class QAAnswerResponse(QAAnswerBase):
     status: str = Field(..., description="审核状态")
     created_at: datetime
     updated_at: datetime
-    author_name: Optional[str] = Field(None, description="作者显示名")
-    author_avatar: Optional[str] = Field(None, description="作者头像URL")
+    author_name: str | None = Field(None, description="作者显示名")
+    author_avatar: str | None = Field(None, description="作者头像URL")
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class QAResponse(QABase):
     """问题响应"""
+
     id: UUID
     user_id: UUID
     status: str = Field(..., description="审核状态")
     view_count: int = Field(..., description="浏览数")
     answer_count: int = Field(..., description="回答数")
     is_resolved: bool = Field(..., description="是否已解决")
-    best_answer_id: Optional[UUID] = Field(None, description="最佳回答 ID")
+    best_answer_id: UUID | None = Field(None, description="最佳回答 ID")
     answers: list[QAAnswerResponse] = Field(default_factory=list, description="回答列表")
     created_at: datetime
     updated_at: datetime
-    author_name: Optional[str] = Field(None, description="作者显示名")
-    author_avatar: Optional[str] = Field(None, description="作者头像URL")
+    author_name: str | None = Field(None, description="作者显示名")
+    author_avatar: str | None = Field(None, description="作者头像URL")
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class QAListResponse(BaseModel):
     """问题列表响应"""
+
     items: list[QAResponse]
     total: int
     page: int
@@ -86,6 +93,7 @@ class QAListResponse(BaseModel):
 
 class QAAnswerListResponse(BaseModel):
     """回答列表响应"""
+
     items: list[QAAnswerResponse]
     total: int
     page: int

@@ -1,4 +1,5 @@
 """管理员外部调研 API — 触发爬虫、导入数据、审核内容。"""
+
 import json
 import logging
 import tempfile
@@ -128,9 +129,7 @@ def _auto_approve_last_run(db: Session, crawler_name: str, admin: User) -> tuple
             promoted += result["promoted"]
         except Exception:
             db.rollback()
-            logger.exception(
-                "[research_admin] auto_approve 单条失败 ext_item_id=%s", ext_item.id
-            )
+            logger.exception("[research_admin] auto_approve 单条失败 ext_item_id=%s", ext_item.id)
             pending_remaining += 1
             continue
     db.commit()
@@ -157,9 +156,7 @@ def run_bilibili_research(
     )
 
     try:
-        crawler = BilibiliResearchCrawler(
-            config={"keyword": body.keyword, "pages": body.pages}
-        )
+        crawler = BilibiliResearchCrawler(config={"keyword": body.keyword, "pages": body.pages})
         raw_items = crawler.fetch()
         parsed_items = crawler.parse(raw_items)
         inserted = crawler.store(parsed_items, db)
@@ -312,9 +309,7 @@ def list_pending_research_items(
         if platform:
             exp_query = exp_query.filter(ExperiencePost.source_platform == platform)
         exp_total = exp_query.count()
-        for post in (
-            exp_query.order_by(ExperiencePost.created_at.desc()).limit(fetch_limit).all()
-        ):
+        for post in exp_query.order_by(ExperiencePost.created_at.desc()).limit(fetch_limit).all():
             items.append(
                 ResearchPendingItem(
                     id=post.id,
@@ -335,9 +330,7 @@ def list_pending_research_items(
         if platform:
             news_query = news_query.filter(KaoyanNews.source_platform == platform)
         news_total = news_query.count()
-        for news in (
-            news_query.order_by(KaoyanNews.created_at.desc()).limit(fetch_limit).all()
-        ):
+        for news in news_query.order_by(KaoyanNews.created_at.desc()).limit(fetch_limit).all():
             items.append(
                 ResearchPendingItem(
                     id=news.id,
@@ -355,7 +348,7 @@ def list_pending_research_items(
 
     items.sort(key=lambda x: x.created_at, reverse=True)
     total = exp_total + news_total
-    paged_items = items[start:start + page_size]
+    paged_items = items[start : start + page_size]
 
     return ResearchPendingListResponse(
         items=paged_items,

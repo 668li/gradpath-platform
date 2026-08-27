@@ -2,6 +2,7 @@
 
 MVP 方案 C：契约先行、实现延后 — 仅落库建表，业务逻辑后续实现。
 """
+
 from datetime import date, datetime
 from uuid import UUID
 
@@ -28,6 +29,7 @@ class DailyAction(ContractAuditMixin, Base):
     状态机：PENDING → DONE / EXPIRED / CANCELED。
     唯一约束：同一用户同一天同一类型只能存在一条行动（UK_user_id_action_type_due_date）。
     """
+
     __tablename__ = "t_action"
 
     id: Mapped[int] = mapped_column(BigIntPK, primary_key=True, autoincrement=True)
@@ -47,7 +49,9 @@ class DailyAction(ContractAuditMixin, Base):
 
     __table_args__ = (
         UniqueConstraint(
-            "user_id", "action_type", "due_date",
+            "user_id",
+            "action_type",
+            "due_date",
             name="uk_action_user_id_action_type_due_date",
         ),
         Index("idx_action_user_id_due_date", "user_id", "due_date"),
@@ -57,6 +61,7 @@ class DailyAction(ContractAuditMixin, Base):
 
 class ActionCheckin(ContractAuditMixin, Base):
     """行动打卡记录（t_action_checkin）。"""
+
     __tablename__ = "t_action_checkin"
 
     id: Mapped[int] = mapped_column(BigIntPK, primary_key=True, autoincrement=True)
@@ -79,6 +84,7 @@ class ActionStreak(ContractAuditMixin, Base):
 
     streak_status：ACTIVE / BROKEN / NEVER。
     """
+
     __tablename__ = "t_action_streak"
 
     id: Mapped[int] = mapped_column(BigIntPK, primary_key=True, autoincrement=True)
@@ -95,13 +101,12 @@ class ActionStreak(ContractAuditMixin, Base):
     )
     # ACTIVE / BROKEN / NEVER
 
-    __table_args__ = (
-        UniqueConstraint("user_id", name="uk_action_streak_user_id"),
-    )
+    __table_args__ = (UniqueConstraint("user_id", name="uk_action_streak_user_id"),)
 
 
 class ActionWeight(ContractAuditMixin, Base):
     """行动类型权重配置（t_action_weight）。"""
+
     __tablename__ = "t_action_weight"
 
     id: Mapped[int] = mapped_column(BigIntPK, primary_key=True, autoincrement=True)
@@ -114,6 +119,4 @@ class ActionWeight(ContractAuditMixin, Base):
         Boolean, nullable=False, default=True, server_default=text("TRUE")
     )
 
-    __table_args__ = (
-        UniqueConstraint("action_type", name="uk_action_weight_action_type"),
-    )
+    __table_args__ = (UniqueConstraint("action_type", name="uk_action_weight_action_type"),)

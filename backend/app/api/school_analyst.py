@@ -1,18 +1,14 @@
 """AI 院校分析师 — 六维雷达 + 分数线趋势 + 暗知识洞察 + 择校分类。"""
+
 import json
 import logging
-import re
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.grad_intel import (
-    DarkKnowledge,
-    GradSchoolIntel,
-    GradScorelineRecord,
-)
+from app.models.grad_intel import DarkKnowledge, GradSchoolIntel, GradScorelineRecord
 from app.services.ai_orchestrator import AIOrchestrator
 from app.services.ai_service import AIServiceNotConfigured
 
@@ -23,8 +19,12 @@ router = APIRouter(prefix="/api/school-analyst", tags=["AI院校分析师"])
 
 # ── Schemas ──────────────────────────────────────────────────────────
 class AnalystReportRequest(BaseModel):
-    school_name: str = Field(..., min_length=1, max_length=100, description="院校名称", examples=["清华大学"])
-    major: str = Field(..., min_length=1, max_length=100, description="专业名称", examples=["计算机科学与技术"])
+    school_name: str = Field(
+        ..., min_length=1, max_length=100, description="院校名称", examples=["清华大学"]
+    )
+    major: str = Field(
+        ..., min_length=1, max_length=100, description="专业名称", examples=["计算机科学与技术"]
+    )
 
 
 class DimensionScore(BaseModel):
@@ -65,7 +65,9 @@ _SUPPRESS_MAP = {"none": 9, "light": 7, "moderate": 4, "severe": 2, "unknown": 5
 _TRANSFER_MAP = {"yes": 9, "moderate": 6, "no": 2, "unknown": 5}
 
 
-def _calc_six_dimensions(intel: GradSchoolIntel | None, scoreline: GradScorelineRecord | None) -> dict:
+def _calc_six_dimensions(
+    intel: GradSchoolIntel | None, scoreline: GradScorelineRecord | None
+) -> dict:
     """从结构化字段计算六维得分。"""
     if not intel:
         return _default_radar()
@@ -139,7 +141,10 @@ def _calc_six_dimensions(intel: GradSchoolIntel | None, scoreline: GradScoreline
     raw = [max(1, min(10, s)) for s in raw]
 
     return {
-        k: {"score": s, "description": f"{descriptions[k]}：{'低' if s <= 3 else '中' if s <= 6 else '高'}（{s}/10）"}
+        k: {
+            "score": s,
+            "description": f"{descriptions[k]}：{'低' if s <= 3 else '中' if s <= 6 else '高'}（{s}/10）",
+        }
         for k, s in zip(keys, raw)
     }
 
@@ -171,11 +176,13 @@ def _build_scoreline_trend(db: Session, school: str, major: str) -> list[dict]:
         ratio = None
         if r.application_count and r.enrollment_count and r.enrollment_count > 0:
             ratio = f"{r.application_count / r.enrollment_count:.1f}:1"
-        trend.append({
-            "year": r.year,
-            "score_line": r.total_score_line,
-            "competition_ratio": ratio,
-        })
+        trend.append(
+            {
+                "year": r.year,
+                "score_line": r.total_score_line,
+                "competition_ratio": ratio,
+            }
+        )
     return trend
 
 
@@ -209,7 +216,9 @@ def _fetch_dark_knowledge(db: Session, school: str, major: str) -> list[str]:
     return highlights[:5]
 
 
-def _classify_recommendation(scoreline: GradScorelineRecord | None, user_score: int | None = 360) -> str:
+def _classify_recommendation(
+    scoreline: GradScorelineRecord | None, user_score: int | None = 360
+) -> str:
     """根据分数线对用户成绩进行冲/稳/保分类。"""
     if not scoreline or not scoreline.total_score_line:
         return "target"

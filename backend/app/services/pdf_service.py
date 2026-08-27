@@ -3,19 +3,14 @@
 
 使用 reportlab 生成个性化 PDF 报告。
 """
+
 import io
 from datetime import date
 
 from reportlab.lib import colors
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
-from reportlab.platypus import (
-    Paragraph,
-    SimpleDocTemplate,
-    Spacer,
-    Table,
-    TableStyle,
-)
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 from sqlalchemy.orm import Session
 
 
@@ -40,6 +35,7 @@ def _to_str(v) -> str:
 # ======================================================================
 # 公共样式
 # ======================================================================
+
 
 def _get_styles():
     """获取报告共用样式。"""
@@ -94,32 +90,36 @@ def _get_styles():
 
 def _make_table_style() -> TableStyle:
     """创建统一的表格样式。"""
-    return TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1e3a8a")),
-        ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
-        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, -1), 9),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-        ("TOPPADDING", (0, 0), (-1, -1), 5),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1),
-         [colors.white, colors.HexColor("#f8fafc")]),
-        ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#e2e8f0")),
-    ])
+    return TableStyle(
+        [
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1e3a8a")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+            ("FONTSIZE", (0, 0), (-1, -1), 9),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+            ("TOPPADDING", (0, 0), (-1, -1), 5),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f8fafc")]),
+            ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#e2e8f0")),
+        ]
+    )
 
 
 def _add_footer(story: list, styles: dict, title: str):
     """添加页脚。"""
     story.append(Spacer(1, 20))
-    story.append(Paragraph(
-        f"{title} · 由 GradPath 自动生成 · {_iso(date.today())}",
-        styles["small"],
-    ))
+    story.append(
+        Paragraph(
+            f"{title} · 由 GradPath 自动生成 · {_iso(date.today())}",
+            styles["small"],
+        )
+    )
 
 
 # ======================================================================
 # 院校报告 PDF
 # ======================================================================
+
 
 def generate_school_report_pdf(
     db: Session,
@@ -135,10 +135,10 @@ def generate_school_report_pdf(
     4. 院校对比建议
     """
     from uuid import UUID
-    from app.models.school import School
+
     from app.models.employment_data import EmploymentData
-    from app.models.report_record import ReportRecord
-    from app.models.grad_intel import GradScorelineRecord, GradSchoolIntel
+    from app.models.grad_intel import GradSchoolIntel, GradScorelineRecord
+    from app.models.school import School
 
     # 查询学校信息
     school = None
@@ -169,11 +169,13 @@ def generate_school_report_pdf(
     story: list = []
 
     # ----- 封面 -----
-    story.append(Paragraph(f"院校报告", styles["title"]))
-    story.append(Paragraph(
-        f"{school.name} | 生成日期：{_iso(date.today())}",
-        styles["subtitle"],
-    ))
+    story.append(Paragraph("院校报告", styles["title"]))
+    story.append(
+        Paragraph(
+            f"{school.name} | 生成日期：{_iso(date.today())}",
+            styles["subtitle"],
+        )
+    )
     story.append(Spacer(1, 10))
 
     # ----- 基本信息 -----
@@ -213,15 +215,19 @@ def generate_school_report_pdf(
     else:
         emp_rows = [["年份", "专业类别", "学历", "就业率", "升学率", "平均薪资"]]
         for ed in employment_data[:10]:
-            emp_rows.append([
-                _to_str(ed.year),
-                _to_str(ed.major_category),
-                _to_str(ed.degree.value if ed.degree else "all"),
-                f"{ed.employment_rate}%" if ed.employment_rate else "-",
-                f"{ed.further_study_rate}%" if ed.further_study_rate else "-",
-                f"¥{ed.average_salary:.0f}" if ed.average_salary else "-",
-            ])
-        emp_table = Table(emp_rows, colWidths=[1.8*cm, 3*cm, 2*cm, 2.5*cm, 2.5*cm, 2.5*cm])
+            emp_rows.append(
+                [
+                    _to_str(ed.year),
+                    _to_str(ed.major_category),
+                    _to_str(ed.degree.value if ed.degree else "all"),
+                    f"{ed.employment_rate}%" if ed.employment_rate else "-",
+                    f"{ed.further_study_rate}%" if ed.further_study_rate else "-",
+                    f"¥{ed.average_salary:.0f}" if ed.average_salary else "-",
+                ]
+            )
+        emp_table = Table(
+            emp_rows, colWidths=[1.8 * cm, 3 * cm, 2 * cm, 2.5 * cm, 2.5 * cm, 2.5 * cm]
+        )
         emp_table.setStyle(_make_table_style())
         story.append(emp_table)
 
@@ -240,16 +246,20 @@ def generate_school_report_pdf(
     else:
         sl_rows = [["年份", "专业", "总分线", "政治", "外语", "业务课一", "业务课二"]]
         for sl in scorelines:
-            sl_rows.append([
-                _to_str(sl.year),
-                _to_str(sl.major_name),
-                _to_str(sl.total_score_line),
-                _to_str(sl.politics_score),
-                _to_str(sl.foreign_language_score),
-                _to_str(sl.business_1_score),
-                _to_str(sl.business_2_score),
-            ])
-        sl_table = Table(sl_rows, colWidths=[1.5*cm, 3.5*cm, 2*cm, 1.5*cm, 1.5*cm, 2*cm, 2*cm])
+            sl_rows.append(
+                [
+                    _to_str(sl.year),
+                    _to_str(sl.major_name),
+                    _to_str(sl.total_score_line),
+                    _to_str(sl.politics_score),
+                    _to_str(sl.foreign_language_score),
+                    _to_str(sl.business_1_score),
+                    _to_str(sl.business_2_score),
+                ]
+            )
+        sl_table = Table(
+            sl_rows, colWidths=[1.5 * cm, 3.5 * cm, 2 * cm, 1.5 * cm, 1.5 * cm, 2 * cm, 2 * cm]
+        )
         sl_table.setStyle(_make_table_style())
         story.append(sl_table)
 
@@ -267,10 +277,12 @@ def generate_school_report_pdf(
         story.append(Paragraph("暂无社区评价。", styles["normal"]))
     else:
         for g in intel_records:
-            story.append(Paragraph(
-                f"<b>{_to_str(g.major_name)}</b> ({_to_str(g.school_tier)})",
-                styles["h3"],
-            ))
+            story.append(
+                Paragraph(
+                    f"<b>{_to_str(g.major_name)}</b> ({_to_str(g.school_tier)})",
+                    styles["h3"],
+                )
+            )
             if g.insider_notes:
                 story.append(Paragraph(f"内部备注：{_to_str(g.insider_notes)}", styles["normal"]))
             if g.ai_summary:
@@ -288,6 +300,7 @@ def generate_school_report_pdf(
 # 职业报告 PDF
 # ======================================================================
 
+
 def generate_career_report_pdf(
     db: Session,
     user_id,
@@ -301,10 +314,9 @@ def generate_career_report_pdf(
     3. 模拟路径分析（如有）
     4. 建议与总结
     """
-    from uuid import UUID
-    from app.models.user import User
     from app.models.career_profile import CareerProfile
     from app.models.destination_decision import DestinationDecision
+    from app.models.user import User
 
     user = db.query(User).filter(User.id == user_id).first()
     profile = db.query(CareerProfile).filter(CareerProfile.user_id == user_id).first()
@@ -334,23 +346,27 @@ def generate_career_report_pdf(
     # ----- 封面 -----
     story.append(Paragraph("职业规划报告", styles["title"]))
     user_name = user.name if user else "未知用户"
-    story.append(Paragraph(
-        f"{user_name} | 生成日期：{_iso(date.today())}",
-        styles["subtitle"],
-    ))
+    story.append(
+        Paragraph(
+            f"{user_name} | 生成日期：{_iso(date.today())}",
+            styles["subtitle"],
+        )
+    )
     story.append(Spacer(1, 10))
 
     # ----- 用户背景 -----
     story.append(Paragraph("个人背景", styles["h2"]))
     bg_rows = [["属性", "信息"]]
     if user:
-        bg_rows.extend([
-            ["姓名", _to_str(user.name)],
-            ["学校", _to_str(user.school)],
-            ["专业", _to_str(user.major)],
-            ["毕业年份", _to_str(user.graduation_year)],
-            ["当前阶段", _to_str(user.current_stage.value if user.current_stage else "")],
-        ])
+        bg_rows.extend(
+            [
+                ["姓名", _to_str(user.name)],
+                ["学校", _to_str(user.school)],
+                ["专业", _to_str(user.major)],
+                ["毕业年份", _to_str(user.graduation_year)],
+                ["当前阶段", _to_str(user.current_stage.value if user.current_stage else "")],
+            ]
+        )
     bg_table = Table(bg_rows, colWidths=[4 * cm, 12 * cm])
     bg_table.setStyle(_make_table_style())
     story.append(bg_table)
@@ -366,7 +382,10 @@ def generate_career_report_pdf(
             ["目标方向", _to_str(profile.target_direction)],
             ["目标行业", _to_str(profile.target_industry)],
             ["技术能力", f"{'★' * profile.technical_skill}{'☆' * (5 - profile.technical_skill)}"],
-            ["沟通能力", f"{'★' * profile.communication_skill}{'☆' * (5 - profile.communication_skill)}"],
+            [
+                "沟通能力",
+                f"{'★' * profile.communication_skill}{'☆' * (5 - profile.communication_skill)}",
+            ],
             ["领导力", f"{'★' * profile.leadership_skill}{'☆' * (5 - profile.leadership_skill)}"],
             ["创造力", f"{'★' * profile.creativity_skill}{'☆' * (5 - profile.creativity_skill)}"],
         ]
@@ -386,14 +405,16 @@ def generate_career_report_pdf(
     else:
         dec_rows = [["日期", "类型", "状态", "信心", "说明"]]
         for d in decisions:
-            dec_rows.append([
-                _iso(d.decision_date),
-                _to_str(d.destination_type.value if d.destination_type else ""),
-                _to_str(d.status.value if d.status else ""),
-                f"{d.confidence}/5" if d.confidence else "-",
-                Paragraph(_to_str(d.reasoning or ""), styles["normal"]),
-            ])
-        dec_table = Table(dec_rows, colWidths=[2.5*cm, 2.5*cm, 2*cm, 1.5*cm, 7*cm])
+            dec_rows.append(
+                [
+                    _iso(d.decision_date),
+                    _to_str(d.destination_type.value if d.destination_type else ""),
+                    _to_str(d.status.value if d.status else ""),
+                    f"{d.confidence}/5" if d.confidence else "-",
+                    Paragraph(_to_str(d.reasoning or ""), styles["normal"]),
+                ]
+            )
+        dec_table = Table(dec_rows, colWidths=[2.5 * cm, 2.5 * cm, 2 * cm, 1.5 * cm, 7 * cm])
         dec_table.setStyle(_make_table_style())
         story.append(dec_table)
 
@@ -404,15 +425,17 @@ def generate_career_report_pdf(
 
         path_rows = [["路径名称", "总薪资(万)", "满意度", "稳定性", "风险", "推荐"]]
         for p in paths[:5]:
-            path_rows.append([
-                _to_str(p.get("name", "")),
-                f"{p.get('total_income', 0) / 10000:.1f}",
-                f"{p.get('avg_satisfaction', 0)}/10",
-                f"{p.get('stability_score', 0)}/10",
-                _to_str(p.get("overall_risk", "")),
-                _to_str(p.get("recommendation", "")),
-            ])
-        path_table = Table(path_rows, colWidths=[3*cm, 2.5*cm, 2*cm, 2*cm, 2*cm, 4*cm])
+            path_rows.append(
+                [
+                    _to_str(p.get("name", "")),
+                    f"{p.get('total_income', 0) / 10000:.1f}",
+                    f"{p.get('avg_satisfaction', 0)}/10",
+                    f"{p.get('stability_score', 0)}/10",
+                    _to_str(p.get("overall_risk", "")),
+                    _to_str(p.get("recommendation", "")),
+                ]
+            )
+        path_table = Table(path_rows, colWidths=[3 * cm, 2.5 * cm, 2 * cm, 2 * cm, 2 * cm, 4 * cm])
         path_table.setStyle(_make_table_style())
         story.append(path_table)
 
@@ -427,6 +450,7 @@ def generate_career_report_pdf(
 # 个人报告 PDF
 # ======================================================================
 
+
 def generate_profile_report_pdf(
     db: Session,
     user_id,
@@ -440,13 +464,12 @@ def generate_profile_report_pdf(
     4. 复盘记录
     5. 收藏列表
     """
-    from uuid import UUID
-    from app.models.user import User
-    from app.models.skill_node import SkillNode
-    from app.models.retrospective import Retrospective
-    from app.models.destination_decision import DestinationDecision
-    from app.models.career_event import CareerEvent
     from app.models.bookmark import Bookmark
+    from app.models.career_event import CareerEvent
+    from app.models.destination_decision import DestinationDecision
+    from app.models.retrospective import Retrospective
+    from app.models.skill_node import SkillNode
+    from app.models.user import User
     from app.services.gamification_service import calculate_xp, get_level
 
     user = db.query(User).filter(User.id == user_id).first()
@@ -506,10 +529,12 @@ def generate_profile_report_pdf(
     # ----- 封面 -----
     story.append(Paragraph("个人综合报告", styles["title"]))
     user_name = user.name if user else "未知用户"
-    story.append(Paragraph(
-        f"{user_name} | 生成日期：{_iso(date.today())}",
-        styles["subtitle"],
-    ))
+    story.append(
+        Paragraph(
+            f"{user_name} | 生成日期：{_iso(date.today())}",
+            styles["subtitle"],
+        )
+    )
     story.append(Spacer(1, 10))
 
     # ----- 基本信息 -----
@@ -549,13 +574,15 @@ def generate_profile_report_pdf(
     else:
         skill_rows = [["类别", "名称", "等级", "获得日期"]]
         for s in skills[:20]:
-            skill_rows.append([
-                _to_str(s.category),
-                _to_str(s.name),
-                _to_str(s.level),
-                _iso(s.acquired_date),
-            ])
-        skill_table = Table(skill_rows, colWidths=[4*cm, 4*cm, 3*cm, 3*cm])
+            skill_rows.append(
+                [
+                    _to_str(s.category),
+                    _to_str(s.name),
+                    _to_str(s.level),
+                    _iso(s.acquired_date),
+                ]
+            )
+        skill_table = Table(skill_rows, colWidths=[4 * cm, 4 * cm, 3 * cm, 3 * cm])
         skill_table.setStyle(_make_table_style())
         story.append(skill_table)
 
@@ -566,12 +593,14 @@ def generate_profile_report_pdf(
     else:
         retro_rows = [["周期", "标题", "满意度"]]
         for r in retros:
-            retro_rows.append([
-                f"{_iso(r.period_start)} ~ {_iso(r.period_end)}",
-                Paragraph(_to_str(r.title), styles["normal"]),
-                _to_str(r.satisfaction),
-            ])
-        retro_table = Table(retro_rows, colWidths=[5*cm, 7*cm, 2*cm])
+            retro_rows.append(
+                [
+                    f"{_iso(r.period_start)} ~ {_iso(r.period_end)}",
+                    Paragraph(_to_str(r.title), styles["normal"]),
+                    _to_str(r.satisfaction),
+                ]
+            )
+        retro_table = Table(retro_rows, colWidths=[5 * cm, 7 * cm, 2 * cm])
         retro_table.setStyle(_make_table_style())
         story.append(retro_table)
 
@@ -582,12 +611,14 @@ def generate_profile_report_pdf(
     else:
         bk_rows = [["类型", "标题", "创建时间"]]
         for bk in bookmarks[:10]:
-            bk_rows.append([
-                _to_str(bk.item_type) if hasattr(bk, 'item_type') else "-",
-                Paragraph(_to_str(bk.title) if hasattr(bk, 'title') else "-", styles["normal"]),
-                _iso(bk.created_at),
-            ])
-        bk_table = Table(bk_rows, colWidths=[3*cm, 9*cm, 3*cm])
+            bk_rows.append(
+                [
+                    _to_str(bk.item_type) if hasattr(bk, "item_type") else "-",
+                    Paragraph(_to_str(bk.title) if hasattr(bk, "title") else "-", styles["normal"]),
+                    _iso(bk.created_at),
+                ]
+            )
+        bk_table = Table(bk_rows, colWidths=[3 * cm, 9 * cm, 3 * cm])
         bk_table.setStyle(_make_table_style())
         story.append(bk_table)
 

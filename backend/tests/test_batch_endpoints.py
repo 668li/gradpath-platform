@@ -17,30 +17,21 @@
 - 未登录访问需鉴权端点返回 401
 - 不存在的 ID 不在结果中
 """
-from datetime import date
+
 from uuid import uuid4
 
-import pytest
-
-from app.models.career_event import CareerEvent, EventType
-from app.models.destination_decision import (
-    DecisionStatus,
-    DestinationDecision,
-    DestinationType,
-)
 from app.models.mentor import Mentor
 from app.models.notification import Notification, NotificationType
-from app.models.post import Post, PostTopicType
-from app.models.skill_node import SkillNode
 from app.models.user import User
-
 
 # ======================================================================
 # 辅助：注册第二个用户，用于跨用户隔离测试
 # ======================================================================
 
-def _register_second_user(client, email="other@example.com",
-                          password="Other1234!", name="其他用户"):
+
+def _register_second_user(
+    client, email="other@example.com", password="Other1234!", name="其他用户"
+):
     """注册第二个用户，返回 (token, user_id)。"""
     client.post(
         "/api/auth/register",
@@ -63,6 +54,7 @@ def _get_current_user_id(db_session) -> str:
 # ======================================================================
 # 1. POST /api/posts/batch — 批量获取帖子（公开）
 # ======================================================================
+
 
 class TestPostsBatch:
     """帖子批量获取端点测试。
@@ -171,6 +163,7 @@ class TestPostsBatch:
 # ======================================================================
 # 2. POST /api/events/batch — 批量获取职业事件（登录 + 用户隔离）
 # ======================================================================
+
 
 class TestEventsBatch:
     """职业事件批量获取端点测试。
@@ -281,6 +274,7 @@ class TestEventsBatch:
 # 3. POST /api/decisions/batch — 批量获取决策（登录 + 用户隔离）
 # ======================================================================
 
+
 class TestDecisionsBatch:
     """决策批量获取端点测试。
 
@@ -374,6 +368,7 @@ class TestDecisionsBatch:
 # 4. POST /api/skills/batch — 批量获取技能（登录 + 用户隔离）
 # ======================================================================
 
+
 class TestSkillsBatch:
     """技能批量获取端点测试。
 
@@ -462,6 +457,7 @@ class TestSkillsBatch:
 # ======================================================================
 # 5. POST /api/mentors/batch — 批量获取导师（公开）
 # ======================================================================
+
 
 class TestMentorsBatch:
     """导师批量获取端点测试。
@@ -552,6 +548,7 @@ class TestMentorsBatch:
 # 6. DELETE /api/notifications/batch — 批量删除通知（登录 + 用户隔离）
 # ======================================================================
 
+
 class TestNotificationsBatchDelete:
     """通知批量删除端点测试。
 
@@ -595,12 +592,8 @@ class TestNotificationsBatchDelete:
         # 第二个用户的通知
         other_headers = _register_second_user(client)
         # 通过 /api/auth/me 等价方式拿 ID — 直接查 DB
-        other_user = db_session.query(User).filter(
-            User.email == "other@example.com"
-        ).first()
-        other_n = self._create_notification(
-            db_session, str(other_user.id), title="他人通知"
-        )
+        other_user = db_session.query(User).filter(User.email == "other@example.com").first()
+        other_n = self._create_notification(db_session, str(other_user.id), title="他人通知")
 
         # 当前用户尝试删除自己 + 他人的通知
         resp = client.request(
@@ -615,9 +608,7 @@ class TestNotificationsBatchDelete:
 
         # 验证他人的通知仍在 DB 中
         still_exists = (
-            db_session.query(Notification)
-            .filter(Notification.id == str(other_n.id))
-            .first()
+            db_session.query(Notification).filter(Notification.id == str(other_n.id)).first()
         )
         assert still_exists is not None
 
@@ -635,9 +626,7 @@ class TestNotificationsBatchDelete:
         assert resp.status_code == 200
         assert resp.json() == {"deleted": 1}
 
-    def test_batch_delete_all_invalid_uuid_returns_zero(
-        self, auth_headers, client
-    ):
+    def test_batch_delete_all_invalid_uuid_returns_zero(self, auth_headers, client):
         """全部无效 UUID 返回 deleted=0。"""
         resp = client.request(
             "DELETE",
@@ -706,6 +695,7 @@ class TestNotificationsBatchDelete:
 # ======================================================================
 # 跨端点对比：所有需鉴权端点未登录时返回 401
 # ======================================================================
+
 
 class TestAuthEnforcement:
     """鉴权一致性：所有需登录的 batch 端点未登录时返回 401。"""

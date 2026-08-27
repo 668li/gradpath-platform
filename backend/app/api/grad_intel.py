@@ -1,4 +1,5 @@
 """考研情报 API — 院校情报、自我定位、暗知识。"""
+
 import logging
 from uuid import UUID
 
@@ -6,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
+from app.core.cache import cache
 from app.core.deps import get_current_user
 from app.database import get_db
 from app.models.grad_intel import GradSchoolIntel
@@ -13,9 +15,8 @@ from app.models.user import User
 from app.schemas.grad_intel import (
     DarkKnowledgeResponse,
     GradAdjustmentInfoResponse,
-    GradScorelineRecordResponse,
-    GradScorelineTrendResponse,
     GradSchoolDataSummaryResponse,
+    GradScorelineTrendResponse,
     GradYanzhaoProgramResponse,
     IntelQueryRequest,
     IntelResponse,
@@ -30,9 +31,7 @@ from app.schemas.mentor import (
     MentorReviewListResponse,
     MentorReviewResponse,
 )
-from app.services import grad_intel_service
-from app.services import mentor_service
-from app.core.cache import cache
+from app.services import grad_intel_service, mentor_service
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +39,7 @@ router = APIRouter(prefix="/api/grad-intel", tags=["考研情报"])
 
 
 # ===== 院校情报 =====
+
 
 @router.post("/intel/query")
 async def query_intel(
@@ -70,6 +70,7 @@ def save_intel(
         intel = grad_intel_service.save_intel(db, user.id, body.model_dump())
     except Exception as e:
         from sqlalchemy.exc import IntegrityError
+
         if isinstance(e, IntegrityError):
             db.rollback()
             raise HTTPException(
@@ -108,6 +109,7 @@ def delete_intel(
 
 
 # ===== 自我定位 =====
+
 
 @router.post("/positioning/create", response_model=PositioningResponse)
 async def create_positioning(
@@ -168,6 +170,7 @@ def get_positioning_history(
 
 # ===== 暗知识 =====
 
+
 @router.get("/dark-knowledge/list", response_model=PaginatedDarkKnowledgeResponse)
 def list_dark_knowledge(
     response: Response,
@@ -183,7 +186,9 @@ def list_dark_knowledge(
         response.headers["Cache-Control"] = "public, max-age=300"
         return cached
 
-    items, total = grad_intel_service.get_dark_knowledge_by_stage(db, stage, page=page, limit=per_page)
+    items, total = grad_intel_service.get_dark_knowledge_by_stage(
+        db, stage, page=page, limit=per_page
+    )
     pages = (total + per_page - 1) // per_page if per_page > 0 else 0
     resp = PaginatedDarkKnowledgeResponse(
         items=[DarkKnowledgeResponse.model_validate(i) for i in items],
@@ -207,6 +212,7 @@ def get_dark_knowledge_stages(
 
 # ===== 公开浏览接口（无需登录）=====
 
+
 @router.get("/intel/public", response_model=list[IntelResponse])
 def list_public_intel(
     school_name: str | None = None,
@@ -223,11 +229,15 @@ def list_public_intel(
         query = query.filter(GradSchoolIntel.major_name.ilike(f"%{major_name}%"))
     if school_tier:
         query = query.filter(GradSchoolIntel.school_tier == school_tier)
-    items = query.order_by(
-        GradSchoolIntel.school_tier,
-        GradSchoolIntel.school_name,
-        GradSchoolIntel.major_name,
-    ).limit(limit).all()
+    items = (
+        query.order_by(
+            GradSchoolIntel.school_tier,
+            GradSchoolIntel.school_name,
+            GradSchoolIntel.major_name,
+        )
+        .limit(limit)
+        .all()
+    )
     return [IntelResponse.model_validate(i) for i in items]
 
 
@@ -242,6 +252,7 @@ def seed_dark_knowledge(
 
 
 # ===== 研招网真实数据（公开浏览） =====
+
 
 @router.get("/yanzhao-programs", response_model=list[GradYanzhaoProgramResponse])
 def list_yanzhao_programs(
@@ -273,7 +284,7 @@ def list_yanzhao_programs(
         limit=limit,
         offset=offset,
     )
-    
+
     items = result[0] if isinstance(result, tuple) else result
 
     cache.set(cache_key, items, ttl=600)
@@ -296,10 +307,15 @@ def list_scorelines(
     cached_result = cache.get(cache_key)
     if cached_result is not None:
         return cached_result
-    
+
     items = grad_intel_service.list_scoreline_records(
-        db, university_name=university_name, major_name=major_name,
-        degree_type=degree_type, year=year, limit=limit, offset=offset,
+        db,
+        university_name=university_name,
+        major_name=major_name,
+        degree_type=degree_type,
+        year=year,
+        limit=limit,
+        offset=offset,
     )
     # 在session关闭前转换为字典
     result = [
@@ -396,6 +412,7 @@ def get_school_summary(
 
 class SchoolBatchRequest(BaseModel):
     """批量获取院校数据汇总请求体。"""
+
     university_names: list[str] = Field(
         ..., min_length=1, max_length=100, description="院校名称列表（最多 100 个）"
     )
@@ -427,6 +444,7 @@ def batch_school_summaries(
 
 
 # ===== 导师评价 =====
+
 
 @router.get("/mentors", response_model=MentorListResponse)
 def list_mentors(

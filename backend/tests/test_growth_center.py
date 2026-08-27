@@ -40,7 +40,8 @@ class TestTrajectory:
 
     def test_create_ok(self, auth_headers, client):
         resp = self._post(
-            client, auth_headers,
+            client,
+            auth_headers,
             {
                 "event_type": "milestone",
                 "event_payload": {"milestone": "拿到了第一份实习"},
@@ -70,18 +71,26 @@ class TestTrajectory:
 
     def test_list_sorted_desc(self, auth_headers, client):
         base = datetime.now(timezone.utc)
-        self._post(client, auth_headers, {
-            "event_type": "milestone",
-            "event_payload": {"n": 1},
-            "occurred_at": (base - timedelta(minutes=2)).isoformat(),
-            "source_event_id": "evt-a",
-        })
-        self._post(client, auth_headers, {
-            "event_type": "review_completed",
-            "event_payload": {"n": 2},
-            "occurred_at": base.isoformat(),
-            "source_event_id": "evt-b",
-        })
+        self._post(
+            client,
+            auth_headers,
+            {
+                "event_type": "milestone",
+                "event_payload": {"n": 1},
+                "occurred_at": (base - timedelta(minutes=2)).isoformat(),
+                "source_event_id": "evt-a",
+            },
+        )
+        self._post(
+            client,
+            auth_headers,
+            {
+                "event_type": "review_completed",
+                "event_payload": {"n": 2},
+                "occurred_at": base.isoformat(),
+                "source_event_id": "evt-b",
+            },
+        )
         items = client.get("/api/growth/trajectory", headers=auth_headers).json()["items"]
         assert [i["event_type"] for i in items] == ["review_completed", "milestone"]
 

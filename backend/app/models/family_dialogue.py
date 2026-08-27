@@ -6,6 +6,7 @@
 
 三层结构：理解父母 → 准备弹药 → 实战演练。
 """
+
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, String, Text

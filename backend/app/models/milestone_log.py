@@ -3,14 +3,14 @@
 
 记录用户对某个里程碑的执行日志/笔记，用于跟踪进度与复盘。
 """
-from datetime import datetime
+
 from uuid import UUID
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import ForeignKey, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
-from app.models.base import UUIDMixin, TimestampMixin
+from app.models.base import TimestampMixin, UUIDMixin
 
 
 class MilestoneLog(UUIDMixin, TimestampMixin, Base):

@@ -1,5 +1,6 @@
 # backend/app/schemas/career_profile.py
 """用户职业画像 Schema 定义。"""
+
 from datetime import datetime
 from uuid import UUID
 

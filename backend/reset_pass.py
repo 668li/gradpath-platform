@@ -7,16 +7,17 @@
     - 密码通过环境变量 RESET_PASSWORD 注入，禁止硬编码（与 SECRET_KEY 同等对待）。
     - 邮箱通过命令行参数传入，不内置任何账户。
 """
-import sys
+
 import os
+import sys
 from pathlib import Path
 
 # 以本文件所在目录为基准加入 sys.path，兼容本地与容器内运行（不硬编码 /app）
 BACKEND_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(BACKEND_DIR))
 
-from app.database import SessionLocal  # noqa: E402
 from app.core.security import hash_password  # noqa: E402
+from app.database import SessionLocal  # noqa: E402
 from app.models.user import User  # noqa: E402
 
 

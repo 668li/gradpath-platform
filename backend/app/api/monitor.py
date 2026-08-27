@@ -5,7 +5,9 @@
     所有监控端点均会暴露系统内部信息（用户数、帖子数、DB 连接、错误、告警规则等），
     必须强制 admin 鉴权，禁止匿名/普通用户访问。
 """
+
 from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -79,7 +81,9 @@ def get_alert_rules(
     # FASTAPI-AUTH-001 + FASTAPI-AUTHZ-001: 告警规则仅 admin 可见
     admin: User = Depends(get_admin_user),
 ):
-    return {"rules": [
-        {"name": "response_time", "condition": "> 5s", "action": "notify"},
-        {"name": "error_rate", "condition": "> 5pct", "action": "notify"},
-    ]}
+    return {
+        "rules": [
+            {"name": "response_time", "condition": "> 5s", "action": "notify"},
+            {"name": "error_rate", "condition": "> 5pct", "action": "notify"},
+        ]
+    }

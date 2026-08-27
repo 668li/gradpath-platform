@@ -13,6 +13,7 @@
            低于阈值 → 保持 PENDING（留给管理员人工决定，不代做判断）
   批量提交：每 100 条 commit 一次，避免长事务。
 """
+
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -108,7 +109,10 @@ def main() -> None:
             # 阶段 A：chsi 红线驳回
             if CHSI_HOST in (ext.source_url or ""):
                 _apply_review(
-                    queue_item, ext, "REJECTED", admin,
+                    queue_item,
+                    ext,
+                    "REJECTED",
+                    admin,
                     reject_reason="研招网红线：yz.chsi.com.cn 数据不入库、不对外分发",
                 )
                 stats["chsi_rejected"] += 1
@@ -116,11 +120,7 @@ def main() -> None:
             # 阶段 B：质量门槛通过
             else:
                 try:
-                    score = (
-                        _news_score(ext)
-                        if ext.item_type == "kaoyan_news"
-                        else _exp_score(ext)
-                    )
+                    score = _news_score(ext) if ext.item_type == "kaoyan_news" else _exp_score(ext)
                 except Exception:
                     score = 0
                 if score < QUALITY_MIN_SCORE:

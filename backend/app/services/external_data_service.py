@@ -1,5 +1,6 @@
 # backend/app/services/external_data_service.py
 """外部数据查询服务 — 公司元数据、薪资基准、市场宏观数据的列表与筛选。"""
+
 from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.orm import Session
 
@@ -25,10 +26,7 @@ def _model_to_dict(obj) -> dict | None:
     """
     if obj is None:
         return None
-    return {
-        col.key: getattr(obj, col.key)
-        for col in sa_inspect(obj).mapper.column_attrs
-    }
+    return {col.key: getattr(obj, col.key) for col in sa_inspect(obj).mapper.column_attrs}
 
 
 def list_companies(
@@ -54,9 +52,7 @@ def list_companies(
 
     query = db.query(Company)
     if name:
-        query = query.filter(
-            Company.name.ilike(f"%{escape_like(name)}%", escape="\\")
-        )
+        query = query.filter(Company.name.ilike(f"%{escape_like(name)}%", escape="\\"))
     if industry:
         query = query.filter(Company.industry == industry)
     items = query.order_by(Company.name.asc()).limit(limit).all()
@@ -100,9 +96,7 @@ def list_salary_benchmarks(
             SalaryBenchmark.position.ilike(f"%{escape_like(position)}%", escape="\\")
         )
     if city:
-        query = query.filter(
-            SalaryBenchmark.city.ilike(f"%{escape_like(city)}%", escape="\\")
-        )
+        query = query.filter(SalaryBenchmark.city.ilike(f"%{escape_like(city)}%", escape="\\"))
     items = (
         query.order_by(SalaryBenchmark.year.desc(), SalaryBenchmark.company.asc())
         .limit(limit)
@@ -145,11 +139,7 @@ def list_market_data(
         query = query.filter(MarketData.year == year)
     if industry:
         query = query.filter(MarketData.industry == industry)
-    items = (
-        query.order_by(MarketData.year.desc(), MarketData.indicator.asc())
-        .limit(limit)
-        .all()
-    )
+    items = query.order_by(MarketData.year.desc(), MarketData.indicator.asc()).limit(limit).all()
 
     result = [_model_to_dict(m) for m in items]
     try:

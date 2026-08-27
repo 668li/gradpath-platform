@@ -9,6 +9,7 @@
 - _check_robots_allowed：允许/禁止/取不到 fail-safe；每 host 缓存一次
 - _fetch_robots_parser：4xx 放行、5xx/网络失败 fail-safe 拒绝
 """
+
 import socket
 
 import pytest
@@ -44,24 +45,24 @@ class TestValidateOutboundUrl:
     @pytest.mark.parametrize(
         "url",
         [
-            "file:///etc/passwd",                    # 非 http(s)
-            "ftp://example.com/file",                # 非 http(s)
-            "javascript:alert(1)",                   # 非 http(s)
-            "http://localhost/",                     # 保留主机名
-            "http://localhost.localdomain/",         # 保留主机名
-            "http://127.0.0.1/",                     # 环回
-            "http://127.0.0.1:8000/admin",           # 环回带端口
-            "http://[::1]/",                         # IPv6 环回
-            "http://10.1.2.3/",                      # 私有 A
-            "http://192.168.1.1/",                   # 私有 C
-            "http://172.16.0.1/",                    # 私有 B
+            "file:///etc/passwd",  # 非 http(s)
+            "ftp://example.com/file",  # 非 http(s)
+            "javascript:alert(1)",  # 非 http(s)
+            "http://localhost/",  # 保留主机名
+            "http://localhost.localdomain/",  # 保留主机名
+            "http://127.0.0.1/",  # 环回
+            "http://127.0.0.1:8000/admin",  # 环回带端口
+            "http://[::1]/",  # IPv6 环回
+            "http://10.1.2.3/",  # 私有 A
+            "http://192.168.1.1/",  # 私有 C
+            "http://172.16.0.1/",  # 私有 B
             "http://169.254.169.254/latest/meta-data/",  # 链路本地（元数据）
-            "http://0.0.0.0/",                       # 未指定
-            "http://224.0.0.1/",                     # 多播
-            "http://240.0.0.1/",                     # 保留
-            "http://[::ffff:127.0.0.1]/",            # IPv4 映射环回
-            "http://[::ffff:192.168.1.1]/",          # IPv4 映射私有
-            "http://",                               # 缺主机名
+            "http://0.0.0.0/",  # 未指定
+            "http://224.0.0.1/",  # 多播
+            "http://240.0.0.1/",  # 保留
+            "http://[::ffff:127.0.0.1]/",  # IPv4 映射环回
+            "http://[::ffff:192.168.1.1]/",  # IPv4 映射私有
+            "http://",  # 缺主机名
         ],
     )
     def test_rejects_all_restricted(self, url):
@@ -78,9 +79,7 @@ class TestValidateOutboundUrl:
         """域名解析到公网 IP → 放行（mock socket 不发真实 DNS）。"""
         monkeypatch.setattr(
             "app.crawlers.base_crawler.socket.getaddrinfo",
-            lambda host, _: [
-                (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 0))
-            ],
+            lambda host, _: [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 0))],
         )
         ok, reason = _make_crawler()._validate_outbound_url("https://example.com/a")
         assert ok is True
@@ -90,9 +89,7 @@ class TestValidateOutboundUrl:
         """域名解析到私有地址 → 拒绝（DNS 重绑定防护）。"""
         monkeypatch.setattr(
             "app.crawlers.base_crawler.socket.getaddrinfo",
-            lambda host, _: [
-                (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("127.0.0.1", 0))
-            ],
+            lambda host, _: [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("127.0.0.1", 0))],
         )
         ok, reason = _make_crawler()._validate_outbound_url("https://evil.example.com/")
         assert ok is False
@@ -156,7 +153,8 @@ class TestRequestGuards:
         monkeypatch.setattr(c, "_check_robots_allowed", lambda url: False)
         called = []
         monkeypatch.setattr(
-            c.session, "request",
+            c.session,
+            "request",
             lambda *a, **kw: called.append(a) or None,
         )
         with pytest.raises(requests.RequestException, match="robots.txt 不允许抓取"):
@@ -175,7 +173,8 @@ class TestRequestGuards:
                 pass
 
         monkeypatch.setattr(
-            c.session, "request",
+            c.session,
+            "request",
             lambda *a, **kw: called.append((a[0], a[1])) or _Resp(),
         )
         monkeypatch.setattr("app.crawlers.base_crawler.time.sleep", lambda s: None)
@@ -215,7 +214,8 @@ class TestRobotsCompliance:
     def test_non_http_never_checked(self, monkeypatch):
         c = _make_crawler()
         monkeypatch.setattr(
-            c, "_fetch_robots_parser",
+            c,
+            "_fetch_robots_parser",
             lambda key: pytest.fail("非 http(s) URL 不应拉取 robots"),
         )
         assert c._check_robots_allowed("file:///tmp/x") is False
@@ -238,7 +238,7 @@ class TestRobotsCompliance:
         # 直接走真实缓存逻辑：_fetch_robots_parser 已打桩
         c._check_robots_allowed("https://example.com/a")
         c._check_robots_allowed("https://example.com/b")  # 同主机 → 不重复拉取
-        c._check_robots_allowed("https://other.com/x")    # 新主机 → 拉取
+        c._check_robots_allowed("https://other.com/x")  # 新主机 → 拉取
         assert calls == ["https://example.com", "https://other.com"]
 
     def test_fetch_robots_404_passes_through(self, monkeypatch):

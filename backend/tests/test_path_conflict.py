@@ -1,6 +1,5 @@
 # backend/tests/test_path_conflict.py
 """路径冲突调解 API 测试 — detect / resolve / history / detail。"""
-from datetime import date
 
 
 # ----------------------------------------------------------------------
@@ -37,9 +36,18 @@ def _create_decision(client, auth_headers, destination_type: str = "civil_servic
 
 # Holland RIA 答案 — 推荐技术/研究类方向（与考公冲突）
 _RIA_ANSWERS = {
-    "q1": "R", "q2": "I", "q3": "A", "q4": "R",
-    "q5": "I", "q6": "A", "q7": "R", "q8": "I",
-    "q9": "A", "q10": "R", "q11": "I", "q12": "A",
+    "q1": "R",
+    "q2": "I",
+    "q3": "A",
+    "q4": "R",
+    "q5": "I",
+    "q6": "A",
+    "q7": "R",
+    "q8": "I",
+    "q9": "A",
+    "q10": "R",
+    "q11": "I",
+    "q12": "A",
 }
 
 
@@ -280,14 +288,10 @@ class TestServiceLayer:
 
     def test_generate_action_plan_per_option(self, db_session):
         """generate_action_plan 应为 0/1/2 分别生成不同计划。"""
-        from app.services.path_conflict_service import (
-            _generate_action_plan_template,
-        )
+        from app.services.path_conflict_service import _generate_action_plan_template
 
         for selected in (0, 1, 2):
-            plan = _generate_action_plan_template(
-                selected, "测试", "后端开发", "考公"
-            )
+            plan = _generate_action_plan_template(selected, "测试", "后端开发", "考公")
             assert plan["summary"], f"selected={selected} 缺少 summary"
             assert isinstance(plan["milestones"], list) and len(plan["milestones"]) > 0
             assert isinstance(plan["resources"], list)

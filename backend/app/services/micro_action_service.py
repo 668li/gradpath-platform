@@ -5,6 +5,7 @@
 - 第 7 天生成"自我发现报告"
 - LLM 可选，未配置时使用模板兜底
 """
+
 from __future__ import annotations
 
 import logging
@@ -169,9 +170,7 @@ TASK_BLUEPRINTS: dict[str, list[dict]] = {
             "day": 7,
             "type": "reflect",
             "title": "生成自我发现报告",
-            "desc": (
-                "回顾前 6 天的记录，系统将为你生成「自我发现报告」。"
-            ),
+            "desc": ("回顾前 6 天的记录，系统将为你生成「自我发现报告」。"),
             "minutes": 15,
         },
     ],
@@ -245,9 +244,7 @@ TASK_BLUEPRINTS: dict[str, list[dict]] = {
             "day": 7,
             "type": "reflect",
             "title": "生成自我发现报告",
-            "desc": (
-                "回顾前 6 天的记录，系统将为你生成「自我发现报告」。"
-            ),
+            "desc": ("回顾前 6 天的记录，系统将为你生成「自我发现报告」。"),
             "minutes": 15,
         },
     ],
@@ -356,11 +353,7 @@ def _calculate_progress(tasks: list[MicroActionTask]) -> int:
 
 def _check_plan_completion(db: Session, plan: MicroActionPlan) -> None:
     """检查 plan 是否 7 天全部处理完毕（completed 或 skipped），是则更新状态。"""
-    tasks = (
-        db.query(MicroActionTask)
-        .filter(MicroActionTask.plan_id == plan.id)
-        .all()
-    )
+    tasks = db.query(MicroActionTask).filter(MicroActionTask.plan_id == plan.id).all()
     if not tasks:
         return
     all_done = all(t.status in ("completed", "skipped") for t in tasks)
@@ -370,9 +363,7 @@ def _check_plan_completion(db: Session, plan: MicroActionPlan) -> None:
         db.commit()
 
 
-async def complete_task(
-    db: Session, task_id: UUID, user_response: str
-) -> MicroActionTask:
+async def complete_task(db: Session, task_id: UUID, user_response: str) -> MicroActionTask:
     """完成任务：标记完成 + 生成洞察 + 检查 plan 是否完成。"""
     task = get_task(db, task_id)
     if task is None:
@@ -499,9 +490,7 @@ async def generate_self_discovery_report(db: Session, plan_id: UUID) -> str:
         ]
         for t in tasks:
             status_label = "完成" if t.status == "completed" else "跳过"
-            records_lines.append(
-                f"\nDay {t.day_number} · {t.title} [{status_label}]"
-            )
+            records_lines.append(f"\nDay {t.day_number} · {t.title} [{status_label}]")
             if t.user_response:
                 records_lines.append(f"用户记录：{t.user_response}")
         user_prompt = "\n".join(records_lines)
@@ -520,15 +509,11 @@ async def generate_self_discovery_report(db: Session, plan_id: UUID) -> str:
     return report
 
 
-def _template_self_discovery_report(
-    plan: MicroActionPlan, tasks: list[MicroActionTask]
-) -> str:
+def _template_self_discovery_report(plan: MicroActionPlan, tasks: list[MicroActionTask]) -> str:
     """无 LLM 时的自我发现报告模板。"""
     completed = [t for t in tasks if t.status == "completed"]
     skipped = [t for t in tasks if t.status == "skipped"]
-    target_desc = plan.target_path + (
-        f"（{plan.target_role}）" if plan.target_role else ""
-    )
+    target_desc = plan.target_path + (f"（{plan.target_role}）" if plan.target_role else "")
 
     return (
         f"【自我发现报告】\n\n"

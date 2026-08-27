@@ -1,9 +1,14 @@
 # backend/app/models/school.py
-from sqlalchemy import Index, String, Text, Integer, Float, JSON
+from typing import TYPE_CHECKING
+
+from sqlalchemy import JSON, Float, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 from app.models.base import TimestampMixin, UUIDMixin
+
+if TYPE_CHECKING:
+    from app.models.report_record import ReportRecord
 
 
 class School(UUIDMixin, TimestampMixin, Base):
@@ -19,7 +24,7 @@ class School(UUIDMixin, TimestampMixin, Base):
     report_index_url: Mapped[str | None] = mapped_column(Text)
     province: Mapped[str | None] = mapped_column(String(20))
     level: Mapped[str | None] = mapped_column(String(20))  # 985/211/双一流/普通
-    
+
     # 增强字段
     ranking: Mapped[int | None] = mapped_column(Integer)  # 全国排名
     key_majors: Mapped[dict | None] = mapped_column(JSON)  # 优势专业列表

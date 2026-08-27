@@ -4,6 +4,7 @@
 每天一个具体任务（调研/访谈/实践/复盘），15-30 分钟可完成，
 第 7 天生成"自我发现报告"。
 """
+
 from datetime import datetime
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
@@ -32,9 +33,7 @@ class MicroActionPlan(UUIDMixin, TimestampMixin, Base):
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
     # 计划完成时间
-    completed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     # 第 7 天生成的自我发现报告
     self_discovery_report: Mapped[str | None] = mapped_column(Text, nullable=True)
 
@@ -57,9 +56,7 @@ class MicroActionTask(UUIDMixin, TimestampMixin, Base):
     # pending / completed / skipped
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
     # 任务完成时间
-    completed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     # 用户完成任务后的记录
     user_response: Mapped[str | None] = mapped_column(Text, nullable=True)
     # AI 生成的洞察（"从你的记录中，我发现..."）

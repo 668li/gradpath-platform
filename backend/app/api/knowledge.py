@@ -8,6 +8,7 @@
 - PUT /api/knowledge/{id} — 更新（管理员）
 - DELETE /api/knowledge/{id} — 删除（管理员）
 """
+
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -46,7 +47,9 @@ def list_all(
     user: User = Depends(get_current_user),
 ):
     """分页查询知识条目（需登录），支持关键词搜索。"""
-    items, total = list_articles(db, category=category, tags=tags, q=q, page=page, page_size=page_size)
+    items, total = list_articles(
+        db, category=category, tags=tags, q=q, page=page, page_size=page_size
+    )
     return {"items": items, "total": total, "page": page, "page_size": page_size}
 
 

@@ -8,13 +8,11 @@ B8: 集成熔断器（``AICircuitBreaker``）— 连续 5 次失败打开熔断�
 30s 后半开试探。熔断打开时直接抛 ``AICircuitBreakerOpenError``，
 不发送实际 LLM 请求，避免雪崩。
 """
+
 import logging
 
 from app.core.cache import cache
-from app.services.ai_circuit_breaker import (
-    AICircuitBreakerOpenError,
-    ai_circuit_breaker,
-)
+from app.services.ai_circuit_breaker import AICircuitBreakerOpenError, ai_circuit_breaker
 from app.services.ai_service import AIService, AIServiceNotConfigured
 
 logger = logging.getLogger(__name__)
@@ -92,9 +90,7 @@ class AIOrchestrator:
                 raise
             except Exception as e:
                 last_error = e
-                logger.warning(
-                    "AIOrchestrator 调用失败 (尝试 %d/%d): %s", attempt, attempts, e
-                )
+                logger.warning("AIOrchestrator 调用失败 (尝试 %d/%d): %s", attempt, attempts, e)
                 if attempt >= attempts:
                     break
 

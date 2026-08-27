@@ -1,4 +1,5 @@
 """管理端用户管理 schemas — 封禁/解封/列表。"""
+
 from datetime import datetime
 from uuid import UUID
 
@@ -28,7 +29,9 @@ class AdminUserListVO(BaseModel):
 
 
 class BanRequest(BaseModel):
-    reason: str = Field(min_length=1, max_length=500, description="封禁原因（必填，会展示给被封用户）")
+    reason: str = Field(
+        min_length=1, max_length=500, description="封禁原因（必填，会展示给被封用户）"
+    )
 
 
 class BanResponse(BaseModel):

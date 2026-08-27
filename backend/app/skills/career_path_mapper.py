@@ -1,5 +1,6 @@
 # backend/app/skills/career_path_mapper.py
 """职业路径规划器 Skill — 根据用户背景和目标，生成详细的职业发展路径图和阶段性目标。"""
+
 from __future__ import annotations
 
 import json
@@ -8,8 +9,14 @@ import re
 from app.skills.base import BaseSkill
 
 ACTIVATE_KEYWORDS = [
-    "职业路径", "发展路径", "职业规划图", "career path", "职业发展",
-    "路径图", "发展图", "路线图",
+    "职业路径",
+    "发展路径",
+    "职业规划图",
+    "career path",
+    "职业发展",
+    "路径图",
+    "发展图",
+    "路线图",
 ]
 
 OUTPUT_FORMAT = """\
@@ -130,6 +137,7 @@ def _safe_parse_json(content: str) -> dict:
 
 def _coerce_career_path(raw: dict) -> dict:
     """将解析后的 career_path dict 强制转换为标准结构。"""
+
     def _as_list(v) -> list:
         return v if isinstance(v, list) else []
 
@@ -146,12 +154,14 @@ def _coerce_career_path(raw: dict) -> dict:
     def _coerce_phase(p: dict) -> dict:
         if not isinstance(p, dict):
             return {}
+
         def _phase_int(key: str, default: int = 6) -> int:
             v = p.get(key, default)
             try:
                 return int(v)
             except (TypeError, ValueError):
                 return default
+
         return {
             "phase_name": _as_str(p.get("phase_name")),
             "duration_months": _phase_int("duration_months", 6),

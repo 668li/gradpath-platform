@@ -1,12 +1,9 @@
 # backend/tests/test_pipeline_fetcher.py
-import pytest
-from unittest.mock import patch, MagicMock
-from pathlib import Path
+from unittest.mock import MagicMock, patch
 
+from app.models.report_record import ParseStatus
 from app.models.school import School
-from app.models.report_record import ReportRecord, ParseStatus
-from pipeline.fetcher import fetch_report, check_robots_allowed
-
+from pipeline.fetcher import check_robots_allowed, fetch_report
 
 SAMPLE_HTML = """
 <html><body>
@@ -22,12 +19,16 @@ SAMPLE_HTML = """
 class TestFetcher:
     def test_fetch_html_report(self, db_session):
         """测试成功抓取 HTML 报告"""
-        school = School(name="清华大学", slug="tsinghua", report_index_url="https://career.tsinghua.edu.cn/")
+        school = School(
+            name="清华大学", slug="tsinghua", report_index_url="https://career.tsinghua.edu.cn/"
+        )
         db_session.add(school)
         db_session.commit()
 
-        with patch("pipeline.fetcher.check_robots_allowed", return_value=True), \
-             patch("pipeline.fetcher.httpx.get") as mock_get:
+        with (
+            patch("pipeline.fetcher.check_robots_allowed", return_value=True),
+            patch("pipeline.fetcher.httpx.get") as mock_get,
+        ):
             mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.text = SAMPLE_HTML
@@ -44,12 +45,16 @@ class TestFetcher:
 
     def test_fetch_report_not_found(self, db_session):
         """测试报告链接未找到"""
-        school = School(name="清华大学", slug="tsinghua", report_index_url="https://career.tsinghua.edu.cn/")
+        school = School(
+            name="清华大学", slug="tsinghua", report_index_url="https://career.tsinghua.edu.cn/"
+        )
         db_session.add(school)
         db_session.commit()
 
-        with patch("pipeline.fetcher.check_robots_allowed", return_value=True), \
-             patch("pipeline.fetcher.httpx.get") as mock_get:
+        with (
+            patch("pipeline.fetcher.check_robots_allowed", return_value=True),
+            patch("pipeline.fetcher.httpx.get") as mock_get,
+        ):
             mock_response = MagicMock()
             mock_response.status_code = 404
             mock_get.return_value = mock_response
@@ -72,8 +77,10 @@ class TestFetcher:
         db_session.commit()
 
         direct_url = "https://example.com/report.htm"
-        with patch("pipeline.fetcher.check_robots_allowed", return_value=True) as mock_robots, \
-             patch("pipeline.fetcher.httpx.get") as mock_get:
+        with (
+            patch("pipeline.fetcher.check_robots_allowed", return_value=True) as mock_robots,
+            patch("pipeline.fetcher.httpx.get") as mock_get,
+        ):
             mock_response = MagicMock()
             mock_response.status_code = 200
             mock_response.text = SAMPLE_HTML
@@ -99,8 +106,10 @@ class TestFetcher:
         db_session.commit()
 
         direct_url = "https://example.com/report.htm"
-        with patch("pipeline.fetcher.check_robots_allowed", return_value=False) as mock_robots, \
-             patch("pipeline.fetcher.httpx.get") as mock_get:
+        with (
+            patch("pipeline.fetcher.check_robots_allowed", return_value=False) as mock_robots,
+            patch("pipeline.fetcher.httpx.get") as mock_get,
+        ):
             # 即便 httpx.get 返回 200，robots 禁止时也不应走到抓取逻辑
             mock_response = MagicMock()
             mock_response.status_code = 200

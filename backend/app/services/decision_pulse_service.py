@@ -7,6 +7,7 @@
 - 暗知识推送流
 - AI 记忆事实面板
 """
+
 import logging
 from datetime import date, datetime, timezone
 from typing import Any
@@ -14,7 +15,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.models.dark_knowledge_push import DarkKnowledgePushLog, PushFeedback
+from app.models.dark_knowledge_push import DarkKnowledgePushLog
 from app.models.decision_review import DecisionReviewQueue, ReviewStatus
 from app.models.destination_decision import DecisionStatus, DestinationDecision
 from app.models.grad_intel import DarkKnowledge
@@ -84,13 +85,19 @@ def get_active_decisions(db: Session, user_id: UUID, limit: int = 10) -> list[di
     return [
         {
             "id": str(d.id),
-            "destination_type": d.destination_type.value if hasattr(d.destination_type, "value") else str(d.destination_type),
+            "destination_type": (
+                d.destination_type.value
+                if hasattr(d.destination_type, "value")
+                else str(d.destination_type)
+            ),
             "status": d.status.value if hasattr(d.status, "value") else str(d.status),
             "decision_date": d.decision_date.isoformat() if d.decision_date else None,
             "confidence": d.confidence,
             "prediction": d.prediction,
             "review_date": d.review_date.isoformat() if d.review_date else None,
-            "reasoning": d.reasoning[:200] + "..." if d.reasoning and len(d.reasoning) > 200 else d.reasoning,
+            "reasoning": (
+                d.reasoning[:200] + "..." if d.reasoning and len(d.reasoning) > 200 else d.reasoning
+            ),
         }
         for d in decisions
     ]
@@ -139,25 +146,27 @@ def get_dark_knowledge_feed(db: Session, user_id: UUID, limit: int = 10) -> list
     # 关联查询 DarkKnowledge 内容
     result: list[dict[str, Any]] = []
     for p in pushes:
-        dk = (
-            db.query(DarkKnowledge)
-            .filter(DarkKnowledge.id == p.dark_knowledge_id)
-            .first()
+        dk = db.query(DarkKnowledge).filter(DarkKnowledge.id == p.dark_knowledge_id).first()
+        result.append(
+            {
+                "push_id": str(p.id),
+                "dark_knowledge_id": str(p.dark_knowledge_id),
+                "stage": p.stage,
+                "pushed_at": p.pushed_at.isoformat() if p.pushed_at else None,
+                "read_at": p.read_at.isoformat() if p.read_at else None,
+                "is_read": p.read_at is not None,
+                "feedback": p.feedback.value if hasattr(p.feedback, "value") else str(p.feedback),
+                "title": dk.title if dk else "(已删除)",
+                "category": dk.category if dk else "",
+                "content": (
+                    dk.content[:300] + "..."
+                    if dk and len(dk.content) > 300
+                    else (dk.content if dk else "")
+                ),
+                "importance": dk.importance if dk else "medium",
+                "actionable_advice": dk.actionable_advice if dk else None,
+            }
         )
-        result.append({
-            "push_id": str(p.id),
-            "dark_knowledge_id": str(p.dark_knowledge_id),
-            "stage": p.stage,
-            "pushed_at": p.pushed_at.isoformat() if p.pushed_at else None,
-            "read_at": p.read_at.isoformat() if p.read_at else None,
-            "is_read": p.read_at is not None,
-            "feedback": p.feedback.value if hasattr(p.feedback, "value") else str(p.feedback),
-            "title": dk.title if dk else "(已删除)",
-            "category": dk.category if dk else "",
-            "content": dk.content[:300] + "..." if dk and len(dk.content) > 300 else (dk.content if dk else ""),
-            "importance": dk.importance if dk else "medium",
-            "actionable_advice": dk.actionable_advice if dk else None,
-        })
     return result
 
 

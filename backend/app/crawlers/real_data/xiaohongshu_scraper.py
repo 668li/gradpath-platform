@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """小红书考研经验帖生成器 — 生成小红书风格的考研经验分享内容。
 
 小红书以短小精悍、emoji密集、个人叙事风格著称。
@@ -7,11 +6,11 @@
 Usage:
     python backend/app/crawlers/real_data/xiaohongshu_scraper.py
 """
+
 import json
 import os
 import random
 import sys
-import time
 
 sys.stdout.reconfigure(encoding="utf-8")
 
@@ -20,16 +19,36 @@ OUTPUT_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "xiaohong
 # ── 小红书风格用户名 ──────────────────────────────────────────────────
 
 USERNAMES = [
-    "考研上岸的小鱼", "努力发光的考研人", "二战上岸选手",
-    "普通二本逆袭985", "考研日记本", "今天也要好好学习",
-    "早起的考研鸟", "自律打卡考研中", "考研加油鸭",
-    "上岸学姐在线分享", "考研资料分享站", "图书馆占座选手",
-    "每日一题考研版", "考研倒计时选手", "努力就会发光",
-    "考研小白成长记", "跨考上岸的幸运儿", "在职考研进行时",
-    "考研政治80+", "英语一85分选手", "数学逆袭之路",
-    "计算机考研上岸", "文科跨考法硕", "复旦学姐来分享",
-    "浙大考研人日记", "北大学长说考研", "考研界的卷王",
-    "上岸后的快乐生活", "考研路上不孤单", "一起加油的研友",
+    "考研上岸的小鱼",
+    "努力发光的考研人",
+    "二战上岸选手",
+    "普通二本逆袭985",
+    "考研日记本",
+    "今天也要好好学习",
+    "早起的考研鸟",
+    "自律打卡考研中",
+    "考研加油鸭",
+    "上岸学姐在线分享",
+    "考研资料分享站",
+    "图书馆占座选手",
+    "每日一题考研版",
+    "考研倒计时选手",
+    "努力就会发光",
+    "考研小白成长记",
+    "跨考上岸的幸运儿",
+    "在职考研进行时",
+    "考研政治80+",
+    "英语一85分选手",
+    "数学逆袭之路",
+    "计算机考研上岸",
+    "文科跨考法硕",
+    "复旦学姐来分享",
+    "浙大考研人日记",
+    "北大学长说考研",
+    "考研界的卷王",
+    "上岸后的快乐生活",
+    "考研路上不孤单",
+    "一起加油的研友",
 ]
 
 # ── 小红书风格emoji装饰 ──────────────────────────────────────────────
@@ -65,7 +84,6 @@ POSTS = [
         "favorites": 5430,
         "tags": ["专硕学硕", "考研择校", "考研经验", "学习方法"],
     },
-
     # === 专业课复习 ===
     {
         "title": "408四门课复习顺序! 这样安排最高效!",
@@ -99,7 +117,6 @@ POSTS = [
         "favorites": 7120,
         "tags": ["考研政治", "政治背诵", "高效学习", "考研经验", "肖秀荣"],
     },
-
     # === 心态调整 ===
     {
         "title": "考研焦虑到崩溃?! 这些方法救了我!",
@@ -141,7 +158,6 @@ POSTS = [
         "favorites": 11230,
         "tags": ["考研心态", "考前焦虑", "考研经验", "情绪管理", "坚持"],
     },
-
     # === 调剂经验 ===
     {
         "title": "调剂上岸! 从985落榜到211录取!",
@@ -159,7 +175,6 @@ POSTS = [
         "favorites": 8540,
         "tags": ["考研调剂", "调剂避坑", "考研经验", "避坑指南", "调剂攻略"],
     },
-
     # === 复试经验 ===
     {
         "title": "考研复试面试技巧! 给导师留下好印象!",
@@ -177,7 +192,6 @@ POSTS = [
         "favorites": 7650,
         "tags": ["考研复试", "英语口语", "考研经验", "复试准备", "口语模板"],
     },
-
     # === 时间规划 ===
     {
         "title": "考研全年时间规划! 从现在到考试日!",
@@ -203,7 +217,6 @@ POSTS = [
         "favorites": 11230,
         "tags": ["考研冲刺", "最后30天", "考研经验", "倒计时", "考试准备"],
     },
-
     # === 更多经验帖 ===
     {
         "title": "考研各科每日时间分配! 科学安排效率最高!",
@@ -350,16 +363,18 @@ def generate_xiaohongshu_posts():
     for post_data in POSTS:
         username = random.choice(USERNAMES)
         emoji_start = random.choice(EMOJI_STARTS)
-        posts.append({
-            "title": post_data["title"],
-            "content": post_data["content"],
-            "likes": post_data["likes"] + random.randint(-500, 500),
-            "comments": post_data["comments"] + random.randint(-50, 50),
-            "favorites": post_data["favorites"] + random.randint(-300, 300),
-            "source": "xiaohongshu",
-            "author": username,
-            "tags": post_data["tags"],
-        })
+        posts.append(
+            {
+                "title": post_data["title"],
+                "content": post_data["content"],
+                "likes": post_data["likes"] + random.randint(-500, 500),
+                "comments": post_data["comments"] + random.randint(-50, 50),
+                "favorites": post_data["favorites"] + random.randint(-300, 300),
+                "source": "xiaohongshu",
+                "author": username,
+                "tags": post_data["tags"],
+            }
+        )
     random.shuffle(posts)
     return posts
 

@@ -11,6 +11,7 @@
 推断为 large 并在 description 注明「规模推断」；溯源 URL 追加在 description 尾行。
 幂等：name 冲突跳过。全 ORM。
 """
+
 import json
 import re
 import sys
@@ -24,7 +25,11 @@ from app.models.company import Company, CompanySize
 DATA = (
     Path(sys.argv[1])
     if len(sys.argv) > 1
-    else Path(__file__).resolve().parent.parent / "app" / "crawlers" / "real_data" / "company_public_data.json"
+    else Path(__file__).resolve().parent.parent
+    / "app"
+    / "crawlers"
+    / "real_data"
+    / "company_public_data.json"
 )
 
 

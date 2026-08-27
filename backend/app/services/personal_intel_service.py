@@ -7,9 +7,9 @@ BI 替代的、随使用越积越深的护城河：
 - 待办风险（临期里程碑、空白关键档案）
 - 暗知识缺口（对比平台 10 万暗知识库，提示用户未覆盖的方向）
 """
+
 from __future__ import annotations
 
-from typing import Any
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -65,9 +65,7 @@ def get_personal_intel(db: Session, user_id: UUID) -> dict:
         if not user.graduation_year:
             profile_gaps.append("毕业年份")
 
-    completeness = round(
-        (5 - len(profile_gaps)) / 5 * 100
-    )
+    completeness = round((5 - len(profile_gaps)) / 5 * 100)
 
     result = {
         "inventory": inventory,

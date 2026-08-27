@@ -1,9 +1,10 @@
 """爬虫执行日志模型。"""
+
 from sqlalchemy import Integer, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
-from app.models.base import GUID, JSONB, TimestampMixin, UUIDMixin
+from app.models.base import JSONB, TimestampMixin, UUIDMixin
 
 
 class CrawlerRun(UUIDMixin, TimestampMixin, Base):
@@ -12,6 +13,7 @@ class CrawlerRun(UUIDMixin, TimestampMixin, Base):
     注：t_crawler_runs 契约扩展（系统设计 §4.2.11）— 表名保留 crawler_runs，
     追加 stored_count / duplicate_count / source_meta 三个字段。
     """
+
     __tablename__ = "crawler_runs"
 
     source_name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)

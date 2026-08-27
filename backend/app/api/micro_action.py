@@ -8,6 +8,7 @@
 - POST /api/micro-actions/tasks/{task_id}/skip     — 跳过任务
 - GET  /api/micro-actions/history            — 获取历史 plan 列表
 """
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -26,7 +27,9 @@ from app.services import micro_action_service as svc
 router = APIRouter(prefix="/api/micro-actions", tags=["7天微行动"])
 
 
-def _to_plan_response(plan: MicroActionPlan, tasks: list[MicroActionTask]) -> MicroActionPlanResponse:
+def _to_plan_response(
+    plan: MicroActionPlan, tasks: list[MicroActionTask]
+) -> MicroActionPlanResponse:
     """构造 plan 响应（含任务列表与进度）。"""
     progress = svc._calculate_progress(tasks)
     return MicroActionPlanResponse(
@@ -143,6 +146,4 @@ def _parse_uuid(value: str):
     try:
         return UUID(value)
     except (ValueError, AttributeError, TypeError):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="无效的 ID 格式"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="无效的 ID 格式")

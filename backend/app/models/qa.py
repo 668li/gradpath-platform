@@ -6,6 +6,7 @@
 - 互动统计：浏览数/回答数
 - 解决状态：是否已解决/最佳回答 ID
 """
+
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -21,6 +22,7 @@ if TYPE_CHECKING:
 
 class QA(UUIDMixin, TimestampMixin, Base):
     """考研问答主表 — 存储考研相关问题。"""
+
     __tablename__ = "qas"
     __table_args__ = (
         # PostgreSQL 下为 JSONB 列创建 GIN 索引，优化 tags 数组查询
@@ -62,5 +64,8 @@ class QA(UUIDMixin, TimestampMixin, Base):
     # === 解决状态 ===
     is_resolved: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     best_answer_id: Mapped[UUID | None] = mapped_column(
-        GUID(), ForeignKey("qa_answers.id", ondelete="SET NULL", use_alter=True), nullable=True, index=True
+        GUID(),
+        ForeignKey("qa_answers.id", ondelete="SET NULL", use_alter=True),
+        nullable=True,
+        index=True,
     )

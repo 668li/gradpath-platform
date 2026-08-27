@@ -1,5 +1,6 @@
 # backend/tests/test_config.py
 """配置校验测试（Task 2）。"""
+
 import pytest
 
 from app.config import Settings
@@ -32,9 +33,7 @@ def test_production_with_custom_secret_key_works(monkeypatch):
     monkeypatch.setenv("ENVIRONMENT", "production")
     monkeypatch.setenv("SECRET_KEY", "a-very-secure-random-key-0123456789")
     # 生产环境不允许 SQLite，需设置 PostgreSQL DATABASE_URL
-    monkeypatch.setenv(
-        "DATABASE_URL", "postgresql://gradpath:strongpass@localhost:5432/gradpath"
-    )
+    monkeypatch.setenv("DATABASE_URL", "postgresql://gradpath:strongpass@localhost:5432/gradpath")
     # 生产环境强制 Redis (A15)
     monkeypatch.setenv("REDIS_URL", "redis://:strongpass@redis:6379/0")
     s = Settings(_env_file=None)
@@ -58,9 +57,7 @@ def test_production_without_redis_raises(monkeypatch):
     monkeypatch.setenv("ENVIRONMENT", "production")
     monkeypatch.setenv("SECRET_KEY", "a-very-secure-random-key-0123456789")
     # 给定合法 PostgreSQL URL，确保报错只源于缺失 Redis
-    monkeypatch.setenv(
-        "DATABASE_URL", "postgresql://gradpath:strongpass@localhost:5432/gradpath"
-    )
+    monkeypatch.setenv("DATABASE_URL", "postgresql://gradpath:strongpass@localhost:5432/gradpath")
     monkeypatch.delenv("REDIS_URL", raising=False)
     with pytest.raises(ValueError):
         Settings(_env_file=None)
@@ -70,9 +67,7 @@ def test_production_with_invalid_redis_scheme_raises(monkeypatch):
     """生产环境 + REDIS_URL 协议错误必须抛出 ValueError (A15)。"""
     monkeypatch.setenv("ENVIRONMENT", "production")
     monkeypatch.setenv("SECRET_KEY", "a-very-secure-random-key-0123456789")
-    monkeypatch.setenv(
-        "DATABASE_URL", "postgresql://gradpath:strongpass@localhost:5432/gradpath"
-    )
+    monkeypatch.setenv("DATABASE_URL", "postgresql://gradpath:strongpass@localhost:5432/gradpath")
     # 非法协议（应使用 redis:// 或 rediss://）
     monkeypatch.setenv("REDIS_URL", "http://redis:6379/0")
     with pytest.raises(ValueError):
@@ -83,9 +78,7 @@ def test_production_with_empty_redis_password_raises(monkeypatch):
     """生产环境 + Redis 密码为空字符串必须抛出 ValueError (A15)。"""
     monkeypatch.setenv("ENVIRONMENT", "production")
     monkeypatch.setenv("SECRET_KEY", "a-very-secure-random-key-0123456789")
-    monkeypatch.setenv(
-        "DATABASE_URL", "postgresql://gradpath:strongpass@localhost:5432/gradpath"
-    )
+    monkeypatch.setenv("DATABASE_URL", "postgresql://gradpath:strongpass@localhost:5432/gradpath")
     # URL 含 password 字段但为空字符串
     monkeypatch.setenv("REDIS_URL", "redis://:@redis:6379/0")
     with pytest.raises(ValueError):
@@ -109,9 +102,7 @@ def test_production_with_valid_config_works(monkeypatch):
     """生产环境 + PostgreSQL + Redis 完整配置可正常构造 (A15)。"""
     monkeypatch.setenv("ENVIRONMENT", "production")
     monkeypatch.setenv("SECRET_KEY", "a-very-secure-random-key-0123456789")
-    monkeypatch.setenv(
-        "DATABASE_URL", "postgresql://gradpath:strongpass@localhost:5432/gradpath"
-    )
+    monkeypatch.setenv("DATABASE_URL", "postgresql://gradpath:strongpass@localhost:5432/gradpath")
     monkeypatch.setenv("REDIS_URL", "redis://:strongpass@redis:6379/0")
     s = Settings(_env_file=None)
     assert s.ENVIRONMENT == "production"

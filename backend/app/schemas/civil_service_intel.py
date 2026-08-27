@@ -1,4 +1,5 @@
 """考公作战室 Pydantic schemas。"""
+
 from datetime import datetime
 from uuid import UUID
 

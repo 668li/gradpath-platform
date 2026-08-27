@@ -4,9 +4,8 @@
 姓名等个人信息），采集器已聚合为职位级记录：同一职位多名考生进面线一致，只存一行
 min_score，个人字段一律不入库。batch 区分批次：首批 / 调剂 / 补充录用。
 """
-from datetime import datetime
 
-from sqlalchemy import DateTime, Float, Index, Integer, String, Text
+from sqlalchemy import Float, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base

@@ -6,6 +6,7 @@
 - 业务键幂等：重复导入同 xlsx → 0 新增；同 position_code 不同专业行 → 都入库（国考语义）
 - 空 position_code 行跳过
 """
+
 from io import BytesIO
 from pathlib import Path
 
@@ -16,8 +17,22 @@ from app.models.gwy_position import GwyPosition
 from app.models.gwy_province_position import GwyProvincePosition
 from scripts.import_position_xlsx import import_xlsx, load_mapping
 
-GUOKAO_MAPPING = Path(__file__).resolve().parent.parent / "app" / "crawlers" / "config" / "position_xlsx" / "guokao_2026.yaml"
-SHENGKAO_MAPPING = Path(__file__).resolve().parent.parent / "app" / "crawlers" / "config" / "position_xlsx" / "shengkao_gd_2026.yaml"
+GUOKAO_MAPPING = (
+    Path(__file__).resolve().parent.parent
+    / "app"
+    / "crawlers"
+    / "config"
+    / "position_xlsx"
+    / "guokao_2026.yaml"
+)
+SHENGKAO_MAPPING = (
+    Path(__file__).resolve().parent.parent
+    / "app"
+    / "crawlers"
+    / "config"
+    / "position_xlsx"
+    / "shengkao_gd_2026.yaml"
+)
 
 
 def _make_guokao_xlsx() -> BytesIO:
@@ -27,16 +42,76 @@ def _make_guokao_xlsx() -> BytesIO:
     # 模拟官方结构：标题行在前（不影响表头定位）
     ws.append(["2026年度考试录用公务员招考简章"])
     ws.append(["中央党群机关职位表"])
-    ws.append(["部门代码", "部门名称", "用人司局", "招考职位", "职位简介", "职位代码",
-               "招考人数", "专业", "学历", "学位", "政治面貌", "工作地点", "备注"])
-    ws.append(["001", "中央某部", "办公厅", "一级主任科员", "综合管理", "100110001001",
-               1, "计算机类", "本科及以上", "与最高学历相对应的学位", "中共党员", "北京", "需出差"])
+    ws.append(
+        [
+            "部门代码",
+            "部门名称",
+            "用人司局",
+            "招考职位",
+            "职位简介",
+            "职位代码",
+            "招考人数",
+            "专业",
+            "学历",
+            "学位",
+            "政治面貌",
+            "工作地点",
+            "备注",
+        ]
+    )
+    ws.append(
+        [
+            "001",
+            "中央某部",
+            "办公厅",
+            "一级主任科员",
+            "综合管理",
+            "100110001001",
+            1,
+            "计算机类",
+            "本科及以上",
+            "与最高学历相对应的学位",
+            "中共党员",
+            "北京",
+            "需出差",
+        ]
+    )
     # 同 position_code 第二条（专业/学历不同，国考语义两行都应入库）
-    ws.append(["001", "中央某部", "业务司局", "一级主任科员", "业务管理", "100110001001",
-               2, "法学类", "仅限硕士研究生", "硕士", "不限", "北京", None])
+    ws.append(
+        [
+            "001",
+            "中央某部",
+            "业务司局",
+            "一级主任科员",
+            "业务管理",
+            "100110001001",
+            2,
+            "法学类",
+            "仅限硕士研究生",
+            "硕士",
+            "不限",
+            "北京",
+            None,
+        ]
+    )
     # 空 position_code 行应跳过
-    ws.append(["001", "中央某部", "办公厅", "临时职位", None, None,
-               None, None, None, None, None, None, None])
+    ws.append(
+        [
+            "001",
+            "中央某部",
+            "办公厅",
+            "临时职位",
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        ]
+    )
     buf = BytesIO()
     wb.save(buf)
     buf.seek(0)
@@ -47,11 +122,38 @@ def _make_shengkao_xlsx() -> BytesIO:
     wb = Workbook()
     ws = wb.active
     ws.title = "县以上机关"
-    ws.append(["招考单位", "单位代码", "招考职位", "职位代码", "职位简介", "职位类型",
-               "录用人数", "学历", "学位", "本科专业名称及代码", "其他要求", "考区"])
-    ws.append(["中共广东省委老干部局", "1990007", "综合岗一级主任科员以下", "19900072641001",
-               "从事文字材料工作", "综合管理类职位", 2, "研究生", "硕士以上",
-               "政治学(A0302),社会学(A0303)", "中共党员", "广州"])
+    ws.append(
+        [
+            "招考单位",
+            "单位代码",
+            "招考职位",
+            "职位代码",
+            "职位简介",
+            "职位类型",
+            "录用人数",
+            "学历",
+            "学位",
+            "本科专业名称及代码",
+            "其他要求",
+            "考区",
+        ]
+    )
+    ws.append(
+        [
+            "中共广东省委老干部局",
+            "1990007",
+            "综合岗一级主任科员以下",
+            "19900072641001",
+            "从事文字材料工作",
+            "综合管理类职位",
+            2,
+            "研究生",
+            "硕士以上",
+            "政治学(A0302),社会学(A0303)",
+            "中共党员",
+            "广州",
+        ]
+    )
     buf = BytesIO()
     wb.save(buf)
     buf.seek(0)

@@ -2,6 +2,7 @@
 
 借鉴 grad_intel_service 的三段式结构，覆盖求职全流程的信息差。
 """
+
 import json
 import re
 from uuid import UUID
@@ -10,7 +11,6 @@ from sqlalchemy.orm import Session
 
 from app.models.career_intel import CareerDarkKnowledge, CareerPositioning, CompanyIntel
 from app.services.ai_orchestrator import AIOrchestrator
-
 
 # ===== 求职暗知识种子数据 =====
 CAREER_DARK_KNOWLEDGE_SEED = [
@@ -63,7 +63,6 @@ CAREER_DARK_KNOWLEDGE_SEED = [
         "tags": ["实习", "转正", "秋招"],
         "sort_order": 4,
     },
-
     # ===== 简历投递阶段 =====
     {
         "stage": "application",
@@ -113,7 +112,6 @@ CAREER_DARK_KNOWLEDGE_SEED = [
         "tags": ["萝卜坑", "央企", "内部子弟"],
         "sort_order": 8,
     },
-
     # ===== 面试阶段 =====
     {
         "stage": "interview",
@@ -151,7 +149,6 @@ CAREER_DARK_KNOWLEDGE_SEED = [
         "tags": ["背调", "天眼查", "公司调研"],
         "sort_order": 11,
     },
-
     # ===== 签约阶段 =====
     {
         "stage": "signing",
@@ -189,7 +186,6 @@ CAREER_DARK_KNOWLEDGE_SEED = [
         "tags": ["offer比较", "总包", "五险一金"],
         "sort_order": 14,
     },
-
     # ===== 入职阶段 =====
     {
         "stage": "onboarding",
@@ -277,6 +273,7 @@ STAGE_NAMES = {
 
 # ===== 暗知识服务 =====
 
+
 def seed_career_dark_knowledge(db: Session) -> int:
     """如果暗知识表为空，预填充种子数据。返回填充条数。"""
     existing = db.query(CareerDarkKnowledge).count()
@@ -310,18 +307,21 @@ def get_career_dark_knowledge_stages(db: Session) -> list[dict]:
     """获取各阶段的统计信息。"""
     results = []
     for stage_code, stage_name in STAGE_NAMES.items():
-        count = db.query(CareerDarkKnowledge).filter(
-            CareerDarkKnowledge.stage == stage_code
-        ).count()
-        results.append({
-            "stage": stage_code,
-            "stage_name": stage_name,
-            "count": count,
-        })
+        count = (
+            db.query(CareerDarkKnowledge).filter(CareerDarkKnowledge.stage == stage_code).count()
+        )
+        results.append(
+            {
+                "stage": stage_code,
+                "stage_name": stage_name,
+                "count": count,
+            }
+        )
     return results
 
 
 # ===== 公司情报服务 =====
+
 
 async def query_company_intel(company_name: str, position_name: str) -> dict:
     """AI 查询公司情报。不落库，返回结构化结果供前端预览。"""
@@ -365,7 +365,9 @@ async def query_company_intel(company_name: str, position_name: str) -> dict:
 
 重要：不确定的信息一律标为 unknown 或 null，不要编造。所有判断都要基于公开可查的信息。"""
 
-    user_content = f"公司：{company_name}\n岗位：{position_name}\n\n请提供这家公司这个岗位的真实情报。"
+    user_content = (
+        f"公司：{company_name}\n岗位：{position_name}\n\n请提供这家公司这个岗位的真实情报。"
+    )
 
     orchestrator = AIOrchestrator()
     raw = await orchestrator.chat(system_prompt=system_prompt, user_prompt=user_content, timeout=45)
@@ -440,6 +442,7 @@ def delete_company_intel(db: Session, user_id: UUID, intel_id: UUID) -> bool:
 
 
 # ===== 求职定位服务 =====
+
 
 async def create_career_positioning(db: Session, user_id: UUID, data: dict) -> CareerPositioning:
     """创建求职定位，自动触发 AI 评估。"""

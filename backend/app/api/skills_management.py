@@ -1,7 +1,8 @@
 """Skill 管理 API — 查询项目内置的 6 个专用 skill。"""
+
 from fastapi import APIRouter, HTTPException
 
-from app.skills.registry import list_skills, get_skill, get_skills_by_category
+from app.skills.registry import get_skill, get_skills_by_category, list_skills
 
 router = APIRouter(prefix="/api/skill-toolbox", tags=["skill-toolbox"])
 

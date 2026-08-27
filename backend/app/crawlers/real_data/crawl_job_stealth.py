@@ -1,11 +1,13 @@
 import asyncio
 import json
 import os
+
 from playwright.async_api import async_playwright
 
 OUTPUT_FILE = os.path.join(os.path.dirname(__file__), "job_data.json")
 
 KEYWORDS = ["考研应届生", "硕士毕业"]
+
 
 async def scrape_zhipin_stealth(context, keyword):
     results = []
@@ -18,7 +20,7 @@ async def scrape_zhipin_stealth(context, keyword):
         # Check if login page
         content = await page.content()
         if "验证码登录" in content or "登录/注册" in content:
-            print(f"  [BOSS直聘] Login required, trying API approach...")
+            print("  [BOSS直聘] Login required, trying API approach...")
             # Try the API directly
             api_url = f"https://www.zhipin.com/wapi/zpgeek/search/joblist.json?query={keyword}&city=100010000&page=1&pageSize=30"
             api_page = await context.new_page()
@@ -33,22 +35,34 @@ async def scrape_zhipin_stealth(context, keyword):
         for card in cards[:20]:
             try:
                 texts = await card.inner_text()
-                lines = [l.strip() for l in texts.split('\n') if l.strip()]
+                lines = [l.strip() for l in texts.split("\n") if l.strip()]
                 if len(lines) >= 2:
                     title = lines[0]
                     company = lines[1] if len(lines) > 1 else ""
                     salary = ""
                     area = ""
                     for l in lines:
-                        if 'k' in l.lower() or '薪' in l or '-' in l and any(c.isdigit() for c in l):
+                        if (
+                            "k" in l.lower()
+                            or "薪" in l
+                            or "-" in l
+                            and any(c.isdigit() for c in l)
+                        ):
                             salary = l
-                        elif '区' in l or '市' in l or '省' in l:
+                        elif "区" in l or "市" in l or "省" in l:
                             area = l
                     if title:
-                        results.append({
-                            "title": title, "company": company, "salary": salary,
-                            "area": area, "url": "", "keyword": keyword, "source": "BOSS直聘"
-                        })
+                        results.append(
+                            {
+                                "title": title,
+                                "company": company,
+                                "salary": salary,
+                                "area": area,
+                                "url": "",
+                                "keyword": keyword,
+                                "source": "BOSS直聘",
+                            }
+                        )
             except Exception:
                 continue
     except Exception as e:
@@ -69,7 +83,7 @@ async def scrape_liepin_stealth(context, keyword):
         final_url = page.url
         print(f"  [猎聘] Final URL: {final_url}")
         if "captcha" in final_url or "safe.liepin" in final_url:
-            print(f"  [猎聘] CAPTCHA detected, skipping")
+            print("  [猎聘] CAPTCHA detected, skipping")
             return results
 
         cards = await page.query_selector_all("[class*='job-card']")
@@ -79,22 +93,34 @@ async def scrape_liepin_stealth(context, keyword):
         for card in cards[:20]:
             try:
                 texts = await card.inner_text()
-                lines = [l.strip() for l in texts.split('\n') if l.strip()]
+                lines = [l.strip() for l in texts.split("\n") if l.strip()]
                 if len(lines) >= 2:
                     title = lines[0]
                     company = lines[1] if len(lines) > 1 else ""
                     salary = ""
                     area = ""
                     for l in lines:
-                        if 'k' in l.lower() or '薪' in l or '-' in l and any(c.isdigit() for c in l):
+                        if (
+                            "k" in l.lower()
+                            or "薪" in l
+                            or "-" in l
+                            and any(c.isdigit() for c in l)
+                        ):
                             salary = l
-                        elif '区' in l or '市' in l or '省' in l:
+                        elif "区" in l or "市" in l or "省" in l:
                             area = l
                     if title:
-                        results.append({
-                            "title": title, "company": company, "salary": salary,
-                            "area": area, "url": "", "keyword": keyword, "source": "猎聘"
-                        })
+                        results.append(
+                            {
+                                "title": title,
+                                "company": company,
+                                "salary": salary,
+                                "area": area,
+                                "url": "",
+                                "keyword": keyword,
+                                "source": "猎聘",
+                            }
+                        )
             except Exception:
                 continue
     except Exception as e:
@@ -112,29 +138,43 @@ async def scrape_51job(context, keyword):
     try:
         await page.goto(url, wait_until="domcontentloaded", timeout=30000)
         await page.wait_for_timeout(4000)
-        cards = await page.query_selector_all("[class*='j_joblist'] .e") or await page.query_selector_all(".joblist-box__item")
+        cards = await page.query_selector_all(
+            "[class*='j_joblist'] .e"
+        ) or await page.query_selector_all(".joblist-box__item")
         if not cards:
             cards = await page.query_selector_all("[class*='joblist'] li")
         print(f"  [前程无忧] Found {len(cards)} cards")
         for card in cards[:20]:
             try:
                 texts = await card.inner_text()
-                lines = [l.strip() for l in texts.split('\n') if l.strip()]
+                lines = [l.strip() for l in texts.split("\n") if l.strip()]
                 if lines:
                     title = lines[0]
                     company = lines[1] if len(lines) > 1 else ""
                     salary = ""
                     area = ""
                     for l in lines:
-                        if 'k' in l.lower() or '薪' in l or '-' in l and any(c.isdigit() for c in l):
+                        if (
+                            "k" in l.lower()
+                            or "薪" in l
+                            or "-" in l
+                            and any(c.isdigit() for c in l)
+                        ):
                             salary = l
-                        elif '区' in l or '市' in l or '省' in l:
+                        elif "区" in l or "市" in l or "省" in l:
                             area = l
                     if title:
-                        results.append({
-                            "title": title, "company": company, "salary": salary,
-                            "area": area, "url": "", "keyword": keyword, "source": "前程无忧"
-                        })
+                        results.append(
+                            {
+                                "title": title,
+                                "company": company,
+                                "salary": salary,
+                                "area": area,
+                                "url": "",
+                                "keyword": keyword,
+                                "source": "前程无忧",
+                            }
+                        )
             except Exception:
                 continue
     except Exception as e:
@@ -152,29 +192,43 @@ async def scrape_zhilian(context, keyword):
     try:
         await page.goto(url, wait_until="domcontentloaded", timeout=30000)
         await page.wait_for_timeout(4000)
-        cards = await page.query_selector_all("[class*='positionlist'] .clearfix") or await page.query_selector_all("[class*='joblist'] .joblist-box__item")
+        cards = await page.query_selector_all(
+            "[class*='positionlist'] .clearfix"
+        ) or await page.query_selector_all("[class*='joblist'] .joblist-box__item")
         if not cards:
             cards = await page.query_selector_all("[class*='jobCard']")
         print(f"  [智联招聘] Found {len(cards)} cards")
         for card in cards[:20]:
             try:
                 texts = await card.inner_text()
-                lines = [l.strip() for l in texts.split('\n') if l.strip()]
+                lines = [l.strip() for l in texts.split("\n") if l.strip()]
                 if lines:
                     title = lines[0]
                     company = lines[1] if len(lines) > 1 else ""
                     salary = ""
                     area = ""
                     for l in lines:
-                        if 'k' in l.lower() or '薪' in l or '-' in l and any(c.isdigit() for c in l):
+                        if (
+                            "k" in l.lower()
+                            or "薪" in l
+                            or "-" in l
+                            and any(c.isdigit() for c in l)
+                        ):
                             salary = l
-                        elif '区' in l or '市' in l or '省' in l:
+                        elif "区" in l or "市" in l or "省" in l:
                             area = l
                     if title:
-                        results.append({
-                            "title": title, "company": company, "salary": salary,
-                            "area": area, "url": "", "keyword": keyword, "source": "智联招聘"
-                        })
+                        results.append(
+                            {
+                                "title": title,
+                                "company": company,
+                                "salary": salary,
+                                "area": area,
+                                "url": "",
+                                "keyword": keyword,
+                                "source": "智联招聘",
+                            }
+                        )
             except Exception:
                 continue
     except Exception as e:
@@ -188,8 +242,7 @@ async def main():
     all_results = []
     async with async_playwright() as p:
         browser = await p.chromium.launch(
-            headless=True,
-            args=["--disable-blink-features=AutomationControlled"]
+            headless=True, args=["--disable-blink-features=AutomationControlled"]
         )
         context = await browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
@@ -220,10 +273,11 @@ async def main():
         json.dump(all_results, f, ensure_ascii=False, indent=2)
 
     total_chars = sum(len(json.dumps(r, ensure_ascii=False)) for r in all_results)
-    print(f"\n=== Done ===")
+    print("\n=== Done ===")
     print(f"Total jobs: {len(all_results)}")
     print(f"Total chars: {total_chars}")
     print(f"Saved to: {OUTPUT_FILE}")
+
 
 if __name__ == "__main__":
     asyncio.run(main())

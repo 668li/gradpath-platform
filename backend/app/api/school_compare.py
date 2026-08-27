@@ -1,22 +1,17 @@
 """院校对比工具 — 多校六维雷达对比 + AI 推荐。"""
-import json
+
 import logging
-from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.api.school_analyst import (
-    _calc_six_dimensions,
-    _build_scoreline_trend,
-    _fetch_dark_knowledge,
-    _find_similar_schools,
-    _classify_recommendation,
-    _default_radar,
-    DimensionScore,
-    SixDimensionRadar,
     ScorelineTrendItem,
+    SixDimensionRadar,
+    _build_scoreline_trend,
+    _calc_six_dimensions,
+    _classify_recommendation,
 )
 from app.core.deps import get_current_user
 from app.database import get_db
@@ -37,7 +32,9 @@ class SchoolItem(BaseModel):
 
 
 class CompareRequest(BaseModel):
-    schools: list[SchoolItem] = Field(..., min_length=2, max_length=5, description="对比院校列表（2-5所）")
+    schools: list[SchoolItem] = Field(
+        ..., min_length=2, max_length=5, description="对比院校列表（2-5所）"
+    )
     user_score: int = Field(default=360, ge=0, le=500, description="用户预估初试成绩")
 
 
@@ -142,10 +139,7 @@ async def _generate_comparison_summary(analyses: list[dict], user_score: int) ->
                 f"一志愿保护{a['six_dimension_radar']['first_choice_protection']['score']}，"
                 f"匹配度{a['match_score']}分，分类={a['recommendation']}"
             )
-        user_content = (
-            f"用户预估初试成绩：{user_score}\n"
-            f"对比院校：\n" + "\n".join(schools_info)
-        )
+        user_content = f"用户预估初试成绩：{user_score}\n" f"对比院校：\n" + "\n".join(schools_info)
         return await ai.chat(system_prompt, user_content, timeout=30)
     except (AIServiceNotConfigured, Exception) as e:
         logger.warning("AI 对比总结生成失败: %s", e)

@@ -9,6 +9,7 @@
 3. update_memory_feedback: 用户反馈调整置信度
 4. mark_used: AI 使用事实时更新 use_count + last_used_at
 """
+
 import json
 import logging
 from datetime import datetime, timezone
@@ -211,12 +212,13 @@ def mark_used(db: Session, fact_ids: list[UUID]) -> None:
     now = datetime.now(timezone.utc)
     # C3: 原子 UPDATE — 高并发下 N 个 AI 调用同时使用同一事实不会丢失计数
     col = UserMemoryFact.use_count
-    db.query(UserMemoryFact).filter(
-        UserMemoryFact.id.in_(fact_ids)
-    ).update({
-        col: col + 1,
-        UserMemoryFact.last_used_at: now,
-    }, synchronize_session=False)
+    db.query(UserMemoryFact).filter(UserMemoryFact.id.in_(fact_ids)).update(
+        {
+            col: col + 1,
+            UserMemoryFact.last_used_at: now,
+        },
+        synchronize_session=False,
+    )
     db.commit()
 
 

@@ -1,6 +1,8 @@
 import json
 
-with open(r"D:\职业规划\职业规划\backend\app\crawlers\real_data\kaoyan_round2.json", encoding='utf-8') as f:
+with open(
+    r"D:\职业规划\职业规划\backend\app\crawlers\real_data\kaoyan_round2.json", encoding="utf-8"
+) as f:
     data = json.load(f)
 
 print(f"Total articles: {len(data)}")

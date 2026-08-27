@@ -3,6 +3,7 @@
 不同于 reactive 的成长洞察（用户请求时生成），主动洞察是系统主动分析
 用户数据模式后生成的，展示在看板上提醒用户注意。
 """
+
 from uuid import UUID
 
 from sqlalchemy import Boolean, ForeignKey, Integer, String, Text

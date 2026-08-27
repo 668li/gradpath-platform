@@ -9,6 +9,7 @@
   处理结果通过 push_notification（type=moderation）通知举报人，
   内容被下架时同步通知作者。
 """
+
 import logging
 import uuid
 from datetime import datetime, timezone
@@ -16,12 +17,12 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlalchemy.orm import Session
 
+from app.api.notifications import push_notification
 from app.core.deps import get_admin_user, get_current_user
 from app.database import get_db
 from app.main import limiter
 from app.models.comment import Comment
 from app.models.experience_post import ExperiencePost
-from app.models.notification import NotificationType
 from app.models.post import Post, PostStatus
 from app.models.qa import QA
 from app.models.qa_answer import QAAnswer
@@ -35,7 +36,6 @@ from app.schemas.report import (
     ReportVO,
 )
 from app.services.moderation_service import ban_user
-from app.api.notifications import push_notification
 
 router = APIRouter(prefix="/api", tags=["社区治理-举报"])
 
@@ -89,7 +89,10 @@ def _notify_author(db: Session, author_id, report) -> None:
         from app.api.notifications import push_notification as _push
 
         return _push(
-            db, author_id, "moderation", "内容被下架",
+            db,
+            author_id,
+            "moderation",
+            "内容被下架",
             f"您发布的{_TARGET_LABELS.get(report.target_type, '内容')}因违反社区规范已被下架。",
         )
     except Exception:
@@ -174,7 +177,10 @@ def create_report(
     db.refresh(report)
     logger.info(
         "举报提交: reporter=%s target=%s:%s reason=%s",
-        current_user.id, data.target_type.value, data.target_id, data.reason,
+        current_user.id,
+        data.target_type.value,
+        data.target_id,
+        data.reason,
     )
     return _to_vo(report)
 
@@ -182,7 +188,9 @@ def create_report(
 @router.get("/admin/reports", response_model=ReportListVO)
 def list_reports(
     report_status: ReportStatus | None = Query(None, alias="status", description="按处理状态筛选"),
-    target_type: ReportTargetType | None = Query(None, alias="target_type", description="按对象类型筛选"),
+    target_type: ReportTargetType | None = Query(
+        None, alias="target_type", description="按对象类型筛选"
+    ),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: Session = Depends(get_db),
@@ -195,10 +203,7 @@ def list_reports(
         q = q.filter(Report.target_type == target_type)
     total = q.count()
     rows = (
-        q.order_by(Report.created_at.desc())
-        .offset((page - 1) * page_size)
-        .limit(page_size)
-        .all()
+        q.order_by(Report.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
     )
     return ReportListVO(total=total, items=[_to_vo(r) for r in rows])
 
@@ -237,12 +242,18 @@ async def process_report(
     # 通知举报人（处理后统一推送，commit 后调用避免提前提交）
     if data.action == "rejected":
         await push_notification(
-            db, report.reporter_id, "moderation", "举报处理结果",
+            db,
+            report.reporter_id,
+            "moderation",
+            "举报处理结果",
             f"您举报的内容（{report.reason}）经审核不成立，暂未处理。",
         )
     else:
         await push_notification(
-            db, report.reporter_id, "moderation", "举报处理结果",
+            db,
+            report.reporter_id,
+            "moderation",
+            "举报处理结果",
             f"您举报的内容（{report.reason}）已核实并处理，感谢您的反馈。",
         )
         # 内容被下架时通知作者

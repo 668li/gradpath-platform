@@ -9,12 +9,12 @@
 ResearchTransformer.transform_rss（清洗/分类/质量分）→ store_research_items
 （simhash 去重 + quality 过滤 → PENDING 审核队列），成功后回写 data_freshness。
 """
+
 import logging
 import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
 from urllib.parse import urljoin
 
 # 当以脚本形式从项目根目录运行时，把 backend 加入 sys.path
@@ -108,12 +108,14 @@ class EolKaoyanCrawler(BaseCrawler):
             detail_text = ""
             if self.fetch_detail:
                 detail_text = self._fetch_detail_text(url)
-            items.append({
-                "title": title,
-                "url": url,
-                "published_at": date,
-                "detail_text": detail_text,
-            })
+            items.append(
+                {
+                    "title": title,
+                    "url": url,
+                    "published_at": date,
+                    "detail_text": detail_text,
+                }
+            )
         logger.info(f"[{self.name}] 列表页解析出 {len(items)} 条，详情抓取完成")
         return items
 
@@ -145,17 +147,19 @@ class EolKaoyanCrawler(BaseCrawler):
             # 详情正文前 300 字作摘要；无详情时用标题兜底
             summary = detail[:300] or title
             content = detail or summary
-            raw_payloads.append({
-                "title": title,
-                "summary": summary,
-                "content": content,
-                "source_url": raw.get("url", ""),
-                "published_at": published_at.isoformat() if published_at else None,
-                "crawled_at": datetime.now(timezone.utc).isoformat(),
-                "category": "考研快讯",
-                "tags": [],
-                "source_platform": "eol",
-            })
+            raw_payloads.append(
+                {
+                    "title": title,
+                    "summary": summary,
+                    "content": content,
+                    "source_url": raw.get("url", ""),
+                    "published_at": published_at.isoformat() if published_at else None,
+                    "crawled_at": datetime.now(timezone.utc).isoformat(),
+                    "category": "考研快讯",
+                    "tags": [],
+                    "source_platform": "eol",
+                }
+            )
         return ResearchTransformer.transform_rss(raw_payloads)
 
     # ===== store：CrawlerRun + 入库 + 回写 data_freshness =====
@@ -187,9 +191,7 @@ class EolKaoyanCrawler(BaseCrawler):
 
             # 回写 data_freshness（source_channel=eol_kaoyan，契约列见 DataFreshness）
             fresh = (
-                db.query(DataFreshness)
-                .filter(DataFreshness.source_name == SOURCE_CHANNEL)
-                .first()
+                db.query(DataFreshness).filter(DataFreshness.source_name == SOURCE_CHANNEL).first()
             )
             now = datetime.now(timezone.utc)
             if fresh is None:
@@ -235,7 +237,9 @@ def main():
         format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
     )
     parser = argparse.ArgumentParser(description="中国教育在线考研频道爬虫 CLI")
-    parser.add_argument("--no-detail", action="store_true", help="跳过详情页正文抓取，仅列表信息入库")
+    parser.add_argument(
+        "--no-detail", action="store_true", help="跳过详情页正文抓取，仅列表信息入库"
+    )
     args = parser.parse_args()
 
     crawler = EolKaoyanCrawler(config={"fetch_detail": not args.no_detail})

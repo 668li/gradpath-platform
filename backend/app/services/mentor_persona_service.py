@@ -3,6 +3,7 @@
 每个导师从不同角度分析同一个问题，避免单一视角盲区。
 用户可以选择一个或多个导师视角来获得建议。
 """
+
 from app.services.ai_orchestrator import AIOrchestrator
 
 # 4 个导师人格定义
@@ -105,7 +106,9 @@ async def get_mentor_advice(persona_code: str, question: str, user_context: str 
     return await orchestrator.chat(system_prompt=system_prompt, user_prompt=full_prompt, timeout=30)
 
 
-async def get_multi_perspective(persona_codes: list[str], question: str, user_context: str = "") -> list[dict]:
+async def get_multi_perspective(
+    persona_codes: list[str], question: str, user_context: str = ""
+) -> list[dict]:
     """获取多个导师视角的建议。"""
     results = []
     for code in persona_codes:
@@ -114,17 +117,21 @@ async def get_multi_perspective(persona_codes: list[str], question: str, user_co
             continue
         try:
             advice = await get_mentor_advice(code, question, user_context)
-            results.append({
-                "persona_code": code,
-                "persona_name": persona["name"],
-                "persona_icon": persona["icon"],
-                "advice": advice,
-            })
+            results.append(
+                {
+                    "persona_code": code,
+                    "persona_name": persona["name"],
+                    "persona_icon": persona["icon"],
+                    "advice": advice,
+                }
+            )
         except Exception as e:
-            results.append({
-                "persona_code": code,
-                "persona_name": persona["name"],
-                "persona_icon": persona["icon"],
-                "advice": f"该导师暂时无法回复：{str(e)}",
-            })
+            results.append(
+                {
+                    "persona_code": code,
+                    "persona_name": persona["name"],
+                    "persona_icon": persona["icon"],
+                    "advice": f"该导师暂时无法回复：{str(e)}",
+                }
+            )
     return results

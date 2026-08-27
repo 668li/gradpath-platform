@@ -14,6 +14,7 @@
     python app/seed/seed_from_research.py
     python app/seed/seed_from_research.py --approve
 """
+
 import argparse
 import logging
 import sys
@@ -28,10 +29,7 @@ if __name__ == "__main__":
 from sqlalchemy.orm import Session
 
 import scripts.import_real_data_to_queue as b3
-from app.crawlers.research.transformer import (
-    SYSTEM_USER_ID,
-    ResearchTransformer,
-)
+from app.crawlers.research.transformer import SYSTEM_USER_ID, ResearchTransformer
 from app.database import Base, SessionLocal, engine
 from app.models.experience_post import ExperiencePost
 from app.models.kaoyan_news import KaoyanNews
@@ -91,9 +89,7 @@ def _experience_post_exists(db: Session, source_url: str) -> bool:
     if not source_url:
         return False
     return (
-        db.query(ExperiencePost.id)
-        .filter(ExperiencePost.source_url == source_url)
-        .first()
+        db.query(ExperiencePost.id).filter(ExperiencePost.source_url == source_url).first()
         is not None
     )
 
@@ -101,12 +97,7 @@ def _experience_post_exists(db: Session, source_url: str) -> bool:
 def _kaoyan_news_exists(db: Session, source_url: str) -> bool:
     if not source_url:
         return False
-    return (
-        db.query(KaoyanNews.id)
-        .filter(KaoyanNews.source_url == source_url)
-        .first()
-        is not None
-    )
+    return db.query(KaoyanNews.id).filter(KaoyanNews.source_url == source_url).first() is not None
 
 
 def _import_experience_posts(db: Session, payloads: list[dict], approve: bool = False) -> int:
@@ -207,9 +198,7 @@ def main() -> None:
             "注入完成：新增 %d 条经验贴（B站+网页+院校+社区）",
             stats["experience_posts"],
         )
-        print(
-            f"注入完成：新增 {stats['experience_posts']} 条经验贴"
-        )
+        print(f"注入完成：新增 {stats['experience_posts']} 条经验贴")
     except Exception as e:
         logger.exception("注入失败: %s", e)
         db.rollback()

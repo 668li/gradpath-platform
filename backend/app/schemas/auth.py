@@ -47,6 +47,7 @@ class UpdateMeRequest(BaseModel):
 
     全部可空：None 表示清除该字段，未传字段保持原值（exclude_unset）。
     """
+
     nickname: str | None = Field(default=None, max_length=50)
     school: str | None = Field(default=None, max_length=255)
     major: str | None = Field(default=None, max_length=255)
@@ -75,10 +76,12 @@ class PasswordResetConfirm(BaseModel):
 
 class PasswordChangeRequest(BaseModel):
     """已登录用户修改密码（需提供当前密码验证）。"""
+
     current_password: str
     new_password: str = Field(min_length=8, max_length=128)
 
 
 class MessageResponse(BaseModel):
     """通用消息响应。"""
+
     message: str

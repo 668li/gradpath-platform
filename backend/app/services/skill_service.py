@@ -53,9 +53,7 @@ def get_skill_tree(db: Session, user_id: UUID) -> list[SkillNode]:
 
 def get_skill(db: Session, user_id: UUID, skill_id: UUID) -> SkillNode:
     skill = (
-        db.query(SkillNode)
-        .filter(SkillNode.id == skill_id, SkillNode.user_id == user_id)
-        .first()
+        db.query(SkillNode).filter(SkillNode.id == skill_id, SkillNode.user_id == user_id).first()
     )
     if not skill:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="技能不存在")
@@ -88,6 +86,7 @@ def get_skill_stats(db: Session, user_id: UUID) -> dict[str, int]:
     if cached is not None:
         return cached
     from sqlalchemy import func
+
     rows = (
         db.query(SkillNode.category, func.count(SkillNode.id))
         .filter(SkillNode.user_id == user_id)

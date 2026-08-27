@@ -13,6 +13,7 @@
 
 幂等：(position, city, year, company) 去重。全 ORM 参数绑定。
 """
+
 import json
 import sys
 from pathlib import Path
@@ -83,7 +84,9 @@ def main() -> None:
             inserted += 1
         db.commit()
         total = db.query(SalaryBenchmark).count()
-    print(f"入库 {inserted} 条 / 重复 {duplicated} / 无效跳过 {skipped} | salary_benchmarks 总数: {total}")
+    print(
+        f"入库 {inserted} 条 / 重复 {duplicated} / 无效跳过 {skipped} | salary_benchmarks 总数: {total}"
+    )
 
 
 if __name__ == "__main__":

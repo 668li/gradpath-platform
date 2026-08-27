@@ -1,12 +1,12 @@
 # backend/pipeline/extractor.py
 """LLM 辅助就业报告解析器"""
+
 import json
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from uuid import UUID
 
-from bs4 import BeautifulSoup
 from sqlalchemy.orm import Session
 
 from app.models.employment_data import Degree, EmploymentData

@@ -3,12 +3,14 @@
 优先使用 Redis（如可用），自动降级到内存缓存。
 支持 TTL、序列化和装饰器。
 """
+
 import json
 import logging
 import time
 from collections import OrderedDict
-from typing import Any, Callable
+from collections.abc import Callable
 from functools import wraps
+from typing import Any
 
 from app.config import settings
 
@@ -77,6 +79,7 @@ class RedisCache:
 
         try:
             import redis
+
             self._redis = redis.Redis.from_url(
                 settings.REDIS_URL,
                 decode_responses=True,
@@ -178,6 +181,7 @@ def cached(ttl: int = 300, prefix: str = ""):
         ttl: 缓存过期时间（秒），默认 5 分钟
         prefix: 缓存键前缀，用于分组
     """
+
     def decorator(func: Callable):
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -198,7 +202,12 @@ def cached(ttl: int = 300, prefix: str = ""):
             return result
 
         wrapper.invalidate = lambda *a, **kw: cache.delete(
-            ":".join([prefix or func.__name__] + [str(x) for x in a] + [f"{k}={v}" for k, v in sorted(kw.items())])
+            ":".join(
+                [prefix or func.__name__]
+                + [str(x) for x in a]
+                + [f"{k}={v}" for k, v in sorted(kw.items())]
+            )
         )
         return wrapper
+
     return decorator

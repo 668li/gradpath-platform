@@ -1,17 +1,17 @@
 """用户公开主页 API。"""
+
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.experience_post import ExperiencePost
 from app.models.qa import QA
 from app.models.qa_answer import QAAnswer
-from app.models.user import User, UserStage
+from app.models.user import User
 from app.schemas.experience_post import ExperiencePostResponse
 from app.schemas.qa import QAAnswerResponse, QAResponse
 
@@ -20,17 +20,18 @@ router = APIRouter(prefix="/api/users", tags=["用户主页"])
 
 class UserProfileResponse(BaseModel):
     """用户公开主页信息"""
+
     id: UUID
-    nickname: Optional[str] = None
-    username: Optional[str] = None
-    name: Optional[str] = None
+    nickname: str | None = None
+    username: str | None = None
+    name: str | None = None
     display_name: str
-    avatar_url: Optional[str] = None
-    bio: Optional[str] = None
-    current_stage: Optional[str] = None
-    school: Optional[str] = None
-    major: Optional[str] = None
-    graduation_year: Optional[int] = None
+    avatar_url: str | None = None
+    bio: str | None = None
+    current_stage: str | None = None
+    school: str | None = None
+    major: str | None = None
+    graduation_year: int | None = None
     created_at: datetime
     post_count: int = 0
     qa_count: int = 0
@@ -45,23 +46,37 @@ def _get_display_name(user: User) -> str:
 
 
 def _build_profile(user: User, db: Session) -> UserProfileResponse:
-    post_count = db.query(ExperiencePost).filter(
-        ExperiencePost.user_id == user.id,
-        ExperiencePost.status == "approved",
-    ).count()
-    qa_count = db.query(QA).filter(
-        QA.user_id == user.id,
-        QA.status == "approved",
-    ).count()
-    answer_count = db.query(QAAnswer).filter(
-        QAAnswer.user_id == user.id,
-        QAAnswer.status == "approved",
-    ).count()
-    total_likes = (
-        db.query(ExperiencePost.like_count).filter(
+    post_count = (
+        db.query(ExperiencePost)
+        .filter(
             ExperiencePost.user_id == user.id,
             ExperiencePost.status == "approved",
-        ).all()
+        )
+        .count()
+    )
+    qa_count = (
+        db.query(QA)
+        .filter(
+            QA.user_id == user.id,
+            QA.status == "approved",
+        )
+        .count()
+    )
+    answer_count = (
+        db.query(QAAnswer)
+        .filter(
+            QAAnswer.user_id == user.id,
+            QAAnswer.status == "approved",
+        )
+        .count()
+    )
+    total_likes = (
+        db.query(ExperiencePost.like_count)
+        .filter(
+            ExperiencePost.user_id == user.id,
+            ExperiencePost.status == "approved",
+        )
+        .all()
     )
     total_likes_sum = sum(r[0] for r in total_likes) if total_likes else 0
 

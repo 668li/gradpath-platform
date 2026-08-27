@@ -1,5 +1,4 @@
 # backend/app/api/employment.py
-from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
@@ -45,7 +44,7 @@ def schools(db: Session = Depends(get_db)):
 @router.get("/schools/cursor", response_model=CursorPaginatedResponse[SchoolResponse])
 def schools_cursor(
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
-    cursor: Optional[str] = Query(None, description="游标（cursor 分页）"),
+    cursor: str | None = Query(None, description="游标（cursor 分页）"),
     db: Session = Depends(get_db),
 ):
     """游标分页获取院校列表（适合无限滚动，避免深页性能退化）。
@@ -58,17 +57,13 @@ def schools_cursor(
         .filter(ReportRecord.parse_status == ParseStatus.published)
         .distinct()
     )
-    query = apply_cursor_filter(
-        query, cursor, time_col=School.created_at, id_col=School.id
-    )
+    query = apply_cursor_filter(query, cursor, time_col=School.created_at, id_col=School.id)
     items = query.order_by(School.created_at.desc()).limit(page_size + 1).all()
     has_more = len(items) > page_size
     if has_more:
         items = items[:page_size]
     next_cursor = (
-        encode_cursor(items[-1].created_at, str(items[-1].id))
-        if has_more and items
-        else None
+        encode_cursor(items[-1].created_at, str(items[-1].id)) if has_more and items else None
     )
     # School ORM 模型无 report_count/major_count 字段，SchoolResponse 又未声明
     # from_attributes=True；这里手动构造 dict，与 list_schools 行为一致。

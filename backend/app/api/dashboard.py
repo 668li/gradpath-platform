@@ -22,8 +22,6 @@ def personal_intel(db: Session = Depends(get_db), user: User = Depends(get_curre
 
 
 @router.get("/weekly-recap")
-def weekly_recap(
-    db: Session = Depends(get_db), user: User = Depends(get_current_user)
-):
+def weekly_recap(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     """周回顾：本周完成的里程碑、新增日志、即将到期里程碑等汇总。"""
     return get_weekly_recap(db, user.id)

@@ -8,6 +8,7 @@
 - /categories：去 general、按出现次数排序
 - 非法 sort → 422；详情 404
 """
+
 from hashlib import sha256
 
 from sqlalchemy.orm import Session
@@ -32,7 +33,9 @@ def _make_news(db: Session, **overrides) -> KaoyanNews:
     }
     defaults.update(overrides)
     if not defaults["source_url"]:
-        defaults["source_url"] = f"https://news.example.com/{sha256(defaults['title'].encode()).hexdigest()[:12]}"
+        defaults["source_url"] = (
+            f"https://news.example.com/{sha256(defaults['title'].encode()).hexdigest()[:12]}"
+        )
     news = KaoyanNews(**defaults)
     db.add(news)
     db.commit()
@@ -124,7 +127,11 @@ class TestList:
 class TestCategories:
     def test_categories_ordered_by_count_excludes_general(self, client, db_session):
         for _ in range(2):
-            _make_news(db_session, title=f"调剂资讯 {sha256(str(_).encode()).hexdigest()[:6]}", category="调剂")
+            _make_news(
+                db_session,
+                title=f"调剂资讯 {sha256(str(_).encode()).hexdigest()[:6]}",
+                category="调剂",
+            )
         _make_news(db_session, title="复试线公布", category="复试线")
         _make_news(db_session, title="未分类", category="general")
         _make_news(db_session, title="待审调剂", category="调剂", status="pending")

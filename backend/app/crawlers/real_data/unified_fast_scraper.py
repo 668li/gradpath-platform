@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """统一高速爬取引擎 — 并发抓取多数据源，可选入库。
 
 使用共享 httpx.AsyncClient + Semaphore 并发控制 + 429 指数退避重试，
@@ -11,14 +10,15 @@ Usage:
     python -m app.crawlers.real_data.unified_fast_scraper --source yanzhao --concurrency 20
     python -m app.crawlers.real_data.unified_fast_scraper --no-cache
 """
-import sys
-import json
-import re
-import os
-import random
-import logging
+
 import argparse
 import asyncio
+import json
+import logging
+import os
+import random
+import re
+import sys
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
@@ -46,7 +46,9 @@ except ImportError:
 
 try:
     from app.crawlers.real_data.firecrawl_kaoyan_full import (
-        clean_markdown, classify_article, extract_title_from_markdown,
+        classify_article,
+        clean_markdown,
+        extract_title_from_markdown,
         parse_html_to_articles,
     )
 except ImportError:
@@ -54,9 +56,7 @@ except ImportError:
     extract_title_from_markdown = parse_html_to_articles = None
 
 try:
-    from app.crawlers.real_data.civil_service_expand import (
-        extract_links, extract_article_content,
-    )
+    from app.crawlers.real_data.civil_service_expand import extract_article_content, extract_links
 except ImportError:
     extract_links = extract_article_content = None
 
@@ -80,6 +80,7 @@ _OUTPUT_FILE = _MODULE_DIR / "unified_scrape_results.json"
 # pyyaml 可能未安装 — try/except 回退到 Python dict 常量配置
 # ═══════════════════════════════════════════════════════════════
 
+
 def _gen_yz_list_urls() -> list[str]:
     """根据 firecrawl_yz_batch.py 的 SECTIONS 配置生成实际 URL 列表。
 
@@ -87,8 +88,12 @@ def _gen_yz_list_urls() -> list[str]:
     page 2+ → {BASE_URL}{path}index_{page}.html
     """
     urls = []
-    for path, pages in [("/kyzx/kydt/", 5), ("/kyzx/jybzc/", 3),
-                         ("/kyzx/zsjz/", 3), ("/kyzx/fstj/", 3)]:
+    for path, pages in [
+        ("/kyzx/kydt/", 5),
+        ("/kyzx/jybzc/", 3),
+        ("/kyzx/zsjz/", 3),
+        ("/kyzx/fstj/", 3),
+    ]:
         for p in range(1, pages + 1):
             if p == 1:
                 urls.append(f"https://yz.chsi.com.cn{path}")
@@ -100,15 +105,22 @@ def _gen_yz_list_urls() -> list[str]:
 # 内置回退配置 — 当 pyyaml 不可用或 sources.yaml 加载失败时使用
 _FALLBACK_SOURCES = {
     "yanzhao": {
-        "name": "研招网", "enabled": True, "source_type": "grad",
+        "name": "研招网",
+        "enabled": True,
+        "source_type": "grad",
         "list_urls": _gen_yz_list_urls(),
-        "list_parser": "yz_list", "detail_parser": "yz_detail",
-        "concurrency": 10, "rate_limit": 0.5,
-        "target_model": "ExperiencePost", "unique_key": "source_url",
+        "list_parser": "yz_list",
+        "detail_parser": "yz_detail",
+        "concurrency": 10,
+        "rate_limit": 0.5,
+        "target_model": "ExperiencePost",
+        "unique_key": "source_url",
         "category_map": {"kydt": "政策", "jybzc": "政策", "zsjz": "政策", "fstj": "复试"},
     },
     "kaoyan": {
-        "name": "考研帮", "enabled": True, "source_type": "grad",
+        "name": "考研帮",
+        "enabled": True,
+        "source_type": "grad",
         "list_urls": [
             "https://www.kaoyan.com/experience/?page=1",
             "https://www.kaoyan.com/experience/?page=2",
@@ -119,83 +131,135 @@ _FALLBACK_SOURCES = {
             "https://www.kaoyan.com/news/list/1/3946",
             "https://www.kaoyan.com/news/list/1/3949",
         ],
-        "list_parser": "kaoyan_list", "detail_parser": "kaoyan_detail",
-        "concurrency": 15, "rate_limit": 0.3,
-        "target_model": "ExperiencePost", "unique_key": "source_url",
-        "category_map": {"初试": "初试", "复试": "复试", "调剂": "调剂",
-                          "择校": "择校", "备考": "复习", "政策": "general",
-                          "分数线": "初试", "经验分享": "general"},
+        "list_parser": "kaoyan_list",
+        "detail_parser": "kaoyan_detail",
+        "concurrency": 15,
+        "rate_limit": 0.3,
+        "target_model": "ExperiencePost",
+        "unique_key": "source_url",
+        "category_map": {
+            "初试": "初试",
+            "复试": "复试",
+            "调剂": "调剂",
+            "择校": "择校",
+            "备考": "复习",
+            "政策": "general",
+            "分数线": "初试",
+            "经验分享": "general",
+        },
     },
     "offcn": {
-        "name": "中公教育", "enabled": True, "source_type": "civil",
+        "name": "中公教育",
+        "enabled": True,
+        "source_type": "civil",
         "list_urls": [
-            "https://www.offcn.com/gwy/", "https://www.offcn.com/sksy/",
-            "https://www.offcn.com/xd/", "https://www.offcn.com/shiyedanwei/",
+            "https://www.offcn.com/gwy/",
+            "https://www.offcn.com/sksy/",
+            "https://www.offcn.com/xd/",
+            "https://www.offcn.com/shiyedanwei/",
         ],
-        "list_parser": "offcn_list", "detail_parser": "offcn_detail",
-        "concurrency": 8, "rate_limit": 0.5,
-        "target_model": "ExperiencePost", "unique_key": "source_url",
-        "category_map": {"国考": "general", "省考": "general",
-                          "选调": "general", "事业单位": "general"},
+        "list_parser": "offcn_list",
+        "detail_parser": "offcn_detail",
+        "concurrency": 8,
+        "rate_limit": 0.5,
+        "target_model": "ExperiencePost",
+        "unique_key": "source_url",
+        "category_map": {
+            "国考": "general",
+            "省考": "general",
+            "选调": "general",
+            "事业单位": "general",
+        },
     },
     "huatu": {
-        "name": "华图教育", "enabled": True, "source_type": "civil",
+        "name": "华图教育",
+        "enabled": True,
+        "source_type": "civil",
         "list_urls": [
-            "https://www.huatu.com/guojia/", "https://www.huatu.com/sheng/",
-            "https://www.huatu.com/xds/", "https://www.huatu.com/sydw/",
+            "https://www.huatu.com/guojia/",
+            "https://www.huatu.com/sheng/",
+            "https://www.huatu.com/xds/",
+            "https://www.huatu.com/sydw/",
         ],
-        "list_parser": "huatu_list", "detail_parser": "huatu_detail",
-        "concurrency": 8, "rate_limit": 0.5,
-        "target_model": "ExperiencePost", "unique_key": "source_url",
-        "category_map": {"国考": "general", "省考": "general",
-                          "选调": "general", "事业单位": "general"},
+        "list_parser": "huatu_list",
+        "detail_parser": "huatu_detail",
+        "concurrency": 8,
+        "rate_limit": 0.5,
+        "target_model": "ExperiencePost",
+        "unique_key": "source_url",
+        "category_map": {
+            "国考": "general",
+            "省考": "general",
+            "选调": "general",
+            "事业单位": "general",
+        },
     },
     "sina_edu": {
-        "name": "新浪教育", "enabled": True, "source_type": "news",
+        "name": "新浪教育",
+        "enabled": True,
+        "source_type": "news",
         "list_urls": [
             "https://edu.sina.com.cn/",
             "https://edu.sina.com.cn/kaoyan/",
             "https://edu.sina.com.cn/gaokao/",
             "https://edu.sina.com.cn/zt_d/kaoyan/",
         ],
-        "list_parser": "sina_list", "detail_parser": "generic_detail",
-        "concurrency": 10, "rate_limit": 0.3,
-        "target_model": "ExperiencePost", "unique_key": "source_url",
+        "list_parser": "sina_list",
+        "detail_parser": "generic_detail",
+        "concurrency": 10,
+        "rate_limit": 0.3,
+        "target_model": "ExperiencePost",
+        "unique_key": "source_url",
         "category_map": {"kaoyan": "general", "gaokao": "general", "study_abroad": "general"},
     },
     "moe": {
-        "name": "教育部", "enabled": False, "source_type": "policy",
+        "name": "教育部",
+        "enabled": False,
+        "source_type": "policy",
         "list_urls": [
             "http://www.moe.gov.cn/jyb_xwfb/",
             "http://www.moe.gov.cn/jyb_xwfb/xw_zt/",
             "http://www.moe.gov.cn/jyb_xxgk/jyb_xxgk_tjzl/",
         ],
-        "list_parser": "moe_list", "detail_parser": "generic_detail",
-        "concurrency": 5, "rate_limit": 0.8,
-        "target_model": "ExperiencePost", "unique_key": "source_url",
+        "list_parser": "moe_list",
+        "detail_parser": "generic_detail",
+        "concurrency": 5,
+        "rate_limit": 0.8,
+        "target_model": "ExperiencePost",
+        "unique_key": "source_url",
         "category_map": {"政策": "policy", "通知": "policy", "公告": "policy"},
     },
     "xinhua_edu": {
-        "name": "新华网教育", "enabled": True, "source_type": "news",
+        "name": "新华网教育",
+        "enabled": True,
+        "source_type": "news",
         "list_urls": [
             "http://www.xinhuanet.com/edu/",
             "http://www.xinhuanet.com/edu/2026-07/",
         ],
-        "list_parser": "xinhua_list", "detail_parser": "generic_detail",
-        "concurrency": 8, "rate_limit": 0.5,
-        "target_model": "ExperiencePost", "unique_key": "source_url",
+        "list_parser": "xinhua_list",
+        "detail_parser": "generic_detail",
+        "concurrency": 8,
+        "rate_limit": 0.5,
+        "target_model": "ExperiencePost",
+        "unique_key": "source_url",
         "category_map": {"教育": "general", "考研": "general", "高教": "general"},
     },
     "eol": {
-        "name": "中国教育在线", "enabled": True, "source_type": "news",
+        "name": "中国教育在线",
+        "enabled": True,
+        "source_type": "news",
         "list_urls": [
             "https://www.eol.cn/kaoyan/",
             "https://www.eol.cn/kaoyan/zhengce/",
             "https://www.eol.cn/kaoyan/kyzx/",
         ],
-        "list_parser": "eol_list", "detail_parser": "generic_detail",
-        "concurrency": 8, "rate_limit": 0.5,
-        "target_model": "ExperiencePost", "unique_key": "source_url",
+        "list_parser": "eol_list",
+        "detail_parser": "generic_detail",
+        "concurrency": 8,
+        "rate_limit": 0.5,
+        "target_model": "ExperiencePost",
+        "unique_key": "source_url",
         "category_map": {"考研": "general", "政策": "policy", "资讯": "general"},
     },
 }
@@ -205,8 +269,9 @@ def load_sources() -> dict:
     """加载 sources.yaml；pyyaml 不可用时回退到 _FALLBACK_SOURCES。"""
     try:
         import yaml
+
         if _SOURCES_FILE.exists():
-            with open(_SOURCES_FILE, "r", encoding="utf-8") as f:
+            with open(_SOURCES_FILE, encoding="utf-8") as f:
                 data = yaml.safe_load(f)
             if data and isinstance(data, dict):
                 return data
@@ -221,22 +286,30 @@ def load_sources() -> dict:
 # 详情页解析函数 — 统一签名 (html: str, url: str) -> dict
 # ═══════════════════════════════════════════════════════════════
 
+
 def _parse_yz_detail(html: str, url: str) -> dict:
     """解析研招网详情页 — 提取标题和正文文本。"""
     from bs4 import BeautifulSoup
+
     soup = BeautifulSoup(html, "html.parser")
     text = soup.get_text(separator="\n", strip=True)
-    content = re.sub(r'\n{3,}', '\n\n', text).strip()[:5000]
+    content = re.sub(r"\n{3,}", "\n\n", text).strip()[:5000]
     title_tag = soup.find("title")
     title = title_tag.get_text(strip=True) if title_tag else "研招网文章"
-    return {"title": title[:200], "content": content, "category": "政策",
-            "source": "yz.chsi.com.cn", "url": url,
-            "scraped_at": datetime.now().isoformat()}
+    return {
+        "title": title[:200],
+        "content": content,
+        "category": "政策",
+        "source": "yz.chsi.com.cn",
+        "url": url,
+        "scraped_at": datetime.now().isoformat(),
+    }
 
 
 def _parse_kaoyan_detail(html: str, url: str) -> dict:
     """解析考研帮详情页 — 复用 clean_markdown/classify_article。"""
     from bs4 import BeautifulSoup
+
     soup = BeautifulSoup(html, "html.parser")
     text = soup.get_text(separator="\n", strip=True)
     content = clean_markdown(text) if clean_markdown else text
@@ -247,9 +320,14 @@ def _parse_kaoyan_detail(html: str, url: str) -> dict:
     if not title:
         title = "考研帮文章"
     category = classify_article(title, content) if classify_article else "经验分享"
-    return {"title": title[:200], "content": content[:5000], "category": category,
-            "source": "kaoyan.com", "url": url,
-            "scraped_at": datetime.now().isoformat()}
+    return {
+        "title": title[:200],
+        "content": content[:5000],
+        "category": category,
+        "source": "kaoyan.com",
+        "url": url,
+        "scraped_at": datetime.now().isoformat(),
+    }
 
 
 def _parse_civil_detail(html: str, url: str) -> dict:
@@ -257,13 +335,19 @@ def _parse_civil_detail(html: str, url: str) -> dict:
     content = extract_article_content(html) if extract_article_content else ""
     if not content or len(content) < 30:
         from bs4 import BeautifulSoup
+
         soup = BeautifulSoup(html, "html.parser")
         content = soup.get_text(separator="\n", strip=True)[:5000]
-    m = re.search(r'<title[^>]*>(.*?)</title>', html, re.DOTALL)
+    m = re.search(r"<title[^>]*>(.*?)</title>", html, re.DOTALL)
     title = m.group(1).strip() if m else "公考资讯"
-    return {"title": title[:200], "content": content[:5000], "category": "公考",
-            "source": "civil_service", "url": url,
-            "scraped_at": datetime.now().isoformat()}
+    return {
+        "title": title[:200],
+        "content": content[:5000],
+        "category": "公考",
+        "source": "civil_service",
+        "url": url,
+        "scraped_at": datetime.now().isoformat(),
+    }
 
 
 def _parse_generic_list(html: str, url: str, domain_keywords: list = None) -> list[dict]:
@@ -271,7 +355,8 @@ def _parse_generic_list(html: str, url: str, domain_keywords: list = None) -> li
 
     根据域名关键词判断链接是否属于本站，并过滤导航/广告链接。
     """
-    from urllib.parse import urlparse, urljoin
+    from urllib.parse import urljoin, urlparse
+
     from bs4 import BeautifulSoup
 
     soup = BeautifulSoup(html, "html.parser")
@@ -279,8 +364,22 @@ def _parse_generic_list(html: str, url: str, domain_keywords: list = None) -> li
     if not domain_keywords:
         domain_keywords = [base_domain.split(".")[0]]
 
-    skip_nav = {"首页", "登录", "注册", "更多", ">>", "关于我们", "联系我们",
-                "设为首页", "收藏", "APP下载", "客服", "返回", "上一页", "下一页"}
+    skip_nav = {
+        "首页",
+        "登录",
+        "注册",
+        "更多",
+        ">>",
+        "关于我们",
+        "联系我们",
+        "设为首页",
+        "收藏",
+        "APP下载",
+        "客服",
+        "返回",
+        "上一页",
+        "下一页",
+    }
     seen = set()
     results = []
 
@@ -305,7 +404,9 @@ def _parse_generic_list(html: str, url: str, domain_keywords: list = None) -> li
             continue
         # Skip non-article resources
         path = parsed.path.lower()
-        if any(ext in path for ext in [".css", ".js", ".png", ".jpg", ".gif", ".ico", ".svg", ".pdf"]):
+        if any(
+            ext in path for ext in [".css", ".js", ".png", ".jpg", ".gif", ".ico", ".svg", ".pdf"]
+        ):
             continue
         # Skip very short paths (homepage, section roots)
         if not path or path == "/" or path.count("/") <= 1:
@@ -321,6 +422,7 @@ def _parse_generic_list(html: str, url: str, domain_keywords: list = None) -> li
 def _parse_generic_detail(html: str, url: str) -> dict:
     """通用详情页解析器 — 提取标题和正文，自动识别来源域名。"""
     from bs4 import BeautifulSoup
+
     soup = BeautifulSoup(html, "html.parser")
 
     # Remove script/style
@@ -345,16 +447,21 @@ def _parse_generic_detail(html: str, url: str) -> dict:
         title = "教育资讯"
 
     # Extract content from article/main area
-    content_el = soup.find("article") or soup.find("div", class_=re.compile(r"article|content|post|body|main")) or soup.find("main")
+    content_el = (
+        soup.find("article")
+        or soup.find("div", class_=re.compile(r"article|content|post|body|main"))
+        or soup.find("main")
+    )
     if content_el:
         content = content_el.get_text(separator="\n", strip=True)
     else:
         content = soup.get_text(separator="\n", strip=True)
 
-    content = re.sub(r'\n{3,}', '\n\n', content).strip()[:5000]
+    content = re.sub(r"\n{3,}", "\n\n", content).strip()[:5000]
 
     # Determine source from URL
     from urllib.parse import urlparse
+
     domain = urlparse(url).netloc
     source_map = {
         "sina.com.cn": "sina.edu.cn",
@@ -375,7 +482,10 @@ def _parse_generic_detail(html: str, url: str) -> dict:
     text_lower = (title + content).lower()
     if any(kw in text_lower for kw in ["考研", "研究生", "招生", "复试", "调剂"]):
         category = "考研"
-    elif any(kw in text_lower for kw in ["公务员", "国考", "省考", "选调", "事业单位", "事业编", "事业编制"]):
+    elif any(
+        kw in text_lower
+        for kw in ["公务员", "国考", "省考", "选调", "事业单位", "事业编", "事业编制"]
+    ):
         category = "考公"
     elif any(kw in text_lower for kw in ["就业", "招聘", "薪资", "面试", "简历", "求职"]):
         category = "就业"
@@ -386,9 +496,14 @@ def _parse_generic_detail(html: str, url: str) -> dict:
     elif any(kw in text_lower for kw in ["政策", "通知", "公告", "意见"]):
         category = "政策"
 
-    return {"title": title[:200], "content": content, "category": category,
-            "source": source, "url": url,
-            "scraped_at": datetime.now().isoformat()}
+    return {
+        "title": title[:200],
+        "content": content,
+        "category": category,
+        "source": source,
+        "url": url,
+        "scraped_at": datetime.now().isoformat(),
+    }
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -405,18 +520,16 @@ PARSE_REGISTRY = {
     "kaoyan_list": lambda html, url: (
         parse_html_to_articles(html, url, "kaoyan") if parse_html_to_articles else []
     ),
-    "offcn_list": lambda html, url: (
-        extract_links(html, url) if extract_links else []
-    ),
-    "huatu_list": lambda html, url: (
-        extract_links(html, url) if extract_links else []
-    ),
+    "offcn_list": lambda html, url: (extract_links(html, url) if extract_links else []),
+    "huatu_list": lambda html, url: (extract_links(html, url) if extract_links else []),
     # 新增通用列表解析器
     "sina_list": lambda html, url: _parse_generic_list(html, url, ["sina.com.cn"]),
     "moe_list": lambda html, url: _parse_generic_list(html, url, ["moe.gov.cn"]),
     "xinhua_list": lambda html, url: _parse_generic_list(html, url, ["xinhuanet.com", "新华网"]),
     "eol_list": lambda html, url: _parse_generic_list(html, url, ["eol.cn"]),
-    "eol_kaoyan_list": lambda html, url: _parse_generic_list(html, url, ["eol.cn", "kaoyan.eol.cn", "kaoyan.cn"]),
+    "eol_kaoyan_list": lambda html, url: _parse_generic_list(
+        html, url, ["eol.cn", "kaoyan.eol.cn", "kaoyan.cn"]
+    ),
     "fenbi_list": lambda html, url: _parse_generic_list(html, url, ["fenbi.com"]),
     "hqwx_list": lambda html, url: _parse_generic_list(html, url, ["hqwx.com"]),
     "163_edu_list": lambda html, url: _parse_generic_list(html, url, ["163.com", "netease.com"]),
@@ -427,7 +540,9 @@ PARSE_REGISTRY = {
     "boss_list": lambda html, url: _parse_generic_list(html, url, ["zhipin.com", "bosszhipin"]),
     "eol_college_list": lambda html, url: _parse_generic_list(html, url, ["eol.cn", "gaokao"]),
     "mofangge_list": lambda html, url: _parse_generic_list(html, url, ["mofangge.com"]),
-    "mofangge_eng_list": lambda html, url: _parse_generic_list(html, url, ["mofangge.com", "gongcheng", "jiaoyu", "english"]),
+    "mofangge_eng_list": lambda html, url: _parse_generic_list(
+        html, url, ["mofangge.com", "gongcheng", "jiaoyu", "english"]
+    ),
     # 详情页解析器 — 已统一签名
     "yz_detail": _parse_yz_detail,
     "kaoyan_detail": _parse_kaoyan_detail,
@@ -441,6 +556,7 @@ PARSE_REGISTRY = {
 # URLCache — 内存 set + 本地 JSON 文件缓存
 # ═══════════════════════════════════════════════════════════════
 
+
 class URLCache:
     """两级缓存：内存 set 快速判断 + JSON 文件持久化。"""
 
@@ -452,7 +568,7 @@ class URLCache:
     def _load(self):
         if os.path.exists(self._file):
             try:
-                with open(self._file, "r", encoding="utf-8") as f:
+                with open(self._file, encoding="utf-8") as f:
                     self._mem = set(json.load(f))
             except Exception:
                 pass
@@ -511,6 +627,7 @@ def check_robots_allowed(url: str, user_agent: str = "*") -> bool:
 # async discover_urls — 并发抓列表页，提取详情 URL
 # ═══════════════════════════════════════════════════════════════
 
+
 async def discover_urls(
     client: httpx.AsyncClient,
     config: dict,
@@ -535,7 +652,8 @@ async def discover_urls(
                 resp = await client.get(
                     url,
                     headers={"User-Agent": random.choice(_USER_AGENTS)},
-                    follow_redirects=True, timeout=20,
+                    follow_redirects=True,
+                    timeout=20,
                 )
                 if resp.status_code == 200:
                     items = parser(resp.text, url) if parser else []
@@ -561,6 +679,7 @@ async def discover_urls(
 # async crawl_source — Semaphore 控制并发抓详情页，含 429 指数退避重试
 # ═══════════════════════════════════════════════════════════════
 
+
 async def crawl_source(
     client: httpx.AsyncClient,
     config: dict,
@@ -582,7 +701,8 @@ async def crawl_source(
                     resp = await client.get(
                         url,
                         headers={"User-Agent": random.choice(_USER_AGENTS)},
-                        follow_redirects=True, timeout=20,
+                        follow_redirects=True,
+                        timeout=20,
                     )
                     if resp.status_code == 200:
                         article = parser(resp.text, url) if parser else None
@@ -618,6 +738,7 @@ async def crawl_source(
 # ═══════════════════════════════════════════════════════════════
 # async run_all — 单个 httpx.AsyncClient 共享，顶层 asyncio.gather 并行所有源
 # ═══════════════════════════════════════════════════════════════
+
 
 async def run_all(args) -> dict:
     """运行全部启用数据源：发现 URL → 抓取详情页。"""
@@ -677,9 +798,7 @@ async def run_all(args) -> dict:
             for k, v in all_results.items()
         },
     }
-    _OUTPUT_FILE.write_text(
-        json.dumps(output, ensure_ascii=False, indent=2), encoding="utf-8"
-    )
+    _OUTPUT_FILE.write_text(json.dumps(output, ensure_ascii=False, indent=2), encoding="utf-8")
     logger.info("=" * 60)
     logger.info(f"全部完成 — 发现 {total_discovered} URL, 抓取 {total_articles} 篇文章")
     logger.info(f"结果保存至: {_OUTPUT_FILE}")
@@ -692,13 +811,16 @@ async def run_all(args) -> dict:
 # 不使用 base_crawler.batch_upsert（pg_insert 在 SQLite 上不兼容）
 # ═══════════════════════════════════════════════════════════════
 
+
 def import_to_db(all_results: dict) -> int:
     """将抓取的文章导入数据库 ExperiencePost 表。"""
     import uuid
+
     from sqlalchemy import select
+
     from app.database import Base, SessionLocal, engine
-    from app.models.user import User
     from app.models.experience_post import ExperiencePost
+    from app.models.user import User
 
     SEED_EMAIL = "unified_scraper@gradpath.local"
     SEED_NAME = "统一爬取引擎"
@@ -707,13 +829,14 @@ def import_to_db(all_results: dict) -> int:
     db = SessionLocal()
     try:
         # 获取或创建种子用户
-        user = db.execute(
-            select(User).where(User.email == SEED_EMAIL)
-        ).scalars().first()
+        user = db.execute(select(User).where(User.email == SEED_EMAIL)).scalars().first()
         if not user:
             user = User(
-                id=uuid.uuid4(), email=SEED_EMAIL, name=SEED_NAME,
-                password_hash="not_a_real_password", is_admin=False,
+                id=uuid.uuid4(),
+                email=SEED_EMAIL,
+                name=SEED_NAME,
+                password_hash="not_a_real_password",
+                is_admin=False,
             )
             db.add(user)
             db.commit()
@@ -722,10 +845,9 @@ def import_to_db(all_results: dict) -> int:
 
         # 获取已存在的 source_url（去重，参考 base_crawler.get_existing_keys 模式）
         existing = {
-            row[0] for row in db.execute(
-                select(ExperiencePost.source_url).where(
-                    ExperiencePost.source_url.isnot(None)
-                )
+            row[0]
+            for row in db.execute(
+                select(ExperiencePost.source_url).where(ExperiencePost.source_url.isnot(None))
             ).all()
         }
         logger.info(f"数据库中已有 {len(existing)} 篇经验帖")
@@ -749,15 +871,24 @@ def import_to_db(all_results: dict) -> int:
             if len(summary) > 197:
                 summary = summary[:197] + "..."
             post = ExperiencePost(
-                id=uuid.uuid4(), user_id=user.id,
+                id=uuid.uuid4(),
+                user_id=user.id,
                 title=article.get("title", "未命名文章")[:200],
-                summary=summary, content=content,
+                summary=summary,
+                content=content,
                 tags=[article.get("category", ""), article.get("source", ""), "unified_scraper"],
                 category=article.get("category", "general"),
-                view_count=0, like_count=0, comment_count=0,
-                external_view_count=0, external_like_count=0,
-                is_pinned=False, is_anonymous=False, status="approved",
-                source_platform="crawler", source_url=url, is_verified=True,
+                view_count=0,
+                like_count=0,
+                comment_count=0,
+                external_view_count=0,
+                external_like_count=0,
+                is_pinned=False,
+                is_anonymous=False,
+                status="approved",
+                source_platform="crawler",
+                source_url=url,
+                is_verified=True,
             )
             new_posts.append(post)
             existing.add(url)
@@ -780,20 +911,17 @@ def import_to_db(all_results: dict) -> int:
 # CLI 入口
 # ═══════════════════════════════════════════════════════════════
 
+
 def main():
     parser = argparse.ArgumentParser(description="统一高速爬取引擎")
-    parser.add_argument("--source", default="all",
-                        help="数据源名称 (yanzhao/kaoyan/offcn/huatu/all)")
-    parser.add_argument("--dry-run", action="store_true",
-                        help="仅发现 URL，不抓取详情页")
-    parser.add_argument("--concurrency", type=int, default=None,
-                        help="覆盖默认并发数")
-    parser.add_argument("--limit", type=int, default=None,
-                        help="每个源最多抓取的详情页数")
-    parser.add_argument("--no-cache", action="store_true",
-                        help="禁用 URL 缓存")
-    parser.add_argument("--no-import", action="store_true",
-                        help="跳过数据库入库")
+    parser.add_argument(
+        "--source", default="all", help="数据源名称 (yanzhao/kaoyan/offcn/huatu/all)"
+    )
+    parser.add_argument("--dry-run", action="store_true", help="仅发现 URL，不抓取详情页")
+    parser.add_argument("--concurrency", type=int, default=None, help="覆盖默认并发数")
+    parser.add_argument("--limit", type=int, default=None, help="每个源最多抓取的详情页数")
+    parser.add_argument("--no-cache", action="store_true", help="禁用 URL 缓存")
+    parser.add_argument("--no-import", action="store_true", help="跳过数据库入库")
     args = parser.parse_args()
 
     # argparse 解析 → asyncio.run(run_all())

@@ -3,6 +3,7 @@
 记录用户每日活跃行为，计算连续打卡天数。
 借鉴 Duolingo 的 streak 设计：易维护的连胜才会被维护。
 """
+
 from datetime import date
 from uuid import UUID
 
@@ -15,9 +16,7 @@ from app.models.base import JSONB, TimestampMixin, UUIDMixin
 
 class StreakRecord(UUIDMixin, TimestampMixin, Base):
     __tablename__ = "streak_records"
-    __table_args__ = (
-        UniqueConstraint("user_id", "activity_date", name="uq_streak_user_date"),
-    )
+    __table_args__ = (UniqueConstraint("user_id", "activity_date", name="uq_streak_user_date"),)
 
     user_id: Mapped[UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True

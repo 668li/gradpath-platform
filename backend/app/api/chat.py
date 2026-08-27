@@ -9,6 +9,7 @@
 - DELETE /api/chat/conversations/{id} — 删除对话
 - GET /api/chat/skills — 列出可用 Skill
 """
+
 import logging
 from uuid import UUID
 
@@ -31,11 +32,7 @@ from app.schemas.chat import (
 )
 from app.schemas.common import PaginatedResponse
 from app.services.ai_circuit_breaker import AICircuitBreakerOpenError
-from app.services.ai_quota_service import (
-    AILLMQuotaExceeded,
-    check_llm_quota,
-    incr_llm_quota,
-)
+from app.services.ai_quota_service import AILLMQuotaExceeded, check_llm_quota, incr_llm_quota
 from app.services.ai_service import AIServiceNotConfigured, AIServiceRetryExhausted
 from app.services.chat_service import (
     create_conversation,

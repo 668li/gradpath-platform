@@ -13,6 +13,7 @@
 映射 yaml 格式见 app/crawlers/config/position_xlsx/guokao_2026.yaml。
 核心逻辑在 import_xlsx()，可被测试注入内存 DB session。
 """
+
 from __future__ import annotations
 
 import hashlib

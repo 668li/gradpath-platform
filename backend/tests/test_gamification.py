@@ -1,5 +1,6 @@
 # backend/tests/test_gamification.py
 """游戏化服务与 API 测试。"""
+
 from datetime import date
 
 from app.models.career_event import CareerEvent, EventType
@@ -10,20 +11,12 @@ from app.models.interview_report import InterviewReport
 from app.models.retrospective import PeriodType, Retrospective
 from app.models.skill_node import SkillNode
 from app.models.user import User
-from app.services.gamification_service import (
-    LEVEL_THRESHOLDS,
-    calculate_xp,
-    check_and_award_badges,
-    get_level,
-    get_or_create_settings,
-    get_profile,
-    update_settings,
-)
-
+from app.services.gamification_service import calculate_xp, check_and_award_badges, get_level
 
 # ======================================================================
 # XP 计算
 # ======================================================================
+
 
 class TestCalculateXP:
     def test_empty_user(self, db_session, auth_headers):
@@ -34,13 +27,15 @@ class TestCalculateXP:
     def test_decisions_only(self, db_session, auth_headers):
         user = db_session.query(User).first()
         for _ in range(3):
-            db_session.add(DestinationDecision(
-                user_id=user.id,
-                destination_type="employment",
-                status=DecisionStatus.planned,
-                decision_date=date(2025, 1, 1),
-                confidence=3,
-            ))
+            db_session.add(
+                DestinationDecision(
+                    user_id=user.id,
+                    destination_type="employment",
+                    status=DecisionStatus.planned,
+                    decision_date=date(2025, 1, 1),
+                    confidence=3,
+                )
+            )
         db_session.commit()
         xp = calculate_xp(db_session, user.id)
         assert xp == 30  # 3 * 10
@@ -48,59 +43,73 @@ class TestCalculateXP:
     def test_all_types(self, db_session, auth_headers):
         user = db_session.query(User).first()
         # 1 decision = 10
-        db_session.add(DestinationDecision(
-            user_id=user.id,
-            destination_type="employment",
-            status=DecisionStatus.planned,
-            decision_date=date(2025, 1, 1),
-            confidence=3,
-        ))
+        db_session.add(
+            DestinationDecision(
+                user_id=user.id,
+                destination_type="employment",
+                status=DecisionStatus.planned,
+                decision_date=date(2025, 1, 1),
+                confidence=3,
+            )
+        )
         # 2 events (1 promotion) = 5 + 15 = 20
-        db_session.add(CareerEvent(
-            user_id=user.id,
-            event_date=date(2025, 1, 1),
-            event_type=EventType.onboard,
-            title="入职",
-        ))
-        db_session.add(CareerEvent(
-            user_id=user.id,
-            event_date=date(2025, 3, 1),
-            event_type=EventType.promotion,
-            title="晋升",
-        ))
+        db_session.add(
+            CareerEvent(
+                user_id=user.id,
+                event_date=date(2025, 1, 1),
+                event_type=EventType.onboard,
+                title="入职",
+            )
+        )
+        db_session.add(
+            CareerEvent(
+                user_id=user.id,
+                event_date=date(2025, 3, 1),
+                event_type=EventType.promotion,
+                title="晋升",
+            )
+        )
         # 1 skill level 3 = 15
-        db_session.add(SkillNode(
-            user_id=user.id,
-            name="Python",
-            category="编程",
-            level=3,
-        ))
+        db_session.add(
+            SkillNode(
+                user_id=user.id,
+                name="Python",
+                category="编程",
+                level=3,
+            )
+        )
         # 1 retro = 15
-        db_session.add(Retrospective(
-            user_id=user.id,
-            period_type=PeriodType.annual,
-            period_start=date(2025, 1, 1),
-            period_end=date(2025, 12, 31),
-            title="年度复盘",
-            satisfaction=4,
-        ))
+        db_session.add(
+            Retrospective(
+                user_id=user.id,
+                period_type=PeriodType.annual,
+                period_start=date(2025, 1, 1),
+                period_end=date(2025, 12, 31),
+                title="年度复盘",
+                satisfaction=4,
+            )
+        )
         # 1 community report = 20
-        db_session.add(CommunityReport(
-            user_id=user.id,
-            school_name="测试大学",
-            major="计算机",
-            graduation_year=2025,
-            degree=Degree.bachelor,
-            destination_type=DestinationType.employment,
-        ))
+        db_session.add(
+            CommunityReport(
+                user_id=user.id,
+                school_name="测试大学",
+                major="计算机",
+                graduation_year=2025,
+                degree=Degree.bachelor,
+                destination_type=DestinationType.employment,
+            )
+        )
         # 1 interview report = 20
-        db_session.add(InterviewReport(
-            user_id=user.id,
-            company="测试公司",
-            position="后端",
-            interview_year=2025,
-            result="offer",
-        ))
+        db_session.add(
+            InterviewReport(
+                user_id=user.id,
+                company="测试公司",
+                position="后端",
+                interview_year=2025,
+                result="offer",
+            )
+        )
         db_session.commit()
         xp = calculate_xp(db_session, user.id)
         assert xp == 100  # 10 + 20 + 15 + 15 + 20 + 20
@@ -109,6 +118,7 @@ class TestCalculateXP:
 # ======================================================================
 # 等级系统
 # ======================================================================
+
 
 class TestLevelSystem:
     def test_level_1_at_zero(self):
@@ -144,16 +154,19 @@ class TestLevelSystem:
 # 徽章颁发
 # ======================================================================
 
+
 class TestBadgeAwarding:
     def test_first_decision_badge(self, db_session, auth_headers):
         user = db_session.query(User).first()
-        db_session.add(DestinationDecision(
-            user_id=user.id,
-            destination_type="employment",
-            status=DecisionStatus.planned,
-            decision_date=date(2025, 1, 1),
-            confidence=3,
-        ))
+        db_session.add(
+            DestinationDecision(
+                user_id=user.id,
+                destination_type="employment",
+                status=DecisionStatus.planned,
+                decision_date=date(2025, 1, 1),
+                confidence=3,
+            )
+        )
         db_session.commit()
         awarded, _ = check_and_award_badges(db_session, user.id)
         codes = [b["code"] for b in awarded]
@@ -161,12 +174,14 @@ class TestBadgeAwarding:
 
     def test_first_event_badge(self, db_session, auth_headers):
         user = db_session.query(User).first()
-        db_session.add(CareerEvent(
-            user_id=user.id,
-            event_date=date(2025, 1, 1),
-            event_type=EventType.onboard,
-            title="入职",
-        ))
+        db_session.add(
+            CareerEvent(
+                user_id=user.id,
+                event_date=date(2025, 1, 1),
+                event_type=EventType.onboard,
+                title="入职",
+            )
+        )
         db_session.commit()
         awarded, _ = check_and_award_badges(db_session, user.id)
         codes = [b["code"] for b in awarded]
@@ -175,13 +190,15 @@ class TestBadgeAwarding:
     def test_decision_master_badge(self, db_session, auth_headers):
         user = db_session.query(User).first()
         for _ in range(5):
-            db_session.add(DestinationDecision(
-                user_id=user.id,
-                destination_type="employment",
-                status=DecisionStatus.planned,
-                decision_date=date(2025, 1, 1),
-                confidence=3,
-            ))
+            db_session.add(
+                DestinationDecision(
+                    user_id=user.id,
+                    destination_type="employment",
+                    status=DecisionStatus.planned,
+                    decision_date=date(2025, 1, 1),
+                    confidence=3,
+                )
+            )
         db_session.commit()
         awarded, _ = check_and_award_badges(db_session, user.id)
         codes = [b["code"] for b in awarded]
@@ -189,13 +206,15 @@ class TestBadgeAwarding:
 
     def test_badge_idempotency(self, db_session, auth_headers):
         user = db_session.query(User).first()
-        db_session.add(DestinationDecision(
-            user_id=user.id,
-            destination_type="employment",
-            status=DecisionStatus.planned,
-            decision_date=date(2025, 1, 1),
-            confidence=3,
-        ))
+        db_session.add(
+            DestinationDecision(
+                user_id=user.id,
+                destination_type="employment",
+                status=DecisionStatus.planned,
+                decision_date=date(2025, 1, 1),
+                confidence=3,
+            )
+        )
         db_session.commit()
         # First call awards the badge
         first, _ = check_and_award_badges(db_session, user.id)
@@ -209,6 +228,7 @@ class TestBadgeAwarding:
 # Profile API
 # ======================================================================
 
+
 class TestGamificationAPI:
     def test_profile_requires_auth(self, client):
         resp = client.get("/api/gamification/profile")
@@ -216,13 +236,15 @@ class TestGamificationAPI:
 
     def test_profile_returns_correct_xp(self, client, auth_headers, db_session):
         user = db_session.query(User).first()
-        db_session.add(DestinationDecision(
-            user_id=user.id,
-            destination_type="employment",
-            status=DecisionStatus.planned,
-            decision_date=date(2025, 1, 1),
-            confidence=3,
-        ))
+        db_session.add(
+            DestinationDecision(
+                user_id=user.id,
+                destination_type="employment",
+                status=DecisionStatus.planned,
+                decision_date=date(2025, 1, 1),
+                confidence=3,
+            )
+        )
         db_session.commit()
         resp = client.get("/api/gamification/profile", headers=auth_headers)
         assert resp.status_code == 200
@@ -232,12 +254,14 @@ class TestGamificationAPI:
 
     def test_profile_newly_awarded_on_first_access(self, client, auth_headers, db_session):
         user = db_session.query(User).first()
-        db_session.add(CareerEvent(
-            user_id=user.id,
-            event_date=date(2025, 1, 1),
-            event_type=EventType.onboard,
-            title="入职",
-        ))
+        db_session.add(
+            CareerEvent(
+                user_id=user.id,
+                event_date=date(2025, 1, 1),
+                event_type=EventType.onboard,
+                title="入职",
+            )
+        )
         db_session.commit()
         resp = client.get("/api/gamification/profile", headers=auth_headers)
         data = resp.json()
@@ -246,12 +270,14 @@ class TestGamificationAPI:
 
     def test_profile_second_access_no_new_badges(self, client, auth_headers, db_session):
         user = db_session.query(User).first()
-        db_session.add(CareerEvent(
-            user_id=user.id,
-            event_date=date(2025, 1, 1),
-            event_type=EventType.onboard,
-            title="入职",
-        ))
+        db_session.add(
+            CareerEvent(
+                user_id=user.id,
+                event_date=date(2025, 1, 1),
+                event_type=EventType.onboard,
+                title="入职",
+            )
+        )
         db_session.commit()
         client.get("/api/gamification/profile", headers=auth_headers)
         resp = client.get("/api/gamification/profile", headers=auth_headers)
@@ -262,6 +288,7 @@ class TestGamificationAPI:
 # ======================================================================
 # Settings API
 # ======================================================================
+
 
 class TestSettingsAPI:
     def test_settings_require_auth(self, client):

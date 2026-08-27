@@ -1,4 +1,5 @@
 """路径冲突调解 Schemas。"""
+
 from datetime import datetime
 from uuid import UUID
 

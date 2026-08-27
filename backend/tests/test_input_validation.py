@@ -1,5 +1,6 @@
 # backend/tests/test_input_validation.py
 """输入校验加固测试（Task 4）。"""
+
 import pytest
 from pydantic import ValidationError
 

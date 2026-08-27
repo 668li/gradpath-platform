@@ -1,10 +1,11 @@
 """失败案例库 API 测试。"""
-from app.services.failure_case_seeds import seed_failure_cases
 
+from app.services.failure_case_seeds import seed_failure_cases
 
 # ======================================================================
 # 测试辅助
 # ======================================================================
+
 
 def _create_case_payload(**overrides) -> dict:
     """生成一个有效的失败案例提交 payload。"""
@@ -31,6 +32,7 @@ def _seed_cases(db_session):
 # 公开列表访问
 # ======================================================================
 
+
 class TestListCases:
     def test_list_public_no_auth_required(self, client):
         """未登录用户可以访问列表。"""
@@ -45,28 +47,32 @@ class TestListCases:
         """列表只返回 status=approved 的案例。"""
         from app.models.failure_case import FailureCase
 
-        db_session.add(FailureCase(
-            author_role="在校生",
-            path_type="kaoyan",
-            stage="preparation",
-            title="已审核案例",
-            story="故事内容",
-            lessons=["教训1"],
-            regrets=["后悔1"],
-            what_would_i_do="如果重来...",
-            status="approved",
-        ))
-        db_session.add(FailureCase(
-            author_role="在校生",
-            path_type="kaoyan",
-            stage="preparation",
-            title="待审核案例",
-            story="故事内容",
-            lessons=["教训1"],
-            regrets=["后悔1"],
-            what_would_i_do="如果重来...",
-            status="pending",
-        ))
+        db_session.add(
+            FailureCase(
+                author_role="在校生",
+                path_type="kaoyan",
+                stage="preparation",
+                title="已审核案例",
+                story="故事内容",
+                lessons=["教训1"],
+                regrets=["后悔1"],
+                what_would_i_do="如果重来...",
+                status="approved",
+            )
+        )
+        db_session.add(
+            FailureCase(
+                author_role="在校生",
+                path_type="kaoyan",
+                stage="preparation",
+                title="待审核案例",
+                story="故事内容",
+                lessons=["教训1"],
+                regrets=["后悔1"],
+                what_would_i_do="如果重来...",
+                status="pending",
+            )
+        )
         db_session.commit()
 
         resp = client.get("/api/failure-cases")
@@ -79,6 +85,7 @@ class TestListCases:
 # ======================================================================
 # 筛选
 # ======================================================================
+
 
 class TestFilterCases:
     def test_filter_by_path_type(self, db_session, client):
@@ -132,6 +139,7 @@ class TestFilterCases:
 # 分页
 # ======================================================================
 
+
 class TestPagination:
     def test_pagination_basic(self, db_session, client):
         """分页：page=1, size=3 返回前 3 条。"""
@@ -169,6 +177,7 @@ class TestPagination:
 # ======================================================================
 # 分享需登录
 # ======================================================================
+
 
 class TestCreateCase:
     def test_create_requires_auth(self, client):
@@ -225,6 +234,7 @@ class TestCreateCase:
 # 匿名性
 # ======================================================================
 
+
 class TestAnonymity:
     def test_response_has_no_user_id(self, auth_headers, client):
         """创建后的 response 不含 user_id 字段（匿名设计）。"""
@@ -243,17 +253,19 @@ class TestAnonymity:
         """列表中的案例也不含 user_id 字段。"""
         from app.models.failure_case import FailureCase
 
-        db_session.add(FailureCase(
-            author_role="毕业生",
-            path_type="kaoyan",
-            stage="interview",
-            title="匿名案例",
-            story="故事",
-            lessons=["教训1"],
-            regrets=["后悔1"],
-            what_would_i_do="如果重来",
-            status="approved",
-        ))
+        db_session.add(
+            FailureCase(
+                author_role="毕业生",
+                path_type="kaoyan",
+                stage="interview",
+                title="匿名案例",
+                story="故事",
+                lessons=["教训1"],
+                regrets=["后悔1"],
+                what_would_i_do="如果重来",
+                status="approved",
+            )
+        )
         db_session.commit()
 
         resp = client.get("/api/failure-cases")
@@ -283,6 +295,7 @@ class TestAnonymity:
 # ======================================================================
 # 标记有帮助
 # ======================================================================
+
 
 class TestMarkHelpful:
     def test_mark_helpful_requires_auth(self, client, db_session):
@@ -321,6 +334,7 @@ class TestMarkHelpful:
 # ======================================================================
 # 详情 + 浏览数
 # ======================================================================
+
 
 class TestGetCase:
     def test_get_case_detail(self, db_session, client):
@@ -386,6 +400,7 @@ class TestGetCase:
 # 统计
 # ======================================================================
 
+
 class TestStats:
     def test_stats_public(self, client):
         """统计接口公开可访问。"""
@@ -414,28 +429,32 @@ class TestStats:
         """统计只包含 approved 案例。"""
         from app.models.failure_case import FailureCase
 
-        db_session.add(FailureCase(
-            author_role="在校生",
-            path_type="kaoyan",
-            stage="preparation",
-            title="approved",
-            story="...",
-            lessons=[],
-            regrets=[],
-            what_would_i_do="...",
-            status="approved",
-        ))
-        db_session.add(FailureCase(
-            author_role="在校生",
-            path_type="kaoyan",
-            stage="preparation",
-            title="pending",
-            story="...",
-            lessons=[],
-            regrets=[],
-            what_would_i_do="...",
-            status="pending",
-        ))
+        db_session.add(
+            FailureCase(
+                author_role="在校生",
+                path_type="kaoyan",
+                stage="preparation",
+                title="approved",
+                story="...",
+                lessons=[],
+                regrets=[],
+                what_would_i_do="...",
+                status="approved",
+            )
+        )
+        db_session.add(
+            FailureCase(
+                author_role="在校生",
+                path_type="kaoyan",
+                stage="preparation",
+                title="pending",
+                story="...",
+                lessons=[],
+                regrets=[],
+                what_would_i_do="...",
+                status="pending",
+            )
+        )
         db_session.commit()
 
         resp = client.get("/api/failure-cases/stats")
@@ -446,6 +465,7 @@ class TestStats:
 # ======================================================================
 # 种子数据完整性
 # ======================================================================
+
 
 class TestSeedData:
     def test_seed_cases_have_required_fields(self, db_session):
@@ -472,5 +492,6 @@ class TestSeedData:
         assert second == 0
 
         from app.models.failure_case import FailureCase
+
         total = db_session.query(FailureCase).count()
         assert total == 8

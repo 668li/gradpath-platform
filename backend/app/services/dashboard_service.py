@@ -19,6 +19,7 @@ def get_overview(db: Session, user_id: UUID) -> dict:
 
     # 记录每日打卡（打开看板即视为活跃）— 缓存命中时也记录，保证打卡不丢失
     from app.services.streak_service import record_activity
+
     record_activity(db, user_id, "dashboard")
 
     if cached is not None:
@@ -88,21 +89,25 @@ def get_overview(db: Session, user_id: UUID) -> dict:
     timeline = []
     for d in decisions:
         detail = d.details or {}
-        timeline.append({
-            "id": str(d.id),
-            "date": d.decision_date.isoformat(),
-            "type": "decision",
-            "title": f"去向决策: {d.destination_type.value}",
-            "subtitle": detail.get("company") or detail.get("target_school") or "",
-        })
+        timeline.append(
+            {
+                "id": str(d.id),
+                "date": d.decision_date.isoformat(),
+                "type": "decision",
+                "title": f"去向决策: {d.destination_type.value}",
+                "subtitle": detail.get("company") or detail.get("target_school") or "",
+            }
+        )
     for e in events:
-        timeline.append({
-            "id": str(e.id),
-            "date": e.event_date.isoformat(),
-            "type": "event",
-            "title": e.title,
-            "subtitle": e.event_type.value,
-        })
+        timeline.append(
+            {
+                "id": str(e.id),
+                "date": e.event_date.isoformat(),
+                "type": "event",
+                "title": e.title,
+                "subtitle": e.event_type.value,
+            }
+        )
     timeline.sort(key=lambda x: x["date"], reverse=True)
 
     result = {

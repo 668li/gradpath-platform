@@ -1,5 +1,5 @@
-from datetime import date
 import logging
+from datetime import date
 from uuid import UUID
 
 import httpx
@@ -36,7 +36,9 @@ router = APIRouter(prefix="/api/retrospectives", tags=["阶段复盘"])
 
 
 @router.post("", response_model=RetroResponse, status_code=status.HTTP_201_CREATED)
-def create(data: RetroCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def create(
+    data: RetroCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)
+):
     return create_retrospective(db, user.id, data)
 
 
@@ -94,9 +96,7 @@ async def ai_draft(
     - 其他异常 → 500
     """
     try:
-        return await generate_ai_retro_draft(
-            db, user.id, body.period_start, body.period_end
-        )
+        return await generate_ai_retro_draft(db, user.id, body.period_start, body.period_end)
     except AIServiceNotConfigured:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -124,7 +124,12 @@ def get_one(retro_id: UUID, db: Session = Depends(get_db), user: User = Depends(
 
 
 @router.patch("/{retro_id}", response_model=RetroResponse)
-def update(retro_id: UUID, data: RetroUpdate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def update(
+    retro_id: UUID,
+    data: RetroUpdate,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
     return update_retrospective(db, user.id, retro_id, data)
 
 

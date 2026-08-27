@@ -15,6 +15,7 @@
   - 公考源（offcn 系 977 篇）/高考源/教育资讯源暂缓（无对应业务流，文件保留）
   - 全程 ORM 参数绑定；幂等可重复执行
 """
+
 import hashlib
 import json
 import sys
@@ -90,8 +91,13 @@ def import_schools(db) -> dict:
                 code=str(r.get("id") or "")[:10] or None,
                 province=str(r.get("province") or "")[:20] or None,
                 level=_level_from_tags(tags),
-                report_index_url=str(r.get("graduate_school_url") or r.get("official_website") or "") or None,
-                key_majors={"city": r.get("city"), "tags": tags} if (r.get("city") or tags) else None,
+                report_index_url=str(
+                    r.get("graduate_school_url") or r.get("official_website") or ""
+                )
+                or None,
+                key_majors=(
+                    {"city": r.get("city"), "tags": tags} if (r.get("city") or tags) else None
+                ),
             )
         )
         inserted += 1
@@ -229,7 +235,9 @@ def _collect_news_raws() -> tuple[list[dict], dict]:
             stats["chsi_rejected" if url else "no_url"] += 1
             continue
         content = str(r.get("content") or "")
-        first_line = next((ln.strip(" #*>\t ") for ln in content.splitlines() if ln.strip(" #*>\t ")), "")
+        first_line = next(
+            (ln.strip(" #*>\t ") for ln in content.splitlines() if ln.strip(" #*>\t ")), ""
+        )
         title = (r.get("title") or first_line or "")[:120]
         raws.append(
             {
@@ -296,7 +304,12 @@ def import_news_queue(db) -> dict:
         **stats,
     }
     db.commit()
-    return {**result, "raw_collected": len(raws), "quality_filtered": len(raws) - len(payloads), **stats}
+    return {
+        **result,
+        "raw_collected": len(raws),
+        "quality_filtered": len(raws) - len(payloads),
+        **stats,
+    }
 
 
 # ---------------------------------------------------------------------------

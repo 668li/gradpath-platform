@@ -6,6 +6,7 @@
 - GET  /api/path-conflict/history — 获取历史调解记录
 - GET  /api/path-conflict/{id}    — 获取单条调解详情
 """
+
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -50,9 +51,7 @@ def detect_conflict(
         )
 
     # 有冲突：生成选项 + 创建 pending 记录
-    options = svc.generate_options(
-        result["assessment_summary"], result["current_situation"]
-    )
+    options = svc.generate_options(result["assessment_summary"], result["current_situation"])
 
     # 创建 pending 记录，返回 conflict_id
     pending = PathConflictResolution(

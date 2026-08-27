@@ -2,7 +2,6 @@ import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import DateTime, Integer, String, Text, func
-from sqlalchemy.dialects.postgresql import JSONB as _PG_JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base

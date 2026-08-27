@@ -1,9 +1,10 @@
 # backend/app/api/ai.py
 """AI 决策指导与外部数据查询 API 路由。"""
+
 import logging
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
+from fastapi import APIRouter, Depends, Query, Request, Response
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -22,11 +23,7 @@ from app.schemas.ai import (
     SalaryBenchmarkResponse,
 )
 from app.services.ai_circuit_breaker import AICircuitBreakerOpenError
-from app.services.ai_quota_service import (
-    AILLMQuotaExceeded,
-    check_llm_quota,
-    incr_llm_quota,
-)
+from app.services.ai_quota_service import AILLMQuotaExceeded, check_llm_quota, incr_llm_quota
 from app.services.ai_service import AIServiceNotConfigured, AIServiceRetryExhausted
 from app.services.decision_advice_service import get_decision_advice
 from app.services.external_data_service import (
@@ -34,10 +31,7 @@ from app.services.external_data_service import (
     list_market_data,
     list_salary_benchmarks,
 )
-from app.services.growth_insight_service import (
-    generate_growth_insight,
-    get_latest_insight,
-)
+from app.services.growth_insight_service import generate_growth_insight, get_latest_insight
 
 # 修复: 文件内多处 logger.exception 调用未定义 logger，补全模块级 logger
 logger = logging.getLogger(__name__)
@@ -48,6 +42,7 @@ router = APIRouter(tags=["AI 与外部数据"])
 # ======================================================================
 # AI 决策指导
 # ======================================================================
+
 
 @router.post(
     "/api/ai/decision-advice",
@@ -81,32 +76,43 @@ async def decision_advice(
         raise RateLimitExceededError("今日 AI 调用次数已达上限，请明日再试")
     except AICircuitBreakerOpenError:
         raise BusinessError(
-            "AI_SERVICE_UNAVAILABLE", "AI 服务暂时不可用，请稍后重试", 503,
+            "AI_SERVICE_UNAVAILABLE",
+            "AI 服务暂时不可用，请稍后重试",
+            503,
         )
     except AIServiceRetryExhausted:
         raise BusinessError(
-            "AI_TIMEOUT", "AI 服务响应超时，请稍后重试", 504,
+            "AI_TIMEOUT",
+            "AI 服务响应超时，请稍后重试",
+            504,
         )
     except AIServiceNotConfigured:
         raise BusinessError(
-            "AI_NOT_CONFIGURED", "AI 服务未配置（LLM_API_KEY 缺失）", 503,
+            "AI_NOT_CONFIGURED",
+            "AI 服务未配置（LLM_API_KEY 缺失）",
+            503,
         )
     except httpx.TimeoutException:
         raise BusinessError(
-            "AI_TIMEOUT", "AI 分析超时，请稍后重试", 504,
+            "AI_TIMEOUT",
+            "AI 分析超时，请稍后重试",
+            504,
         )
     except BusinessError:
         raise
     except Exception as e:
         logger.exception("AI 决策指导服务异常: %s", e)
         raise BusinessError(
-            "AI_INTERNAL", "AI 决策指导服务异常，请稍后重试", 500,
+            "AI_INTERNAL",
+            "AI 决策指导服务异常，请稍后重试",
+            500,
         )
 
 
 # ======================================================================
 # AI 成长洞察
 # ======================================================================
+
 
 @router.post(
     "/api/ai/growth-insight",
@@ -144,26 +150,36 @@ async def growth_insight(
         raise RateLimitExceededError("今日 AI 调用次数已达上限，请明日再试")
     except AICircuitBreakerOpenError:
         raise BusinessError(
-            "AI_SERVICE_UNAVAILABLE", "AI 服务暂时不可用，请稍后重试", 503,
+            "AI_SERVICE_UNAVAILABLE",
+            "AI 服务暂时不可用，请稍后重试",
+            503,
         )
     except AIServiceRetryExhausted:
         raise BusinessError(
-            "AI_TIMEOUT", "AI 服务响应超时，请稍后重试", 504,
+            "AI_TIMEOUT",
+            "AI 服务响应超时，请稍后重试",
+            504,
         )
     except AIServiceNotConfigured:
         raise BusinessError(
-            "AI_NOT_CONFIGURED", "AI 服务未配置（LLM_API_KEY 缺失）", 503,
+            "AI_NOT_CONFIGURED",
+            "AI 服务未配置（LLM_API_KEY 缺失）",
+            503,
         )
     except httpx.TimeoutException:
         raise BusinessError(
-            "AI_TIMEOUT", "AI 分析超时，请稍后重试", 504,
+            "AI_TIMEOUT",
+            "AI 分析超时，请稍后重试",
+            504,
         )
     except BusinessError:
         raise
     except Exception as e:
         logger.exception("成长洞察服务异常: %s", e)
         raise BusinessError(
-            "AI_INTERNAL", "成长洞察服务异常，请稍后重试", 500,
+            "AI_INTERNAL",
+            "成长洞察服务异常，请稍后重试",
+            500,
         )
 
 
@@ -188,6 +204,7 @@ def latest_growth_insight(
 # ======================================================================
 # 外部数据查询（公开接口）
 # ======================================================================
+
 
 @router.get("/api/companies", response_model=list[CompanyResponse])
 def companies(
@@ -218,8 +235,9 @@ def companies_batch(
     前端在作战室/就业页一次展示 N 家公司时，原需发 N 次
     `/api/companies/{id}` 请求；本接口一次返回所有公司信息。
     """
-    from app.models.company import Company as CompanyModel
     from uuid import UUID as PyUUID
+
+    from app.models.company import Company as CompanyModel
 
     # 限制单次最多 100 个，防止滥用
     raw_ids = body.ids[:100]
@@ -235,9 +253,7 @@ def companies_batch(
     return [CompanyResponse.model_validate(c) for c in items]
 
 
-@router.get(
-    "/api/salary-benchmarks", response_model=list[SalaryBenchmarkResponse]
-)
+@router.get("/api/salary-benchmarks", response_model=list[SalaryBenchmarkResponse])
 def salary_benchmarks(
     company: str | None = Query(None, description="公司筛选（模糊）"),
     position: str | None = Query(None, description="岗位筛选（模糊）"),
@@ -246,9 +262,7 @@ def salary_benchmarks(
     db: Session = Depends(get_db),
 ):
     """查询薪资基准（公开）。"""
-    return list_salary_benchmarks(
-        db, company=company, position=position, city=city, limit=limit
-    )
+    return list_salary_benchmarks(db, company=company, position=position, city=city, limit=limit)
 
 
 @router.get("/api/market-data", response_model=list[MarketDataResponse])
@@ -260,6 +274,4 @@ def market_data(
     db: Session = Depends(get_db),
 ):
     """查询市场宏观数据（公开）。"""
-    return list_market_data(
-        db, category=category, year=year, industry=industry, limit=limit
-    )
+    return list_market_data(db, category=category, year=year, industry=industry, limit=limit)

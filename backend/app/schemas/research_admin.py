@@ -1,4 +1,5 @@
 """管理员外部调研 API 的 Pydantic Schema。"""
+
 from datetime import datetime
 from uuid import UUID
 

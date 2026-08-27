@@ -14,20 +14,17 @@
    - ACTIVE_WEBSOCKETS (Gauge)
 4. 启动时清理 multiproc 目录，避免旧文件污染。
 """
+
 from __future__ import annotations
 
 import logging
 import os
-import shutil
 from pathlib import Path
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
 # 多进程目录 — 必须在 prometheus_client 导入前设置
-PROMETHEUS_MULTIPROC_DIR = os.environ.get(
-    "PROMETHEUS_MULTIPROC_DIR", "/tmp/prometheus_multiproc"
-)
+PROMETHEUS_MULTIPROC_DIR = os.environ.get("PROMETHEUS_MULTIPROC_DIR", "/tmp/prometheus_multiproc")
 
 
 def _ensure_multiproc_dir() -> None:
@@ -59,13 +56,13 @@ if os.environ.get("PROMETHEUS_MULTIPROC_DIR"):
 # ----------------------------------------------------------------------
 try:
     from prometheus_client import (
-        Counter,
-        Histogram,
-        Gauge,
-        CollectorRegistry,
-        multiprocess,
-        generate_latest,
         CONTENT_TYPE_LATEST,
+        CollectorRegistry,
+        Counter,
+        Gauge,
+        Histogram,
+        generate_latest,
+        multiprocess,
     )
 
     _PROMETHEUS_AVAILABLE = True
@@ -74,10 +71,10 @@ except ImportError:
     logger.warning("prometheus_client 未安装，多进程监控指标不可用")
 
 # 全局 Registry（多进程模式下延迟创建）
-_REGISTRY: Optional["CollectorRegistry"] = None
+_REGISTRY: CollectorRegistry | None = None
 
 
-def _get_registry() -> "CollectorRegistry":
+def _get_registry() -> CollectorRegistry:
     """获取 CollectorRegistry。
 
     多进程模式（PROMETHEUS_MULTIPROC_DIR 已设置）下创建一个新的 CollectorRegistry
@@ -104,6 +101,7 @@ def _get_registry() -> "CollectorRegistry":
     else:
         # 单进程模式：使用默认 REGISTRY（全局 Counter/Histogram/Gauge 自动注册到此处）
         from prometheus_client import REGISTRY as _DEFAULT_REGISTRY
+
         _REGISTRY = _DEFAULT_REGISTRY
         return _REGISTRY
 
@@ -210,6 +208,7 @@ def record_http_request(method: str, path: str, status_code: int, duration_secon
     # 同时调用旧版 record_request 维持 /api/metrics 兼容
     try:
         from app.api.metrics import record_request
+
         record_request(method, path, status_code, duration_seconds * 1000.0)
     except Exception:
         pass

@@ -7,6 +7,7 @@
 3. 构建用户消息 prompt（build_user_prompt）
 4. 解析 LLM 输出（parse_response，默认返回原始文本）
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

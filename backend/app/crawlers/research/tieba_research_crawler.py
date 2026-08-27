@@ -4,6 +4,7 @@
 再抓公开帖子首页正文；登录内容不爬、robots 不允许 → fail-safe 跳过并如实记录。
 入库走 store_research_items → PENDING 审核队列，人工确认后才落业务表。
 """
+
 import argparse
 import html
 import json
@@ -35,7 +36,9 @@ DEFAULT_KEYWORDS = ["避坑", "踩坑", "教训", "劝退", "避雷", "别报", 
 _ANTI_CRAWL_MARKERS = ["安全验证", "CAPTCHA", "登录后查看", "请您登录", "请先登录"]
 
 # 贴吧列表页帖子链接：/p/12345，标题在 <a ... class="j_th_tit ">标题</a>
-_THREAD_LINK_RE = re.compile(r'href="(/p/(\d+))"[^>]*class="[^"]*j_th_tit[^"]*"[^>]*>(.*?)</a>', re.S)
+_THREAD_LINK_RE = re.compile(
+    r'href="(/p/(\d+))"[^>]*class="[^"]*j_th_tit[^"]*"[^>]*>(.*?)</a>', re.S
+)
 # 回退：任意 /p/ 链接 + 邻近标题
 _THREAD_LINK_FALLBACK_RE = re.compile(r'<a[^>]*href="(/p/\d+)"[^>]*>(.*?)</a>', re.S)
 # 帖子页标题
@@ -122,10 +125,16 @@ class TiebaResearchCrawler(BaseCrawler):
         matches = _THREAD_LINK_RE.findall(html_text)
         if not matches:
             # 回退：任意 /p/ 链接 + 邻近标题（无 pid 提取）
-            matches = [(href, "", title) for href, title in _THREAD_LINK_FALLBACK_RE.findall(html_text)]
+            matches = [
+                (href, "", title) for href, title in _THREAD_LINK_FALLBACK_RE.findall(html_text)
+            ]
         seen: set[str] = set()
         for href, pid, raw_title in matches:
-            url = f"https://tieba.baidu.com{patch_href(href)}" if not href.startswith("http") else href
+            url = (
+                f"https://tieba.baidu.com{patch_href(href)}"
+                if not href.startswith("http")
+                else href
+            )
             if pid and pid in seen:
                 continue
             if pid:
@@ -148,14 +157,16 @@ class TiebaResearchCrawler(BaseCrawler):
             url = raw.get("url", "")
             html_text = raw.get("html", "")
             if raw.get("status") != "ok" or not html_text:
-                parsed_items.append({
-                    "title": raw.get("title_hint", url),
-                    "content": "",
-                    "source_url": url,
-                    "source_platform": "tieba",
-                    "status": "failed",
-                    "error": raw.get("error", "空响应"),
-                })
+                parsed_items.append(
+                    {
+                        "title": raw.get("title_hint", url),
+                        "content": "",
+                        "source_url": url,
+                        "source_platform": "tieba",
+                        "status": "failed",
+                        "error": raw.get("error", "空响应"),
+                    }
+                )
                 continue
 
             title = self._extract_title(html_text) or raw.get("title_hint") or url
@@ -163,23 +174,27 @@ class TiebaResearchCrawler(BaseCrawler):
 
             if not content or any(marker in content for marker in _ANTI_CRAWL_MARKERS):
                 logger.warning(f"[{self.name}] 帖子无正文或含登录/验证码墙，丢弃: {url}")
-                parsed_items.append({
-                    "title": title,
-                    "content": "",
-                    "source_url": url,
-                    "source_platform": "tieba",
-                    "status": "failed",
-                    "error": "登录墙/验证码或空正文（合规跳过）",
-                })
+                parsed_items.append(
+                    {
+                        "title": title,
+                        "content": "",
+                        "source_url": url,
+                        "source_platform": "tieba",
+                        "status": "failed",
+                        "error": "登录墙/验证码或空正文（合规跳过）",
+                    }
+                )
                 continue
 
-            parsed_items.append({
-                "title": title,
-                "content": content,
-                "source_url": url,
-                "source_platform": "tieba",
-                "status": "ok",
-            })
+            parsed_items.append(
+                {
+                    "title": title,
+                    "content": content,
+                    "source_url": url,
+                    "source_platform": "tieba",
+                    "status": "ok",
+                }
+            )
         return parsed_items
 
     def _extract_title(self, html_text: str) -> str:
@@ -272,7 +287,9 @@ def main() -> None:
     )
     parser = argparse.ArgumentParser(description="百度贴吧考研避坑帖调研爬虫")
     parser.add_argument("--forum", type=str, default="考研", help="贴吧名（默认：考研）")
-    parser.add_argument("--keywords", type=str, default="", help="避坑关键词，逗号分隔（缺省用默认集）")
+    parser.add_argument(
+        "--keywords", type=str, default="", help="避坑关键词，逗号分隔（缺省用默认集）"
+    )
     parser.add_argument("--pages", type=int, default=1, help="列表页抓取页数（每页 50 帖）")
     parser.add_argument("--max-items", type=int, default=0, help="帖子抓取条数上限（0 不限）")
     args = parser.parse_args()

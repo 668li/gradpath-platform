@@ -1,5 +1,6 @@
 # backend/app/models/company_review.py
 """公司评价模型 — 员工/前员工匿名分享的公司评价，覆盖工作生活平衡、薪资满意度等维度。"""
+
 from uuid import UUID
 
 from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, UniqueConstraint
@@ -18,10 +19,13 @@ class CompanyReview(UUIDMixin, TimestampMixin, Base):
     - 企业文化评分 (culture_score)
     - 职业成长空间 (career_growth)
     """
+
     __tablename__ = "company_reviews"
     __table_args__ = (
         UniqueConstraint(
-            "user_id", "company", "title",
+            "user_id",
+            "company",
+            "title",
             name="uq_user_company_review_title",
         ),
     )

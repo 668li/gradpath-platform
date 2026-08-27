@@ -1,14 +1,15 @@
 # backend/app/schemas/chat.py
 """对话与职业规划的 Pydantic Schema 定义 — Phase 11。"""
+
 from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-
 # ======================================================================
 # 对话与消息
 # ======================================================================
+
 
 class ConversationCreate(BaseModel):
     title: str = Field(default="新对话", max_length=200)
@@ -63,6 +64,7 @@ class SkillInfo(BaseModel):
 # 职业规划
 # ======================================================================
 
+
 class CareerPlanResponse(BaseModel):
     id: UUID
     user_id: UUID
@@ -87,6 +89,7 @@ class MilestoneUpdate(BaseModel):
 # ======================================================================
 # 里程碑执行日志与到期提醒 — Phase 12
 # ======================================================================
+
 
 class MilestoneLogCreate(BaseModel):
     # 修复: FASTAPI-VALID-001 — 里程碑日志 content 加 max_length

@@ -1,6 +1,7 @@
 """成长模式智能 API — 历史数据分析 + 预测校准 + 快照持久化。"""
-from datetime import datetime, timezone
+
 import json
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
@@ -23,7 +24,14 @@ async def analyze_patterns(
     result = await growth_pattern_service.analyze_patterns(db, user.id)
     patterns = result.get("patterns", []) if isinstance(result, dict) else []
     # 计算成长得分：模式数 + 数据完整度启发式
-    score = min(100, len(patterns) * 18 + result.get("data_points", {}).get("skill_count", 0) if isinstance(result, dict) else 0)
+    score = min(
+        100,
+        (
+            len(patterns) * 18 + result.get("data_points", {}).get("skill_count", 0)
+            if isinstance(result, dict)
+            else 0
+        ),
+    )
 
     period = datetime.now(timezone.utc).strftime("%Y-%m")
     # 同月只保留最新快照
@@ -36,11 +44,17 @@ async def analyze_patterns(
         period=period,
         growth_score=int(score),
         pattern_count=len(patterns),
-        snapshot=json.dumps(result if isinstance(result, dict) else {"raw": str(result)}, ensure_ascii=False),
+        snapshot=json.dumps(
+            result if isinstance(result, dict) else {"raw": str(result)}, ensure_ascii=False
+        ),
     )
     db.add(snap)
     db.commit()
-    return {**result, "growth_score": int(score), "snapshot_saved": True} if isinstance(result, dict) else result
+    return (
+        {**result, "growth_score": int(score), "snapshot_saved": True}
+        if isinstance(result, dict)
+        else result
+    )
 
 
 @router.get("/history")

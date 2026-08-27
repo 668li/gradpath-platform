@@ -1,5 +1,6 @@
 # backend/app/skills/salary_benchmark.py
 """薪资基准分析 Skill — 分析用户薪资数据，生成行业/岗位/地区的薪资基准报告。"""
+
 from __future__ import annotations
 
 import json
@@ -8,7 +9,11 @@ import re
 from app.skills.base import BaseSkill
 
 ACTIVATE_KEYWORDS = [
-    "薪资基准", "薪资报告", "工资水平", "salary benchmark", "薪资分析",
+    "薪资基准",
+    "薪资报告",
+    "工资水平",
+    "salary benchmark",
+    "薪资分析",
 ]
 
 OUTPUT_FORMAT = """\
@@ -116,6 +121,7 @@ def _safe_parse_json(content: str) -> dict:
 
 def _coerce_benchmark(raw: dict) -> dict:
     """将解析后的 salary_benchmark dict 强制转换为标准结构。"""
+
     def _as_dict(v) -> dict:
         return v if isinstance(v, dict) else {}
 

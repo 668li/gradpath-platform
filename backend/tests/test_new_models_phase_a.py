@@ -1,8 +1,8 @@
 """Phase A 模型建表验证测试 — 4 个新模型可正确创建表并执行 CRUD。"""
+
 from datetime import date, datetime, timezone
 from uuid import uuid4
 
-import pytest
 from sqlalchemy import inspect
 
 from app.models import (
@@ -56,10 +56,7 @@ class TestUserMemoryFactModel:
     def test_memory_fact_type_enum_values(self):
         """枚举应包含 6 种类型"""
         types = {t.value for t in MemoryFactType}
-        assert types == {
-            "preference", "background", "goal",
-            "constraint", "behavior", "fact"
-        }
+        assert types == {"preference", "background", "goal", "constraint", "behavior", "fact"}
 
 
 class TestUserOnboardingModel:
@@ -234,18 +231,15 @@ class TestModelsRegistered:
             UserMemoryFact,
             UserOnboarding,
         )
+
         assert UserMemoryFact is not None
         assert UserOnboarding is not None
         assert DecisionReviewQueue is not None
         assert DarkKnowledgePushLog is not None
 
     def test_all_enums_importable(self):
-        from app.models import (
-            MemoryFactType,
-            OnboardingStatus,
-            PushFeedback,
-            ReviewStatus,
-        )
+        from app.models import MemoryFactType, OnboardingStatus, PushFeedback, ReviewStatus
+
         assert MemoryFactType is not None
         assert OnboardingStatus is not None
         assert ReviewStatus is not None

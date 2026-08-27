@@ -3,8 +3,8 @@
 每个 skill 包含：名称、描述、触发词、使用场景、能力边界。
 前端通过 API 查询注册表，展示可用 skill 列表。
 """
-from dataclasses import dataclass, field
-from typing import Optional
+
+from dataclasses import dataclass
 
 from app.skills.base import BaseSkill
 
@@ -24,7 +24,7 @@ class SkillInfo:
     category: str  # builder / advisor / generator
     icon: str = "code"
     is_active: bool = True
-    skill_path: Optional[str] = None
+    skill_path: str | None = None
 
 
 # ===== 项目专用 Skill =====
@@ -173,7 +173,19 @@ _SKILLS: list[SkillInfo] = [
         name="career_planning",
         display_name="职业规划",
         description="根据用户背景制定职业规划，生成里程碑和时间线。",
-        trigger_words=["职业规划", "制定计划", "职业发展", "规划", "路径", "怎么进", "如何准备", "目标", "进大厂", "career plan", "career"],
+        trigger_words=[
+            "职业规划",
+            "制定计划",
+            "职业发展",
+            "规划",
+            "路径",
+            "怎么进",
+            "如何准备",
+            "目标",
+            "进大厂",
+            "career plan",
+            "career",
+        ],
         use_cases=["用户需要职业规划", "生成里程碑和时间线"],
         capabilities=["分析用户背景", "生成职业规划", "生成里程碑"],
         limitations=["不用于具体简历优化"],
@@ -185,7 +197,18 @@ _SKILLS: list[SkillInfo] = [
         name="grad_school_planning",
         display_name="考研规划",
         description="根据用户背景制定考研规划，生成择校建议和备考计划。",
-        trigger_words=["考研规划", "择校建议", "备考计划", "考研", "保研", "研究生", "读研", "学硕", "专硕", "硕士"],
+        trigger_words=[
+            "考研规划",
+            "择校建议",
+            "备考计划",
+            "考研",
+            "保研",
+            "研究生",
+            "读研",
+            "学硕",
+            "专硕",
+            "硕士",
+        ],
         use_cases=["用户需要考研规划", "生成择校建议"],
         capabilities=["分析用户背景", "生成考研规划", "生成择校建议"],
         limitations=["不用于具体科目复习指导"],
@@ -295,7 +318,12 @@ _SKILLS: list[SkillInfo] = [
         description="帮助用户生成推荐链接，追踪推荐效果，提供推荐奖励",
         trigger_words=["推荐朋友", "邀请好友", "推荐链接", "user referral", "邀请注册"],
         use_cases=["用户需要生成推荐链接", "追踪推荐效果", "了解推荐奖励"],
-        capabilities=["生成推荐码和推荐链接", "提供分层推荐奖励机制", "生成多平台分享文案", "追踪推荐效果数据"],
+        capabilities=[
+            "生成推荐码和推荐链接",
+            "提供分层推荐奖励机制",
+            "生成多平台分享文案",
+            "追踪推荐效果数据",
+        ],
         limitations=["不用于真实推荐系统后端", "不用于支付结算"],
         category="generator",
         icon="users",
@@ -331,7 +359,13 @@ _SKILLS: list[SkillInfo] = [
         description="分析用户对公司的评价，提取关键信息，帮助其他用户了解公司真实情况",
         trigger_words=["公司评价", "公司口碑", "公司怎么样", "company review", "工作体验"],
         use_cases=["用户需要了解公司情况", "分析公司口碑", "评估工作体验"],
-        capabilities=["分析工作文化", "评估工作生活平衡", "分析薪资福利", "评估管理风格", "分析成长机会"],
+        capabilities=[
+            "分析工作文化",
+            "评估工作生活平衡",
+            "分析薪资福利",
+            "评估管理风格",
+            "分析成长机会",
+        ],
         limitations=["不用于具体面试指导", "不用于薪资谈判"],
         category="advisor",
         icon="building",
@@ -460,62 +494,74 @@ def _load_skill_classes():
     global _SKILL_CLASSES
     if _SKILL_CLASSES:
         return
-    
-    from app.skills.default_skill import DefaultSkill
-    from app.skills.interview_simulation import InterviewSimulationSkill
+
+    from app.skills.career_path_mapper import CareerPathMapperSkill
     from app.skills.career_planning import CareerPlanningSkill
     from app.skills.career_transition import CareerTransitionSkill
-    from app.skills.grad_school_planning import GradSchoolPlanningSkill
-    from app.skills.resume_diagnosis import ResumeDiagnosisSkill
-    from app.skills.industry_analyzer import IndustryAnalyzerSkill
-    from app.skills.salary_negotiation import SalaryNegotiationSkill
-    from app.skills.salary_benchmark import SalaryBenchmarkSkill
-    from app.skills.learning_plan_generator import LearningPlanGeneratorSkill
-    from app.skills.interview_coach import InterviewCoachSkill
-    from app.skills.resume_optimizer import ResumeOptimizerSkill
-    from app.skills.career_path_mapper import CareerPathMapperSkill
     from app.skills.company_review import CompanyReviewSkill
+    from app.skills.default_skill import DefaultSkill
+    from app.skills.grad_school_planning import GradSchoolPlanningSkill
+    from app.skills.industry_analyzer import IndustryAnalyzerSkill
+    from app.skills.interview_coach import InterviewCoachSkill
+    from app.skills.interview_simulation import InterviewSimulationSkill
+    from app.skills.learning_plan_generator import LearningPlanGeneratorSkill
+    from app.skills.resume_diagnosis import ResumeDiagnosisSkill
+    from app.skills.resume_optimizer import ResumeOptimizerSkill
+    from app.skills.salary_benchmark import SalaryBenchmarkSkill
+    from app.skills.salary_negotiation import SalaryNegotiationSkill
     from app.skills.user_referral import UserReferralSkill
-    
-    for cls in [DefaultSkill, InterviewSimulationSkill, CareerPlanningSkill,
-                CareerTransitionSkill, GradSchoolPlanningSkill, ResumeDiagnosisSkill,
-                IndustryAnalyzerSkill, SalaryNegotiationSkill, SalaryBenchmarkSkill,
-                LearningPlanGeneratorSkill, InterviewCoachSkill, ResumeOptimizerSkill,
-                CareerPathMapperSkill, CompanyReviewSkill, UserReferralSkill]:
+
+    for cls in [
+        DefaultSkill,
+        InterviewSimulationSkill,
+        CareerPlanningSkill,
+        CareerTransitionSkill,
+        GradSchoolPlanningSkill,
+        ResumeDiagnosisSkill,
+        IndustryAnalyzerSkill,
+        SalaryNegotiationSkill,
+        SalaryBenchmarkSkill,
+        LearningPlanGeneratorSkill,
+        InterviewCoachSkill,
+        ResumeOptimizerSkill,
+        CareerPathMapperSkill,
+        CompanyReviewSkill,
+        UserReferralSkill,
+    ]:
         _SKILL_CLASSES[cls.code] = cls
 
 
 def get_skill_instance(name: str) -> BaseSkill | None:
     """按名称获取 BaseSkill 实例。"""
     _load_skill_classes()
-    
+
     # 先尝试精确匹配
     if name in _SKILL_CLASSES:
         return _SKILL_CLASSES[name]()
-    
+
     # 尝试从 SkillInfo 匹配
     for s in _SKILLS:
         if s.name == name and s.name in _SKILL_CLASSES:
             return _SKILL_CLASSES[s.name]()
-    
+
     return None
 
 
 def find_skill_instance(content: str, context: dict | None = None) -> BaseSkill | None:
     """根据消息内容和对话上下文匹配最适合的 BaseSkill 实例。
-    
+
     支持上下文感知：如果对话历史中出现过相关关键词，给予加分。
     无匹配返回 DefaultSkill。
     """
     _load_skill_classes()
-    
+
     if not content:
         return _SKILL_CLASSES.get("default", lambda: None)()
-    
+
     content_lower = content.lower()
     best_match = None
     best_score = 0
-    
+
     # 提取对话历史内容用于上下文匹配
     history_content = ""
     if context and "history" in context:
@@ -524,25 +570,25 @@ def find_skill_instance(content: str, context: dict | None = None) -> BaseSkill 
                 history_content += " " + msg.get("content", "").lower()
             elif isinstance(msg, str):
                 history_content += " " + msg.lower()
-    
+
     for s in _SKILLS:
         if s.code == "default":
             continue  # skip default in scoring
         score = 0
-        
+
         # 当前消息匹配
         for trigger in s.trigger_words:
             if trigger in content_lower:
                 score += len(trigger)
-        
+
         # 上下文加成：对话历史中出现过相关关键词
         if history_content:
             for trigger in s.trigger_words:
                 if trigger in history_content:
                     score += len(trigger) * 0.3  # 上下文加成30%
-        
+
         if score > best_score and s.name in _SKILL_CLASSES:
             best_score = score
             best_match = _SKILL_CLASSES[s.name]()
-    
+
     return best_match if best_match else _SKILL_CLASSES.get("default", lambda: None)()

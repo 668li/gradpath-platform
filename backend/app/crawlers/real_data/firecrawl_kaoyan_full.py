@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Firecrawl full crawl of kaoyan.com - uses scrape API for lower credit cost.
 
 Targets: kaoyan.com (首页, experience, news, college, article pages)
@@ -7,15 +6,16 @@ Saves to: firecrawl_loop.json
 Usage:
     python firecrawl_kaoyan_full.py
 """
-import os
-import sys
+
 import json
+import logging
+import os
 import re
 import time
-import logging
-import httpx
 from datetime import datetime
 from pathlib import Path
+
+import httpx
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -30,23 +30,23 @@ OUTPUT_FILE = OUTPUT_DIR / "firecrawl_loop.json"
 def clean_markdown(content: str) -> str:
     if not content:
         return ""
-    text = re.sub(r'\{[^}]*\}', '', content)
-    text = re.sub(r'/\*!.*?\*/', '', text)
-    text = re.sub(r'--tw-[^:]+:[^;]+;', '', text)
-    text = re.sub(r'\.tw-[^{]*\{[^}]*\}', '', text)
-    text = re.sub(r'@media[^{]*\{[^}]*\}', '', text)
-    text = re.sub(r'\n{3,}', '\n\n', text)
-    text = re.sub(r' {2,}', ' ', text)
-    lines = content.split('\n')
+    text = re.sub(r"\{[^}]*\}", "", content)
+    text = re.sub(r"/\*!.*?\*/", "", text)
+    text = re.sub(r"--tw-[^:]+:[^;]+;", "", text)
+    text = re.sub(r"\.tw-[^{]*\{[^}]*\}", "", text)
+    text = re.sub(r"@media[^{]*\{[^}]*\}", "", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    text = re.sub(r" {2,}", " ", text)
+    lines = content.split("\n")
     clean_lines = []
     for line in lines:
         stripped = line.strip()
-        if stripped.startswith('{') or stripped.startswith('}') or stripped.startswith('/*'):
+        if stripped.startswith("{") or stripped.startswith("}") or stripped.startswith("/*"):
             continue
-        if 'font-family' in stripped or 'font-size' in stripped:
+        if "font-family" in stripped or "font-size" in stripped:
             continue
         clean_lines.append(line)
-    return '\n'.join(clean_lines).strip()
+    return "\n".join(clean_lines).strip()
 
 
 def classify_article(title: str, content: str) -> str:
@@ -69,28 +69,30 @@ def classify_article(title: str, content: str) -> str:
 
 
 def extract_title_from_markdown(md: str) -> str:
-    for line in md.split('\n'):
+    for line in md.split("\n"):
         stripped = line.strip()
-        if stripped.startswith('# ') or stripped.startswith('## '):
-            t = stripped.lstrip('# ').strip()
-            if len(t) > 4 and not t.startswith('{') and not t.startswith('!'):
+        if stripped.startswith("# ") or stripped.startswith("## "):
+            t = stripped.lstrip("# ").strip()
+            if len(t) > 4 and not t.startswith("{") and not t.startswith("!"):
                 return t[:200]
     return ""
 
 
-def extract_article_urls_from_markdown(md: str, base_url: str = "https://www.kaoyan.com") -> list[str]:
+def extract_article_urls_from_markdown(
+    md: str, base_url: str = "https://www.kaoyan.com"
+) -> list[str]:
     urls = []
     patterns = [
-        r'\[([^\]]+)\]\((/article/[^\)]+)\)',
-        r'\]\((https?://www\.kaoyan\.com/article/[^\)]+)\)',
-        r'\]\((/article/\d+/\d+/[a-f0-9]+)\)',
+        r"\[([^\]]+)\]\((/article/[^\)]+)\)",
+        r"\]\((https?://www\.kaoyan\.com/article/[^\)]+)\)",
+        r"\]\((/article/\d+/\d+/[a-f0-9]+)\)",
     ]
     for pattern in patterns:
         for match in re.finditer(pattern, md):
             url = match.group(2) if match.lastindex == 2 else match.group(1)
-            if url.startswith('/'):
+            if url.startswith("/"):
                 url = base_url + url
-            if url.startswith('https://www.kaoyan.com/article/'):
+            if url.startswith("https://www.kaoyan.com/article/"):
                 urls.append(url)
     return list(dict.fromkeys(urls))
 
@@ -116,7 +118,7 @@ def firecrawl_scrape_single(app, url: str) -> dict | None:
     """Scrape single page using Firecrawl scrape API."""
     try:
         result = app.scrape(url, formats=["markdown"])
-        md = getattr(result, 'markdown', '') or ""
+        md = getattr(result, "markdown", "") or ""
         return {"markdown": md, "url": url}
     except Exception as e:
         logger.error(f"Firecrawl scrape failed for {url}: {e}")
@@ -126,6 +128,7 @@ def firecrawl_scrape_single(app, url: str) -> dict | None:
 def parse_html_to_articles(html: str, url: str, section: str) -> list[dict]:
     """Parse HTML page to extract articles/links."""
     from bs4 import BeautifulSoup
+
     soup = BeautifulSoup(html, "html.parser")
     articles = []
 
@@ -138,23 +141,27 @@ def parse_html_to_articles(html: str, url: str, section: str) -> list[dict]:
             continue
 
         # Article links
-        if "/article/" in href:
+        if "/article/" in href or any(
+            seg in href
+            for seg in [
+                "/experience/",
+                "/news/",
+                "/college/",
+                "/zhao/",
+                "/fsx/",
+                "/zhuanye/",
+                "/tiaoji/",
+            ]
+        ):
             if href.startswith("/"):
                 href = "https://www.kaoyan.com" + href
-            articles.append({
-                "title": text[:200],
-                "url": href,
-                "section": section,
-            })
-        # Category links
-        elif any(seg in href for seg in ["/experience/", "/news/", "/college/", "/zhao/", "/fsx/", "/zhuanye/", "/tiaoji/"]):
-            if href.startswith("/"):
-                href = "https://www.kaoyan.com" + href
-            articles.append({
-                "title": text[:200],
-                "url": href,
-                "section": section,
-            })
+            articles.append(
+                {
+                    "title": text[:200],
+                    "url": href,
+                    "section": section,
+                }
+            )
 
     return articles
 
@@ -172,15 +179,17 @@ def crawl_with_fallback(url: str, label: str, app=None) -> tuple[list[dict], lis
             title = extract_title_from_markdown(md)
             content = clean_markdown(md)
             category = classify_article(title, content)
-            articles.append({
-                "title": title[:200] if title else f"{label}页面",
-                "url": url,
-                "category": category,
-                "content": content,
-                "source": "kaoyan.com",
-                "section": label,
-                "scraped_at": datetime.now().isoformat(),
-            })
+            articles.append(
+                {
+                    "title": title[:200] if title else f"{label}页面",
+                    "url": url,
+                    "category": category,
+                    "content": content,
+                    "source": "kaoyan.com",
+                    "section": label,
+                    "scraped_at": datetime.now().isoformat(),
+                }
+            )
             discovered_urls = extract_article_urls_from_markdown(md, url)
             return articles, discovered_urls
 
@@ -189,6 +198,7 @@ def crawl_with_fallback(url: str, label: str, app=None) -> tuple[list[dict], lis
     html = httpx_scrape(url)
     if html:
         from bs4 import BeautifulSoup
+
         soup = BeautifulSoup(html, "html.parser")
         text = soup.get_text(separator="\n", strip=True)
         content = clean_markdown(text)
@@ -197,15 +207,17 @@ def crawl_with_fallback(url: str, label: str, app=None) -> tuple[list[dict], lis
         title_tag = soup.find("title")
         title = title_tag.get_text(strip=True) if title_tag else f"{label}页面"
 
-        articles.append({
-            "title": title[:200],
-            "url": url,
-            "category": classify_article(title, content),
-            "content": content,
-            "source": "kaoyan.com",
-            "section": label,
-            "scraped_at": datetime.now().isoformat(),
-        })
+        articles.append(
+            {
+                "title": title[:200],
+                "url": url,
+                "category": classify_article(title, content),
+                "content": content,
+                "source": "kaoyan.com",
+                "section": label,
+                "scraped_at": datetime.now().isoformat(),
+            }
+        )
 
         # Extract links
         link_data = parse_html_to_articles(html, url, label)
@@ -224,6 +236,7 @@ def main():
     app = None
     try:
         from firecrawl import FirecrawlApp
+
         app = FirecrawlApp(api_key=FIRECRAWL_API_KEY)
         print("  Firecrawl 客户端: 已初始化")
     except Exception as e:
@@ -248,8 +261,8 @@ def main():
     for label, url in crawl_targets:
         articles, discovered = crawl_with_fallback(url, label, app)
         for a in articles:
-            if a['url'] not in seen_urls:
-                seen_urls.add(a['url'])
+            if a["url"] not in seen_urls:
+                seen_urls.add(a["url"])
                 all_articles.append(a)
         all_discovered_urls.extend(discovered)
         print(f"  [{label}] 获得 {len(articles)} 篇, 发现 {len(discovered)} 个链接")
@@ -257,7 +270,7 @@ def main():
 
     # Phase 2: Scrape discovered article pages
     unique_discovered = list(dict.fromkeys(all_discovered_urls))
-    article_urls = [u for u in unique_discovered if '/article/' in u][:30]
+    article_urls = [u for u in unique_discovered if "/article/" in u][:30]
 
     if article_urls:
         print(f"\n[文章详情] 爬取 {len(article_urls)} 篇文章详情 ...")
@@ -289,6 +302,7 @@ def main():
                 html = httpx_scrape(url)
                 if html:
                     from bs4 import BeautifulSoup
+
                     soup = BeautifulSoup(html, "html.parser")
                     text = soup.get_text(separator="\n", strip=True)
                     content = clean_markdown(text)
@@ -329,13 +343,13 @@ def main():
     categories = {}
     sections = {}
     for a in all_articles:
-        cat = a.get('category', 'unknown')
-        sec = a.get('section', 'unknown')
+        cat = a.get("category", "unknown")
+        sec = a.get("section", "unknown")
         categories[cat] = categories.get(cat, 0) + 1
         sections[sec] = sections.get(sec, 0) + 1
 
     print(f"\n{'=' * 60}")
-    print(f"爬取完成！")
+    print("爬取完成！")
     print(f"  总计: {len(all_articles)} 篇文章")
     print(f"  总字符数: {output['total_chars']:,}")
     print(f"  分类分布: {json.dumps(categories, ensure_ascii=False)}")

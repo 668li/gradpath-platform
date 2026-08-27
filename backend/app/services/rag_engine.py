@@ -7,8 +7,10 @@ with semantic search (document_embeddings vector search) for maximum recall.
 导致 keyword search 抛 OperationalError -> 整个 RAG 流程失败 -> LLM 超时。
 改用 LOWER() + LIKE 实现跨数据库大小写不敏感匹配。
 """
+
 import logging
 from dataclasses import dataclass, field
+
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -25,6 +27,7 @@ def _escape_like(s: str) -> str:
 def _is_sqlite() -> bool:
     """检测当前数据库是否为 SQLite（开发环境兼容性判断）。"""
     return settings.DATABASE_URL.startswith("sqlite")
+
 
 logger = logging.getLogger(__name__)
 
@@ -79,8 +82,10 @@ class RAGEngine:
         # 修复 bug: 使用 LOWER() + LIKE 替代 ILIKE，兼容 SQLite 和 PostgreSQL
         # SQLite 不支持 ILIKE，会抛 OperationalError；LOWER() + LIKE 在两者下都能工作
         keyword_cond = " OR ".join(
-            [f"(LOWER(title) LIKE '%' || LOWER(:kw{i}) || '%' OR LOWER(content) LIKE '%' || LOWER(:kw{i}) || '%')"
-             for i in range(len(keywords))]
+            [
+                f"(LOWER(title) LIKE '%' || LOWER(:kw{i}) || '%' OR LOWER(content) LIKE '%' || LOWER(:kw{i}) || '%')"
+                for i in range(len(keywords))
+            ]
         )
         keyword_params = {f"kw{i}": _escape_like(k) for i, k in enumerate(keywords)}
 
@@ -115,7 +120,9 @@ class RAGEngine:
     # Keyword search per table
     # ------------------------------------------------------------------
 
-    def _search_experience(self, keyword_cond: str, keyword_params: dict, limit: int) -> list[RAGResult]:
+    def _search_experience(
+        self, keyword_cond: str, keyword_params: dict, limit: int
+    ) -> list[RAGResult]:
         sql = text(
             f"SELECT id, title, content, source_platform FROM experience_posts "
             f"WHERE ({keyword_cond}) LIMIT :limit"
@@ -137,7 +144,9 @@ class RAGEngine:
             logger.warning("experience keyword search failed: %s", e)
             return []
 
-    def _search_knowledge(self, keyword_cond: str, keyword_params: dict, limit: int) -> list[RAGResult]:
+    def _search_knowledge(
+        self, keyword_cond: str, keyword_params: dict, limit: int
+    ) -> list[RAGResult]:
         sql = text(
             f"SELECT id, title, content, category FROM knowledge_articles "
             f"WHERE ({keyword_cond}) LIMIT :limit"
@@ -160,10 +169,7 @@ class RAGEngine:
             return []
 
     def _search_qa(self, keyword_cond: str, keyword_params: dict, limit: int) -> list[RAGResult]:
-        sql = text(
-            f"SELECT id, title, content FROM qas "
-            f"WHERE ({keyword_cond}) LIMIT :limit"
-        )
+        sql = text(f"SELECT id, title, content FROM qas " f"WHERE ({keyword_cond}) LIMIT :limit")
         try:
             params = {"limit": limit, **keyword_params}
             return [
@@ -206,9 +212,7 @@ class RAGEngine:
     # Semantic search (vector cosine via pgvector)
     # ------------------------------------------------------------------
 
-    def _search_semantic(
-        self, query: str, top_k: int, source_types: list[str]
-    ) -> list[RAGResult]:
+    def _search_semantic(self, query: str, top_k: int, source_types: list[str]) -> list[RAGResult]:
         """Run vector search over document_embeddings table."""
         try:
             from app.services.rag_service import RAGService

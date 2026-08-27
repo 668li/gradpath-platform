@@ -1,5 +1,4 @@
 """评论系统 API 测试。"""
-import pytest
 
 
 class TestCommentCreate:
@@ -75,13 +74,11 @@ class TestCommentList:
 
 
 class TestCommentNotification:
-    def test_comment_triggers_notification_to_post_author(
-        self, client, auth_headers, db_session
-    ):
+    def test_comment_triggers_notification_to_post_author(self, client, auth_headers, db_session):
         """auth_headers 用户(评论者) 评论另一个用户(作者)的帖子后，作者收到通知"""
         from app.models.experience_post import ExperiencePost
-        from app.models.user import User
         from app.models.notification import Notification
+        from app.models.user import User
 
         # 评论者 = auth_headers 对应用户
         commenter = db_session.query(User).first()
@@ -113,9 +110,9 @@ class TestCommentNotification:
 class TestCommentLike:
     def test_like_comment(self, client, auth_headers, db_session):
         """点赞评论成功"""
+        from app.models.comment import Comment
         from app.models.experience_post import ExperiencePost
         from app.models.user import User
-        from app.models.comment import Comment
 
         user = db_session.query(User).first()
         post = ExperiencePost(title="帖子", content="内容", user_id=user.id)

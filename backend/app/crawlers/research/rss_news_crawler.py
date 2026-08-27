@@ -1,4 +1,5 @@
 """RSS 考研资讯爬虫 — 聚合多个公开 RSS 源，按关键词过滤并落地为 JSON。"""
+
 import sys
 from pathlib import Path
 
@@ -78,7 +79,9 @@ class RssNewsCrawler(BaseCrawler):
     def __init__(self, config: dict = None):
         super().__init__(config)
         self.feeds = self.config.get("feeds", DEFAULT_FEEDS)
-        self.keywords = [k.strip().lower() for k in self.config.get("keywords", DEFAULT_KEYWORDS) if k.strip()]
+        self.keywords = [
+            k.strip().lower() for k in self.config.get("keywords", DEFAULT_KEYWORDS) if k.strip()
+        ]
         self.output_path = Path(self.config.get("output_path", OUTPUT_PATH))
 
     def fetch(self) -> list[dict]:
@@ -95,11 +98,13 @@ class RssNewsCrawler(BaseCrawler):
                     logger.warning(f"[{self.name}] {feed_url} 解析警告: {parsed.bozo_exception}")
                 feed_title = parsed.feed.get("title", "") if parsed.feed else ""
                 for entry in parsed.entries:
-                    all_entries.append({
-                        "_feed_url": feed_url,
-                        "_feed_title": feed_title,
-                        "entry": entry,
-                    })
+                    all_entries.append(
+                        {
+                            "_feed_url": feed_url,
+                            "_feed_title": feed_title,
+                            "entry": entry,
+                        }
+                    )
                 logger.info(f"[{self.name}] {feed_url} 获取 {len(parsed.entries)} 条")
             except Exception as e:
                 self.stats["errors"] += 1

@@ -1,4 +1,5 @@
 """评论 API。"""
+
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
@@ -8,14 +9,8 @@ from app.core.deps import get_current_user
 from app.core.rate_limit import rate_limits
 from app.database import get_db
 from app.main import limiter
-from app.models.comment import Comment
-from app.models.experience_post import ExperiencePost
 from app.models.user import User
-from app.schemas.comment import (
-    CommentCreate,
-    CommentListResponse,
-    CommentResponse,
-)
+from app.schemas.comment import CommentCreate, CommentListResponse, CommentResponse
 from app.services.comment_service import (
     create_comment,
     get_comments_by_post,
@@ -29,7 +24,9 @@ router = APIRouter(prefix="/api/comments", tags=["评论系统"])
 def _comment_to_response(c) -> CommentResponse:
     nickname = "匿名用户"
     if hasattr(c, "author") and c.author:
-        nickname = getattr(c.author, "nickname", None) or getattr(c.author, "username", None) or "匿名用户"
+        nickname = (
+            getattr(c.author, "nickname", None) or getattr(c.author, "username", None) or "匿名用户"
+        )
     return CommentResponse(
         id=c.id,
         post_id=c.post_id,

@@ -1,8 +1,6 @@
 """通知 API 路由。"""
-import json
+
 import uuid
-from datetime import datetime, timezone
-from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
@@ -10,7 +8,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
-from app.core.exceptions import BusinessError, NotFoundError
+from app.core.exceptions import NotFoundError
 from app.core.websocket_manager import manager as ws_manager
 from app.database import get_db
 from app.models.notification import Notification, NotificationType
@@ -70,9 +68,7 @@ def list_notifications(
         .limit(page_size)
         .all()
     )
-    return NotificationListResponse(
-        items=items, total=total, unread_count=unread_count
-    )
+    return NotificationListResponse(items=items, total=total, unread_count=unread_count)
 
 
 @router.get("/unread-count", response_model=NotificationCountResponse)
@@ -129,8 +125,10 @@ def mark_all_as_read(
 
 # ===== C8 批量操作 API =====
 
+
 class NotificationBatchDeleteRequest(BaseModel):
     """批量删除通知请求体。"""
+
     ids: list[str] = Field(
         ...,
         description="要删除的通知 ID 列表（最多 100 个）",
@@ -168,9 +166,11 @@ def batch_delete_notifications(
 
 # ===== C4 通知归档 API =====
 
+
 class ArchiveBatchRequest(BaseModel):
     """批量归档请求体。"""
-    notification_ids: Optional[list[str]] = Field(
+
+    notification_ids: list[str] | None = Field(
         None,
         # 注意: max_length=500 是 schema 层 DoS 防护上限（高于业务上限 200）。
         # 业务上限 200 由 validate_archive_batch_limit 检查并返回 400 +
@@ -217,7 +217,7 @@ def archive_batch(
     - 不传 notification_ids + only_read=true: 归档用户全部已读通知
     - 不传 notification_ids + only_read=false: 归档用户全部通知
     """
-    ids: Optional[list[UUID]] = None
+    ids: list[UUID] | None = None
     if body.notification_ids is not None:
         ids = []
         for raw in body.notification_ids:
@@ -250,9 +250,8 @@ def archive_old(
 
     通常由前端在用户访问通知页时调用，或由定时任务触发。
     """
-    from app.services.notification_cleanup_service import (
-        archive_old_read_notifications,
-    )
+    from app.services.notification_cleanup_service import archive_old_read_notifications
+
     count = archive_old_read_notifications(db, user_id=user.id, days_old=days_old)
     return NotificationArchiveResponse(
         message="自动归档完成",
@@ -292,16 +291,19 @@ async def push_notification(
     db.commit()
     db.refresh(n)
     # 实时推送到 WebSocket
-    await ws_manager.send_personal(str(user_id), {
-        "type": "new_notification",
-        "notification": {
-            "id": str(n.id),
-            "type": n.type.value if hasattr(n.type, "value") else str(n.type),
-            "title": n.title,
-            "content": n.content,
-            "read": n.read,
-            "archived": n.archived,
-            "created_at": n.created_at.isoformat() if n.created_at else None,
+    await ws_manager.send_personal(
+        str(user_id),
+        {
+            "type": "new_notification",
+            "notification": {
+                "id": str(n.id),
+                "type": n.type.value if hasattr(n.type, "value") else str(n.type),
+                "title": n.title,
+                "content": n.content,
+                "read": n.read,
+                "archived": n.archived,
+                "created_at": n.created_at.isoformat() if n.created_at else None,
+            },
         },
-    })
+    )
     return n

@@ -1,4 +1,5 @@
 """网页文章调研爬虫 — 基于 Jina Reader 读取网页正文。"""
+
 import argparse
 import json
 import logging
@@ -51,20 +52,24 @@ class WebArticleCrawler(BaseCrawler):
             jina_url = JINA_READER_URL.format(url=url)
             text, error = self._fetch_with_retry(jina_url)
             if error is None:
-                raw_items.append({
-                    "url": url,
-                    "text": text,
-                    "status": "ok",
-                })
+                raw_items.append(
+                    {
+                        "url": url,
+                        "text": text,
+                        "status": "ok",
+                    }
+                )
                 logger.info(f"[{self.name}] 成功读取: {url}")
             else:
                 logger.warning(f"[{self.name}] 读取失败: {url} | {error}")
-                raw_items.append({
-                    "url": url,
-                    "text": "",
-                    "status": "error",
-                    "error": error,
-                })
+                raw_items.append(
+                    {
+                        "url": url,
+                        "text": "",
+                        "status": "error",
+                        "error": error,
+                    }
+                )
             time.sleep(self._rate_limit)
         return raw_items
 
@@ -107,24 +112,28 @@ class WebArticleCrawler(BaseCrawler):
             status = raw.get("status", "")
 
             if status != "ok" or not text:
-                parsed_items.append({
-                    "title": url,
-                    "content": "",
-                    "source_url": url,
-                    "source_platform": "web",
-                    "status": "failed",
-                })
+                parsed_items.append(
+                    {
+                        "title": url,
+                        "content": "",
+                        "source_url": url,
+                        "source_platform": "web",
+                        "status": "failed",
+                    }
+                )
                 continue
 
             title = self._extract_title(text) or url
             content = self._extract_content(text, title)
-            parsed_items.append({
-                "title": title,
-                "content": content,
-                "source_url": url,
-                "source_platform": "web",
-                "status": "ok",
-            })
+            parsed_items.append(
+                {
+                    "title": title,
+                    "content": content,
+                    "source_url": url,
+                    "source_platform": "web",
+                    "status": "ok",
+                }
+            )
         return parsed_items
 
     def _extract_title(self, text: str) -> str:

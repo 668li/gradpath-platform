@@ -3,6 +3,7 @@
 
 from datetime import datetime, timedelta, timezone
 
+
 # ----------------------------------------------------------------------
 # 辅助函数
 # ----------------------------------------------------------------------
@@ -10,7 +11,14 @@ def _today() -> str:
     return datetime.now(timezone.utc).date().isoformat()
 
 
-def _create_action(client, auth_headers, action_type="read_article", title="读一篇行业文章", due_date=None, idempotency=None):
+def _create_action(
+    client,
+    auth_headers,
+    action_type="read_article",
+    title="读一篇行业文章",
+    due_date=None,
+    idempotency=None,
+):
     headers = dict(auth_headers)
     if idempotency:
         headers["X-Idempotency-Key"] = idempotency
@@ -76,7 +84,9 @@ class TestAuthRequired:
 # ----------------------------------------------------------------------
 class TestCreateAction:
     def test_create_ok(self, auth_headers, client):
-        action = _create_action(client, auth_headers, action_type="mock_interview", title="模拟面试练习")
+        action = _create_action(
+            client, auth_headers, action_type="mock_interview", title="模拟面试练习"
+        )
         assert action["id"]
         assert action["user_id"]  # UUID 已注入
         assert action["action_type"] == "mock_interview"
@@ -183,9 +193,7 @@ class TestUpdateAction:
         assert body["status"] == "CANCELED"
 
     def test_update_nonexistent_404(self, auth_headers, client):
-        resp = client.put(
-            "/api/actions/999999", headers=auth_headers, json={"title": "x"}
-        )
+        resp = client.put("/api/actions/999999", headers=auth_headers, json={"title": "x"})
         assert resp.status_code == 404
 
     def test_note_ignored_on_update(self, auth_headers, client):
@@ -205,7 +213,9 @@ class TestUpdateAction:
 class TestCheckin:
     def test_checkin_ok(self, auth_headers, client):
         action = _create_action(client, auth_headers)
-        resp = _checkin(client, auth_headers, action["id"], note="已完成", evidence_url="https://example.com/ev")
+        resp = _checkin(
+            client, auth_headers, action["id"], note="已完成", evidence_url="https://example.com/ev"
+        )
         assert resp.status_code == 200, resp.text
         checkin = resp.json()
         assert checkin["action_id"] == action["id"]
@@ -268,11 +278,15 @@ class TestStreak:
 
         # 前天 + 昨天连续 → current=2
         _checkin(
-            client, auth_headers, a1["id"],
+            client,
+            auth_headers,
+            a1["id"],
             completed_at=(today - timedelta(days=2)).isoformat(),
         )
         _checkin(
-            client, auth_headers, a2["id"],
+            client,
+            auth_headers,
+            a2["id"],
             completed_at=(today - timedelta(days=1)).isoformat(),
         )
         body = client.get("/api/actions/streaks", headers=auth_headers).json()
@@ -282,7 +296,9 @@ class TestStreak:
 
         # 中断：隔 2 天（今天-4）再打卡 → 重开为 1，状态 BROKEN
         _checkin(
-            client, auth_headers, a3["id"],
+            client,
+            auth_headers,
+            a3["id"],
             completed_at=(today - timedelta(days=4)).isoformat(),
         )
         body = client.get("/api/actions/streaks", headers=auth_headers).json()

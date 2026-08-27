@@ -13,6 +13,7 @@
 
 幂等：(name, university) 去重跳过。全 ORM 参数绑定。
 """
+
 import json
 import sys
 from pathlib import Path
@@ -47,7 +48,11 @@ def main() -> None:
                 duplicated += 1
                 continue
             fields_raw = str(r.get("research_fields") or "").strip()
-            directions = [f.strip() for f in fields_raw.replace("，", ",").replace("、", ",").split(",") if f.strip()]
+            directions = [
+                f.strip()
+                for f in fields_raw.replace("，", ",").replace("、", ",").split(",")
+                if f.strip()
+            ]
             source_url = str(r.get("source_url") or "").strip()
             if source_url:
                 directions = directions[:8] + [f"src:{source_url[:200]}"]

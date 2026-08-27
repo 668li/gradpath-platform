@@ -1,4 +1,5 @@
 """国考职位 Pydantic schemas"""
+
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict

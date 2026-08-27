@@ -10,10 +10,11 @@
 2. events 表复用 — 不引入新表，web-vital 事件作为 Event.event_type="web_vital" 存储
 3. payload schema 包含 name/value/rating/delta/metric_id/page/session_id/timestamp
 """
+
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -37,7 +38,7 @@ METRIC_ID_MAX_LENGTH = 128
 
 def record_web_vital(
     db: Session,
-    user_id: Optional[UUID],
+    user_id: UUID | None,
     name: str,
     value: float,
     rating: str,
@@ -45,7 +46,7 @@ def record_web_vital(
     metric_id: str = "",
     page: str = "",
     session_id: str = "",
-    timestamp: Optional[str] = None,
+    timestamp: str | None = None,
 ) -> Event:
     """记录一条 web-vital 指标。
 
@@ -124,14 +125,15 @@ def record_web_vital(
 # 通用埋点辅助函数 — 供 service 层调用
 # ----------------------------------------------------------------------
 
+
 def track_event(
     db: Session,
-    user_id: Optional[UUID],
+    user_id: UUID | None,
     session_id: str,
     event_type: str,
-    page: Optional[str] = None,
-    element: Optional[str] = None,
-    payload: Optional[dict[str, Any]] = None,
+    page: str | None = None,
+    element: str | None = None,
+    payload: dict[str, Any] | None = None,
 ) -> Event:
     """通用埋点 — 记录任意事件到 events 表。
 
@@ -162,10 +164,10 @@ def track_event(
 
 def track_page_view(
     db: Session,
-    user_id: Optional[UUID],
+    user_id: UUID | None,
     session_id: str,
     page: str,
-    referrer: Optional[str] = None,
+    referrer: str | None = None,
 ) -> Event:
     """记录页面浏览事件。"""
     payload: dict[str, Any] = {}
@@ -183,12 +185,12 @@ def track_page_view(
 
 def track_click(
     db: Session,
-    user_id: Optional[UUID],
+    user_id: UUID | None,
     session_id: str,
     page: str,
     element: str,
-    text: Optional[str] = None,
-    tag: Optional[str] = None,
+    text: str | None = None,
+    tag: str | None = None,
 ) -> Event:
     """记录点击事件。"""
     payload: dict[str, Any] = {}
@@ -209,8 +211,8 @@ def track_click(
 
 def get_web_vitals_summary(
     db: Session,
-    page: Optional[str] = None,
-    session_id: Optional[str] = None,
+    page: str | None = None,
+    session_id: str | None = None,
     limit: int = 1000,
 ) -> dict[str, dict[str, float]]:
     """聚合查询 web-vitals 指标统计。

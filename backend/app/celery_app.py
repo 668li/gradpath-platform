@@ -6,8 +6,10 @@
 - 资源控制：worker_max_tasks_per_child=100 防止内存泄漏；prefetch=1 防止长任务饥饿
 - 超时：硬超时 30 分钟，软超时 25 分钟（爬虫/AI 任务可能耗时较长）
 """
+
 from __future__ import annotations
 
+import importlib as _importlib
 import logging
 
 from celery import Celery
@@ -62,3 +64,10 @@ celery_app.conf.update(
 )
 
 logger.info("Celery 应用已初始化: broker=%s", _build_celery_broker_url())
+
+# Celery 5.4+ 的任务注册表是惰性的:include 模块只在 worker 启动/finalize 时导入,
+# 直接访问 celery_app.tasks 不会触发加载。此处显式加载,保证任意 import 顺序下
+# 任务都已注册(此前 test_celery_tasks 依赖偶然的导入顺序通过,isort 重排后暴露);
+# 同时避免 worker 竞态"任务未注册即发送"。
+for _task_module in ("app.tasks.crawler_tasks", "app.tasks.ai_tasks"):
+    _importlib.import_module(_task_module)

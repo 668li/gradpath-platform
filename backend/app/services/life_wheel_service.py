@@ -1,5 +1,6 @@
 """人生平衡轮服务层 — 8 维度生活满意度评估与 AI 分析。"""
-from datetime import date, datetime, timezone
+
+from datetime import date
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -84,7 +85,9 @@ async def generate_ai_analysis(db: Session, snapshot_id: UUID) -> str:
         lines.append(f"\n用户笔记: {snapshot.notes}")
 
     orchestrator = AIOrchestrator()
-    raw = await orchestrator.chat(system_prompt=SYSTEM_PROMPT, user_prompt="\n".join(lines), timeout=30)
+    raw = await orchestrator.chat(
+        system_prompt=SYSTEM_PROMPT, user_prompt="\n".join(lines), timeout=30
+    )
 
     snapshot.ai_analysis = raw
     db.commit()

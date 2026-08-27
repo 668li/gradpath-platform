@@ -1,4 +1,5 @@
 """社区评分模型 — 经验贴/知识文章的质量信号。"""
+
 from uuid import UUID
 
 from sqlalchemy import CheckConstraint, ForeignKey, Index, Integer, String, Text

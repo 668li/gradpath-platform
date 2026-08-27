@@ -8,12 +8,13 @@
 - store：落 t_external_research_item + t_review_queue_item（PENDING 审核队列）
 - 分类细化：transformer 心态/避坑 新分类
 """
+
 import pytest
 from sqlalchemy.orm import Session
 
 from app.crawlers.research.bilibili_research_crawler import (
-    BilibiliResearchCrawler,
     DEFAULT_KEYWORDS,
+    BilibiliResearchCrawler,
 )
 from app.crawlers.research.transformer import ResearchTransformer
 from app.models.ingestion import ExternalResearchItem, ReviewQueueItem
@@ -63,7 +64,9 @@ class TestFetch:
     @pytest.fixture(autouse=True)
     def _no_sleep(self, monkeypatch):
         """打桩随机 sleep（1-4s 控频），避免拖慢测试。"""
-        monkeypatch.setattr("app.crawlers.research.bilibili_research_crawler.time.sleep", lambda s: None)
+        monkeypatch.setattr(
+            "app.crawlers.research.bilibili_research_crawler.time.sleep", lambda s: None
+        )
 
     def test_fetch_iterates_keywords_and_pages(self, monkeypatch):
         """逐关键词逐页抓取，mock _request 不真网。"""
@@ -73,7 +76,9 @@ class TestFetch:
         def fake_request(url, method="GET", **kwargs):
             calls.append(url)
             return _FakeResponse(
-                _bili_api_payload([{"title": f"<em>视频</em>{i}", "bvid": f"BV{i}"} for i in range(2)])
+                _bili_api_payload(
+                    [{"title": f"<em>视频</em>{i}", "bvid": f"BV{i}"} for i in range(2)]
+                )
             )
 
         monkeypatch.setattr(c, "_request", fake_request)
@@ -125,7 +130,7 @@ class TestParse:
         parsed = c.parse(
             [
                 {
-                    "title": "<em class=\"keyword\">考研数学</em>刷题经验",
+                    "title": '<em class="keyword">考研数学</em>刷题经验',
                     "play": 12000,
                     "like": 356,
                     "bvid": "BV1xx411c7mD",
@@ -179,17 +184,21 @@ class TestStoreToReviewQueue:
         inserted = c.store(items, db=db_session)
         assert inserted == 1
 
-        ext = db_session.query(ExternalResearchItem).filter(
-            ExternalResearchItem.source_url == "https://www.bilibili.com/video/BV1zz"
-        ).first()
+        ext = (
+            db_session.query(ExternalResearchItem)
+            .filter(ExternalResearchItem.source_url == "https://www.bilibili.com/video/BV1zz")
+            .first()
+        )
         assert ext is not None
         assert ext.review_status == "PENDING"
         assert ext.item_type == "experience_post"
         assert ext.source_platform == "bilibili"
 
-        queue = db_session.query(ReviewQueueItem).filter(
-            ReviewQueueItem.source_url == "https://www.bilibili.com/video/BV1zz"
-        ).first()
+        queue = (
+            db_session.query(ReviewQueueItem)
+            .filter(ReviewQueueItem.source_url == "https://www.bilibili.com/video/BV1zz")
+            .first()
+        )
         assert queue is not None
         assert queue.review_status == "PENDING"
 
@@ -197,7 +206,14 @@ class TestStoreToReviewQueue:
         """同 URL 二次入库幂等（source_url 唯一索引）。"""
         c = _make_crawler()
         items = c.parse(
-            [{"title": "二战心态调整", "description": "如何撑过疲惫期", "bvid": "BV1dup", "play": 5}]
+            [
+                {
+                    "title": "二战心态调整",
+                    "description": "如何撑过疲惫期",
+                    "bvid": "BV1dup",
+                    "play": 5,
+                }
+            ]
         )
         assert c.store(items, db=db_session) == 1
         assert c.store(items, db=db_session) == 0

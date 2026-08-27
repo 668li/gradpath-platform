@@ -1,4 +1,5 @@
 """收藏模型 — 用户收藏学校、导师、帖子等内容。"""
+
 import enum
 from uuid import UUID
 
@@ -21,9 +22,7 @@ class Bookmark(UUIDMixin, TimestampMixin, Base):
         UniqueConstraint("user_id", "target_type", "target_id", name="uq_user_target"),
     )
 
-    user_id: Mapped[UUID] = mapped_column(
-        ForeignKey("users.id"), nullable=False, index=True
-    )
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     target_type: Mapped[BookmarkTargetType] = mapped_column(
         Enum(BookmarkTargetType), nullable=False
     )

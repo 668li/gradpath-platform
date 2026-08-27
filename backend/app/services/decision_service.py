@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 
 from app.core.cache import cache
 from app.core.exceptions import NotFoundError
-from app.models.destination_decision import DestinationDecision
 from app.models.decision_review import DecisionReviewQueue, ReviewStatus
+from app.models.destination_decision import DestinationDecision
 from app.schemas.decision import DecisionCreate, DecisionUpdate
 
 logger = logging.getLogger(__name__)
@@ -68,6 +68,7 @@ def _trigger_dark_knowledge_push(db: Session, user_id: UUID, decision: Destinati
     """决策创建时主动推送相关暗知识（暗知识护城河）。"""
     try:
         from app.services.dark_knowledge_push_service import push_for_decision
+
         destination_type = (
             decision.destination_type.value
             if hasattr(decision.destination_type, "value")
@@ -114,7 +115,9 @@ def get_decision(db: Session, user_id: UUID, decision_id: UUID) -> DestinationDe
     return decision
 
 
-def update_decision(db: Session, user_id: UUID, decision_id: UUID, data: DecisionUpdate) -> DestinationDecision:
+def update_decision(
+    db: Session, user_id: UUID, decision_id: UUID, data: DecisionUpdate
+) -> DestinationDecision:
     decision = get_decision(db, user_id, decision_id)
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():

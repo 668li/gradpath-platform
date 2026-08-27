@@ -1,5 +1,6 @@
 # backend/app/services/export_service.py
 """数据导出服务 — PDF 时间线、JSON 备份、公开技能分享页面。"""
+
 import io
 from datetime import date
 from uuid import UUID
@@ -7,13 +8,7 @@ from uuid import UUID
 from reportlab.lib import colors
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
-from reportlab.platypus import (
-    Paragraph,
-    SimpleDocTemplate,
-    Spacer,
-    Table,
-    TableStyle,
-)
+from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 from sqlalchemy.orm import Session
 
 from app.models.career_event import CareerEvent
@@ -26,10 +21,10 @@ from app.models.user import User
 from app.models.user_setting import UserSetting
 from app.services.gamification_service import calculate_xp, get_level
 
-
 # ======================================================================
 # 工具函数
 # ======================================================================
+
 
 def _iso(d) -> str | None:
     """将日期/日期时间转换为 ISO 字符串，None 保持为 None。"""
@@ -52,6 +47,7 @@ def _to_str(v) -> str:
 # ======================================================================
 # PDF 导出
 # ======================================================================
+
 
 def export_timeline_pdf(db: Session, user_id: UUID) -> bytes:
     """生成 PDF 时间线。
@@ -219,8 +215,12 @@ def export_timeline_pdf(db: Session, user_id: UUID) -> bytes:
                     ("VALIGN", (0, 0), (-1, -1), "TOP"),
                     ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
                     ("TOPPADDING", (0, 0), (-1, -1), 5),
-                    ("ROWBACKGROUNDS", (0, 1), (-1, -1),
-                     [colors.white, colors.HexColor("#f8fafc")]),
+                    (
+                        "ROWBACKGROUNDS",
+                        (0, 1),
+                        (-1, -1),
+                        [colors.white, colors.HexColor("#f8fafc")],
+                    ),
                     ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#e2e8f0")),
                 ]
             )
@@ -243,9 +243,7 @@ def export_timeline_pdf(db: Session, user_id: UUID) -> bytes:
                     Paragraph(_to_str(s.notes or ""), normal_style),
                 ]
             )
-        skill_table = Table(
-            skill_rows, colWidths=[3 * cm, 4 * cm, 1.5 * cm, 2.8 * cm, 4.7 * cm]
-        )
+        skill_table = Table(skill_rows, colWidths=[3 * cm, 4 * cm, 1.5 * cm, 2.8 * cm, 4.7 * cm])
         skill_table.setStyle(
             TableStyle(
                 [
@@ -257,8 +255,12 @@ def export_timeline_pdf(db: Session, user_id: UUID) -> bytes:
                     ("ALIGN", (2, 0), (2, -1), "CENTER"),
                     ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
                     ("TOPPADDING", (0, 0), (-1, -1), 5),
-                    ("ROWBACKGROUNDS", (0, 1), (-1, -1),
-                     [colors.white, colors.HexColor("#f8fafc")]),
+                    (
+                        "ROWBACKGROUNDS",
+                        (0, 1),
+                        (-1, -1),
+                        [colors.white, colors.HexColor("#f8fafc")],
+                    ),
                     ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#e2e8f0")),
                 ]
             )
@@ -281,9 +283,7 @@ def export_timeline_pdf(db: Session, user_id: UUID) -> bytes:
                     Paragraph(_to_str(r.lessons_learned or ""), normal_style),
                 ]
             )
-        retro_table = Table(
-            retro_rows, colWidths=[3.5 * cm, 3 * cm, 1.5 * cm, 4 * cm, 4 * cm]
-        )
+        retro_table = Table(retro_rows, colWidths=[3.5 * cm, 3 * cm, 1.5 * cm, 4 * cm, 4 * cm])
         retro_table.setStyle(
             TableStyle(
                 [
@@ -295,8 +295,12 @@ def export_timeline_pdf(db: Session, user_id: UUID) -> bytes:
                     ("ALIGN", (2, 0), (2, -1), "CENTER"),
                     ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
                     ("TOPPADDING", (0, 0), (-1, -1), 5),
-                    ("ROWBACKGROUNDS", (0, 1), (-1, -1),
-                     [colors.white, colors.HexColor("#f8fafc")]),
+                    (
+                        "ROWBACKGROUNDS",
+                        (0, 1),
+                        (-1, -1),
+                        [colors.white, colors.HexColor("#f8fafc")],
+                    ),
                     ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#e2e8f0")),
                 ]
             )
@@ -328,6 +332,7 @@ def export_timeline_pdf(db: Session, user_id: UUID) -> bytes:
 # JSON 备份
 # ======================================================================
 
+
 def export_profile_json(db: Session, user_id: UUID) -> dict:
     """导出全部用户数据为 JSON dict。
 
@@ -352,27 +357,15 @@ def export_profile_json(db: Session, user_id: UUID) -> dict:
         .order_by(CareerEvent.event_date.asc())
         .all()
     )
-    skills = (
-        db.query(SkillNode)
-        .filter(SkillNode.user_id == user_id)
-        .all()
-    )
+    skills = db.query(SkillNode).filter(SkillNode.user_id == user_id).all()
     retros = (
         db.query(Retrospective)
         .filter(Retrospective.user_id == user_id)
         .order_by(Retrospective.period_end.desc())
         .all()
     )
-    community = (
-        db.query(CommunityReport)
-        .filter(CommunityReport.user_id == user_id)
-        .all()
-    )
-    interviews = (
-        db.query(InterviewReport)
-        .filter(InterviewReport.user_id == user_id)
-        .all()
-    )
+    community = db.query(CommunityReport).filter(CommunityReport.user_id == user_id).all()
+    interviews = db.query(InterviewReport).filter(InterviewReport.user_id == user_id).all()
 
     xp = calculate_xp(db, user_id)
     level, level_name, _, _ = get_level(xp)
@@ -394,7 +387,9 @@ def export_profile_json(db: Session, user_id: UUID) -> dict:
             "details": d.details,
             "reasoning": d.reasoning,
             "confidence": d.confidence,
-            "reference_snapshot_id": str(d.reference_snapshot_id) if d.reference_snapshot_id else None,
+            "reference_snapshot_id": (
+                str(d.reference_snapshot_id) if d.reference_snapshot_id else None
+            ),
         }
         for d in decisions
     ]
@@ -499,6 +494,7 @@ def export_profile_json(db: Session, user_id: UUID) -> dict:
 # 公开技能分享
 # ======================================================================
 
+
 def get_shareable_skills(db: Session, share_token: str) -> dict | None:
     """根据分享令牌返回公开技能数据。
 
@@ -509,11 +505,7 @@ def get_shareable_skills(db: Session, share_token: str) -> dict | None:
     if not share_token:
         return None
 
-    setting = (
-        db.query(UserSetting)
-        .filter(UserSetting.share_token == share_token)
-        .first()
-    )
+    setting = db.query(UserSetting).filter(UserSetting.share_token == share_token).first()
     if not setting or not setting.share_skills_enabled:
         return None
 

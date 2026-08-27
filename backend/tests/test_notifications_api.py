@@ -1,6 +1,6 @@
 # tests/test_notifications_api.py
 """通知 API 集成测试。"""
-import pytest
+
 from fastapi.testclient import TestClient
 
 from app.models.notification import Notification, NotificationType
@@ -8,7 +8,9 @@ from app.models.user import User
 
 
 class TestNotificationAPI:
-    def _create_notification(self, db_session, user_id, type="system", title="Test", content="Body", read=False):
+    def _create_notification(
+        self, db_session, user_id, type="system", title="Test", content="Body", read=False
+    ):
         n = Notification(
             user_id=user_id,
             type=NotificationType(type),

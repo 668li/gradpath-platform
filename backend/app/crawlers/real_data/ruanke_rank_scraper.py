@@ -11,6 +11,7 @@
 - 单次请求即可拿全量，控频限速保留；
 - 输出：backend/app/crawlers/real_data/ruanke_rankings.json
 """
+
 from __future__ import annotations
 
 import json

@@ -1,9 +1,8 @@
 """家庭对话脚手架 Schemas。"""
+
 from datetime import datetime
-from uuid import UUID
 
 from pydantic import BaseModel, Field
-
 
 # 支持的父母类型
 PARENT_ARCHETYPES = (
@@ -17,9 +16,15 @@ PARENT_ARCHETYPES = (
 class FamilyDialogueStart(BaseModel):
     """启动家庭对话脚手架的请求体。"""
 
-    parent_concern: str = Field(..., min_length=1, max_length=200, description="父母主要担心什么，如「爸妈想让我考公」")
-    user_choice: str = Field(..., min_length=1, max_length=200, description="用户想选什么，如「我想去互联网公司」")
-    parent_archetype: str = Field(..., description="父母类型: stability_first/prestige_first/practical_worry/supportive")
+    parent_concern: str = Field(
+        ..., min_length=1, max_length=200, description="父母主要担心什么，如「爸妈想让我考公」"
+    )
+    user_choice: str = Field(
+        ..., min_length=1, max_length=200, description="用户想选什么，如「我想去互联网公司」"
+    )
+    parent_archetype: str = Field(
+        ..., description="父母类型: stability_first/prestige_first/practical_worry/supportive"
+    )
 
 
 class Argument(BaseModel):

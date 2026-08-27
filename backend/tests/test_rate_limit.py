@@ -5,12 +5,11 @@
 conftest 中的 autouse fixture 会在每个测试前后调用 limiter.reset()，
 保证各测试从干净的限流状态开始。
 """
+
 import uuid
 from unittest.mock import AsyncMock, patch
 
 from fastapi.testclient import TestClient
-
-from app.main import app
 
 
 def _login_payload(email: str = "nobody@test.com", password: str = "Wrong1!") -> dict:
@@ -68,9 +67,7 @@ def test_ai_endpoint_rate_limit(client: TestClient, auth_headers: dict):
         "advice": "mock",
     }
     statuses = []
-    with patch(
-        "app.api.ai.get_decision_advice", new=AsyncMock(return_value=fake_response)
-    ):
+    with patch("app.api.ai.get_decision_advice", new=AsyncMock(return_value=fake_response)):
         for _ in range(11):
             resp = client.post(
                 "/api/ai/decision-advice",
@@ -89,7 +86,7 @@ def test_rate_limit_response_has_headers(client: TestClient):
     for _ in range(6):
         resp = client.post("/api/auth/login", json=_login_payload())
     assert resp.status_code == 429
-    lowered = {k.lower() for k in resp.headers.keys()}
+    lowered = {k.lower() for k in resp.headers}
     assert "retry-after" in lowered or any(
         k.startswith("x-ratelimit-") for k in lowered
     ), f"missing rate limit headers: {dict(resp.headers)}"

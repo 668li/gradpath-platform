@@ -1,6 +1,8 @@
 """爬虫执行日志 Schema。"""
+
 from datetime import datetime
 from uuid import UUID
+
 from pydantic import BaseModel
 
 
@@ -25,6 +27,7 @@ class CrawlerRunResponse(BaseModel):
 
 class CrawlerInfo(BaseModel):
     """爬虫信息。"""
+
     name: str
     category: str
     description: str
@@ -33,5 +36,6 @@ class CrawlerInfo(BaseModel):
 
 class CrawlerRunRequest(BaseModel):
     """触发爬虫请求。"""
+
     source_name: str
     dry_run: bool = False

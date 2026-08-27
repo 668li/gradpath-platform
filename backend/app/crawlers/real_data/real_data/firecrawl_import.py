@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Import Firecrawl-scraped articles into GradPath database.
 
 Reads firecrawl_scraped.json and inserts as ExperiencePost + KnowledgeArticle.
@@ -10,10 +9,11 @@ Or locally:
     cd backend
     python -m app.crawlers.real_data.firecrawl_import
 """
-import sys
+
 import json
 import os
 import re
+import sys
 import uuid
 from pathlib import Path
 
@@ -21,11 +21,12 @@ backend_dir = Path(__file__).parent.parent.parent.parent
 if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
+
 from app.database import Base, SessionLocal, engine
-from app.models.user import User
 from app.models.experience_post import ExperiencePost
 from app.models.knowledge_article import KnowledgeArticle
+from app.models.user import User
 
 SEED_USER_EMAIL = "firecrawl_seed@gradpath.local"
 SEED_USER_NAME = "考研数据采集"
@@ -49,11 +50,11 @@ CATEGORY_MAP = {
 def clean_content(raw):
     if not raw:
         return ""
-    text = re.sub(r'\{[^}]*\}', '', raw)
-    text = re.sub(r'/\*!.*?\*/', '', text)
-    text = re.sub(r'--tw-[^:]+:[^;]+;', '', text)
-    text = re.sub(r'\n{3,}', '\n\n', text)
-    text = re.sub(r' {2,}', ' ', text)
+    text = re.sub(r"\{[^}]*\}", "", raw)
+    text = re.sub(r"/\*!.*?\*/", "", text)
+    text = re.sub(r"--tw-[^:]+:[^;]+;", "", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    text = re.sub(r" {2,}", " ", text)
     return text.strip()
 
 
@@ -77,16 +78,12 @@ def get_or_create_seed_user(db):
 
 
 def get_existing_urls(db):
-    stmt = select(ExperiencePost.source_url).where(
-        ExperiencePost.source_url.isnot(None)
-    )
+    stmt = select(ExperiencePost.source_url).where(ExperiencePost.source_url.isnot(None))
     return {row[0] for row in db.execute(stmt).all()}
 
 
 def get_existing_ka_urls(db):
-    stmt = select(KnowledgeArticle.source).where(
-        KnowledgeArticle.source.isnot(None)
-    )
+    stmt = select(KnowledgeArticle.source).where(KnowledgeArticle.source.isnot(None))
     return {row[0] for row in db.execute(stmt).all()}
 
 
@@ -148,7 +145,8 @@ def import_knowledge_articles(db, articles, existing_ka_urls):
 
     # Select articles suitable for knowledge base
     knowledge_suitable = [
-        a for a in articles
+        a
+        for a in articles
         if a.get("category") in ("政策", "分数线", "专业分析")
         and a.get("url", "") not in existing_ka_urls
     ]
@@ -196,7 +194,7 @@ def main():
         print(f"\nERROR: 文件不存在: {json_path}")
         sys.exit(1)
 
-    with open(json_path, "r", encoding="utf-8") as f:
+    with open(json_path, encoding="utf-8") as f:
         data = json.load(f)
 
     articles = data.get("articles", [])
@@ -235,6 +233,7 @@ def main():
         print(f"\nERROR: 导入失败: {e}")
         db.rollback()
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
     finally:

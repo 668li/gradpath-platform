@@ -8,6 +8,7 @@
 - parse：标题/首楼正文提取、登录墙标记丢弃、抓取失败诚实记录
 - store：落 t_external_research_item + t_review_queue_item（PENDING 审核队列）
 """
+
 import pytest
 
 from app.crawlers.research.tieba_research_crawler import (
@@ -133,12 +134,14 @@ class TestParse:
     def test_extracts_title_and_first_floor(self):
         c = _make_crawler()
         parsed = c.parse(
-            [{
-                "url": "https://tieba.baidu.com/p/1001",
-                "html": _THREAD_HTML,
-                "title_hint": "考研避坑：这些学校慎报",
-                "status": "ok",
-            }]
+            [
+                {
+                    "url": "https://tieba.baidu.com/p/1001",
+                    "html": _THREAD_HTML,
+                    "title_hint": "考研避坑：这些学校慎报",
+                    "status": "ok",
+                }
+            ]
         )
         assert len(parsed) == 1
         item = parsed[0]
@@ -160,13 +163,15 @@ class TestParse:
     def test_fetch_error_item_kept_honestly(self):
         c = _make_crawler()
         parsed = c.parse(
-            [{
-                "url": "https://tieba.baidu.com/p/1",
-                "html": "",
-                "title_hint": "考研避坑",
-                "status": "error",
-                "error": "robots.txt 不允许抓取",
-            }]
+            [
+                {
+                    "url": "https://tieba.baidu.com/p/1",
+                    "html": "",
+                    "title_hint": "考研避坑",
+                    "status": "error",
+                    "error": "robots.txt 不允许抓取",
+                }
+            ]
         )
         assert parsed[0]["status"] == "failed"
         assert "robots.txt 不允许抓取" in parsed[0]["error"]
@@ -177,40 +182,48 @@ class TestStoreToReviewQueue:
     def test_store_creates_pending_queue_item(self, db_session):
         c = _make_crawler()
         items = c.parse(
-            [{
-                "url": "https://tieba.baidu.com/p/7001",
-                "html": _THREAD_HTML,
-                "title_hint": "考研避坑：这些学校慎报",
-                "status": "ok",
-            }]
+            [
+                {
+                    "url": "https://tieba.baidu.com/p/7001",
+                    "html": _THREAD_HTML,
+                    "title_hint": "考研避坑：这些学校慎报",
+                    "status": "ok",
+                }
+            ]
         )
         inserted = c.store(items, db=db_session)
         assert inserted == 1
 
-        ext = db_session.query(ExternalResearchItem).filter(
-            ExternalResearchItem.source_url == "https://tieba.baidu.com/p/7001"
-        ).first()
+        ext = (
+            db_session.query(ExternalResearchItem)
+            .filter(ExternalResearchItem.source_url == "https://tieba.baidu.com/p/7001")
+            .first()
+        )
         assert ext is not None
         assert ext.review_status == "PENDING"
         assert ext.item_type == "experience_post"
         assert ext.source_platform == "tieba"
         assert ext.crawler_name == "tieba_research"
 
-        queue = db_session.query(ReviewQueueItem).filter(
-            ReviewQueueItem.source_url == "https://tieba.baidu.com/p/7001"
-        ).first()
+        queue = (
+            db_session.query(ReviewQueueItem)
+            .filter(ReviewQueueItem.source_url == "https://tieba.baidu.com/p/7001")
+            .first()
+        )
         assert queue is not None
         assert queue.review_status == "PENDING"
 
     def test_store_dedupes_same_url(self, db_session):
         c = _make_crawler()
         items = c.parse(
-            [{
-                "url": "https://tieba.baidu.com/p/7002",
-                "html": _THREAD_HTML,
-                "title_hint": "考研避坑",
-                "status": "ok",
-            }]
+            [
+                {
+                    "url": "https://tieba.baidu.com/p/7002",
+                    "html": _THREAD_HTML,
+                    "title_hint": "考研避坑",
+                    "status": "ok",
+                }
+            ]
         )
         assert c.store(items, db=db_session) == 1
         assert c.store(items, db=db_session) == 0

@@ -1,5 +1,6 @@
 # backend/app/skills/interview_simulation.py
 """面试模拟 Skill — 模拟面试问答，支持多轮对话。"""
+
 from __future__ import annotations
 
 import json

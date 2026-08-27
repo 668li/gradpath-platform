@@ -15,6 +15,7 @@ Phase B2（合规边界内）：
 
 新增官方源 = 追加一节配置；校验：列表页 HTML 结构与 <li><a>+<span> 模式一致。
 """
+
 import logging
 import re
 import sys
@@ -59,7 +60,7 @@ DEFAULT_SECTIONS: list[dict[str, Any]] = [
 # 通用列表条目：<li><a href="...htm">标题</a><span>YYYY-MM-DD</span></li>
 _LIST_ITEM_RE = re.compile(
     r'<li><a href="(?P<url>[^"]+\.htm)">(?P<title>.*?)</a>'
-    r'<span>(?P<date>\d{4}-\d{2}-\d{2})</span></li>',
+    r"<span>(?P<date>\d{4}-\d{2}-\d{2})</span></li>",
     re.S,
 )
 
@@ -70,7 +71,9 @@ def _extract_content_div(html: str, content_cls: str) -> str:
     从容器 <div ...> 起到第一个闭合 </div>（高校正文容器通常无深嵌套）。
     """
     quoted = re.escape(content_cls)
-    m = re.search(r'<div[^>]*class=["\']?' + quoted + r'["\']?[^>]*>(?P<body>.*?)</div>', html or "", re.S)
+    m = re.search(
+        r'<div[^>]*class=["\']?' + quoted + r'["\']?[^>]*>(?P<body>.*?)</div>', html or "", re.S
+    )
     if not m:
         return ""
     text = re.sub(r"<[^>]+>", " ", m.group("body"))
@@ -133,13 +136,15 @@ class OfficialAnnounceCrawler(BaseCrawler):
                         detail_title, detail_text = self._fetch_detail(
                             url, section.get("content_cls", ""), section.get("title_suffix", "")
                         )
-                    raw_items.append({
-                        "title": detail_title or title,
-                        "url": url,
-                        "published_at": date,
-                        "detail_text": detail_text,
-                        "source_name": section.get("name", list_url),
-                    })
+                    raw_items.append(
+                        {
+                            "title": detail_title or title,
+                            "url": url,
+                            "published_at": date,
+                            "detail_text": detail_text,
+                            "source_name": section.get("name", list_url),
+                        }
+                    )
                     section_items += 1
                 logger.info(f"[{self.name}] 栏目 {section.get('name')} 解析 {section_items} 条")
             except Exception as e:
@@ -171,17 +176,19 @@ class OfficialAnnounceCrawler(BaseCrawler):
             detail = raw.get("detail_text", "")
             summary = detail[:300] or title
             published_at = raw.get("published_at")
-            raw_payloads.append({
-                "title": title,
-                "summary": summary,
-                "content": detail or summary,
-                "source_url": raw.get("url", ""),
-                "published_at": published_at,
-                "crawled_at": datetime.now(timezone.utc).isoformat(),
-                "category": f"官方公告·{raw.get('source_name', '')}"[:50],
-                "tags": [],
-                "source_platform": "official",
-            })
+            raw_payloads.append(
+                {
+                    "title": title,
+                    "summary": summary,
+                    "content": detail or summary,
+                    "source_url": raw.get("url", ""),
+                    "published_at": published_at,
+                    "crawled_at": datetime.now(timezone.utc).isoformat(),
+                    "category": f"官方公告·{raw.get('source_name', '')}"[:50],
+                    "tags": [],
+                    "source_platform": "official",
+                }
+            )
         return ResearchTransformer.transform_rss(raw_payloads)
 
     # ===== store：CrawlerRun + 入库 =====
@@ -219,8 +226,7 @@ class OfficialAnnounceCrawler(BaseCrawler):
             run_record.duplicate_count = result["duplicated"]
             run_record.source_meta = {
                 "sections": [
-                    {"name": s.get("name"), "list_url": s.get("list_url")}
-                    for s in self.sections
+                    {"name": s.get("name"), "list_url": s.get("list_url")} for s in self.sections
                 ],
                 "platform": "official",
             }

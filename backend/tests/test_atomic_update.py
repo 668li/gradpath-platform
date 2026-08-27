@@ -5,10 +5,9 @@
 2. 功能测试：单次调用功能正确（计数 +1）
 3. 并发测试：多线程并发调用，最终计数 = 并发数（无丢失更新）
 """
+
 import threading
 from uuid import uuid4
-
-import pytest
 
 
 class TestAtomicUpdateStaticCheck:
@@ -17,27 +16,33 @@ class TestAtomicUpdateStaticCheck:
     def test_comment_service_has_atomic_increment(self):
         """comment_service 定义了 _atomic_increment 辅助函数。"""
         import app.services.comment_service as cs
+
         assert hasattr(cs, "_atomic_increment")
 
     def test_experience_post_service_has_atomic_increment(self):
         """experience_post_service 定义了 _atomic_increment 辅助函数。"""
         import app.services.experience_post_service as eps
+
         assert hasattr(eps, "_atomic_increment")
 
     def test_qa_service_has_atomic_increment(self):
         """qa_service 定义了 _atomic_increment 辅助函数。"""
         import app.services.qa_service as qs
+
         assert hasattr(qs, "_atomic_increment")
 
     def test_mentor_service_has_atomic_increment(self):
         """mentor_service 定义了 _atomic_increment 辅助函数。"""
         import app.services.mentor_service as ms
+
         assert hasattr(ms, "_atomic_increment")
 
     def test_user_memory_service_uses_bulk_atomic_update(self):
         """user_memory_service.mark_used 使用 bulk 原子 UPDATE。"""
         import inspect
+
         from app.services import user_memory_service
+
         source = inspect.getsource(user_memory_service.mark_used)
         # 应使用 .update({...col: col + 1...}) 模式
         assert "col + 1" in source or "use_count + 1" in source
@@ -118,6 +123,7 @@ class TestAtomicIncrementConcurrency:
     SQLite WAL 模式支持多读单写，写操作会自动加锁串行化，但每条 UPDATE 语句本身是原子的，
     所以能验证「原子 UPDATE」相对「read-modify-write」的优势：不会丢失更新。
     """
+
     def test_concurrent_increments_no_lost_update(self, tmp_path):
         """10 个线程各 +10，最终应 = 100（无丢失更新）。"""
         from sqlalchemy import create_engine, event
@@ -196,9 +202,9 @@ class TestAtomicIncrementConcurrency:
         try:
             final_post = s.query(ExperiencePost).filter(ExperiencePost.id == post_id).first()
             expected = NUM_THREADS * INCREMENT_PER_THREAD
-            assert final_post.view_count == expected, (
-                f"丢失更新: 期望 {expected}, 实际 {final_post.view_count}"
-            )
+            assert (
+                final_post.view_count == expected
+            ), f"丢失更新: 期望 {expected}, 实际 {final_post.view_count}"
         finally:
             s.close()
             Base.metadata.drop_all(engine)

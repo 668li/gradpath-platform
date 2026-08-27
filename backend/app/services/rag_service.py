@@ -6,6 +6,7 @@
 - 元数据过滤
 - 上下文构建与 LLM 生成
 """
+
 import logging
 from typing import Any
 
@@ -30,6 +31,7 @@ def _get_embedding_model():
     if _embedding_model is None:
         try:
             from sentence_transformers import SentenceTransformer
+
             model_name = getattr(settings, "EMBEDDING_MODEL", "BAAI/bge-large-zh-v1.5")
             _embedding_model = SentenceTransformer(model_name)
             logger.info("Embedding 模型加载完成: %s", model_name)
@@ -41,8 +43,7 @@ def _get_embedding_model():
             return None
         except Exception as e:
             logger.warning(
-                "Embedding 模型加载失败（%s），RAG 将降级为关键词搜索: %s",
-                type(e).__name__, e
+                "Embedding 模型加载失败（%s），RAG 将降级为关键词搜索: %s", type(e).__name__, e
             )
             return None
     return _embedding_model
@@ -131,7 +132,7 @@ class RAGService:
 
         # 5. 执行查询（显式 bindparams，确保所有参数都被正确转义）
         try:
-            bindparams_list = [bindparam(k) for k in params.keys()]
+            bindparams_list = [bindparam(k) for k in params]
             result = self.db.execute(text(sql).bindparams(*bindparams_list), params)
             rows = result.fetchall()
         except Exception as e:
@@ -144,19 +145,19 @@ class RAGService:
         for row in rows:
             similarity = float(row.similarity) if row.similarity else 0
             if similarity >= score_threshold:
-                results.append({
-                    "id": str(row.id),
-                    "source_table": row.source_table,
-                    "content": row.content,
-                    "metadata": row.doc_metadata,
-                    "similarity": round(similarity, 4),
-                })
+                results.append(
+                    {
+                        "id": str(row.id),
+                        "source_table": row.source_table,
+                        "content": row.content,
+                        "metadata": row.doc_metadata,
+                        "similarity": round(similarity, 4),
+                    }
+                )
 
         return results
 
-    def _fallback_search(
-        self, query: str, top_k: int, filters: dict | None
-    ) -> list[dict]:
+    def _fallback_search(self, query: str, top_k: int, filters: dict | None) -> list[dict]:
         """降级搜索 — 当向量检索不可用时，使用关键词匹配。"""
         # 修复 bug: ILIKE 是 PostgreSQL 特定语法，SQLite 不支持。
         # SQLite 用 LIKE（默认大小写不敏感对 ASCII，对中文无影响）；
@@ -191,7 +192,7 @@ class RAGService:
         params["limit"] = top_k
 
         try:
-            bindparams_list = [bindparam(k) for k in params.keys()]
+            bindparams_list = [bindparam(k) for k in params]
             result = self.db.execute(text(sql).bindparams(*bindparams_list), params)
             rows = result.fetchall()
             return [
@@ -223,9 +224,7 @@ class RAGService:
 
             source = r["source_table"]
             similarity = r.get("similarity", 0)
-            context_parts.append(
-                f"[来源: {source} | 相关度: {similarity:.2f}]\n{content}"
-            )
+            context_parts.append(f"[来源: {source} | 相关度: {similarity:.2f}]\n{content}")
             current_tokens += estimated_tokens
 
         return "\n\n---\n\n".join(context_parts)

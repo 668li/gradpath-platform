@@ -1,4 +1,5 @@
 """B站考研经验视频调研爬虫。"""
+
 import argparse
 import json
 import logging
@@ -53,23 +54,23 @@ class BilibiliResearchCrawler(BaseCrawler):
         raw_keywords = self.config.get("keywords") or []
         if isinstance(raw_keywords, str):
             raw_keywords = raw_keywords.split(",")
-        self.keywords = [
-            k.strip() for k in raw_keywords if k and k.strip()
-        ] or DEFAULT_KEYWORDS
+        self.keywords = [k.strip() for k in raw_keywords if k and k.strip()] or DEFAULT_KEYWORDS
         # 兼容旧字段：keyword 取第一个关键词（CLI 单关键词用法、source_meta 展示）
         self.keyword = self.keywords[0]
         self.pages = int(self.config.get("pages", 1))
         # 基类会按 _rate_limit 做固定睡眠，这里由本类自行控制 1-3 秒随机间隔
         self._rate_limit = 0
-        self.session.headers.update({
-            "User-Agent": (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
-            ),
-            "Referer": "https://search.bilibili.com/",
-            "Accept": "application/json, text/plain, */*",
-            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-        })
+        self.session.headers.update(
+            {
+                "User-Agent": (
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
+                ),
+                "Referer": "https://search.bilibili.com/",
+                "Accept": "application/json, text/plain, */*",
+                "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+            }
+        )
 
     def fetch(self) -> list[dict]:
         """调用 B站搜索 API，逐关键词分页抓取视频搜索结果。"""

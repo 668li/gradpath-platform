@@ -24,6 +24,7 @@
     py -3.13 scripts/import_real_data_to_queue.py --limit 20
     py -3.13 scripts/import_real_data_to_queue.py --json         # JSON 摘要（测试断言用）
 """
+
 import argparse
 import json
 import re
@@ -48,6 +49,7 @@ MAX_CONTENT_CHARS = 20_000
 # 站点壳标题标记：命中则改用 URL 派生的占位标题（webfetch/crawl4ai/firecrawl 类页面 dump）
 _SITE_NAME_MARKERS = ("学而思考研帮", "kaoyan.com", "考研网")
 _BOILER_RE = re.compile(r"^(上一篇[:：]|下一篇[:：]|未命名文章|$)")
+
 
 # 适配器：raw 行 → store_research_items 接受的 {title, content, source_url, ...} 字典
 # 除核心列（title/content/source_url/source_platform）外全部进 external_meta
@@ -87,8 +89,8 @@ def _clean_title(title: str, url: str) -> str:
 
 def _first_line_text(md: str) -> str:
     """从 markdown/文本里抠第一行真实文字，用作 summary（供确认入库时展示）。"""
-    text = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", md or "")          # 图片
-    text = re.sub(r"\[([^\]]+)\]\([^)]*\)", r"\1", text)           # 链接保留文字
+    text = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", md or "")  # 图片
+    text = re.sub(r"\[([^\]]+)\]\([^)]*\)", r"\1", text)  # 链接保留文字
     text = re.sub(r"^[#>*\-\s]+", "", text, flags=re.M)
     for line in text.splitlines():
         line = line.strip()
@@ -104,7 +106,7 @@ def _adapter_bilibili(rows: list[dict]) -> list[dict]:
         title = str(raw.get("title") or "").strip()
         url = str(raw.get("url") or "").strip()
         if url.startswith("//"):
-            url = "https:" + url          # bilibili_round3 抓取时丢了 scheme
+            url = "https:" + url  # bilibili_round3 抓取时丢了 scheme
         if not title or not url:
             continue
         desc = str(raw.get("description") or "").strip()
@@ -184,9 +186,7 @@ def _adapter_school(rows: list[dict]) -> list[dict]:
     items: list[dict] = []
     for raw in rows:
         name = str(raw.get("name") or "").strip()
-        url = str(
-            raw.get("graduate_school_url") or raw.get("official_website") or ""
-        ).strip()
+        url = str(raw.get("graduate_school_url") or raw.get("official_website") or "").strip()
         if not name or not url:
             continue
 
@@ -258,44 +258,260 @@ def _adapter_community(rows: list[dict]) -> list[dict]:
 # 子键 None = 文件顶层即列表；特殊值 "__unified__" = 整个 dict 交给 _adapter_unified
 SOURCE_REGISTRY: list[tuple[str, str | None, str, str, str, str, Callable]] = [
     # —— bilibili 经验贴 → experience_post（B 站，user_reported 可信度）——
-    ("bilibili_expand.json", None, "bilibili", "bilibili_research", "experience_post", "bilibili", _adapter_bilibili),
-    ("bilibili_loop.json", None, "bilibili", "bilibili_research", "experience_post", "bilibili", _adapter_bilibili),
-    ("bilibili_round3.json", None, "bilibili", "bilibili_research", "experience_post", "bilibili", _adapter_bilibili),
-    ("bilibili_data.json", "videos", "bilibili", "bilibili_research", "experience_post", "bilibili", _adapter_bilibili),
-    ("crawllee_bilibili.json", None, "bilibili", "bilibili_research", "experience_post", "bilibili", _adapter_bilibili),
-    ("crawllee_bilibili2.json", None, "bilibili", "bilibili_research", "experience_post", "bilibili", _adapter_bilibili),
-    ("fast_bilibili.json", None, "bilibili", "bilibili_research", "experience_post", "bilibili", _adapter_bilibili),
-    ("round5_bilibili.json", None, "bilibili", "bilibili_research", "experience_post", "bilibili", _adapter_bilibili),
+    (
+        "bilibili_expand.json",
+        None,
+        "bilibili",
+        "bilibili_research",
+        "experience_post",
+        "bilibili",
+        _adapter_bilibili,
+    ),
+    (
+        "bilibili_loop.json",
+        None,
+        "bilibili",
+        "bilibili_research",
+        "experience_post",
+        "bilibili",
+        _adapter_bilibili,
+    ),
+    (
+        "bilibili_round3.json",
+        None,
+        "bilibili",
+        "bilibili_research",
+        "experience_post",
+        "bilibili",
+        _adapter_bilibili,
+    ),
+    (
+        "bilibili_data.json",
+        "videos",
+        "bilibili",
+        "bilibili_research",
+        "experience_post",
+        "bilibili",
+        _adapter_bilibili,
+    ),
+    (
+        "crawllee_bilibili.json",
+        None,
+        "bilibili",
+        "bilibili_research",
+        "experience_post",
+        "bilibili",
+        _adapter_bilibili,
+    ),
+    (
+        "crawllee_bilibili2.json",
+        None,
+        "bilibili",
+        "bilibili_research",
+        "experience_post",
+        "bilibili",
+        _adapter_bilibili,
+    ),
+    (
+        "fast_bilibili.json",
+        None,
+        "bilibili",
+        "bilibili_research",
+        "experience_post",
+        "bilibili",
+        _adapter_bilibili,
+    ),
+    (
+        "round5_bilibili.json",
+        None,
+        "bilibili",
+        "bilibili_research",
+        "experience_post",
+        "bilibili",
+        _adapter_bilibili,
+    ),
     # —— 网页文章 → kaoyan_news（web，官方域名 → official_verified）——
-    ("crawl4ai_results.json", None, "web", "web_article_research", "kaoyan_news", "web", _adapter_web),
-    ("crawlee_kaoyan.json", None, "web", "web_article_research", "kaoyan_news", "web", _adapter_web),
-    ("crawllee_kaoyan.json", None, "web", "web_article_research", "kaoyan_news", "web", _adapter_web),
+    (
+        "crawl4ai_results.json",
+        None,
+        "web",
+        "web_article_research",
+        "kaoyan_news",
+        "web",
+        _adapter_web,
+    ),
+    (
+        "crawlee_kaoyan.json",
+        None,
+        "web",
+        "web_article_research",
+        "kaoyan_news",
+        "web",
+        _adapter_web,
+    ),
+    (
+        "crawllee_kaoyan.json",
+        None,
+        "web",
+        "web_article_research",
+        "kaoyan_news",
+        "web",
+        _adapter_web,
+    ),
     ("crawllee_yz.json", None, "web", "web_article_research", "kaoyan_news", "web", _adapter_web),
-    ("kaoyan_crawled.json", None, "web", "web_article_research", "kaoyan_news", "web", _adapter_web),
+    (
+        "kaoyan_crawled.json",
+        None,
+        "web",
+        "web_article_research",
+        "kaoyan_news",
+        "web",
+        _adapter_web,
+    ),
     ("kaoyan_round2.json", None, "web", "web_article_research", "kaoyan_news", "web", _adapter_web),
     ("round5_kaoyan.json", None, "web", "web_article_research", "kaoyan_news", "web", _adapter_web),
     ("real_articles.json", None, "web", "web_article_research", "kaoyan_news", "web", _adapter_web),
     ("fast_kaoyan.json", None, "web", "web_article_research", "kaoyan_news", "web", _adapter_web),
     ("fast_yz.json", None, "web", "web_article_research", "kaoyan_news", "web", _adapter_web),
-    ("school_official.json", None, "web", "web_article_research", "kaoyan_news", "web", _adapter_web),
+    (
+        "school_official.json",
+        None,
+        "web",
+        "web_article_research",
+        "kaoyan_news",
+        "web",
+        _adapter_web,
+    ),
     ("yz_articles.json", None, "web", "web_article_research", "kaoyan_news", "web", _adapter_web),
-    ("yz_articles_round2.json", None, "web", "web_article_research", "kaoyan_news", "web", _adapter_web),
-    ("yz_articles_round3.json", None, "web", "web_article_research", "kaoyan_news", "web", _adapter_web),
-    ("round5_yz.json", "articles", "web", "web_article_research", "kaoyan_news", "web", _adapter_web),
-    ("fast_strategy.json", "articles", "web", "web_article_research", "kaoyan_news", "web", _adapter_web),
-    ("firecrawl_scraped.json", "articles", "web", "web_article_research", "kaoyan_news", "web", _adapter_web),
-    ("koolearn_crawled.json", "data", "web", "web_article_research", "kaoyan_news", "web", _adapter_web),
-    ("webfetch_round2.json", "articles", "web", "web_article_research", "kaoyan_news", "web", _adapter_web),
-    ("webfetch_round4.json", "articles", "web", "web_article_research", "kaoyan_news", "web", _adapter_web),
-    ("batch_scrape_results.json", "kaoyan", "web", "web_article_research", "kaoyan_news", "web", _adapter_web),
-    ("batch_scrape_results.json", "yz", "web", "web_article_research", "kaoyan_news", "web", _adapter_web),
-    ("unified_scrape_results.json", "__unified__", "web", "web_article_research", "kaoyan_news", "web", _adapter_unified),
-    ("civil_service_expanded.json", None, "web", "web_article_research", "kaoyan_news", "web", _adapter_web),
+    (
+        "yz_articles_round2.json",
+        None,
+        "web",
+        "web_article_research",
+        "kaoyan_news",
+        "web",
+        _adapter_web,
+    ),
+    (
+        "yz_articles_round3.json",
+        None,
+        "web",
+        "web_article_research",
+        "kaoyan_news",
+        "web",
+        _adapter_web,
+    ),
+    (
+        "round5_yz.json",
+        "articles",
+        "web",
+        "web_article_research",
+        "kaoyan_news",
+        "web",
+        _adapter_web,
+    ),
+    (
+        "fast_strategy.json",
+        "articles",
+        "web",
+        "web_article_research",
+        "kaoyan_news",
+        "web",
+        _adapter_web,
+    ),
+    (
+        "firecrawl_scraped.json",
+        "articles",
+        "web",
+        "web_article_research",
+        "kaoyan_news",
+        "web",
+        _adapter_web,
+    ),
+    (
+        "koolearn_crawled.json",
+        "data",
+        "web",
+        "web_article_research",
+        "kaoyan_news",
+        "web",
+        _adapter_web,
+    ),
+    (
+        "webfetch_round2.json",
+        "articles",
+        "web",
+        "web_article_research",
+        "kaoyan_news",
+        "web",
+        _adapter_web,
+    ),
+    (
+        "webfetch_round4.json",
+        "articles",
+        "web",
+        "web_article_research",
+        "kaoyan_news",
+        "web",
+        _adapter_web,
+    ),
+    (
+        "batch_scrape_results.json",
+        "kaoyan",
+        "web",
+        "web_article_research",
+        "kaoyan_news",
+        "web",
+        _adapter_web,
+    ),
+    (
+        "batch_scrape_results.json",
+        "yz",
+        "web",
+        "web_article_research",
+        "kaoyan_news",
+        "web",
+        _adapter_web,
+    ),
+    (
+        "unified_scrape_results.json",
+        "__unified__",
+        "web",
+        "web_article_research",
+        "kaoyan_news",
+        "web",
+        _adapter_unified,
+    ),
+    (
+        "civil_service_expanded.json",
+        None,
+        "web",
+        "web_article_research",
+        "kaoyan_news",
+        "web",
+        _adapter_web,
+    ),
     # —— 院校信息 → kaoyan_news（web，real_data 爬虫名）——
     ("college_details.json", None, "school", "real_data", "kaoyan_news", "web", _adapter_school),
     # —— 社区帖 → experience_post（v2ex/zhihu，user_reported 可信度）——
-    ("v2ex_data.json", "topics", "community", "real_data", "experience_post", "v2ex", _adapter_community),
-    ("zhihu_playwright.json", None, "community", "real_data", "experience_post", "zhihu", _adapter_community),
+    (
+        "v2ex_data.json",
+        "topics",
+        "community",
+        "real_data",
+        "experience_post",
+        "v2ex",
+        _adapter_community,
+    ),
+    (
+        "zhihu_playwright.json",
+        None,
+        "community",
+        "real_data",
+        "experience_post",
+        "zhihu",
+        _adapter_community,
+    ),
 ]
 
 # 明确不导入的文件及原因（B3 合规红线：数据必须真实）
@@ -383,10 +599,7 @@ def main() -> None:
     args = parser.parse_args()
 
     only_groups = {g.strip() for g in args.only.split(",")} if args.only else None
-    registry = [
-        e for e in SOURCE_REGISTRY
-        if only_groups is None or e[2] in only_groups
-    ]
+    registry = [e for e in SOURCE_REGISTRY if only_groups is None or e[2] in only_groups]
     if not registry:
         parser.error(f"--only 无匹配分组: {args.only}")
 
@@ -415,7 +628,9 @@ def main() -> None:
         summary = {"mode": "dry-run", "files": per_file, "totals": {}}
         for group in sorted({e[2] for e in registry}):
             summary["totals"][group] = sum(
-                f["items"] for f in per_file.values() if f.get("group") == group and "error" not in f
+                f["items"]
+                for f in per_file.values()
+                if f.get("group") == group and "error" not in f
             )
         if args.json:
             print(json.dumps(summary, ensure_ascii=False, indent=2))

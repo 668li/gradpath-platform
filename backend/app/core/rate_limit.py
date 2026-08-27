@@ -8,6 +8,7 @@
     @limiter.limit(rate_limits.AUTH_LOGIN)
     def login(...): ...
 """
+
 from __future__ import annotations
 
 

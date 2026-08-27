@@ -4,6 +4,7 @@
 选填原因）。P0 仅采集存储：同用户同条目 upsert 只留最新一条（可切换），
 管理端统计/处理留 P1。目标条目不存在返回 404，未登录返回 401，超限流 429。
 """
+
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
@@ -15,15 +16,9 @@ from app.database import get_db
 from app.main import limiter
 from app.models.experience_post import ExperiencePost
 from app.models.kaoyan_news import KaoyanNews
-from app.models.quality_feedback import (
-    QualityFeedback,
-    QualityFeedbackTargetType,
-)
+from app.models.quality_feedback import QualityFeedback, QualityFeedbackTargetType
 from app.models.user import User
-from app.schemas.quality_feedback import (
-    QualityFeedbackCreate,
-    QualityFeedbackResponse,
-)
+from app.schemas.quality_feedback import QualityFeedbackCreate, QualityFeedbackResponse
 
 router = APIRouter(prefix="/api/kaoyan", tags=["质量反馈"])
 

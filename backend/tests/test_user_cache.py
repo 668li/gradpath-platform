@@ -10,10 +10,10 @@
 - build_user_context 缓存未命中写缓存
 - 事件 CRUD 失效 user_context 缓存
 """
+
 from datetime import date
 from unittest.mock import patch
 
-import pytest
 from sqlalchemy import event
 
 from app.core.cache import cache
@@ -23,10 +23,10 @@ from app.schemas.event import EventCreate
 from app.services.chat_service import build_user_context
 from app.services.event_service import create_event
 
-
 # ======================================================================
 # 辅助函数
 # ======================================================================
+
 
 def _count_queries(db_session, func):
     """统计 func 执行期间发生的 SQL 查询次数。"""
@@ -47,6 +47,7 @@ def _count_queries(db_session, func):
 # ======================================================================
 # get_current_user 缓存
 # ======================================================================
+
 
 class TestGetCurrentUserCache:
     def test_cache_miss_hits_db_and_writes_cache(self, auth_headers, client, db_session):
@@ -130,6 +131,7 @@ class TestGetCurrentUserCache:
 # ======================================================================
 # build_user_context 缓存
 # ======================================================================
+
 
 class TestBuildUserContextCache:
     def test_cache_miss_hits_db_and_writes_cache(self, db_session):
@@ -222,6 +224,7 @@ class TestBuildUserContextCache:
 # 缓存失效
 # ======================================================================
 
+
 class TestCacheInvalidation:
     def test_event_create_invalidates_user_context_cache(self, db_session):
         """创建 CareerEvent 后失效 user_context 缓存。"""
@@ -254,8 +257,8 @@ class TestCacheInvalidation:
 
     def test_event_update_invalidates_user_context_cache(self, db_session):
         """更新 CareerEvent 后失效 user_context 缓存。"""
-        from app.services.event_service import update_event
         from app.schemas.event import EventUpdate
+        from app.services.event_service import update_event
 
         user = User(
             email="evt2@example.com",

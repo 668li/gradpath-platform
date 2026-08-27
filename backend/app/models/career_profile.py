@@ -3,6 +3,7 @@
 
 每个用户最多拥有一份职业画像，用于个性化推荐与规划生成。
 """
+
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, Integer, String, Text
@@ -23,14 +24,20 @@ class CareerProfile(UUIDMixin, TimestampMixin, Base):
     )
 
     # 教育背景
-    education_level: Mapped[str | None] = mapped_column(String(50), nullable=True)  # high_school, bachelor, master, phd, other
+    education_level: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
+    )  # high_school, bachelor, master, phd, other
     major: Mapped[str | None] = mapped_column(String(200), nullable=True)  # 专业
     school_name: Mapped[str | None] = mapped_column(String(200), nullable=True)  # 学校名称
-    school_tier: Mapped[str | None] = mapped_column(String(50), nullable=True)  # 985, 211, 双非, 海外, 其他
+    school_tier: Mapped[str | None] = mapped_column(
+        String(50), nullable=True
+    )  # 985, 211, 双非, 海外, 其他
     graduation_year: Mapped[int | None] = mapped_column(Integer, nullable=True)  # 毕业年份
 
     # 目标方向
-    target_direction: Mapped[str | None] = mapped_column(String(200), nullable=True)  # 目标方向，如"大厂后端开发"
+    target_direction: Mapped[str | None] = mapped_column(
+        String(200), nullable=True
+    )  # 目标方向，如"大厂后端开发"
     target_industry: Mapped[str | None] = mapped_column(String(100), nullable=True)  # 目标行业
 
     # 自我评估 (1-5分)

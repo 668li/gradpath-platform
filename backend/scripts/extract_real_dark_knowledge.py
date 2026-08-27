@@ -14,6 +14,7 @@
 不伪造 common_misconception / actionable_advice / verification_method（留空，
 诚实降级）。幂等：title unique 冲突跳过。全 ORM 参数绑定。
 """
+
 import sys
 from pathlib import Path
 
@@ -24,8 +25,22 @@ from app.models.experience_post import ExperiencePost
 from app.models.grad_intel import DarkKnowledge
 
 AVOID_KEYWORDS = [
-    "避坑", "踩坑", "教训", "劝退", "避雷", "别报", "不要报", "不建议",
-    "误区", "后悔", "失败", "翻车", "血泪", "惨败", "陷阱", "千万别",
+    "避坑",
+    "踩坑",
+    "教训",
+    "劝退",
+    "避雷",
+    "别报",
+    "不要报",
+    "不建议",
+    "误区",
+    "后悔",
+    "失败",
+    "翻车",
+    "血泪",
+    "惨败",
+    "陷阱",
+    "千万别",
 ]
 
 STAGE_MAP = {
@@ -86,7 +101,9 @@ def main() -> None:
             )
             inserted += 1
         db.commit()
-        print(f"真实经验贴总数: {len(posts)} | 命中避坑关键词: {matched} | 入库暗知识: {inserted} | 跳过(空标题/重复): {skipped}")
+        print(
+            f"真实经验贴总数: {len(posts)} | 命中避坑关键词: {matched} | 入库暗知识: {inserted} | 跳过(空标题/重复): {skipped}"
+        )
 
 
 if __name__ == "__main__":

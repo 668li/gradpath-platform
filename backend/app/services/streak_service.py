@@ -7,6 +7,7 @@
 - 每周1次休息日，不扣streak
 - 断签回赎：完成双倍行动日赎回1次断签
 """
+
 from datetime import date, timedelta
 from uuid import UUID
 
@@ -24,15 +25,22 @@ STREAK_MILESTONES = [
     (100, "长期主义"),
 ]
 
+
 # 每周休息日起始（周一）
 def _week_start(today: date = None) -> date:
     d = today or date.today()
     return d - timedelta(days=d.weekday())
 
 
-def record_activity(db: Session, user_id: UUID, activity_type: str, xp: int = 0,
-                    action_detail: str = "", is_rest_day: bool = False,
-                    is_redeem: bool = False) -> StreakRecord:
+def record_activity(
+    db: Session,
+    user_id: UUID,
+    activity_type: str,
+    xp: int = 0,
+    action_detail: str = "",
+    is_rest_day: bool = False,
+    is_redeem: bool = False,
+) -> StreakRecord:
     """记录用户当日活跃行为，自动计算连续打卡天数。
 
     如果当日已有记录，追加行为类型；否则创建新记录并计算 streak。
@@ -106,8 +114,7 @@ def record_activity(db: Session, user_id: UUID, activity_type: str, xp: int = 0,
     return record
 
 
-def checkin(db: Session, user_id: UUID, action_type: str = "main",
-            action_detail: str = "") -> dict:
+def checkin(db: Session, user_id: UUID, action_type: str = "main", action_detail: str = "") -> dict:
     """手动打卡：完成行动后调用。
 
     action_type: "main" | "micro"
@@ -125,7 +132,10 @@ def checkin(db: Session, user_id: UUID, action_type: str = "main",
 
     xp = 10 if action_type == "main" else 3
     record = record_activity(
-        db, user_id, action_type, xp=xp,
+        db,
+        user_id,
+        action_type,
+        xp=xp,
         action_detail=action_detail,
     )
     is_new = record.streak_count > 0 and not existing
@@ -175,7 +185,10 @@ def rest_day(db: Session, user_id: UUID) -> dict:
     streak_count = yesterday_record.streak_count if yesterday_record else 0
 
     record = record_activity(
-        db, user_id, "rest", xp=0,
+        db,
+        user_id,
+        "rest",
+        xp=0,
         action_detail="休息日",
         is_rest_day=True,
     )
@@ -306,16 +319,11 @@ def get_streak_stats(db: Session, user_id: UUID) -> dict:
     longest_streak = max(r.streak_count for r in records)
 
     # 总活跃天数
-    total_count = (
-        db.query(StreakRecord)
-        .filter(StreakRecord.user_id == user_id)
-        .count()
-    )
+    total_count = db.query(StreakRecord).filter(StreakRecord.user_id == user_id).count()
 
     # 里程碑
     milestones = [
-        {"days": d, "name": n, "unlocked": current_streak >= d}
-        for d, n in STREAK_MILESTONES
+        {"days": d, "name": n, "unlocked": current_streak >= d} for d, n in STREAK_MILESTONES
     ]
 
     # 本周是否已用休息日

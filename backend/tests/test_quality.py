@@ -8,6 +8,7 @@
 - 可溯源：有合法 source_url 才 +10
 - 分级阈值边界：75/55/35 → A/B/C，34 → D
 """
+
 from datetime import datetime, timedelta, timezone
 
 from app.crawlers.research.quality import (
@@ -86,7 +87,7 @@ class TestFreshness:
         assert _freshness_score(_utc_ago(0.5), None) == 30
 
     def test_decays_over_time(self):
-        assert _freshness_score(_utc_ago(3 * 24), None) == 25   # <7d
+        assert _freshness_score(_utc_ago(3 * 24), None) == 25  # <7d
         assert _freshness_score(_utc_ago(15 * 24), None) == 18  # <30d
         assert _freshness_score(_utc_ago(60 * 24), None) == 10  # <90d
         assert _freshness_score(_utc_ago(120 * 24), None) == 5  # <180d

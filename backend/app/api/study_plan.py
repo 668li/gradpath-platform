@@ -1,17 +1,15 @@
 """学习计划 API"""
+
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from uuid import UUID
 
 from app.core.deps import get_current_user
 from app.database import get_db
-from app.models.user import User
 from app.models.study_plan import StudyPlan
-from app.schemas.study_plan import (
-    StudyPlanCreate,
-    StudyPlanUpdate,
-    StudyPlanResponse,
-)
+from app.models.user import User
+from app.schemas.study_plan import StudyPlanCreate, StudyPlanResponse, StudyPlanUpdate
 
 router = APIRouter(prefix="/api/study-plans", tags=["学习计划"])
 
@@ -46,10 +44,7 @@ def get(
     user: User = Depends(get_current_user),
 ):
     """获取单个学习计划"""
-    plan = db.query(StudyPlan).filter(
-        StudyPlan.id == plan_id,
-        StudyPlan.user_id == user.id
-    ).first()
+    plan = db.query(StudyPlan).filter(StudyPlan.id == plan_id, StudyPlan.user_id == user.id).first()
     if not plan:
         raise HTTPException(status_code=404, detail="学习计划不存在")
     return plan
@@ -63,16 +58,13 @@ def update(
     user: User = Depends(get_current_user),
 ):
     """更新学习计划"""
-    plan = db.query(StudyPlan).filter(
-        StudyPlan.id == plan_id,
-        StudyPlan.user_id == user.id
-    ).first()
+    plan = db.query(StudyPlan).filter(StudyPlan.id == plan_id, StudyPlan.user_id == user.id).first()
     if not plan:
         raise HTTPException(status_code=404, detail="学习计划不存在")
-    
+
     for key, value in body.model_dump(exclude_unset=True).items():
         setattr(plan, key, value)
-    
+
     db.commit()
     db.refresh(plan)
     return plan
@@ -85,13 +77,10 @@ def delete(
     user: User = Depends(get_current_user),
 ):
     """删除学习计划"""
-    plan = db.query(StudyPlan).filter(
-        StudyPlan.id == plan_id,
-        StudyPlan.user_id == user.id
-    ).first()
+    plan = db.query(StudyPlan).filter(StudyPlan.id == plan_id, StudyPlan.user_id == user.id).first()
     if not plan:
         raise HTTPException(status_code=404, detail="学习计划不存在")
-    
+
     db.delete(plan)
     db.commit()
     return None

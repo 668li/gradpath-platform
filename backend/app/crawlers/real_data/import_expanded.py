@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Import expanded civil service and salary data into GradPath database.
 
 Reads:
@@ -8,21 +7,23 @@ Reads:
 Usage (inside Docker):
     docker exec gradpath-backend-1 python /app/app/crawlers/real_data/import_expanded.py
 """
+
 import json
 import os
 import re
 import sys
 import uuid
 
-sys.stdout.reconfigure(encoding='utf-8')
+sys.stdout.reconfigure(encoding="utf-8")
 
 DATA_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(DATA_DIR, '..', '..', '..'))
+sys.path.insert(0, os.path.join(DATA_DIR, "..", "..", ".."))
 
-from sqlalchemy import text, func, select
-from app.database import SessionLocal, engine, Base
+from sqlalchemy import func, select, text
+
+from app.database import Base, SessionLocal, engine
 from app.models.knowledge_article import KnowledgeArticle
-from app.models.salary_benchmark import SalaryBenchmark, ExperienceLevel
+from app.models.salary_benchmark import ExperienceLevel, SalaryBenchmark
 
 
 def load_json(filename):
@@ -31,7 +32,7 @@ def load_json(filename):
         print(f"  [SKIP] {filename} not found")
         return None
     try:
-        with open(path, 'r', encoding='utf-8') as f:
+        with open(path, encoding="utf-8") as f:
             data = json.load(f)
         print(f"  [OK] Loaded {filename}: {len(data) if isinstance(data, list) else 'dict'}")
         return data
@@ -43,8 +44,8 @@ def load_json(filename):
 def clean_content(raw):
     if not raw:
         return ""
-    text = re.sub(r'<[^>]+>', ' ', raw)
-    text = re.sub(r'\s+', ' ', text).strip()
+    text = re.sub(r"<[^>]+>", " ", raw)
+    text = re.sub(r"\s+", " ", text).strip()
     return text
 
 
@@ -114,9 +115,7 @@ def import_salary_benchmarks(db):
     existing_rows = db.execute(
         text("SELECT company, position, city, experience_level, year FROM salary_benchmarks")
     ).fetchall()
-    existing_keys = {
-        (row[0], row[1], row[2], row[3], row[4]) for row in existing_rows
-    }
+    existing_keys = {(row[0], row[1], row[2], row[3], row[4]) for row in existing_rows}
     print(f"  DB already has {len(existing_keys)} salary benchmarks")
 
     new_count = 0
@@ -186,7 +185,6 @@ def verify_counts(db):
 
 
 def main():
-    from sqlalchemy import select
 
     print("=" * 60)
     print("GradPath Expanded Data Import")
@@ -223,7 +221,9 @@ def main():
         # Category breakdown for knowledge_articles
         print("\n--- Knowledge Articles by Category ---")
         rows = db.execute(
-            text("SELECT category, COUNT(*) FROM knowledge_articles GROUP BY category ORDER BY COUNT(*) DESC")
+            text(
+                "SELECT category, COUNT(*) FROM knowledge_articles GROUP BY category ORDER BY COUNT(*) DESC"
+            )
         ).fetchall()
         for row in rows:
             print(f"  {row[0]}: {row[1]}")
@@ -231,7 +231,9 @@ def main():
         # Salary benchmarks by experience level
         print("\n--- Salary Benchmarks by Experience Level ---")
         rows = db.execute(
-            text("SELECT experience_level, COUNT(*) FROM salary_benchmarks GROUP BY experience_level ORDER BY experience_level")
+            text(
+                "SELECT experience_level, COUNT(*) FROM salary_benchmarks GROUP BY experience_level ORDER BY experience_level"
+            )
         ).fetchall()
         for row in rows:
             print(f"  {row[0]}: {row[1]}")
@@ -246,6 +248,7 @@ def main():
         print(f"\nERROR: {e}")
         db.rollback()
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
     finally:

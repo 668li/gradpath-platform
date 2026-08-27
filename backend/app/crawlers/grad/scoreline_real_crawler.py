@@ -4,12 +4,12 @@
 覆盖 30 所 985 院校的主要专业，包含 2022-2025 年复试总分线、单科线、
 报考人数、录取人数及调剂人数等关键字段。
 """
+
 from sqlalchemy.orm import Session
 
 from app.crawlers.base_crawler import BaseCrawler
 from app.crawlers.grad.yanzhao_crawler import _YANZHAO_PROGRAM_DATA
 from app.crawlers.registry import register_crawler
-
 
 # 专业基础复试线（2024 年参考值，结合公开数据区间整理）
 _MAJOR_BASE_SCORES: dict[str, int] = {
@@ -116,7 +116,13 @@ def _calculate_scoreline(
     total = base + offset + year_offset
 
     # 单科线基于总分和学科特点（公共课 100 分制，业务课 150 分制或 300 分制）
-    if "计算机" in major or "电子信息" in major or "电子科学与技术" in major or "集成电路" in major or "生物医学工程" in major:
+    if (
+        "计算机" in major
+        or "电子信息" in major
+        or "电子科学与技术" in major
+        or "集成电路" in major
+        or "生物医学工程" in major
+    ):
         politics = 50
         foreign = 50
         business_1 = 80
@@ -188,22 +194,30 @@ class ScorelineRealCrawler(BaseCrawler):
         years = [2022, 2023, 2024, 2025]
         for r in raw_items:
             (
-                university_name, _department, major_name, degree_type,
-                _directions, enrollment_quota, _tuition, _duration,
+                university_name,
+                _department,
+                major_name,
+                degree_type,
+                _directions,
+                enrollment_quota,
+                _tuition,
+                _duration,
                 _requirements,
             ) = r
             for year in years:
                 scoreline = _calculate_scoreline(
                     university_name, major_name, degree_type, enrollment_quota, year
                 )
-                parsed.append({
-                    "university_name": university_name,
-                    "major_name": major_name,
-                    "degree_type": degree_type,
-                    "year": year,
-                    **scoreline,
-                    "data_sources": ["院校研究生院官网", "研招网"],
-                })
+                parsed.append(
+                    {
+                        "university_name": university_name,
+                        "major_name": major_name,
+                        "degree_type": degree_type,
+                        "year": year,
+                        **scoreline,
+                        "data_sources": ["院校研究生院官网", "研招网"],
+                    }
+                )
         return parsed
 
     def store(self, items: list[dict], db: Session) -> int:

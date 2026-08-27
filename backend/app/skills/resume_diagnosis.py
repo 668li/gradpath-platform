@@ -1,5 +1,6 @@
 # backend/app/skills/resume_diagnosis.py
 """简历诊断 Skill — 分析简历并给出修改建议。"""
+
 from __future__ import annotations
 
 import json

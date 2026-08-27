@@ -373,7 +373,6 @@ class TestSelfDiscoveryReport:
         并通过显式调用 service.generate_self_discovery_report 验证模板兜底路径。
         """
         import asyncio
-
         from uuid import UUID
 
         from app.services import micro_action_service as svc

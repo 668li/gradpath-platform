@@ -3,15 +3,14 @@
 4层模板：数据层→对比层→洞察层→行动层
 叫"草稿"不叫"周报"——用户是作者，AI 是助手。
 """
-from datetime import date, datetime, timedelta, timezone
+
+from datetime import date, datetime, timedelta
 from uuid import UUID
 
 from sqlalchemy.orm import Session
 
 from app.models.career_plan import CareerPlan
-from app.models.milestone_log import MilestoneLog
 from app.models.streak import StreakRecord
-from app.models.retrospective import Retrospective
 
 
 def _week_range(today: date = None):
@@ -121,32 +120,40 @@ def generate_weekly_draft(db: Session, user_id: UUID) -> dict:
     if total_actions > 0 and main_actions > 0:
         main_pct = round(main_actions / total_actions * 100) if total_actions > 0 else 0
         if main_pct > 70:
-            insights.append({
-                "text": f"行动{main_pct}%集中在主行动，建议留出时间做微行动（暗知识/档案补全）来保持长期动力",
-                "evidence": f"本周{main_actions}个主行动 vs {micro_actions}个微行动",
-                "action_link": "/intel",
-            })
+            insights.append(
+                {
+                    "text": f"行动{main_pct}%集中在主行动，建议留出时间做微行动（暗知识/档案补全）来保持长期动力",
+                    "evidence": f"本周{main_actions}个主行动 vs {micro_actions}个微行动",
+                    "action_link": "/intel",
+                }
+            )
         elif main_pct < 30 and micro_actions > 0:
-            insights.append({
-                "text": "微行动占比偏高，下周尝试每天完成1个主行动来推进核心目标",
-                "evidence": f"本周{main_actions}个主行动 vs {micro_actions}个微行动",
-                "action_link": "/decisions",
-            })
+            insights.append(
+                {
+                    "text": "微行动占比偏高，下周尝试每天完成1个主行动来推进核心目标",
+                    "evidence": f"本周{main_actions}个主行动 vs {micro_actions}个微行动",
+                    "action_link": "/decisions",
+                }
+            )
 
     # 洞察2：对比上周
     if last_week_active > 0:
         if active_days > last_week_active:
-            insights.append({
-                "text": f"比上周多活跃{active_days - last_week_active}天，势头在上升",
-                "evidence": f"上周{last_week_active}天 → 本周{active_days}天",
-                "action_link": None,
-            })
+            insights.append(
+                {
+                    "text": f"比上周多活跃{active_days - last_week_active}天，势头在上升",
+                    "evidence": f"上周{last_week_active}天 → 本周{active_days}天",
+                    "action_link": None,
+                }
+            )
         elif active_days < last_week_active and active_days > 0:
-            insights.append({
-                "text": f"比上周少活跃{last_week_active - active_days}天，下周只改一件事的话，从周一恢复行动开始",
-                "evidence": f"上周{last_week_active}天 → 本周{active_days}天",
-                "action_link": "/retrospectives",
-            })
+            insights.append(
+                {
+                    "text": f"比上周少活跃{last_week_active - active_days}天，下周只改一件事的话，从周一恢复行动开始",
+                    "evidence": f"上周{last_week_active}天 → 本周{active_days}天",
+                    "action_link": "/retrospectives",
+                }
+            )
 
     # 限制最多2条
     insights = insights[:2]
@@ -155,20 +162,24 @@ def generate_weekly_draft(db: Session, user_id: UUID) -> dict:
     action_layer: list[dict] = []
 
     if active_days < 5:
-        action_layer.append({
-            "action": "本周活跃天数不足5天，下周目标：每天至少完成1个微行动",
-            "why": "连续行动比单次大行动更能建立习惯",
-            "deadline": (week_end + timedelta(days=7)).isoformat(),
-            "source": "insight",
-        })
+        action_layer.append(
+            {
+                "action": "本周活跃天数不足5天，下周目标：每天至少完成1个微行动",
+                "why": "连续行动比单次大行动更能建立习惯",
+                "deadline": (week_end + timedelta(days=7)).isoformat(),
+                "source": "insight",
+            }
+        )
 
     if total_actions > 0 and micro_actions == 0 and main_actions > 0:
-        action_layer.append({
-            "action": "尝试每天加1个5分钟微行动（看暗知识/补档案）",
-            "why": "微行动降低启动门槛，休息日也能保持streak",
-            "deadline": (week_end + timedelta(days=7)).isoformat(),
-            "source": "insight",
-        })
+        action_layer.append(
+            {
+                "action": "尝试每天加1个5分钟微行动（看暗知识/补档案）",
+                "why": "微行动降低启动门槛，休息日也能保持streak",
+                "deadline": (week_end + timedelta(days=7)).isoformat(),
+                "source": "insight",
+            }
+        )
 
     # 目标锚定：从职业规划中提取下周目标
     plans = (
@@ -180,12 +191,14 @@ def generate_weekly_draft(db: Session, user_id: UUID) -> dict:
     )
     if plans:
         plan = plans[0]
-        action_layer.append({
-            "action": f"回顾你的目标「{plan.goal_text[:30]}」，下周推进1个里程碑",
-            "why": "目标锚定，保持方向感",
-            "deadline": (week_end + timedelta(days=7)).isoformat(),
-            "source": "goal",
-        })
+        action_layer.append(
+            {
+                "action": f"回顾你的目标「{plan.goal_text[:30]}」，下周推进1个里程碑",
+                "why": "目标锚定，保持方向感",
+                "deadline": (week_end + timedelta(days=7)).isoformat(),
+                "source": "goal",
+            }
+        )
 
     action_layer = action_layer[:3]
 

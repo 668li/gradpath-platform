@@ -3,6 +3,7 @@
 GET /api/user-context: 获取聚合用户上下文（画像+诊断+记忆+决策+统计）
 GET /api/user-context/prompt: 获取 AI 注入用 prompt 文本
 """
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 

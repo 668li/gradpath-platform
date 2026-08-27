@@ -1,11 +1,12 @@
-import sys
 import json
+import sys
 from pathlib import Path
 
 backend_dir = Path("/app")
 sys.path.insert(0, str(backend_dir))
 
 from sqlalchemy import text
+
 from app.database import engine
 
 with open("/app/app/crawlers/real_data/xiaohongshu_deep.json") as f:

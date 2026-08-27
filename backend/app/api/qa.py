@@ -1,5 +1,5 @@
 """考研社区 — 问答互助 API。"""
-from typing import Optional
+
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
@@ -29,7 +29,6 @@ from app.services.qa_service import (
     approve_question,
     create_answer,
     create_question,
-    delete_answer,
     delete_question,
     get_answer,
     get_answers,
@@ -67,11 +66,11 @@ def _check_answer_owner(answer: QAAnswer, user: User) -> None:
 def list_questions(
     page: int = Query(1, ge=1, description="页码（offset 分页）"),
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
-    cursor: Optional[str] = Query(None, description="游标（cursor 分页，传则忽略 page）"),
-    tag: Optional[str] = Query(None, description="标签过滤"),
-    status: Optional[str] = Query(None, description="审核状态过滤（默认 approved）"),
-    search: Optional[str] = Query(None, description="搜索关键词"),
-    is_resolved: Optional[bool] = Query(None, description="是否已解决"),
+    cursor: str | None = Query(None, description="游标（cursor 分页，传则忽略 page）"),
+    tag: str | None = Query(None, description="标签过滤"),
+    status: str | None = Query(None, description="审核状态过滤（默认 approved）"),
+    search: str | None = Query(None, description="搜索关键词"),
+    is_resolved: bool | None = Query(None, description="是否已解决"),
     db: Session = Depends(get_db),
 ):
     """获取问题列表（默认展示已通过的内容）。
@@ -112,7 +111,15 @@ def list_questions(
                     answers=[],
                     created_at=q.created_at,
                     updated_at=q.updated_at,
-                    author_name=(user_map[q.user_id].nickname or user_map[q.user_id].username or user_map[q.user_id].name) if q.user_id in user_map else None,
+                    author_name=(
+                        (
+                            user_map[q.user_id].nickname
+                            or user_map[q.user_id].username
+                            or user_map[q.user_id].name
+                        )
+                        if q.user_id in user_map
+                        else None
+                    ),
                     author_avatar=user_map[q.user_id].avatar_url if q.user_id in user_map else None,
                 )
                 for q in items
@@ -152,7 +159,15 @@ def list_questions(
                 answers=[],
                 created_at=q.created_at,
                 updated_at=q.updated_at,
-                author_name=(user_map[q.user_id].nickname or user_map[q.user_id].username or user_map[q.user_id].name) if q.user_id in user_map else None,
+                author_name=(
+                    (
+                        user_map[q.user_id].nickname
+                        or user_map[q.user_id].username
+                        or user_map[q.user_id].name
+                    )
+                    if q.user_id in user_map
+                    else None
+                ),
                 author_avatar=user_map[q.user_id].avatar_url if q.user_id in user_map else None,
             )
             for q in questions

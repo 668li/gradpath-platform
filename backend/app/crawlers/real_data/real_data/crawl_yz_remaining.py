@@ -1,12 +1,12 @@
-# -*- coding: utf-8 -*-
 """
 Crawl remaining yz.chsi.com.cn sections using Firecrawl scrape
 1. 招生简章 (zsjz)
 2. 复试经验 (fstj)
 """
+
+import json
 import os
 import re
-import json
 import time
 from datetime import datetime
 from pathlib import Path
@@ -38,18 +38,18 @@ def extract_links_from_markdown(markdown, base_url):
     """Extract article links from markdown content."""
     links = []
     # Match markdown links: [text](url)
-    for match in re.finditer(r'\[([^\]]+)\]\((https?://[^)]+)\)', markdown):
+    for match in re.finditer(r"\[([^\]]+)\]\((https?://[^)]+)\)", markdown):
         title, url = match.group(1), match.group(2)
         links.append({"title": title, "url": url})
 
     # Also match relative links
-    for match in re.finditer(r'\[([^\]]+)\]\((/[^)]+)\)', markdown):
+    for match in re.finditer(r"\[([^\]]+)\]\((/[^)]+)\)", markdown):
         title, rel = match.group(1), match.group(2)
         full_url = f"https://yz.chsi.com.cn{rel}"
         links.append({"title": title, "url": full_url})
 
     # Also find plain URLs
-    for match in re.finditer(r'(https?://yz\.chsi\.com\.cn/[^\s\)\"]+)', markdown):
+    for match in re.finditer(r"(https?://yz\.chsi\.com\.cn/[^\s\)\"]+)", markdown):
         url = match.group(1)
         if url not in [l["url"] for l in links]:
             links.append({"title": "", "url": url})
@@ -91,20 +91,20 @@ def crawl_section(app, section_info):
     print(f"{'='*60}")
 
     # Step 1: Scrape the list/index page
-    print(f"\n[1/3] Scraping list page...")
+    print("\n[1/3] Scraping list page...")
     result = scrape_with_retry(app, list_url)
     if not result:
         print(f"  Failed to scrape list page for {name}")
         return [], 0, 0
 
-    markdown = getattr(result, 'markdown', '') or ''
+    markdown = getattr(result, "markdown", "") or ""
     if not markdown and isinstance(result, dict):
-        markdown = result.get('markdown', '')
+        markdown = result.get("markdown", "")
 
     print(f"  List page markdown: {len(markdown)} chars")
 
     # Step 2: Extract article links
-    print(f"\n[2/3] Extracting article links...")
+    print("\n[2/3] Extracting article links...")
     links = extract_links_from_markdown(markdown, list_url)
 
     # Deduplicate
@@ -116,17 +116,14 @@ def crawl_section(app, section_info):
             unique_links.append(link)
 
     # Only keep yz.chsi.com.cn links that look like articles
-    article_links = [
-        l for l in unique_links
-        if "chsi.com.cn" in l["url"] and l["url"] != list_url
-    ]
+    article_links = [l for l in unique_links if "chsi.com.cn" in l["url"] and l["url"] != list_url]
 
     print(f"  Found {len(article_links)} unique article links")
     article_links = article_links[:limit]
     print(f"  Will scrape {len(article_links)} articles (limit={limit})")
 
     # Step 3: Scrape each article
-    print(f"\n[3/3] Scraping articles...")
+    print("\n[3/3] Scraping articles...")
     all_data = []
 
     # Include the list page itself as the first entry
@@ -144,17 +141,17 @@ def crawl_section(app, section_info):
 
         art_result = scrape_with_retry(app, link["url"], retries=2)
         if not art_result:
-            print(f"    Skipped (no result)")
+            print("    Skipped (no result)")
             continue
 
-        art_md = getattr(art_result, 'markdown', '') or ''
+        art_md = getattr(art_result, "markdown", "") or ""
         if not art_md and isinstance(art_result, dict):
-            art_md = art_result.get('markdown', '')
+            art_md = art_result.get("markdown", "")
 
         art_title = link["title"]
         if not art_title and isinstance(art_result, dict):
-            meta = art_result.get('metadata', {})
-            art_title = meta.get('title', '') if isinstance(meta, dict) else ''
+            meta = art_result.get("metadata", {})
+            art_title = meta.get("title", "") if isinstance(meta, dict) else ""
 
         entry = {
             "source": name,
@@ -218,7 +215,7 @@ def main():
     print("=" * 60)
     print(f"Total pages crawled: {all_data['summary']['total_pages']}")
     print(f"Total chars: {all_data['summary']['total_chars']:,}")
-    print(f"\nBreakdown:")
+    print("\nBreakdown:")
     for section, data in all_data["sections"].items():
         print(f"  {section}: {data['page_count']} pages, {data['total_chars']:,} chars")
     print(f"\nSaved to: {OUTPUT_FILE}")
@@ -228,5 +225,6 @@ def main():
 
 if __name__ == "__main__":
     import logging
+
     logging.basicConfig(level=logging.INFO)
     main()

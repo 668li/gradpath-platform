@@ -1,12 +1,10 @@
 # backend/tests/test_pipeline_review.py
-import pytest
 from unittest.mock import patch
-from io import StringIO
 
+from app.models.employment_data import Degree, EmploymentData
+from app.models.report_record import ParseStatus, ReportRecord
 from app.models.school import School
-from app.models.report_record import ReportRecord, ParseStatus
-from app.models.employment_data import EmploymentData, Degree
-from pipeline.reviewer import review_report, publish_report
+from pipeline.reviewer import publish_report, review_report
 
 
 class TestReviewer:
@@ -16,15 +14,22 @@ class TestReviewer:
         db_session.add(school)
         db_session.commit()
         report = ReportRecord(
-            school_id=school.id, year=2024, source_url="url",
+            school_id=school.id,
+            year=2024,
+            source_url="url",
             parse_status=ParseStatus.parsed,
         )
         db_session.add(report)
         db_session.commit()
-        db_session.add(EmploymentData(
-            report_id=report.id, major="机械工程", degree=Degree.bachelor,
-            employment_rate=0.45, employer_ranking=[{"name": "三一重工", "count": 15}],
-        ))
+        db_session.add(
+            EmploymentData(
+                report_id=report.id,
+                major="机械工程",
+                degree=Degree.bachelor,
+                employment_rate=0.45,
+                employer_ranking=[{"name": "三一重工", "count": 15}],
+            )
+        )
         db_session.commit()
 
         with patch("builtins.input", return_value="y"):
@@ -39,7 +44,9 @@ class TestReviewer:
         db_session.add(school)
         db_session.commit()
         report = ReportRecord(
-            school_id=school.id, year=2024, source_url="url",
+            school_id=school.id,
+            year=2024,
+            source_url="url",
             parse_status=ParseStatus.parsed,
         )
         db_session.add(report)
@@ -57,7 +64,9 @@ class TestReviewer:
         db_session.add(school)
         db_session.commit()
         report = ReportRecord(
-            school_id=school.id, year=2024, source_url="url",
+            school_id=school.id,
+            year=2024,
+            source_url="url",
             parse_status=ParseStatus.pending,
         )
         db_session.add(report)
@@ -72,7 +81,9 @@ class TestReviewer:
         db_session.add(school)
         db_session.commit()
         report = ReportRecord(
-            school_id=school.id, year=2024, source_url="url",
+            school_id=school.id,
+            year=2024,
+            source_url="url",
             parse_status=ParseStatus.reviewed,
         )
         db_session.add(report)
@@ -88,7 +99,9 @@ class TestReviewer:
         db_session.add(school)
         db_session.commit()
         report = ReportRecord(
-            school_id=school.id, year=2024, source_url="url",
+            school_id=school.id,
+            year=2024,
+            source_url="url",
             parse_status=ParseStatus.parsed,
         )
         db_session.add(report)

@@ -3,8 +3,8 @@
 
 防止回归：任何人再注册 /api/v1/* 路由或前端再调用 v1 路径都会先挂这里。
 """
-import pytest
 
+import pytest
 
 # 旧 v1 前缀路径（每个后端模块至少抽查一条）
 _OLD_V1_PATHS = [
@@ -39,6 +39,6 @@ def test_old_v1_path_404(client, path):
 @pytest.mark.parametrize(("method", "path", "expected"), _NEW_API_PATHS)
 def test_new_api_path_registered(client, method, path, expected):
     resp = client.request(method, path, json={"source_system": "x"})
-    assert resp.status_code == expected, (
-        f"新 /api 路径应已注册（期望 {expected}）: {method} {path} → {resp.status_code}"
-    )
+    assert (
+        resp.status_code == expected
+    ), f"新 /api 路径应已注册（期望 {expected}）: {method} {path} → {resp.status_code}"

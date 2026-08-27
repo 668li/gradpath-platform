@@ -1,5 +1,6 @@
 # backend/app/models/growth_insight.py
 """成长洞察模型 — 缓存 LLM 生成的成长分析结果，按 event_count 判断是否需要重新生成。"""
+
 from datetime import date, datetime, timezone
 from uuid import UUID
 
@@ -19,5 +20,7 @@ class GrowthInsight(UUIDMixin, TimestampMixin, Base):
     insight_data: Mapped[dict] = mapped_column(JSONB, nullable=False)
     event_count: Mapped[int] = mapped_column(Integer, nullable=False)
     generated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc),
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
     )

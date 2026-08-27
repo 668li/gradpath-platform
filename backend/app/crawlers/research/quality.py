@@ -7,6 +7,7 @@
 3. 内容完整度：有正文（content）优于只有标题/摘要
 4. 可溯源：source_url 有效才计分
 """
+
 from datetime import datetime, timezone
 from urllib.parse import urlparse
 
@@ -131,9 +132,7 @@ def _authority_reason(points: int) -> str:
     return "无来源链接"
 
 
-def _freshness_reason(
-    published_at: datetime | None, crawled_at: datetime | None
-) -> str:
+def _freshness_reason(published_at: datetime | None, crawled_at: datetime | None) -> str:
     """时效性说明（发布时间未知/衰减档位）。"""
     ts = published_at or crawled_at
     if not ts:
@@ -178,9 +177,7 @@ def score_item_detailed(
     score = authority + freshness + completeness + traceable
     score = max(0, min(100, score))
 
-    completeness_detail = (
-        f"正文约 {len(content or '')} 字" if content else "无正文"
-    )
+    completeness_detail = f"正文约 {len(content or '')} 字" if content else "无正文"
     if summary and completeness < _COMPLETENESS_MAX:
         completeness_detail += "，有摘要加分"
 

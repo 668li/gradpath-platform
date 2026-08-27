@@ -3,6 +3,7 @@
 从 app.config.settings 读取数据库 URL（而非 alembic.ini 中的硬编码值），
 并导入所有模型以确保 autogenerate 能检测到表结构变更。
 """
+
 from __future__ import annotations
 
 import sys

@@ -2,6 +2,7 @@
 
 字段严格对齐契约 DTO；枚举字段按契约以 str + 注释形式声明。
 """
+
 from datetime import datetime
 
 from pydantic import BaseModel, Field
@@ -29,7 +30,9 @@ class IngestRunVO(BaseModel):
     """
 
     run_id: str = Field(..., description="抓取运行 ID（CrawlerRun.id，UUID 字符串）")
-    source_system: str = Field(..., description="来源系统；枚举：yanzhao / school_official / manual")
+    source_system: str = Field(
+        ..., description="来源系统；枚举：yanzhao / school_official / manual"
+    )
     status: str = Field(..., description="运行状态；如 running / success / failed")
     total_items: int = Field(..., description="抓取总条数")
     pending_items: int = Field(..., description="待确认条数")
@@ -48,7 +51,9 @@ class IngestConfirmRequest(BaseModel):
         ...,
         description="人工确认后的字段（院校/专业/年份/复试线/报录比）",
     )
-    source_url: str = Field(..., max_length=500, description="公告原文链接（必填，来源追溯，合规红线 N1）")
+    source_url: str = Field(
+        ..., max_length=500, description="公告原文链接（必填，来源追溯，合规红线 N1）"
+    )
     source_system: str = Field(
         ...,
         description="来源系统；枚举：yanzhao / school_official / manual",

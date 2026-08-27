@@ -13,10 +13,10 @@
 - 归档不存在的通知返回 404 NotFoundError
 - 批量超过 200 条返回 BusinessError
 """
+
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
-import pytest
 from fastapi.testclient import TestClient
 
 from app.models.notification import Notification, NotificationType
@@ -275,9 +275,7 @@ class TestNotificationArchive:
         assert "旧未读" in titles
         assert "旧已读" not in titles
 
-    def test_archive_old_invalid_days_too_small(
-        self, client: TestClient, auth_headers: dict
-    ):
+    def test_archive_old_invalid_days_too_small(self, client: TestClient, auth_headers: dict):
         """days_old < 1 应返回 422。"""
         resp = client.post(
             "/api/notifications/archive-old?days_old=0",
@@ -285,9 +283,7 @@ class TestNotificationArchive:
         )
         assert resp.status_code == 422
 
-    def test_archive_old_invalid_days_too_large(
-        self, client: TestClient, auth_headers: dict
-    ):
+    def test_archive_old_invalid_days_too_large(self, client: TestClient, auth_headers: dict):
         """days_old > 365 应返回 422。"""
         resp = client.post(
             "/api/notifications/archive-old?days_old=366",
@@ -332,9 +328,7 @@ class TestNotificationArchive:
         # 未归档未读 — 计入
         self._create_notification(db_session, uid, title="未读", read=False)
         # 已归档未读 — 不计入
-        self._create_notification(
-            db_session, uid, title="归档未读", read=False, archived=True
-        )
+        self._create_notification(db_session, uid, title="归档未读", read=False, archived=True)
 
         resp = client.get("/api/notifications/unread-count", headers=auth_headers)
         assert resp.status_code == 200
@@ -346,9 +340,7 @@ class TestNotificationArchive:
         """全部标记已读不影响归档通知。"""
         uid = self._get_user_id(db_session)
         n1 = self._create_notification(db_session, uid, title="未读", read=False)
-        n2 = self._create_notification(
-            db_session, uid, title="归档未读", read=False, archived=True
-        )
+        n2 = self._create_notification(db_session, uid, title="归档未读", read=False, archived=True)
 
         resp = client.post("/api/notifications/read-all", headers=auth_headers)
         assert resp.status_code == 200
@@ -369,13 +361,9 @@ class TestNotificationArchive:
         # 未归档未读
         self._create_notification(db_session, uid, title="未归档未读", read=False)
         # 已归档未读
-        self._create_notification(
-            db_session, uid, title="归档未读", read=False, archived=True
-        )
+        self._create_notification(db_session, uid, title="归档未读", read=False, archived=True)
         # 已归档已读
-        self._create_notification(
-            db_session, uid, title="归档已读", read=True, archived=True
-        )
+        self._create_notification(db_session, uid, title="归档已读", read=True, archived=True)
 
         # 默认列表（未归档）只看到「未归档未读」
         resp1 = client.get("/api/notifications?unread_only=true", headers=auth_headers)
@@ -392,9 +380,7 @@ class TestNotificationArchive:
 
     # ===== 跨用户隔离 =====
 
-    def test_archive_cross_user_isolation(
-        self, client: TestClient, auth_headers: dict, db_session
-    ):
+    def test_archive_cross_user_isolation(self, client: TestClient, auth_headers: dict, db_session):
         """归档操作不能影响其他用户的通知。"""
         uid_a = self._get_user_id(db_session)
         # 用户 A 创建一条通知

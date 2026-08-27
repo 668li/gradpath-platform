@@ -4,6 +4,7 @@
 由 CareerPlanningSkill 解析 LLM 输出生成，记录目标、当前状态、目标状态、
 能力差距、里程碑与时间线，供用户跟踪执行进度。
 """
+
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, Integer, String, Text
@@ -21,9 +22,17 @@ class CareerPlan(UUIDMixin, TimestampMixin, Base):
         ForeignKey("conversations.id"), nullable=True
     )
     goal_text: Mapped[str] = mapped_column(Text, nullable=False)
-    current_state: Mapped[dict] = mapped_column(JSONB, default=dict)  # {skills, education, experience}
-    target_state: Mapped[dict] = mapped_column(JSONB, default=dict)  # {position, company, requirements}
-    gaps: Mapped[list] = mapped_column(JSONB, default=list)  # [{skill, current_level, target_level, gap}]
-    milestones: Mapped[list] = mapped_column(JSONB, default=list)  # [{title, description, deadline, skills[], status}]
+    current_state: Mapped[dict] = mapped_column(
+        JSONB, default=dict
+    )  # {skills, education, experience}
+    target_state: Mapped[dict] = mapped_column(
+        JSONB, default=dict
+    )  # {position, company, requirements}
+    gaps: Mapped[list] = mapped_column(
+        JSONB, default=list
+    )  # [{skill, current_level, target_level, gap}]
+    milestones: Mapped[list] = mapped_column(
+        JSONB, default=list
+    )  # [{title, description, deadline, skills[], status}]
     timeline_months: Mapped[int] = mapped_column(Integer, default=6)
     status: Mapped[str] = mapped_column(String(20), default="draft")  # draft/active/completed

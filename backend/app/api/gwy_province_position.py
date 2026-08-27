@@ -2,7 +2,6 @@
 
 数据来源：各省公务员考试招录职位表（fetch_gd_shengkao_positions.py 采集，首例：广东省 2026），仅做查询展示。
 """
-from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, or_
@@ -23,8 +22,8 @@ router = APIRouter(prefix="/api/gwy-province-positions", tags=["省考职位"])
 
 @router.get("/stats", response_model=GwyProvincePositionStatsResponse)
 def gwy_province_position_stats(
-    year: Optional[int] = Query(None, description="招考年份（默认全部）"),
-    province: Optional[str] = Query(None, description="省份（默认全部，如：广东）"),
+    year: int | None = Query(None, description="招考年份（默认全部）"),
+    province: str | None = Query(None, description="省份（默认全部，如：广东）"),
     db: Session = Depends(get_db),
 ):
     """省考职位统计：总数 + 按招录系统/学历/考区/应届限制分组，含总招录人数。"""
@@ -34,9 +33,7 @@ def gwy_province_position_stats(
     if province:
         base = base.filter(GwyProvincePosition.province == province)
     total = base.count()
-    total_recruit = base.with_entities(
-        func.sum(GwyProvincePosition.recruit_count)
-    ).scalar()
+    total_recruit = base.with_entities(func.sum(GwyProvincePosition.recruit_count)).scalar()
 
     def group_counts(column):
         rows = (
@@ -66,15 +63,15 @@ def gwy_province_position_stats(
 def list_gwy_province_positions(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
-    q: Optional[str] = Query(None, description="关键词（职位名称/招考单位/职位简介/专业 模糊匹配）"),
-    province: Optional[str] = Query(None, description="省份过滤（如：广东）"),
-    year: Optional[int] = Query(None, description="招考年份（默认全部）"),
-    exam_region: Optional[str] = Query(None, description="考区过滤（如：广州）"),
-    education_req: Optional[str] = Query(None, description="学历要求过滤（如：本科）"),
-    position_type: Optional[str] = Query(None, description="职位类别过滤（如：综合管理类）"),
-    fresh_grad_only: Optional[str] = Query(None, description="是否限应届毕业生报考（是/否）"),
-    position_code: Optional[str] = Query(None, description="职位代码精确匹配"),
-    sheet_name: Optional[str] = Query(None, description="招录系统过滤（如：县以上机关）"),
+    q: str | None = Query(None, description="关键词（职位名称/招考单位/职位简介/专业 模糊匹配）"),
+    province: str | None = Query(None, description="省份过滤（如：广东）"),
+    year: int | None = Query(None, description="招考年份（默认全部）"),
+    exam_region: str | None = Query(None, description="考区过滤（如：广州）"),
+    education_req: str | None = Query(None, description="学历要求过滤（如：本科）"),
+    position_type: str | None = Query(None, description="职位类别过滤（如：综合管理类）"),
+    fresh_grad_only: str | None = Query(None, description="是否限应届毕业生报考（是/否）"),
+    position_code: str | None = Query(None, description="职位代码精确匹配"),
+    sheet_name: str | None = Query(None, description="招录系统过滤（如：县以上机关）"),
     db: Session = Depends(get_db),
 ):
     """获取省考职位列表（公开）。"""
@@ -132,11 +129,7 @@ def get_gwy_province_position_detail(
     db: Session = Depends(get_db),
 ):
     """获取省考职位详情。"""
-    position = (
-        db.query(GwyProvincePosition)
-        .filter(GwyProvincePosition.id == position_id)
-        .first()
-    )
+    position = db.query(GwyProvincePosition).filter(GwyProvincePosition.id == position_id).first()
     if not position:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="职位不存在")
     return GwyProvincePositionResponse.model_validate(position)

@@ -3,9 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime
 from uuid import UUID
 
-from pydantic import BaseModel, Field, model_validator
-
-from app.models.skill_node import SkillNode
+from pydantic import BaseModel, Field
 
 
 class SkillCreate(BaseModel):
@@ -37,7 +35,7 @@ class SkillResponse(BaseModel):
     notes: str | None
     created_at: datetime
     updated_at: datetime
-    children: list["SkillResponse"] = []
+    children: list[SkillResponse] = []
 
     model_config = {"from_attributes": True}
 

@@ -1,14 +1,14 @@
 """上岸报告 API — 提交、查询、统计、公开墙。"""
+
 import logging
 from collections import Counter
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
 from app.database import get_db
-from app.models.outcome_report import AdmissionPath, OutcomeReport, OutcomeType
+from app.models.outcome_report import OutcomeReport, OutcomeType
 from app.models.user import User
 from app.schemas.outcome_report import (
     OutcomeReportCreate,
@@ -129,7 +129,8 @@ def get_outcome_stats(
         )
 
     accepted = sum(
-        1 for r in reports
+        1
+        for r in reports
         if r.outcome_type in (OutcomeType.grad_civil_career, OutcomeType.adjustment)
     )
     acceptance_rate = round(accepted / total, 2) if total else 0
@@ -152,15 +153,13 @@ def get_outcome_stats(
     # Path breakdown
     path_counter = Counter()
     for r in reports:
-        path_counter[r.admission_path.value if hasattr(r.admission_path, "value") else r.admission_path] += 1
+        path_counter[
+            r.admission_path.value if hasattr(r.admission_path, "value") else r.admission_path
+        ] += 1
     path_breakdown = dict(path_counter)
 
     # Common reflections (top non-empty ones)
-    reflections = [
-        r.what_i_would_do_differently
-        for r in reports
-        if r.what_i_would_do_differently
-    ]
+    reflections = [r.what_i_would_do_differently for r in reports if r.what_i_would_do_differently]
     # Simple dedup by exact match
     seen = set()
     unique_reflections = []

@@ -12,8 +12,18 @@ PASSWORD_RESET_TOKEN_EXPIRE_MINUTES = 30
 
 # 修复: FASTAPI-AUTH-003 — 显式拒绝 ALGORITHM="none"，
 # 防御层：即使配置错误也不会签发无签名 token。
-_ALLOWED_ALGORITHMS = {"HS256", "HS384", "HS512", "RS256", "RS384", "RS512",
-                       "ES256", "ES384", "ES512", "EdDSA"}
+_ALLOWED_ALGORITHMS = {
+    "HS256",
+    "HS384",
+    "HS512",
+    "RS256",
+    "RS384",
+    "RS512",
+    "ES256",
+    "ES384",
+    "ES512",
+    "EdDSA",
+}
 if settings.ALGORITHM not in _ALLOWED_ALGORITHMS:
     raise RuntimeError(
         f"ALGORITHM={settings.ALGORITHM!r} 不在允许列表 (FASTAPI-AUTH-003)。"

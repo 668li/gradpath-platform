@@ -3,12 +3,11 @@
 通过 GitHub Search API 搜索相关开源仓库，提取仓库元数据并导入
 knowledge_articles 表，供 RAG 检索使用。
 """
+
 import argparse
 import json
 import logging
 import sys
-import time
-from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import quote
 
@@ -17,7 +16,11 @@ from sqlalchemy.orm import Session
 
 # 当以脚本直接运行时，确保 backend 目录在 sys.path 中以便 import app
 if __name__ == "__main__":
-    backend_dir = Path(__name__).resolve().parents[3] if __name__ == "__main__" else Path(__file__).resolve().parents[3]
+    backend_dir = (
+        Path(__name__).resolve().parents[3]
+        if __name__ == "__main__"
+        else Path(__file__).resolve().parents[3]
+    )
     sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
 from app.crawlers.base_crawler import BaseCrawler
@@ -76,16 +79,12 @@ class GitHubKaoyanCrawler(BaseCrawler):
                 resp = self._request(url)
                 data = resp.json()
                 items = data.get("items", [])
-                logger.info(
-                    f"[{self.name}] 关键词「{kw}」返回 {len(items)} 条"
-                )
+                logger.info(f"[{self.name}] 关键词「{kw}」返回 {len(items)} 条")
                 all_items.extend(items)
             except requests.HTTPError as e:
                 # 处理 GitHub API 限速
                 if e.response is not None and e.response.status_code == 403:
-                    logger.warning(
-                        f"[{self.name}] 触发 GitHub API 限速，跳过关键词「{kw}」"
-                    )
+                    logger.warning(f"[{self.name}] 触发 GitHub API 限速，跳过关键词「{kw}」")
                     self.stats["errors"] += 1
                 else:
                     logger.error(f"[{self.name}] 请求失败: {e}")
@@ -114,28 +113,32 @@ class GitHubKaoyanCrawler(BaseCrawler):
                 content_parts.append(description)
             if topics:
                 content_parts.append(f"**Topics:** {', '.join(topics)}")
-            content_parts.append(f"**Stars:** {stars} | **Language:** {language} | **Owner:** {owner}")
+            content_parts.append(
+                f"**Stars:** {stars} | **Language:** {language} | **Owner:** {owner}"
+            )
             if created_at:
                 content_parts.append(f"**Created:** {created_at[:10]}")
             content = "\n\n".join(content_parts)
 
-            parsed.append({
-                "category": "education_path",
-                "title": f"[GitHub] {name}",
-                "content": content,
-                "tags": topics if topics else [language] if language else [],
-                "source": "github",
-                "metadata": {
-                    "source_type": "repo",
-                    "html_url": html_url,
-                    "stargazers_count": stars,
-                    "language": language,
-                    "owner": owner,
-                    "created_at": created_at,
-                    "topics": topics,
-                },
-                "is_published": True,
-            })
+            parsed.append(
+                {
+                    "category": "education_path",
+                    "title": f"[GitHub] {name}",
+                    "content": content,
+                    "tags": topics if topics else [language] if language else [],
+                    "source": "github",
+                    "metadata": {
+                        "source_type": "repo",
+                        "html_url": html_url,
+                        "stargazers_count": stars,
+                        "language": language,
+                        "owner": owner,
+                        "created_at": created_at,
+                        "topics": topics,
+                    },
+                    "is_published": True,
+                }
+            )
         return parsed
 
     def store(self, items: list[dict], db: Session) -> int:
@@ -145,13 +148,12 @@ class GitHubKaoyanCrawler(BaseCrawler):
 
         # 提取所有 html_url 用于去重
         urls = [item["metadata"]["html_url"] for item in items]
-        existing = self.get_existing_keys(
-            db, KnowledgeArticle, "source", []
-        )
+        existing = self.get_existing_keys(db, KnowledgeArticle, "source", [])
         # 通过 metadata JSONB 查询已有 URL（简单方案：逐条检查）
         existing_urls: set[str] = set()
         try:
             from sqlalchemy import text
+
             result = db.execute(
                 text(
                     "SELECT metadata->>'html_url' FROM knowledge_articles "
@@ -163,10 +165,7 @@ class GitHubKaoyanCrawler(BaseCrawler):
             logger.warning(f"[{self.name}] 去重查询失败，将全量插入: {e}")
 
         # 过滤已存在的
-        new_items = [
-            item for item in items
-            if item["metadata"]["html_url"] not in existing_urls
-        ]
+        new_items = [item for item in items if item["metadata"]["html_url"] not in existing_urls]
         skipped = len(items) - len(new_items)
         if skipped > 0:
             logger.info(f"[{self.name}] 去重跳过 {skipped} 条已存在记录")

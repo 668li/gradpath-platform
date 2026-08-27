@@ -2,18 +2,10 @@
 
 MVP 方案 C：契约先行、实现延后 — 仅落库建表，业务逻辑后续实现。
 """
+
 from datetime import datetime
 
-from sqlalchemy import (
-    BigInteger,
-    DateTime,
-    Index,
-    Integer,
-    String,
-    Text,
-    UniqueConstraint,
-    text,
-)
+from sqlalchemy import BigInteger, DateTime, Index, Integer, String, Text, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -27,6 +19,7 @@ class DataSourceMeta(ContractAuditMixin, Base):
     credibility：official_verified / user_reported / model_inferred。
     review_status：PENDING / APPROVED / REJECTED。
     """
+
     __tablename__ = "t_data_source"
 
     id: Mapped[int] = mapped_column(BigIntPK, primary_key=True, autoincrement=True)
@@ -35,7 +28,9 @@ class DataSourceMeta(ContractAuditMixin, Base):
     source_url: Mapped[str] = mapped_column(String(500), nullable=False)
     crawled_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     credibility: Mapped[str] = mapped_column(
-        String(20), nullable=False, default="model_inferred",
+        String(20),
+        nullable=False,
+        default="model_inferred",
         server_default=text("'model_inferred'"),
     )
     # official_verified / user_reported / model_inferred
@@ -62,6 +57,7 @@ class ExternalResearchItem(ContractAuditMixin, Base):
     credibility：official_verified / user_reported / model_inferred。
     review_status：PENDING / APPROVED / REJECTED / DUPLICATED。
     """
+
     __tablename__ = "t_external_research_item"
 
     id: Mapped[int] = mapped_column(BigIntPK, primary_key=True, autoincrement=True)
@@ -78,7 +74,9 @@ class ExternalResearchItem(ContractAuditMixin, Base):
     source_platform: Mapped[str] = mapped_column(String(30), nullable=False)
     external_meta: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     credibility: Mapped[str] = mapped_column(
-        String(20), nullable=False, default="model_inferred",
+        String(20),
+        nullable=False,
+        default="model_inferred",
         server_default=text("'model_inferred'"),
     )
     # official_verified / user_reported / model_inferred
@@ -100,6 +98,7 @@ class ReviewQueueItem(ContractAuditMixin, Base):
     item_type：external_research / mentor_review。
     review_status：PENDING / APPROVED / REJECTED。
     """
+
     __tablename__ = "t_review_queue_item"
 
     id: Mapped[int] = mapped_column(BigIntPK, primary_key=True, autoincrement=True)

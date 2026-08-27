@@ -5,7 +5,10 @@ from pydantic import BaseModel, Field
 
 
 class LifeWheelSubmit(BaseModel):
-    scores: dict = Field(..., description="8维度评分 {career, finance, health, relationships, growth, fun, environment, spirituality} 1-10")
+    scores: dict = Field(
+        ...,
+        description="8维度评分 {career, finance, health, relationships, growth, fun, environment, spirituality} 1-10",
+    )
     notes: str | None = None
 
 

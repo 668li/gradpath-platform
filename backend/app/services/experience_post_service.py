@@ -1,6 +1,6 @@
 """考研经验贴服务层 — 社区交流系统。"""
+
 import logging
-from typing import Optional
 from uuid import UUID
 
 from sqlalchemy import or_
@@ -13,16 +13,10 @@ from app.models.outcome_report import OutcomeReport, OutcomeType
 logger = logging.getLogger(__name__)
 
 
-def _atomic_increment(
-    db: Session, model_cls, item_id: UUID, column: str, delta: int = 1
-) -> bool:
+def _atomic_increment(db: Session, model_cls, item_id: UUID, column: str, delta: int = 1) -> bool:
     """原子 UPDATE — 避免 read-modify-write 在高并发下丢失更新。"""
     col = getattr(model_cls, column)
-    rows = (
-        db.query(model_cls)
-        .filter(model_cls.id == item_id)
-        .update({col: col + delta})
-    )
+    rows = db.query(model_cls).filter(model_cls.id == item_id).update({col: col + delta})
     return rows > 0
 
 
@@ -53,7 +47,9 @@ def create_experience_post(
     return post
 
 
-def get_experience_post(db: Session, post_id: UUID, include_unapproved: bool = False) -> Optional[ExperiencePost]:
+def get_experience_post(
+    db: Session, post_id: UUID, include_unapproved: bool = False
+) -> ExperiencePost | None:
     """获取单个经验贴。安全修复 M1: 默认只返回已审核通过的帖子。"""
     query = db.query(ExperiencePost).filter(ExperiencePost.id == post_id)
     if not include_unapproved:
@@ -65,11 +61,11 @@ def get_experience_posts(
     db: Session,
     page: int = 1,
     page_size: int = 20,
-    category: Optional[str] = None,
-    tag: Optional[str] = None,
-    status: Optional[str] = None,
-    search: Optional[str] = None,
-    source_platform: Optional[str] = None,
+    category: str | None = None,
+    tag: str | None = None,
+    status: str | None = None,
+    search: str | None = None,
+    source_platform: str | None = None,
 ) -> tuple[list[ExperiencePost], int]:
     """获取经验贴列表（支持筛选）。
 
@@ -85,18 +81,16 @@ def get_experience_posts(
 
     if source_platform == "user":
         query = query.filter(
-            (ExperiencePost.source_platform == "user") |
-            (ExperiencePost.source_platform.is_(None))
+            (ExperiencePost.source_platform == "user") | (ExperiencePost.source_platform.is_(None))
         )
     elif source_platform == "external":
         query = query.filter(
-            (ExperiencePost.source_platform.isnot(None)) &
-            (ExperiencePost.source_platform != "user")
+            (ExperiencePost.source_platform.isnot(None))
+            & (ExperiencePost.source_platform != "user")
         )
     elif source_platform is None:
         query = query.filter(
-            (ExperiencePost.source_platform == "user") |
-            (ExperiencePost.source_platform.is_(None))
+            (ExperiencePost.source_platform == "user") | (ExperiencePost.source_platform.is_(None))
         )
     else:
         # 支持按具体来源平台过滤（如 trae_forum / crawler / xiaohongshu / v2ex）
@@ -130,13 +124,13 @@ def get_experience_posts_cursor(
     db: Session,
     *,
     page_size: int = 20,
-    cursor: Optional[str] = None,
-    category: Optional[str] = None,
-    tag: Optional[str] = None,
-    status: Optional[str] = None,
-    search: Optional[str] = None,
-    source_platform: Optional[str] = None,
-) -> tuple[list[ExperiencePost], Optional[str], bool]:
+    cursor: str | None = None,
+    category: str | None = None,
+    tag: str | None = None,
+    status: str | None = None,
+    search: str | None = None,
+    source_platform: str | None = None,
+) -> tuple[list[ExperiencePost], str | None, bool]:
     """游标分页获取经验贴列表。
 
     Returns:
@@ -151,18 +145,16 @@ def get_experience_posts_cursor(
 
     if source_platform == "user":
         query = query.filter(
-            (ExperiencePost.source_platform == "user") |
-            (ExperiencePost.source_platform.is_(None))
+            (ExperiencePost.source_platform == "user") | (ExperiencePost.source_platform.is_(None))
         )
     elif source_platform == "external":
         query = query.filter(
-            (ExperiencePost.source_platform.isnot(None)) &
-            (ExperiencePost.source_platform != "user")
+            (ExperiencePost.source_platform.isnot(None))
+            & (ExperiencePost.source_platform != "user")
         )
     elif source_platform is None:
         query = query.filter(
-            (ExperiencePost.source_platform == "user") |
-            (ExperiencePost.source_platform.is_(None))
+            (ExperiencePost.source_platform == "user") | (ExperiencePost.source_platform.is_(None))
         )
     else:
         # 支持按具体来源平台过滤（如 trae_forum / crawler / xiaohongshu / v2ex）
@@ -207,7 +199,7 @@ def update_experience_post(
     db: Session,
     post_id: UUID,
     data: dict,
-) -> Optional[ExperiencePost]:
+) -> ExperiencePost | None:
     """更新经验贴（作者/管理员对自身或待审帖操作，需 include_unapproved 直查）。"""
     post = get_experience_post(db, post_id, include_unapproved=True)
     if not post:
@@ -243,12 +235,10 @@ def delete_experience_post(db: Session, post_id: UUID) -> bool:
 def increment_experience_post_view(db: Session, post_id: UUID) -> bool:
     """增加经验贴浏览数。"""
     # C3: 原子 UPDATE 替换 post.view_count += 1
-    return _atomic_increment(db, ExperiencePost, post_id, "view_count", 1) and (
-        db.commit() or True
-    )
+    return _atomic_increment(db, ExperiencePost, post_id, "view_count", 1) and (db.commit() or True)
 
 
-def like_experience_post(db: Session, post_id: UUID) -> Optional[ExperiencePost]:
+def like_experience_post(db: Session, post_id: UUID) -> ExperiencePost | None:
     """点赞经验贴。"""
     post = get_experience_post(db, post_id)
     if not post:
@@ -260,7 +250,7 @@ def like_experience_post(db: Session, post_id: UUID) -> Optional[ExperiencePost]
     return post
 
 
-def approve_experience_post(db: Session, post_id: UUID) -> Optional[ExperiencePost]:
+def approve_experience_post(db: Session, post_id: UUID) -> ExperiencePost | None:
     """审核通过经验贴。
 
     修复（成熟化 A3）：此前经 get_experience_post（默认只查 approved）
@@ -276,7 +266,7 @@ def approve_experience_post(db: Session, post_id: UUID) -> Optional[ExperiencePo
     return post
 
 
-def reject_experience_post(db: Session, post_id: UUID) -> Optional[ExperiencePost]:
+def reject_experience_post(db: Session, post_id: UUID) -> ExperiencePost | None:
     """拒绝经验贴（同上修复：直查任意状态）。"""
     post = get_experience_post(db, post_id, include_unapproved=True)
     if not post:
@@ -287,9 +277,7 @@ def reject_experience_post(db: Session, post_id: UUID) -> Optional[ExperiencePos
     return post
 
 
-def set_experience_post_pin(
-    db: Session, post_id: UUID, pinned: bool
-) -> Optional[ExperiencePost]:
+def set_experience_post_pin(db: Session, post_id: UUID, pinned: bool) -> ExperiencePost | None:
     """置顶/取消置顶经验贴（管理员）。"""
     post = get_experience_post(db, post_id, include_unapproved=True)
     if not post:
@@ -303,7 +291,7 @@ def set_experience_post_pin(
 def create_from_outcome_report(
     db: Session,
     report: OutcomeReport,
-) -> Optional[ExperiencePost]:
+) -> ExperiencePost | None:
     """从上岸报告自动生成经验贴草稿（飞轮护城河）。
 
     设计：
@@ -329,7 +317,11 @@ def create_from_outcome_report(
         if report.score_total:
             summary_parts.append(f"总分 {report.score_total}")
         if report.admission_path:
-            path_str = report.admission_path.value if hasattr(report.admission_path, "value") else str(report.admission_path)
+            path_str = (
+                report.admission_path.value
+                if hasattr(report.admission_path, "value")
+                else str(report.admission_path)
+            )
             summary_parts.append(f"录取途径: {path_str}")
         if report.satisfaction_after is not None:
             summary_parts.append(f"满意度 {report.satisfaction_after}/5")
@@ -338,7 +330,9 @@ def create_from_outcome_report(
         # 构建内容
         content_sections = []
         content_sections.append(f"# {title}\n")
-        content_sections.append(f"## 基本信息\n- 目标院校: {report.target_school or '未指定'}\n- 实际院校: {report.actual_school or '未指定'}\n- 目标专业: {report.target_major or '未指定'}\n- 实际专业: {report.actual_major or '未指定'}\n- 年份: {report.year}\n")
+        content_sections.append(
+            f"## 基本信息\n- 目标院校: {report.target_school or '未指定'}\n- 实际院校: {report.actual_school or '未指定'}\n- 目标专业: {report.target_major or '未指定'}\n- 实际专业: {report.actual_major or '未指定'}\n- 年份: {report.year}\n"
+        )
 
         if report.score_total:
             scores = []
@@ -351,10 +345,14 @@ def create_from_outcome_report(
             if report.score_major2:
                 scores.append(f"专业课2 {report.score_major2}")
             scores_str = " / ".join(scores) if scores else "无明细"
-            content_sections.append(f"## 成绩\n- 总分: {report.score_total}\n- 明细: {scores_str}\n")
+            content_sections.append(
+                f"## 成绩\n- 总分: {report.score_total}\n- 明细: {scores_str}\n"
+            )
 
         if report.what_i_would_do_differently:
-            content_sections.append(f"## 如果重来我会这样做\n{report.what_i_would_do_differently}\n")
+            content_sections.append(
+                f"## 如果重来我会这样做\n{report.what_i_would_do_differently}\n"
+            )
 
         if report.advice_for_others:
             content_sections.append(f"## 给学弟学妹的建议\n{report.advice_for_others}\n")
@@ -370,7 +368,11 @@ def create_from_outcome_report(
             tags.append(report.actual_school)
         if report.actual_major:
             tags.append(report.actual_major)
-        path_str = report.admission_path.value if hasattr(report.admission_path, "value") else str(report.admission_path)
+        path_str = (
+            report.admission_path.value
+            if hasattr(report.admission_path, "value")
+            else str(report.admission_path)
+        )
         if path_str == "adjustment":
             tags.append("调剂")
         tags.append(f"{report.year}年")

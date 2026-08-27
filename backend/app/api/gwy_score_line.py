@@ -3,7 +3,6 @@
 数据来源：2026 国考面试人员名单（fetch_gwy_interview.py 采集，职位级聚合，
 已剔除准考证号/姓名等个人信息），仅做查询展示。
 """
-from typing import Optional
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, or_
@@ -24,7 +23,7 @@ router = APIRouter(prefix="/api/gwy-score-lines", tags=["国考进面分数线"]
 
 @router.get("/stats", response_model=GwyScoreLineStatsResponse)
 def gwy_score_line_stats(
-    year: Optional[int] = Query(None, description="招考年份（默认全部）"),
+    year: int | None = Query(None, description="招考年份（默认全部）"),
     db: Session = Depends(get_db),
 ):
     """进面分数线统计：总数 + 平均进面分 + 按批次/年份分组计数。"""
@@ -60,10 +59,10 @@ def gwy_score_line_stats(
 def list_gwy_score_lines(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
-    year: Optional[int] = Query(None, description="招考年份（默认全部）"),
-    batch: Optional[str] = Query(None, description="批次过滤（首批/调剂/补充录用）"),
-    position_code: Optional[str] = Query(None, description="职位代码精确匹配（关联职位用）"),
-    q: Optional[str] = Query(None, description="关键词（招录机关/职位名称 模糊匹配）"),
+    year: int | None = Query(None, description="招考年份（默认全部）"),
+    batch: str | None = Query(None, description="批次过滤（首批/调剂/补充录用）"),
+    position_code: str | None = Query(None, description="职位代码精确匹配（关联职位用）"),
+    q: str | None = Query(None, description="关键词（招录机关/职位名称 模糊匹配）"),
     db: Session = Depends(get_db),
 ):
     """获取国考进面分数线列表（公开）。"""

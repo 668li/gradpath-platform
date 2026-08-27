@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Crawl remaining yz.chsi.com.cn sections using httpx + BeautifulSoup
 Firecrawl credits exhausted — falls back to direct HTTP scraping.
@@ -6,12 +5,14 @@ Firecrawl credits exhausted — falls back to direct HTTP scraping.
 1. 招生简章 (zsjz)
 2. 复试经验 (fstj)
 """
-import re
+
 import json
+import re
 import time
-import httpx
 from datetime import datetime
 from pathlib import Path
+
+import httpx
 from bs4 import BeautifulSoup
 
 OUTPUT_FILE = Path(__file__).parent / "yz_round2.json"
@@ -87,7 +88,7 @@ def extract_article_links(html, base_url, list_url):
         if "chsi.com.cn" not in full_url:
             continue
         # Filter for actual article links (usually contain numeric IDs or specific patterns)
-        if re.search(r'/kyzx/\w+/\d+', full_url) or re.search(r'/ky/\d+', full_url):
+        if re.search(r"/kyzx/\w+/\d+", full_url) or re.search(r"/ky/\d+", full_url):
             links.append({"title": title, "url": full_url})
 
     # Deduplicate by URL
@@ -117,7 +118,11 @@ def extract_article_content(html, url):
     else:
         # Fallback: get all text from body
         body = soup.find("body")
-        text = body.get_text(separator="\n", strip=True) if body else soup.get_text(separator="\n", strip=True)
+        text = (
+            body.get_text(separator="\n", strip=True)
+            if body
+            else soup.get_text(separator="\n", strip=True)
+        )
 
     # Extract title
     title_el = soup.find("h1") or soup.find("h2") or soup.find("title")
@@ -142,42 +147,44 @@ def crawl_section(client, section_info):
     print(f"{'='*60}")
 
     # Step 1: Fetch list page
-    print(f"\n[1/3] Fetching list page...")
+    print("\n[1/3] Fetching list page...")
     html = fetch_page(client, list_url)
     if not html:
-        print(f"  Failed to fetch list page")
+        print("  Failed to fetch list page")
         return [], 0, 0
 
     print(f"  List page: {len(html)} chars")
 
     # Step 2: Extract article links
-    print(f"\n[2/3] Extracting article links...")
+    print("\n[2/3] Extracting article links...")
     links = extract_article_links(html, list_url, list_url)
     print(f"  Found {len(links)} article links")
     links = links[:limit]
     print(f"  Will scrape {len(links)} articles (limit={limit})")
 
     # Step 3: Scrape each article
-    print(f"\n[3/3] Scraping articles...")
+    print("\n[3/3] Scraping articles...")
     all_data = []
 
     # Include list page content
     soup = BeautifulSoup(html, "html.parser")
     list_text = soup.get_text(separator="\n", strip=True)
-    all_data.append({
-        "source": name,
-        "url": list_url,
-        "title": f"{name} - 目录页",
-        "markdown": list_text,
-        "chars": len(list_text),
-    })
+    all_data.append(
+        {
+            "source": name,
+            "url": list_url,
+            "title": f"{name} - 目录页",
+            "markdown": list_text,
+            "chars": len(list_text),
+        }
+    )
 
     for i, link in enumerate(links):
         print(f"  [{i+1}/{len(links)}] {link['title'][:50]}...")
 
         art_html = fetch_page(client, link["url"])
         if not art_html:
-            print(f"    Skipped (fetch failed)")
+            print("    Skipped (fetch failed)")
             continue
 
         article = extract_article_content(art_html, link["url"])
@@ -245,7 +252,7 @@ def main():
     print("=" * 60)
     print(f"Total pages crawled: {all_data['summary']['total_pages']}")
     print(f"Total chars: {all_data['summary']['total_chars']:,}")
-    print(f"\nBreakdown:")
+    print("\nBreakdown:")
     for section, data in all_data["sections"].items():
         print(f"  {section}: {data['page_count']} pages, {data['total_chars']:,} chars")
     print(f"\nSaved to: {OUTPUT_FILE}")

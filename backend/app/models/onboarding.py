@@ -3,6 +3,7 @@
 新用户首次登录后完成 4 步诊断（基本信息 / 目标方向 / 自我评估 / 提交），
 AI 基于答案生成个性化诊断 + 推荐路径，作为后续 AI 个性化的初始基线。
 """
+
 import enum
 from datetime import datetime
 from uuid import UUID
@@ -16,9 +17,10 @@ from app.models.base import GUID, JSONB, TimestampMixin, UUIDMixin
 
 class OnboardingStatus(str, enum.Enum):
     """诊断状态 — 跟踪诊断流程进度。"""
-    in_progress = "in_progress"   # 进行中（已保存答案，未生成诊断）
-    completed = "completed"       # 已完成（AI 诊断已生成）
-    skipped = "skipped"           # 已跳过（用户选择跳过）
+
+    in_progress = "in_progress"  # 进行中（已保存答案，未生成诊断）
+    completed = "completed"  # 已完成（AI 诊断已生成）
+    skipped = "skipped"  # 已跳过（用户选择跳过）
 
 
 class UserOnboarding(UUIDMixin, TimestampMixin, Base):
@@ -30,6 +32,7 @@ class UserOnboarding(UUIDMixin, TimestampMixin, Base):
     - recommended_path 存储 AI 推荐的行动路径（结构化 JSONB）
     - completed_at 记录完成时间，用于触发后续流程
     """
+
     __tablename__ = "user_onboardings"
 
     user_id: Mapped[UUID] = mapped_column(

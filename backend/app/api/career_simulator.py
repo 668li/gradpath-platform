@@ -10,13 +10,14 @@ Enhanced version with:
 - Market comparison
 - Personalized risk assessment
 """
+
 import logging
-import math
-import random
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, field_validator
 from sqlalchemy import text
 from sqlalchemy.orm import Session
+
 from app.database import get_db
 
 logger = logging.getLogger(__name__)
@@ -105,11 +106,31 @@ class PathResult(BaseModel):
 
 # City tier multipliers
 CITY_TIERS = {
-    "tier1": {"cities": ["Beijing", "Shanghai", "Guangzhou", "Shenzhen"], "multiplier": 1.0, "cost": 1.0},
-    "new_tier1": {"cities": ["Hangzhou", "Chengdu", "Wuhan", "Nanjing", "Suzhou", "Xian"], "multiplier": 0.82, "cost": 0.75},
-    "tier2": {"cities": ["Changsha", "Chongqing", "Hefei", "Zhengzhou", "Jinan"], "multiplier": 0.72, "cost": 0.60},
-    "tier3": {"cities": ["Wuxi", "Dongguan", "Xiamen", "Ningbo", "Qingdao", "Zhuhai"], "multiplier": 0.65, "cost": 0.55},
-    "tier4": {"cities": ["Kunming", "Dalian", "Shenyang", "Fuzhou", "Nanning"], "multiplier": 0.55, "cost": 0.45},
+    "tier1": {
+        "cities": ["Beijing", "Shanghai", "Guangzhou", "Shenzhen"],
+        "multiplier": 1.0,
+        "cost": 1.0,
+    },
+    "new_tier1": {
+        "cities": ["Hangzhou", "Chengdu", "Wuhan", "Nanjing", "Suzhou", "Xian"],
+        "multiplier": 0.82,
+        "cost": 0.75,
+    },
+    "tier2": {
+        "cities": ["Changsha", "Chongqing", "Hefei", "Zhengzhou", "Jinan"],
+        "multiplier": 0.72,
+        "cost": 0.60,
+    },
+    "tier3": {
+        "cities": ["Wuxi", "Dongguan", "Xiamen", "Ningbo", "Qingdao", "Zhuhai"],
+        "multiplier": 0.65,
+        "cost": 0.55,
+    },
+    "tier4": {
+        "cities": ["Kunming", "Dalian", "Shenyang", "Fuzhou", "Nanning"],
+        "multiplier": 0.55,
+        "cost": 0.45,
+    },
 }
 
 # Salary baselines (monthly, by path_type, by year in career)
@@ -127,9 +148,9 @@ SALARY_CURVES = {
 
 # Education costs (total for the degree)
 EDUCATION_COSTS = {
-    "grad_cs": 200000,      # 2年研究生学费+生活费
+    "grad_cs": 200000,  # 2年研究生学费+生活费
     "grad_finance": 250000,  # 金融专硕学费较高
-    "civil_national": 0,     # 无需额外教育费用
+    "civil_national": 0,  # 无需额外教育费用
     "civil_provincial": 0,
     "career_it": 0,
     "career_finance": 0,
@@ -241,16 +262,19 @@ def _get_city_multiplier(city: str) -> dict:
 def _query_salary_from_db(db: Session, industry: str, city: str) -> list[int]:
     """Try to get real salary data from DB salary_benchmarks table."""
     try:
-        rows = db.execute(text(
-            "SELECT experience_level, AVG(salary_median) as avg_sal "
-            "FROM salary_benchmarks "
-            "WHERE (city = :city OR city LIKE :city_like) "
-            "AND (position LIKE :industry OR company LIKE :industry) "
-            "GROUP BY experience_level "
-            "ORDER BY CASE experience_level "
-            "WHEN 'entry' THEN 1 WHEN 'junior' THEN 2 WHEN 'mid' THEN 3 "
-            "WHEN 'senior' THEN 4 WHEN 'lead' THEN 5 END"
-        ), {"city": city, "city_like": f"%{city}%", "industry": f"%{industry}%"}).fetchall()
+        rows = db.execute(
+            text(
+                "SELECT experience_level, AVG(salary_median) as avg_sal "
+                "FROM salary_benchmarks "
+                "WHERE (city = :city OR city LIKE :city_like) "
+                "AND (position LIKE :industry OR company LIKE :industry) "
+                "GROUP BY experience_level "
+                "ORDER BY CASE experience_level "
+                "WHEN 'entry' THEN 1 WHEN 'junior' THEN 2 WHEN 'mid' THEN 3 "
+                "WHEN 'senior' THEN 4 WHEN 'lead' THEN 5 END"
+            ),
+            {"city": city, "city_like": f"%{city}%", "industry": f"%{industry}%"},
+        ).fetchall()
 
         if len(rows) >= 3:
             return [int(r[1]) for r in rows]
@@ -285,10 +309,14 @@ def _calculate_growth_rate(current_salary: int, prev_salary: int) -> float:
     return round((current_salary - prev_salary) / prev_salary * 100, 1)
 
 
-def _calculate_net_worth(cumulative_income: int, education_cost: int, city_cost: float, year_idx: int) -> int:
+def _calculate_net_worth(
+    cumulative_income: int, education_cost: int, city_cost: float, year_idx: int
+) -> int:
     """Calculate estimated net worth (income - expenses - education)."""
     living_expense_ratio = 0.4 + (city_cost * 0.2)
-    cumulative_expense = int(cumulative_income * living_expense_ratio / (year_idx + 1) * (year_idx + 1))
+    cumulative_expense = int(
+        cumulative_income * living_expense_ratio / (year_idx + 1) * (year_idx + 1)
+    )
     return cumulative_income - cumulative_expense - education_cost
 
 
@@ -308,10 +336,13 @@ def simulate_paths(req: SimulateRequest, db: Session = Depends(get_db)):
             salary_curve = SALARY_CURVES.get(path.path_type, SALARY_CURVES["career_fallback"])
             db_salary = _query_salary_from_db(db, path.industry, path.city)
             phases = PHASES.get(path.path_type, PHASES["career_fallback"])
-            risk_profile = RISK_PROFILES.get(path.path_type, {
-                "base_risk": 0.35,
-                "factors": [["就业竞争", "行业不确定性", "职业发展不确定"]] * 5,
-            })
+            risk_profile = RISK_PROFILES.get(
+                path.path_type,
+                {
+                    "base_risk": 0.35,
+                    "factors": [["就业竞争", "行业不确定性", "职业发展不确定"]] * 5,
+                },
+            )
             education_cost = EDUCATION_COSTS.get(path.path_type, 0)
 
             # Merge DB salary if available (weighted 60% DB, 40% baseline)
@@ -331,8 +362,14 @@ def simulate_paths(req: SimulateRequest, db: Session = Depends(get_db)):
                 annual = adjusted_salary * 12
                 cumulative += annual
 
-                phase_data = phases[i] if i < len(phases) else {"phase": "长期发展", "detail": "持续深耕"}
-                risks = risk_profile["factors"][i] if i < len(risk_profile["factors"]) else ["持续关注行业变化"]
+                phase_data = (
+                    phases[i] if i < len(phases) else {"phase": "长期发展", "detail": "持续深耕"}
+                )
+                risks = (
+                    risk_profile["factors"][i]
+                    if i < len(risk_profile["factors"])
+                    else ["持续关注行业变化"]
+                )
 
                 # Key events
                 events = []
@@ -359,9 +396,18 @@ def simulate_paths(req: SimulateRequest, db: Session = Depends(get_db)):
                     monthly_salary=adjusted_salary,
                     annual_income=annual,
                     cumulative_income=cumulative,
-                    satisfaction=_calculate_satisfaction(i, path.path_type, city_info["multiplier"]),
-                    growth_rate=_calculate_growth_rate(adjusted_salary, int(salary_curve[i - 1] * city_info["multiplier"]) if i > 0 else 0),
-                    risk_level="low" if risk_profile["base_risk"] < 0.2 else "high" if risk_profile["base_risk"] > 0.35 else "medium",
+                    satisfaction=_calculate_satisfaction(
+                        i, path.path_type, city_info["multiplier"]
+                    ),
+                    growth_rate=_calculate_growth_rate(
+                        adjusted_salary,
+                        int(salary_curve[i - 1] * city_info["multiplier"]) if i > 0 else 0,
+                    ),
+                    risk_level=(
+                        "low"
+                        if risk_profile["base_risk"] < 0.2
+                        else "high" if risk_profile["base_risk"] > 0.35 else "medium"
+                    ),
                     risk_factors=risks,
                     milestones=[phase_data["detail"]],
                     key_events=events,
@@ -381,7 +427,11 @@ def simulate_paths(req: SimulateRequest, db: Session = Depends(get_db)):
             stability = round((1 - risk_profile["base_risk"]) * 10, 1)
 
             # Risk assessment
-            risk = "low" if risk_profile["base_risk"] < 0.2 else "high" if risk_profile["base_risk"] > 0.35 else "medium"
+            risk = (
+                "low"
+                if risk_profile["base_risk"] < 0.2
+                else "high" if risk_profile["base_risk"] > 0.35 else "medium"
+            )
 
             # Recommendation text
             if avg_sat >= 7 and risk == "low":
@@ -393,21 +443,23 @@ def simulate_paths(req: SimulateRequest, db: Session = Depends(get_db)):
             else:
                 rec = "均衡路径，适合大多数情况"
 
-            results.append(PathResult(
-                name=path.name,
-                path_type=path.path_type,
-                industry=path.industry,
-                city=path.city,
-                yearly=yearly,
-                total_income=total_income,
-                total_education_cost=total_edu_cost,
-                net_worth_10yr=yearly[-1].net_worth if yearly else 0,
-                avg_satisfaction=avg_sat,
-                career_growth_score=avg_growth,
-                stability_score=stability,
-                overall_risk=risk,
-                recommendation=rec,
-            ))
+            results.append(
+                PathResult(
+                    name=path.name,
+                    path_type=path.path_type,
+                    industry=path.industry,
+                    city=path.city,
+                    yearly=yearly,
+                    total_income=total_income,
+                    total_education_cost=total_edu_cost,
+                    net_worth_10yr=yearly[-1].net_worth if yearly else 0,
+                    avg_satisfaction=avg_sat,
+                    career_growth_score=avg_growth,
+                    stability_score=stability,
+                    overall_risk=risk,
+                    recommendation=rec,
+                )
+            )
 
         # Sort by composite score: 40% income + 30% satisfaction + 20% stability + 10% growth
         for r in results:
@@ -421,10 +473,12 @@ def simulate_paths(req: SimulateRequest, db: Session = Depends(get_db)):
             )
 
         results.sort(
-            key=lambda x: (x.total_income / max((pr.total_income for pr in results), default=1) * 40 +
-                            x.avg_satisfaction * 3 +
-                            x.stability_score * 2 +
-                            x.career_growth_score * 0.1),
+            key=lambda x: (
+                x.total_income / max((pr.total_income for pr in results), default=1) * 40
+                + x.avg_satisfaction * 3
+                + x.stability_score * 2
+                + x.career_growth_score * 0.1
+            ),
             reverse=True,
         )
 
@@ -452,16 +506,66 @@ def simulate_paths(req: SimulateRequest, db: Session = Depends(get_db)):
 @router.get("/presets")
 def get_presets():
     """Return preset career paths for quick selection."""
-    return {"presets": [
-        {"name": "考研→IT", "path_type": "grad_cs", "city": "Beijing", "industry": "IT", "description": "计算机考研→互联网大厂"},
-        {"name": "考研→金融", "path_type": "grad_finance", "city": "Shanghai", "industry": "Finance", "description": "金融专硕→金融机构"},
-        {"name": "国考", "path_type": "civil_national", "city": "Beijing", "industry": "Government", "description": "国家公务员考试"},
-        {"name": "省考", "path_type": "civil_provincial", "city": "Hangzhou", "industry": "Government", "description": "省级公务员考试"},
-        {"name": "IT就业", "path_type": "career_it", "city": "Shenzhen", "industry": "IT", "description": "本科/硕士直接进入IT行业"},
-        {"name": "金融就业", "path_type": "career_finance", "city": "Shanghai", "industry": "Finance", "description": "直接进入金融行业"},
-        {"name": "教育就业", "path_type": "career_education", "city": "Chengdu", "industry": "Education", "description": "教育行业就业"},
-        {"name": "医疗就业", "path_type": "career_healthcare", "city": "Wuhan", "industry": "Healthcare", "description": "医疗行业就业"},
-    ]}
+    return {
+        "presets": [
+            {
+                "name": "考研→IT",
+                "path_type": "grad_cs",
+                "city": "Beijing",
+                "industry": "IT",
+                "description": "计算机考研→互联网大厂",
+            },
+            {
+                "name": "考研→金融",
+                "path_type": "grad_finance",
+                "city": "Shanghai",
+                "industry": "Finance",
+                "description": "金融专硕→金融机构",
+            },
+            {
+                "name": "国考",
+                "path_type": "civil_national",
+                "city": "Beijing",
+                "industry": "Government",
+                "description": "国家公务员考试",
+            },
+            {
+                "name": "省考",
+                "path_type": "civil_provincial",
+                "city": "Hangzhou",
+                "industry": "Government",
+                "description": "省级公务员考试",
+            },
+            {
+                "name": "IT就业",
+                "path_type": "career_it",
+                "city": "Shenzhen",
+                "industry": "IT",
+                "description": "本科/硕士直接进入IT行业",
+            },
+            {
+                "name": "金融就业",
+                "path_type": "career_finance",
+                "city": "Shanghai",
+                "industry": "Finance",
+                "description": "直接进入金融行业",
+            },
+            {
+                "name": "教育就业",
+                "path_type": "career_education",
+                "city": "Chengdu",
+                "industry": "Education",
+                "description": "教育行业就业",
+            },
+            {
+                "name": "医疗就业",
+                "path_type": "career_healthcare",
+                "city": "Wuhan",
+                "industry": "Healthcare",
+                "description": "医疗行业就业",
+            },
+        ]
+    }
 
 
 @router.get("/cities")
@@ -469,22 +573,26 @@ def get_city_tiers():
     """Return city tier information."""
     result = []
     for tier, info in CITY_TIERS.items():
-        result.append({
-            "tier": tier,
-            "cities": info["cities"],
-            "salary_multiplier": info["multiplier"],
-            "cost_multiplier": info["cost"],
-        })
+        result.append(
+            {
+                "tier": tier,
+                "cities": info["cities"],
+                "salary_multiplier": info["multiplier"],
+                "cost_multiplier": info["cost"],
+            }
+        )
     return {"tiers": result}
 
 
 @router.get("/industries")
 def get_industries():
     """Return available industry paths."""
-    return {"industries": [
-        {"id": "IT", "name": "信息技术", "paths": ["grad_cs", "career_it"]},
-        {"id": "Finance", "name": "金融", "paths": ["grad_finance", "career_finance"]},
-        {"id": "Government", "name": "体制内", "paths": ["civil_national", "civil_provincial"]},
-        {"id": "Education", "name": "教育", "paths": ["career_education"]},
-        {"id": "Healthcare", "name": "医疗", "paths": ["career_healthcare"]},
-    ]}
+    return {
+        "industries": [
+            {"id": "IT", "name": "信息技术", "paths": ["grad_cs", "career_it"]},
+            {"id": "Finance", "name": "金融", "paths": ["grad_finance", "career_finance"]},
+            {"id": "Government", "name": "体制内", "paths": ["civil_national", "civil_provincial"]},
+            {"id": "Education", "name": "教育", "paths": ["career_education"]},
+            {"id": "Healthcare", "name": "医疗", "paths": ["career_healthcare"]},
+        ]
+    }

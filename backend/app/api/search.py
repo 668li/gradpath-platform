@@ -3,6 +3,7 @@
 支持对经验帖、知识文章、问答、暗知识的全文检索，
 提供高亮、分页、类型过滤功能。
 """
+
 import json
 import logging
 from typing import Literal
@@ -31,6 +32,7 @@ def is_postgresql() -> bool:
 
 class SearchResultItem(BaseModel):
     """搜索结果项。"""
+
     id: str
     type: str  # experience / knowledge / qa / dark
     title: str
@@ -42,6 +44,7 @@ class SearchResultItem(BaseModel):
 
 class SearchResponse(BaseModel):
     """搜索响应。"""
+
     query: str
     type: str
     total: int
@@ -614,8 +617,7 @@ def full_text_search(
 
         # 执行搜索查询
         rows = db.execute(
-            text(search_sql),
-            {"query": q, "page_size": page_size, "offset": offset}
+            text(search_sql), {"query": q, "page_size": page_size, "offset": offset}
         ).fetchall()
 
         # 构建结果
@@ -631,15 +633,17 @@ def full_text_search(
             elif not isinstance(metadata, dict):
                 metadata = {}
 
-            results.append(SearchResultItem(
-                id=str(row.id),
-                type=row.type,
-                title=row.title,
-                content=row.content,
-                highlight=row.highlight,
-                score=round(float(row.score), 4),
-                metadata=metadata,
-            ))
+            results.append(
+                SearchResultItem(
+                    id=str(row.id),
+                    type=row.type,
+                    title=row.title,
+                    content=row.content,
+                    highlight=row.highlight,
+                    score=round(float(row.score), 4),
+                    metadata=metadata,
+                )
+            )
 
         return SearchResponse(
             query=q,

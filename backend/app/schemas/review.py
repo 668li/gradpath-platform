@@ -2,6 +2,7 @@
 
 字段严格对齐契约 DTO；枚举字段按契约以 str + 注释形式声明。
 """
+
 from datetime import date, datetime
 from uuid import UUID
 
@@ -23,7 +24,7 @@ class ReviewCreateRequest(BaseModel):
     # ===== 可选字段 =====
     action_refs: list = Field(
         default_factory=list,
-        description="关联行动 ID 列表；落库时转换为 {\"action_ids\": [...]} dict（JSONB）",
+        description='关联行动 ID 列表；落库时转换为 {"action_ids": [...]} dict（JSONB）',
     )
     mood_score: int | None = Field(None, ge=1, le=5, description="主观评分；范围 1~5")
 
@@ -33,7 +34,9 @@ class ReviewVO(BaseModel):
 
     id: int = Field(..., description="复盘记录 ID")
     user_id: UUID = Field(..., description="用户 ID")
-    review_type: str = Field(..., description="复盘类型；枚举：daily / weekly / monthly / milestone")
+    review_type: str = Field(
+        ..., description="复盘类型；枚举：daily / weekly / monthly / milestone"
+    )
     period_start: date = Field(..., description="复盘周期开始")
     period_end: date = Field(..., description="复盘周期结束")
     content: str = Field(..., description="复盘内容")
@@ -51,7 +54,9 @@ class ReviewDetailVO(ReviewVO):
     ai_summary: str | None = Field(None, description="AI 复盘摘要")
     ai_insights: dict | None = Field(None, description="AI 洞察（JSONB）")
     ai_suggestions: dict | None = Field(None, description="AI 建议（JSONB）")
-    uncertainty_score: float | None = Field(None, ge=0.0, le=1.0, description="不确定性评分；0.0~1.0")
+    uncertainty_score: float | None = Field(
+        None, ge=0.0, le=1.0, description="不确定性评分；0.0~1.0"
+    )
 
 
 class ReviewPageResponse(BaseModel):

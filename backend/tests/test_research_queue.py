@@ -8,8 +8,10 @@
 - reject / duplicate 状态转移与回填
 - promote 幂等：同 source_url 二次通过不重复落业务表
 """
-import pytest
+
 from hashlib import md5
+
+import pytest
 from sqlalchemy.orm import Session
 
 from app.models.experience_post import ExperiencePost
@@ -49,12 +51,16 @@ def _seed_queue_item(
     external_meta: dict | None = None,
 ) -> tuple[ExternalResearchItem, ReviewQueueItem]:
     """构造 PENDING 的 t_external_research_item + t_review_queue_item。"""
-    meta = external_meta if external_meta is not None else {
-        "author": "UP主",
-        "view_count": 120,
-        "like_count": 8,
-        "tags": ["复试"],
-    }
+    meta = (
+        external_meta
+        if external_meta is not None
+        else {
+            "author": "UP主",
+            "view_count": 120,
+            "like_count": 8,
+            "tags": ["复试"],
+        }
+    )
     ext = ExternalResearchItem(
         crawler_name="bilibili_research",
         crawler_run_id="00000000000000000000000000000000",
@@ -139,9 +145,11 @@ class TestApprove:
         assert data["promoted"] == 1
 
         # 业务表落库：ExperiencePost 一条 + 系统用户确保
-        post = db_session.query(ExperiencePost).filter(
-            ExperiencePost.source_url == ext.source_url
-        ).first()
+        post = (
+            db_session.query(ExperiencePost)
+            .filter(ExperiencePost.source_url == ext.source_url)
+            .first()
+        )
         assert post is not None
         assert post.status == "approved"
         assert post.source_platform == "bilibili"
@@ -175,9 +183,7 @@ class TestApprove:
         )
         assert resp.status_code == 200
         assert resp.json()["promoted"] == 1
-        news = db_session.query(KaoyanNews).filter(
-            KaoyanNews.source_url == ext.source_url
-        ).first()
+        news = db_session.query(KaoyanNews).filter(KaoyanNews.source_url == ext.source_url).first()
         assert news is not None
         assert news.status == "approved"
         assert news.category == "复试"
@@ -248,9 +254,11 @@ class TestPromotePurity(TestApprove):
         assert resp.status_code == 200
         assert resp.json()["promoted"] == 1
 
-        post = db_session.query(ExperiencePost).filter(
-            ExperiencePost.source_url == ext.source_url
-        ).first()
+        post = (
+            db_session.query(ExperiencePost)
+            .filter(ExperiencePost.source_url == ext.source_url)
+            .first()
+        )
         assert post is not None
         # 反软广：命中引流词 → 标注但不下架
         assert post.is_promotion is True
@@ -283,9 +291,11 @@ class TestPromotePurity(TestApprove):
             json={},
             headers=admin_headers,
         )
-        post = db_session.query(ExperiencePost).filter(
-            ExperiencePost.source_url == ext.source_url
-        ).first()
+        post = (
+            db_session.query(ExperiencePost)
+            .filter(ExperiencePost.source_url == ext.source_url)
+            .first()
+        )
         assert post.is_promotion is False
         assert post.promotion_confidence == 0.0
         assert post.quality_grade == "A"
@@ -300,7 +310,7 @@ class TestPromotePurity(TestApprove):
             source_url="https://news.example.com/2026/08/zhang",
             title="2026年XX大学计算机考研招生简章",
             content="计算机学院拟招收 120 人。初试科目：①101思想政治理论②201英语一"
-                    "③301数学一④408计算机学科专业基础。参考书：《数据结构（C语言版）》。",
+            "③301数学一④408计算机学科专业基础。参考书：《数据结构（C语言版）》。",
             external_meta={
                 "summary": "招生简章",
                 "category": "招生简章",
@@ -313,9 +323,7 @@ class TestPromotePurity(TestApprove):
             json={},
             headers=admin_headers,
         )
-        news = db_session.query(KaoyanNews).filter(
-            KaoyanNews.source_url == ext.source_url
-        ).first()
+        news = db_session.query(KaoyanNews).filter(KaoyanNews.source_url == ext.source_url).first()
         assert news is not None
         meta = news.structured_meta or {}
         assert meta.get("enrollment_count") == 120
@@ -341,9 +349,11 @@ class TestPromotePurity(TestApprove):
             json={},
             headers=admin_headers,
         )
-        post = db_session.query(ExperiencePost).filter(
-            ExperiencePost.source_url == ext.source_url
-        ).first()
+        post = (
+            db_session.query(ExperiencePost)
+            .filter(ExperiencePost.source_url == ext.source_url)
+            .first()
+        )
         assert post is not None
         # 可解释扣分原因：质量徽章 hover 数据源
         reasons = post.quality_reasons or []
@@ -378,7 +388,7 @@ class TestPromotePurity(TestApprove):
             source_url="https://news.example.com/2026/08/year1",
             title="2026年XX大学计算机考研招生简章",
             content="计算机学院拟招收 120 人。初试科目：①101思想政治理论②201英语一"
-                    "③301数学一④408计算机学科专业基础。参考书：《数据结构（C语言版）》。",
+            "③301数学一④408计算机学科专业基础。参考书：《数据结构（C语言版）》。",
             external_meta={
                 "summary": "招生简章",
                 "category": "招生简章",
@@ -391,9 +401,7 @@ class TestPromotePurity(TestApprove):
             json={},
             headers=admin_headers,
         )
-        news = db_session.query(KaoyanNews).filter(
-            KaoyanNews.source_url == ext.source_url
-        ).first()
+        news = db_session.query(KaoyanNews).filter(KaoyanNews.source_url == ext.source_url).first()
         assert news is not None
         reasons = news.quality_reasons or []
         assert len(reasons) >= 1
@@ -509,22 +517,31 @@ class TestCredibilityInference:
         """官方域名（含子域）→ official_verified。"""
         from app.services.research_ingestion import _infer_credibility, store_research_items
 
-        assert _infer_credibility("https://yz.chsi.com.cn/2026/kyzc.shtml", "web") == "official_verified"
+        assert (
+            _infer_credibility("https://yz.chsi.com.cn/2026/kyzc.shtml", "web")
+            == "official_verified"
+        )
         assert _infer_credibility("https://kaoyan.xxx.edu.cn/news/1", "web") == "official_verified"
-        assert _infer_credibility("https://www.gov.cn/zhengce/2026.htm", "web") == "official_verified"
+        assert (
+            _infer_credibility("https://www.gov.cn/zhengce/2026.htm", "web") == "official_verified"
+        )
 
         result = store_research_items(
             db_session,
             crawler_name="web_article_research",
             item_type="kaoyan_news",
-            items=[{"title": "研招网通知", "content": "x", "source_url": "https://yz.chsi.com.cn/a/b"}],
+            items=[
+                {"title": "研招网通知", "content": "x", "source_url": "https://yz.chsi.com.cn/a/b"}
+            ],
             source_platform="web",
             run_id="00000000000000000000000000000000",
         )
         assert result["inserted"] == 1
-        ext = db_session.query(ExternalResearchItem).filter(
-            ExternalResearchItem.source_url == "https://yz.chsi.com.cn/a/b"
-        ).one()
+        ext = (
+            db_session.query(ExternalResearchItem)
+            .filter(ExternalResearchItem.source_url == "https://yz.chsi.com.cn/a/b")
+            .one()
+        )
         assert ext.credibility == "official_verified"
 
     def test_community_platform(self, db_session):
@@ -545,9 +562,11 @@ class TestCredibilityInference:
             run_id="00000000000000000000000000000000",
         )
         assert result["inserted"] == 1
-        ext = db_session.query(ExternalResearchItem).filter(
-            ExternalResearchItem.source_url == "https://b23.tv/av123"
-        ).one()
+        ext = (
+            db_session.query(ExternalResearchItem)
+            .filter(ExternalResearchItem.source_url == "https://b23.tv/av123")
+            .one()
+        )
         assert ext.credibility == "user_reported"
 
     def test_other_falls_back_to_model_inferred(self):
@@ -555,4 +574,6 @@ class TestCredibilityInference:
         from app.services.research_ingestion import _infer_credibility
 
         assert _infer_credibility("https://example.com/posts/1", "web") == "model_inferred"
-        assert _infer_credibility("https://news.ycombinator.com/item?id=1", "rss") == "model_inferred"
+        assert (
+            _infer_credibility("https://news.ycombinator.com/item?id=1", "rss") == "model_inferred"
+        )

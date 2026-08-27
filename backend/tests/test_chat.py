@@ -1,15 +1,11 @@
 # backend/tests/test_chat.py
 """对话 API 测试 — Phase 11 AI 职业管家。"""
+
 import json
 import uuid
 from unittest.mock import AsyncMock, patch
 
-import httpx
-import pytest
-
 from app.models.career_plan import CareerPlan
-from app.models.conversation import Conversation, Message
-
 
 # ======================================================================
 # 辅助函数与 mock 数据
@@ -33,8 +29,20 @@ MOCK_REPLY_CAREER_PLAN = json.dumps(
                 {"skill": "系统设计", "current_level": 1, "target_level": 3, "gap": "缺乏经验"},
             ],
             "milestones": [
-                {"title": "掌握Go基础", "description": "学习Go语法与并发", "deadline": "2025-03-01", "skills": ["Go"], "status": "pending"},
-                {"title": "刷算法题200道", "description": "LeetCode中等难度", "deadline": "2025-05-01", "skills": ["算法"], "status": "pending"},
+                {
+                    "title": "掌握Go基础",
+                    "description": "学习Go语法与并发",
+                    "deadline": "2025-03-01",
+                    "skills": ["Go"],
+                    "status": "pending",
+                },
+                {
+                    "title": "刷算法题200道",
+                    "description": "LeetCode中等难度",
+                    "deadline": "2025-05-01",
+                    "skills": ["算法"],
+                    "status": "pending",
+                },
             ],
             "timeline_months": 6,
         },
@@ -44,9 +52,7 @@ MOCK_REPLY_CAREER_PLAN = json.dumps(
 
 
 def _create_conversation(client, auth_headers, title="测试对话"):
-    resp = client.post(
-        "/api/chat/conversations", headers=auth_headers, json={"title": title}
-    )
+    resp = client.post("/api/chat/conversations", headers=auth_headers, json={"title": title})
     assert resp.status_code == 201
     return resp.json()
 
@@ -54,6 +60,7 @@ def _create_conversation(client, auth_headers, title="测试对话"):
 # ======================================================================
 # 对话 CRUD
 # ======================================================================
+
 
 class TestConversationCRUD:
     def test_create_conversation_200(self, auth_headers, client):
@@ -86,9 +93,7 @@ class TestConversationCRUD:
         """分页参数生效。"""
         for i in range(5):
             _create_conversation(client, auth_headers, f"对话{i}")
-        resp = client.get(
-            "/api/chat/conversations?page=1&page_size=2", headers=auth_headers
-        )
+        resp = client.get("/api/chat/conversations?page=1&page_size=2", headers=auth_headers)
         assert resp.status_code == 200
         data = resp.json()
         assert data["page"] == 1
@@ -99,22 +104,19 @@ class TestConversationCRUD:
     def test_delete_conversation_204(self, auth_headers, client):
         """删除对话返回 204。"""
         conv = _create_conversation(client, auth_headers)
-        resp = client.delete(
-            f"/api/chat/conversations/{conv['id']}", headers=auth_headers
-        )
+        resp = client.delete(f"/api/chat/conversations/{conv['id']}", headers=auth_headers)
         assert resp.status_code == 204
 
     def test_delete_conversation_404(self, auth_headers, client):
         """删除不存在的对话返回 404。"""
-        resp = client.delete(
-            f"/api/chat/conversations/{uuid.uuid4()}", headers=auth_headers
-        )
+        resp = client.delete(f"/api/chat/conversations/{uuid.uuid4()}", headers=auth_headers)
         assert resp.status_code == 404
 
 
 # ======================================================================
 # 发送消息
 # ======================================================================
+
 
 class TestSendMessage:
     def test_send_message_401(self, client):
@@ -139,9 +141,7 @@ class TestSendMessage:
         assert resp.status_code == 503
         assert "未配置" in resp.json()["detail"]
 
-    def test_send_message_success_with_mock(
-        self, auth_headers, client, db_session, monkeypatch
-    ):
+    def test_send_message_success_with_mock(self, auth_headers, client, db_session, monkeypatch):
         """mock LLM 返回纯文本，发送消息成功。"""
         from app.services import ai_service
 
@@ -164,9 +164,7 @@ class TestSendMessage:
         assert data["skill_used"] == "default"
         assert data["career_plan"] is None
 
-    def test_send_message_with_skill_hint(
-        self, auth_headers, client, db_session, monkeypatch
-    ):
+    def test_send_message_with_skill_hint(self, auth_headers, client, db_session, monkeypatch):
         """skill_hint 指定时使用对应 Skill。"""
         from app.services import ai_service
 
@@ -206,6 +204,7 @@ class TestSendMessage:
 # ======================================================================
 # 消息历史
 # ======================================================================
+
 
 class TestMessageHistory:
     def test_message_history_order(self, auth_headers, client, db_session, monkeypatch):
@@ -258,6 +257,7 @@ class TestMessageHistory:
 # Skill 列表
 # ======================================================================
 
+
 class TestSkillsList:
     def test_list_skills_returns_all(self, auth_headers, client):
         """列出全部 Skill（含 Phase 12 新增）。"""
@@ -278,10 +278,9 @@ class TestSkillsList:
 # 职业规划提取
 # ======================================================================
 
+
 class TestCareerPlanExtraction:
-    def test_career_plan_saved_from_llm(
-        self, auth_headers, client, db_session, monkeypatch
-    ):
+    def test_career_plan_saved_from_llm(self, auth_headers, client, db_session, monkeypatch):
         """mock LLM 返回含 career_plan 的 JSON，验证规划被保存。"""
         from app.services import ai_service
 
@@ -313,9 +312,7 @@ class TestCareerPlanExtraction:
         assert len(plan.milestones) == 2
         assert plan.status == "draft"
 
-    def test_career_plan_listed_in_api(
-        self, auth_headers, client, db_session, monkeypatch
-    ):
+    def test_career_plan_listed_in_api(self, auth_headers, client, db_session, monkeypatch):
         """生成的职业规划可通过 career-plans API 查询。"""
         from app.services import ai_service
 
@@ -343,6 +340,7 @@ class TestCareerPlanExtraction:
 # ======================================================================
 # 用户上下文构建（build_user_context）
 # ======================================================================
+
 
 class TestBuildUserContext:
     def test_career_profile_injected_into_context(self, auth_headers, client, db_session):

@@ -1,4 +1,5 @@
 """收藏的 Pydantic Schema 定义。"""
+
 from datetime import datetime
 
 from pydantic import BaseModel, Field, field_validator

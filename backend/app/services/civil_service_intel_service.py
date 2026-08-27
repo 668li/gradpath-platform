@@ -2,15 +2,19 @@
 
 借鉴 career_intel_service 的三段式结构，覆盖考公全流程的信息差。
 """
+
 import json
 import re
 from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.models.civil_service_intel import CivilServiceDarkKnowledge, CivilServicePositioning, PostIntel
+from app.models.civil_service_intel import (
+    CivilServiceDarkKnowledge,
+    CivilServicePositioning,
+    PostIntel,
+)
 from app.services.ai_orchestrator import AIOrchestrator
-
 
 # ===== 考公暗知识种子数据 =====
 CIVIL_SERVICE_DARK_KNOWLEDGE_SEED = [
@@ -63,7 +67,6 @@ CIVIL_SERVICE_DARK_KNOWLEDGE_SEED = [
         "tags": ["专业", "法学", "汉语言", "计算机", "财会"],
         "sort_order": 4,
     },
-
     # ===== 第二阶段：备考选岗 =====
     {
         "stage": "preparation",
@@ -149,7 +152,6 @@ CIVIL_SERVICE_DARK_KNOWLEDGE_SEED = [
         "tags": ["异地", "乡镇", "方言", "调动"],
         "sort_order": 11,
     },
-
     # ===== 第三阶段：笔试面试 =====
     {
         "stage": "exam",
@@ -235,7 +237,6 @@ CIVIL_SERVICE_DARK_KNOWLEDGE_SEED = [
         "tags": ["社保", "应届生", "择业期"],
         "sort_order": 18,
     },
-
     # ===== 第四阶段：入职适应 =====
     {
         "stage": "onboarding",
@@ -297,7 +298,6 @@ CIVIL_SERVICE_DARK_KNOWLEDGE_SEED = [
         "tags": ["入职", "收费", "骗局"],
         "sort_order": 23,
     },
-
     # ===== 第五阶段：职业发展 =====
     {
         "stage": "career_dev",
@@ -373,6 +373,7 @@ STAGE_NAMES = {
 
 # ===== 暗知识服务 =====
 
+
 def seed_civil_service_dark_knowledge(db: Session) -> int:
     """如果暗知识表为空，预填充种子数据。返回填充条数。"""
     existing = db.query(CivilServiceDarkKnowledge).count()
@@ -384,7 +385,9 @@ def seed_civil_service_dark_knowledge(db: Session) -> int:
     return len(CIVIL_SERVICE_DARK_KNOWLEDGE_SEED)
 
 
-def get_civil_service_dark_knowledge_by_stage(db: Session, stage: str | None = None) -> list[CivilServiceDarkKnowledge]:
+def get_civil_service_dark_knowledge_by_stage(
+    db: Session, stage: str | None = None
+) -> list[CivilServiceDarkKnowledge]:
     """按阶段获取暗知识列表。"""
     query = db.query(CivilServiceDarkKnowledge)
     if stage:
@@ -396,18 +399,23 @@ def get_civil_service_dark_knowledge_stages(db: Session) -> list[dict]:
     """获取各阶段的统计信息。"""
     results = []
     for stage_code, stage_name in STAGE_NAMES.items():
-        count = db.query(CivilServiceDarkKnowledge).filter(
-            CivilServiceDarkKnowledge.stage == stage_code
-        ).count()
-        results.append({
-            "stage": stage_code,
-            "stage_name": stage_name,
-            "count": count,
-        })
+        count = (
+            db.query(CivilServiceDarkKnowledge)
+            .filter(CivilServiceDarkKnowledge.stage == stage_code)
+            .count()
+        )
+        results.append(
+            {
+                "stage": stage_code,
+                "stage_name": stage_name,
+                "count": count,
+            }
+        )
     return results
 
 
 # ===== 岗位情报服务 =====
+
 
 async def query_post_intel(region: str, department: str, post_name: str, exam_type: str) -> dict:
     """AI 查询岗位情报。不落库，返回结构化结果供前端预览。"""
@@ -525,9 +533,7 @@ def get_user_post_intel_list(db: Session, user_id: UUID) -> list[PostIntel]:
 
 def delete_post_intel(db: Session, user_id: UUID, intel_id: UUID) -> bool:
     intel = (
-        db.query(PostIntel)
-        .filter(PostIntel.id == intel_id, PostIntel.user_id == user_id)
-        .first()
+        db.query(PostIntel).filter(PostIntel.id == intel_id, PostIntel.user_id == user_id).first()
     )
     if not intel:
         return False
@@ -538,7 +544,10 @@ def delete_post_intel(db: Session, user_id: UUID, intel_id: UUID) -> bool:
 
 # ===== 考公定位服务 =====
 
-async def create_civil_service_positioning(db: Session, user_id: UUID, data: dict) -> CivilServicePositioning:
+
+async def create_civil_service_positioning(
+    db: Session, user_id: UUID, data: dict
+) -> CivilServicePositioning:
     """创建考公定位，自动触发 AI 评估。"""
     positioning = CivilServicePositioning(user_id=user_id, **data)
     db.add(positioning)
@@ -654,7 +663,9 @@ async def _generate_civil_service_assessment(positioning: CivilServicePositionin
     return data
 
 
-def get_latest_civil_service_positioning(db: Session, user_id: UUID) -> CivilServicePositioning | None:
+def get_latest_civil_service_positioning(
+    db: Session, user_id: UUID
+) -> CivilServicePositioning | None:
     return (
         db.query(CivilServicePositioning)
         .filter(CivilServicePositioning.user_id == user_id)
@@ -663,7 +674,9 @@ def get_latest_civil_service_positioning(db: Session, user_id: UUID) -> CivilSer
     )
 
 
-def get_civil_service_positioning_history(db: Session, user_id: UUID) -> list[CivilServicePositioning]:
+def get_civil_service_positioning_history(
+    db: Session, user_id: UUID
+) -> list[CivilServicePositioning]:
     return (
         db.query(CivilServicePositioning)
         .filter(CivilServicePositioning.user_id == user_id)

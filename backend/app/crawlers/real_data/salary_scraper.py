@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Salary benchmark data generator for GradPath.
 
 Generates 2000+ realistic salary benchmark records based on Chinese job market data.
@@ -8,10 +7,10 @@ Output: salary_real.json
 Format: salary_benchmarks table compatible (company, position, city, experience_level,
         salary_min, salary_median, salary_max, source, year)
 """
+
 import json
 import os
 import random
-import sys
 
 import httpx
 
@@ -21,7 +20,7 @@ YEAR = 2025
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                  "(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+    "(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
 }
@@ -41,7 +40,18 @@ CITY_TIERS = {
         "multiplier": 0.90,
     },
     "三线": {
-        "cities": ["贵阳", "南宁", "兰州", "太原", "乌鲁木齐", "哈尔滨", "长春", "沈阳", "济南", "南昌"],
+        "cities": [
+            "贵阳",
+            "南宁",
+            "兰州",
+            "太原",
+            "乌鲁木齐",
+            "哈尔滨",
+            "长春",
+            "沈阳",
+            "济南",
+            "南昌",
+        ],
         "multiplier": 0.75,
     },
     "四线": {
@@ -237,56 +247,160 @@ JOB_DATA = {
 # Common company names by category
 COMPANIES = {
     "互联网/科技": [
-        "阿里巴巴", "腾讯", "字节跳动", "百度", "美团", "京东",
-        "网易", "华为", "小米", "快手", "拼多多", "滴滴",
-        "B站", "微博", "知乎", "小红书", "得物", "大疆",
-        "商汤科技", "科大讯飞", "海康威视", "中兴通讯", "联想",
+        "阿里巴巴",
+        "腾讯",
+        "字节跳动",
+        "百度",
+        "美团",
+        "京东",
+        "网易",
+        "华为",
+        "小米",
+        "快手",
+        "拼多多",
+        "滴滴",
+        "B站",
+        "微博",
+        "知乎",
+        "小红书",
+        "得物",
+        "大疆",
+        "商汤科技",
+        "科大讯飞",
+        "海康威视",
+        "中兴通讯",
+        "联想",
     ],
     "金融/银行": [
-        "工商银行", "建设银行", "农业银行", "中国银行", "招商银行",
-        "交通银行", "中信银行", "浦发银行", "兴业银行", "平安银行",
-        "高盛", "摩根士丹利", "中金公司", "华泰证券", "国泰君安",
-        "中国人寿", "平安保险", "太平洋保险", "新华保险",
+        "工商银行",
+        "建设银行",
+        "农业银行",
+        "中国银行",
+        "招商银行",
+        "交通银行",
+        "中信银行",
+        "浦发银行",
+        "兴业银行",
+        "平安银行",
+        "高盛",
+        "摩根士丹利",
+        "中金公司",
+        "华泰证券",
+        "国泰君安",
+        "中国人寿",
+        "平安保险",
+        "太平洋保险",
+        "新华保险",
     ],
     "公务员/事业单位": [
-        "国家部委", "省级政府", "市级政府", "县级政府",
-        "国务院", "中央部委", "省级厅局", "市直单位",
-        "区县级单位", "乡镇政府", "街道办",
+        "国家部委",
+        "省级政府",
+        "市级政府",
+        "县级政府",
+        "国务院",
+        "中央部委",
+        "省级厅局",
+        "市直单位",
+        "区县级单位",
+        "乡镇政府",
+        "街道办",
     ],
     "教育": [
-        "北京大学", "清华大学", "复旦大学", "浙江大学", "南京大学",
-        "新东方", "学而思", "好未来", "猿辅导", "作业帮",
-        "中公教育", "华图教育", "粉笔教育",
+        "北京大学",
+        "清华大学",
+        "复旦大学",
+        "浙江大学",
+        "南京大学",
+        "新东方",
+        "学而思",
+        "好未来",
+        "猿辅导",
+        "作业帮",
+        "中公教育",
+        "华图教育",
+        "粉笔教育",
     ],
     "医疗/健康": [
-        "协和医院", "华西医院", "瑞金医院", "中山医院",
-        "湘雅医院", "齐鲁医院", "同济医院", "301医院",
-        "恒瑞医药", "药明康德", "迈瑞医疗", "爱尔眼科",
+        "协和医院",
+        "华西医院",
+        "瑞金医院",
+        "中山医院",
+        "湘雅医院",
+        "齐鲁医院",
+        "同济医院",
+        "301医院",
+        "恒瑞医药",
+        "药明康德",
+        "迈瑞医疗",
+        "爱尔眼科",
     ],
     "制造/工程": [
-        "中国建筑", "中国中铁", "中国交建", "中国中车",
-        "三一重工", "中联重科", "比亚迪", "宁德时代",
-        "格力电器", "美的集团", "海尔智家",
+        "中国建筑",
+        "中国中铁",
+        "中国交建",
+        "中国中车",
+        "三一重工",
+        "中联重科",
+        "比亚迪",
+        "宁德时代",
+        "格力电器",
+        "美的集团",
+        "海尔智家",
     ],
     "房地产/建筑": [
-        "万科", "碧桂园", "恒大", "融创", "保利发展",
-        "中海地产", "华润置地", "龙湖集团", "绿城中国",
+        "万科",
+        "碧桂园",
+        "恒大",
+        "融创",
+        "保利发展",
+        "中海地产",
+        "华润置地",
+        "龙湖集团",
+        "绿城中国",
     ],
     "传媒/文化": [
-        "中央电视台", "人民日报", "新华社", "澎湃新闻",
-        "字节跳动", "快手", "B站", "芒果TV",
+        "中央电视台",
+        "人民日报",
+        "新华社",
+        "澎湃新闻",
+        "字节跳动",
+        "快手",
+        "B站",
+        "芒果TV",
     ],
     "电商/零售": [
-        "阿里巴巴", "京东", "拼多多", "唯品会", "苏宁",
-        "抖音电商", "快手电商", "得物", "闲鱼",
+        "阿里巴巴",
+        "京东",
+        "拼多多",
+        "唯品会",
+        "苏宁",
+        "抖音电商",
+        "快手电商",
+        "得物",
+        "闲鱼",
     ],
     "咨询/法律": [
-        "麦肯锡", "BCG", "贝恩", "德勤", "普华永道",
-        "安永", "毕马威", "埃森哲", "金杜律所", "中伦律所",
+        "麦肯锡",
+        "BCG",
+        "贝恩",
+        "德勤",
+        "普华永道",
+        "安永",
+        "毕马威",
+        "埃森哲",
+        "金杜律所",
+        "中伦律所",
     ],
     "物流/交通": [
-        "顺丰", "中通", "圆通", "韵达", "申通",
-        "菜鸟", "京东物流", "极兔速递", "德邦快递",
+        "顺丰",
+        "中通",
+        "圆通",
+        "韵达",
+        "申通",
+        "菜鸟",
+        "京东物流",
+        "极兔速递",
+        "德邦快递",
     ],
 }
 
@@ -300,7 +414,9 @@ def flatten_cities() -> list[tuple[str, float]]:
     return result
 
 
-def generate_salary_range(base_min: int, base_max: int, city_mult: float, exp_mult: float) -> tuple[int, int, int]:
+def generate_salary_range(
+    base_min: int, base_max: int, city_mult: float, exp_mult: float
+) -> tuple[int, int, int]:
     """Generate realistic salary_min, salary_median, salary_max."""
     adjusted_min = int(base_min * city_mult * exp_mult)
     adjusted_max = int(base_max * city_mult * exp_mult)
@@ -338,17 +454,17 @@ def try_scrape_zhipin() -> list[dict]:
                     if resp.status_code == 200 and len(resp.text) > 1000:
                         # Parse any salary data found
                         import re
+
                         # Look for salary range patterns like "15-25K" or "15000-25000"
-                        salary_patterns = re.findall(
-                            r'(\d+)[kK]-?(\d+)[kK]',
-                            resp.text
-                        )
+                        salary_patterns = re.findall(r"(\d+)[kK]-?(\d+)[kK]", resp.text)
                         for low, high in salary_patterns[:100]:
-                            records.append({
-                                "salary_min": int(low) * 1000,
-                                "salary_max": int(high) * 1000,
-                                "source": "zhipin",
-                            })
+                            records.append(
+                                {
+                                    "salary_min": int(low) * 1000,
+                                    "salary_max": int(high) * 1000,
+                                    "source": "zhipin",
+                                }
+                            )
                         if records:
                             print(f"  [zhipin] Extracted {len(records)} salary references")
                             return records
@@ -410,17 +526,19 @@ def generate_all_records() -> list[dict]:
                         salary_median = max(salary_min + 500, (salary_median // 500) * 500)
                         salary_max = max(salary_median + 1000, (salary_max // 500) * 500)
 
-                    records.append({
-                        "company": company,
-                        "position": position,
-                        "city": city,
-                        "experience_level": exp_level,
-                        "salary_min": salary_min,
-                        "salary_median": salary_median,
-                        "salary_max": salary_max,
-                        "source": "zhipin" if zhipin_refs else "market_research",
-                        "year": YEAR,
-                    })
+                    records.append(
+                        {
+                            "company": company,
+                            "position": position,
+                            "city": city,
+                            "experience_level": exp_level,
+                            "salary_min": salary_min,
+                            "salary_median": salary_median,
+                            "salary_max": salary_max,
+                            "source": "zhipin" if zhipin_refs else "market_research",
+                            "year": YEAR,
+                        }
+                    )
 
     return records
 

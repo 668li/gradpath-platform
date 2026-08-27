@@ -1,11 +1,11 @@
 # backend/tests/test_models_employment.py
+
 import pytest
-from uuid import uuid4
 from sqlalchemy.exc import IntegrityError
 
+from app.models.employment_data import Degree, EmploymentData
+from app.models.report_record import ParseStatus, ReportRecord
 from app.models.school import School
-from app.models.report_record import ReportRecord, ParseStatus
-from app.models.employment_data import EmploymentData, Degree
 
 
 class TestSchool:
@@ -91,5 +91,7 @@ class TestEmploymentData:
         db_session.add(EmploymentData(report_id=report.id, major="机械", degree=Degree.bachelor))
         db_session.commit()
         with pytest.raises(IntegrityError):
-            db_session.add(EmploymentData(report_id=report.id, major="机械", degree=Degree.bachelor))
+            db_session.add(
+                EmploymentData(report_id=report.id, major="机械", degree=Degree.bachelor)
+            )
             db_session.commit()

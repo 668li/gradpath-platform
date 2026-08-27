@@ -1,9 +1,10 @@
 # tests/test_skills.py
 """Skill 单元测试 — 验证各 skill 的注册、激活与实例化。"""
+
 from __future__ import annotations
 
-import sys
 import os
+import sys
 
 # 确保 backend/app 在 path 中
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "backend"))
@@ -66,10 +67,10 @@ def test_find_salary_negotiation():
 
 import json
 
-from app.skills.industry_analyzer import IndustryAnalyzerSkill
-from app.skills.company_review import CompanyReviewSkill
-from app.skills.user_referral import UserReferralSkill
 from app.skills import registry
+from app.skills.company_review import CompanyReviewSkill
+from app.skills.industry_analyzer import IndustryAnalyzerSkill
+from app.skills.user_referral import UserReferralSkill
 
 
 class TestIndustryAnalyzerActivate:
@@ -205,15 +206,22 @@ def test_interview_coach_parse_json():
     skill = InterviewCoachSkill()
 
     # 有效 JSON 输入
-    json_input = json.dumps({
-        "content": "面试技巧",
-        "interview_coach": {
-            "tips": [{"category": "表达", "tip": "条理清晰", "why": "加分"}],
-            "common_questions": [{"question": "自我介绍", "answer_strategy": "STAR法则", "pitfall": "背稿"}],
-            "mindset": {"title": "放松", "suggestions": ["深呼吸"], "exercises": ["冥想"]},
-            "preparation_checklist": [{"item": "简历", "priority": "high", "description": "多份"}],
+    json_input = json.dumps(
+        {
+            "content": "面试技巧",
+            "interview_coach": {
+                "tips": [{"category": "表达", "tip": "条理清晰", "why": "加分"}],
+                "common_questions": [
+                    {"question": "自我介绍", "answer_strategy": "STAR法则", "pitfall": "背稿"}
+                ],
+                "mindset": {"title": "放松", "suggestions": ["深呼吸"], "exercises": ["冥想"]},
+                "preparation_checklist": [
+                    {"item": "简历", "priority": "high", "description": "多份"}
+                ],
+            },
         },
-    }, ensure_ascii=False)
+        ensure_ascii=False,
+    )
     result = skill.parse_response(json_input)
     assert result["content"] == "面试技巧"
     assert result["interview_coach"] is not None
@@ -223,7 +231,15 @@ def test_interview_coach_parse_json():
     assert len(result["interview_coach"]["preparation_checklist"]) == 1
 
     # markdown 代码块包裹
-    md_payload = {"content": "技巧", "interview_coach": {"tips": [], "common_questions": [], "mindset": {}, "preparation_checklist": []}}
+    md_payload = {
+        "content": "技巧",
+        "interview_coach": {
+            "tips": [],
+            "common_questions": [],
+            "mindset": {},
+            "preparation_checklist": [],
+        },
+    }
     md_input = f"```json\n{json.dumps(md_payload, ensure_ascii=False)}\n```"
     result = skill.parse_response(md_input)
     assert result["content"] == "技巧"
@@ -468,7 +484,15 @@ def test_salary_benchmark_parse_json():
             "industry": "互联网",
             "position": "后端开发",
             "region": "北京",
-            "salary_distribution": {"min": 15000, "max": 35000, "median": 25000, "p25": 20000, "p75": 30000, "currency": "CNY", "sample_size": 500},
+            "salary_distribution": {
+                "min": 15000,
+                "max": 35000,
+                "median": 25000,
+                "p25": 20000,
+                "p75": 30000,
+                "currency": "CNY",
+                "sample_size": 500,
+            },
             "factors": [{"factor": "学历", "impact": "高", "description": "硕士及以上有明显优势"}],
             "trends": {"direction": "上涨", "annual_growth": "8%", "forecast": "持续上涨"},
             "comparisons": [{"name": "行业平均", "value": "25000", "benchmark": "22000"}],
@@ -560,9 +584,24 @@ class TestUserReferralParse:
                 "referral_code": "GP2024ABC",
                 "referral_link": "https://gradpath.com/ref/GP2024ABC",
                 "reward_tiers": [
-                    {"tier": "铜牌", "referrals_needed": 3, "reward": "VIP会员7天", "description": "推荐3位好友"},
-                    {"tier": "银牌", "referrals_needed": 10, "reward": "VIP会员30天", "description": "推荐10位好友"},
-                    {"tier": "金牌", "referrals_needed": 30, "reward": "VIP会员1年", "description": "推荐30位好友"},
+                    {
+                        "tier": "铜牌",
+                        "referrals_needed": 3,
+                        "reward": "VIP会员7天",
+                        "description": "推荐3位好友",
+                    },
+                    {
+                        "tier": "银牌",
+                        "referrals_needed": 10,
+                        "reward": "VIP会员30天",
+                        "description": "推荐10位好友",
+                    },
+                    {
+                        "tier": "金牌",
+                        "referrals_needed": 30,
+                        "reward": "VIP会员1年",
+                        "description": "推荐30位好友",
+                    },
                 ],
                 "share_templates": {
                     "wechat": "我正在用GradPath做职业规划，一起加入吧！",

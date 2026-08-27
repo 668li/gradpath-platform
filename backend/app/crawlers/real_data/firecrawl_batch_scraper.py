@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Batch scrape real graduate school articles using Firecrawl.
 
 Targets: kaoyan.com, yz.chsi.com.cn
@@ -7,12 +6,12 @@ Saves to: firecrawl_scraped.json
 Usage:
     python -m app.crawlers.real_data.firecrawl_batch_scraper
 """
-import os
-import sys
+
 import json
+import logging
+import os
 import re
 import time
-import logging
 from datetime import datetime
 from pathlib import Path
 
@@ -30,23 +29,23 @@ def clean_markdown(content: str) -> str:
     """Remove CSS noise and clean markdown content."""
     if not content:
         return ""
-    text = re.sub(r'\{[^}]*\}', '', content)
-    text = re.sub(r'/\*!.*?\*/', '', text)
-    text = re.sub(r'--tw-[^:]+:[^;]+;', '', text)
-    text = re.sub(r'\.tw-[^{]*\{[^}]*\}', '', text)
-    text = re.sub(r'@media[^{]*\{[^}]*\}', '', text)
-    text = re.sub(r'\n{3,}', '\n\n', text)
-    text = re.sub(r' {2,}', ' ', text)
-    lines = text.split('\n')
+    text = re.sub(r"\{[^}]*\}", "", content)
+    text = re.sub(r"/\*!.*?\*/", "", text)
+    text = re.sub(r"--tw-[^:]+:[^;]+;", "", text)
+    text = re.sub(r"\.tw-[^{]*\{[^}]*\}", "", text)
+    text = re.sub(r"@media[^{]*\{[^}]*\}", "", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    text = re.sub(r" {2,}", " ", text)
+    lines = text.split("\n")
     clean_lines = []
     for line in lines:
         stripped = line.strip()
-        if stripped.startswith('{') or stripped.startswith('}') or stripped.startswith('/*'):
+        if stripped.startswith("{") or stripped.startswith("}") or stripped.startswith("/*"):
             continue
-        if 'font-family' in stripped or 'font-size' in stripped:
+        if "font-family" in stripped or "font-size" in stripped:
             continue
         clean_lines.append(line)
-    return '\n'.join(clean_lines).strip()
+    return "\n".join(clean_lines).strip()
 
 
 def classify_article(title: str, content: str) -> str:
@@ -70,11 +69,11 @@ def classify_article(title: str, content: str) -> str:
 
 def extract_title_from_markdown(md: str) -> str:
     """Extract title from markdown content."""
-    for line in md.split('\n'):
+    for line in md.split("\n"):
         stripped = line.strip()
-        if stripped.startswith('# ') or stripped.startswith('## '):
-            t = stripped.lstrip('# ').strip()
-            if len(t) > 4 and not t.startswith('{') and not t.startswith('!'):
+        if stripped.startswith("# ") or stripped.startswith("## "):
+            t = stripped.lstrip("# ").strip()
+            if len(t) > 4 and not t.startswith("{") and not t.startswith("!"):
                 return t[:200]
     return ""
 
@@ -102,7 +101,7 @@ def crawl_kaoyan_batch():
                 scrape_options={"formats": ["markdown"]},
             )
 
-            if not hasattr(result, 'data') or not result.data:
+            if not hasattr(result, "data") or not result.data:
                 logger.warning(f"  No data from {target_url}")
                 time.sleep(3)
                 continue
@@ -116,7 +115,7 @@ def crawl_kaoyan_batch():
                 meta = page.metadata
                 url = ""
                 if meta:
-                    url = getattr(meta, 'source_url', '') or getattr(meta, 'url', '') or ""
+                    url = getattr(meta, "source_url", "") or getattr(meta, "url", "") or ""
                 if not url or url in seen_urls or len(md) < 100:
                     continue
 
@@ -125,14 +124,16 @@ def crawl_kaoyan_batch():
                 content = clean_markdown(md)
                 category = classify_article(title, content)
 
-                all_articles.append({
-                    "title": title[:200] if title else "未命名文章",
-                    "url": url,
-                    "category": category,
-                    "content": content,
-                    "source": "kaoyan.com",
-                    "scraped_at": datetime.now().isoformat(),
-                })
+                all_articles.append(
+                    {
+                        "title": title[:200] if title else "未命名文章",
+                        "url": url,
+                        "category": category,
+                        "content": content,
+                        "source": "kaoyan.com",
+                        "scraped_at": datetime.now().isoformat(),
+                    }
+                )
 
             time.sleep(3)
 
@@ -162,21 +163,23 @@ def scrape_kaoyan_articles():
         logger.info(f"Scraping individual: {url}")
         try:
             result = app.scrape(url, formats=["markdown"])
-            md = getattr(result, 'markdown', '') or ""
-            if not md and hasattr(result, 'data'):
-                md = result.data.get('markdown', '') if isinstance(result.data, dict) else ""
+            md = getattr(result, "markdown", "") or ""
+            if not md and hasattr(result, "data"):
+                md = result.data.get("markdown", "") if isinstance(result.data, dict) else ""
             if md and len(md) > 100:
                 title = extract_title_from_markdown(md)
                 content = clean_markdown(md)
                 category = classify_article(title, content)
-                articles.append({
-                    "title": title[:200] if title else "未命名文章",
-                    "url": url,
-                    "category": category,
-                    "content": content,
-                    "source": "kaoyan.com",
-                    "scraped_at": datetime.now().isoformat(),
-                })
+                articles.append(
+                    {
+                        "title": title[:200] if title else "未命名文章",
+                        "url": url,
+                        "category": category,
+                        "content": content,
+                        "source": "kaoyan.com",
+                        "scraped_at": datetime.now().isoformat(),
+                    }
+                )
             time.sleep(2)
         except Exception as e:
             logger.error(f"Scrape failed for {url}: {e}")
@@ -201,18 +204,20 @@ def crawl_yanzhao():
         logger.info(f"Scraping yanzhao: {url}")
         try:
             result = app.scrape(url, formats=["markdown"])
-            md = getattr(result, 'markdown', '') or ""
+            md = getattr(result, "markdown", "") or ""
             if md and len(md) > 100:
                 title = extract_title_from_markdown(md) or "研招网信息"
                 content = clean_markdown(md)
-                articles.append({
-                    "title": title[:200],
-                    "url": url,
-                    "category": "政策",
-                    "content": content,
-                    "source": "yz.chsi.com.cn",
-                    "scraped_at": datetime.now().isoformat(),
-                })
+                articles.append(
+                    {
+                        "title": title[:200],
+                        "url": url,
+                        "category": "政策",
+                        "content": content,
+                        "source": "yz.chsi.com.cn",
+                        "scraped_at": datetime.now().isoformat(),
+                    }
+                )
             time.sleep(2)
         except Exception as e:
             logger.error(f"Scrape failed for {url}: {e}")
@@ -234,8 +239,8 @@ def main():
     print("\n[1/3] 批量爬取 kaoyan.com ...")
     kaoyan_batch = crawl_kaoyan_batch()
     for a in kaoyan_batch:
-        if a['url'] not in seen_urls:
-            seen_urls.add(a['url'])
+        if a["url"] not in seen_urls:
+            seen_urls.add(a["url"])
             all_articles.append(a)
     print(f"   获得 {len(kaoyan_batch)} 篇 (去重后总计: {len(all_articles)})")
 
@@ -244,8 +249,8 @@ def main():
     time.sleep(5)  # Wait for rate limit reset
     individual = scrape_kaoyan_articles()
     for a in individual:
-        if a['url'] not in seen_urls:
-            seen_urls.add(a['url'])
+        if a["url"] not in seen_urls:
+            seen_urls.add(a["url"])
             all_articles.append(a)
     print(f"   获得 {len(individual)} 篇 (去重后总计: {len(all_articles)})")
 
@@ -254,8 +259,8 @@ def main():
     time.sleep(5)
     yanzhao = crawl_yanzhao()
     for a in yanzhao:
-        if a['url'] not in seen_urls:
-            seen_urls.add(a['url'])
+        if a["url"] not in seen_urls:
+            seen_urls.add(a["url"])
             all_articles.append(a)
     print(f"   获得 {len(yanzhao)} 篇 (去重后总计: {len(all_articles)})")
 
@@ -271,11 +276,11 @@ def main():
     # Summary
     categories = {}
     for a in all_articles:
-        cat = a.get('category', 'unknown')
+        cat = a.get("category", "unknown")
         categories[cat] = categories.get(cat, 0) + 1
 
     print(f"\n{'=' * 60}")
-    print(f"爬取完成！")
+    print("爬取完成！")
     print(f"  总计: {len(all_articles)} 篇文章")
     print(f"  分类分布: {json.dumps(categories, ensure_ascii=False)}")
     print(f"  保存至: {OUTPUT_FILE}")

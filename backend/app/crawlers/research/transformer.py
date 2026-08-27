@@ -2,6 +2,7 @@
 
 将 B站视频、网页文章、RSS 资讯等原始 crawler 输出转换为可写入数据库的 payload。
 """
+
 import html
 import re
 from datetime import datetime, timezone
@@ -72,10 +73,27 @@ KAOYAN_CATEGORY_RULES = [
     ("调剂", ["调剂", "调剂系统", "调剂名额", "调剂信息"]),
     ("复试线", ["复试线", "国家线", "自划线", "分数线", "院线", "校线"]),
     ("复试", ["复试", "面试", "复试名单", "拟录取"]),
-    ("招生简章", ["招生简章", "招生章程", "招生计划", "招生目录", "专业目录", "硕士招生", "博士招生"]),
+    (
+        "招生简章",
+        ["招生简章", "招生章程", "招生计划", "招生目录", "专业目录", "硕士招生", "博士招生"],
+    ),
     ("推免", ["推免", "保研", "推荐免试", "免试攻读"]),
     ("报录比", ["报录比", "录取比例", "报考人数", "报名人数", "录取人数"]),
-    ("政策", ["政策", "报名", "初试", "考试时间", "考试大纲", "网报", "网上确认", "报考", "教育部", "通知"]),
+    (
+        "政策",
+        [
+            "政策",
+            "报名",
+            "初试",
+            "考试时间",
+            "考试大纲",
+            "网报",
+            "网上确认",
+            "报考",
+            "教育部",
+            "通知",
+        ],
+    ),
     ("择校", ["择校", "选校", "院校选择"]),
     ("备考", ["备考", "复习", "真题", "资料", "经验"]),
 ]
@@ -188,9 +206,7 @@ class ResearchTransformer:
         return result
 
     @classmethod
-    def transform_bilibili(
-        cls, items: list[dict], source_platform: str = "bilibili"
-    ) -> list[dict]:
+    def transform_bilibili(cls, items: list[dict], source_platform: str = "bilibili") -> list[dict]:
         """将 B站/知乎/贴吧经验内容转换为 ExperiencePost payload。
 
         source_platform 可选参（默认 "bilibili" 保兼容）：

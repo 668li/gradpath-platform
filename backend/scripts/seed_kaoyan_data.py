@@ -9,6 +9,7 @@
     cd backend
     python scripts/seed_kaoyan_data.py
 """
+
 import sys
 from pathlib import Path
 

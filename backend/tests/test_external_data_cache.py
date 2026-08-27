@@ -7,6 +7,7 @@
 - 不同参数不命中缓存
 - Redis 不可用时降级到直接打 DB（不抛异常）
 """
+
 from unittest.mock import patch
 
 import pytest
@@ -22,10 +23,10 @@ from app.services.external_data_service import (
     list_salary_benchmarks,
 )
 
-
 # ======================================================================
 # 辅助函数与 fixture
 # ======================================================================
+
 
 def _count_queries(db_session, func):
     """统计 func 执行期间发生的 SQL 查询次数。"""
@@ -56,15 +57,14 @@ def seeded_db(db_session):
 # list_companies 缓存
 # ======================================================================
 
+
 class TestListCompaniesCache:
     def test_cache_miss_hits_db_and_writes_cache(self, seeded_db):
         """首次调用打 DB 并写缓存。"""
         # 确认缓存为空
         assert cache.get("companies:list:None:None:50") is None
 
-        result, query_count = _count_queries(
-            seeded_db, lambda: list_companies(seeded_db, limit=50)
-        )
+        result, query_count = _count_queries(seeded_db, lambda: list_companies(seeded_db, limit=50))
 
         # 打了 DB
         assert query_count >= 1
@@ -107,9 +107,7 @@ class TestListCompaniesCache:
         """不同 limit 不命中缓存。"""
         list_companies(seeded_db, limit=10)
 
-        _, query_count = _count_queries(
-            seeded_db, lambda: list_companies(seeded_db, limit=20)
-        )
+        _, query_count = _count_queries(seeded_db, lambda: list_companies(seeded_db, limit=20))
         assert query_count >= 1
 
     def test_redis_unavailable_falls_back_to_db(self, seeded_db):
@@ -142,6 +140,7 @@ class TestListCompaniesCache:
 # ======================================================================
 # list_salary_benchmarks 缓存
 # ======================================================================
+
 
 class TestListSalaryBenchmarksCache:
     def test_cache_miss_hits_db_and_writes_cache(self, seeded_db):
@@ -183,6 +182,7 @@ class TestListSalaryBenchmarksCache:
 # list_market_data 缓存
 # ======================================================================
 
+
 class TestListMarketDataCache:
     def test_cache_miss_hits_db_and_writes_cache(self, seeded_db):
         """首次调用打 DB 并写缓存。"""
@@ -223,6 +223,7 @@ class TestListMarketDataCache:
 # Redis 降级测试（统一）
 # ======================================================================
 
+
 class TestRedisFallback:
     def test_cache_get_exception_does_not_raise(self, seeded_db):
         """cache.get 异常时函数不应抛出，应降级打 DB。"""
@@ -238,7 +239,9 @@ class TestRedisFallback:
 
     def test_both_cache_ops_exception_still_returns_data(self, seeded_db):
         """cache.get 和 cache.set 都异常时仍应返回 DB 数据。"""
-        with patch.object(cache, "get", side_effect=Exception("Redis down")), \
-             patch.object(cache, "set", side_effect=Exception("Redis down")):
+        with (
+            patch.object(cache, "get", side_effect=Exception("Redis down")),
+            patch.object(cache, "set", side_effect=Exception("Redis down")),
+        ):
             result = list_salary_benchmarks(seeded_db, limit=5)
         assert len(result) > 0

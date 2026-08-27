@@ -8,6 +8,7 @@
 - schedule_news_enhancement：开发环境（memory broker）安全跳过
 - 审核 approve → KaoyanNews 落库即带 quality_score/key_dates（Phase C1 兜底）
 """
+
 import pytest
 from sqlalchemy.orm import Session
 
@@ -90,9 +91,9 @@ class TestSanitizeLlmDates:
 
     def test_drops_invalid_entries(self):
         raw = [
-            {"label": "报名", "date": "2025-13-45"},          # 非法日期
-            {"label": "未知标签", "date": "2025-10-01"},      # 非白名单标签
-            {"label": "报名", "date": "2025年10月"},           # 格式不符
+            {"label": "报名", "date": "2025-13-45"},  # 非法日期
+            {"label": "未知标签", "date": "2025-10-01"},  # 非白名单标签
+            {"label": "报名", "date": "2025年10月"},  # 格式不符
             {"label": "报名", "date": None},
             "not-a-dict",
         ]
@@ -100,9 +101,11 @@ class TestSanitizeLlmDates:
 
     def test_end_date_before_date_dropped(self):
         # end_date < date：保留单点日期，丢弃非法 end_date
-        result = _sanitize_llm_dates([
-            {"label": "调剂", "date": "2025-04-08", "end_date": "2025-04-01"},
-        ])
+        result = _sanitize_llm_dates(
+            [
+                {"label": "调剂", "date": "2025-04-08", "end_date": "2025-04-01"},
+            ]
+        )
         assert result == [{"label": "调剂", "date": "2025-04-08"}]
 
 
@@ -117,9 +120,7 @@ class TestEnhanceNewsItem:
                 '"key_dates": [{"label": "复试", "date": "2026-03-25"}]}'
             )
         )
-        monkeypatch.setattr(
-            "app.services.ai_orchestrator.AIOrchestrator", lambda: fake
-        )
+        monkeypatch.setattr("app.services.ai_orchestrator.AIOrchestrator", lambda: fake)
 
         result = await enhance_news_item(db_session, news)
         assert result["status"] == "enhanced"
@@ -133,9 +134,7 @@ class TestEnhanceNewsItem:
     async def test_llm_error_degrades_keeps_rule_based(self, db_session, monkeypatch):
         news = _make_news(db_session)
         fake = _FakeOrchestrator(error=RuntimeError("LLM 超时"))
-        monkeypatch.setattr(
-            "app.services.ai_orchestrator.AIOrchestrator", lambda: fake
-        )
+        monkeypatch.setattr("app.services.ai_orchestrator.AIOrchestrator", lambda: fake)
 
         result = await enhance_news_item(db_session, news)
         assert result["status"] == "degraded"
@@ -148,9 +147,7 @@ class TestEnhanceNewsItem:
     async def test_non_json_response_degrades(self, db_session, monkeypatch):
         news = _make_news(db_session)
         fake = _FakeOrchestrator(response="抱歉，我无法完成。")
-        monkeypatch.setattr(
-            "app.services.ai_orchestrator.AIOrchestrator", lambda: fake
-        )
+        monkeypatch.setattr("app.services.ai_orchestrator.AIOrchestrator", lambda: fake)
 
         result = await enhance_news_item(db_session, news)
         assert result["status"] == "degraded"
@@ -232,9 +229,7 @@ class TestPromoteFillsPurityFields:
         assert resp.status_code == 200
         assert resp.json()["promoted"] == 1
 
-        news = db_session.query(KaoyanNews).filter(
-            KaoyanNews.source_url == source_url
-        ).first()
+        news = db_session.query(KaoyanNews).filter(KaoyanNews.source_url == source_url).first()
         assert news is not None
         assert isinstance(news.quality_score, int) and 0 <= news.quality_score <= 100
         assert news.quality_grade in {"A", "B", "C", "D"}

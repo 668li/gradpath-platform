@@ -3,9 +3,10 @@
 在决策前就预想失败，用加权矩阵量化选项，用红队问题检验假设。
 真正提升决策质量，而非事后归因。
 """
+
 from uuid import UUID
 
-from sqlalchemy import ForeignKey, Integer, String, Text
+from sqlalchemy import ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -14,6 +15,7 @@ from app.models.base import JSONB, TimestampMixin, UUIDMixin
 
 class DecisionAnalysis(UUIDMixin, TimestampMixin, Base):
     """决策深度分析 — 预验尸 + 矩阵 + 红队。"""
+
     __tablename__ = "decision_analyses"
 
     user_id: Mapped[UUID] = mapped_column(

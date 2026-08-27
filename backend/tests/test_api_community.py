@@ -1,5 +1,4 @@
 """社区数据 API 测试。"""
-import pytest
 
 
 class TestCommunitySubmit:

@@ -3,6 +3,7 @@
 幂等执行：按 action_type 存在则跳过、缺失则插入（复用 app/seed/seed_action_weight.py）。
 用法：python scripts/seed_action_weights.py
 """
+
 import sys
 from pathlib import Path
 

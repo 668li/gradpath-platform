@@ -7,18 +7,19 @@
 
 每个功能都带 60s 缓存，避免高频聚合查询拖垮数据库。
 """
+
 from __future__ import annotations
 
 import logging
-from datetime import date, datetime, timezone
+from datetime import date
 from uuid import UUID
 
-from sqlalchemy import func, and_
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.cache import cache
 from app.models.dark_knowledge_push import DarkKnowledgePushLog
-from app.models.destination_decision import DestinationDecision, DestinationType, DecisionStatus
+from app.models.destination_decision import DecisionStatus, DestinationDecision
 from app.models.grad_intel import DarkKnowledge
 from app.models.outcome_report import OutcomeReport
 from app.models.user import User
@@ -112,7 +113,8 @@ def get_peer_mirror(db: Session, user_id: UUID) -> dict:
     )
     total_outcomes = sum(c for _, c in outcome_rows)
     success_count = sum(
-        c for ot, c in outcome_rows
+        c
+        for ot, c in outcome_rows
         if (ot.value if hasattr(ot, "value") else str(ot)) in ("grad_civil_career", "adjustment")
     )
     success_rate = round(success_count / total_outcomes * 100) if total_outcomes > 0 else None
@@ -194,16 +196,20 @@ def get_procrastination_cost(db: Session, user_id: UUID) -> dict:
             urgency = "low"
             message = f"刚创建 {days_pending} 天，趁热打铁推进分析"
 
-        items.append({
-            "decision_id": str(d.id),
-            "destination_type": d.destination_type.value,
-            "destination_label": _DEST_LABELS.get(d.destination_type.value, str(d.destination_type)),
-            "days_pending": days_pending,
-            "lost_prep_hours": lost_prep_hours,
-            "urgency": urgency,
-            "message": message,
-            "confidence": d.confidence,
-        })
+        items.append(
+            {
+                "decision_id": str(d.id),
+                "destination_type": d.destination_type.value,
+                "destination_label": _DEST_LABELS.get(
+                    d.destination_type.value, str(d.destination_type)
+                ),
+                "days_pending": days_pending,
+                "lost_prep_hours": lost_prep_hours,
+                "urgency": urgency,
+                "message": message,
+                "confidence": d.confidence,
+            }
+        )
 
     # 按紧迫度排序
     urgency_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
@@ -232,9 +238,8 @@ def get_dark_knowledge_gap(db: Session, user_id: UUID, limit: int = 5) -> dict:
         return cached
 
     # 用户已经看过的暗知识 ID
-    seen_ids_subq = (
-        db.query(DarkKnowledgePushLog.dark_knowledge_id)
-        .filter(DarkKnowledgePushLog.user_id == user_id)
+    seen_ids_subq = db.query(DarkKnowledgePushLog.dark_knowledge_id).filter(
+        DarkKnowledgePushLog.user_id == user_id
     )
 
     # 高重要性且未看过的暗知识
@@ -260,15 +265,19 @@ def get_dark_knowledge_gap(db: Session, user_id: UUID, limit: int = 5) -> dict:
             )
             .scalar()
         ) or 0
-        gap_items.append({
-            "id": str(dk.id),
-            "title": dk.title,
-            "content_preview": (dk.content or "")[:120],
-            "stage": dk.stage,
-            "category": dk.category,
-            "read_by_peers": int(read_count),
-            "common_misconception": dk.common_misconception[:100] if dk.common_misconception else None,
-        })
+        gap_items.append(
+            {
+                "id": str(dk.id),
+                "title": dk.title,
+                "content_preview": (dk.content or "")[:120],
+                "stage": dk.stage,
+                "category": dk.category,
+                "read_by_peers": int(read_count),
+                "common_misconception": (
+                    dk.common_misconception[:100] if dk.common_misconception else None
+                ),
+            }
+        )
 
     result = {
         "has_gap": len(gap_items) > 0,
@@ -320,24 +329,28 @@ def get_regret_lessons(db: Session, limit_per_type: int = 2) -> dict:
             text = r.what_i_would_do_differently or r.advice_for_others
             if not text or not text.strip():
                 continue
-            lessons.append({
-                "text": text.strip()[:300],
-                "target_school": r.target_school,
-                "target_major": r.target_major,
-                "year": r.year,
-                "score_total": r.score_total,
-                "satisfaction_after": r.satisfaction_after,
-                "confidence_before": r.confidence_before,
-            })
+            lessons.append(
+                {
+                    "text": text.strip()[:300],
+                    "target_school": r.target_school,
+                    "target_major": r.target_major,
+                    "year": r.year,
+                    "score_total": r.score_total,
+                    "satisfaction_after": r.satisfaction_after,
+                    "confidence_before": r.confidence_before,
+                }
+            )
             if len(lessons) >= limit_per_type:
                 break
         if lessons:
-            groups.append({
-                "outcome_type": outcome_type,
-                "label": _OUTCOME_LABELS.get(outcome_type, outcome_type),
-                "tone": _OUTCOME_TONES.get(outcome_type, "neutral"),
-                "lessons": lessons,
-            })
+            groups.append(
+                {
+                    "outcome_type": outcome_type,
+                    "label": _OUTCOME_LABELS.get(outcome_type, outcome_type),
+                    "tone": _OUTCOME_TONES.get(outcome_type, "neutral"),
+                    "lessons": lessons,
+                }
+            )
 
     result = {
         "has_lessons": len(groups) > 0,

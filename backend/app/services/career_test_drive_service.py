@@ -8,6 +8,7 @@
   就业-软件开发 / 考公-基层 / 考公-机关。
 - 每个模板包含 8-10 个时间段（08:00-22:00），含真实的时间、活动、描述与情绪起伏。
 """
+
 import json
 import logging
 from uuid import UUID
@@ -44,14 +45,54 @@ _TEMPLATES: list[dict] = [
             "2 年机会成本，需面对学历贬值与年龄焦虑",
         ],
         "time_blocks": [
-            {"time": "08:30", "activity": "实验室晨更", "description": "到实验室开机，检查昨晚通宵跑的训练任务日志，确认 loss 曲线正常。", "emotion": "专注"},
-            {"time": "10:00", "activity": "组会汇报", "description": "向导师汇报上周进展，被追问实验设置的合理性，现场被问到哑口无言。", "emotion": "紧张"},
-            {"time": "12:00", "activity": "食堂 + 趴桌午休", "description": "和同门边吃饭边吐槽导师，午饭后在工位趴二十分钟回血。", "emotion": "放松"},
-            {"time": "14:00", "activity": "调代码", "description": "复现一篇顶会论文的模型，CUDA 报错排查了两个小时，最后发现是数据预处理问题。", "emotion": "焦虑"},
-            {"time": "16:30", "activity": "读文献", "description": "精读两篇 arXiv 新文，在笔记本上记下可借鉴的思路，准备写进 related work。", "emotion": "兴奋"},
-            {"time": "19:00", "activity": "晚饭 + 散步", "description": "和室友去校门口吃黄焖鸡，绕操场走两圈聊聊毕业去向。", "emotion": "平静"},
-            {"time": "20:30", "activity": "写论文", "description": "对着 LaTeX 改 method 章节，反复斟酌措辞，进度缓慢但必须推进。", "emotion": "疲惫"},
-            {"time": "22:00", "activity": "提交夜间训练任务", "description": "重新配置超参，挂上 4 卡训练任务后关灯回宿舍，路上还在想实验设计。", "emotion": "期待"},
+            {
+                "time": "08:30",
+                "activity": "实验室晨更",
+                "description": "到实验室开机，检查昨晚通宵跑的训练任务日志，确认 loss 曲线正常。",
+                "emotion": "专注",
+            },
+            {
+                "time": "10:00",
+                "activity": "组会汇报",
+                "description": "向导师汇报上周进展，被追问实验设置的合理性，现场被问到哑口无言。",
+                "emotion": "紧张",
+            },
+            {
+                "time": "12:00",
+                "activity": "食堂 + 趴桌午休",
+                "description": "和同门边吃饭边吐槽导师，午饭后在工位趴二十分钟回血。",
+                "emotion": "放松",
+            },
+            {
+                "time": "14:00",
+                "activity": "调代码",
+                "description": "复现一篇顶会论文的模型，CUDA 报错排查了两个小时，最后发现是数据预处理问题。",
+                "emotion": "焦虑",
+            },
+            {
+                "time": "16:30",
+                "activity": "读文献",
+                "description": "精读两篇 arXiv 新文，在笔记本上记下可借鉴的思路，准备写进 related work。",
+                "emotion": "兴奋",
+            },
+            {
+                "time": "19:00",
+                "activity": "晚饭 + 散步",
+                "description": "和室友去校门口吃黄焖鸡，绕操场走两圈聊聊毕业去向。",
+                "emotion": "平静",
+            },
+            {
+                "time": "20:30",
+                "activity": "写论文",
+                "description": "对着 LaTeX 改 method 章节，反复斟酌措辞，进度缓慢但必须推进。",
+                "emotion": "疲惫",
+            },
+            {
+                "time": "22:00",
+                "activity": "提交夜间训练任务",
+                "description": "重新配置超参，挂上 4 卡训练任务后关灯回宿舍，路上还在想实验设计。",
+                "emotion": "期待",
+            },
         ],
     },
     # 2. 考研-文科
@@ -73,14 +114,54 @@ _TEMPLATES: list[dict] = [
             "学术圈竞争激烈，「非升即走」压力大",
         ],
         "time_blocks": [
-            {"time": "08:00", "activity": "图书馆晨读", "description": "占座后开始背诵英语作文模板与专业术语，走廊里全是同样在背书的同学。", "emotion": "困倦"},
-            {"time": "10:00", "activity": "精读文献", "description": "读一篇核心期刊论文，用三种颜色的笔做批注：观点/论据/可质疑处。", "emotion": "专注"},
-            {"time": "12:30", "activity": "午饭 + 小憩", "description": "食堂随便吃点，回图书馆趴一会，旁边同学的翻书声成了白噪音。", "emotion": "放松"},
-            {"time": "14:00", "activity": "整理读书笔记", "description": "把上午的批注誊抄进笔记本，按主题归类，搭建自己的知识图谱。", "emotion": "踏实"},
-            {"time": "16:00", "activity": "写作训练", "description": "限时写一篇论述题，写完对照范文自评，发现论证链条还是有漏洞。", "emotion": "受挫"},
-            {"time": "18:30", "activity": "晚饭 + 散步", "description": "绕校园走一圈，听一集播客换换脑子。", "emotion": "平静"},
-            {"time": "20:00", "activity": "政治/英语刷题", "description": "刷两套真题的选择题，错了的回看知识点，机械但必须坚持。", "emotion": "麻木"},
-            {"time": "22:00", "activity": "夜自习收尾", "description": "图书馆闭馆音乐响起，收拾书包回宿舍，路上还在默念今天背过的概念。", "emotion": "充实"},
+            {
+                "time": "08:00",
+                "activity": "图书馆晨读",
+                "description": "占座后开始背诵英语作文模板与专业术语，走廊里全是同样在背书的同学。",
+                "emotion": "困倦",
+            },
+            {
+                "time": "10:00",
+                "activity": "精读文献",
+                "description": "读一篇核心期刊论文，用三种颜色的笔做批注：观点/论据/可质疑处。",
+                "emotion": "专注",
+            },
+            {
+                "time": "12:30",
+                "activity": "午饭 + 小憩",
+                "description": "食堂随便吃点，回图书馆趴一会，旁边同学的翻书声成了白噪音。",
+                "emotion": "放松",
+            },
+            {
+                "time": "14:00",
+                "activity": "整理读书笔记",
+                "description": "把上午的批注誊抄进笔记本，按主题归类，搭建自己的知识图谱。",
+                "emotion": "踏实",
+            },
+            {
+                "time": "16:00",
+                "activity": "写作训练",
+                "description": "限时写一篇论述题，写完对照范文自评，发现论证链条还是有漏洞。",
+                "emotion": "受挫",
+            },
+            {
+                "time": "18:30",
+                "activity": "晚饭 + 散步",
+                "description": "绕校园走一圈，听一集播客换换脑子。",
+                "emotion": "平静",
+            },
+            {
+                "time": "20:00",
+                "activity": "政治/英语刷题",
+                "description": "刷两套真题的选择题，错了的回看知识点，机械但必须坚持。",
+                "emotion": "麻木",
+            },
+            {
+                "time": "22:00",
+                "activity": "夜自习收尾",
+                "description": "图书馆闭馆音乐响起，收拾书包回宿舍，路上还在默念今天背过的概念。",
+                "emotion": "充实",
+            },
         ],
     },
     # 3. 就业-互联网产品经理
@@ -102,14 +183,54 @@ _TEMPLATES: list[dict] = [
             "KPI 与功能上线节奏压力，加班成常态",
         ],
         "time_blocks": [
-            {"time": "09:30", "activity": "看数据晨会", "description": "到工位先打开数据看板，昨日 DAU 与转化率波动，准备好被 leader 追问的原因。", "emotion": "紧张"},
-            {"time": "10:30", "activity": "需求评审", "description": "主持新功能评审会，研发当场质疑方案可行性，反复修改交互细节。", "emotion": "高压"},
-            {"time": "12:00", "activity": "工位外卖", "description": "边吃外卖边回钉钉消息，中午也没真正离开工位。", "emotion": "疲惫"},
-            {"time": "14:00", "activity": "用户访谈", "description": "和 3 位真实用户视频访谈，听到吐槽自己设计的功能，心情复杂但有用。", "emotion": "兴奋"},
-            {"time": "16:00", "activity": "写 PRD", "description": "戴上耳机挤时间写需求文档，被打断 4 次，最终写完一半。", "emotion": "无奈"},
-            {"time": "18:30", "activity": "跨部门对齐", "description": "和设计、测试、运营同步下个迭代排期，扯皮两小时才勉强达成一致。", "emotion": "焦躁"},
-            {"time": "20:00", "activity": "晚饭 + 复盘", "description": "公司食堂吃完饭回工位，整理今天的访谈纪要，列出明天要推进的卡点。", "emotion": "踏实"},
-            {"time": "22:00", "activity": "下班", "description": "打车回家，路上还在群里回复研发的问题，到家已快十一点。", "emotion": "疲惫"},
+            {
+                "time": "09:30",
+                "activity": "看数据晨会",
+                "description": "到工位先打开数据看板，昨日 DAU 与转化率波动，准备好被 leader 追问的原因。",
+                "emotion": "紧张",
+            },
+            {
+                "time": "10:30",
+                "activity": "需求评审",
+                "description": "主持新功能评审会，研发当场质疑方案可行性，反复修改交互细节。",
+                "emotion": "高压",
+            },
+            {
+                "time": "12:00",
+                "activity": "工位外卖",
+                "description": "边吃外卖边回钉钉消息，中午也没真正离开工位。",
+                "emotion": "疲惫",
+            },
+            {
+                "time": "14:00",
+                "activity": "用户访谈",
+                "description": "和 3 位真实用户视频访谈，听到吐槽自己设计的功能，心情复杂但有用。",
+                "emotion": "兴奋",
+            },
+            {
+                "time": "16:00",
+                "activity": "写 PRD",
+                "description": "戴上耳机挤时间写需求文档，被打断 4 次，最终写完一半。",
+                "emotion": "无奈",
+            },
+            {
+                "time": "18:30",
+                "activity": "跨部门对齐",
+                "description": "和设计、测试、运营同步下个迭代排期，扯皮两小时才勉强达成一致。",
+                "emotion": "焦躁",
+            },
+            {
+                "time": "20:00",
+                "activity": "晚饭 + 复盘",
+                "description": "公司食堂吃完饭回工位，整理今天的访谈纪要，列出明天要推进的卡点。",
+                "emotion": "踏实",
+            },
+            {
+                "time": "22:00",
+                "activity": "下班",
+                "description": "打车回家，路上还在群里回复研发的问题，到家已快十一点。",
+                "emotion": "疲惫",
+            },
         ],
     },
     # 4. 就业-软件开发
@@ -131,14 +252,54 @@ _TEMPLATES: list[dict] = [
             "技术迭代快，需持续学习避免被淘汰",
         ],
         "time_blocks": [
-            {"time": "09:30", "activity": "每日站会", "description": "15 分钟站会同步进度，被 leader 点名问昨天卡住的那个 bug 解决没有。", "emotion": "紧张"},
-            {"time": "10:00", "activity": "深度编码", "description": "戴上降噪耳机进入心流，重构一个核心模块，两小时写了 300 行干净的代码。", "emotion": "专注"},
-            {"time": "12:00", "activity": "午饭 + 休息", "description": "和同事去园区食堂，聊两嘴技术八卦，回来趴一会。", "emotion": "放松"},
-            {"time": "14:00", "activity": "code review", "description": "review 同事的 PR，提了 6 条建议，其中一条架构层面的引发了讨论。", "emotion": "投入"},
-            {"time": "16:00", "activity": "联调 + 修 bug", "description": "和前端联调接口，发现是自己的字段命名不一致，返工修了一下午。", "emotion": "烦躁"},
-            {"time": "18:30", "activity": "晚饭", "description": "公司食堂吃完，回工位看看监控大盘，一切正常松了口气。", "emotion": "平静"},
-            {"time": "20:00", "activity": "学习新技术", "description": "看一小时新框架的官方文档，做笔记，为下个项目做技术储备。", "emotion": "充实"},
-            {"time": "21:30", "activity": "下班", "description": "提交今天的代码 push 到远端，关电脑回家，路上听一集技术播客。", "emotion": "满足"},
+            {
+                "time": "09:30",
+                "activity": "每日站会",
+                "description": "15 分钟站会同步进度，被 leader 点名问昨天卡住的那个 bug 解决没有。",
+                "emotion": "紧张",
+            },
+            {
+                "time": "10:00",
+                "activity": "深度编码",
+                "description": "戴上降噪耳机进入心流，重构一个核心模块，两小时写了 300 行干净的代码。",
+                "emotion": "专注",
+            },
+            {
+                "time": "12:00",
+                "activity": "午饭 + 休息",
+                "description": "和同事去园区食堂，聊两嘴技术八卦，回来趴一会。",
+                "emotion": "放松",
+            },
+            {
+                "time": "14:00",
+                "activity": "code review",
+                "description": "review 同事的 PR，提了 6 条建议，其中一条架构层面的引发了讨论。",
+                "emotion": "投入",
+            },
+            {
+                "time": "16:00",
+                "activity": "联调 + 修 bug",
+                "description": "和前端联调接口，发现是自己的字段命名不一致，返工修了一下午。",
+                "emotion": "烦躁",
+            },
+            {
+                "time": "18:30",
+                "activity": "晚饭",
+                "description": "公司食堂吃完，回工位看看监控大盘，一切正常松了口气。",
+                "emotion": "平静",
+            },
+            {
+                "time": "20:00",
+                "activity": "学习新技术",
+                "description": "看一小时新框架的官方文档，做笔记，为下个项目做技术储备。",
+                "emotion": "充实",
+            },
+            {
+                "time": "21:30",
+                "activity": "下班",
+                "description": "提交今天的代码 push 到远端，关电脑回家，路上听一集技术播客。",
+                "emotion": "满足",
+            },
         ],
     },
     # 5. 考公-基层
@@ -160,14 +321,54 @@ _TEMPLATES: list[dict] = [
             "突发事件多，节假日值守是常态",
         ],
         "time_blocks": [
-            {"time": "08:30", "activity": "签到 + 收发文", "description": "到办公室签到，处理 overnight 的 OA 公文，标记需要今天跟进的几件。", "emotion": "平静"},
-            {"time": "10:00", "activity": "材料撰写", "description": "为下周的工作汇报写材料，反复修改措辞，领导要求「再拔高一点高度」。", "emotion": "枯燥"},
-            {"time": "11:30", "activity": "群众接待", "description": "接待两位来办事的群众，耐心解释政策，帮一位老人填完表格。", "emotion": "耐心"},
-            {"time": "12:00", "activity": "食堂午饭", "description": "和同事在机关食堂吃饭，聊聊最近的考核指标，饭后回办公室休息。", "emotion": "放松"},
-            {"time": "14:00", "activity": "下午例会", "description": "参加科室例会，部署本月重点任务，被分到一个不太想干的专项。", "emotion": "无奈"},
-            {"time": "16:00", "activity": "下社区", "description": "和同事一起下社区走访，登记台账，鞋上沾满泥巴但心里踏实。", "emotion": "踏实"},
-            {"time": "18:00", "activity": "整理台账", "description": "回办公室整理今天走访的台账资料，录入系统，确保数据准确。", "emotion": "机械"},
-            {"time": "20:00", "activity": "加班收尾", "description": "把明天要交的材料再过一遍，领导签字后才下班回家。", "emotion": "疲惫"},
+            {
+                "time": "08:30",
+                "activity": "签到 + 收发文",
+                "description": "到办公室签到，处理 overnight 的 OA 公文，标记需要今天跟进的几件。",
+                "emotion": "平静",
+            },
+            {
+                "time": "10:00",
+                "activity": "材料撰写",
+                "description": "为下周的工作汇报写材料，反复修改措辞，领导要求「再拔高一点高度」。",
+                "emotion": "枯燥",
+            },
+            {
+                "time": "11:30",
+                "activity": "群众接待",
+                "description": "接待两位来办事的群众，耐心解释政策，帮一位老人填完表格。",
+                "emotion": "耐心",
+            },
+            {
+                "time": "12:00",
+                "activity": "食堂午饭",
+                "description": "和同事在机关食堂吃饭，聊聊最近的考核指标，饭后回办公室休息。",
+                "emotion": "放松",
+            },
+            {
+                "time": "14:00",
+                "activity": "下午例会",
+                "description": "参加科室例会，部署本月重点任务，被分到一个不太想干的专项。",
+                "emotion": "无奈",
+            },
+            {
+                "time": "16:00",
+                "activity": "下社区",
+                "description": "和同事一起下社区走访，登记台账，鞋上沾满泥巴但心里踏实。",
+                "emotion": "踏实",
+            },
+            {
+                "time": "18:00",
+                "activity": "整理台账",
+                "description": "回办公室整理今天走访的台账资料，录入系统，确保数据准确。",
+                "emotion": "机械",
+            },
+            {
+                "time": "20:00",
+                "activity": "加班收尾",
+                "description": "把明天要交的材料再过一遍，领导签字后才下班回家。",
+                "emotion": "疲惫",
+            },
         ],
     },
     # 6. 考公-机关
@@ -189,14 +390,54 @@ _TEMPLATES: list[dict] = [
             "工作成果不易被外界看见，价值感需自我寻找",
         ],
         "time_blocks": [
-            {"time": "09:00", "activity": "处理来文", "description": "登录 OA 处理昨日积压来文，分门别类拟办意见，重要件标注呈送领导。", "emotion": "专注"},
-            {"time": "10:30", "activity": "起草文稿", "description": "起草一份调研报告提纲，反复斟酌小标题的对仗与逻辑层次。", "emotion": "投入"},
-            {"time": "12:00", "activity": "食堂午饭", "description": "和处室同事在食堂就餐，聊两句家常，饭后散步消食。", "emotion": "放松"},
-            {"time": "14:00", "activity": "调研座谈", "description": "随领导参加一场专题调研座谈会，认真记录发言要点，会后整理纪要。", "emotion": "认真"},
-            {"time": "16:00", "activity": "汇报沟通", "description": "向处长汇报报告初稿，被指出几处表述需调整，回去继续打磨。", "emotion": "紧张"},
-            {"time": "18:00", "activity": "学习文件", "description": "学习最新下发的政策文件，圈画重点，为后续撰写材料积累素材。", "emotion": "平静"},
-            {"time": "19:30", "activity": "下班", "description": "整理桌面与明日待办，准点下班，难得按时回家。", "emotion": "满足"},
-            {"time": "21:00", "activity": "自我提升", "description": "在家看一小时申论与公文写作网课，为遴选考试做准备。", "emotion": "充实"},
+            {
+                "time": "09:00",
+                "activity": "处理来文",
+                "description": "登录 OA 处理昨日积压来文，分门别类拟办意见，重要件标注呈送领导。",
+                "emotion": "专注",
+            },
+            {
+                "time": "10:30",
+                "activity": "起草文稿",
+                "description": "起草一份调研报告提纲，反复斟酌小标题的对仗与逻辑层次。",
+                "emotion": "投入",
+            },
+            {
+                "time": "12:00",
+                "activity": "食堂午饭",
+                "description": "和处室同事在食堂就餐，聊两句家常，饭后散步消食。",
+                "emotion": "放松",
+            },
+            {
+                "time": "14:00",
+                "activity": "调研座谈",
+                "description": "随领导参加一场专题调研座谈会，认真记录发言要点，会后整理纪要。",
+                "emotion": "认真",
+            },
+            {
+                "time": "16:00",
+                "activity": "汇报沟通",
+                "description": "向处长汇报报告初稿，被指出几处表述需调整，回去继续打磨。",
+                "emotion": "紧张",
+            },
+            {
+                "time": "18:00",
+                "activity": "学习文件",
+                "description": "学习最新下发的政策文件，圈画重点，为后续撰写材料积累素材。",
+                "emotion": "平静",
+            },
+            {
+                "time": "19:30",
+                "activity": "下班",
+                "description": "整理桌面与明日待办，准点下班，难得按时回家。",
+                "emotion": "满足",
+            },
+            {
+                "time": "21:00",
+                "activity": "自我提升",
+                "description": "在家看一小时申论与公文写作网课，为遴选考试做准备。",
+                "emotion": "充实",
+            },
         ],
     },
 ]
@@ -215,12 +456,27 @@ def _find_template(path_type: str, target_role: str) -> dict:
     ptype = _normalize(path_type)
     # 1) 关键词匹配
     keyword_map = [
-        ("计算机", "考研计算机"), ("理工", "考研计算机"), ("算法", "考研计算机"),
-        ("文科", "考研文科"), ("语言", "考研文科"), ("历史", "考研文科"), ("哲学", "考研文科"),
-        ("产品", "互联网产品经理"), ("pm", "互联网产品经理"),
-        ("开发", "软件开发"), ("程序", "软件开发"), ("软件", "软件开发"), ("后端", "软件开发"), ("前端", "软件开发"),
-        ("基层", "考公基层"), ("乡镇", "考公基层"), ("街道", "考公基层"),
-        ("机关", "考公机关"), ("部委", "考公机关"), ("省直", "考公机关"), ("市直", "考公机关"),
+        ("计算机", "考研计算机"),
+        ("理工", "考研计算机"),
+        ("算法", "考研计算机"),
+        ("文科", "考研文科"),
+        ("语言", "考研文科"),
+        ("历史", "考研文科"),
+        ("哲学", "考研文科"),
+        ("产品", "互联网产品经理"),
+        ("pm", "互联网产品经理"),
+        ("开发", "软件开发"),
+        ("程序", "软件开发"),
+        ("软件", "软件开发"),
+        ("后端", "软件开发"),
+        ("前端", "软件开发"),
+        ("基层", "考公基层"),
+        ("乡镇", "考公基层"),
+        ("街道", "考公基层"),
+        ("机关", "考公机关"),
+        ("部委", "考公机关"),
+        ("省直", "考公机关"),
+        ("市直", "考公机关"),
     ]
     for kw, tmpl_role in keyword_map:
         if kw in role:
@@ -284,12 +540,14 @@ async def _from_llm(path_type: str, target_role: str, user_context: dict | None)
         for b in blocks:
             if not isinstance(b, dict):
                 continue
-            normalized_blocks.append({
-                "time": str(b.get("time", "")),
-                "activity": str(b.get("activity", "")),
-                "description": str(b.get("description", "")),
-                "emotion": str(b.get("emotion", "")),
-            })
+            normalized_blocks.append(
+                {
+                    "time": str(b.get("time", "")),
+                    "activity": str(b.get("activity", "")),
+                    "description": str(b.get("description", "")),
+                    "emotion": str(b.get("emotion", "")),
+                }
+            )
         if len(normalized_blocks) < 6:
             return None
         return {
@@ -330,7 +588,9 @@ async def generate_experience(
 # ─────────────────────────────────────────────
 
 
-async def create_drive(db: Session, user_id: UUID, path_type: str, target_role: str) -> CareerTestDrive:
+async def create_drive(
+    db: Session, user_id: UUID, path_type: str, target_role: str
+) -> CareerTestDrive:
     """生成并持久化一条试驾记录。"""
     content = await generate_experience(path_type, target_role)
     drive = CareerTestDrive(

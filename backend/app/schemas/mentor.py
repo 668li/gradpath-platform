@@ -1,7 +1,8 @@
 """导师相关 Pydantic schemas"""
+
 from datetime import datetime
-from typing import Optional, List
 from uuid import UUID
+
 from pydantic import BaseModel, Field
 
 
@@ -12,53 +13,56 @@ class MentorBase(BaseModel):
     university: str = Field(..., min_length=1, max_length=200, description="所属院校")
     department: str = Field(..., min_length=1, max_length=200, description="所属院系")
     title: str = Field(..., min_length=1, max_length=100, description="职称")
-    research_directions: List[str] = Field(default=[], description="研究方向")
+    research_directions: list[str] = Field(default=[], description="研究方向")
     paper_count: int = Field(default=0, description="论文数量")
     project_count: int = Field(default=0, description="项目数量")
     citation_count: int = Field(default=0, description="引用次数")
-    h_index: Optional[int] = Field(None, description="h-index")
-    academic_homepage: Optional[str] = Field(None, max_length=2000, description="学术主页链接")
-    google_scholar_url: Optional[str] = Field(None, max_length=2000, description="Google Scholar 链接")
-    cnki_url: Optional[str] = Field(None, max_length=2000, description="知网主页链接")
+    h_index: int | None = Field(None, description="h-index")
+    academic_homepage: str | None = Field(None, max_length=2000, description="学术主页链接")
+    google_scholar_url: str | None = Field(None, max_length=2000, description="Google Scholar 链接")
+    cnki_url: str | None = Field(None, max_length=2000, description="知网主页链接")
     enrollment_status: str = Field(default="unknown", max_length=50, description="招生状态")
-    enrollment_directions: List[str] = Field(default=[], description="招生方向")
-    contact_email: Optional[str] = Field(None, max_length=200, description="联系邮箱")
-    contact_phone: Optional[str] = Field(None, max_length=50, description="联系电话")
-    source_url: Optional[str] = Field(None, max_length=2000, description="数据来源 URL")
+    enrollment_directions: list[str] = Field(default=[], description="招生方向")
+    contact_email: str | None = Field(None, max_length=200, description="联系邮箱")
+    contact_phone: str | None = Field(None, max_length=50, description="联系电话")
+    source_url: str | None = Field(None, max_length=2000, description="数据来源 URL")
     source_platform: str = Field(default="official", max_length=50, description="数据来源平台")
-    tags: List[str] = Field(default=[], description="标签")
+    tags: list[str] = Field(default=[], description="标签")
 
 
 class MentorCreate(MentorBase):
     """创建导师"""
+
     pass
 
 
 class MentorUpdate(BaseModel):
     """更新导师信息"""
-    name: Optional[str] = None
-    university: Optional[str] = None
-    department: Optional[str] = None
-    title: Optional[str] = None
-    research_directions: Optional[List[str]] = None
-    paper_count: Optional[int] = None
-    project_count: Optional[int] = None
-    citation_count: Optional[int] = None
-    h_index: Optional[int] = None
-    academic_homepage: Optional[str] = None
-    google_scholar_url: Optional[str] = None
-    cnki_url: Optional[str] = None
-    enrollment_status: Optional[str] = None
-    enrollment_directions: Optional[List[str]] = None
-    contact_email: Optional[str] = None
-    contact_phone: Optional[str] = None
-    source_url: Optional[str] = None
-    source_platform: Optional[str] = None
-    tags: Optional[List[str]] = None
+
+    name: str | None = None
+    university: str | None = None
+    department: str | None = None
+    title: str | None = None
+    research_directions: list[str] | None = None
+    paper_count: int | None = None
+    project_count: int | None = None
+    citation_count: int | None = None
+    h_index: int | None = None
+    academic_homepage: str | None = None
+    google_scholar_url: str | None = None
+    cnki_url: str | None = None
+    enrollment_status: str | None = None
+    enrollment_directions: list[str] | None = None
+    contact_email: str | None = None
+    contact_phone: str | None = None
+    source_url: str | None = None
+    source_platform: str | None = None
+    tags: list[str] | None = None
 
 
 class MentorResponse(MentorBase):
     """导师响应"""
+
     id: UUID
     avg_rating: float = Field(..., description="平均评分")
     review_count: int = Field(..., description="评价数量")
@@ -87,20 +91,22 @@ class MentorReviewBase(BaseModel):
     # 修复: FASTAPI-VALID-001 — 评价 title/content 加 max_length
     title: str = Field(..., min_length=1, max_length=200, description="评价标题")
     content: str = Field(..., min_length=1, max_length=20000, description="详细评价内容")
-    pros: List[str] = Field(default=[], description="优点标签")
-    cons: List[str] = Field(default=[], description="缺点标签")
+    pros: list[str] = Field(default=[], description="优点标签")
+    cons: list[str] = Field(default=[], description="缺点标签")
     is_anonymous: bool = Field(default=True, description="是否匿名")
-    anonymous_id: Optional[str] = Field(None, max_length=100, description="匿名标识")
-    reviewer_identity: Optional[str] = Field(None, max_length=200, description="评价者身份")
+    anonymous_id: str | None = Field(None, max_length=100, description="匿名标识")
+    reviewer_identity: str | None = Field(None, max_length=200, description="评价者身份")
 
 
 class MentorReviewCreate(MentorReviewBase):
     """创建导师评价"""
-    mentor_id: Optional[UUID] = Field(None, description="导师 ID（可选，URL 路径中已包含）")
+
+    mentor_id: UUID | None = Field(None, description="导师 ID（可选，URL 路径中已包含）")
 
 
 class MentorReviewResponse(MentorReviewBase):
     """导师评价响应"""
+
     id: UUID
     mentor_id: UUID
     user_id: UUID
@@ -119,7 +125,8 @@ class MentorReviewResponse(MentorReviewBase):
 
 class MentorReviewListResponse(BaseModel):
     """导师评价列表响应"""
-    items: List[MentorReviewResponse]
+
+    items: list[MentorReviewResponse]
     total: int
     page: int
     page_size: int
@@ -128,7 +135,8 @@ class MentorReviewListResponse(BaseModel):
 # === 导师列表响应 ===
 class MentorListResponse(BaseModel):
     """导师列表响应"""
-    items: List[MentorResponse]
+
+    items: list[MentorResponse]
     total: int
     page: int
     page_size: int

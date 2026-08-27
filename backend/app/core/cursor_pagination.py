@@ -3,11 +3,11 @@
 用最后一条记录的 id 作为游标，前端传回游标即可精确取下一页，
 无需 COUNT(*) 或 OFFSET。适用于按 created_at/id 排序的列表。
 """
+
 from __future__ import annotations
 
 import base64
 import json
-from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 

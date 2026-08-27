@@ -1,17 +1,16 @@
 # backend/tests/test_api_ai.py
 """AI 决策指导 API 测试。"""
+
 import json
-from unittest.mock import AsyncMock, MagicMock, patch
+from datetime import date
+from unittest.mock import AsyncMock, patch
 
 import httpx
-import pytest
 
 from app.models.career_event import CareerEvent, EventType
 from app.models.company import Company, CompanySize
 from app.models.salary_benchmark import ExperienceLevel, SalaryBenchmark
 from app.models.skill_node import SkillNode
-from datetime import date
-
 
 # ======================================================================
 # 辅助函数与测试数据
@@ -23,9 +22,7 @@ MOCK_LLM_RESPONSE = json.dumps(
         "pros": ["薪资水平高于行业平均", "技术成长空间大"],
         "cons": ["竞争激烈，面试难度高", "工作强度大"],
         "market_analysis": "深圳互联网后端市场需求旺盛，腾讯头部地位稳固",
-        "alternatives": [
-            {"option": "字节跳动后端开发", "reason": "薪资相近，技术栈现代化"}
-        ],
+        "alternatives": [{"option": "字节跳动后端开发", "reason": "薪资相近，技术栈现代化"}],
         "skill_gap": ["分布式系统设计", "高并发处理经验"],
         "confidence": 4,
         "advice": "建议补充分布式系统项目经验，重点准备系统设计面试。",
@@ -119,6 +116,7 @@ def _advice_payload(**overrides):
 # 权限控制
 # ======================================================================
 
+
 class TestAuth:
     def test_anonymous_decision_advice_fails(self, client):
         """未登录不能调用 AI 决策指导。"""
@@ -130,6 +128,7 @@ class TestAuth:
 # 降级策略
 # ======================================================================
 
+
 class TestDegradation:
     def test_no_llm_key_returns_503(self, auth_headers, client, db_session, monkeypatch):
         """LLM_API_KEY 未配置时返回 503。"""
@@ -138,9 +137,7 @@ class TestDegradation:
 
         monkeypatch.setattr(ai_service.settings, "LLM_API_KEY", "")
 
-        resp = client.post(
-            "/api/ai/decision-advice", headers=auth_headers, json=_advice_payload()
-        )
+        resp = client.post("/api/ai/decision-advice", headers=auth_headers, json=_advice_payload())
         assert resp.status_code == 503
         assert "未配置" in resp.json()["detail"]
 
@@ -167,6 +164,7 @@ class TestDegradation:
 # ======================================================================
 # 正常调用
 # ======================================================================
+
 
 class TestNormalCall:
     def test_normal_call_with_mock_llm(self, auth_headers, client, db_session, monkeypatch):
@@ -254,6 +252,7 @@ class TestNormalCall:
 # Context 组装逻辑
 # ======================================================================
 
+
 class TestContextAssembly:
     def test_user_context_assembled(self, auth_headers, client, db_session, monkeypatch):
         """验证用户画像（技能、职业事件）被正确查询并注入 context。"""
@@ -325,16 +324,9 @@ class TestContextAssembly:
         monkeypatch.setattr(ai_service.settings, "LLM_API_KEY", "fake-key-for-test")
 
         # 预置面试经验数据
+        from app.models.community_report import CommunityReport, DestinationType, SalaryRange
+        from app.models.interview_report import InterviewReport, InterviewResult
         from app.models.user import User
-        from app.models.interview_report import (
-            InterviewReport,
-            InterviewResult,
-        )
-        from app.models.community_report import (
-            CommunityReport,
-            DestinationType,
-            SalaryRange,
-        )
 
         user = db_session.query(User).filter(User.email == "test@example.com").first()
         db_session.add(

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """V2EX 考研就业讨论爬取器 — 抓取 V2EX 社区职业/考研相关讨论并导入知识库。
 
 目标节点：qna(问答), career(职场), job(求职), graduate(研究生)
@@ -11,15 +10,13 @@ Or locally:
     cd backend
     python -m app.crawlers.research.v2ex_knowledge
 """
-import sys
-import uuid
-import time
-import json
+
 import re
-import random
-from pathlib import Path
+import sys
+import time
+import uuid
 from datetime import datetime, timezone
-from typing import Optional
+from pathlib import Path
 
 # Add backend to path if running locally
 backend_dir = Path(__file__).parent.parent.parent.parent
@@ -28,7 +25,8 @@ if str(backend_dir) not in sys.path:
 
 import httpx
 from bs4 import BeautifulSoup
-from sqlalchemy import select, func
+from sqlalchemy import func, select
+
 from app.database import Base, SessionLocal, engine
 from app.models.knowledge_article import KnowledgeArticle
 
@@ -73,7 +71,7 @@ class V2EXKnowledgeCrawler:
             resp = self.client.get(url)
 
             if resp.status_code == 403:
-                print(f"  ⚠ API 返回 403，切换到 HTML 解析模式")
+                print("  ⚠ API 返回 403，切换到 HTML 解析模式")
                 return []
 
             resp.raise_for_status()
@@ -131,15 +129,17 @@ class V2EXKnowledgeCrawler:
                     replies_elem = item.select_one("a.count_livid")
                     replies_count = int(replies_elem.get_text(strip=True)) if replies_elem else 0
 
-                    topics.append({
-                        "id": topic_id,
-                        "title": title,
-                        "node": {"name": node},
-                        "member": {"username": author},
-                        "replies": replies_count,
-                        "created": int(time.time()),  # 近似时间
-                        "url": f"https://www.v2ex.com{href}",
-                    })
+                    topics.append(
+                        {
+                            "id": topic_id,
+                            "title": title,
+                            "node": {"name": node},
+                            "member": {"username": author},
+                            "replies": replies_count,
+                            "created": int(time.time()),  # 近似时间
+                            "url": f"https://www.v2ex.com{href}",
+                        }
+                    )
 
                     self.stats["fetched"] += 1
 
@@ -215,9 +215,9 @@ class V2EXKnowledgeCrawler:
         """清理内容文本"""
         if not raw:
             return ""
-        text = re.sub(r'\n{3,}', '\n\n', raw)
-        text = re.sub(r' {2,}', ' ', text)
-        text = re.sub(r'\[.*?\]\(.*?\)', '', text)  # 移除 Markdown 链接
+        text = re.sub(r"\n{3,}", "\n\n", raw)
+        text = re.sub(r" {2,}", " ", text)
+        text = re.sub(r"\[.*?\]\(.*?\)", "", text)  # 移除 Markdown 链接
         return text.strip()
 
     def store(self, items: list[dict], db) -> int:
@@ -282,7 +282,7 @@ class V2EXKnowledgeCrawler:
             # 使用 JSONB 查询检查 metadata->>'v2ex_topic_id'
             stmt = select(KnowledgeArticle.id).where(
                 KnowledgeArticle.source == "v2ex",
-                KnowledgeArticle.metadata_["v2ex_topic_id"].astext == str(topic_id)
+                KnowledgeArticle.metadata_["v2ex_topic_id"].astext == str(topic_id),
             )
             result = db.execute(stmt).first()
             if result:
@@ -315,7 +315,7 @@ class V2EXKnowledgeCrawler:
 
                 # API 失败则用 HTML 解析
                 if not topics:
-                    print(f"  → 使用 HTML 解析模式")
+                    print("  → 使用 HTML 解析模式")
                     topics = self.fetch_topics_html(node, TOPICS_PER_NODE)
 
                 print(f"  ✓ 获取 {len(topics)} 条帖子")
@@ -362,6 +362,7 @@ class V2EXKnowledgeCrawler:
             print(f"\n✗ 爬取失败: {e}")
             db.rollback()
             import traceback
+
             traceback.print_exc()
             self.stats["errors"] += 1
             return self.stats

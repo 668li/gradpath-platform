@@ -3,6 +3,7 @@
 路径与 DTO 对齐系统设计 §3.2.M3.2 接口清单；
 user_id 一律由登录态 token 推断（get_current_user），不在请求体传。
 """
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 

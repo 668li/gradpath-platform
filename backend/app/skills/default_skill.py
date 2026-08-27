@@ -1,5 +1,6 @@
 # backend/app/skills/default_skill.py
 """默认通用职业咨询 Skill — 始终激活作为兜底。"""
+
 from app.skills.base import BaseSkill
 
 

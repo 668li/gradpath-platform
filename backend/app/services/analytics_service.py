@@ -1,12 +1,12 @@
 """数据分析服务 — 分数线趋势、录取率、报录比、调剂分析。"""
+
 import logging
 from typing import Any
 
 import numpy as np
 from sqlalchemy.orm import Session
 
-from app.models.grad_intel import GradAdjustmentInfo, GradScorelineRecord, GradSchoolIntel
-from app.models.school import School
+from app.models.grad_intel import GradAdjustmentInfo, GradSchoolIntel, GradScorelineRecord
 
 logger = logging.getLogger(__name__)
 
@@ -21,9 +21,7 @@ class AnalyticsService:
     # 分数线趋势分析
     # ==================================================================
 
-    def get_scoreline_trend(
-        self, university_name: str, major_name: str
-    ) -> dict[str, Any]:
+    def get_scoreline_trend(self, university_name: str, major_name: str) -> dict[str, Any]:
         """获取分数线多年趋势。"""
         records = (
             self.db.query(GradScorelineRecord)
@@ -61,16 +59,14 @@ class AnalyticsService:
             "trend_analysis": trend_analysis,
             "year_over_year_change": yoy_change,
             "statistics": {
-                "avg_score": round(np.mean([s for s in total_scores if s]), 1)
-                if total_scores
-                else 0,
+                "avg_score": (
+                    round(np.mean([s for s in total_scores if s]), 1) if total_scores else 0
+                ),
                 "max_score": max([s for s in total_scores if s], default=0),
                 "min_score": min([s for s in total_scores if s], default=0),
-                "std_score": round(
-                    np.std([s for s in total_scores if s]), 1
-                )
-                if total_scores
-                else 0,
+                "std_score": (
+                    round(np.std([s for s in total_scores if s]), 1) if total_scores else 0
+                ),
             },
         }
 
@@ -133,9 +129,7 @@ class AnalyticsService:
         )
 
         if university_name:
-            query = query.filter(
-                GradScorelineRecord.university_name == university_name
-            )
+            query = query.filter(GradScorelineRecord.university_name == university_name)
         if major_name:
             query = query.filter(GradScorelineRecord.major_name == major_name)
         if year:
@@ -154,11 +148,11 @@ class AnalyticsService:
                     "admission_rate": round(rate, 2),
                     "enrollment": r.enrollment_count,
                     "applications": r.application_count,
-                    "competition_ratio": round(
-                        r.application_count / r.enrollment_count, 1
-                    )
-                    if r.enrollment_count
-                    else 0,
+                    "competition_ratio": (
+                        round(r.application_count / r.enrollment_count, 1)
+                        if r.enrollment_count
+                        else 0
+                    ),
                 }
             )
 
@@ -170,9 +164,7 @@ class AnalyticsService:
             "details": details,
             "summary": {
                 "average_rate": round(float(avg_rate), 2),
-                "total_programs": len(
-                    set((d["university"], d["major"]) for d in details)
-                ),
+                "total_programs": len(set((d["university"], d["major"]) for d in details)),
                 "competition_level": self._classify_competition(float(avg_rate)),
                 "best_rate": max(rates) if rates else 0,
                 "worst_rate": min(rates) if rates else 0,
@@ -194,9 +186,7 @@ class AnalyticsService:
     # 报录比分析
     # ==================================================================
 
-    def get_application_ratio(
-        self, year: int | None = None, top_n: int = 20
-    ) -> dict[str, Any]:
+    def get_application_ratio(self, year: int | None = None, top_n: int = 20) -> dict[str, Any]:
         """获取报录比分析 — 热门/冷门专业排名。"""
         query = self.db.query(GradScorelineRecord).filter(
             GradScorelineRecord.application_count.isnot(None),
@@ -234,14 +224,10 @@ class AnalyticsService:
             "hot_programs": ratios[:top_n],
             "cold_programs": ratios[-top_n:] if len(ratios) >= top_n else [],
             "statistics": {
-                "avg_ratio": round(float(np.mean(ratio_values)), 1)
-                if ratio_values
-                else 0,
+                "avg_ratio": round(float(np.mean(ratio_values)), 1) if ratio_values else 0,
                 "max_ratio": ratios[0]["ratio"] if ratios else 0,
                 "min_ratio": ratios[-1]["ratio"] if ratios else 0,
-                "median_ratio": round(float(np.median(ratio_values)), 1)
-                if ratio_values
-                else 0,
+                "median_ratio": round(float(np.median(ratio_values)), 1) if ratio_values else 0,
                 "total_programs": len(ratios),
             },
         }
@@ -250,9 +236,7 @@ class AnalyticsService:
     # 调剂成功率分析
     # ==================================================================
 
-    def get_adjustment_analysis(
-        self, university_name: str | None = None
-    ) -> dict[str, Any]:
+    def get_adjustment_analysis(self, university_name: str | None = None) -> dict[str, Any]:
         """获取调剂成功率分析。"""
         # 调剂信息
         adjustment_query = self.db.query(GradAdjustmentInfo)
@@ -267,21 +251,13 @@ class AnalyticsService:
             GradSchoolIntel.transfer_friendly != "unknown"
         )
         if university_name:
-            intel_query = intel_query.filter(
-                GradSchoolIntel.school_name == university_name
-            )
+            intel_query = intel_query.filter(GradSchoolIntel.school_name == university_name)
         intel_records = intel_query.all()
 
         # 统计调剂友好度
-        friendly_count = sum(
-            1 for i in intel_records if i.transfer_friendly == "yes"
-        )
-        moderate_count = sum(
-            1 for i in intel_records if i.transfer_friendly == "moderate"
-        )
-        unfriendly_count = sum(
-            1 for i in intel_records if i.transfer_friendly == "no"
-        )
+        friendly_count = sum(1 for i in intel_records if i.transfer_friendly == "yes")
+        moderate_count = sum(1 for i in intel_records if i.transfer_friendly == "moderate")
+        unfriendly_count = sum(1 for i in intel_records if i.transfer_friendly == "no")
         total = len(intel_records)
 
         # 调剂友好院校列表
@@ -314,35 +290,25 @@ class AnalyticsService:
                 "moderate": moderate_count,
                 "unfriendly": unfriendly_count,
                 "total": total,
-                "friendly_rate": round(friendly_count / total * 100, 2)
-                if total
-                else 0,
+                "friendly_rate": round(friendly_count / total * 100, 2) if total else 0,
             },
             "top_friendly_schools": friendly_schools,
-            "recommendations": self._generate_adjustment_tips(
-                adjustments, intel_records
-            ),
+            "recommendations": self._generate_adjustment_tips(adjustments, intel_records),
         }
 
-    def _generate_adjustment_tips(
-        self, adjustments: list, intel_records: list
-    ) -> list[str]:
+    def _generate_adjustment_tips(self, adjustments: list, intel_records: list) -> list[str]:
         """生成调剂建议。"""
         tips = []
 
         if not adjustments:
             tips.append("当前暂无调剂信息，建议关注研招网和院校官网的调剂公告")
 
-        friendly_count = sum(
-            1 for i in intel_records if i.transfer_friendly == "yes"
-        )
+        friendly_count = sum(1 for i in intel_records if i.transfer_friendly == "yes")
         if friendly_count > 0:
             tips.append(f"共有 {friendly_count} 所院校被标记为调剂友好")
 
         # 检查是否有压分现象
-        score_suppressed = sum(
-            1 for i in intel_records if i.score_suppression == "yes"
-        )
+        score_suppressed = sum(1 for i in intel_records if i.score_suppression == "yes")
         if score_suppressed > 0:
             tips.append(f"注意：有 {score_suppressed} 所院校存在压分现象，调剂时需谨慎")
 

@@ -1,5 +1,6 @@
 # backend/pipeline/fetcher.py
 """高校就业质量报告抓取器"""
+
 import asyncio
 import random
 import re
@@ -8,8 +9,8 @@ from urllib.robotparser import RobotFileParser
 import httpx
 from sqlalchemy.orm import Session
 
+from app.models.report_record import ParseStatus, ReportRecord
 from app.models.school import School
-from app.models.report_record import ReportRecord, ParseStatus
 
 USER_AGENT = "GradPathBot/1.0 (career research; +https://github.com/gradpath)"
 REQUEST_DELAY = 1  # 秒，基础请求间隔（优化：从3减至1，加 jitter 防惊群）
@@ -128,6 +129,7 @@ def _find_report_url(index_url: str, year: int) -> str | None:
     matches = re.findall(pattern, html, re.IGNORECASE)
     if matches:
         from urllib.parse import urljoin
+
         return urljoin(index_url, matches[0])
     return None
 
@@ -145,6 +147,7 @@ def _fetch_url(url: str) -> tuple[str | None, int | None]:
         try:
             if attempt > 0:
                 import time
+
                 time.sleep(_jittered_delay(REQUEST_DELAY * (attempt + 1)))
             resp = httpx.get(url, headers=headers, timeout=TIMEOUT, follow_redirects=True)
             if resp.status_code == 200:
@@ -156,7 +159,9 @@ def _fetch_url(url: str) -> tuple[str | None, int | None]:
     return None, None
 
 
-async def _fetch_url_async(url: str, client: httpx.AsyncClient | None = None) -> tuple[str | None, int | None]:
+async def _fetch_url_async(
+    url: str, client: httpx.AsyncClient | None = None
+) -> tuple[str | None, int | None]:
     """带重试的异步 HTTP GET。
 
     在 async 上下文中使用，不会阻塞事件循环。
@@ -167,10 +172,14 @@ async def _fetch_url_async(url: str, client: httpx.AsyncClient | None = None) ->
             if attempt > 0:
                 await asyncio.sleep(_jittered_delay(REQUEST_DELAY * (attempt + 1)))
             if client:
-                resp = await client.get(url, headers=headers, timeout=TIMEOUT, follow_redirects=True)
+                resp = await client.get(
+                    url, headers=headers, timeout=TIMEOUT, follow_redirects=True
+                )
             else:
                 async with httpx.AsyncClient() as ac:
-                    resp = await ac.get(url, headers=headers, timeout=TIMEOUT, follow_redirects=True)
+                    resp = await ac.get(
+                        url, headers=headers, timeout=TIMEOUT, follow_redirects=True
+                    )
             if resp.status_code == 200:
                 return resp.text, 200
             if resp.status_code == 404:
@@ -180,7 +189,9 @@ async def _fetch_url_async(url: str, client: httpx.AsyncClient | None = None) ->
     return None, None
 
 
-async def _find_report_url_async(index_url: str, year: int, client: httpx.AsyncClient | None = None) -> str | None:
+async def _find_report_url_async(
+    index_url: str, year: int, client: httpx.AsyncClient | None = None
+) -> str | None:
     """从入口页搜索指定年份的报告链接（异步版本）"""
     html, _ = await _fetch_url_async(index_url, client)
     if not html:
@@ -189,6 +200,7 @@ async def _find_report_url_async(index_url: str, year: int, client: httpx.AsyncC
     matches = re.findall(pattern, html, re.IGNORECASE)
     if matches:
         from urllib.parse import urljoin
+
         return urljoin(index_url, matches[0])
     return None
 

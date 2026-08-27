@@ -1,11 +1,12 @@
 # backend/tests/test_api_interview.py
 """公司面试经验报告 API 测试。"""
-import pytest
 
+import pytest
 
 # ======================================================================
 # 辅助函数
 # ======================================================================
+
 
 def _submit_report(client, headers, **overrides):
     """通过 API 提交一条面试报告，返回响应。"""
@@ -27,6 +28,7 @@ def _submit_report(client, headers, **overrides):
 # ======================================================================
 # 提交报告
 # ======================================================================
+
 
 class TestSubmitReport:
     def test_submit_report(self, auth_headers, client):
@@ -105,9 +107,7 @@ class TestDeleteReport:
         resp = _submit_report(client, auth_headers)
         report_id = resp.json()["id"]
 
-        resp_del = client.delete(
-            f"/api/interview/{report_id}", headers=auth_headers
-        )
+        resp_del = client.delete(f"/api/interview/{report_id}", headers=auth_headers)
         assert resp_del.status_code == 204
 
         resp_list = client.get("/api/interview/my-reports", headers=auth_headers)
@@ -124,20 +124,33 @@ class TestDeleteReport:
 # 聚合统计
 # ======================================================================
 
+
 class TestAggregate:
     def test_aggregate_sufficient(self, auth_headers, client):
         """样本 >= 3 时返回完整分布数据。"""
         _submit_report(
-            client, auth_headers, interview_year=2022,
-            dimensions=["algorithm", "system_design"], difficulty=4, result="offer",
+            client,
+            auth_headers,
+            interview_year=2022,
+            dimensions=["algorithm", "system_design"],
+            difficulty=4,
+            result="offer",
         )
         _submit_report(
-            client, auth_headers, interview_year=2023,
-            dimensions=["algorithm", "project_depth"], difficulty=3, result="rejected",
+            client,
+            auth_headers,
+            interview_year=2023,
+            dimensions=["algorithm", "project_depth"],
+            difficulty=3,
+            result="rejected",
         )
         _submit_report(
-            client, auth_headers, interview_year=2024,
-            dimensions=["algorithm", "system_design", "communication"], difficulty=5, result="offer",
+            client,
+            auth_headers,
+            interview_year=2024,
+            dimensions=["algorithm", "system_design", "communication"],
+            difficulty=5,
+            result="offer",
         )
 
         resp = client.post(
@@ -238,12 +251,17 @@ class TestAggregate:
 # 全局统计
 # ======================================================================
 
+
 class TestStats:
     def test_stats(self, auth_headers, client):
         """全局统计。"""
         _submit_report(client, auth_headers, company="腾讯", position="后端开发")
-        _submit_report(client, auth_headers, company="腾讯", position="前端开发", interview_year=2023)
-        _submit_report(client, auth_headers, company="字节跳动", position="后端开发", interview_year=2022)
+        _submit_report(
+            client, auth_headers, company="腾讯", position="前端开发", interview_year=2023
+        )
+        _submit_report(
+            client, auth_headers, company="字节跳动", position="后端开发", interview_year=2022
+        )
 
         resp = client.get("/api/interview/stats")
         assert resp.status_code == 200
@@ -264,12 +282,17 @@ class TestStats:
 # 公司列表
 # ======================================================================
 
+
 class TestCompanies:
     def test_companies(self, auth_headers, client):
         """公司列表。"""
         _submit_report(client, auth_headers, company="腾讯", position="后端开发")
-        _submit_report(client, auth_headers, company="腾讯", position="前端开发", interview_year=2023)
-        _submit_report(client, auth_headers, company="字节跳动", position="后端开发", interview_year=2022)
+        _submit_report(
+            client, auth_headers, company="腾讯", position="前端开发", interview_year=2023
+        )
+        _submit_report(
+            client, auth_headers, company="字节跳动", position="后端开发", interview_year=2022
+        )
 
         resp = client.post(
             "/api/interview/companies",
@@ -299,6 +322,7 @@ class TestCompanies:
 # ======================================================================
 # 权限控制
 # ======================================================================
+
 
 class TestAuth:
     def test_anonymous_submit_fails(self, client):

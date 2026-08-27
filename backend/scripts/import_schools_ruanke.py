@@ -10,6 +10,7 @@
 来源：软科中国最好大学排名 2026 主榜（公开 JSON API，实测 200）。
 全 ORM 参数绑定，幂等可重跑。
 """
+
 import hashlib
 import json
 import sys
@@ -21,7 +22,13 @@ sys.path.insert(0, str(BACKEND_ROOT))
 from app.database import SessionLocal
 from app.models.school import School
 
-DATA_FILE = Path(__file__).resolve().parent.parent / "app" / "crawlers" / "real_data" / "ruanke_rankings.json"
+DATA_FILE = (
+    Path(__file__).resolve().parent.parent
+    / "app"
+    / "crawlers"
+    / "real_data"
+    / "ruanke_rankings.json"
+)
 SOURCE_PAGE = "https://www.shanghairanking.cn/rankings/bcur/2026"
 
 
@@ -51,7 +58,9 @@ def main() -> None:
             ranking = int(r.get("ranking")) if str(r.get("ranking") or "").isdigit() else None
             slug = "sch-" + hashlib.sha256(name.encode()).hexdigest()[:10]
             univ_up = str(r.get("univUp") or "").strip()
-            ruanke_page = f"https://www.shanghairanking.cn/institution/{univ_up}" if univ_up else None
+            ruanke_page = (
+                f"https://www.shanghairanking.cn/institution/{univ_up}" if univ_up else None
+            )
             existing = db.query(School).filter(School.name == name).first()
             if existing:
                 # 只补权威字段，不覆盖既有 report_index_url/key_majors 真实数据
@@ -75,15 +84,19 @@ def main() -> None:
                     level=level,
                     ranking=ranking,
                     report_index_url=ruanke_page,
-                    key_majors={"tags": tags, "category": category, "src": SOURCE_PAGE}
-                    if (tags or category)
-                    else None,
+                    key_majors=(
+                        {"tags": tags, "category": category, "src": SOURCE_PAGE}
+                        if (tags or category)
+                        else None
+                    ),
                 )
             )
             inserted += 1
         db.commit()
         total = db.query(School).count()
-    print(f"软科入库：新增 {inserted} / 更新 {updated} / 跳过 {skipped_bad} | schools 总数: {total}")
+    print(
+        f"软科入库：新增 {inserted} / 更新 {updated} / 跳过 {skipped_bad} | schools 总数: {total}"
+    )
 
 
 if __name__ == "__main__":

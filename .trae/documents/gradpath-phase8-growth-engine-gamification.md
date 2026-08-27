@@ -45,7 +45,7 @@ Research basis: developer-roadmap (345K stars, interactive DAG), SkillTree (NSA 
 
 **Files to create:**
 - `backend/app/models/user_badge.py` — UserBadge model
-- `backend/app/models/growth_insight.py` — GrowthInsight model  
+- `backend/app/models/growth_insight.py` — GrowthInsight model
 - `backend/app/models/user_setting.py` — UserSetting model
 
 **UserBadge schema:**

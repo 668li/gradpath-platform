@@ -10,6 +10,7 @@
 
 去重：一条暗知识对同一用户最多推送一次。
 """
+
 import logging
 from datetime import datetime, timezone
 from typing import Any
@@ -72,8 +73,11 @@ def push_for_user(
     pushed_ids = {row[0] for row in db.query(pushed_ids_subq).all()}
 
     # 2. 查询候选暗知识
-    query = db.query(DarkKnowledge).filter(~DarkKnowledge.id.in_(pushed_ids)) if pushed_ids \
+    query = (
+        db.query(DarkKnowledge).filter(~DarkKnowledge.id.in_(pushed_ids))
+        if pushed_ids
         else db.query(DarkKnowledge)
+    )
 
     # 按阶段过滤（如果有）
     if stage:
@@ -114,7 +118,10 @@ def push_for_user(
             db.refresh(log)
         logger.info(
             "推送 %d 条暗知识给 user_id=%s trigger=%s stage=%s",
-            len(created), user_id, trigger, stage,
+            len(created),
+            user_id,
+            trigger,
+            stage,
         )
 
     return created
@@ -212,11 +219,7 @@ def get_push_history(
     query = db.query(DarkKnowledgePushLog).filter(DarkKnowledgePushLog.user_id == user_id)
     if only_unread:
         query = query.filter(DarkKnowledgePushLog.read_at.is_(None))
-    return (
-        query.order_by(DarkKnowledgePushLog.pushed_at.desc())
-        .limit(limit)
-        .all()
-    )
+    return query.order_by(DarkKnowledgePushLog.pushed_at.desc()).limit(limit).all()
 
 
 def get_unread_count(db: Session, user_id: UUID) -> int:

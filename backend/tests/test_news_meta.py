@@ -7,7 +7,6 @@
 - 参考书目（《书名》）
 以及抽不到时的诚实降级（None / []）。
 """
-import pytest
 
 from app.crawlers.research.news_meta import (
     _extract_enrollment_count,
@@ -68,7 +67,7 @@ class TestExamSubjects:
         )
         assert "英语一" in subjects
         assert "数学二" in subjects
-        assert all("复试" != s for s in subjects)
+        assert all(s != "复试" for s in subjects)
 
     def test_no_subjects_returns_empty(self):
         assert _extract_exam_subjects("调剂公告", "名额有限") == []
@@ -130,7 +129,10 @@ class TestExtractStructuredMeta:
         )
         assert meta["enrollment_count"] == 120
         assert "思想政治理论" in meta["exam_subjects"]
-        assert "408计算机学科专业基础" in meta["exam_subjects"] or "计算机学科专业基础" in meta["exam_subjects"]
+        assert (
+            "408计算机学科专业基础" in meta["exam_subjects"]
+            or "计算机学科专业基础" in meta["exam_subjects"]
+        )
         assert "数据结构（C语言版）" in meta["reference_books"]
 
     def test_no_signal_degrades_honestly(self):
@@ -145,12 +147,10 @@ class TestEvidenceChain:
     """Phase I：资讯证据链（evidence 原文片段 + confidence + effective_year）。"""
 
     def test_full_evidence_and_year(self):
-        meta, evidence, confidence, effective_year = (
-            extract_news_structured_meta_with_evidence(
-                "2026年XX大学计算机考研招生简章",
-                "计算机学院拟招收 120 人。初试科目：①101思想政治理论②201英语一。"
-                "参考书：《数据结构（C语言版）》。",
-            )
+        meta, evidence, confidence, effective_year = extract_news_structured_meta_with_evidence(
+            "2026年XX大学计算机考研招生简章",
+            "计算机学院拟招收 120 人。初试科目：①101思想政治理论②201英语一。"
+            "参考书：《数据结构（C语言版）》。",
         )
         # meta 与旧版一致
         assert meta["enrollment_count"] == 120
@@ -169,8 +169,8 @@ class TestEvidenceChain:
         assert confidence["effective_year"] == 0.8
 
     def test_no_signal_honest_empty(self):
-        meta, evidence, confidence, effective_year = (
-            extract_news_structured_meta_with_evidence("普通资讯", "无结构化信息")
+        meta, evidence, confidence, effective_year = extract_news_structured_meta_with_evidence(
+            "普通资讯", "无结构化信息"
         )
         assert evidence == {}
         assert confidence == {}
@@ -190,9 +190,7 @@ class TestEffectiveYear:
     """数据年份抽取 + 年号护栏（仅招/录/名额/简章/统考/调剂上下文才算）。"""
 
     def test_year_zhang_sheng_jian_zhang(self):
-        _, _, _, year = extract_news_structured_meta_with_evidence(
-            "2026年招生简章发布", "详见附件"
-        )
+        _, _, _, year = extract_news_structured_meta_with_evidence("2026年招生简章发布", "详见附件")
         assert year == 2026
 
     def test_year_nizhaosheng(self):

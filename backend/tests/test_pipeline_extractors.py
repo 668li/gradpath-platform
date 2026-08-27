@@ -1,5 +1,6 @@
 # backend/tests/test_pipeline_extractors.py
 """文本提取器测试。"""
+
 from pathlib import Path
 
 from app.models.pipeline_enums import ContentType

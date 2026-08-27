@@ -18,150 +18,246 @@
 # 题目（每题 4 个选项 value 分别为 D/I/S/C，顺序按 D-I-S-C 固定）
 # ----------------------------------------------------------------------
 DISC_QUESTIONS = [
-    {"id": "disc_q1", "question": "面对一个新任务，你最自然的反应是？", "options": [
-        {"value": "D", "label": "直接定目标，立刻动手推进"},
-        {"value": "I", "label": "找大家聊聊，把人凑齐再开干"},
-        {"value": "S", "label": "先了解清楚节奏，配合团队推进"},
-        {"value": "C", "label": "先把流程和细节梳理清楚再开始"},
-    ]},
-    {"id": "disc_q2", "question": "在团队讨论中，你最常做的是？", "options": [
-        {"value": "D", "label": "推动结论，避免空谈"},
-        {"value": "I", "label": "活跃气氛，激发想法"},
-        {"value": "S", "label": "倾听他人，调和分歧"},
-        {"value": "C", "label": "记录要点，核对事实"},
-    ]},
-    {"id": "disc_q3", "question": "面对冲突，你的第一反应是？", "options": [
-        {"value": "D", "label": "正面交锋，亮明立场"},
-        {"value": "I", "label": "用沟通化解，缓和情绪"},
-        {"value": "S", "label": "尽量退让，维护关系"},
-        {"value": "C", "label": "用事实和规则厘清是非"},
-    ]},
-    {"id": "disc_q4", "question": "你的工作节奏更接近？", "options": [
-        {"value": "D", "label": "快、猛、追求突破"},
-        {"value": "I", "label": "灵活多变、跟随热情"},
-        {"value": "S", "label": "稳定持续、按部就班"},
-        {"value": "C", "label": "严谨细致、追求准确"},
-    ]},
-    {"id": "disc_q5", "question": "面对一项决策，你最看重？", "options": [
-        {"value": "D", "label": "结果与效率"},
-        {"value": "I", "label": "大家的认同感"},
-        {"value": "S", "label": "团队是否适应"},
-        {"value": "C", "label": "依据是否充分"},
-    ]},
-    {"id": "disc_q6", "question": "在压力下，你更可能？", "options": [
-        {"value": "D", "label": "更急更猛，目标驱动"},
-        {"value": "I", "label": "找人倾诉，转移注意"},
-        {"value": "S", "label": "默默承担，维持稳定"},
-        {"value": "C", "label": "埋头分析，寻找方案"},
-    ]},
-    {"id": "disc_q7", "question": "你最喜欢的领导风格是？", "options": [
-        {"value": "D", "label": "授权放权，看结果"},
-        {"value": "I", "label": "鼓舞激励，氛围好"},
-        {"value": "S", "label": "稳定支持，节奏稳"},
-        {"value": "C", "label": "标准清晰，讲规则"},
-    ]},
-    {"id": "disc_q8", "question": "做汇报时你更倾向于？", "options": [
-        {"value": "D", "label": "直接给结论和行动项"},
-        {"value": "I", "label": "讲生动的故事和案例"},
-        {"value": "S", "label": "把过程和团队贡献讲清楚"},
-        {"value": "C", "label": "用数据和图表支撑结论"},
-    ]},
-    {"id": "disc_q9", "question": "面对一项改变，你的态度更接近？", "options": [
-        {"value": "D", "label": "迫不及待想推动"},
-        {"value": "I", "label": "觉得新鲜有趣，愿意试"},
-        {"value": "S", "label": "先观察影响，再适应"},
-        {"value": "C", "label": "评估风险，再决定"},
-    ]},
-    {"id": "disc_q10", "question": "你最不喜欢的工作场景是？", "options": [
-        {"value": "D", "label": "拖拖拉拉、议而不决"},
-        {"value": "I", "label": "气氛冷清、没有互动"},
-        {"value": "S", "label": "变化太快、人心惶惶"},
-        {"value": "C", "label": "规则不清、糊里糊涂"},
-    ]},
-    {"id": "disc_q11", "question": "你最希望被同事评价为？", "options": [
-        {"value": "D", "label": "有魄力、能扛事"},
-        {"value": "I", "label": "热情、好相处"},
-        {"value": "S", "label": "靠谱、可信赖"},
-        {"value": "C", "label": "专业、严谨"},
-    ]},
-    {"id": "disc_q12", "question": "面对一个复杂问题，你倾向于？", "options": [
-        {"value": "D", "label": "先做决定，再调整"},
-        {"value": "I", "label": "拉人讨论，碰撞想法"},
-        {"value": "S", "label": "稳妥推进，逐步化解"},
-        {"value": "C", "label": "拆解要素，逐项分析"},
-    ]},
-    {"id": "disc_q13", "question": "你最看重的团队特质是？", "options": [
-        {"value": "D", "label": "战斗力强、能拿结果"},
-        {"value": "I", "label": "氛围融洽、互动活跃"},
-        {"value": "S", "label": "稳定协作、互相信任"},
-        {"value": "C", "label": "标准清晰、流程规范"},
-    ]},
-    {"id": "disc_q14", "question": "你最自然的工作启动方式是？", "options": [
-        {"value": "D", "label": "定目标、分任务、马上开干"},
-        {"value": "I", "label": "约大家开会、动员气氛"},
-        {"value": "S", "label": "确认分工、平稳启动"},
-        {"value": "C", "label": "列出清单、制定标准"},
-    ]},
-    {"id": "disc_q15", "question": "面对批评，你的反应更接近？", "options": [
-        {"value": "D", "label": "据理力争，捍卫立场"},
-        {"value": "I", "label": "先回应情绪，再说事情"},
-        {"value": "S", "label": "默默接受，避免冲突"},
-        {"value": "C", "label": "核对事实，澄清对错"},
-    ]},
-    {"id": "disc_q16", "question": "你最享受的成就感来自？", "options": [
-        {"value": "D", "label": "拿下挑战性目标"},
-        {"value": "I", "label": "获得大家的认可与喜爱"},
-        {"value": "S", "label": "团队稳定、大家都好"},
-        {"value": "C", "label": "把事情做对、做到位"},
-    ]},
-    {"id": "disc_q17", "question": "你处理信息时更倾向于？", "options": [
-        {"value": "D", "label": "只看关键结论"},
-        {"value": "I", "label": "听人讲比看报告更高效"},
-        {"value": "S", "label": "完整了解背景与上下文"},
-        {"value": "C", "label": "仔细核对每一条数据"},
-    ]},
-    {"id": "disc_q18", "question": "面对一项新规，你最在意？", "options": [
-        {"value": "D", "label": "是否影响效率与结果"},
-        {"value": "I", "label": "是否影响大家的关系和氛围"},
-        {"value": "S", "label": "是否平稳、能否落地"},
-        {"value": "C", "label": "是否合理、是否可量化"},
-    ]},
-    {"id": "disc_q19", "question": "你最常用的沟通方式是？", "options": [
-        {"value": "D", "label": "简短直接、结果导向"},
-        {"value": "I", "label": "热情生动、富于表情"},
-        {"value": "S", "label": "温和耐心、注重倾听"},
-        {"value": "C", "label": "条理清晰、数据支撑"},
-    ]},
-    {"id": "disc_q20", "question": "面对一个新成员加入团队，你的反应是？", "options": [
-        {"value": "D", "label": "直接给他派任务、看产出"},
-        {"value": "I", "label": "热情欢迎、主动介绍大家"},
-        {"value": "S", "label": "帮他慢慢融入、关心适应"},
-        {"value": "C", "label": "把规则与流程交代清楚"},
-    ]},
-    {"id": "disc_q21", "question": "你最看重的执行力体现在？", "options": [
-        {"value": "D", "label": "速度与突破"},
-        {"value": "I", "label": "号召力与感染力"},
-        {"value": "S", "label": "持续与稳定"},
-        {"value": "C", "label": "准确与规范"},
-    ]},
-    {"id": "disc_q22", "question": "你最不擅长的场景是？", "options": [
-        {"value": "D", "label": "需要长期耐心、慢工出细活"},
-        {"value": "I", "label": "长期独自埋头、缺少互动"},
-        {"value": "S", "label": "高频冲突、需要正面交锋"},
-        {"value": "C", "label": "高度模糊、需要即兴发挥"},
-    ]},
-    {"id": "disc_q23", "question": "你认为好项目的标志是？", "options": [
-        {"value": "D", "label": "目标达成、突破常规"},
-        {"value": "I", "label": "团队愉快、氛围热烈"},
-        {"value": "S", "label": "节奏稳定、协作顺畅"},
-        {"value": "C", "label": "质量过硬、零失误"},
-    ]},
-    {"id": "disc_q24", "question": "你最希望在工作中获得？", "options": [
-        {"value": "D", "label": "掌控权与成就感"},
-        {"value": "I", "label": "认可、关注与人脉"},
-        {"value": "S", "label": "安全感与归属感"},
-        {"value": "C", "label": "专业感与确定性"},
-    ]},
+    {
+        "id": "disc_q1",
+        "question": "面对一个新任务，你最自然的反应是？",
+        "options": [
+            {"value": "D", "label": "直接定目标，立刻动手推进"},
+            {"value": "I", "label": "找大家聊聊，把人凑齐再开干"},
+            {"value": "S", "label": "先了解清楚节奏，配合团队推进"},
+            {"value": "C", "label": "先把流程和细节梳理清楚再开始"},
+        ],
+    },
+    {
+        "id": "disc_q2",
+        "question": "在团队讨论中，你最常做的是？",
+        "options": [
+            {"value": "D", "label": "推动结论，避免空谈"},
+            {"value": "I", "label": "活跃气氛，激发想法"},
+            {"value": "S", "label": "倾听他人，调和分歧"},
+            {"value": "C", "label": "记录要点，核对事实"},
+        ],
+    },
+    {
+        "id": "disc_q3",
+        "question": "面对冲突，你的第一反应是？",
+        "options": [
+            {"value": "D", "label": "正面交锋，亮明立场"},
+            {"value": "I", "label": "用沟通化解，缓和情绪"},
+            {"value": "S", "label": "尽量退让，维护关系"},
+            {"value": "C", "label": "用事实和规则厘清是非"},
+        ],
+    },
+    {
+        "id": "disc_q4",
+        "question": "你的工作节奏更接近？",
+        "options": [
+            {"value": "D", "label": "快、猛、追求突破"},
+            {"value": "I", "label": "灵活多变、跟随热情"},
+            {"value": "S", "label": "稳定持续、按部就班"},
+            {"value": "C", "label": "严谨细致、追求准确"},
+        ],
+    },
+    {
+        "id": "disc_q5",
+        "question": "面对一项决策，你最看重？",
+        "options": [
+            {"value": "D", "label": "结果与效率"},
+            {"value": "I", "label": "大家的认同感"},
+            {"value": "S", "label": "团队是否适应"},
+            {"value": "C", "label": "依据是否充分"},
+        ],
+    },
+    {
+        "id": "disc_q6",
+        "question": "在压力下，你更可能？",
+        "options": [
+            {"value": "D", "label": "更急更猛，目标驱动"},
+            {"value": "I", "label": "找人倾诉，转移注意"},
+            {"value": "S", "label": "默默承担，维持稳定"},
+            {"value": "C", "label": "埋头分析，寻找方案"},
+        ],
+    },
+    {
+        "id": "disc_q7",
+        "question": "你最喜欢的领导风格是？",
+        "options": [
+            {"value": "D", "label": "授权放权，看结果"},
+            {"value": "I", "label": "鼓舞激励，氛围好"},
+            {"value": "S", "label": "稳定支持，节奏稳"},
+            {"value": "C", "label": "标准清晰，讲规则"},
+        ],
+    },
+    {
+        "id": "disc_q8",
+        "question": "做汇报时你更倾向于？",
+        "options": [
+            {"value": "D", "label": "直接给结论和行动项"},
+            {"value": "I", "label": "讲生动的故事和案例"},
+            {"value": "S", "label": "把过程和团队贡献讲清楚"},
+            {"value": "C", "label": "用数据和图表支撑结论"},
+        ],
+    },
+    {
+        "id": "disc_q9",
+        "question": "面对一项改变，你的态度更接近？",
+        "options": [
+            {"value": "D", "label": "迫不及待想推动"},
+            {"value": "I", "label": "觉得新鲜有趣，愿意试"},
+            {"value": "S", "label": "先观察影响，再适应"},
+            {"value": "C", "label": "评估风险，再决定"},
+        ],
+    },
+    {
+        "id": "disc_q10",
+        "question": "你最不喜欢的工作场景是？",
+        "options": [
+            {"value": "D", "label": "拖拖拉拉、议而不决"},
+            {"value": "I", "label": "气氛冷清、没有互动"},
+            {"value": "S", "label": "变化太快、人心惶惶"},
+            {"value": "C", "label": "规则不清、糊里糊涂"},
+        ],
+    },
+    {
+        "id": "disc_q11",
+        "question": "你最希望被同事评价为？",
+        "options": [
+            {"value": "D", "label": "有魄力、能扛事"},
+            {"value": "I", "label": "热情、好相处"},
+            {"value": "S", "label": "靠谱、可信赖"},
+            {"value": "C", "label": "专业、严谨"},
+        ],
+    },
+    {
+        "id": "disc_q12",
+        "question": "面对一个复杂问题，你倾向于？",
+        "options": [
+            {"value": "D", "label": "先做决定，再调整"},
+            {"value": "I", "label": "拉人讨论，碰撞想法"},
+            {"value": "S", "label": "稳妥推进，逐步化解"},
+            {"value": "C", "label": "拆解要素，逐项分析"},
+        ],
+    },
+    {
+        "id": "disc_q13",
+        "question": "你最看重的团队特质是？",
+        "options": [
+            {"value": "D", "label": "战斗力强、能拿结果"},
+            {"value": "I", "label": "氛围融洽、互动活跃"},
+            {"value": "S", "label": "稳定协作、互相信任"},
+            {"value": "C", "label": "标准清晰、流程规范"},
+        ],
+    },
+    {
+        "id": "disc_q14",
+        "question": "你最自然的工作启动方式是？",
+        "options": [
+            {"value": "D", "label": "定目标、分任务、马上开干"},
+            {"value": "I", "label": "约大家开会、动员气氛"},
+            {"value": "S", "label": "确认分工、平稳启动"},
+            {"value": "C", "label": "列出清单、制定标准"},
+        ],
+    },
+    {
+        "id": "disc_q15",
+        "question": "面对批评，你的反应更接近？",
+        "options": [
+            {"value": "D", "label": "据理力争，捍卫立场"},
+            {"value": "I", "label": "先回应情绪，再说事情"},
+            {"value": "S", "label": "默默接受，避免冲突"},
+            {"value": "C", "label": "核对事实，澄清对错"},
+        ],
+    },
+    {
+        "id": "disc_q16",
+        "question": "你最享受的成就感来自？",
+        "options": [
+            {"value": "D", "label": "拿下挑战性目标"},
+            {"value": "I", "label": "获得大家的认可与喜爱"},
+            {"value": "S", "label": "团队稳定、大家都好"},
+            {"value": "C", "label": "把事情做对、做到位"},
+        ],
+    },
+    {
+        "id": "disc_q17",
+        "question": "你处理信息时更倾向于？",
+        "options": [
+            {"value": "D", "label": "只看关键结论"},
+            {"value": "I", "label": "听人讲比看报告更高效"},
+            {"value": "S", "label": "完整了解背景与上下文"},
+            {"value": "C", "label": "仔细核对每一条数据"},
+        ],
+    },
+    {
+        "id": "disc_q18",
+        "question": "面对一项新规，你最在意？",
+        "options": [
+            {"value": "D", "label": "是否影响效率与结果"},
+            {"value": "I", "label": "是否影响大家的关系和氛围"},
+            {"value": "S", "label": "是否平稳、能否落地"},
+            {"value": "C", "label": "是否合理、是否可量化"},
+        ],
+    },
+    {
+        "id": "disc_q19",
+        "question": "你最常用的沟通方式是？",
+        "options": [
+            {"value": "D", "label": "简短直接、结果导向"},
+            {"value": "I", "label": "热情生动、富于表情"},
+            {"value": "S", "label": "温和耐心、注重倾听"},
+            {"value": "C", "label": "条理清晰、数据支撑"},
+        ],
+    },
+    {
+        "id": "disc_q20",
+        "question": "面对一个新成员加入团队，你的反应是？",
+        "options": [
+            {"value": "D", "label": "直接给他派任务、看产出"},
+            {"value": "I", "label": "热情欢迎、主动介绍大家"},
+            {"value": "S", "label": "帮他慢慢融入、关心适应"},
+            {"value": "C", "label": "把规则与流程交代清楚"},
+        ],
+    },
+    {
+        "id": "disc_q21",
+        "question": "你最看重的执行力体现在？",
+        "options": [
+            {"value": "D", "label": "速度与突破"},
+            {"value": "I", "label": "号召力与感染力"},
+            {"value": "S", "label": "持续与稳定"},
+            {"value": "C", "label": "准确与规范"},
+        ],
+    },
+    {
+        "id": "disc_q22",
+        "question": "你最不擅长的场景是？",
+        "options": [
+            {"value": "D", "label": "需要长期耐心、慢工出细活"},
+            {"value": "I", "label": "长期独自埋头、缺少互动"},
+            {"value": "S", "label": "高频冲突、需要正面交锋"},
+            {"value": "C", "label": "高度模糊、需要即兴发挥"},
+        ],
+    },
+    {
+        "id": "disc_q23",
+        "question": "你认为好项目的标志是？",
+        "options": [
+            {"value": "D", "label": "目标达成、突破常规"},
+            {"value": "I", "label": "团队愉快、氛围热烈"},
+            {"value": "S", "label": "节奏稳定、协作顺畅"},
+            {"value": "C", "label": "质量过硬、零失误"},
+        ],
+    },
+    {
+        "id": "disc_q24",
+        "question": "你最希望在工作中获得？",
+        "options": [
+            {"value": "D", "label": "掌控权与成就感"},
+            {"value": "I", "label": "认可、关注与人脉"},
+            {"value": "S", "label": "安全感与归属感"},
+            {"value": "C", "label": "专业感与确定性"},
+        ],
+    },
 ]
 
 

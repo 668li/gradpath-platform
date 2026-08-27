@@ -1,5 +1,6 @@
 # backend/tests/test_knowledge.py
 """知识库 API 测试 — Phase 11。"""
+
 import uuid
 
 import pytest
@@ -57,9 +58,7 @@ class TestKnowledgeList:
     def test_list_pagination(self, auth_headers, client, db_session):
         """分页参数生效。"""
         _seed_articles(db_session, count=5)
-        resp = client.get(
-            "/api/knowledge?page=1&page_size=2", headers=auth_headers
-        )
+        resp = client.get("/api/knowledge?page=1&page_size=2", headers=auth_headers)
         assert resp.status_code == 200
         data = resp.json()
         assert data["page"] == 1
@@ -71,9 +70,7 @@ class TestKnowledgeList:
         """分类过滤生效。"""
         _seed_articles(db_session, count=3, category="industry_guide")
         _seed_articles(db_session, count=2, category="job_requirement")
-        resp = client.get(
-            "/api/knowledge?category=job_requirement", headers=auth_headers
-        )
+        resp = client.get("/api/knowledge?category=job_requirement", headers=auth_headers)
         assert resp.status_code == 200
         data = resp.json()
         assert data["total"] == 2
@@ -181,9 +178,7 @@ class TestKnowledgeAdminCRUD:
         """管理员删除返回 204。"""
         _seed_articles(db_session, count=1)
         article = db_session.query(KnowledgeArticle).first()
-        resp = client.delete(
-            f"/api/knowledge/{article.id}", headers=admin_headers
-        )
+        resp = client.delete(f"/api/knowledge/{article.id}", headers=admin_headers)
         assert resp.status_code == 204
         # 确认已删除
         assert db_session.query(KnowledgeArticle).count() == 0
@@ -192,7 +187,5 @@ class TestKnowledgeAdminCRUD:
         """非管理员删除返回 403。"""
         _seed_articles(db_session, count=1)
         article = db_session.query(KnowledgeArticle).first()
-        resp = client.delete(
-            f"/api/knowledge/{article.id}", headers=auth_headers
-        )
+        resp = client.delete(f"/api/knowledge/{article.id}", headers=auth_headers)
         assert resp.status_code == 403

@@ -27,15 +27,15 @@ We implement JWT-based authentication with the following design:
 POST /api/auth/login
   → Validate credentials
   → Issue access_token + refresh_token
-  
+
 GET /api/auth/me
   → Verify access_token via Authorization: Bearer header
   → Return user profile
-  
+
 POST /api/auth/refresh
   → Validate refresh_token
   → Issue new access_token
-  
+
 WS /ws/{user_id}?token=<access_token>
   → Verify token on connect
   → Confirm user_id matches token subject

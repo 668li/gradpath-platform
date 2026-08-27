@@ -1,4 +1,5 @@
 """考研情报 Schema — 院校情报、自我定位、暗知识。"""
+
 from datetime import datetime
 from uuid import UUID
 
@@ -8,12 +9,14 @@ from pydantic import BaseModel, Field
 # ===== 院校情报 =====
 class IntelQueryRequest(BaseModel):
     """AI 院校情报查询请求。"""
+
     school_name: str = Field(..., description="院校名称")
     major_name: str = Field(..., description="专业名称")
 
 
 class IntelSaveRequest(BaseModel):
     """保存院校情报。"""
+
     school_name: str
     major_name: str
     school_tier: str = ""
@@ -37,6 +40,7 @@ class IntelSaveRequest(BaseModel):
 
 class IntelResponse(BaseModel):
     """院校情报响应。"""
+
     id: UUID
     school_name: str
     major_name: str
@@ -64,6 +68,7 @@ class IntelResponse(BaseModel):
 
 class AIIntelResult(BaseModel):
     """AI 生成的院校情报结果。"""
+
     school_name: str
     major_name: str
     school_tier: str = ""
@@ -86,6 +91,7 @@ class AIIntelResult(BaseModel):
 # ===== 自我定位 =====
 class PositioningCreateRequest(BaseModel):
     """创建自我定位。"""
+
     undergrad_tier: str = Field(..., description="本科层次: 985/211/一本/二本/三本/专升本")
     undergrad_major: str | None = None
     gpa: float | None = None
@@ -104,6 +110,7 @@ class PositioningCreateRequest(BaseModel):
 
 class SchoolRecommendation(BaseModel):
     """单个院校推荐。"""
+
     name: str
     major: str = ""
     tier: str = ""
@@ -113,6 +120,7 @@ class SchoolRecommendation(BaseModel):
 
 class PositioningResponse(BaseModel):
     """自我定位响应。"""
+
     id: UUID
     undergrad_tier: str
     undergrad_major: str | None = None
@@ -142,6 +150,7 @@ class PositioningResponse(BaseModel):
 # ===== 暗知识 =====
 class DarkKnowledgeResponse(BaseModel):
     """暗知识响应。"""
+
     id: UUID
     stage: str
     category: str
@@ -160,6 +169,7 @@ class DarkKnowledgeResponse(BaseModel):
 # ===== 研招网真实专业目录 =====
 class GradYanzhaoProgramResponse(BaseModel):
     """研招网专业目录响应。"""
+
     id: UUID
     university_name: str
     department: str
@@ -184,6 +194,7 @@ class GradYanzhaoProgramResponse(BaseModel):
 # ===== 真实复试分数线 =====
 class GradScorelineRecordResponse(BaseModel):
     """院校复试分数线响应。"""
+
     id: UUID
     university_name: str
     major_name: str
@@ -206,6 +217,7 @@ class GradScorelineRecordResponse(BaseModel):
 
 class GradScorelineTrendResponse(BaseModel):
     """复试分数线趋势响应（按院校+专业聚合多年数据）。"""
+
     university_name: str
     major_name: str
     degree_type: str | None = None
@@ -222,6 +234,7 @@ class GradScorelineTrendResponse(BaseModel):
 # ===== 调剂信息 =====
 class GradAdjustmentInfoResponse(BaseModel):
     """调剂信息响应。"""
+
     id: UUID
     university_name: str
     department: str
@@ -244,6 +257,7 @@ class GradAdjustmentInfoResponse(BaseModel):
 
 class GradSchoolDataSummaryResponse(BaseModel):
     """院校数据汇总（用于前端卡片展示）。"""
+
     university_name: str
     program_count: int
     latest_year: int | None = None
@@ -256,6 +270,7 @@ class GradSchoolDataSummaryResponse(BaseModel):
 # ===== 分页响应 =====
 class PaginatedResponse(BaseModel):
     """分页响应基础模型。"""
+
     items: list = []
     total: int = 0
     page: int = 1
@@ -265,14 +280,17 @@ class PaginatedResponse(BaseModel):
 
 class PaginatedDarkKnowledgeResponse(PaginatedResponse):
     """暗知识分页响应。"""
+
     items: list[DarkKnowledgeResponse] = []
 
 
 class PaginatedYanzhaoProgramResponse(PaginatedResponse):
     """研招网专业目录分页响应。"""
+
     items: list[GradYanzhaoProgramResponse] = []
 
 
 class PaginatedScorelineResponse(PaginatedResponse):
     """分数线记录分页响应。"""
+
     items: list[GradScorelineRecordResponse] = []

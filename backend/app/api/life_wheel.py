@@ -1,4 +1,5 @@
 """人生平衡轮 API — 8 维度生活满意度评估。"""
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 

@@ -1,4 +1,5 @@
 """求职作战室 API — 公司情报 + 求职定位 + 求职暗知识。"""
+
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -23,6 +24,7 @@ router = APIRouter(prefix="/api/career-intel", tags=["求职作战室"])
 
 # ===== 公司情报 =====
 
+
 @router.post("/intel/query")
 async def query_company_intel(
     body: CompanyIntelQueryRequest,
@@ -32,7 +34,9 @@ async def query_company_intel(
     return await career_intel_service.query_company_intel(body.company_name, body.position_name)
 
 
-@router.post("/intel/save", response_model=CompanyIntelResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/intel/save", response_model=CompanyIntelResponse, status_code=status.HTTP_201_CREATED
+)
 def save_company_intel(
     body: CompanyIntelSaveRequest,
     db: Session = Depends(get_db),
@@ -69,7 +73,12 @@ def delete_company_intel(
 
 # ===== 求职定位 =====
 
-@router.post("/positioning/create", response_model=CareerPositioningResponse, status_code=status.HTTP_201_CREATED)
+
+@router.post(
+    "/positioning/create",
+    response_model=CareerPositioningResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_positioning(
     body: CareerPositioningCreateRequest,
     db: Session = Depends(get_db),
@@ -103,6 +112,7 @@ def get_positioning_history(
 
 # ===== 求职暗知识 =====
 
+
 @router.get("/dark-knowledge/list", response_model=list[CareerDarkKnowledgeResponse])
 def get_dark_knowledge(
     stage: str | None = Query(default=None),
@@ -112,7 +122,9 @@ def get_dark_knowledge(
     user: User = Depends(get_current_user),
 ):
     """获取求职暗知识列表（按阶段过滤，支持分页）。"""
-    items, _total = career_intel_service.get_career_dark_knowledge_by_stage(db, stage, page=page, limit=per_page)
+    items, _total = career_intel_service.get_career_dark_knowledge_by_stage(
+        db, stage, page=page, limit=per_page
+    )
     return [CareerDarkKnowledgeResponse.model_validate(i) for i in items]
 
 

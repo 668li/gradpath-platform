@@ -7,12 +7,11 @@
 
 当真实抓取失败时，回退到预置的缓存数据。
 """
+
 import json
+import logging
 import random
 import time
-import logging
-from typing import Any, Optional
-from datetime import datetime, timezone
 
 import httpx
 from bs4 import BeautifulSoup
@@ -167,7 +166,7 @@ def _fetch_with_retry(
     url: str,
     max_retries: int = 3,
     base_delay: float = 2.0,
-) -> Optional[httpx.Response]:
+) -> httpx.Response | None:
     """带指数退避重试的 HTTP 请求。"""
     for attempt in range(max_retries):
         try:
@@ -175,15 +174,17 @@ def _fetch_with_retry(
             if resp.status_code == 200:
                 return resp
             if resp.status_code == 429:
-                delay = base_delay * (2 ** attempt) + random.uniform(0, 1)
+                delay = base_delay * (2**attempt) + random.uniform(0, 1)
                 logger.warning(f"Rate limited (429), waiting {delay:.1f}s before retry...")
                 time.sleep(delay)
                 continue
             logger.warning(f"HTTP {resp.status_code} for {url}")
             return resp
         except (httpx.TimeoutException, httpx.ConnectError) as e:
-            delay = base_delay * (2 ** attempt) + random.uniform(0, 1)
-            logger.warning(f"Request failed ({attempt+1}/{max_retries}): {e}, retrying in {delay:.1f}s")
+            delay = base_delay * (2**attempt) + random.uniform(0, 1)
+            logger.warning(
+                f"Request failed ({attempt+1}/{max_retries}): {e}, retrying in {delay:.1f}s"
+            )
             time.sleep(delay)
     return None
 
@@ -197,12 +198,14 @@ def _parse_yanzhao_search(html: str) -> list[dict]:
         for row in rows:
             cols = row.find_all("td")
             if len(cols) >= 4:
-                results.append({
-                    "university": cols[0].get_text(strip=True),
-                    "major": cols[1].get_text(strip=True),
-                    "degree_type": cols[2].get_text(strip=True),
-                    "year": cols[3].get_text(strip=True) if len(cols) > 3 else "",
-                })
+                results.append(
+                    {
+                        "university": cols[0].get_text(strip=True),
+                        "major": cols[1].get_text(strip=True),
+                        "degree_type": cols[2].get_text(strip=True),
+                        "year": cols[3].get_text(strip=True) if len(cols) > 3 else "",
+                    }
+                )
     except Exception as e:
         logger.error(f"Failed to parse yanzhao search results: {e}")
     return results
@@ -217,11 +220,13 @@ def _parse_cdgdc_rank(html: str) -> list[dict]:
         for row in rows:
             cols = row.find_all("td")
             if len(cols) >= 3:
-                results.append({
-                    "discipline": cols[0].get_text(strip=True),
-                    "university": cols[1].get_text(strip=True),
-                    "rating": cols[2].get_text(strip=True),
-                })
+                results.append(
+                    {
+                        "discipline": cols[0].get_text(strip=True),
+                        "university": cols[1].get_text(strip=True),
+                        "rating": cols[2].get_text(strip=True),
+                    }
+                )
     except Exception as e:
         logger.error(f"Failed to parse CDGDC rankings: {e}")
     return results
@@ -323,11 +328,13 @@ class RealDataCrawler(BaseCrawler):
                 if resp and resp.status_code == 200:
                     parsed = _parse_yanzhao_search(resp.text)
                     for item in parsed:
-                        results.append({
-                            "source": "研招网",
-                            "type": "program",
-                            "data": item,
-                        })
+                        results.append(
+                            {
+                                "source": "研招网",
+                                "type": "program",
+                                "data": item,
+                            }
+                        )
                     logger.info(f"Fetched {len(results)} programs from 研招网")
                 else:
                     logger.warning("Failed to fetch from 研招网")
@@ -350,16 +357,18 @@ class RealDataCrawler(BaseCrawler):
 
                     resp = _fetch_with_retry(client, website, max_retries=2)
                     if resp and resp.status_code == 200:
-                        results.append({
-                            "source": "高校官网",
-                            "type": "school",
-                            "data": {
-                                "name": school_name,
-                                "website": website,
-                                "html_length": len(resp.text),
-                                "status": "fetched",
-                            },
-                        })
+                        results.append(
+                            {
+                                "source": "高校官网",
+                                "type": "school",
+                                "data": {
+                                    "name": school_name,
+                                    "website": website,
+                                    "html_length": len(resp.text),
+                                    "status": "fetched",
+                                },
+                            }
+                        )
                         time.sleep(random.uniform(1.0, 2.0))  # 随机延迟
 
                     logger.info(f"Fetched data from {school_name} website")
@@ -378,11 +387,13 @@ class RealDataCrawler(BaseCrawler):
                 if resp and resp.status_code == 200:
                     parsed = _parse_cdgdc_rank(resp.text)
                     for item in parsed:
-                        results.append({
-                            "source": "学位网",
-                            "type": "discipline",
-                            "data": item,
-                        })
+                        results.append(
+                            {
+                                "source": "学位网",
+                                "type": "discipline",
+                                "data": item,
+                            }
+                        )
                     logger.info(f"Fetched {len(results)} discipline ratings from 学位网")
                 else:
                     logger.warning("Failed to fetch from 学位网")
@@ -396,19 +407,23 @@ class RealDataCrawler(BaseCrawler):
 
         # 学校信息缓存
         for school_name, school_info in _SCHOOL_CACHE.items():
-            results.append({
-                "source": "cache",
-                "type": "school",
-                "data": school_info,
-            })
+            results.append(
+                {
+                    "source": "cache",
+                    "type": "school",
+                    "data": school_info,
+                }
+            )
 
         # 专业目录缓存
         for program in _PROGRAM_CACHE:
-            results.append({
-                "source": "cache",
-                "type": "program",
-                "data": program,
-            })
+            results.append(
+                {
+                    "source": "cache",
+                    "type": "program",
+                    "data": program,
+                }
+            )
 
         logger.info(f"Using cached data: {len(results)} items")
         return results

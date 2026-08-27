@@ -10,8 +10,8 @@
 - 业务异常（AIServiceNotConfigured）不计入熔断失败计数
 - HTTP 4xx 不计入熔断，5xx 计入熔断
 """
+
 import time
-from unittest.mock import AsyncMock, patch
 
 import httpx
 import pytest
@@ -21,33 +21,35 @@ from app.services.ai_circuit_breaker import (
     AICircuitBreakerOpenError,
     _is_transient_error,
 )
-from app.services.ai_service import (
-    AIServiceNotConfigured,
-    AIServiceRetryExhausted,
-)
-
+from app.services.ai_service import AIServiceNotConfigured, AIServiceRetryExhausted
 
 # ======================================================================
 # 辅助：构造会失败的 async 函数
 # ======================================================================
 
+
 def _make_failing_fn(exc: Exception):
     """构造一个总是抛出指定异常的 async 函数。"""
+
     async def _failing(*args, **kwargs):
         raise exc
+
     return _failing
 
 
 def _make_success_fn(retVal="ok"):
     """构造一个总是成功的 async 函数。"""
+
     async def _success(*args, **kwargs):
         return retVal
+
     return _success
 
 
 # ======================================================================
 # 熔断器打开：连续 5 次失败
 # ======================================================================
+
 
 class TestCircuitBreakerOpens:
     def test_default_config(self):
@@ -102,6 +104,7 @@ class TestCircuitBreakerOpens:
 # 熔断器打开时拒绝调用
 # ======================================================================
 
+
 class TestCircuitBreakerRejects:
     @pytest.mark.asyncio
     async def test_open_state_raises_error(self):
@@ -146,6 +149,7 @@ class TestCircuitBreakerRejects:
 # ======================================================================
 # 半开状态：RECOVERY_TIMEOUT 后允许一次试探
 # ======================================================================
+
 
 class TestCircuitBreakerHalfOpen:
     @pytest.mark.asyncio
@@ -203,6 +207,7 @@ class TestCircuitBreakerHalfOpen:
 # 异常分类：哪些异常计入熔断
 # ======================================================================
 
+
 class TestTransientErrorClassification:
     def test_timeout_is_transient(self):
         """httpx.TimeoutException 计入熔断。"""
@@ -246,6 +251,7 @@ class TestTransientErrorClassification:
 # 业务异常不计入熔断失败计数
 # ======================================================================
 
+
 class TestBusinessExceptionNotCounted:
     @pytest.mark.asyncio
     async def test_not_configured_does_not_open_circuit(self):
@@ -283,6 +289,7 @@ class TestBusinessExceptionNotCounted:
 # ======================================================================
 # reset 方法
 # ======================================================================
+
 
 class TestReset:
     @pytest.mark.asyncio

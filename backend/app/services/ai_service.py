@@ -10,16 +10,12 @@
   HTTPStatusError 不重试（避免对 4xx 浪费额度）
 - A14: 在 chat 方法入口/出口埋点 LLM_CALL_COUNT / LLM_CALL_LATENCY 指标
 """
+
 import logging
 import time
 
 import httpx
-from tenacity import (
-    AsyncRetrying,
-    retry_if_exception_type,
-    stop_after_attempt,
-    wait_exponential,
-)
+from tenacity import AsyncRetrying, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from app.config import settings
 
@@ -40,9 +36,7 @@ class AIServiceRetryExhausted(Exception):
 
     def __init__(self, last_exception: BaseException):
         self.last_exception = last_exception
-        super().__init__(
-            f"AI 服务重试耗尽: {type(last_exception).__name__}: {last_exception}"
-        )
+        super().__init__(f"AI 服务重试耗尽: {type(last_exception).__name__}: {last_exception}")
 
 
 # B8: tenacity 重试策略
@@ -145,6 +139,7 @@ class AIService:
             # A14: 不论成功/失败都记录指标
             try:
                 from app.metrics import record_llm_call
+
                 record_llm_call(
                     model=self.model or "unknown",
                     status=_status_label,

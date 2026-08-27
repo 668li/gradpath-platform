@@ -5,6 +5,7 @@ run.py / admin API 只 import registry 空表，get_crawler() 恒返回 None，
 导致 `python -m app.crawlers.run --source xxx` 与 admin /run 入口全部报
 "爬虫未注册"。这里集中 import 各分类包，使任何入口拿到完整注册表。
 """
+
 from app.crawlers import career  # noqa: F401
 from app.crawlers import civil  # noqa: F401
 from app.crawlers import grad  # noqa: F401

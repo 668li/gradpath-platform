@@ -1,11 +1,9 @@
 """讨论帖种子数据。"""
-import uuid
 
 from sqlalchemy.orm import Session
 
 from app.models.post import Post, PostTopicType
 from app.models.user import User
-
 
 SEED_TOPICS = [
     ("清华大学|计算机科学与技术", "school_major", 5, 5),

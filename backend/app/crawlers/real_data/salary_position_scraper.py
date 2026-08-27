@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Position-granularity salary benchmark scraper for GradPath.
 
 Collects REAL, traceable position-level wage-price statistics from PUBLIC
@@ -48,6 +47,7 @@ Record fields: {position, city, experience_level, salary_min, salary_median,
 
 Run:  py -3.13 salary_position_scraper.py
 """
+
 import json
 import os
 import re
@@ -118,7 +118,8 @@ def _requests_get(url):
             "note-ssl-fallback",
             "hrss.sz.gov.cn https handshake fails under Python/OpenSSL3 "
             "(BAD_ECPOINT); identical public pages fetched via http "
-            "(robots.txt 404 on both schemes, verified)")
+            "(robots.txt 404 on both schemes, verified)",
+        )
         return requests.get(fallback, headers=HEADERS, timeout=REQUEST_TIMEOUT)
 
 
@@ -247,7 +248,7 @@ def parse_page_rows(text, dim_filter):
     last_seq = 0
     active = dim_filter is None
     while i < len(tokens):
-        if tokens[i: i + 5] == PCT5:
+        if tokens[i : i + 5] == PCT5:
             dim = _header_dim(tokens, i)
             i += 5
             active = dim_filter is None or dim == dim_filter
@@ -260,12 +261,14 @@ def parse_page_rows(text, dim_filter):
             while j < len(tokens) and not is_bignum(tokens[j]) and j - i <= 8:
                 name_parts.append(tokens[j])
                 j += 1
-            if (name_parts and j + 5 <= len(tokens)
-                    and all(is_bignum(tokens[k]) for k in range(j, j + 5))
-                    and (seq > last_seq or seq == 1)):
+            if (
+                name_parts
+                and j + 5 <= len(tokens)
+                and all(is_bignum(tokens[k]) for k in range(j, j + 5))
+                and (seq > last_seq or seq == 1)
+            ):
                 vals = [to_int(tokens[k]) for k in range(j, j + 5)]
-                rows.append({"seq": seq, "name": clean_name(name_parts),
-                             "vals": vals})
+                rows.append({"seq": seq, "name": clean_name(name_parts), "vals": vals})
                 last_seq = seq
                 i = j + 5
                 continue
@@ -308,8 +311,7 @@ def parse_section(doc, start_page, end_page, start_marker, end_marker, dim):
 # education x tenure handling (深圳 分学历与工龄)
 # ---------------------------------------------------------------------------
 
-TENURE_RE = re.compile(
-    r"^(1（含）年以下|2～3年|4～5年|6～10年|11年以上)$")
+TENURE_RE = re.compile(r"^(1（含）年以下|2～3年|4～5年|6～10年|11年以上)$")
 TENURE_MAP = {
     "1（含）年以下": "1年以下",
     "2～3年": "2-3年",
@@ -328,14 +330,25 @@ def education_tenure_records(rows, city, year, source, source_url, category):
         p10, _p25, p50, _p75, p90 = row["vals"]
         if TENURE_RE.match(name):
             if current_edu:
-                records.append(make_record(
-                    current_edu, city, TENURE_MAP[name], p10, p50, p90,
-                    year, source, source_url, category))
+                records.append(
+                    make_record(
+                        current_edu,
+                        city,
+                        TENURE_MAP[name],
+                        p10,
+                        p50,
+                        p90,
+                        year,
+                        source,
+                        source_url,
+                        category,
+                    )
+                )
         else:
             current_edu = name
-            records.append(make_record(
-                name, city, "不限", p10, p50, p90,
-                year, source, source_url, category))
+            records.append(
+                make_record(name, city, "不限", p10, p50, p90, year, source, source_url, category)
+            )
     return records
 
 
@@ -343,8 +356,19 @@ def education_tenure_records(rows, city, year, source, source_url, category):
 # record assembly
 # ---------------------------------------------------------------------------
 
-def make_record(position, city, experience_level, salary_min, salary_median,
-                salary_max, year, source, source_url, category):
+
+def make_record(
+    position,
+    city,
+    experience_level,
+    salary_min,
+    salary_median,
+    salary_max,
+    year,
+    source,
+    source_url,
+    category,
+):
     return {
         "position": position,
         "city": city,
@@ -369,9 +393,9 @@ def position_records(rows, city, year, source, source_url, category):
             continue
         p10, _p25, p50, _p75, p90 = row["vals"]
         seen_names.add(name)
-        records.append(make_record(
-            name, city, "不限", p10, p50, p90,
-            year, source, source_url, category))
+        records.append(
+            make_record(name, city, "不限", p10, p50, p90, year, source, source_url, category)
+        )
     return records
 
 
@@ -438,9 +462,11 @@ SOURCES = [
         "key": "hz",
         "city": "杭州市",
         "page_url": None,  # 公告以官方PDF形式发布于浙江政务网附件域
-        "pdf_fallback": ("https://zjjcmspublic.oss-cn-hangzhou-zwynet-d01-a."
-                         "internet.cloud.zj.gov.cn/jcms_files/jcms1/web3163/"
-                         "site/attach/0/8de07211fbc54b69b37cb7c62f3ddc47.pdf"),
+        "pdf_fallback": (
+            "https://zjjcmspublic.oss-cn-hangzhou-zwynet-d01-a."
+            "internet.cloud.zj.gov.cn/jcms_files/jcms1/web3163/"
+            "site/attach/0/8de07211fbc54b69b37cb7c62f3ddc47.pdf"
+        ),
         "pdf_cache": "hz_2023.pdf",
         "year": 2023,
         "source": "杭州市人社局《2023年企业薪酬调查信息》",
@@ -478,31 +504,43 @@ def scrape_city(cfg):
     doc = fitz.open(pdf_path)
     records = []
     for sec in cfg["sections"]:
-        start = (find_page(doc, sec["start_marker"], sec["search_from"])
-                 if sec["start_marker"] else sec["search_from"])
+        start = (
+            find_page(doc, sec["start_marker"], sec["search_from"])
+            if sec["start_marker"]
+            else sec["search_from"]
+        )
         if start is None:
-            entries.append(f"[{sec['category']}] 起始标记未找到: "
-                           f"{sec['start_marker']} -> 跳过")
+            entries.append(f"[{sec['category']}] 起始标记未找到: " f"{sec['start_marker']} -> 跳过")
             continue
         if sec["end_marker"]:
             end = find_page(doc, sec["end_marker"], start + 1)
             if end is None:  # end marker on the start page itself
-                end = start if sec["end_marker"] in doc[start].get_text() \
-                    else len(doc) - 1
+                end = start if sec["end_marker"] in doc[start].get_text() else len(doc) - 1
         else:
             end = min(start + 40, len(doc) - 1)
-        rows = parse_section(doc, start, end, sec["start_marker"],
-                             sec["end_marker"], sec["dim"])
+        rows = parse_section(doc, start, end, sec["start_marker"], sec["end_marker"], sec["dim"])
         if sec["mode"] == "education_tenure":
             recs = education_tenure_records(
-                rows, cfg["city"], cfg["year"], cfg["source"],
-                cfg["page_url"] or pdf_url, sec["category"])
+                rows,
+                cfg["city"],
+                cfg["year"],
+                cfg["source"],
+                cfg["page_url"] or pdf_url,
+                sec["category"],
+            )
         else:
             recs = position_records(
-                rows, cfg["city"], cfg["year"], cfg["source"],
-                cfg["page_url"] or pdf_url, sec["category"])
-        entries.append(f"[{sec['category']}] pages {start}-{end} "
-                       f"dim={sec['dim']} rows={len(rows)} -> {len(recs)}条")
+                rows,
+                cfg["city"],
+                cfg["year"],
+                cfg["source"],
+                cfg["page_url"] or pdf_url,
+                sec["category"],
+            )
+        entries.append(
+            f"[{sec['category']}] pages {start}-{end} "
+            f"dim={sec['dim']} rows={len(rows)} -> {len(recs)}条"
+        )
         records.extend(recs)
     doc.close()
     return records, entries
@@ -529,21 +567,28 @@ def verify(records):
         if not (0 < r["salary_min"] <= r["salary_median"] <= r["salary_max"]):
             problems.append(f"percentile order violated: {r}")
     for city, pos, exp, field, expected in SPOT_CHECKS:
-        hit = next((r for r in records if r["city"] == city
-                    and r["position"] == pos
-                    and r["experience_level"] == exp), None)
+        hit = next(
+            (
+                r
+                for r in records
+                if r["city"] == city and r["position"] == pos and r["experience_level"] == exp
+            ),
+            None,
+        )
         if hit is None:
             problems.append(f"spot-check miss: {city}/{pos}/{exp}")
         elif hit[field] != expected:
             problems.append(
                 f"spot-check mismatch {city}/{pos}/{exp} {field}: "
-                f"got {hit[field]}, expected {expected} (公告原文)")
+                f"got {hit[field]}, expected {expected} (公告原文)"
+            )
     return problems
 
 
 # ---------------------------------------------------------------------------
 # main
 # ---------------------------------------------------------------------------
+
 
 def run():
     all_records = []
@@ -563,8 +608,7 @@ def run():
 
     seen, unique = set(), []
     for r in all_records:
-        key = (r["city"], r["position"], r["experience_level"],
-               r["category"], r["year"])
+        key = (r["city"], r["position"], r["experience_level"], r["category"], r["year"])
         if key not in seen:
             seen.add(key)
             unique.append(r)
@@ -604,9 +648,11 @@ def run():
         for p in problems:
             print(f"  ! {p}")
     else:
-        print("\nspot-check vs 公告原文: all passed "
-              f"({len(SPOT_CHECKS)} checks, percentile order OK)")
-    ok = (len(unique) >= 60 and len(by_city) >= 2 and not problems)
+        print(
+            "\nspot-check vs 公告原文: all passed "
+            f"({len(SPOT_CHECKS)} checks, percentile order OK)"
+        )
+    ok = len(unique) >= 60 and len(by_city) >= 2 and not problems
     return 0 if ok else 1
 
 

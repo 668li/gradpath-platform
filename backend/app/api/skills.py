@@ -29,7 +29,9 @@ class SkillBatchRequest(BaseModel):
 
 
 @router.post("", response_model=SkillResponse, status_code=status.HTTP_201_CREATED)
-def create(data: SkillCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def create(
+    data: SkillCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)
+):
     return create_skill(db, user.id, data)
 
 
@@ -68,9 +70,7 @@ def batch_skills(
         return []
     # 安全约束：仅返回当前用户的技能，防止越权
     items = (
-        db.query(SkillNode)
-        .filter(SkillNode.id.in_(parsed_ids), SkillNode.user_id == user.id)
-        .all()
+        db.query(SkillNode).filter(SkillNode.id.in_(parsed_ids), SkillNode.user_id == user.id).all()
     )
     return [SkillResponse.model_validate(s) for s in items]
 
@@ -81,7 +81,12 @@ def get_one(skill_id: UUID, db: Session = Depends(get_db), user: User = Depends(
 
 
 @router.patch("/{skill_id}", response_model=SkillResponse)
-def update(skill_id: UUID, data: SkillUpdate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def update(
+    skill_id: UUID,
+    data: SkillUpdate,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
     return update_skill(db, user.id, skill_id, data)
 
 

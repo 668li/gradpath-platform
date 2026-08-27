@@ -1,18 +1,17 @@
-# -*- coding: utf-8 -*-
 """社交媒体数据导入脚本 — 将知乎和小红书数据导入GradPath数据库。
 
 读取 zhihu_kaoyan.json 和 xiaohongshu_kaoyan.json，
 导入 experience_posts 和 knowledge_articles 表。
 
 Usage:
-    cd D:\职业规划\职业规划\backend
+    cd D:\\职业规划\\职业规划\backend
     python -m app.crawlers.real_data.import_social
 """
+
 import json
 import os
 import re
 import sys
-import uuid
 
 sys.stdout.reconfigure(encoding="utf-8")
 
@@ -20,13 +19,14 @@ DATA_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(DATA_DIR, "..", "..", ".."))
 
 from sqlalchemy import text
-from app.database import SessionLocal, engine, Base
-from app.models.user import User
+
+from app.database import Base, SessionLocal, engine
 from app.models.experience_post import ExperiencePost
 from app.models.knowledge_article import KnowledgeArticle
-
+from app.models.user import User
 
 # ── 工具函数 ──────────────────────────────────────────────────────────
+
 
 def load_json(filename):
     path = os.path.join(DATA_DIR, filename)
@@ -34,7 +34,7 @@ def load_json(filename):
         print(f"  SKIP: {filename} not found")
         return []
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             data = json.load(f)
         return data if isinstance(data, list) else []
     except Exception as e:
@@ -59,7 +59,7 @@ def clean_content(raw, max_len=3000):
     """清理内容中的特殊字符。"""
     if not raw:
         return ""
-    text = re.sub(r'\n{3,}', '\n\n', raw)
+    text = re.sub(r"\n{3,}", "\n\n", raw)
     text = text.strip()
     return text[:max_len] if len(text) > max_len else text
 
@@ -67,6 +67,7 @@ def clean_content(raw, max_len=3000):
 def get_system_user(db):
     """获取或创建系统用户。"""
     from uuid import UUID
+
     sid = UUID("00000000-0000-0000-0000-000000000000")
     user = db.query(User).filter(User.id == sid).first()
     if not user:
@@ -83,6 +84,7 @@ def get_system_user(db):
 
 
 # ── 主导入逻辑 ────────────────────────────────────────────────────────
+
 
 def import_zhihu(db, user):
     """导入知乎数据到 experience_posts。"""
@@ -102,9 +104,7 @@ def import_zhihu(db, user):
         title = title[:200]
 
         # 去重：检查是否已存在相同标题
-        existing = db.query(ExperiencePost).filter(
-            ExperiencePost.title == title
-        ).first()
+        existing = db.query(ExperiencePost).filter(ExperiencePost.title == title).first()
         if existing:
             skipped += 1
             continue
@@ -129,22 +129,24 @@ def import_zhihu(db, user):
         author = safe_str(item.get("author", "匿名用户"))
 
         try:
-            db.add(ExperiencePost(
-                title=title,
-                content=content,
-                summary=content[:200],
-                tags=tags,
-                category=category,
-                user_id=user.id,
-                source_platform="zhihu",
-                source_url=None,
-                view_count=upvotes * 3,
-                like_count=upvotes,
-                comment_count=upvotes // 10,
-                is_anonymous="匿名" in author,
-                status="approved",
-                is_verified=True,
-            ))
+            db.add(
+                ExperiencePost(
+                    title=title,
+                    content=content,
+                    summary=content[:200],
+                    tags=tags,
+                    category=category,
+                    user_id=user.id,
+                    source_platform="zhihu",
+                    source_url=None,
+                    view_count=upvotes * 3,
+                    like_count=upvotes,
+                    comment_count=upvotes // 10,
+                    is_anonymous="匿名" in author,
+                    status="approved",
+                    is_verified=True,
+                )
+            )
             db.flush()
             imported += 1
         except Exception as e:
@@ -194,12 +196,8 @@ def import_xiaohongshu(db, user):
         is_long_form = len(content) > 400 and imported_ka < 25
 
         # 去重检查
-        existing_exp = db.query(ExperiencePost).filter(
-            ExperiencePost.title == title
-        ).first()
-        existing_ka = db.query(KnowledgeArticle).filter(
-            KnowledgeArticle.title == title
-        ).first()
+        existing_exp = db.query(ExperiencePost).filter(ExperiencePost.title == title).first()
+        existing_ka = db.query(KnowledgeArticle).filter(KnowledgeArticle.title == title).first()
         if existing_exp or existing_ka:
             skipped += 1
             continue
@@ -228,19 +226,21 @@ def import_xiaohongshu(db, user):
                     break
 
             try:
-                db.add(KnowledgeArticle(
-                    title=title,
-                    content=content,
-                    category=category,
-                    tags=tags + ["小红书"],
-                    source="xiaohongshu",
-                    metadata_={
-                        "author": author,
-                        "likes": likes,
-                        "comments": comments,
-                        "favorites": favorites,
-                    },
-                ))
+                db.add(
+                    KnowledgeArticle(
+                        title=title,
+                        content=content,
+                        category=category,
+                        tags=tags + ["小红书"],
+                        source="xiaohongshu",
+                        metadata_={
+                            "author": author,
+                            "likes": likes,
+                            "comments": comments,
+                            "favorites": favorites,
+                        },
+                    )
+                )
                 db.flush()
                 imported_ka += 1
             except Exception as e:
@@ -257,13 +257,7 @@ def import_xiaohongshu(db, user):
                 elif "复试" in t:
                     category = "复试"
                     break
-                elif "数学" in t:
-                    category = "复习"
-                    break
-                elif "英语" in t:
-                    category = "复习"
-                    break
-                elif "政治" in t:
+                elif "数学" in t or "英语" in t or "政治" in t:
                     category = "复习"
                     break
                 elif "择校" in t:
@@ -271,22 +265,24 @@ def import_xiaohongshu(db, user):
                     break
 
             try:
-                db.add(ExperiencePost(
-                    title=title,
-                    content=content,
-                    summary=content[:200],
-                    tags=tags + ["小红书"],
-                    category=category,
-                    user_id=user.id,
-                    source_platform="xiaohongshu",
-                    source_url=None,
-                    view_count=likes * 5,
-                    like_count=likes,
-                    comment_count=comments,
-                    is_anonymous=False,
-                    status="approved",
-                    is_verified=True,
-                ))
+                db.add(
+                    ExperiencePost(
+                        title=title,
+                        content=content,
+                        summary=content[:200],
+                        tags=tags + ["小红书"],
+                        category=category,
+                        user_id=user.id,
+                        source_platform="xiaohongshu",
+                        source_url=None,
+                        view_count=likes * 5,
+                        like_count=likes,
+                        comment_count=comments,
+                        is_anonymous=False,
+                        status="approved",
+                        is_verified=True,
+                    )
+                )
                 db.flush()
                 imported_exp += 1
             except Exception as e:
@@ -295,7 +291,9 @@ def import_xiaohongshu(db, user):
                 print(f"  SKIP EP: {title[:50]}... - {e}")
 
     db.commit()
-    print(f"  小红书: experience_posts 新增 {imported_exp}, knowledge_articles 新增 {imported_ka}, 跳过 {skipped}")
+    print(
+        f"  小红书: experience_posts 新增 {imported_exp}, knowledge_articles 新增 {imported_ka}, 跳过 {skipped}"
+    )
     return imported_exp + imported_ka, skipped
 
 
@@ -319,22 +317,26 @@ def print_db_counts(db):
 
     # 社交媒体来源统计
     try:
-        r = db.execute(text(
-            "SELECT source_platform, COUNT(*) FROM experience_posts "
-            "WHERE source_platform IN ('zhihu', 'xiaohongshu') "
-            "GROUP BY source_platform"
-        ))
+        r = db.execute(
+            text(
+                "SELECT source_platform, COUNT(*) FROM experience_posts "
+                "WHERE source_platform IN ('zhihu', 'xiaohongshu') "
+                "GROUP BY source_platform"
+            )
+        )
         for row in r.fetchall():
             print(f"  {row[0]:8s}经验帖: {row[1]}")
     except Exception:
         pass
 
     try:
-        r = db.execute(text(
-            "SELECT source, COUNT(*) FROM knowledge_articles "
-            "WHERE source = 'xiaohongshu' "
-            "GROUP BY source"
-        ))
+        r = db.execute(
+            text(
+                "SELECT source, COUNT(*) FROM knowledge_articles "
+                "WHERE source = 'xiaohongshu' "
+                "GROUP BY source"
+            )
+        )
         for row in r.fetchall():
             print(f"  {row[0]:8s}知识文章: {row[1]}")
     except Exception:
@@ -371,7 +373,7 @@ def main():
 
         # 总结
         print("\n" + "=" * 60)
-        print(f"导入完成!")
+        print("导入完成!")
         print(f"  知乎: 新增 {zhihu_count}, 跳过 {zhihu_skip}")
         print(f"  小红书: 新增 {xhs_count}, 跳过 {xhs_skip}")
         print(f"  总计: 新增 {zhihu_count + xhs_count}, 跳过 {zhihu_skip + xhs_skip}")
@@ -380,6 +382,7 @@ def main():
     except Exception as e:
         print(f"\n导入失败: {e}")
         import traceback
+
         traceback.print_exc()
         db.rollback()
         sys.exit(1)

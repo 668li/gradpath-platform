@@ -1,17 +1,17 @@
-import os, json
+import json
+import os
 
 FIRECRAWL_API_KEY = os.getenv("FIRECRAWL_API_KEY", "")
 if not FIRECRAWL_API_KEY:
     print("[WARN] FIRECRAWL_API_KEY 环境变量未设置，Firecrawl功能不可用")
 os.environ["FIRECRAWL_API_KEY"] = FIRECRAWL_API_KEY
 from firecrawl import FirecrawlApp
+
 app = FirecrawlApp(api_key=FIRECRAWL_API_KEY)
 
 print("Starting crawl of kaoyan.com/major with limit=50...")
 result = app.crawl(
-    "https://www.kaoyan.com/major",
-    limit=50,
-    scrape_options={"formats": ["markdown"]}
+    "https://www.kaoyan.com/major", limit=50, scrape_options={"formats": ["markdown"]}
 )
 
 pages = result.data
@@ -31,12 +31,7 @@ for page in pages:
         if meta:
             url = getattr(meta, "source_url", "") or getattr(meta, "url", "") or ""
             title = getattr(meta, "title", "") or ""
-        majors.append({
-            "url": url,
-            "title": title,
-            "content": content,
-            "char_count": char_count
-        })
+        majors.append({"url": url, "title": title, "content": content, "char_count": char_count})
 
 majors.sort(key=lambda x: x["char_count"], reverse=True)
 

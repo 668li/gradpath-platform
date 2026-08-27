@@ -5,10 +5,10 @@
 - 第一人称叙事（800-1200字），具体教训 3-5 条，后悔的事 2-3 条，"如果重来"建议
 - 覆盖考研 / 考公 / 求职 / 留学 四条路径
 """
+
 from sqlalchemy.orm import Session
 
 from app.models.failure_case import FailureCase
-
 
 SEED_CASES = [
     # 1. 考研计算机初试差3分

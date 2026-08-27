@@ -4,6 +4,7 @@
 Conversation 记录一个对话主题与激活的 Skill 集合；
 Message 记录每轮 user/assistant 消息，含 skill_used 与 context_snapshot 快照。
 """
+
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, String, Text

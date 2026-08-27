@@ -15,9 +15,9 @@
 注意：本服务使用独立的 Redis 客户端（与 cache 模块隔离），
 因为配额计数需要原子性 INCR + EXPIRE，不能复用 RedisCache 的 JSON 序列化。
 """
+
 import logging
 from datetime import date
-from typing import Optional
 
 from app.config import settings
 
@@ -33,9 +33,7 @@ class AILLMQuotaExceeded(Exception):
     def __init__(self, used: int, quota: int):
         self.used = used
         self.quota = quota
-        super().__init__(
-            f"今日 AI 调用次数已达上限 (used={used}, quota={quota})"
-        )
+        super().__init__(f"今日 AI 调用次数已达上限 (used={used}, quota={quota})")
 
 
 class AIQuotaService:
@@ -77,12 +75,12 @@ class AIQuotaService:
             logger.warning("AI 配额服务：Redis 连接失败，降级到不限制模式: %s", e)
             self._redis = None
 
-    def _quota_key(self, user_id, today: Optional[date] = None) -> str:
+    def _quota_key(self, user_id, today: date | None = None) -> str:
         """构造配额计数 key: ``llm_quota:{user_id}:{YYYY-MM-DD}``"""
         d = today or date.today()
         return f"{self.KEY_PREFIX}:{user_id}:{d.isoformat()}"
 
-    async def check_llm_quota(self, user_id) -> Optional[int]:
+    async def check_llm_quota(self, user_id) -> int | None:
         """检查用户当日 LLM 配额。
 
         Args:
@@ -116,7 +114,7 @@ class AIQuotaService:
 
         return used
 
-    async def incr_llm_quota(self, user_id) -> Optional[int]:
+    async def incr_llm_quota(self, user_id) -> int | None:
         """递增用户当日 LLM 调用计数。
 
         使用 INCR + EXPIRE 保证原子性：第一次调用时设置 TTL。
@@ -143,7 +141,7 @@ class AIQuotaService:
             logger.warning("AI 配额递增失败（不阻塞业务）: %s", e)
             return None
 
-    async def get_llm_quota(self, user_id) -> Optional[int]:
+    async def get_llm_quota(self, user_id) -> int | None:
         """查询用户当日已用次数（主要用于测试/调试）。"""
         if self._redis is None:
             return None
@@ -154,7 +152,7 @@ class AIQuotaService:
             logger.warning("AI 配额查询失败: %s", e)
             return None
 
-    def reset(self, user_id=None, today: Optional[date] = None) -> None:
+    def reset(self, user_id=None, today: date | None = None) -> None:
         """重置配额计数（主要用于测试）。
 
         Args:

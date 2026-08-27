@@ -2,6 +2,7 @@
 
 借鉴考研作战室的三模型结构，解决求职场景的信息不对称问题。
 """
+
 from sqlalchemy import Boolean, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -11,9 +12,12 @@ from app.models.base import JSONB, TimestampMixin, UUIDMixin
 
 class CompanyIntel(UUIDMixin, TimestampMixin, Base):
     """公司情报 — AI 生成的结构化公司/岗位情报画像。"""
+
     __tablename__ = "career_company_intel"
 
-    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     company_name: Mapped[str] = mapped_column(String(200), nullable=False)
     position_name: Mapped[str] = mapped_column(String(200), nullable=False)
     industry: Mapped[str] = mapped_column(String(100), nullable=False, default="")
@@ -47,9 +51,12 @@ class CompanyIntel(UUIDMixin, TimestampMixin, Base):
 
 class CareerPositioning(UUIDMixin, TimestampMixin, Base):
     """求职定位 — 用户背景 + AI 评估 + 三档公司推荐。"""
+
     __tablename__ = "career_positionings"
 
-    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
 
     # 用户背景
     education_level: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -81,6 +88,7 @@ class CareerPositioning(UUIDMixin, TimestampMixin, Base):
 
 class CareerDarkKnowledge(UUIDMixin, TimestampMixin, Base):
     """求职暗知识 — 预填充的求职盲区知识。"""
+
     __tablename__ = "career_dark_knowledge"
 
     stage: Mapped[str] = mapped_column(String(50), nullable=False, index=True)

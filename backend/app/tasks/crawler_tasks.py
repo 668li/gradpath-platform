@@ -9,9 +9,9 @@
 - _run_crawler_background：保留原签名，内部调用 celery task.delay()
   当 Celery broker 不可用时，自动降级到同步执行（不阻塞 FastAPI worker）。
 """
+
 from __future__ import annotations
 
-import asyncio
 import logging
 from uuid import uuid4
 
@@ -166,11 +166,13 @@ def run_scheduled_crawler_task(source_name: str):
             try:
                 # broadcast_sync 调度协程到主事件循环；
                 # Celery worker 无主事件循环时，使用 asyncio.run 降级
-                ws_manager.broadcast_sync({
-                    "type": "data_update",
-                    "source_name": source_name,
-                    "items_stored": result.get("stored", 0),
-                })
+                ws_manager.broadcast_sync(
+                    {
+                        "type": "data_update",
+                        "source_name": source_name,
+                        "items_stored": result.get("stored", 0),
+                    }
+                )
             except Exception as e:
                 logger.warning("定时任务数据更新通知失败: %s", e)
 
@@ -189,9 +191,11 @@ def run_scheduled_crawler_task(source_name: str):
 # 优先使用 Celery 异步执行；broker 不可用时降级到同步执行
 # ----------------------------------------------------------------------
 
+
 def _celery_available() -> bool:
     """检查 Celery broker 是否可用（仅检查配置，不发实际连接）。"""
     from app.config import settings
+
     if not settings.REDIS_URL:
         return False
     try:

@@ -1,7 +1,7 @@
 """通知模型 — 系统通知、活动提醒、评论回复等。"""
+
 import enum
 from datetime import datetime
-from typing import Optional
 from uuid import UUID
 
 from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, String, Text
@@ -25,15 +25,15 @@ class NotificationType(str, enum.Enum):
 class Notification(UUIDMixin, TimestampMixin, Base):
     __tablename__ = "notifications"
 
-    user_id: Mapped[UUID] = mapped_column(
-        ForeignKey("users.id"), nullable=False, index=True
-    )
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     type: Mapped[NotificationType] = mapped_column(
         Enum(NotificationType), nullable=False, default=NotificationType.system
     )
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False, default="")
-    link: Mapped[Optional[str]] = mapped_column(String(500), nullable=True, comment="点击通知后跳转的链接")
+    link: Mapped[str | None] = mapped_column(
+        String(500), nullable=True, comment="点击通知后跳转的链接"
+    )
     read: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     # C4 通知归档：归档后不再出现在主列表，仅可通过 ?archived=true 查询
     archived: Mapped[bool] = mapped_column(
@@ -43,7 +43,7 @@ class Notification(UUIDMixin, TimestampMixin, Base):
         index=True,
         comment="是否已归档（归档通知从主列表移除）",
     )
-    archived_at: Mapped[Optional[datetime]] = mapped_column(
+    archived_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
         comment="归档时间，归档时设置，恢复时清空",

@@ -1,4 +1,5 @@
 """AI 推荐 API — 院校推荐、调剂推荐、暗知识推荐（公开接口）。"""
+
 import logging
 from dataclasses import asdict
 
@@ -63,7 +64,9 @@ def recommend_adjustments(
 
 @router.get("/dark-knowledge")
 def recommend_dark_knowledge(
-    stage: str | None = Query(None, description="备考阶段: decision/school_selection/preparation/exam/retest/transfer"),
+    stage: str | None = Query(
+        None, description="备考阶段: decision/school_selection/preparation/exam/retest/transfer"
+    ),
     top_n: int = Query(10, ge=1, le=50, description="返回前 N 条"),
     db: Session = Depends(get_db),
 ):

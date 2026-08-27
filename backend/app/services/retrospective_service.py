@@ -62,7 +62,9 @@ def get_retrospective(db: Session, user_id: UUID, retro_id: UUID) -> Retrospecti
     return retro
 
 
-def update_retrospective(db: Session, user_id: UUID, retro_id: UUID, data: RetroUpdate) -> Retrospective:
+def update_retrospective(
+    db: Session, user_id: UUID, retro_id: UUID, data: RetroUpdate
+) -> Retrospective:
     retro = get_retrospective(db, user_id, retro_id)
     for key, value in data.model_dump(exclude_unset=True).items():
         setattr(retro, key, value)
@@ -79,9 +81,7 @@ def delete_retrospective(db: Session, user_id: UUID, retro_id: UUID) -> None:
     _invalidate_user_context_cache(user_id)
 
 
-def generate_draft(
-    db: Session, user_id: UUID, period_start: date, period_end: date
-) -> dict:
+def generate_draft(db: Session, user_id: UUID, period_start: date, period_end: date) -> dict:
     events = (
         db.query(CareerEvent)
         .filter(
@@ -93,10 +93,19 @@ def generate_draft(
         .all()
     )
     event_summaries = [
-        {"id": str(e.id), "event_date": e.event_date.isoformat(), "event_type": e.event_type.value, "title": e.title}
+        {
+            "id": str(e.id),
+            "event_date": e.event_date.isoformat(),
+            "event_type": e.event_type.value,
+            "title": e.title,
+        }
         for e in events
     ]
-    suggested_achievements = [e.title for e in events if e.event_type.value in ("promotion", "project_done", "certification")]
+    suggested_achievements = [
+        e.title
+        for e in events
+        if e.event_type.value in ("promotion", "project_done", "certification")
+    ]
     return {
         "period_start": period_start.isoformat(),
         "period_end": period_end.isoformat(),

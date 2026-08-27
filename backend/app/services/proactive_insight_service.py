@@ -10,9 +10,10 @@
 - warning: 风险预警（如"你的规划已逾期2周"）
 - suggestion: 建议推送（如"基于你的霍兰德测评，建议探索算法方向"）
 """
+
 import json
 import re
-from datetime import date, timedelta
+from datetime import date
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -88,7 +89,9 @@ def _build_context(db: Session, user_id: UUID) -> str:
     if decisions:
         lines.append("【历史决策】")
         for d in decisions[:5]:
-            review_status = "已回溯" if d.review_completed else ("待回溯" if d.review_date else "未设回溯")
+            review_status = (
+                "已回溯" if d.review_completed else ("待回溯" if d.review_date else "未设回溯")
+            )
             lines.append(
                 f"- {d.decision_date} [{d.destination_type.value}] "
                 f"置信度={d.confidence} 回溯={review_status}"
@@ -104,7 +107,11 @@ def _build_context(db: Session, user_id: UUID) -> str:
         lines.append("【当前规划】")
         for p in plans:
             total = len(p.milestones) if p.milestones else 0
-            done = sum(1 for m in (p.milestones or []) if isinstance(m, dict) and m.get("status") == "completed")
+            done = sum(
+                1
+                for m in (p.milestones or [])
+                if isinstance(m, dict) and m.get("status") == "completed"
+            )
             lines.append(f"- 目标:{p.goal_text} 进度:{done}/{total}")
 
     # 测评结果
@@ -115,7 +122,9 @@ def _build_context(db: Session, user_id: UUID) -> str:
         .first()
     )
     if assessment:
-        lines.append(f"【霍兰德测评】编码:{assessment.result_code} 推荐:{', '.join(assessment.recommended_directions[:3])}")
+        lines.append(
+            f"【霍兰德测评】编码:{assessment.result_code} 推荐:{', '.join(assessment.recommended_directions[:3])}"
+        )
 
     # 待回溯决策
     today = date.today()
@@ -192,14 +201,16 @@ def _generate_rule_insights(db: Session, user_id: UUID) -> list[dict]:
     )
     for d in pending_reviews[:2]:
         days_overdue = (today - d.review_date).days if d.review_date else 0
-        insights.append({
-            "insight_type": "reminder",
-            "title": f"决策回溯提醒",
-            "content": f"你在 {d.decision_date} 做的「{d.destination_type.value}」决策已到回溯日期{'，逾期 ' + str(days_overdue) + ' 天' if days_overdue > 0 else ''}。记录实际结果，校准你的判断力。",
-            "action_suggestion": "前往去向决策页面填写回溯评估",
-            "priority": 5 if days_overdue > 0 else 4,
-            "related_data": {"decision_id": str(d.id)},
-        })
+        insights.append(
+            {
+                "insight_type": "reminder",
+                "title": "决策回溯提醒",
+                "content": f"你在 {d.decision_date} 做的「{d.destination_type.value}」决策已到回溯日期{'，逾期 ' + str(days_overdue) + ' 天' if days_overdue > 0 else ''}。记录实际结果，校准你的判断力。",
+                "action_suggestion": "前往去向决策页面填写回溯评估",
+                "priority": 5 if days_overdue > 0 else 4,
+                "related_data": {"decision_id": str(d.id)},
+            }
+        )
 
     # 2. 逾期里程碑警告
     plans = (
@@ -217,31 +228,37 @@ def _generate_rule_insights(db: Session, user_id: UUID) -> list[dict]:
                 continue
             deadline = m.get("deadline")
             if deadline and deadline <= today.isoformat():
-                insights.append({
-                    "insight_type": "warning",
-                    "title": "里程碑逾期提醒",
-                    "content": f"规划「{p.goal_text}」中的里程碑「{m.get('title', '未命名')}」已逾期。",
-                    "action_suggestion": "调整计划或标记为进行中",
-                    "priority": 4,
-                    "related_data": {"plan_id": str(p.id)},
-                })
+                insights.append(
+                    {
+                        "insight_type": "warning",
+                        "title": "里程碑逾期提醒",
+                        "content": f"规划「{p.goal_text}」中的里程碑「{m.get('title', '未命名')}」已逾期。",
+                        "action_suggestion": "调整计划或标记为进行中",
+                        "priority": 4,
+                        "related_data": {"plan_id": str(p.id)},
+                    }
+                )
                 break
 
     # 3. 里程碑完成庆祝
     for p in plans[:3]:
         if not p.milestones:
             continue
-        done = sum(1 for m in p.milestones if isinstance(m, dict) and m.get("status") == "completed")
+        done = sum(
+            1 for m in p.milestones if isinstance(m, dict) and m.get("status") == "completed"
+        )
         total = len(p.milestones)
         if done > 0 and done == total:
-            insights.append({
-                "insight_type": "celebration",
-                "title": "规划全部完成！",
-                "content": f"恭喜！你的规划「{p.goal_text}」的 {total} 个里程碑已全部完成。是时候设定下一个目标了。",
-                "action_suggestion": "创建新的职业规划",
-                "priority": 3,
-                "related_data": {"plan_id": str(p.id)},
-            })
+            insights.append(
+                {
+                    "insight_type": "celebration",
+                    "title": "规划全部完成！",
+                    "content": f"恭喜！你的规划「{p.goal_text}」的 {total} 个里程碑已全部完成。是时候设定下一个目标了。",
+                    "action_suggestion": "创建新的职业规划",
+                    "priority": 3,
+                    "related_data": {"plan_id": str(p.id)},
+                }
+            )
             break
 
     return insights
@@ -268,22 +285,30 @@ def _parse_insights(raw: str) -> list[dict]:
     for item in data[:3]:
         if not isinstance(item, dict):
             continue
-        results.append({
-            "insight_type": str(item.get("insight_type", "pattern")),
-            "title": str(item.get("title", ""))[:200],
-            "content": str(item.get("content", "")),
-            "action_suggestion": str(item.get("action_suggestion", "")) or None,
-            "priority": max(1, min(5, int(item.get("priority", 3)))),
-        })
+        results.append(
+            {
+                "insight_type": str(item.get("insight_type", "pattern")),
+                "title": str(item.get("title", ""))[:200],
+                "content": str(item.get("content", "")),
+                "action_suggestion": str(item.get("action_suggestion", "")) or None,
+                "priority": max(1, min(5, int(item.get("priority", 3)))),
+            }
+        )
     return results
 
 
-def list_insights(db: Session, user_id: UUID, limit: int = 10, unread_only: bool = False) -> list[ProactiveInsight]:
+def list_insights(
+    db: Session, user_id: UUID, limit: int = 10, unread_only: bool = False
+) -> list[ProactiveInsight]:
     """列出用户的主动洞察。"""
     query = db.query(ProactiveInsight).filter(ProactiveInsight.user_id == user_id)
     if unread_only:
         query = query.filter(ProactiveInsight.is_read == False)
-    return query.order_by(ProactiveInsight.priority.desc(), ProactiveInsight.created_at.desc()).limit(limit).all()
+    return (
+        query.order_by(ProactiveInsight.priority.desc(), ProactiveInsight.created_at.desc())
+        .limit(limit)
+        .all()
+    )
 
 
 def mark_as_read(db: Session, user_id: UUID, insight_id: UUID) -> bool:

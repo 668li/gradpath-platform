@@ -1,5 +1,6 @@
 # backend/tests/test_exceptions.py
 """全局异常处理器测试（C2 改造后）。"""
+
 import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
@@ -33,7 +34,9 @@ def exc_client():
 
     def raise_business_with_details() -> dict:
         raise BusinessError(
-            "QUOTA_EXCEEDED", "AI 调用次数已用尽", 429,
+            "QUOTA_EXCEEDED",
+            "AI 调用次数已用尽",
+            429,
             details={"quota": 100, "used": 100},
         )
 

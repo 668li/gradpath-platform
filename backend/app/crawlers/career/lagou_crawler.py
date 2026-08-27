@@ -3,6 +3,7 @@
 拉勾网以互联网/科技岗位为主，本爬虫覆盖 10 个新一线城市，
 生成 100 条招聘数据。字段映射到 Company 表与 SalaryBenchmark 表。
 """
+
 import random
 from uuid import UUID
 
@@ -14,13 +15,20 @@ from app.crawlers.registry import register_crawler
 from app.models.company import Company, CompanySize
 from app.models.salary_benchmark import ExperienceLevel, SalaryBenchmark
 
-
 SYSTEM_USER_ID = UUID("00000000-0000-0000-0000-000000000000")
 
 # 10 个新一线城市（拉勾网偏重新一线）
 _CITIES = [
-    "杭州", "成都", "南京", "武汉", "西安",
-    "苏州", "天津", "重庆", "长沙", "青岛",
+    "杭州",
+    "成都",
+    "南京",
+    "武汉",
+    "西安",
+    "苏州",
+    "天津",
+    "重庆",
+    "长沙",
+    "青岛",
 ]
 
 # 10 个岗位类型: (岗位名, 经验级别, 薪资基线下限 k, 薪资基线上限 k)
@@ -39,9 +47,16 @@ _POSITIONS = [
 
 # 城市薪资系数（新一线普遍略低于一线）
 _CITY_MULTIPLIER = {
-    "杭州": 1.00, "成都": 0.80, "南京": 0.90, "武汉": 0.78,
-    "西安": 0.75, "苏州": 0.85, "天津": 0.78, "重庆": 0.78,
-    "长沙": 0.72, "青岛": 0.72,
+    "杭州": 1.00,
+    "成都": 0.80,
+    "南京": 0.90,
+    "武汉": 0.78,
+    "西安": 0.75,
+    "苏州": 0.85,
+    "天津": 0.78,
+    "重庆": 0.78,
+    "长沙": 0.72,
+    "青岛": 0.72,
 }
 
 # 公司池: (公司名, 行业, 规模, 阶段, 总部)
@@ -112,20 +127,22 @@ class LagouCrawler(BaseCrawler):
                 adjusted_min = int(sal_min_k * multiplier * 1000)
                 adjusted_max = int(sal_max_k * multiplier * 1000)
                 adjusted_median = (adjusted_min + adjusted_max) // 2
-                raw.append({
-                    "company_name": company[0],
-                    "industry": company[1],
-                    "size": company[2],
-                    "stage": company[3],
-                    "headquarters": company[4],
-                    "city": city,
-                    "position": position,
-                    "experience_level": level,
-                    "salary_min": adjusted_min,
-                    "salary_max": adjusted_max,
-                    "salary_median": adjusted_median,
-                    "source": "拉勾网",
-                })
+                raw.append(
+                    {
+                        "company_name": company[0],
+                        "industry": company[1],
+                        "size": company[2],
+                        "stage": company[3],
+                        "headquarters": company[4],
+                        "city": city,
+                        "position": position,
+                        "experience_level": level,
+                        "salary_min": adjusted_min,
+                        "salary_max": adjusted_max,
+                        "salary_median": adjusted_median,
+                        "source": "拉勾网",
+                    }
+                )
         return raw
 
     def parse(self, raw_items: list[dict]) -> list[dict]:
@@ -141,9 +158,11 @@ class LagouCrawler(BaseCrawler):
         new_count = 0
         for item in items:
             # 1. 确保 Company 记录存在（按 name 去重）
-            existing_company = db.execute(
-                select(Company).where(Company.name == item["company_name"])
-            ).scalars().first()
+            existing_company = (
+                db.execute(select(Company).where(Company.name == item["company_name"]))
+                .scalars()
+                .first()
+            )
             if existing_company is None:
                 company = Company(
                     name=item["company_name"],
@@ -157,16 +176,20 @@ class LagouCrawler(BaseCrawler):
                 db.flush()  # 立即刷新，使后续 select 能查到新公司（autoflush=False 需手动 flush）
 
             # 2. 写入 SalaryBenchmark（去重：company + position + city + experience_level + year）
-            existing_salary = db.execute(
-                select(SalaryBenchmark).where(
-                    SalaryBenchmark.company == item["company_name"],
-                    SalaryBenchmark.position == item["position"],
-                    SalaryBenchmark.city == item["city"],
-                    SalaryBenchmark.experience_level == item["experience_level"],
-                    SalaryBenchmark.year == 2026,
-                    SalaryBenchmark.source == "拉勾网",
+            existing_salary = (
+                db.execute(
+                    select(SalaryBenchmark).where(
+                        SalaryBenchmark.company == item["company_name"],
+                        SalaryBenchmark.position == item["position"],
+                        SalaryBenchmark.city == item["city"],
+                        SalaryBenchmark.experience_level == item["experience_level"],
+                        SalaryBenchmark.year == 2026,
+                        SalaryBenchmark.source == "拉勾网",
+                    )
                 )
-            ).scalars().first()
+                .scalars()
+                .first()
+            )
             if existing_salary is None:
                 salary = SalaryBenchmark(
                     company=item["company_name"],

@@ -1,11 +1,12 @@
 import psycopg2
+
 conn = psycopg2.connect("postgresql://gradpath:changeme@db:5432/gradpath")
 cur = conn.cursor()
 
 # 1. 所有表的数据量
 cur.execute("""
-SELECT schemaname, relname, n_live_tup 
-FROM pg_stat_user_tables 
+SELECT schemaname, relname, n_live_tup
+FROM pg_stat_user_tables
 ORDER BY n_live_tup DESC
 """)
 print("=== 数据库表数据量 ===")
@@ -53,4 +54,5 @@ print(f"  qas: {cur.fetchone()[0]}")
 cur.execute("SELECT count(*) FROM mentors")
 print(f"  mentors: {cur.fetchone()[0]}")
 
-cur.close(); conn.close()
+cur.close()
+conn.close()

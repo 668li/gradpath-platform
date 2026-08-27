@@ -4,6 +4,7 @@
 城市/地区、4 个级别（科员/副科/正科/副处）的薪资待遇数据，共 80 条记录，
 包含基本工资、津贴、年终绩效等综合年收入信息。
 """
+
 import random
 from uuid import UUID
 
@@ -20,18 +21,50 @@ SYSTEM_USER_ID = UUID("00000000-0000-0000-0000-000000000000")
 # 20 个城市/地区（按待遇水平分档）
 # 一线：待遇最高；新一线：待遇中等偏上；二线：待遇中等
 _CITIES = [
-    "北京", "上海", "广州", "深圳",  # 一线
-    "杭州", "南京", "苏州", "成都", "武汉", "西安",  # 新一线
-    "重庆", "天津", "青岛", "长沙", "郑州", "合肥", "福州",  # 新一线
-    "昆明", "贵阳", "沈阳",  # 二线
+    "北京",
+    "上海",
+    "广州",
+    "深圳",  # 一线
+    "杭州",
+    "南京",
+    "苏州",
+    "成都",
+    "武汉",
+    "西安",  # 新一线
+    "重庆",
+    "天津",
+    "青岛",
+    "长沙",
+    "郑州",
+    "合肥",
+    "福州",  # 新一线
+    "昆明",
+    "贵阳",
+    "沈阳",  # 二线
 ]
 
 # 城市分档（1=一线，2=新一线，3=二线）
 _CITY_TIER = {
-    "北京": 1, "上海": 1, "广州": 1, "深圳": 1,
-    "杭州": 2, "南京": 2, "苏州": 2, "成都": 2, "武汉": 2, "西安": 2,
-    "重庆": 2, "天津": 2, "青岛": 2, "长沙": 2, "郑州": 2, "合肥": 2, "福州": 2,
-    "昆明": 3, "贵阳": 3, "沈阳": 3,
+    "北京": 1,
+    "上海": 1,
+    "广州": 1,
+    "深圳": 1,
+    "杭州": 2,
+    "南京": 2,
+    "苏州": 2,
+    "成都": 2,
+    "武汉": 2,
+    "西安": 2,
+    "重庆": 2,
+    "天津": 2,
+    "青岛": 2,
+    "长沙": 2,
+    "郑州": 2,
+    "合肥": 2,
+    "福州": 2,
+    "昆明": 3,
+    "贵阳": 3,
+    "沈阳": 3,
 }
 
 # 4 个级别
@@ -97,16 +130,18 @@ class SalaryCrawler(BaseCrawler):
                 # 在区间内随机取整
                 salary_low = random.randint(low, high - 1)
                 salary_high = random.randint(salary_low + 1, high)
-                raw.append({
-                    "region": city,
-                    "department": "机关",
-                    "post_name": level,
-                    "level": level,
-                    "salary_low": salary_low,
-                    "salary_high": salary_high,
-                    "bonus_info": random.choice(_BONUS_ITEMS),
-                    "housing_fund": random.choice(["10%", "12%", ""]),
-                })
+                raw.append(
+                    {
+                        "region": city,
+                        "department": "机关",
+                        "post_name": level,
+                        "level": level,
+                        "salary_low": salary_low,
+                        "salary_high": salary_high,
+                        "bonus_info": random.choice(_BONUS_ITEMS),
+                        "housing_fund": random.choice(["10%", "12%", ""]),
+                    }
+                )
         return raw
 
     def parse(self, raw_items: list[dict]) -> list[dict]:
@@ -117,28 +152,30 @@ class SalaryCrawler(BaseCrawler):
             notes = f"含{r['bonus_info']}，{r['level']}综合年收入约{r['salary_low']}-{r['salary_high']}万"
             bonus_info = r["bonus_info"]
             housing_fund = r["housing_fund"] if r["housing_fund"] else None
-            parsed.append({
-                "region": r["region"],
-                "department": r["department"],
-                "post_name": r["post_name"],
-                "exam_type": "待遇信息",
-                "real_competition": "unknown",
-                "treatment_level": _treatment_level(r["salary_high"]),
-                "promotion_speed": _PROMOTION_SPEED[r["level"]],
-                "workload": "medium",
-                "radish_post": "unknown",
-                "service_period": "unknown",
-                "salary_estimate": salary,
-                "housing_fund": housing_fund,
-                "bonus_info": bonus_info,
-                "department_tier": "待遇参考",
-                "work_content": _WORK_CONTENT[r["level"]],
-                "insider_notes": notes,
-                "risk_warnings": [],
-                "data_sources": ["公务员待遇调研", "职级工资标准"],
-                "tags": ["待遇", "薪资", r["level"], r["region"]],
-                "ai_summary": f"{r['region']}{r['level']}综合年收入{salary}（含{bonus_info}）",
-            })
+            parsed.append(
+                {
+                    "region": r["region"],
+                    "department": r["department"],
+                    "post_name": r["post_name"],
+                    "exam_type": "待遇信息",
+                    "real_competition": "unknown",
+                    "treatment_level": _treatment_level(r["salary_high"]),
+                    "promotion_speed": _PROMOTION_SPEED[r["level"]],
+                    "workload": "medium",
+                    "radish_post": "unknown",
+                    "service_period": "unknown",
+                    "salary_estimate": salary,
+                    "housing_fund": housing_fund,
+                    "bonus_info": bonus_info,
+                    "department_tier": "待遇参考",
+                    "work_content": _WORK_CONTENT[r["level"]],
+                    "insider_notes": notes,
+                    "risk_warnings": [],
+                    "data_sources": ["公务员待遇调研", "职级工资标准"],
+                    "tags": ["待遇", "薪资", r["level"], r["region"]],
+                    "ai_summary": f"{r['region']}{r['level']}综合年收入{salary}（含{bonus_info}）",
+                }
+            )
         return parsed
 
     def store(self, items: list[dict], db: Session) -> int:

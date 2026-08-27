@@ -1,6 +1,6 @@
 """讨论帖的 Pydantic Schema 定义。"""
+
 from datetime import datetime
-from uuid import UUID
 
 from pydantic import BaseModel, Field, field_validator
 

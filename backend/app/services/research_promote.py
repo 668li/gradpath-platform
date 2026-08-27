@@ -10,6 +10,7 @@
 事务约定：本服务只做 db.add / 属性回填，不 commit / 不回滚，
 由调用方（API 端点或 auto_approve）统一提交，保证"队列状态 + 业务数据"原子。
 """
+
 import logging
 import re
 from datetime import date, datetime, timezone
@@ -25,7 +26,7 @@ from app.crawlers.research.experience_quality import (
 )
 from app.crawlers.research.news_meta import extract_news_structured_meta_with_evidence
 from app.crawlers.research.quality import score_item_detailed
-from app.crawlers.research.transformer import ResearchTransformer, SYSTEM_USER_ID
+from app.crawlers.research.transformer import SYSTEM_USER_ID, ResearchTransformer
 from app.models.experience_post import ExperiencePost
 from app.models.ingestion import DataSourceMeta, ExternalResearchItem
 from app.models.kaoyan_news import KaoyanNews
@@ -59,6 +60,7 @@ _RANGE_RE = re.compile(
     r"(?P<date1>" + _CHINESE_DATE + r")\s*(?:至|—|–|-|~|到)\s*(?P<date2>" + _CHINESE_DATE + r")"
 )
 
+
 # 无年份日期按"最近的该月日"推断年份（未来优先）：10 月报名/12 月初试落在当年，
 # 3-4 月复试/调剂落次年的场景可正确归属；规则版近似，LLM 增强版会精确化。
 def _resolve_year(month: int, day: int) -> int:
@@ -74,9 +76,7 @@ def _parse_chinese_date(text: str, default_year: int | None = None) -> date | No
 
     default_year：无显式年份时的年份兜底（区间第二个日期继承首日期年份用）。
     """
-    m = re.match(
-        r"(?:20\d{2}年)?(?:1[0-2]|0?[1-9])月(?:3[01]|[12]\d|0?[1-9])日?", text
-    )
+    m = re.match(r"(?:20\d{2}年)?(?:1[0-2]|0?[1-9])月(?:3[01]|[12]\d|0?[1-9])日?", text)
     if not m:
         return None
     token = m.group(0)
@@ -125,7 +125,7 @@ def extract_key_dates(title: str, content: str) -> list[dict]:
         d2 = _parse_chinese_date(m.group("date2"), default_year=d1.year if d1 else None)
         if d1 and d2:
             # 尝试向前找标签（如"报名时间："）
-            prefix = text_[max(0, m.start() - 12): m.start()]
+            prefix = text_[max(0, m.start() - 12) : m.start()]
             label = None
             for cand in ("网上确认", "报名", "截止", "初试", "复试", "调剂", "确认"):
                 if cand in prefix:
@@ -139,7 +139,7 @@ def extract_key_dates(title: str, content: str) -> list[dict]:
         if not d:
             continue
         label = m.group("label")
-        if label == "确认" and "网上确认" in text_[max(0, m.start() - 6): m.start() + 8]:
+        if label == "确认" and "网上确认" in text_[max(0, m.start() - 6) : m.start() + 8]:
             label = "网上确认"
         # 区间已覆盖的日期不再重复（避免报名窗口拆成单点）
         if any(r["label"] == label and r["date"] == d.isoformat() for r in results):
@@ -212,11 +212,7 @@ def _parse_dt(value: Any) -> datetime | None:
 
 def _backfill_data_source(db: Session, ext_item: ExternalResearchItem, reviewer: str) -> None:
     """按 source_url 回填 t_data_source.review_status（匹配到才更新）。"""
-    ds = (
-        db.query(DataSourceMeta)
-        .filter(DataSourceMeta.source_url == ext_item.source_url)
-        .first()
-    )
+    ds = db.query(DataSourceMeta).filter(DataSourceMeta.source_url == ext_item.source_url).first()
     if ds is not None and ds.review_status != "APPROVED":
         ds.review_status = "APPROVED"
         ds.reviewed_by = reviewer
@@ -230,9 +226,7 @@ def _touch_data_freshness(db: Session, ext_item: ExternalResearchItem) -> None:
     - 只做 db.execute，不 commit（与调用方同一事务，保证原子）
     """
     meta = ext_item.external_meta or {}
-    source_name = meta.get("source_channel") or _FRESHNESS_SOURCE_ALIASES.get(
-        ext_item.crawler_name
-    )
+    source_name = meta.get("source_channel") or _FRESHNESS_SOURCE_ALIASES.get(ext_item.crawler_name)
     if not source_name:
         return
     try:
@@ -264,9 +258,7 @@ def _touch_data_freshness(db: Session, ext_item: ExternalResearchItem) -> None:
         )
 
 
-def _promote_experience_post(
-    db: Session, ext_item: ExternalResearchItem, reviewer: str
-) -> dict:
+def _promote_experience_post(db: Session, ext_item: ExternalResearchItem, reviewer: str) -> dict:
     """落 ExperiencePost：复用 transform_bilibili 清洗，status=approved，source_url 幂等。
 
     Phase G 提纯：落库时注入质量分（打分器五维：来源可信度/完整度/互动/
@@ -275,9 +267,7 @@ def _promote_experience_post(
     """
     # 幂等去重：业务表已存在同 URL → 跳过
     exists = (
-        db.query(ExperiencePost.id)
-        .filter(ExperiencePost.source_url == ext_item.source_url)
-        .first()
+        db.query(ExperiencePost.id).filter(ExperiencePost.source_url == ext_item.source_url).first()
     )
     if exists:
         logger.info("[research_promote] experience_post 已存在，跳过: %s", ext_item.source_url)
@@ -365,20 +355,14 @@ def _promote_experience_post(
     return {"promoted": 1, "skipped": 0}
 
 
-def _promote_kaoyan_news(
-    db: Session, ext_item: ExternalResearchItem, reviewer: str
-) -> dict:
+def _promote_kaoyan_news(db: Session, ext_item: ExternalResearchItem, reviewer: str) -> dict:
     """落 KaoyanNews：status=approved，source_url 幂等。
 
     Phase C1 提纯：落库时补齐 quality_score/grade（采集期已算则沿用，
     缺失则规则版现场计算）、key_dates（规则正则抽取，LLM 增强见 news_enhance）、
     is_expired 时效标记，保证审核确认后前端拿到的是提纯后的结构化数据。
     """
-    exists = (
-        db.query(KaoyanNews.id)
-        .filter(KaoyanNews.source_url == ext_item.source_url)
-        .first()
-    )
+    exists = db.query(KaoyanNews.id).filter(KaoyanNews.source_url == ext_item.source_url).first()
     if exists:
         logger.info("[research_promote] kaoyan_news 已存在，跳过: %s", ext_item.source_url)
         return {"promoted": 0, "skipped": 1}
@@ -446,9 +430,7 @@ def _promote_kaoyan_news(
     return {"promoted": 1, "skipped": 0}
 
 
-def _promote_dark_knowledge(
-    db: Session, ext_item: ExternalResearchItem, reviewer: str
-) -> dict:
+def _promote_dark_knowledge(db: Session, ext_item: ExternalResearchItem, reviewer: str) -> dict:
     """落 DarkKnowledge（防御分支）— 当前无爬虫写入该类型，仅按 meta.stage 兜底。"""
     from app.models.grad_intel import DarkKnowledge
 
@@ -459,11 +441,7 @@ def _promote_dark_knowledge(
             "[research_promote] dark_knowledge 缺 stage，跳过落库: %s", ext_item.source_url
         )
         return {"promoted": 0, "skipped": 1}
-    exists = (
-        db.query(DarkKnowledge.id)
-        .filter(DarkKnowledge.title == ext_item.title)
-        .first()
-    )
+    exists = db.query(DarkKnowledge.id).filter(DarkKnowledge.title == ext_item.title).first()
     if exists:
         return {"promoted": 0, "skipped": 1}
     db.add(
@@ -484,9 +462,7 @@ def _promote_dark_knowledge(
     return {"promoted": 1, "skipped": 0}
 
 
-def promote_external_item(
-    db: Session, ext_item: ExternalResearchItem, reviewer: str
-) -> dict:
+def promote_external_item(db: Session, ext_item: ExternalResearchItem, reviewer: str) -> dict:
     """审核通过 → 落业务表（幂等）。返回 {"promoted": int, "skipped": int}。
 
     Args:

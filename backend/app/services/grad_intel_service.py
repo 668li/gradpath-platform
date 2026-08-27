@@ -5,11 +5,11 @@
 2. 自我定位模糊 → AI 基于背景数据生成三档院校推荐
 3. "你不知道你不知道" → 预填充的真实盲区知识
 """
+
 import hashlib
 import json
 import logging
 import re
-import time
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -81,7 +81,8 @@ def clear_positioning_cache() -> int:
         被清除的缓存项数量
     """
     deleted = 0
-    for key in cache.keys():
+    # SIM118: cache 是 RedisCache(非 dict,无 __iter__),只能走 keys() 全量扫描
+    for key in cache.keys():  # noqa: SIM118
         if key.startswith(f"{CACHE_PREFIX}:"):
             if cache.delete(key):
                 deleted += 1
@@ -102,60 +103,216 @@ def _get_static_recommendations(data: dict) -> dict:
     # 根据本科层次和 GPA 确定推荐档次
     if undergrad_tier in ["985", "211"] and gpa >= 3.5:
         reach_schools = [
-            {"name": "清华大学", "major": target_major or "计算机科学与技术", "tier": "985", "probability": 35, "reason": "顶尖院校，竞争激烈"},
-            {"name": "北京大学", "major": target_major or "软件工程", "tier": "985", "probability": 30, "reason": "学术氛围浓厚"},
+            {
+                "name": "清华大学",
+                "major": target_major or "计算机科学与技术",
+                "tier": "985",
+                "probability": 35,
+                "reason": "顶尖院校，竞争激烈",
+            },
+            {
+                "name": "北京大学",
+                "major": target_major or "软件工程",
+                "tier": "985",
+                "probability": 30,
+                "reason": "学术氛围浓厚",
+            },
         ]
         target_schools = [
-            {"name": "浙江大学", "major": target_major or "计算机科学与技术", "tier": "985", "probability": 65, "reason": "工科强校，录取相对公平"},
-            {"name": "上海交通大学", "major": target_major or "电子信息", "tier": "985", "probability": 60, "reason": "地理位置优越"},
-            {"name": "中国科学技术大学", "major": target_major or "计算机科学与技术", "tier": "985", "probability": 55, "reason": "科研实力强"},
+            {
+                "name": "浙江大学",
+                "major": target_major or "计算机科学与技术",
+                "tier": "985",
+                "probability": 65,
+                "reason": "工科强校，录取相对公平",
+            },
+            {
+                "name": "上海交通大学",
+                "major": target_major or "电子信息",
+                "tier": "985",
+                "probability": 60,
+                "reason": "地理位置优越",
+            },
+            {
+                "name": "中国科学技术大学",
+                "major": target_major or "计算机科学与技术",
+                "tier": "985",
+                "probability": 55,
+                "reason": "科研实力强",
+            },
         ]
         safety_schools = [
-            {"name": "南京大学", "major": target_major or "计算机科学与技术", "tier": "985", "probability": 85, "reason": "保底选择，录取概率高"},
-            {"name": "华中科技大学", "major": target_major or "计算机科学与技术", "tier": "985", "probability": 80, "reason": "工科强校，相对稳妥"},
+            {
+                "name": "南京大学",
+                "major": target_major or "计算机科学与技术",
+                "tier": "985",
+                "probability": 85,
+                "reason": "保底选择，录取概率高",
+            },
+            {
+                "name": "华中科技大学",
+                "major": target_major or "计算机科学与技术",
+                "tier": "985",
+                "probability": 80,
+                "reason": "工科强校，相对稳妥",
+            },
         ]
         success_probability = 55
     elif undergrad_tier in ["985", "211", "双一流"] and gpa >= 3.0:
         reach_schools = [
-            {"name": "浙江大学", "major": target_major or "计算机科学与技术", "tier": "985", "probability": 40, "reason": "冲刺选择"},
-            {"name": "上海交通大学", "major": target_major or "电子信息", "tier": "985", "probability": 35, "reason": "竞争激烈"},
+            {
+                "name": "浙江大学",
+                "major": target_major or "计算机科学与技术",
+                "tier": "985",
+                "probability": 40,
+                "reason": "冲刺选择",
+            },
+            {
+                "name": "上海交通大学",
+                "major": target_major or "电子信息",
+                "tier": "985",
+                "probability": 35,
+                "reason": "竞争激烈",
+            },
         ]
         target_schools = [
-            {"name": "南京大学", "major": target_major or "计算机科学与技术", "tier": "985", "probability": 65, "reason": "匹配当前水平"},
-            {"name": "武汉大学", "major": target_major or "计算机科学与技术", "tier": "985", "probability": 60, "reason": "综合性大学"},
-            {"name": "中山大学", "major": target_major or "计算机科学与技术", "tier": "985", "probability": 55, "reason": "华南地区强校"},
+            {
+                "name": "南京大学",
+                "major": target_major or "计算机科学与技术",
+                "tier": "985",
+                "probability": 65,
+                "reason": "匹配当前水平",
+            },
+            {
+                "name": "武汉大学",
+                "major": target_major or "计算机科学与技术",
+                "tier": "985",
+                "probability": 60,
+                "reason": "综合性大学",
+            },
+            {
+                "name": "中山大学",
+                "major": target_major or "计算机科学与技术",
+                "tier": "985",
+                "probability": 55,
+                "reason": "华南地区强校",
+            },
         ]
         safety_schools = [
-            {"name": "四川大学", "major": target_major or "计算机科学与技术", "tier": "985", "probability": 85, "reason": "保底选择"},
-            {"name": "吉林大学", "major": target_major or "计算机科学与技术", "tier": "985", "probability": 80, "reason": "录取概率高"},
+            {
+                "name": "四川大学",
+                "major": target_major or "计算机科学与技术",
+                "tier": "985",
+                "probability": 85,
+                "reason": "保底选择",
+            },
+            {
+                "name": "吉林大学",
+                "major": target_major or "计算机科学与技术",
+                "tier": "985",
+                "probability": 80,
+                "reason": "录取概率高",
+            },
         ]
         success_probability = 50
     elif undergrad_tier in ["一本", "二本"] and gpa >= 3.0:
         reach_schools = [
-            {"name": "南京航空航天大学", "major": target_major or "计算机科学与技术", "tier": "211", "probability": 40, "reason": "冲刺选择"},
-            {"name": "北京交通大学", "major": target_major or "计算机科学与技术", "tier": "211", "probability": 35, "reason": "地理位置好"},
+            {
+                "name": "南京航空航天大学",
+                "major": target_major or "计算机科学与技术",
+                "tier": "211",
+                "probability": 40,
+                "reason": "冲刺选择",
+            },
+            {
+                "name": "北京交通大学",
+                "major": target_major or "计算机科学与技术",
+                "tier": "211",
+                "probability": 35,
+                "reason": "地理位置好",
+            },
         ]
         target_schools = [
-            {"name": "杭州电子科技大学", "major": target_major or "计算机科学与技术", "tier": "一本", "probability": 65, "reason": "IT 就业好"},
-            {"name": "南京邮电大学", "major": target_major or "计算机科学与技术", "tier": "一本", "probability": 60, "reason": "通信强校"},
-            {"name": "重庆邮电大学", "major": target_major or "计算机科学与技术", "tier": "一本", "probability": 55, "reason": "西南地区强校"},
+            {
+                "name": "杭州电子科技大学",
+                "major": target_major or "计算机科学与技术",
+                "tier": "一本",
+                "probability": 65,
+                "reason": "IT 就业好",
+            },
+            {
+                "name": "南京邮电大学",
+                "major": target_major or "计算机科学与技术",
+                "tier": "一本",
+                "probability": 60,
+                "reason": "通信强校",
+            },
+            {
+                "name": "重庆邮电大学",
+                "major": target_major or "计算机科学与技术",
+                "tier": "一本",
+                "probability": 55,
+                "reason": "西南地区强校",
+            },
         ]
         safety_schools = [
-            {"name": "浙江工业大学", "major": target_major or "计算机科学与技术", "tier": "一本", "probability": 85, "reason": "保底选择"},
-            {"name": "广东工业大学", "major": target_major or "计算机科学与技术", "tier": "一本", "probability": 80, "reason": "珠三角就业好"},
+            {
+                "name": "浙江工业大学",
+                "major": target_major or "计算机科学与技术",
+                "tier": "一本",
+                "probability": 85,
+                "reason": "保底选择",
+            },
+            {
+                "name": "广东工业大学",
+                "major": target_major or "计算机科学与技术",
+                "tier": "一本",
+                "probability": 80,
+                "reason": "珠三角就业好",
+            },
         ]
         success_probability = 45
     else:
         reach_schools = [
-            {"name": "杭州电子科技大学", "major": target_major or "计算机科学与技术", "tier": "一本", "probability": 35, "reason": "冲刺选择"},
+            {
+                "name": "杭州电子科技大学",
+                "major": target_major or "计算机科学与技术",
+                "tier": "一本",
+                "probability": 35,
+                "reason": "冲刺选择",
+            },
         ]
         target_schools = [
-            {"name": "浙江工业大学", "major": target_major or "计算机科学与技术", "tier": "一本", "probability": 60, "reason": "匹配当前水平"},
-            {"name": "南京邮电大学", "major": target_major or "计算机科学与技术", "tier": "一本", "probability": 55, "reason": "专业实力强"},
+            {
+                "name": "浙江工业大学",
+                "major": target_major or "计算机科学与技术",
+                "tier": "一本",
+                "probability": 60,
+                "reason": "匹配当前水平",
+            },
+            {
+                "name": "南京邮电大学",
+                "major": target_major or "计算机科学与技术",
+                "tier": "一本",
+                "probability": 55,
+                "reason": "专业实力强",
+            },
         ]
         safety_schools = [
-            {"name": "浙江理工大学", "major": target_major or "计算机科学与技术", "tier": "一本", "probability": 85, "reason": "保底选择"},
-            {"name": "江苏大学", "major": target_major or "计算机科学与技术", "tier": "一本", "probability": 80, "reason": "录取概率高"},
+            {
+                "name": "浙江理工大学",
+                "major": target_major or "计算机科学与技术",
+                "tier": "一本",
+                "probability": 85,
+                "reason": "保底选择",
+            },
+            {
+                "name": "江苏大学",
+                "major": target_major or "计算机科学与技术",
+                "tier": "一本",
+                "probability": 80,
+                "reason": "录取概率高",
+            },
         ]
         success_probability = 35
 
@@ -227,7 +384,6 @@ DARK_KNOWLEDGE_SEED = [
         "tags": ["同等学力", "专科考研", "加试"],
         "sort_order": 4,
     },
-
     # ===== 阶段2: 择校阶段 =====
     {
         "stage": "school_selection",
@@ -289,7 +445,6 @@ DARK_KNOWLEDGE_SEED = [
         "tags": ["自命题", "统考", "真题", "信息差"],
         "sort_order": 9,
     },
-
     # ===== 阶段3: 备考阶段 =====
     {
         "stage": "preparation",
@@ -339,7 +494,6 @@ DARK_KNOWLEDGE_SEED = [
         "tags": ["经验贴", "幸存者偏差", "复习计划"],
         "sort_order": 13,
     },
-
     # ===== 阶段4: 初试后 =====
     {
         "stage": "exam",
@@ -377,7 +531,6 @@ DARK_KNOWLEDGE_SEED = [
         "tags": ["调剂", "信息战", "预调剂"],
         "sort_order": 16,
     },
-
     # ===== 阶段5: 复试阶段 =====
     {
         "stage": "retest",
@@ -422,6 +575,7 @@ DARK_KNOWLEDGE_SEED = [
 # 暗知识服务
 # ======================================================================
 
+
 def seed_dark_knowledge(db: Session) -> int:
     """预填充暗知识数据。如果表为空则插入，返回插入条数。"""
     existing = db.query(DarkKnowledge).count()
@@ -445,14 +599,19 @@ def get_dark_knowledge_by_stage(
     query = db.query(DarkKnowledge)
     if stage and stage != "all":
         query = query.filter(DarkKnowledge.stage == stage)
-    
+
     # 获取总数
     total = query.count()
-    
+
     # 应用分页
     offset = (page - 1) * limit
-    items = query.order_by(DarkKnowledge.stage, DarkKnowledge.sort_order).offset(offset).limit(limit).all()
-    
+    items = (
+        query.order_by(DarkKnowledge.stage, DarkKnowledge.sort_order)
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+
     return items, total
 
 
@@ -478,6 +637,7 @@ def get_dark_knowledge_stages(db: Session) -> list[dict]:
 # ======================================================================
 # 院校情报服务
 # ======================================================================
+
 
 async def query_school_intel(school_name: str, major_name: str) -> dict:
     """AI 生成院校情报。
@@ -614,15 +774,18 @@ def delete_intel(db: Session, user_id: UUID, intel_id: UUID) -> bool:
 # 自我定位服务
 # ======================================================================
 
-async def create_positioning(db: Session, user_id: UUID, data: dict, bypass_cache: bool = False) -> SelfPositioning:
+
+async def create_positioning(
+    db: Session, user_id: UUID, data: dict, bypass_cache: bool = False
+) -> SelfPositioning:
     """创建自我定位并触发 AI 评估。
-    
+
     Args:
         bypass_cache: 是否绕过缓存强制重新生成
     """
     # 计算缓存键
     cache_key = _compute_cache_key(data)
-    
+
     # 检查缓存（除非绕过）
     if not bypass_cache:
         cached_result = _get_cached_result(cache_key)
@@ -690,7 +853,7 @@ async def create_positioning(db: Session, user_id: UUID, data: dict, bypass_cach
     except Exception as e:
         logger.error("AI 评估失败: %s", e)
         assessment = _get_static_recommendations(data)
-    
+
     positioning.ai_assessment = assessment.get("ai_assessment")
     positioning.reach_schools = assessment.get("reach_schools", [])
     positioning.target_schools = assessment.get("target_schools", [])
@@ -789,6 +952,7 @@ def get_positioning_history(db: Session, user_id: UUID) -> list[SelfPositioning]
 # 研招网真实数据查询
 # ======================================================================
 
+
 def list_yanzhao_programs(
     db: Session,
     *,
@@ -812,10 +976,10 @@ def list_yanzhao_programs(
         query = query.filter(GradYanzhaoProgram.degree_type == degree_type)
     if year:
         query = query.filter(GradYanzhaoProgram.year == year)
-    
+
     # 获取总数
     total = query.count()
-    
+
     # 应用分页
     items = (
         query.order_by(GradYanzhaoProgram.university_name, GradYanzhaoProgram.major_name)
@@ -823,7 +987,7 @@ def list_yanzhao_programs(
         .offset(offset)
         .all()
     )
-    
+
     return items, total
 
 

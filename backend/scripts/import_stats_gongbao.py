@@ -5,6 +5,7 @@
 幂等键 (indicator, category, year, region, industry) 与 import_salary_gov_market 一致；
 纯增量追加（不动既有工资数据，不删除任何行）。全 ORM 参数绑定。
 """
+
 import json
 import sys
 from pathlib import Path
@@ -43,7 +44,11 @@ def main() -> None:
                     MarketData.category == category,
                     MarketData.year == int(year),
                     MarketData.region.is_(None) if region is None else MarketData.region == region,
-                    MarketData.industry.is_(None) if industry is None else MarketData.industry == industry,
+                    (
+                        MarketData.industry.is_(None)
+                        if industry is None
+                        else MarketData.industry == industry
+                    ),
                 )
                 .first()
             )
@@ -66,7 +71,9 @@ def main() -> None:
             inserted += 1
         db.commit()
         total = db.query(MarketData).count()
-    print(f"导入 {inserted} 条 / 重复 {duplicated} / 无效跳过 {skipped} | market_data 总数: {total}")
+    print(
+        f"导入 {inserted} 条 / 重复 {duplicated} / 无效跳过 {skipped} | market_data 总数: {total}"
+    )
 
 
 if __name__ == "__main__":

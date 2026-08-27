@@ -1,4 +1,5 @@
 """人生设计引擎 Schemas。"""
+
 from datetime import date, datetime
 from uuid import UUID
 
@@ -78,7 +79,8 @@ class WeeklyReviewResponse(BaseModel):
 
 class AuditGenerateRequest(BaseModel):
     """请求 AI 生成个性化的人生审计问题。"""
+
     focus_areas: list[str] = Field(
         default_factory=lambda: ["career", "finance", "health", "relationships", "growth"],
-        description="审计聚焦领域"
+        description="审计聚焦领域",
     )

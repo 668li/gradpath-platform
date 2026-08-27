@@ -1,7 +1,13 @@
-import urllib.request, json, time, urllib.parse, http.cookiejar
+import http.cookiejar
+import json
+import time
+import urllib.parse
+import urllib.request
 
 # Load existing results
-with open(r"D:\职业规划\职业规划\backend\app\crawlers\real_data\fast_bilibili.json", "r", encoding="utf-8") as f:
+with open(
+    r"D:\职业规划\职业规划\backend\app\crawlers\real_data\fast_bilibili.json", encoding="utf-8"
+) as f:
     existing = json.load(f)
 
 existing_bvids = {v["url"] for v in existing}
@@ -16,22 +22,28 @@ for kw in keywords:
     try:
         # Fetch search page for cookies
         search_page_url = f"https://search.bilibili.com/all?keyword={urllib.parse.quote(kw)}"
-        page_req = urllib.request.Request(search_page_url, headers={
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-        })
+        page_req = urllib.request.Request(
+            search_page_url,
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+            },
+        )
         opener.open(page_req, timeout=15)
         time.sleep(1)
 
         # Fetch page 2
         api_url = f"https://api.bilibili.com/x/web-interface/search/type?keyword={urllib.parse.quote(kw)}&search_type=video&page=2&pagesize=30"
-        api_req = urllib.request.Request(api_url, headers={
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-            "Referer": f"https://search.bilibili.com/all?keyword={urllib.parse.quote(kw)}",
-            "Accept": "application/json, text/plain, */*",
-            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-        })
+        api_req = urllib.request.Request(
+            api_url,
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+                "Referer": f"https://search.bilibili.com/all?keyword={urllib.parse.quote(kw)}",
+                "Accept": "application/json, text/plain, */*",
+                "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+            },
+        )
         resp = opener.open(api_req, timeout=15)
         data = json.loads(resp.read())
 
@@ -41,14 +53,18 @@ for kw in keywords:
             for v in items:
                 bvid_url = f"https://www.bilibili.com/video/{v.get('bvid', '')}"
                 if bvid_url not in existing_bvids:
-                    existing.append({
-                        "title": v.get("title", "").replace("<em class=\"keyword\">", "").replace("</em>", ""),
-                        "author": v.get("author", ""),
-                        "views": v.get("play", 0),
-                        "description": v.get("description", ""),
-                        "url": bvid_url,
-                        "keyword": kw
-                    })
+                    existing.append(
+                        {
+                            "title": v.get("title", "")
+                            .replace('<em class="keyword">', "")
+                            .replace("</em>", ""),
+                            "author": v.get("author", ""),
+                            "views": v.get("play", 0),
+                            "description": v.get("description", ""),
+                            "url": bvid_url,
+                            "keyword": kw,
+                        }
+                    )
                     existing_bvids.add(bvid_url)
                     added += 1
             print(f"[OK] {kw} page2: +{added} new (from {len(items)} results)")

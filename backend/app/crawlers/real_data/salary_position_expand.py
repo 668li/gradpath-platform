@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Position-granularity salary benchmark EXPANSION scraper for GradPath.
 
 Extends salary_position_scraper.py (existing 1046 records for 广州/深圳/杭州)
@@ -52,15 +51,15 @@ the existing salary_position_data.json on (position, city, year).
 
 Run:  py -3.13 salary_position_expand.py
 """
+
 import html as html_mod
 import json
 import os
 import re
 import sys
 import time
-import urllib.parse
 import zipfile
-from urllib.parse import urlsplit, urljoin
+from urllib.parse import urljoin, urlsplit
 
 import requests
 
@@ -211,8 +210,9 @@ def row_from_cells(cells, wan):
     return {"name": clean_name("".join(texts)), "vals": vals}
 
 
-def make_record(position, city, salary_min, salary_median, salary_max, year,
-                source, source_url, category):
+def make_record(
+    position, city, salary_min, salary_median, salary_max, year, source, source_url, category
+):
     return {
         "position": position,
         "city": city,
@@ -228,8 +228,7 @@ def make_record(position, city, salary_min, salary_median, salary_max, year,
     }
 
 
-def rows_to_records(rows, city, year, source, source_url, category, entries,
-                    tag):
+def rows_to_records(rows, city, year, source, source_url, category, entries, tag):
     records, seen = [], set()
     for row in rows:
         name = row["name"]
@@ -237,8 +236,7 @@ def rows_to_records(rows, city, year, source, source_url, category, entries,
             continue
         seen.add(name)
         p10, _p25, p50, _p75, p90 = row["vals"]
-        records.append(make_record(name, city, p10, p50, p90, year, source,
-                                   source_url, category))
+        records.append(make_record(name, city, p10, p50, p90, year, source, source_url, category))
     entries.append(f"[{tag}] parsed rows={len(rows)} -> {len(records)}条")
     return records
 
@@ -247,14 +245,16 @@ def rows_to_records(rows, city, year, source, source_url, category, entries,
 # source 1+3: inline HTML tables (重庆 / 武汉)
 # ---------------------------------------------------------------------------
 
+
 def html_tables(html):
     out = []
     for tbl in re.findall(r"<table[^>]*>.*?</table>", html, re.S | re.I):
         rows = []
         for tr in re.findall(r"<tr[^>]*>(.*?)</tr>", tbl, re.S | re.I):
             cells = re.findall(r"<t[dh][^>]*>(.*?)</t[dh]>", tr, re.S | re.I)
-            cells = [re.sub(r"\s+", "", html_mod.unescape(
-                re.sub(r"<[^>]+>", "", c))) for c in cells]
+            cells = [
+                re.sub(r"\s+", "", html_mod.unescape(re.sub(r"<[^>]+>", "", c))) for c in cells
+            ]
             rows.append(cells)
         out.append(rows)
     return out
@@ -280,9 +280,18 @@ def scrape_html_tables(cfg):
             continue
         rows = [row_from_cells(r, cfg["wan_unit"]) for r in target]
         rows = [r for r in rows if r]
-        records.extend(rows_to_records(
-            rows, cfg["city"], cfg["year"], cfg["source"], cfg["page_url"],
-            sec["category"], entries, sec["category"]))
+        records.extend(
+            rows_to_records(
+                rows,
+                cfg["city"],
+                cfg["year"],
+                cfg["source"],
+                cfg["page_url"],
+                sec["category"],
+                entries,
+                sec["category"],
+            )
+        )
     return records, entries
 
 
@@ -290,9 +299,9 @@ def scrape_html_tables(cfg):
 # source 2: docx attachment (济南, 万元/年)
 # ---------------------------------------------------------------------------
 
+
 def docx_tables(data):
-    xml = zipfile.ZipFile(__import__("io").BytesIO(data)).read(
-        "word/document.xml").decode("utf-8")
+    xml = zipfile.ZipFile(__import__("io").BytesIO(data)).read("word/document.xml").decode("utf-8")
     out = []
     for tbl in re.findall(r"<w:tbl>.*?</w:tbl>", xml, re.S):
         rows = []
@@ -335,14 +344,24 @@ def scrape_docx(cfg):
                     break
                 seen += 1
         if target is None:
-            entries.append(f"[{sec['category']}] 未找到第{occurrence + 1}个维度 "
-                           f"{dim} 表格 -> 跳过")
+            entries.append(
+                f"[{sec['category']}] 未找到第{occurrence + 1}个维度 " f"{dim} 表格 -> 跳过"
+            )
             continue
         rows = [row_from_cells(r, cfg["wan_unit"]) for r in target]
         rows = [r for r in rows if r]
-        records.extend(rows_to_records(
-            rows, cfg["city"], cfg["year"], cfg["source"], cfg["page_url"],
-            sec["category"], entries, sec["category"]))
+        records.extend(
+            rows_to_records(
+                rows,
+                cfg["city"],
+                cfg["year"],
+                cfg["source"],
+                cfg["page_url"],
+                sec["category"],
+                entries,
+                sec["category"],
+            )
+        )
     return records, entries
 
 
@@ -351,6 +370,7 @@ def scrape_docx(cfg):
 # Layout: 序|号|<dim>|工资水平（万元/年）|10%|25%|50%|75%|90% then data rows;
 # names may wrap across two lines; values carry decimals (万元).
 # ---------------------------------------------------------------------------
+
 
 def tokenize(text):
     return [ln.strip() for ln in text.splitlines() if ln.strip()]
@@ -368,7 +388,7 @@ def parse_pdf_page_rows(text, wan):
     rows = []
     i = 0
     while i < len(tokens):
-        if tokens[i: i + 5] == PCT5:
+        if tokens[i : i + 5] == PCT5:
             i += 5
             # collect name tokens until 5 consecutive numbers
             j = i
@@ -376,13 +396,15 @@ def parse_pdf_page_rows(text, wan):
                 seq_m = SEQ_RE.match(tokens[j])
                 k = j + 1 if seq_m else j
                 name_parts = []
-                while k < len(tokens) and not NUM_RE.match(tokens[k]) \
-                        and len(name_parts) <= 6:
+                while k < len(tokens) and not NUM_RE.match(tokens[k]) and len(name_parts) <= 6:
                     name_parts.append(tokens[k])
                     k += 1
-                if (name_parts and k + 5 <= len(tokens)
-                        and all(NUM_RE.match(tokens[m]) for m in range(k, k + 5))
-                        and k - (j + 1 if seq_m else j) <= 7):
+                if (
+                    name_parts
+                    and k + 5 <= len(tokens)
+                    and all(NUM_RE.match(tokens[m]) for m in range(k, k + 5))
+                    and k - (j + 1 if seq_m else j) <= 7
+                ):
                     vals = [to_yuan(tokens[m], wan) for m in range(k, k + 5)]
                     if all(vals[n] <= vals[n + 1] for n in range(4)):
                         name = clean_name("".join(name_parts))
@@ -415,7 +437,7 @@ def _cut_after_marker(text, marker):
     marker_norm = marker.replace(" ", "").replace("\u3000", "")
     for idx, ln in enumerate(lines):
         if marker_norm in ln.replace(" ", "").replace("\u3000", ""):
-            return "\n".join(lines[idx + 1:])
+            return "\n".join(lines[idx + 1 :])
     return text
 
 
@@ -456,9 +478,18 @@ def scrape_pdf(cfg):
                 text = _cut_at_marker(text, sec["end_marker"])
             rows.extend(parse_pdf_page_rows(text, cfg["wan_unit"]))
         entries.append(f"[{sec['category']}] pages {start}-{end} rows_raw={len(rows)}")
-        records.extend(rows_to_records(
-            rows, cfg["city"], cfg["year"], cfg["source"], cfg["page_url"],
-            sec["category"], entries, sec["category"]))
+        records.extend(
+            rows_to_records(
+                rows,
+                cfg["city"],
+                cfg["year"],
+                cfg["source"],
+                cfg["page_url"],
+                sec["category"],
+                entries,
+                sec["category"],
+            )
+        )
     doc.close()
     return records, entries
 
@@ -520,15 +551,24 @@ SOURCES = [
         "wan_unit": True,  # 单位: 万元/年 -> x10000 => 元/年
         "source": "东莞市人社局《2024年东莞市人力资源市场工资价位》",
         "sections": [
-            {"start_marker": "（三）分学历工资价位",
-             "end_marker": "（四）分岗位类型工资价位",
-             "search_from": 5, "category": "分学历工资价位"},
-            {"start_marker": "（四）分岗位类型工资价位",
-             "end_marker": "二、从业人员职业工资价位",
-             "search_from": 5, "category": "分岗位类型工资价位"},
-            {"start_marker": "（一）分职业工资价位",
-             "end_marker": "（二）制造业职业工资价位",
-             "search_from": 5, "category": "分职业工资价位"},
+            {
+                "start_marker": "（三）分学历工资价位",
+                "end_marker": "（四）分岗位类型工资价位",
+                "search_from": 5,
+                "category": "分学历工资价位",
+            },
+            {
+                "start_marker": "（四）分岗位类型工资价位",
+                "end_marker": "二、从业人员职业工资价位",
+                "search_from": 5,
+                "category": "分岗位类型工资价位",
+            },
+            {
+                "start_marker": "（一）分职业工资价位",
+                "end_marker": "（二）制造业职业工资价位",
+                "search_from": 5,
+                "category": "分职业工资价位",
+            },
         ],
     },
 ]
@@ -543,21 +583,21 @@ SCRAPERS = {"html": scrape_html_tables, "docx": scrape_docx, "pdf": scrape_pdf}
 
 SPOT_CHECKS = [
     # (city, position, field, expected)  values read from the announcements
-    ("重庆市", "企业单位负责人", "salary_median", 93793),      # 52000/67117/93793/140000/228249
+    ("重庆市", "企业单位负责人", "salary_median", 93793),  # 52000/67117/93793/140000/228249
     ("重庆市", "其他生产制造及有关人员", "salary_min", 37412),
     ("重庆市", "高层管理岗", "salary_median", 101754),
-    ("济南市", "企业负责人", "salary_median", 151300),         # 15.13万元/年 x10000
+    ("济南市", "企业负责人", "salary_median", 151300),  # 15.13万元/年 x10000
     ("济南市", "自然科学和地球科学研究人员", "salary_min", 60200),  # 6.02万元/年
     ("济南市", "大地测量工程技术人员", "salary_max", 269800),  # 26.98万元/年 (L/S标记已清)
-    ("济南市", "高层管理岗", "salary_median", 179200),         # 17.92万元/年
+    ("济南市", "高层管理岗", "salary_median", 179200),  # 17.92万元/年
     ("武汉市", "企业董事", "salary_median", 103000),
     ("武汉市", "企业经理", "salary_min", 50926),
     ("武汉市", "安全员", "salary_max", 102714),
     ("武汉市", "高层管理岗", "salary_min", 58500),
     ("东莞市", "研究生（含博士、硕士）", "salary_median", 204000),  # 20.40万元/年
-    ("东莞市", "大学本科", "salary_min", 52600),              # 5.26万元/年
+    ("东莞市", "大学本科", "salary_min", 52600),  # 5.26万元/年
     ("东莞市", "材料成形与改性工程技术人员", "salary_median", 79000),  # 7.90万元/年
-    ("东莞市", "高级技师", "salary_median", 76300),           # 7.63万元/年
+    ("东莞市", "高级技师", "salary_median", 76300),  # 7.63万元/年
 ]
 
 
@@ -574,13 +614,15 @@ def verify(records):
         elif hit[field] != expected:
             problems.append(
                 f"spot-check mismatch {city}/{pos} {field}: got {hit[field]}, "
-                f"expected {expected} (公告原文)")
+                f"expected {expected} (公告原文)"
+            )
     return problems
 
 
 # ---------------------------------------------------------------------------
 # main
 # ---------------------------------------------------------------------------
+
 
 def run():
     all_records, report = [], []
@@ -600,8 +642,7 @@ def run():
     # internal dedup
     seen, unique = set(), []
     for r in all_records:
-        key = (r["city"], r["position"], r["experience_level"],
-               r["category"], r["year"])
+        key = (r["city"], r["position"], r["experience_level"], r["category"], r["year"])
         if key not in seen:
             seen.add(key)
             unique.append(r)
@@ -613,8 +654,7 @@ def run():
             for r in json.load(fh):
                 existing_keys.add((r["position"], r["city"], r["year"]))
     before = len(unique)
-    unique = [r for r in unique
-              if (r["position"], r["city"], r["year"]) not in existing_keys]
+    unique = [r for r in unique if (r["position"], r["city"], r["year"]) not in existing_keys]
     dropped = before - len(unique)
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as fh:
@@ -648,9 +688,11 @@ def run():
         for p in problems:
             print(f"  ! {p}")
     else:
-        print(f"\nspot-check vs 公告原文: all passed ({len(SPOT_CHECKS)} checks, "
-              "percentile order OK)")
-    ok = (len(unique) >= 200 and len(by_city) >= 3 and not problems)
+        print(
+            f"\nspot-check vs 公告原文: all passed ({len(SPOT_CHECKS)} checks, "
+            "percentile order OK)"
+        )
+    ok = len(unique) >= 200 and len(by_city) >= 3 and not problems
     return 0 if ok else 1
 
 

@@ -1,10 +1,9 @@
 # backend/pipeline/seed_sources.py
 """数据源种子数据脚本。"""
+
 from app.database import SessionLocal
 from app.models.data_source import DataSource
 from app.models.user import User
-from app.core.security import hash_password
-
 
 SEED_SOURCES = [
     {

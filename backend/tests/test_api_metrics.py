@@ -1,5 +1,4 @@
 """Metrics API 测试。"""
-import pytest
 
 
 class TestMetricsEndpoint:

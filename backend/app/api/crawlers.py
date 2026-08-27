@@ -1,25 +1,26 @@
 """爬虫管理 API — 管理员专用。支持异步执行、APScheduler定时任务和WebSocket通知。"""
-import json
+
 import logging
 from uuid import uuid4
+
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
+from app.config import settings
+from app.core.cache import cache
+
 # 后台爬虫任务为 sync 函数（在线程池执行），通过 ws_manager.notify_task_sync
 # 把跨 worker 的 WebSocket 广播协程调度到主事件循环。
-
 from app.core.deps import get_admin_user
-from app.core.cache import cache
-from app.config import settings
-from app.database import get_db, SessionLocal
-from app.models.user import User
-from app.models.crawler_run import CrawlerRun
-from app.schemas.crawler_run import CrawlerInfo, CrawlerRunRequest, CrawlerRunResponse
-from app.crawlers.registry import list_crawlers, get_crawler
+from app.core.websocket_manager import manager as ws_manager
 from app.crawlers.compliance import is_allowed_crawler
 from app.crawlers.crawler_config import load_config
-from app.core.websocket_manager import manager as ws_manager
+from app.crawlers.registry import get_crawler, list_crawlers
+from app.database import SessionLocal, get_db
+from app.models.crawler_run import CrawlerRun
+from app.models.user import User
+from app.schemas.crawler_run import CrawlerInfo, CrawlerRunRequest, CrawlerRunResponse
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +53,7 @@ def _celery_available() -> bool:
         return False
     try:
         from app.celery_app import celery_app
+
         broker_url = str(celery_app.conf.broker_url or "")
         return not broker_url.startswith("memory://")
     except Exception:
@@ -66,12 +68,14 @@ def _dispatch_crawler_task(task_id: str, source_name: str, dry_run: bool):
     if _celery_available():
         try:
             from app.tasks.crawler_tasks import run_crawler_task
+
             run_crawler_task.delay(task_id, source_name, dry_run)
             logger.info("爬虫任务已投递到 Celery: task_id=%s source=%s", task_id, source_name)
             return True
         except Exception as e:
             logger.warning("Celery 投递失败，降级到 BackgroundTasks: %s", e)
     return False
+
 
 # ----------------------------------------------------------------------
 # APScheduler 定时任务管理
@@ -81,7 +85,7 @@ _scheduler = None
 
 def _build_scheduler_jobstore():
     """构建 APScheduler jobstore：优先使用 Redis 后端（多 worker 共享），
-    
+
     Redis 不可用时降级到 MemoryJobStore（开发环境）。
     修复: A9 — 原 MemoryJobStore 进程重启后任务丢失，多 worker 重复执行定时任务。
     """
@@ -93,6 +97,7 @@ def _build_scheduler_jobstore():
 
     try:
         from urllib.parse import urlparse
+
         from apscheduler.jobstores.redis import RedisJobStore
 
         # 解析 redis://[:password@]host:port/db
@@ -110,7 +115,9 @@ def _build_scheduler_jobstore():
         )
         logger.info(
             "APScheduler 使用 RedisJobStore: host=%s port=%d db=%d",
-            host, port, db,
+            host,
+            port,
+            db,
         )
         return jobstore
     except Exception as e:
@@ -128,6 +135,7 @@ def get_scheduler():
     if _scheduler is None:
         try:
             from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
             _scheduler = AsyncIOScheduler(jobstores={"default": _build_scheduler_jobstore()})
             _scheduler.start()
             logger.info("APScheduler 已启动")
@@ -158,12 +166,14 @@ def list_all_crawlers(user: User = Depends(get_admin_user)):
     crawlers = list_crawlers()
     result = []
     for name, cls in crawlers.items():
-        result.append(CrawlerInfo(
-            name=name,
-            category=cls.category,
-            description=cls.description,
-            config=load_config(name),
-        ))
+        result.append(
+            CrawlerInfo(
+                name=name,
+                category=cls.category,
+                description=cls.description,
+                config=load_config(name),
+            )
+        )
     return result
 
 
@@ -176,20 +186,30 @@ def _run_crawler_background(
     db = SessionLocal()
     try:
         # 更新状态为运行中
-        cache.set(f"{TASK_CACHE_PREFIX}:{task_id}", {"status": "running", "source_name": source_name}, ttl=TASK_CACHE_TTL)
-        
+        cache.set(
+            f"{TASK_CACHE_PREFIX}:{task_id}",
+            {"status": "running", "source_name": source_name},
+            ttl=TASK_CACHE_TTL,
+        )
+
         # 发送WebSocket通知
         ws_manager.notify_task_sync(task_id, "running", {"source_name": source_name})
 
         cls = get_crawler(source_name)
         if not cls:
-            cache.set(f"{TASK_CACHE_PREFIX}:{task_id}", {"status": "failed", "error": f"爬虫 '{source_name}' 未注册"}, ttl=TASK_CACHE_TTL)
-            ws_manager.notify_task_sync(task_id, "failed", {"error": f"爬虫 '{source_name}' 未注册"})
+            cache.set(
+                f"{TASK_CACHE_PREFIX}:{task_id}",
+                {"status": "failed", "error": f"爬虫 '{source_name}' 未注册"},
+                ttl=TASK_CACHE_TTL,
+            )
+            ws_manager.notify_task_sync(
+                task_id, "failed", {"error": f"爬虫 '{source_name}' 未注册"}
+            )
             return
-        
+
         config = load_config(source_name)
         crawler = cls(config=config)
-        
+
         # 创建执行记录
         run_record = CrawlerRun(
             source_name=source_name,
@@ -199,10 +219,10 @@ def _run_crawler_background(
         db.add(run_record)
         db.commit()
         db.refresh(run_record)
-        
+
         # 执行爬虫
         result = crawler.run(db=db) if not dry_run else {"status": "dry_run"}
-        
+
         # 更新记录
         run_record.status = result.get("status", "unknown")
         run_record.items_fetched = result.get("fetched", 0)
@@ -212,29 +232,41 @@ def _run_crawler_background(
         run_record.error_message = result.get("error")
         db.commit()
         db.refresh(run_record)
-        
+
         # 更新任务状态
-        cache.set(f"{TASK_CACHE_PREFIX}:{task_id}", {
-            "status": result.get("status", "unknown"),
-            "run_id": str(run_record.id),
-            "fetched": result.get("fetched", 0),
-            "stored": result.get("stored", 0),
-            "errors": result.get("errors", 0),
-        }, ttl=TASK_CACHE_TTL)
-        
+        cache.set(
+            f"{TASK_CACHE_PREFIX}:{task_id}",
+            {
+                "status": result.get("status", "unknown"),
+                "run_id": str(run_record.id),
+                "fetched": result.get("fetched", 0),
+                "stored": result.get("stored", 0),
+                "errors": result.get("errors", 0),
+            },
+            ttl=TASK_CACHE_TTL,
+        )
+
         # 发送WebSocket通知
-        ws_manager.notify_task_sync(task_id, result.get("status", "unknown"), {
-            "run_id": str(run_record.id),
-            "fetched": result.get("fetched", 0),
-            "stored": result.get("stored", 0),
-            "errors": result.get("errors", 0),
-        })
+        ws_manager.notify_task_sync(
+            task_id,
+            result.get("status", "unknown"),
+            {
+                "run_id": str(run_record.id),
+                "fetched": result.get("fetched", 0),
+                "stored": result.get("stored", 0),
+                "errors": result.get("errors", 0),
+            },
+        )
 
         logger.info(f"爬虫 {source_name} 执行完成: {result}")
 
     except Exception as e:
         logger.error(f"爬虫 {source_name} 执行失败: {e}")
-        cache.set(f"{TASK_CACHE_PREFIX}:{task_id}", {"status": "failed", "error": str(e)}, ttl=TASK_CACHE_TTL)
+        cache.set(
+            f"{TASK_CACHE_PREFIX}:{task_id}",
+            {"status": "failed", "error": str(e)},
+            ttl=TASK_CACHE_TTL,
+        )
         ws_manager.notify_task_sync(task_id, "failed", {"error": str(e)})
     finally:
         db.close()
@@ -318,6 +350,7 @@ def get_run_detail(
 ):
     """获取单次爬取详情。"""
     from uuid import UUID
+
     record = db.query(CrawlerRun).filter(CrawlerRun.id == UUID(run_id)).first()
     if not record:
         raise HTTPException(status_code=404, detail="记录不存在")
@@ -336,13 +369,15 @@ def list_schedules(user: User = Depends(get_admin_user)):
     jobs = []
     for job in scheduler.get_jobs():
         if job.id.startswith("crawler_"):
-            jobs.append(ScheduleResponse(
-                job_id=job.id,
-                source_name=job.kwargs.get("source_name", ""),
-                cron=str(job.trigger),
-                enabled=job.next_run_time is not None,
-                next_run=str(job.next_run_time) if job.next_run_time else None,
-            ))
+            jobs.append(
+                ScheduleResponse(
+                    job_id=job.id,
+                    source_name=job.kwargs.get("source_name", ""),
+                    cron=str(job.trigger),
+                    enabled=job.next_run_time is not None,
+                    next_run=str(job.next_run_time) if job.next_run_time else None,
+                )
+            )
     return jobs
 
 
@@ -457,6 +492,7 @@ async def _run_scheduled_crawler(source_name: str):
     if _celery_available():
         try:
             from app.tasks.crawler_tasks import run_scheduled_crawler_task
+
             run_scheduled_crawler_task.delay(source_name)
             logger.info("定时爬虫任务已投递到 Celery: source=%s", source_name)
             return
@@ -508,8 +544,8 @@ async def _run_scheduled_crawler(source_name: str):
 # 默认按日定时任务（新源随启动补齐，管理员可在 /schedules 改期/停用）
 # ----------------------------------------------------------------------
 DEFAULT_DAILY_SCHEDULES: dict[str, str] = {
-    "eol_kaoyan": "0 2 * * *",          # 每天 02:00 抓取中国教育在线考研频道
-    "official_announce": "0 2 * * *",   # 每天 02:00 抓取高校研究生院官方公告
+    "eol_kaoyan": "0 2 * * *",  # 每天 02:00 抓取中国教育在线考研频道
+    "official_announce": "0 2 * * *",  # 每天 02:00 抓取高校研究生院官方公告
 }
 
 
@@ -553,23 +589,30 @@ def seed_default_schedules() -> None:
 async def _notify_data_update(source_name: str, items_stored: int):
     """发送数据更新通知（WebSocket + 外部webhook）。"""
     import httpx
+
     from app.config import settings
 
     # WebSocket广播
-    await ws_manager.broadcast({
-        "type": "data_update",
-        "source_name": source_name,
-        "items_stored": items_stored,
-    })
+    await ws_manager.broadcast(
+        {
+            "type": "data_update",
+            "source_name": source_name,
+            "items_stored": items_stored,
+        }
+    )
 
     # 外部webhook（n8n）
     webhook_url = getattr(settings, "DATA_UPDATE_WEBHOOK_URL", None)
     if webhook_url:
         try:
             async with httpx.AsyncClient() as client:
-                await client.post(webhook_url, json={
-                    "source_name": source_name,
-                    "items_stored": items_stored,
-                }, timeout=10)
+                await client.post(
+                    webhook_url,
+                    json={
+                        "source_name": source_name,
+                        "items_stored": items_stored,
+                    },
+                    timeout=10,
+                )
         except Exception as e:
             logger.warning(f"Webhook通知失败: {e}")

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Real government-published salary data scraper for GradPath.
 
 Collects REAL, traceable salary statistics from public government sources:
@@ -24,6 +23,7 @@ Record fields: {indicator, category, value, unit, region, industry, year,
 
 Run:  py -3.13 salary_gov_scraper.py
 """
+
 import json
 import os
 import re
@@ -55,10 +55,8 @@ NBS_SOURCE = "国家统计局"
 
 SH_PAGES = [
     # (kind, url) kind: yrd_positions | skill_talent
-    ("yrd_positions",
-     "https://rsj.sh.gov.cn/tgzjw_17760/20251226/t0035_1437616.html"),
-    ("skill_talent",
-     "https://rsj.sh.gov.cn/tgzjw_17760/20241018/t0035_1428263.html"),
+    ("yrd_positions", "https://rsj.sh.gov.cn/tgzjw_17760/20251226/t0035_1437616.html"),
+    ("skill_talent", "https://rsj.sh.gov.cn/tgzjw_17760/20241018/t0035_1428263.html"),
 ]
 SH_SOURCE = "上海市人力资源和社会保障局"
 
@@ -74,6 +72,7 @@ JOB_LEVEL_COLS = [
 # ----------------------------------------------------------------------------
 # generic helpers
 # ----------------------------------------------------------------------------
+
 
 def fetch(url):
     resp = requests.get(url, headers=HEADERS, timeout=REQUEST_TIMEOUT)
@@ -99,8 +98,9 @@ def parse_tables(html):
     for tb in re.findall(r"<table[^>]*>.*?</table>", html, re.S | re.I):
         rows = []
         for tr in re.findall(r"<tr[^>]*>.*?</tr>", tb, re.S | re.I):
-            cells = [strip_tags(c) for c in
-                     re.findall(r"<t[dh][^>]*>(.*?)</t[dh]>", tr, re.S | re.I)]
+            cells = [
+                strip_tags(c) for c in re.findall(r"<t[dh][^>]*>(.*?)</t[dh]>", tr, re.S | re.I)
+            ]
             cells = [c for c in cells if c != ""]
             if cells:
                 rows.append(cells)
@@ -141,8 +141,9 @@ def to_number(text):
     return float(m.group()) if m else None
 
 
-def make_record(indicator, category, value, unit, region, industry, year,
-                source, source_url, published_at):
+def make_record(
+    indicator, category, value, unit, region, industry, year, source, source_url, published_at
+):
     return {
         "indicator": indicator,
         "category": category,
@@ -161,6 +162,7 @@ def check_robots(url):
     """Lightweight robots.txt awareness check (reporting only, non-blocking)."""
     try:
         from urllib.parse import urlsplit
+
         parts = urlsplit(url)
         robots_url = f"{parts.scheme}://{parts.netloc}/robots.txt"
         resp = requests.get(robots_url, headers=HEADERS, timeout=15)
@@ -176,6 +178,7 @@ def check_robots(url):
 # ----------------------------------------------------------------------------
 # Source A: 国家统计局 annual average-wage announcements
 # ----------------------------------------------------------------------------
+
 
 def classify_nbs_table(rows):
     """Map a table to (dimension, unit_mode) by its header row."""
@@ -209,8 +212,7 @@ def scrape_nbs_page(data_year, url):
     """Parse one NBS annual wage announcement into records."""
     html = fetch(url)
     m = re.search(r"/t(\d{4})(\d{2})(\d{2})_", url)
-    published_at = (f"{m.group(1)}-{m.group(2)}-{m.group(3)}"
-                    if m else f"{data_year}-01-01")
+    published_at = f"{m.group(1)}-{m.group(2)}-{m.group(3)}" if m else f"{data_year}-01-01"
     records = []
 
     # Walk content in document order: remember the nearest preceding section
@@ -235,9 +237,11 @@ def scrape_nbs_page(data_year, url):
             dimension, mode = classify_nbs_table(rows)
             if dimension is None:
                 continue
-            records.extend(nbs_table_records(
-                rows, dimension, mode, section, data_year,
-                NBS_SOURCE, url, published_at))
+            records.extend(
+                nbs_table_records(
+                    rows, dimension, mode, section, data_year, NBS_SOURCE, url, published_at
+                )
+            )
         else:
             for head in re.findall(r">([^<>]*(?:一|二|三|四|五)、[^<>]{2,60})<", tok):
                 sec = section_of_heading(head.strip())
@@ -246,8 +250,7 @@ def scrape_nbs_page(data_year, url):
     return records
 
 
-def nbs_table_records(rows, dimension, mode, section, data_year,
-                      source, url, published_at):
+def nbs_table_records(rows, dimension, mode, section, data_year, source, url, published_at):
     records = []
     indicator = f"{section}就业人员年平均工资"
     rows = drop_unit_notes(rows)
@@ -275,15 +278,26 @@ def nbs_table_records(rows, dimension, mode, section, data_year,
                 cat = "全体"
             for year, val in ((data_year, v_cur), (data_year - 1, v_prev)):
                 if val is not None:
-                    records.append(make_record(
-                        indicator, cat, val, "元/年", region, industry,
-                        year, source, url, published_at))
+                    records.append(
+                        make_record(
+                            indicator,
+                            cat,
+                            val,
+                            "元/年",
+                            region,
+                            industry,
+                            year,
+                            source,
+                            url,
+                            published_at,
+                        )
+                    )
     else:  # job_level: 规模以上企业按岗位
         # header rows: row0 [区域|行业|登记注册统计类别, 规模以上企业就业人员(merged)]
         #              row1 sub-columns [中层及以上管理人员, ...]
         cols = ["规模以上企业就业人员"] + JOB_LEVEL_COLS
         sub_idx = next((i for i, r in enumerate(rows) if "中层" in "".join(r)), -1)
-        body = rows[sub_idx + 1:] if sub_idx >= 0 else data_rows
+        body = rows[sub_idx + 1 :] if sub_idx >= 0 else data_rows
         for row in body:
             if not row:
                 continue
@@ -299,12 +313,24 @@ def nbs_table_records(rows, dimension, mode, section, data_year,
                 val = to_number(row[i + 1])
                 if val is None:
                     continue
-                records.append(make_record(
-                    "规模以上企业就业人员年平均工资" if col == "规模以上企业就业人员"
-                    else "规模以上企业分岗位就业人员年平均工资",
-                    f"{col}{suffix}" if suffix else col,
-                    val, "元/年", region, industry,
-                    data_year, source, url, published_at))
+                records.append(
+                    make_record(
+                        (
+                            "规模以上企业就业人员年平均工资"
+                            if col == "规模以上企业就业人员"
+                            else "规模以上企业分岗位就业人员年平均工资"
+                        ),
+                        f"{col}{suffix}" if suffix else col,
+                        val,
+                        "元/年",
+                        region,
+                        industry,
+                        data_year,
+                        source,
+                        url,
+                        published_at,
+                    )
+                )
     return records
 
 
@@ -332,16 +358,27 @@ def scrape_sh_yrd_positions(url):
                 val = to_number(row[2 + i])
                 if val is None:
                     continue
-                records.append(make_record(
-                    "长三角一体化示范区制造业企业市场工资价位",
-                    f"{position}({pct})", val, "元/年", "长三角一体化示范区",
-                    "制造业", 2024, SH_SOURCE, url, published_at))
+                records.append(
+                    make_record(
+                        "长三角一体化示范区制造业企业市场工资价位",
+                        f"{position}({pct})",
+                        val,
+                        "元/年",
+                        "长三角一体化示范区",
+                        "制造业",
+                        2024,
+                        SH_SOURCE,
+                        url,
+                        published_at,
+                    )
+                )
     return records
 
 
 # ----------------------------------------------------------------------------
 # Source B2: 上海 企业技能人才市场工资价位 (skilled-talent series)
 # ----------------------------------------------------------------------------
+
 
 def scrape_sh_skill_talent(url):
     html = fetch(url)
@@ -354,45 +391,78 @@ def scrape_sh_skill_talent(url):
     records = []
 
     # 2019—2023年，技能人才年平均工资分别为12.79、13.55、14.83、16.22和16.88万元。
-    m = re.search(
-        r"(\d{4})[—-](\d{4})年[，,]技能人才年平均工资分别为"
-        r"([\d\.、和]+)万元", text)
+    m = re.search(r"(\d{4})[—-](\d{4})年[，,]技能人才年平均工资分别为" r"([\d\.、和]+)万元", text)
     if m:
         start_year = int(m.group(1))
         vals = [to_number(v) for v in re.findall(r"[\d\.]+", m.group(3))]
         for offset, val in enumerate(vals):
             if val is not None:
-                records.append(make_record(
-                    "企业技能人才年平均工资", "技能人才合计", val * 10000,
-                    "元/年", "上海市", None, start_year + offset,
-                    SH_SOURCE, url, published_at))
+                records.append(
+                    make_record(
+                        "企业技能人才年平均工资",
+                        "技能人才合计",
+                        val * 10000,
+                        "元/年",
+                        "上海市",
+                        None,
+                        start_year + offset,
+                        SH_SOURCE,
+                        url,
+                        published_at,
+                    )
+                )
 
     # “人工智能”产业高技能人才年工资高位数为33.08万元，增幅9.9%。 (3 industries)
     for ind, val in re.findall(
-            r"[“\"]([\u4e00-\u9fa5]{2,12})[”\"]产业高技能人才年工资高位数为"
-            r"([\d\.]+)万元", text):
-        records.append(make_record(
-            "高技能人才年工资高位数", f"{ind}产业", to_number(val) * 10000,
-            "元/年", "上海市", f"{ind}", 2023, SH_SOURCE, url, published_at))
+        r"[“\"]([\u4e00-\u9fa5]{2,12})[”\"]产业高技能人才年工资高位数为" r"([\d\.]+)万元", text
+    ):
+        records.append(
+            make_record(
+                "高技能人才年工资高位数",
+                f"{ind}产业",
+                to_number(val) * 10000,
+                "元/年",
+                "上海市",
+                f"{ind}",
+                2023,
+                SH_SOURCE,
+                url,
+                published_at,
+            )
+        )
 
     # 高技能人才年工资中位数分别为18.91、18.67和17.76万元 (industries listed before)
     m = re.search(
         r"[“\"]制造业[”\"][“\"]交通运输、仓储和邮政业[”\"][“\"]信息传输、软件和信息技术服务业[”\"]"
-        r"[，,]高技能人才年工资中位数分别为([\d\.、和]+)万元", text)
+        r"[，,]高技能人才年工资中位数分别为([\d\.、和]+)万元",
+        text,
+    )
     if m:
         inds = ["制造业", "交通运输、仓储和邮政业", "信息传输、软件和信息技术服务业"]
         vals = [to_number(v) for v in re.findall(r"[\d\.]+", m.group(1))]
         for ind, val in zip(inds, vals):
             if val is not None:
-                records.append(make_record(
-                    "高技能人才年工资中位数", f"{ind}", val * 10000,
-                    "元/年", "上海市", ind, 2023, SH_SOURCE, url, published_at))
+                records.append(
+                    make_record(
+                        "高技能人才年工资中位数",
+                        f"{ind}",
+                        val * 10000,
+                        "元/年",
+                        "上海市",
+                        ind,
+                        2023,
+                        SH_SOURCE,
+                        url,
+                        published_at,
+                    )
+                )
     return records
 
 
 # ----------------------------------------------------------------------------
 # main
 # ----------------------------------------------------------------------------
+
 
 def main():
     all_records = []
@@ -410,21 +480,25 @@ def main():
     for year, url in NBS_PAGES:
         time.sleep(POLITE_DELAY)
         all_records.extend(
-            attempt(f"NBS-{year} {url}", lambda u=url, y=year:
-                    scrape_nbs_page(y, u)))
+            attempt(f"NBS-{year} {url}", lambda u=url, y=year: scrape_nbs_page(y, u))
+        )
 
     for kind, url in SH_PAGES:
         time.sleep(POLITE_DELAY)
-        fn = (scrape_sh_yrd_positions if kind == "yrd_positions"
-              else scrape_sh_skill_talent)
-        all_records.extend(
-            attempt(f"SH-{kind} {url}", lambda u=url, f=fn: f(u)))
+        fn = scrape_sh_yrd_positions if kind == "yrd_positions" else scrape_sh_skill_talent
+        all_records.extend(attempt(f"SH-{kind} {url}", lambda u=url, f=fn: f(u)))
 
     # dedupe on identity of the statistic
     seen, unique = set(), []
     for r in all_records:
-        key = (r["indicator"], r["category"], r["region"], r["industry"],
-               r["year"], r["source_url"])
+        key = (
+            r["indicator"],
+            r["category"],
+            r["region"],
+            r["industry"],
+            r["year"],
+            r["source_url"],
+        )
         if key not in seen:
             seen.add(key)
             unique.append(r)

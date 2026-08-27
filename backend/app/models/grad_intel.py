@@ -5,6 +5,7 @@
 2. 自我定位模糊（我能考上什么层次的学校）
 3. "你不知道你不知道"的盲区知识
 """
+
 from uuid import UUID
 
 from sqlalchemy import Boolean, Float, ForeignKey, Index, Integer, String, Text
@@ -23,6 +24,7 @@ class GradSchoolIntel(UUIDMixin, TimestampMixin, Base):
     - 报录比多少？真实统考名额？(admission_ratio)
     - 复试怎么考？占比多少？(retest_weight / retest_format)
     """
+
     __tablename__ = "grad_school_intel"
     __table_args__ = (
         Index("ix_school_intel_unique", "school_name", "major_name", unique=True),
@@ -40,9 +42,13 @@ class GradSchoolIntel(UUIDMixin, TimestampMixin, Base):
 
     # === 核心情报 ===
     # 卡第一学历程度: none / light / moderate / severe / unknown
-    background_discrimination: Mapped[str] = mapped_column(String(20), nullable=False, default="unknown")
+    background_discrimination: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="unknown"
+    )
     # 保护第一志愿: yes / partial / no / unknown
-    first_choice_protection: Mapped[str] = mapped_column(String(20), nullable=False, default="unknown")
+    first_choice_protection: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="unknown"
+    )
     # 报录比（含推免），如 "15:1"
     admission_ratio: Mapped[str | None] = mapped_column(String(50), nullable=True)
     # 推免占比，如 "60%"
@@ -74,6 +80,7 @@ class SelfPositioning(UUIDMixin, TimestampMixin, Base):
     解决"我能考上什么学校"的自我认知问题。
     AI 基于背景数据生成冲刺/稳妥/保底三档院校推荐。
     """
+
     __tablename__ = "self_positionings"
 
     user_id: Mapped[UUID] = mapped_column(
@@ -111,6 +118,7 @@ class DarkKnowledge(UUIDMixin, TimestampMixin, Base):
     预填充结构化内容，按阶段分类。
     每条知识包含：核心内容 + 常见误区 + 行动建议 + 验证方法。
     """
+
     __tablename__ = "dark_knowledge"
     __table_args__ = (
         Index("ix_dark_knowledge_stage_sort", "stage", "sort_order"),
@@ -185,7 +193,14 @@ class GradAdjustmentInfo(UUIDMixin, TimestampMixin, Base):
 
     __tablename__ = "grad_adjustment_info"
     __table_args__ = (
-        Index("ix_adjustment_unique", "university_name", "department", "major_name", "year", unique=True),
+        Index(
+            "ix_adjustment_unique",
+            "university_name",
+            "department",
+            "major_name",
+            "year",
+            unique=True,
+        ),
     )
 
     university_name: Mapped[str] = mapped_column(String(200), nullable=False, index=True)

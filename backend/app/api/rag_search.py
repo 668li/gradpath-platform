@@ -1,4 +1,5 @@
 """RAG Search API - search across all GradPath data with AI-synthesizable context."""
+
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -6,7 +7,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.services.rag_engine import RAGEngine, RAGResult
+from app.services.rag_engine import RAGEngine
 
 logger = logging.getLogger(__name__)
 

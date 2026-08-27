@@ -8,6 +8,7 @@ promote 落库时已计算 quality_score/key_dates/is_expired），不阻塞主�
 LLM 不可用时 ai_summary 保持 NULL（诚实，不伪造 AI 内容），前端回退展示
 summary 字段。
 """
+
 import json
 import logging
 import re
@@ -24,24 +25,29 @@ LLM_TIMEOUT = 25
 SUMMARY_MAX_LEN = 160
 # 有效分类维度（与 transformer.KAOYAN_CATEGORY_RULES 键集一致）
 VALID_CATEGORIES = {
-    "政策", "招生简章", "复试", "调剂", "复试线", "推免", "报录比", "择校", "备考", "general",
+    "政策",
+    "招生简章",
+    "复试",
+    "调剂",
+    "复试线",
+    "推免",
+    "报录比",
+    "择校",
+    "备考",
+    "general",
 }
 
 _SYSTEM_PROMPT = (
     "你是考研信息差分析师。基于给定的考研资讯标题与正文，输出严格 JSON（不要任何其他文字）："
-    "{\"summary\": \"≤120字中文摘要，只写对考生有行动价值的信息差（截止时间、报名要求、政策变化点），不编造原文没有的事实\", "
-    "\"category\": \"资讯分类，从以下取值：政策/招生简章/复试/调剂/复试线/推免/报录比/择校/备考/general\", "
-    "\"key_dates\": [{\"label\": \"报名|网上确认|截止|初试|复试|调剂\", \"date\": \"YYYY-MM-DD\", \"end_date\": \"YYYY-MM-DD(可选，窗口结束日)\"}]}。"
+    '{"summary": "≤120字中文摘要，只写对考生有行动价值的信息差（截止时间、报名要求、政策变化点），不编造原文没有的事实", '
+    '"category": "资讯分类，从以下取值：政策/招生简章/复试/调剂/复试线/推免/报录比/择校/备考/general", '
+    '"key_dates": [{"label": "报名|网上确认|截止|初试|复试|调剂", "date": "YYYY-MM-DD", "end_date": "YYYY-MM-DD(可选，窗口结束日)"}]}。'
     "关键时间点只从原文抽取，原文没有的日期一律不写。"
 )
 
 
 def _build_user_prompt(title: str, category: str, content: str) -> str:
-    return (
-        f"标题：{title}\n"
-        f"现有分类：{category}\n"
-        f"正文：{(content or '')[:2000]}"
-    )
+    return f"标题：{title}\n" f"现有分类：{category}\n" f"正文：{(content or '')[:2000]}"
 
 
 def _parse_llm_json(text: str) -> dict | None:
@@ -58,7 +64,7 @@ def _parse_llm_json(text: str) -> dict | None:
     if start < 0 or end <= start:
         return None
     try:
-        return json.loads(cleaned[start:end + 1])
+        return json.loads(cleaned[start : end + 1])
     except (json.JSONDecodeError, ValueError):
         return None
 
@@ -84,7 +90,12 @@ def _sanitize_llm_dates(raw_dates: object) -> list[dict]:
             continue
         label = item.get("label")
         if not isinstance(label, str) or label not in {
-            "报名", "网上确认", "截止", "初试", "复试", "调剂",
+            "报名",
+            "网上确认",
+            "截止",
+            "初试",
+            "复试",
+            "调剂",
         }:
             continue
         date = _valid_date_token(item.get("date"))
@@ -147,13 +158,13 @@ async def enhance_news_item(db: Session, news: KaoyanNews) -> dict:
             # 关键日期可能变化 → 基于新日期重算时效标记
             from app.services.research_promote import _compute_is_expired
 
-            news.is_expired = _compute_is_expired(
-                news.published_at, news.crawled_at, llm_dates
-            )
+            news.is_expired = _compute_is_expired(news.published_at, news.crawled_at, llm_dates)
 
         logger.info(
             "[news_enhance] 增强成功 %s (summary=%s, key_dates=%d)",
-            news.id, bool(news.ai_summary), len(news.key_dates or []),
+            news.id,
+            bool(news.ai_summary),
+            len(news.key_dates or []),
         )
         return {"status": "enhanced", "key_dates": len(llm_dates)}
     except Exception as e:  # noqa: BLE001 — 降级模式：任何失败保留规则版结果

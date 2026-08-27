@@ -1,4 +1,5 @@
 """收藏 API 路由。"""
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -81,9 +82,7 @@ def remove_bookmark(
     db: Session = Depends(get_db),
 ):
     bookmark = (
-        db.query(Bookmark)
-        .filter(Bookmark.id == bookmark_id, Bookmark.user_id == user.id)
-        .first()
+        db.query(Bookmark).filter(Bookmark.id == bookmark_id, Bookmark.user_id == user.id).first()
     )
     if not bookmark:
         raise HTTPException(

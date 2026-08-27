@@ -4,28 +4,25 @@ Endpoints:
     POST /api/ai/agent          — answer a question (DB + optional web search + LLM)
     GET  /api/ai/agent/web-search — test web search independently
 """
+
 import logging
 import re
-from typing import Literal, Optional
+from typing import Literal
 
 import httpx
-from fastapi import APIRouter, HTTPException, Query, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.core.deps import get_current_user
-from app.database import get_db, SessionLocal
+from app.database import SessionLocal, get_db
 from app.models.user import User
 from app.services.ai_butler_service import route_agent, scan_user
 from app.services.ai_circuit_breaker import AICircuitBreakerOpenError
-from app.services.ai_quota_service import (
-    AILLMQuotaExceeded,
-    check_llm_quota,
-    incr_llm_quota,
-)
 from app.services.ai_orchestrator import AIOrchestrator
+from app.services.ai_quota_service import AILLMQuotaExceeded, check_llm_quota, incr_llm_quota
 from app.services.ai_service import AIServiceRetryExhausted
 from app.services.user_context_service import build_context_prompt
 from app.services.web_search import WebSearchService
@@ -66,6 +63,7 @@ def _sanitize_prompt_input(text: str) -> str:
         cleaned = pattern.sub("[FILTERED]", cleaned)
     return cleaned
 
+
 # ---------------------------------------------------------------------------
 # Singleton services (created once at import time)
 # ---------------------------------------------------------------------------
@@ -77,10 +75,11 @@ _web_search = WebSearchService()
 # Request / response schemas
 # ---------------------------------------------------------------------------
 
+
 class AgentRequest(BaseModel):
     question: str
     search_web: bool = True
-    context: Optional[str] = None
+    context: str | None = None
 
 
 class SourceItem(BaseModel):
@@ -105,6 +104,7 @@ class WebSearchResultItem(BaseModel):
 # ---------------------------------------------------------------------------
 # Helpers — DB search (reuses patterns from app/api/search.py)
 # ---------------------------------------------------------------------------
+
 
 def _is_sqlite() -> bool:
     """检测当前数据库是否为 SQLite（开发环境兼容性判断）。"""
@@ -173,12 +173,14 @@ SELECT * FROM combined LIMIT :total;
             {"q": query, "lim": limit, "total": limit * 2},
         ).fetchall()
         for r in rows:
-            results.append({
-                "type": r.type,
-                "title": r.title or "",
-                "content": r.content or "",
-                "url": r.url or "",
-            })
+            results.append(
+                {
+                    "type": r.type,
+                    "title": r.title or "",
+                    "content": r.content or "",
+                    "url": r.url or "",
+                }
+            )
     except Exception as e:
         logger.error("DB search failed: %s", e)
     finally:
@@ -189,6 +191,7 @@ SELECT * FROM combined LIMIT :total;
 # ---------------------------------------------------------------------------
 # Intent classification (simple keyword-based)
 # ---------------------------------------------------------------------------
+
 
 def _classify_intent(question: str) -> str:
     """Classify question intent into one of: 考研 / 考公 / 就业 / 通用."""
@@ -206,16 +209,12 @@ def _classify_intent(question: str) -> str:
 # Endpoints
 # ---------------------------------------------------------------------------
 
+
 @router.get("/web-search")
 async def web_search_endpoint(q: str = Query(..., min_length=1, max_length=200)):
     """Test web search independently."""
     results = await _web_search.search(q, max_results=5)
-    return {
-        "results": [
-            {"title": r.title, "url": r.url, "snippet": r.snippet}
-            for r in results
-        ]
-    }
+    return {"results": [{"title": r.title, "url": r.url, "snippet": r.snippet} for r in results]}
 
 
 class ScanResponse(BaseModel):
@@ -393,10 +392,7 @@ async def agent_endpoint(
     web_results: list[dict] = []
     if body.search_web:
         web_hits = await _web_search.search(question, max_results=5)
-        web_results = [
-            {"title": h.title, "content": h.snippet, "url": h.url}
-            for h in web_hits
-        ]
+        web_results = [{"title": h.title, "content": h.snippet, "url": h.url} for h in web_hits]
 
     # --- 3. Build context ---
     # 修复: FASTAPI-INJECT-001 — 用户输入必须与系统指令隔离，避免 prompt injection
@@ -404,13 +400,15 @@ async def agent_endpoint(
     context_parts: list[str] = []
 
     for i, item in enumerate(db_results, 1):
-        all_sources.append(SourceItem(type="db", title=item["title"],
-                                      content=item["content"], url=item["url"]))
+        all_sources.append(
+            SourceItem(type="db", title=item["title"], content=item["content"], url=item["url"])
+        )
         context_parts.append(f"[DB#{i}] {item['title']}: {item['content'][:200]}")
 
     for i, item in enumerate(web_results, 1):
-        all_sources.append(SourceItem(type="web", title=item["title"],
-                                      content=item["content"], url=item["url"]))
+        all_sources.append(
+            SourceItem(type="web", title=item["title"], content=item["content"], url=item["url"])
+        )
         context_parts.append(f"[Web#{i}] {item['title']}: {item['content'][:200]}")
 
     # 修复: FASTAPI-INJECT-001 — 对用户补充上下文进行 prompt 注入清洗
@@ -511,6 +509,7 @@ async def agent_endpoint(
 # ---------------------------------------------------------------------------
 # AI 管家统一入口 — 扫描用户全量数据，产出结构化画像 + 行动清单
 # ---------------------------------------------------------------------------
+
 
 class ScanResponse(BaseModel):
     profile: dict

@@ -1,27 +1,20 @@
 """AI 增强 API — 院校分析报告、RAG 问答、录取预测、学习计划。"""
+
 import logging
 from datetime import datetime
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from app.config import settings
 from app.core.deps import get_current_user
 from app.database import get_db
 from app.models.user import User
 from app.services.ai_circuit_breaker import AICircuitBreakerOpenError
-from app.services.ai_quota_service import (
-    AILLMQuotaExceeded,
-    check_llm_quota,
-    incr_llm_quota,
-)
 from app.services.ai_orchestrator import AIOrchestrator
-from app.services.ai_service import (
-    AIServiceNotConfigured,
-    AIServiceRetryExhausted,
-)
+from app.services.ai_quota_service import AILLMQuotaExceeded, check_llm_quota, incr_llm_quota
+from app.services.ai_service import AIServiceNotConfigured, AIServiceRetryExhausted
 from app.services.user_context_service import build_context_prompt
 
 logger = logging.getLogger(__name__)
@@ -36,6 +29,7 @@ def _get_limiter():
     global _limiter
     if _limiter is None:
         from app.main import limiter
+
         _limiter = limiter
     return _limiter
 
@@ -58,8 +52,10 @@ def _inject_user_context(db: Session, user_id, base_prompt: str) -> str:
 # Schema 定义
 # ======================================================================
 
+
 class ReportRequest(BaseModel):
     """院校分析报告请求。"""
+
     school_name: str = Field(..., description="目标院校名称")
     major_name: str = Field(..., description="目标专业名称")
     include_intel: bool = Field(True, description="是否包含院校情报")
@@ -68,6 +64,7 @@ class ReportRequest(BaseModel):
 
 class ReportResponse(BaseModel):
     """院校分析报告响应。"""
+
     school_overview: str
     scoreline_trend: dict
     competition_analysis: dict
@@ -80,6 +77,7 @@ class ReportResponse(BaseModel):
 
 class AskRequest(BaseModel):
     """RAG 问答请求。"""
+
     question: str = Field(..., min_length=2, max_length=500, description="用户问题")
     school_filter: str | None = Field(None, description="限定院校")
     year_filter: int | None = Field(None, description="限定年份")
@@ -89,6 +87,7 @@ class AskRequest(BaseModel):
 
 class AskResponse(BaseModel):
     """RAG 问答响应。"""
+
     answer: str
     sources: list[dict]
     confidence: float
@@ -96,6 +95,7 @@ class AskResponse(BaseModel):
 
 class PredictRequest(BaseModel):
     """录取概率预测请求。"""
+
     school_name: str = Field(..., description="目标院校名称")
     major_name: str = Field(..., description="目标专业名称")
     user_score: int = Field(..., ge=0, le=500, description="用户模考分数")
@@ -106,6 +106,7 @@ class PredictRequest(BaseModel):
 
 class PredictResponse(BaseModel):
     """录取概率预测响应。"""
+
     probability: float
     confidence: str
     risk_level: str
@@ -116,6 +117,7 @@ class PredictResponse(BaseModel):
 
 class PlanRequest(BaseModel):
     """学习计划请求。"""
+
     school_name: str = Field(..., description="目标院校名称")
     major_name: str = Field(..., description="目标专业名称")
     subjects: list[str] = Field(..., description="考试科目")
@@ -127,6 +129,7 @@ class PlanRequest(BaseModel):
 
 class PlanResponse(BaseModel):
     """学习计划响应。"""
+
     plan_name: str
     total_days: int
     phases: list[dict]
@@ -138,6 +141,7 @@ class PlanResponse(BaseModel):
 # ======================================================================
 # AI 院校分析报告
 # ======================================================================
+
 
 @router.post("/api/ai/report", response_model=ReportResponse)
 @_get_limiter().limit("5/minute")
@@ -177,6 +181,7 @@ async def generate_report(
         # 1. 获取数据上下文
         # 修复 ImportError: 实际路径为 app.services.analytics_service
         from app.services.analytics_service import get_analytics_service
+
         analytics = get_analytics_service(db)
 
         scoreline_trend = analytics.get_scoreline_trend(body.school_name, body.major_name)
@@ -186,10 +191,16 @@ async def generate_report(
         intel_summary = {}
         if body.include_intel:
             from app.models.grad_intel import GradSchoolIntel
-            intel = db.query(GradSchoolIntel).filter(
-                GradSchoolIntel.school_name == body.school_name,
-                GradSchoolIntel.major_name == body.major_name,
-            ).order_by(GradSchoolIntel.year.desc()).first()
+
+            intel = (
+                db.query(GradSchoolIntel)
+                .filter(
+                    GradSchoolIntel.school_name == body.school_name,
+                    GradSchoolIntel.major_name == body.major_name,
+                )
+                .order_by(GradSchoolIntel.year.desc())
+                .first()
+            )
             if intel:
                 intel_summary = {
                     "background_discrimination": intel.background_discrimination,
@@ -236,6 +247,7 @@ async def generate_report(
 
         # 5. 解析响应
         import json
+
         try:
             report_data = json.loads(result)
             # 修复 bug: LLM 可能返回字符串而非 dict，导致 ReportResponse 校验失败
@@ -246,7 +258,9 @@ async def generate_report(
             report_data = {
                 "school_overview": result,
                 "scoreline_trend": scoreline_trend,
-                "competition_analysis": admission_rate.get("summary", {}) if isinstance(admission_rate, dict) else {},
+                "competition_analysis": (
+                    admission_rate.get("summary", {}) if isinstance(admission_rate, dict) else {}
+                ),
                 "intel_summary": intel_summary,
                 "probability_assessment": {},
                 "personalized_advice": "请参考以上数据分析",
@@ -269,7 +283,11 @@ async def generate_report(
             intel_summary=_ensure_dict(report_data.get("intel_summary"), intel_summary),
             probability_assessment=_ensure_dict(report_data.get("probability_assessment")),
             personalized_advice=str(report_data.get("personalized_advice", "")),
-            risk_warnings=report_data.get("risk_warnings") if isinstance(report_data.get("risk_warnings"), list) else [],
+            risk_warnings=(
+                report_data.get("risk_warnings")
+                if isinstance(report_data.get("risk_warnings"), list)
+                else []
+            ),
             generated_at=datetime.now().isoformat(),
         )
 
@@ -304,6 +322,7 @@ async def generate_report(
 # ======================================================================
 # RAG 智能问答
 # ======================================================================
+
 
 @router.post("/api/ai/ask", response_model=AskResponse)
 @_get_limiter().limit("20/minute")
@@ -377,16 +396,16 @@ async def rag_ask(
 
         # 4. 计算置信度
         avg_similarity = (
-            sum(r.get("similarity", 0) for r in results) / len(results)
-            if results
-            else 0
+            sum(r.get("similarity", 0) for r in results) / len(results) if results else 0
         )
 
         return AskResponse(
             answer=answer,
             sources=[
                 {
-                    "content": r["content"][:200] + "..." if len(r["content"]) > 200 else r["content"],
+                    "content": (
+                        r["content"][:200] + "..." if len(r["content"]) > 200 else r["content"]
+                    ),
                     "source_table": r["source_table"],
                     "similarity": r.get("similarity", 0),
                 }
@@ -429,6 +448,7 @@ async def rag_ask(
 # 录取概率预测
 # ======================================================================
 
+
 @router.post("/api/ai/predict", response_model=PredictResponse)
 @_get_limiter().limit("10/minute")
 async def predict_admission(
@@ -445,8 +465,8 @@ async def predict_admission(
     """
     try:
         # 修复 ImportError: 实际路径为 app.services.analytics_service
+
         from app.services.analytics_service import get_analytics_service
-        import numpy as np
 
         analytics = get_analytics_service(db)
 
@@ -469,6 +489,7 @@ async def predict_admission(
 
         # 使用正态分布 CDF 近似概率
         from scipy.stats import norm
+
         base_probability = norm.cdf(z_score)
 
         # 调整因子
@@ -487,10 +508,22 @@ async def predict_admission(
 
         # 5. 影响因素
         factors = [
-            {"feature": "user_score", "impact": score_diff / 100, "direction": "positive" if score_diff > 0 else "negative"},
+            {
+                "feature": "user_score",
+                "impact": score_diff / 100,
+                "direction": "positive" if score_diff > 0 else "negative",
+            },
             {"feature": "historical_avg_line", "impact": avg_score / 500, "direction": "neutral"},
-            {"feature": "admission_rate", "impact": avg_rate / 100, "direction": "positive" if avg_rate > 15 else "negative"},
-            {"feature": "undergrad_tier", "impact": (tier_factor - 1) * 0.5, "direction": "positive" if tier_factor > 1 else "negative"},
+            {
+                "feature": "admission_rate",
+                "impact": avg_rate / 100,
+                "direction": "positive" if avg_rate > 15 else "negative",
+            },
+            {
+                "feature": "undergrad_tier",
+                "impact": (tier_factor - 1) * 0.5,
+                "direction": "positive" if tier_factor > 1 else "negative",
+            },
         ]
 
         # 6. 建议
@@ -545,6 +578,7 @@ async def predict_admission(
 # 学习计划生成
 # ======================================================================
 
+
 @router.post("/api/ai/plan", response_model=PlanResponse)
 @_get_limiter().limit("5/minute")
 async def generate_study_plan(
@@ -576,6 +610,7 @@ async def generate_study_plan(
     try:
         # 修复 ImportError: 实际路径为 app.services.analytics_service
         from app.services.analytics_service import get_analytics_service
+
         # 修复 ImportError: 实际路径为 app.services.rag_service
         from app.services.rag_service import get_rag_service
 
@@ -588,9 +623,7 @@ async def generate_study_plan(
             top_k=3,
             filters={"source": "experience_post"},
         )
-        experience_summary = "\n".join(
-            [r["content"][:200] for r in experience_results]
-        )
+        experience_summary = "\n".join([r["content"][:200] for r in experience_results])
 
         # 2. 获取分数线数据
         trend_data = analytics.get_scoreline_trend(body.school_name, body.major_name)
@@ -635,6 +668,7 @@ async def generate_study_plan(
 
         # 5. 解析响应
         import json
+
         try:
             plan_data = json.loads(result)
         except json.JSONDecodeError:
@@ -643,12 +677,34 @@ async def generate_study_plan(
                 "plan_name": f"{body.school_name} {body.major_name} 备考计划",
                 "total_days": 180,
                 "phases": [
-                    {"name": "基础阶段", "start_day": 1, "end_day": 60, "goals": "打牢基础", "daily_hours": body.daily_hours * 0.7},
-                    {"name": "强化阶段", "start_day": 61, "end_day": 120, "goals": "强化训练", "daily_hours": body.daily_hours * 0.9},
-                    {"name": "冲刺阶段", "start_day": 121, "end_day": 180, "goals": "冲刺提分", "daily_hours": body.daily_hours},
+                    {
+                        "name": "基础阶段",
+                        "start_day": 1,
+                        "end_day": 60,
+                        "goals": "打牢基础",
+                        "daily_hours": body.daily_hours * 0.7,
+                    },
+                    {
+                        "name": "强化阶段",
+                        "start_day": 61,
+                        "end_day": 120,
+                        "goals": "强化训练",
+                        "daily_hours": body.daily_hours * 0.9,
+                    },
+                    {
+                        "name": "冲刺阶段",
+                        "start_day": 121,
+                        "end_day": 180,
+                        "goals": "冲刺提分",
+                        "daily_hours": body.daily_hours,
+                    },
                 ],
                 "weekly_tests": [{"day": "周六", "subject": "全真模拟"}],
-                "daily_schedule": {"morning": "政治/英语", "afternoon": "数学/专业课", "evening": "复习巩固"},
+                "daily_schedule": {
+                    "morning": "政治/英语",
+                    "afternoon": "数学/专业课",
+                    "evening": "复习巩固",
+                },
                 "tips": ["保持规律作息", "每周至少一次全真模拟", "注意身心健康"],
             }
 

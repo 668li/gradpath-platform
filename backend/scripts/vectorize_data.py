@@ -9,6 +9,7 @@
     3. 生成 Embedding
     4. 存入 document_embeddings 表
 """
+
 import json
 import logging
 import sys
@@ -21,6 +22,7 @@ from sqlalchemy.orm import Session
 
 from app.database import SessionLocal
 from app.models import (
+    QA,
     DarkKnowledge,
     ExperiencePost,
     GradAdjustmentInfo,
@@ -28,7 +30,6 @@ from app.models import (
     GradScorelineRecord,
     GradYanzhaoProgram,
     KnowledgeArticle,
-    QA,
     QAAnswer,
     SalaryBenchmark,
     School,
@@ -46,6 +47,7 @@ def get_model():
     global _model
     if _model is None:
         from sentence_transformers import SentenceTransformer
+
         _model = SentenceTransformer("BAAI/bge-large-zh-v1.5")
         logger.info("Embedding 模型加载完成")
     return _model
@@ -129,8 +131,7 @@ def vectorize_qa(db: Session, model) -> int:
         for i, (embedding, content) in enumerate(zip(embeddings, batch_contents)):
             qa_id, source = batch_ids[i]
             save_embedding(
-                db, source, qa_id, content, embedding.tolist(),
-                {"tags": [], "type": "qa"}, 0
+                db, source, qa_id, content, embedding.tolist(), {"tags": [], "type": "qa"}, 0
             )
             count += 1
 
@@ -175,13 +176,18 @@ def vectorize_intel(db: Session, model) -> int:
             record_id = batch_ids[i]
             record = records[i]
             save_embedding(
-                db, "grad_school_intel", record_id, content, embedding.tolist(),
+                db,
+                "grad_school_intel",
+                record_id,
+                content,
+                embedding.tolist(),
                 {
                     "school_name": record.school_name,
                     "major_name": record.major_name,
                     "year": record.year,
                     "type": "intel",
-                }, 0
+                },
+                0,
             )
             count += 1
 
@@ -203,8 +209,13 @@ def vectorize_knowledge(db: Session, model) -> int:
                 continue
             embedding = model.encode(chunk, normalize_embeddings=True)
             save_embedding(
-                db, "knowledge_article", record.id, chunk, embedding.tolist(),
-                {"title": record.title, "chunk_index": i, "type": "knowledge"}, i
+                db,
+                "knowledge_article",
+                record.id,
+                chunk,
+                embedding.tolist(),
+                {"title": record.title, "chunk_index": i, "type": "knowledge"},
+                i,
             )
             count += 1
 
@@ -227,8 +238,13 @@ def vectorize_experience(db: Session, model) -> int:
                 continue
             embedding = model.encode(chunk, normalize_embeddings=True)
             save_embedding(
-                db, "experience_post", record.id, chunk, embedding.tolist(),
-                {"title": record.title, "chunk_index": i, "type": "experience"}, i
+                db,
+                "experience_post",
+                record.id,
+                chunk,
+                embedding.tolist(),
+                {"title": record.title, "chunk_index": i, "type": "experience"},
+                i,
             )
             count += 1
 
@@ -266,12 +282,17 @@ def vectorize_dark_knowledge(db: Session, model) -> int:
             record_id = batch_ids[i]
             record = records[i]
             save_embedding(
-                db, "dark_knowledge", record_id, content, embedding.tolist(),
+                db,
+                "dark_knowledge",
+                record_id,
+                content,
+                embedding.tolist(),
                 {
                     "stage": record.stage,
                     "category": record.category,
                     "type": "dark_knowledge",
-                }, 0
+                },
+                0,
             )
             count += 1
 
@@ -313,13 +334,18 @@ def vectorize_scorelines(db: Session, model) -> int:
             record_id = batch_ids[i]
             record = records[i]
             save_embedding(
-                db, "scoreline", record_id, content, embedding.tolist(),
+                db,
+                "scoreline",
+                record_id,
+                content,
+                embedding.tolist(),
                 {
                     "university_name": record.university_name,
                     "major_name": record.major_name,
                     "year": record.year,
                     "type": "scoreline",
-                }, 0
+                },
+                0,
             )
             count += 1
 
@@ -356,13 +382,18 @@ def vectorize_salary(db: Session, model) -> int:
             record_id = batch_ids[i]
             record = records[i]
             save_embedding(
-                db, "salary_benchmark", record_id, content, embedding.tolist(),
+                db,
+                "salary_benchmark",
+                record_id,
+                content,
+                embedding.tolist(),
                 {
                     "company": record.company,
                     "position": record.position,
                     "city": record.city,
                     "type": "salary",
-                }, 0
+                },
+                0,
             )
             count += 1
 

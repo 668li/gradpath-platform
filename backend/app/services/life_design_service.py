@@ -3,9 +3,7 @@
 将模糊焦虑转化为结构化行动：
 人生审计(AI提问10个直击灵魂的问题) → 愿景构建 → 90天冲刺 → 周复盘 → 季度回顾
 """
-import json
-import re
-from datetime import date, timedelta
+
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -56,20 +54,24 @@ def generate_audit_questions(focus_areas: list[str]) -> list[dict]:
     for area in focus_areas:
         if area in AUDIT_QUESTIONS:
             for q in AUDIT_QUESTIONS[area]:
-                questions.append({
-                    "domain": area,
-                    "domain_name": DOMAIN_NAMES.get(area, area),
-                    "question": q,
-                })
+                questions.append(
+                    {
+                        "domain": area,
+                        "domain_name": DOMAIN_NAMES.get(area, area),
+                        "question": q,
+                    }
+                )
     # 如果用户没有选择领域，返回全部
     if not questions:
         for area, qs in AUDIT_QUESTIONS.items():
             for q in qs:
-                questions.append({
-                    "domain": area,
-                    "domain_name": DOMAIN_NAMES.get(area, area),
-                    "question": q,
-                })
+                questions.append(
+                    {
+                        "domain": area,
+                        "domain_name": DOMAIN_NAMES.get(area, area),
+                        "question": q,
+                    }
+                )
     return questions
 
 
@@ -148,9 +150,11 @@ def activate_sprint(db: Session, user_id: UUID, sprint_id: UUID) -> LifeDesignSp
     for o in others:
         o.status = "completed"
 
-    sprint = db.query(LifeDesignSprint).filter(
-        LifeDesignSprint.id == sprint_id, LifeDesignSprint.user_id == user_id
-    ).first()
+    sprint = (
+        db.query(LifeDesignSprint)
+        .filter(LifeDesignSprint.id == sprint_id, LifeDesignSprint.user_id == user_id)
+        .first()
+    )
     if not sprint:
         raise ValueError("冲刺不存在")
 
@@ -185,7 +189,9 @@ async def generate_sprint_review(db: Session, sprint_id: UUID) -> str:
 """
     for i, g in enumerate(sprint.goals, 1):
         if isinstance(g, dict):
-            context += f"  {i}. {g.get('title', '?')} — 可衡量结果: {g.get('measurable_result', '?')}\n"
+            context += (
+                f"  {i}. {g.get('title', '?')} — 可衡量结果: {g.get('measurable_result', '?')}\n"
+            )
 
     if sprint.review_notes:
         context += f"\n用户自述回顾：{sprint.review_notes}"
@@ -198,6 +204,7 @@ async def generate_sprint_review(db: Session, sprint_id: UUID) -> str:
 
 
 # === 周复盘 ===
+
 
 async def create_weekly_review(db: Session, user_id: UUID, data: dict) -> WeeklyReview:
     """创建周复盘。"""
@@ -240,7 +247,9 @@ async def _generate_weekly_ai_analysis(db: Session, review: WeeklyReview):
 
     try:
         orchestrator = AIOrchestrator()
-        review.ai_analysis = await orchestrator.chat(system_prompt=system_prompt, user_prompt=context, timeout=30)
+        review.ai_analysis = await orchestrator.chat(
+            system_prompt=system_prompt, user_prompt=context, timeout=30
+        )
         db.commit()
     except Exception:
         pass

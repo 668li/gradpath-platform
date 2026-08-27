@@ -1,4 +1,5 @@
 """国考进面分数线 API 测试 — 列表/筛选/分页/统计。"""
+
 from datetime import datetime, timezone
 
 import pytest
@@ -102,9 +103,7 @@ def test_list_score_lines_pagination(client, seed_score_lines):
 
 
 def test_list_score_lines_position_code_filter(client, seed_score_lines):
-    resp = client.get(
-        "/api/gwy-score-lines", params={"position_code": "130110001001"}
-    )
+    resp = client.get("/api/gwy-score-lines", params={"position_code": "130110001001"})
     assert resp.status_code == 200
     data = resp.json()
     assert data["total"] == 1

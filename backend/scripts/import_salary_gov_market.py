@@ -9,6 +9,7 @@ salary_benchmarks 原 2880 条合成已删。本脚本：
 消费方：AI 决策建议（decision_advice_service）等。幂等：重跑时按
 (indicator, category, year, region, industry) 去重跳过。全 ORM 参数绑定。
 """
+
 import json
 import sys
 from pathlib import Path
@@ -71,7 +72,11 @@ def main() -> None:
                     MarketData.category == category,
                     MarketData.year == int(year),
                     MarketData.region.is_(None) if region is None else MarketData.region == region,
-                    MarketData.industry.is_(None) if industry is None else MarketData.industry == industry,
+                    (
+                        MarketData.industry.is_(None)
+                        if industry is None
+                        else MarketData.industry == industry
+                    ),
                 )
                 .first()
             )
@@ -94,7 +99,9 @@ def main() -> None:
             inserted += 1
         db.commit()
         total = db.query(MarketData).count()
-    print(f"导入 {inserted} 条 / 重复 {duplicated} / 无效跳过 {skipped} | market_data 总数: {total}")
+    print(
+        f"导入 {inserted} 条 / 重复 {duplicated} / 无效跳过 {skipped} | market_data 总数: {total}"
+    )
 
 
 if __name__ == "__main__":

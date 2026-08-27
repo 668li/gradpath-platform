@@ -1,4 +1,5 @@
 """Fetch 考研 Bilibili videos using Playwright browser automation."""
+
 import json
 import re
 import time
@@ -8,6 +9,7 @@ from pathlib import Path
 OUTPUT = Path(r"D:\职业规划\职业规划\backend\app\crawlers\real_data\bilibili_round2.json")
 
 KEYWORDS = ["考研择校", "考研二战", "考研心态", "考研调剂经验", "考研上岸"]
+
 
 def main():
     from playwright.sync_api import sync_playwright
@@ -57,15 +59,17 @@ def main():
                     if not bvid or bvid in seen_bvids:
                         continue
                     seen_bvids.add(bvid)
-                    results.append({
-                        "title": d["title"][:200],
-                        "author": "",
-                        "views": 0,
-                        "description": "",
-                        "url": f"https://www.bilibili.com/video/{bvid}",
-                        "bvid": bvid,
-                        "keyword": kw,
-                    })
+                    results.append(
+                        {
+                            "title": d["title"][:200],
+                            "author": "",
+                            "views": 0,
+                            "description": "",
+                            "url": f"https://www.bilibili.com/video/{bvid}",
+                            "bvid": bvid,
+                            "keyword": kw,
+                        }
+                    )
                     count += 1
                     if count >= 10:
                         break
@@ -84,6 +88,7 @@ def main():
     with open(OUTPUT, "w", encoding="utf-8") as f:
         json.dump(results, f, ensure_ascii=False, indent=2)
     print(f"Saved to {OUTPUT}")
+
 
 if __name__ == "__main__":
     main()

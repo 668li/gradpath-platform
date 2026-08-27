@@ -4,6 +4,7 @@
 与 retrospective_service.generate_draft（规则版）互补，本服务调用 LLM
 生成更丰富的结构化复盘内容，但不持久化（由调用方决定是否保存为 Retrospective）。
 """
+
 import json
 import re
 from datetime import date
@@ -37,9 +38,7 @@ SYSTEM_PROMPT = """你是一位资深的职业复盘教练，擅长引导用户�
 - 结合提供的 STAR 细节，避免泛泛而谈"""
 
 
-def _build_context(
-    db: Session, user_id: UUID, period_start: date, period_end: date
-) -> str:
+def _build_context(db: Session, user_id: UUID, period_start: date, period_end: date) -> str:
     """查询指定时段内的职业事件并格式化为文本，含 STAR 细节。"""
     events = (
         db.query(CareerEvent)
@@ -170,8 +169,7 @@ async def generate_ai_retro_draft(
     # 调用 LLM（AIOrchestrator 会在 key 为空时抛出 AIServiceNotConfigured）
     orchestrator = AIOrchestrator()
     user_content = (
-        f"{context_text}\n\n"
-        "请基于以上职业事件生成该时段的阶段复盘草稿（严格按 JSON 格式输出）。"
+        f"{context_text}\n\n" "请基于以上职业事件生成该时段的阶段复盘草稿（严格按 JSON 格式输出）。"
     )
     raw = await orchestrator.chat(system_prompt=SYSTEM_PROMPT, user_prompt=user_content, timeout=30)
 

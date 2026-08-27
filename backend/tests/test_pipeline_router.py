@@ -1,12 +1,8 @@
 # backend/tests/test_pipeline_router.py
 """智能路由测试。"""
+
 from app.models.pipeline_enums import ContentType
-from pipeline.router import (
-    route_by_filename,
-    route_by_mime,
-    route_by_url,
-    route_content,
-)
+from pipeline.router import route_by_filename, route_by_mime, route_by_url, route_content
 
 
 class TestRouteByFilename:
@@ -80,6 +76,7 @@ class TestRouteContent:
     def test_llm_fallback_not_called_without_key(self, monkeypatch):
         # 没有配置 LLM_API_KEY 时不调用 LLM
         from app.config import settings
+
         monkeypatch.setattr(settings, "LLM_API_KEY", "")
         result = route_content(content_preview="some content")
         assert result == ContentType.html

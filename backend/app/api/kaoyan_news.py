@@ -3,7 +3,7 @@
 Phase D1 扩展：quality 排序、质量等级/来源筛选、分类列表，供资讯中心页
 （分类 tab / 质量徽章 / 关键日期）使用。
 """
-from typing import Optional
+
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -37,11 +37,13 @@ def list_news_categories(db: Session = Depends(get_db)):
 def list_kaoyan_news(
     page: int = Query(1, ge=1, description="页码"),
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
-    category: Optional[str] = Query(None, description="分类过滤"),
-    search: Optional[str] = Query(None, description="搜索关键词"),
-    sort: str = Query("latest", pattern="^(latest|quality)$", description="排序：latest 最新 / quality 质量分降序"),
-    quality_grade: Optional[str] = Query(None, description="质量等级过滤（A/B/C/D）"),
-    source_platform: Optional[str] = Query(None, description="来源过滤（rss/eol/official 等）"),
+    category: str | None = Query(None, description="分类过滤"),
+    search: str | None = Query(None, description="搜索关键词"),
+    sort: str = Query(
+        "latest", pattern="^(latest|quality)$", description="排序：latest 最新 / quality 质量分降序"
+    ),
+    quality_grade: str | None = Query(None, description="质量等级过滤（A/B/C/D）"),
+    source_platform: str | None = Query(None, description="来源过滤（rss/eol/official 等）"),
     db: Session = Depends(get_db),
 ):
     """获取考研资讯列表（默认只展示已审核内容；支持质量排序与筛选）。"""

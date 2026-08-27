@@ -1,5 +1,5 @@
-# -*- coding: utf-8 -*-
 """stats_gongbao_scraper 单元测试：用 2025 公报真实片段断言正则抽取与白名单校验。"""
+
 import pytest
 
 from app.crawlers.real_data.stats_gongbao_scraper import (
@@ -71,13 +71,16 @@ def test_strip_to_text_removes_tags():
     assert "年末全国就业人员 72504 万人" in text
 
 
-@pytest.mark.parametrize("bad_url", [
-    "http://www.stats.gov.cn/sj/zxfb/202602/t20260228_1962662.html",  # 非 https
-    "https://evil.example.com/sj/zxfb/202602/t20260228_1962662.html",  # 非白名单 host
-    "https://www.stats.gov.cn/other/t20260228_1962662.html",           # 非公报路径
-    "https://www.stats.gov.cn/sj/zxfb/../../etc/passwd",               # 路径穿越尝试
-    "file:///etc/passwd",
-])
+@pytest.mark.parametrize(
+    "bad_url",
+    [
+        "http://www.stats.gov.cn/sj/zxfb/202602/t20260228_1962662.html",  # 非 https
+        "https://evil.example.com/sj/zxfb/202602/t20260228_1962662.html",  # 非白名单 host
+        "https://www.stats.gov.cn/other/t20260228_1962662.html",  # 非公报路径
+        "https://www.stats.gov.cn/sj/zxfb/../../etc/passwd",  # 路径穿越尝试
+        "file:///etc/passwd",
+    ],
+)
 def test_validate_rejects_non_whitelist(bad_url):
     with pytest.raises(ValueError):
         validate_gongbao_url(bad_url)

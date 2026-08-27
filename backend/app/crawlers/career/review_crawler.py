@@ -3,6 +3,7 @@
 覆盖 20 家知名公司，每公司 4 条评价，共 80 条。
 评价涵盖正面/负面/中性三种基调。字段映射到 CompanyReview 表。
 """
+
 import random
 from uuid import UUID
 
@@ -13,7 +14,6 @@ from app.crawlers.base_crawler import BaseCrawler
 from app.crawlers.registry import register_crawler
 from app.models.company import Company, CompanySize
 from app.models.company_review import CompanyReview
-
 
 SYSTEM_USER_ID = UUID("00000000-0000-0000-0000-000000000000")
 
@@ -117,20 +117,24 @@ class ReviewCrawler(BaseCrawler):
                 rating = min(max(rating, 1), 5)
                 source = rng.choice(["看准网", "脉脉"])
                 source_url = f"https://www.kanzhun.com/review/{company_name}/"
-                raw.append({
-                    "company_name": company_name,
-                    "company_info": company_info,
-                    "rating": rating,
-                    "title": title,
-                    "content": content,
-                    "is_recommended": is_recommended,
-                    "work_life_balance": rng.randint(ranges["wlb"][0], ranges["wlb"][1]),
-                    "salary_satisfaction": rng.randint(ranges["salary"][0], ranges["salary"][1]),
-                    "culture_score": rng.randint(ranges["culture"][0], ranges["culture"][1]),
-                    "career_growth": rng.randint(ranges["growth"][0], ranges["growth"][1]),
-                    "source": source,
-                    "source_url": source_url,
-                })
+                raw.append(
+                    {
+                        "company_name": company_name,
+                        "company_info": company_info,
+                        "rating": rating,
+                        "title": title,
+                        "content": content,
+                        "is_recommended": is_recommended,
+                        "work_life_balance": rng.randint(ranges["wlb"][0], ranges["wlb"][1]),
+                        "salary_satisfaction": rng.randint(
+                            ranges["salary"][0], ranges["salary"][1]
+                        ),
+                        "culture_score": rng.randint(ranges["culture"][0], ranges["culture"][1]),
+                        "career_growth": rng.randint(ranges["growth"][0], ranges["growth"][1]),
+                        "source": source,
+                        "source_url": source_url,
+                    }
+                )
         return raw
 
     def parse(self, raw_items: list[dict]) -> list[dict]:
@@ -138,24 +142,26 @@ class ReviewCrawler(BaseCrawler):
         parsed: list[dict] = []
         for r in raw_items:
             info = r["company_info"]
-            parsed.append({
-                "company_name": r["company_name"],
-                "industry": info[1],
-                "size": info[2],
-                "stage": info[3],
-                "headquarters": info[4],
-                "company": r["company_name"],
-                "rating": r["rating"],
-                "title": r["title"],
-                "content": r["content"],
-                "is_recommended": r["is_recommended"],
-                "work_life_balance": r["work_life_balance"],
-                "salary_satisfaction": r["salary_satisfaction"],
-                "culture_score": r["culture_score"],
-                "career_growth": r["career_growth"],
-                "source": r["source"],
-                "source_url": r["source_url"],
-            })
+            parsed.append(
+                {
+                    "company_name": r["company_name"],
+                    "industry": info[1],
+                    "size": info[2],
+                    "stage": info[3],
+                    "headquarters": info[4],
+                    "company": r["company_name"],
+                    "rating": r["rating"],
+                    "title": r["title"],
+                    "content": r["content"],
+                    "is_recommended": r["is_recommended"],
+                    "work_life_balance": r["work_life_balance"],
+                    "salary_satisfaction": r["salary_satisfaction"],
+                    "culture_score": r["culture_score"],
+                    "career_growth": r["career_growth"],
+                    "source": r["source"],
+                    "source_url": r["source_url"],
+                }
+            )
         return parsed
 
     def store(self, items: list[dict], db: Session) -> int:
@@ -167,9 +173,11 @@ class ReviewCrawler(BaseCrawler):
         new_count = 0
         for item in items:
             # 1. 确保 Company 记录存在
-            existing_company = db.execute(
-                select(Company).where(Company.name == item["company_name"])
-            ).scalars().first()
+            existing_company = (
+                db.execute(select(Company).where(Company.name == item["company_name"]))
+                .scalars()
+                .first()
+            )
             if existing_company is None:
                 company = Company(
                     name=item["company_name"],
@@ -183,13 +191,17 @@ class ReviewCrawler(BaseCrawler):
                 db.flush()  # 立即刷新，使后续 select 能查到新公司（autoflush=False 需手动 flush）
 
             # 2. 写入 CompanyReview（去重：user_id + company + title）
-            existing_review = db.execute(
-                select(CompanyReview).where(
-                    CompanyReview.user_id == SYSTEM_USER_ID,
-                    CompanyReview.company == item["company"],
-                    CompanyReview.title == item["title"],
+            existing_review = (
+                db.execute(
+                    select(CompanyReview).where(
+                        CompanyReview.user_id == SYSTEM_USER_ID,
+                        CompanyReview.company == item["company"],
+                        CompanyReview.title == item["title"],
+                    )
                 )
-            ).scalars().first()
+                .scalars()
+                .first()
+            )
             if existing_review is None:
                 review = CompanyReview(
                     user_id=SYSTEM_USER_ID,

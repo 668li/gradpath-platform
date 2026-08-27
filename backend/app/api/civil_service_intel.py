@@ -1,4 +1,5 @@
 """考公作战室 API 路由。"""
+
 import logging
 from typing import Any
 from uuid import UUID
@@ -44,6 +45,7 @@ def _ensure_seeded(db: Session) -> None:
 
 
 # ============ 岗位情报 ============
+
 
 @router.post("/post-intel/query", response_model=dict[str, Any])
 async def query_post_intel_endpoint(payload: PostIntelQueryRequest) -> Any:
@@ -92,6 +94,7 @@ def list_public_post_intel_endpoint(
 ) -> Any:
     """公开浏览所有岗位情报（无需登录）。"""
     from app.models.civil_service_intel import PostIntel
+
     query = db.query(PostIntel)
     if region:
         query = query.filter(PostIntel.region.ilike(f"%{region}%"))
@@ -101,11 +104,15 @@ def list_public_post_intel_endpoint(
         query = query.filter(PostIntel.exam_type == exam_type)
     if department_tier:
         query = query.filter(PostIntel.department_tier == department_tier)
-    items = query.order_by(
-        PostIntel.department_tier,
-        PostIntel.region,
-        PostIntel.department,
-    ).limit(limit).all()
+    items = (
+        query.order_by(
+            PostIntel.department_tier,
+            PostIntel.region,
+            PostIntel.department,
+        )
+        .limit(limit)
+        .all()
+    )
     return items
 
 
@@ -123,6 +130,7 @@ def delete_post_intel_endpoint(
 
 
 # ============ 考公定位 ============
+
 
 @router.post("/positioning", response_model=CivilServicePositioningResponse)
 async def create_positioning_endpoint(
@@ -156,6 +164,7 @@ def get_positioning_history_endpoint(
 
 
 # ============ 考公暗知识 ============
+
 
 @router.post("/dark-knowledge/seed")
 def seed_dark_knowledge_endpoint(db: Session = Depends(get_db)) -> Any:

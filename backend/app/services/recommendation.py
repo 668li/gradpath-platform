@@ -5,6 +5,7 @@
 2. 调剂机会：基于分数差、专业匹配度推荐调剂
 3. 暗知识：按备考阶段推荐相关盲区知识
 """
+
 import logging
 from dataclasses import dataclass, field
 
@@ -12,12 +13,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.cache import cache
-from app.models.grad_intel import (
-    DarkKnowledge,
-    GradAdjustmentInfo,
-    GradSchoolIntel,
-    GradScorelineRecord,
-)
+from app.models.grad_intel import DarkKnowledge, GradAdjustmentInfo, GradScorelineRecord
 from app.models.school import School
 
 logger = logging.getLogger(__name__)
@@ -28,6 +24,7 @@ TIER_ORDER = {"985": 0, "211": 1, "双一流": 2, "普通": 3}
 @dataclass
 class SchoolRecommendation:
     """单个院校推荐结果。"""
+
     name: str
     province: str = ""
     level: str = ""
@@ -40,6 +37,7 @@ class SchoolRecommendation:
 @dataclass
 class AdjustmentRecommendation:
     """调剂推荐结果。"""
+
     university_name: str
     department: str
     major_name: str
@@ -55,6 +53,7 @@ class AdjustmentRecommendation:
 @dataclass
 class DarkKnowledgeRecommendation:
     """暗知识推荐结果。"""
+
     id: str
     stage: str
     category: str
@@ -92,14 +91,14 @@ class ContentBasedRecommender:
             target_major: 目标专业
             top_n: 返回前 N 条结果
         """
-        cache_key = f"rec:schools:{target_score}:{target_tier}:{target_region}:{target_major}:{top_n}"
+        cache_key = (
+            f"rec:schools:{target_score}:{target_tier}:{target_region}:{target_major}:{top_n}"
+        )
         cached = cache.get(cache_key)
         if cached is not None:
             return cached
 
         # 优化查询：只获取每个院校专业的最新一条分数线记录
-        from sqlalchemy import func, case
-        from sqlalchemy.orm import aliased
 
         # 子查询：获取每个 university_name|major_name 的最新年份
         latest_year_subq = (
@@ -116,14 +115,11 @@ class ContentBasedRecommender:
         )
 
         # 主查询：使用 JOIN 只获取最新记录
-        scoreline_query = (
-            self.db.query(GradScorelineRecord)
-            .join(
-                latest_year_subq,
-                (GradScorelineRecord.university_name == latest_year_subq.c.university_name)
-                & (GradScorelineRecord.major_name == latest_year_subq.c.major_name)
-                & (GradScorelineRecord.year == latest_year_subq.c.max_year),
-            )
+        scoreline_query = self.db.query(GradScorelineRecord).join(
+            latest_year_subq,
+            (GradScorelineRecord.university_name == latest_year_subq.c.university_name)
+            & (GradScorelineRecord.major_name == latest_year_subq.c.major_name)
+            & (GradScorelineRecord.year == latest_year_subq.c.max_year),
         )
 
         if target_major:
@@ -140,13 +136,9 @@ class ContentBasedRecommender:
         scorelines = scoreline_query.limit(500).all()
 
         # 构建调剂信息索引
-        adj_query = self.db.query(GradAdjustmentInfo).filter(
-            GradAdjustmentInfo.status == "open"
-        )
+        adj_query = self.db.query(GradAdjustmentInfo).filter(GradAdjustmentInfo.status == "open")
         if target_major:
-            adj_query = adj_query.filter(
-                GradAdjustmentInfo.major_name.ilike(f"%{target_major}%")
-            )
+            adj_query = adj_query.filter(GradAdjustmentInfo.major_name.ilike(f"%{target_major}%"))
         adjustments = adj_query.all()
         adj_map: dict[str, list[GradAdjustmentInfo]] = {}
         for adj in adjustments:
@@ -175,7 +167,9 @@ class ContentBasedRecommender:
                 diff = target_score - sl.total_score_line
                 if -20 <= diff <= 20:
                     score += 40 - abs(diff) * 2
-                    reasons.append(f"目标分数{target_score}与复试线{sl.total_score_line}差距{diff}分")
+                    reasons.append(
+                        f"目标分数{target_score}与复试线{sl.total_score_line}差距{diff}分"
+                    )
                 elif -40 <= diff < -20:
                     score += 10
                     reasons.append(f"目标分数低于复试线{abs(diff)}分，有挑战")
@@ -220,15 +214,17 @@ class ContentBasedRecommender:
 
             has_adj = uni in adj_map
 
-            results.append(SchoolRecommendation(
-                name=uni,
-                province=school.province if school else "",
-                level=school.level if school else "",
-                match_score=round(score, 1),
-                match_reasons=reasons,
-                score_line=sl.total_score_line,
-                adjustment_available=has_adj,
-            ))
+            results.append(
+                SchoolRecommendation(
+                    name=uni,
+                    province=school.province if school else "",
+                    level=school.level if school else "",
+                    match_score=round(score, 1),
+                    match_reasons=reasons,
+                    score_line=sl.total_score_line,
+                    adjustment_available=has_adj,
+                )
+            )
 
         results.sort(key=lambda x: x.match_score, reverse=True)
         top = results[:top_n]
@@ -248,21 +244,17 @@ class ContentBasedRecommender:
         if cached is not None:
             return cached
 
-        query = self.db.query(GradAdjustmentInfo).filter(
-            GradAdjustmentInfo.status == "open"
-        )
+        query = self.db.query(GradAdjustmentInfo).filter(GradAdjustmentInfo.status == "open")
         if target_major:
-            query = query.filter(
-                GradAdjustmentInfo.major_name.ilike(f"%{target_major}%")
-            )
+            query = query.filter(GradAdjustmentInfo.major_name.ilike(f"%{target_major}%"))
         adjustments = query.all()
 
         # 查询 School 表获取省份
         school_map: dict[str, School] = {}
         if target_region:
-            schools = self.db.query(School).filter(
-                School.province.ilike(f"%{target_region}%")
-            ).all()
+            schools = (
+                self.db.query(School).filter(School.province.ilike(f"%{target_region}%")).all()
+            )
             for s in schools:
                 school_map[s.name] = s
 
@@ -280,8 +272,10 @@ class ContentBasedRecommender:
             # 地区匹配
             if target_region:
                 school = school_map.get(adj.university_name)
-                if school and school.province and (
-                    target_region in school.province or school.province in target_region
+                if (
+                    school
+                    and school.province
+                    and (target_region in school.province or school.province in target_region)
                 ):
                     score += 30
                     reasons.append(f"地区匹配: {school.province}")
@@ -311,18 +305,20 @@ class ContentBasedRecommender:
                 score += 5
                 reasons.append(f"可调专业范围: {adj.original_major_range}")
 
-            results.append(AdjustmentRecommendation(
-                university_name=adj.university_name,
-                department=adj.department,
-                major_name=adj.major_name,
-                match_score=round(score, 1),
-                match_reasons=reasons,
-                adjustment_quota=adj.adjustment_quota,
-                deadline=adj.deadline,
-                contact_email=adj.contact_email,
-                contact_phone=adj.contact_phone,
-                source_url=adj.source_url,
-            ))
+            results.append(
+                AdjustmentRecommendation(
+                    university_name=adj.university_name,
+                    department=adj.department,
+                    major_name=adj.major_name,
+                    match_score=round(score, 1),
+                    match_reasons=reasons,
+                    adjustment_quota=adj.adjustment_quota,
+                    deadline=adj.deadline,
+                    contact_email=adj.contact_email,
+                    contact_phone=adj.contact_phone,
+                    source_url=adj.source_url,
+                )
+            )
 
         results.sort(key=lambda x: x.match_score, reverse=True)
         top = results[:top_n]
@@ -344,9 +340,13 @@ class ContentBasedRecommender:
         if stage:
             query = query.filter(DarkKnowledge.stage == stage)
 
-        items = query.order_by(
-            DarkKnowledge.sort_order,
-        ).limit(top_n).all()
+        items = (
+            query.order_by(
+                DarkKnowledge.sort_order,
+            )
+            .limit(top_n)
+            .all()
+        )
 
         results = []
         for item in items:
@@ -358,17 +358,19 @@ class ContentBasedRecommender:
             else:
                 relevance = 60.0
 
-            results.append(DarkKnowledgeRecommendation(
-                id=str(item.id),
-                stage=item.stage,
-                category=item.category,
-                title=item.title,
-                content=item.content,
-                importance=item.importance,
-                common_misconception=item.common_misconception,
-                actionable_advice=item.actionable_advice,
-                relevance_score=relevance,
-            ))
+            results.append(
+                DarkKnowledgeRecommendation(
+                    id=str(item.id),
+                    stage=item.stage,
+                    category=item.category,
+                    title=item.title,
+                    content=item.content,
+                    importance=item.importance,
+                    common_misconception=item.common_misconception,
+                    actionable_advice=item.actionable_advice,
+                    relevance_score=relevance,
+                )
+            )
 
         results.sort(key=lambda x: x.relevance_score, reverse=True)
         cache.set(cache_key, results, ttl=300)

@@ -31,7 +31,9 @@ class DecisionBatchRequest(BaseModel):
 
 
 @router.post("", response_model=DecisionResponse, status_code=status.HTTP_201_CREATED)
-def create(data: DecisionCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def create(
+    data: DecisionCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)
+):
     return create_decision(db, user.id, data)
 
 
@@ -84,15 +86,24 @@ def batch_decisions(
 
 
 @router.get("/{decision_id}", response_model=DecisionResponse)
-def get_one(decision_id: UUID, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def get_one(
+    decision_id: UUID, db: Session = Depends(get_db), user: User = Depends(get_current_user)
+):
     return get_decision(db, user.id, decision_id)
 
 
 @router.patch("/{decision_id}", response_model=DecisionResponse)
-def update(decision_id: UUID, data: DecisionUpdate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def update(
+    decision_id: UUID,
+    data: DecisionUpdate,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
     return update_decision(db, user.id, decision_id, data)
 
 
 @router.delete("/{decision_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete(decision_id: UUID, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+def delete(
+    decision_id: UUID, db: Session = Depends(get_db), user: User = Depends(get_current_user)
+):
     delete_decision(db, user.id, decision_id)

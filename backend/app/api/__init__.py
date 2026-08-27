@@ -3,6 +3,7 @@
 替换 main.py 中 50+ 行手动 import + include_router，
 新增 API 端点只需在 app/api/ 创建带 router 的 .py 文件即可自动注册。
 """
+
 import importlib
 import logging
 import pkgutil

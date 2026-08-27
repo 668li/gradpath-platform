@@ -14,9 +14,11 @@
 - 调用成功后通过 ``on_success`` 重置失败计数；
 - 调用失败后通过 ``on_failure`` 累加失败计数。
 """
+
 import logging
 import time
-from typing import Awaitable, Callable, TypeVar
+from collections.abc import Awaitable, Callable
+from typing import TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -89,19 +91,13 @@ class AICircuitBreaker:
     def _before_call(self) -> None:
         """调用前检查熔断状态。打开时抛出 ``AICircuitBreakerOpenError``。"""
         if self.is_open:
-            logger.warning(
-                "AI 熔断器已打开，拒绝调用 (失败计数=%d)", self._failure_count
-            )
-            raise AICircuitBreakerOpenError(
-                "AI 服务熔断器已打开，请稍后重试"
-            )
+            logger.warning("AI 熔断器已打开，拒绝调用 (失败计数=%d)", self._failure_count)
+            raise AICircuitBreakerOpenError("AI 服务熔断器已打开，请稍后重试")
 
     def _on_success(self) -> None:
         """调用成功：重置失败计数，关闭熔断器。"""
         if self._state != "closed":
-            logger.info(
-                "AI 熔断器从 %s 状态恢复到 closed", self._state
-            )
+            logger.info("AI 熔断器从 %s 状态恢复到 closed", self._state)
         self._state = "closed"
         self._failure_count = 0
         self._opened_at = None

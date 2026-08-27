@@ -1,4 +1,7 @@
-import psycopg2, json
+import json
+
+import psycopg2
+
 conn = psycopg2.connect("postgresql://gradpath:changeme@db:5432/gradpath")
 cur = conn.cursor()
 
@@ -6,7 +9,9 @@ cur = conn.cursor()
 print("=== 考公 civil_service_post_intel ===")
 cur.execute("SELECT count(*) FROM civil_service_post_intel")
 print(f"  总数: {cur.fetchone()[0]}")
-cur.execute("SELECT id, region, department, post_name, real_competition FROM civil_service_post_intel LIMIT 3")
+cur.execute(
+    "SELECT id, region, department, post_name, real_competition FROM civil_service_post_intel LIMIT 3"
+)
 for r in cur.fetchall():
     print(f"  {r}")
 
@@ -28,7 +33,9 @@ for r in cur.fetchall():
 print("\n=== 就业 salary_benchmarks ===")
 cur.execute("SELECT count(*) FROM salary_benchmarks")
 print(f"  总数: {cur.fetchone()[0]}")
-cur.execute("SELECT id, company, position, city, salary_min, salary_max FROM salary_benchmarks LIMIT 3")
+cur.execute(
+    "SELECT id, company, position, city, salary_min, salary_max FROM salary_benchmarks LIMIT 3"
+)
 for r in cur.fetchall():
     print(f"  {r}")
 
@@ -63,4 +70,5 @@ print("\n=== 考研 grad_scoreline_records ===")
 cur.execute("SELECT count(*) FROM grad_scoreline_records")
 print(f"  总数: {cur.fetchone()[0]}")
 
-cur.close(); conn.close()
+cur.close()
+conn.close()

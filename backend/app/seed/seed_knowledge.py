@@ -17,6 +17,7 @@
 
 使用：python -m app.seed.seed_knowledge
 """
+
 from sqlalchemy.orm import Session
 
 from app.models.knowledge_article import KnowledgeArticle
@@ -2305,7 +2306,10 @@ ARTICLES: list[dict] = [
         "title": "东南 vs 南航 vs 南理工：南京工科三强对比",
         "tags": ["东南", "南航", "南理工", "南京", "985/211", "院校对比"],
         "source": "GradPath 院校研究室",
-        "metadata_": {"universities": ["东南大学", "南京航空航天大学", "南京理工大学"], "type": "对比分析"},
+        "metadata_": {
+            "universities": ["东南大学", "南京航空航天大学", "南京理工大学"],
+            "type": "对比分析",
+        },
         "content": (
             "## 南京工科三强对比\n\n"
             "东南、南航、南理工是南京工科实力最强的三所高校。\n\n"
@@ -2396,7 +2400,10 @@ ARTICLES: list[dict] = [
         "title": "北航 vs 北理 vs 中农：北京985性价比分析",
         "tags": ["北航", "北理", "中农", "北京", "985", "院校对比"],
         "source": "GradPath 院校研究室",
-        "metadata_": {"universities": ["北京航空航天大学", "北京理工大学", "中国农业大学"], "type": "对比分析"},
+        "metadata_": {
+            "universities": ["北京航空航天大学", "北京理工大学", "中国农业大学"],
+            "type": "对比分析",
+        },
         "content": (
             "## 北京三所985性价比分析\n\n"
             "北航、北理、中农是北京985高校中性价比较高的选择。\n\n"
@@ -2657,7 +2664,10 @@ ARTICLES: list[dict] = [
         "title": "北邮 vs 西电 vs 成电：信息类高校对比",
         "tags": ["北邮", "西电", "成电", "211/985", "信息类", "院校对比"],
         "source": "GradPath 院校研究室",
-        "metadata_": {"universities": ["北京邮电大学", "西安电子科技大学", "电子科技大学"], "type": "对比分析"},
+        "metadata_": {
+            "universities": ["北京邮电大学", "西安电子科技大学", "电子科技大学"],
+            "type": "对比分析",
+        },
         "content": (
             "## 信息类高校对比\n\n"
             "北邮、西电、成电是信息通信领域最顶尖的三所高校。\n\n"
@@ -6820,9 +6830,9 @@ def seed_knowledge(db: Session) -> int:
     """
     created = 0
     for item in ARTICLES:
-        existing = db.query(KnowledgeArticle).filter(
-            KnowledgeArticle.title == item["title"]
-        ).first()
+        existing = (
+            db.query(KnowledgeArticle).filter(KnowledgeArticle.title == item["title"]).first()
+        )
         if existing:
             continue
         article = KnowledgeArticle(

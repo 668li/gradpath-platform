@@ -66,6 +66,7 @@ class RetroDraft(BaseModel):
 # AI 复盘草稿
 # ======================================================================
 
+
 class AIRetroDraftRequest(BaseModel):
     """AI 复盘草稿请求体。"""
 

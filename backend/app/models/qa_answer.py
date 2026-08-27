@@ -8,6 +8,7 @@
 - 最佳回答：is_best
 - 审核机制：待审核/已通过/已拒绝
 """
+
 from uuid import UUID
 
 from sqlalchemy import Boolean, ForeignKey, Integer, String, Text
@@ -19,6 +20,7 @@ from app.models.base import GUID, TimestampMixin, UUIDMixin
 
 class QAAnswer(UUIDMixin, TimestampMixin, Base):
     """考研问答回答表 — 存储对问题的回答。"""
+
     __tablename__ = "qa_answers"
 
     # === 关联 ===

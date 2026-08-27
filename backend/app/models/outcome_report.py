@@ -1,4 +1,5 @@
 """Outcome Report (上岸报告) — 用户报告考试/求职结果，驱动数据飞轮。"""
+
 import enum
 from uuid import UUID
 
@@ -6,7 +7,7 @@ from sqlalchemy import Enum, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
-from app.models.base import GUID, TimestampMixin, UUIDMixin
+from app.models.base import TimestampMixin, UUIDMixin
 
 
 class OutcomeType(str, enum.Enum):
@@ -23,15 +24,17 @@ class AdmissionPath(str, enum.Enum):
 
 class OutcomeReport(UUIDMixin, TimestampMixin, Base):
     __tablename__ = "outcome_reports"
-    __table_args__ = (
-        {"comment": "上岸报告 — 闭环数据飞轮的核心表"},
-    )
+    __table_args__ = ({"comment": "上岸报告 — 闭环数据飞轮的核心表"},)
 
     user_id: Mapped[UUID] = mapped_column(
-        ForeignKey("users.id"), nullable=False, index=True,
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True,
     )
     outcome_type: Mapped[OutcomeType] = mapped_column(
-        Enum(OutcomeType), nullable=False, index=True,
+        Enum(OutcomeType),
+        nullable=False,
+        index=True,
     )
     target_school: Mapped[str | None] = mapped_column(String(200))
     target_major: Mapped[str | None] = mapped_column(String(200))
@@ -43,7 +46,8 @@ class OutcomeReport(UUIDMixin, TimestampMixin, Base):
     score_major1: Mapped[int | None] = mapped_column(Integer)
     score_major2: Mapped[int | None] = mapped_column(Integer)
     admission_path: Mapped[AdmissionPath] = mapped_column(
-        Enum(AdmissionPath), default=AdmissionPath.normal,
+        Enum(AdmissionPath),
+        default=AdmissionPath.normal,
     )
     year: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
     confidence_before: Mapped[float | None] = mapped_column(Float)

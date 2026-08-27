@@ -92,7 +92,9 @@ def confirm_password_reset(db: Session, token: str, new_password: str) -> User:
     user_id = verify_password_reset_token(token)
     if user_id is None:
         raise BusinessError(
-            "INVALID_RESET_TOKEN", "重置令牌无效或已过期", 400,
+            "INVALID_RESET_TOKEN",
+            "重置令牌无效或已过期",
+            400,
         )
 
     user = db.query(User).filter(User.id == user_id).first()
@@ -113,7 +115,9 @@ def change_password(db: Session, user: User, current_password: str, new_password
 
     if not verify_password(current_password, user.password_hash):
         raise BusinessError(
-            "CURRENT_PASSWORD_INVALID", "当前密码不正确", 400,
+            "CURRENT_PASSWORD_INVALID",
+            "当前密码不正确",
+            400,
         )
 
     # user 可能来自 get_current_user 缓存（detached），重新查询以确保附加到 session

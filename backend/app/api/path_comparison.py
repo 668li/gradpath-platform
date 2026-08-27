@@ -4,17 +4,14 @@
 - POST /api/path-comparison/compare — 提交 2-3 条路径，生成量化对比
 - GET  /api/path-comparison/history  — 获取历史对比记录
 """
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
 from app.database import get_db
 from app.models.user import User
-from app.schemas.path_comparison import (
-    ComparisonRequest,
-    ComparisonResponse,
-    PathMetrics,
-)
+from app.schemas.path_comparison import ComparisonRequest, ComparisonResponse, PathMetrics
 from app.services import path_comparison_service as svc
 
 router = APIRouter(prefix="/api/path-comparison", tags=["多路径对比"])
@@ -62,10 +59,12 @@ def get_history(
     responses: list[ComparisonResponse] = []
     for r in records:
         data = svc.to_response(r)
-        responses.append(ComparisonResponse(
-            id=data["id"],
-            metrics=[PathMetrics(**m) for m in data["metrics"]],
-            recommendation=data["recommendation"],
-            created_at=r.created_at,
-        ))
+        responses.append(
+            ComparisonResponse(
+                id=data["id"],
+                metrics=[PathMetrics(**m) for m in data["metrics"]],
+                recommendation=data["recommendation"],
+                created_at=r.created_at,
+            )
+        )
     return responses

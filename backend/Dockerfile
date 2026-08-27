@@ -1,4 +1,4 @@
-# ---- Stage 1: builder (install build deps, build) ----
+# ---- Stage 1: builder (install build deps, build full wheel) ----
 FROM python:3.11-slim AS builder
 
 WORKDIR /app
@@ -8,9 +8,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY pyproject.toml .
-COPY app/__init__.py app/__init__.py
+COPY app/ app/
 
-RUN pip install --no-cache-dir build && \
+RUN pip install --no-cache-dir "build==1.2.2.post1" && \
     python -m build --wheel --outdir /wheels
 
 # ---- Stage 2: production (runtime only, no dev deps) ----
@@ -20,16 +20,13 @@ RUN groupadd -r gradpath && useradd --no-log-init -r -g gradpath gradpath
 
 WORKDIR /app
 
+# 完整 wheel（含 app 全量源码 + pyproject 全部依赖），保证依赖不遗漏。
+# 历史坑：曾用 `pip install .` 于无源码目录装依赖，配合 packages.find 显式声明后
+# 会报 0 matches，故统一从 Stage 1 的完整 wheel 安装。
 COPY --from=builder /wheels/*.whl /wheels/
-
-# 修复: 旧版 wheel 安装遗漏 tenacity/redis/prometheus_client 等运行时依赖,
-# 导致路由自动发现全部被跳过,前端所有"加载X失败"均源于此。
-# 直接从 pyproject.toml 安装全部依赖,确保不遗漏。
-COPY pyproject.toml .
-RUN pip install --no-cache-dir . && \
+RUN pip install --no-cache-dir /wheels/*.whl && \
     rm -rf /wheels
 
-COPY app/ app/
 COPY pipeline/ pipeline/
 COPY migrations/ migrations/
 COPY alembic.ini .

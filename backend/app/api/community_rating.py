@@ -1,4 +1,5 @@
 """社区评分 API — 经验贴/知识文章的质量信号与已上岸徽章。"""
+
 import logging
 import math
 from uuid import UUID
@@ -28,6 +29,7 @@ def _get_limiter():
     global _limiter
     if _limiter is None:
         from app.main import limiter
+
         _limiter = limiter
     return _limiter
 
@@ -36,8 +38,10 @@ def _get_limiter():
 # Schema 定义
 # ======================================================================
 
+
 class RateRequest(BaseModel):
     """评分请求。"""
+
     target_type: str = Field(..., description="目标类型: experience_post / knowledge_article")
     target_id: UUID = Field(..., description="目标 ID")
     rating: int = Field(..., ge=1, le=5, description="评分 1-5")
@@ -46,6 +50,7 @@ class RateRequest(BaseModel):
 
 class RatingResponse(BaseModel):
     """评分响应。"""
+
     id: UUID
     user_id: UUID
     target_type: str
@@ -57,6 +62,7 @@ class RatingResponse(BaseModel):
 
 class RatingStats(BaseModel):
     """评分统计。"""
+
     avg_stars: float
     rating_count: int
     quality_score: float
@@ -65,6 +71,7 @@ class RatingStats(BaseModel):
 
 class TopRatedItem(BaseModel):
     """高评分内容。"""
+
     target_id: UUID
     target_type: str
     title: str
@@ -75,6 +82,7 @@ class TopRatedItem(BaseModel):
 
 class UserRatingHistory(BaseModel):
     """用户评分历史。"""
+
     ratings: list[RatingResponse]
     total_ratings: int
     avg_rating_given: float
@@ -82,11 +90,13 @@ class UserRatingHistory(BaseModel):
 
 class BadgeVerifyRequest(BaseModel):
     """已上岸徽章验证请求。"""
+
     outcome_report_id: UUID = Field(..., description="上岸报告 ID")
 
 
 class BadgeResponse(BaseModel):
     """徽章验证响应。"""
+
     badge_granted: bool
     message: str
     badge_type: str | None = None
@@ -95,6 +105,7 @@ class BadgeResponse(BaseModel):
 # ======================================================================
 # 评分端点
 # ======================================================================
+
 
 @router.post("/rate", response_model=RatingResponse, status_code=status.HTTP_201_CREATED)
 @_get_limiter().limit("20/minute")
@@ -116,11 +127,15 @@ def rate_content(
             if not target:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="经验贴不存在")
         elif body.target_type == "knowledge_article":
-            target = db.query(KnowledgeArticle).filter(KnowledgeArticle.id == body.target_id).first()
+            target = (
+                db.query(KnowledgeArticle).filter(KnowledgeArticle.id == body.target_id).first()
+            )
             if not target:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="知识文章不存在")
         else:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="无效的 target_type")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="无效的 target_type"
+            )
 
         # 检查是否已评过分（更新 or 新建）
         existing = (
@@ -162,7 +177,7 @@ def rate_content(
         )
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         # 修复: FASTAPI-RESP-001 — 不向客户端泄漏内部异常信息，仅记录日志
         logger.exception("rate_content failed")
         raise HTTPException(status_code=500, detail="评分失败，请稍后重试")
@@ -200,12 +215,14 @@ def get_top_rated(
         avg_stars = float(row.avg_stars)
         rating_count = row.rating_count
         quality_score = avg_stars * math.log(1 + rating_count)
-        items.append({
-            "target_id": row.target_id,
-            "avg_stars": round(avg_stars, 2),
-            "rating_count": rating_count,
-            "quality_score": round(quality_score, 2),
-        })
+        items.append(
+            {
+                "target_id": row.target_id,
+                "avg_stars": round(avg_stars, 2),
+                "rating_count": rating_count,
+                "quality_score": round(quality_score, 2),
+            }
+        )
 
     items.sort(key=lambda x: x["quality_score"], reverse=True)
     items = items[:limit]
@@ -337,7 +354,7 @@ def verify_badge(
         )
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         # 修复: FASTAPI-RESP-001 — 不向客户端泄漏内部异常信息，仅记录日志
         logger.exception("verify_badge failed")
         raise HTTPException(status_code=500, detail="徽章验证失败，请稍后重试")

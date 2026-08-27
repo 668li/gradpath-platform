@@ -4,6 +4,7 @@
 覆盖：认证要求、6 种路径生成、历史记录、单条详情、跨用户隔离。
 LLM 未配置时回退到预设模板，测试始终返回有效内容。
 """
+
 import pytest
 
 # 6 种路径 × 目标角色（与 service 中的 6 个模板对应）
@@ -19,8 +20,10 @@ PATH_CASES = [
 
 def test_generate_requires_auth(client):
     """未登录生成应返回 401。"""
-    resp = client.post("/api/career-test-drive/generate",
-                       json={"path_type": "employment", "target_role": "软件开发"})
+    resp = client.post(
+        "/api/career-test-drive/generate",
+        json={"path_type": "employment", "target_role": "软件开发"},
+    )
     assert resp.status_code == 401
 
 

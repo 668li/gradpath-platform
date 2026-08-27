@@ -1,5 +1,6 @@
 # backend/app/skills/resume_optimizer.py
 """简历优化器 Skill — 分析用户简历内容，提供优化建议和改进方案。"""
+
 from __future__ import annotations
 
 import json

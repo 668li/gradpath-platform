@@ -6,8 +6,6 @@
 2. 服务层搜索使用 ILIKE（不区分大小写，pg_trgm 友好）
 3. SQLite 回退路径下搜索功能仍可用
 """
-import pytest
-from uuid import UUID
 
 
 class TestPgTrgmMigration:
@@ -16,6 +14,7 @@ class TestPgTrgmMigration:
     def test_migration_file_exists(self):
         """迁移文件存在。"""
         import os
+
         migration_path = os.path.join(
             os.path.dirname(os.path.dirname(__file__)),
             "migrations",
@@ -35,9 +34,7 @@ class TestPgTrgmMigration:
             "versions",
             "20260720_add_pgtrgm_gin_indexes_v2.py",
         )
-        spec = importlib.util.spec_from_file_location(
-            "add_pgtrgm_gin_indexes_v2", migration_path
-        )
+        spec = importlib.util.spec_from_file_location("add_pgtrgm_gin_indexes_v2", migration_path)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
 
@@ -67,14 +64,12 @@ class TestPgTrgmMigration:
             "versions",
             "20260720_add_pgtrgm_gin_indexes_v2.py",
         )
-        spec = importlib.util.spec_from_file_location(
-            "add_pgtrgm_gin_indexes_v2", migration_path
-        )
+        spec = importlib.util.spec_from_file_location("add_pgtrgm_gin_indexes_v2", migration_path)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
 
         # 源代码使用 f-string 动态生成索引名
-        with open(migration_path, "r", encoding="utf-8") as f:
+        with open(migration_path, encoding="utf-8") as f:
             content = f.read()
         assert 'f"idx_{table}_{column}_trgm"' in content or (
             "idx_{table}_{column}_trgm" in content
@@ -93,6 +88,7 @@ class TestSqlFallbackScript:
     def test_sql_script_exists(self):
         """scripts/add_pg_trgm_indexes.sql 存在。"""
         import os
+
         sql_path = os.path.join(
             os.path.dirname(os.path.dirname(__file__)),
             "scripts",
@@ -103,24 +99,26 @@ class TestSqlFallbackScript:
     def test_sql_script_contains_extension(self):
         """SQL 脚本包含 CREATE EXTENSION pg_trgm。"""
         import os
+
         sql_path = os.path.join(
             os.path.dirname(os.path.dirname(__file__)),
             "scripts",
             "add_pg_trgm_indexes.sql",
         )
-        with open(sql_path, "r", encoding="utf-8") as f:
+        with open(sql_path, encoding="utf-8") as f:
             content = f.read()
         assert "CREATE EXTENSION IF NOT EXISTS pg_trgm" in content
 
     def test_sql_script_contains_all_indexes(self):
         """SQL 脚本包含所有目标索引。"""
         import os
+
         sql_path = os.path.join(
             os.path.dirname(os.path.dirname(__file__)),
             "scripts",
             "add_pg_trgm_indexes.sql",
         )
-        with open(sql_path, "r", encoding="utf-8") as f:
+        with open(sql_path, encoding="utf-8") as f:
             content = f.read()
         for expected in [
             "idx_schools_name_trgm",
@@ -138,8 +136,9 @@ class TestServiceLayerILIKE:
 
     def test_mentor_search_uses_ilike(self, db_session):
         """mentor_service 搜索使用 ilike 而非 like。"""
-        import app.services.mentor_service as ms
         import inspect
+
+        import app.services.mentor_service as ms
 
         source = inspect.getsource(ms)
         # 至少有一处 ilike 调用（搜索导师姓名）
@@ -147,8 +146,9 @@ class TestServiceLayerILIKE:
 
     def test_school_search_works_case_insensitive(self, db_session):
         """schools 表的搜索查询不区分大小写（PostgreSQL 上走 GIN 索引）。"""
-        from app.models.school import School
         from sqlalchemy import inspect as sa_inspect
+
+        from app.models.school import School
 
         # 验证 School 模型有 name 字段
         mapper = sa_inspect(School)
@@ -204,9 +204,7 @@ class TestPostgresIndexingConfiguration:
             "versions",
             "20260720_add_pgtrgm_gin_indexes_v2.py",
         )
-        spec = importlib.util.spec_from_file_location(
-            "add_pgtrgm_gin_indexes_v2", migration_path
-        )
+        spec = importlib.util.spec_from_file_location("add_pgtrgm_gin_indexes_v2", migration_path)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         assert callable(module._is_postgresql)
@@ -216,7 +214,6 @@ class TestPostgresIndexingConfiguration:
     def test_sqlite_skips_gin_index(self):
         """SQLite 环境下迁移应跳过 GIN 索引创建（不支持）。"""
         # 通过源码检查 upgrade() 在非 PostgreSQL 时无 op.execute 索引创建
-        import importlib.util
         import os
 
         migration_path = os.path.join(
@@ -225,7 +222,7 @@ class TestPostgresIndexingConfiguration:
             "versions",
             "20260720_add_pgtrgm_gin_indexes_v2.py",
         )
-        with open(migration_path, "r", encoding="utf-8") as f:
+        with open(migration_path, encoding="utf-8") as f:
             content = f.read()
         # upgrade() 内有 if _is_postgresql() 守卫
         assert "if _is_postgresql():" in content

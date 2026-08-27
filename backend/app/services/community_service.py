@@ -1,5 +1,6 @@
 # backend/app/services/community_service.py
 """社区毕业去向报告服务层 — 提交、查询、删除与聚合统计。"""
+
 import uuid
 from uuid import UUID
 
@@ -8,11 +9,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models.community_report import CommunityReport
-from app.schemas.community import (
-    AggregateResponse,
-    CommunityStats,
-    CommunitySubmit,
-)
+from app.schemas.community import AggregateResponse, CommunityStats, CommunitySubmit
 from app.services.employment_service import escape_like
 
 # 样本量不足阈值：低于此值时不返回分布数据，仅返回样本数
@@ -74,9 +71,7 @@ def delete_report(db: Session, user_id: UUID, report_id: str) -> None:
     try:
         rid = uuid.UUID(report_id)
     except (ValueError, AttributeError, TypeError):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="报告不存在"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="报告不存在")
     report = (
         db.query(CommunityReport)
         .filter(
@@ -86,34 +81,24 @@ def delete_report(db: Session, user_id: UUID, report_id: str) -> None:
         .first()
     )
     if not report:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="报告不存在"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="报告不存在")
     db.delete(report)
     db.commit()
 
 
-def aggregate(
-    db: Session, school: str, major: str, year: int | None = None
-) -> AggregateResponse:
+def aggregate(db: Session, school: str, major: str, year: int | None = None) -> AggregateResponse:
     """聚合统计：模糊匹配学校与专业，返回去向分布、热门雇主/城市/行业、薪资分布。
 
     当样本量 < MIN_SAMPLE 时仅返回 sample_count，不返回分布数据（隐私保护）。
     """
     filters = [
-        CommunityReport.school_name.ilike(
-            f"%{escape_like(school)}%", escape="\\"
-        ),
-        CommunityReport.major.ilike(
-            f"%{escape_like(major)}%", escape="\\"
-        ),
+        CommunityReport.school_name.ilike(f"%{escape_like(school)}%", escape="\\"),
+        CommunityReport.major.ilike(f"%{escape_like(major)}%", escape="\\"),
     ]
     if year is not None:
         filters.append(CommunityReport.graduation_year == year)
 
-    sample_count = (
-        db.query(func.count(CommunityReport.id)).filter(*filters).scalar() or 0
-    )
+    sample_count = db.query(func.count(CommunityReport.id)).filter(*filters).scalar() or 0
 
     if sample_count < MIN_SAMPLE:
         return AggregateResponse(
@@ -133,9 +118,7 @@ def aggregate(
         .group_by(CommunityReport.destination_type)
         .all()
     )
-    destination_distribution = {
-        dt.value: count / sample_count for dt, count in dest_rows
-    }
+    destination_distribution = {dt.value: count / sample_count for dt, count in dest_rows}
 
     # 热门雇主（按数量降序，取前10）
     emp_rows = (
@@ -198,14 +181,8 @@ def aggregate(
 def get_stats(db: Session) -> CommunityStats:
     """全局统计：报告总数、覆盖学校数、覆盖专业数。"""
     total = db.query(func.count(CommunityReport.id)).scalar() or 0
-    school_count = (
-        db.query(func.count(func.distinct(CommunityReport.school_name)))
-        .scalar()
-        or 0
-    )
-    major_count = (
-        db.query(func.count(func.distinct(CommunityReport.major))).scalar() or 0
-    )
+    school_count = db.query(func.count(func.distinct(CommunityReport.school_name))).scalar() or 0
+    major_count = db.query(func.count(func.distinct(CommunityReport.major))).scalar() or 0
     return CommunityStats(
         total_reports=total,
         school_count=school_count,

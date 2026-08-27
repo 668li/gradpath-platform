@@ -6,6 +6,7 @@
 
 封禁安全护栏：不能封禁管理员账户（moderation_service 兜底）。
 """
+
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -61,18 +62,11 @@ def list_users(
     q = db.query(User)
     if keyword:
         like = f"%{keyword}%"
-        q = q.filter(
-            or_(User.email.ilike(like), User.name.ilike(like), User.nickname.ilike(like))
-        )
+        q = q.filter(or_(User.email.ilike(like), User.name.ilike(like), User.nickname.ilike(like)))
     if status_filter is not None:
         q = q.filter(User.status == status_filter)
     total = q.count()
-    rows = (
-        q.order_by(User.created_at.desc())
-        .offset((page - 1) * page_size)
-        .limit(page_size)
-        .all()
-    )
+    rows = q.order_by(User.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
     return AdminUserListVO(total=total, items=[_to_vo(u) for u in rows])
 
 

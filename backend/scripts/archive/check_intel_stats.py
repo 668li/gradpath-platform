@@ -1,5 +1,7 @@
 from sqlalchemy import text
+
 from app.database import engine
+
 conn = engine.connect()
 r = conn.execute(text("SELECT count(*), min(year), max(year) FROM grad_school_intel")).fetchone()
 print(f"count={r[0]} year_range={r[1]}-{r[2]}")

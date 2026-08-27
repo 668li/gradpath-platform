@@ -1,10 +1,13 @@
 # data_freshness.py
 """Data Freshness Engine - tracks freshness of all data sources."""
+
 import logging
 from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import text
 from sqlalchemy.orm import Session
+
 from app.config import settings
 from app.core.deps import get_admin_user
 from app.database import get_db
@@ -15,9 +18,15 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/data-freshness", tags=["data"])
 
 SOURCES = {
-    "yanzhao": "Yanzhao", "kaoyan": "Kaoyan", "offcn": "Offcn",
-    "huatu": "Huatu", "sina_edu": "Sina", "eol_kaoyan": "EOL",
-    "fenbi": "Fenbi", "mofangge": "MoFangGe", "51job": "51Job",
+    "yanzhao": "Yanzhao",
+    "kaoyan": "Kaoyan",
+    "offcn": "Offcn",
+    "huatu": "Huatu",
+    "sina_edu": "Sina",
+    "eol_kaoyan": "EOL",
+    "fenbi": "Fenbi",
+    "mofangge": "MoFangGe",
+    "51job": "51Job",
     "gaokao_cn": "Gaokao",
 }
 
@@ -31,13 +40,12 @@ def _table_exists(db: Session, table_name: str) -> bool:
     """检测表是否存在（兼容 SQLite / PostgreSQL）。"""
     try:
         if _is_sqlite():
-            r = db.execute(text(
-                "SELECT name FROM sqlite_master WHERE type='table' AND name=:n"
-            ), {"n": table_name}).fetchone()
+            r = db.execute(
+                text("SELECT name FROM sqlite_master WHERE type='table' AND name=:n"),
+                {"n": table_name},
+            ).fetchone()
         else:
-            r = db.execute(text(
-                "SELECT to_regclass(:n)"
-            ), {"n": table_name}).fetchone()
+            r = db.execute(text("SELECT to_regclass(:n)"), {"n": table_name}).fetchone()
         return bool(r and r[0])
     except Exception:
         return False
@@ -52,9 +60,11 @@ def _query_freshness_rows(db: Session) -> list:
         logger.info("data_freshness 表不存在（开发环境未迁移），返回空数据")
         return []
     try:
-        return db.execute(text(
-            "SELECT source_name, last_successful_crawl, records_count, status FROM data_freshness"
-        )).fetchall()
+        return db.execute(
+            text(
+                "SELECT source_name, last_successful_crawl, records_count, status FROM data_freshness"
+            )
+        ).fetchall()
     except Exception as e:
         logger.warning("查询 data_freshness 表失败，降级返回空: %s", e)
         return []
@@ -86,19 +96,27 @@ def freshness_status(db: Session = Depends(get_db)):
     for sn, name in SOURCES.items():
         if sn in existing:
             r = existing[sn]
-            results.append({
-                "source": sn, "display_name": name,
-                "score": _freshness_score(r[1]),
-                "records": r[2] or 0,
-                "last_crawl": r[1].isoformat() if r[1] else None,
-                "status": r[3] or "unknown",
-            })
+            results.append(
+                {
+                    "source": sn,
+                    "display_name": name,
+                    "score": _freshness_score(r[1]),
+                    "records": r[2] or 0,
+                    "last_crawl": r[1].isoformat() if r[1] else None,
+                    "status": r[3] or "unknown",
+                }
+            )
         else:
-            results.append({
-                "source": sn, "display_name": name,
-                "score": 20, "records": 0,
-                "last_crawl": None, "status": "unknown",
-            })
+            results.append(
+                {
+                    "source": sn,
+                    "display_name": name,
+                    "score": 20,
+                    "records": 0,
+                    "last_crawl": None,
+                    "status": "unknown",
+                }
+            )
     results.sort(key=lambda x: x["score"], reverse=True)
     return {"sources": results, "total": len(results)}
 
@@ -139,17 +157,23 @@ def refresh_source(
     try:
         if _is_sqlite():
             # SQLite 不支持 ON CONFLICT，用 INSERT OR REPLACE 简化
-            db.execute(text(
-                "INSERT OR REPLACE INTO data_freshness "
-                "(source_name, last_successful_crawl, records_count, status, updated_at) "
-                "VALUES (:n, CURRENT_TIMESTAMP, 0, 'refreshing', CURRENT_TIMESTAMP)"
-            ), {"n": source_name})
+            db.execute(
+                text(
+                    "INSERT OR REPLACE INTO data_freshness "
+                    "(source_name, last_successful_crawl, records_count, status, updated_at) "
+                    "VALUES (:n, CURRENT_TIMESTAMP, 0, 'refreshing', CURRENT_TIMESTAMP)"
+                ),
+                {"n": source_name},
+            )
         else:
-            db.execute(text(
-                "INSERT INTO data_freshness (source_name, last_successful_crawl, records_count, status, updated_at) "
-                "VALUES (:n, NOW(), 0, 'refreshing', NOW()) "
-                "ON CONFLICT (source_name) DO UPDATE SET status='refreshing', updated_at=NOW()"
-            ), {"n": source_name})
+            db.execute(
+                text(
+                    "INSERT INTO data_freshness (source_name, last_successful_crawl, records_count, status, updated_at) "
+                    "VALUES (:n, NOW(), 0, 'refreshing', NOW()) "
+                    "ON CONFLICT (source_name) DO UPDATE SET status='refreshing', updated_at=NOW()"
+                ),
+                {"n": source_name},
+            )
         db.commit()
     except Exception as e:
         db.rollback()

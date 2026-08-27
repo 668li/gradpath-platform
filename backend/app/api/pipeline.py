@@ -1,5 +1,6 @@
 # backend/app/api/pipeline.py
 """Pipeline API 路由 — 管理员专用。"""
+
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
@@ -19,6 +20,7 @@ from app.schemas.pipeline import (
     ReportListResponse,
 )
 from app.services.pipeline_service import (
+    MAX_FILE_SIZE,
     create_source,
     delete_report,
     delete_source,
@@ -32,7 +34,6 @@ from app.services.pipeline_service import (
     publish_report,
     reparse_report,
     update_source,
-    MAX_FILE_SIZE,
 )
 
 router = APIRouter(prefix="/api/pipeline", tags=["数据管道"])
@@ -62,7 +63,9 @@ async def ingest_file_endpoint(
     """文件上传模式接入。"""
     content = await file.read()
     if len(content) > MAX_FILE_SIZE:
-        raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="文件过大，最大 20MB")
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail="文件过大，最大 20MB"
+        )
     try:
         report = ingest_file(db, content, file.filename or "upload.html", school_slug, year)
         return report
@@ -154,6 +157,7 @@ def stats_endpoint(
 
 # ===== DataSource CRUD =====
 
+
 @router.get("/sources", response_model=list[DataSourceResponse])
 def list_sources_endpoint(
     user: User = Depends(get_admin_user),
@@ -179,6 +183,7 @@ def update_source_endpoint(
     db: Session = Depends(get_db),
 ):
     from uuid import UUID
+
     try:
         return update_source(db, UUID(source_id), body)
     except ValueError as e:
@@ -192,6 +197,7 @@ def delete_source_endpoint(
     db: Session = Depends(get_db),
 ):
     from uuid import UUID
+
     try:
         delete_source(db, UUID(source_id))
     except ValueError as e:

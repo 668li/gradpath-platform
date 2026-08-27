@@ -1,12 +1,11 @@
 """考研社区 — 经验贴 API。"""
-from typing import Optional
+
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
-from sqlalchemy.orm import Session, selectinload
+from sqlalchemy.orm import Session
 
 from app.core.cache import cache
-from app.core.cursor_pagination import encode_cursor
 from app.core.deps import get_admin_user, get_current_user
 from app.core.rate_limit import rate_limits
 from app.database import get_db
@@ -45,16 +44,20 @@ def _check_post_owner(post: ExperiencePost, user: User) -> None:
         )
 
 
-@router.get("", response_model=ExperiencePostListResponse | CursorPaginatedResponse[ExperiencePostResponse])
+@router.get(
+    "", response_model=ExperiencePostListResponse | CursorPaginatedResponse[ExperiencePostResponse]
+)
 def list_experience_posts(
     page: int = Query(1, ge=1, description="页码（offset 分页）"),
     page_size: int = Query(20, ge=1, le=100, description="每页数量"),
-    cursor: Optional[str] = Query(None, description="游标（cursor 分页，传则忽略 page）"),
-    category: Optional[str] = Query(None, description="分类过滤"),
-    tag: Optional[str] = Query(None, description="标签过滤"),
-    status: Optional[str] = Query(None, description="审核状态过滤（默认 approved）"),
-    search: Optional[str] = Query(None, description="搜索关键词"),
-    source_platform: Optional[str] = Query(None, description="来源平台过滤：user=用户发布, external=外部爬取"),
+    cursor: str | None = Query(None, description="游标（cursor 分页，传则忽略 page）"),
+    category: str | None = Query(None, description="分类过滤"),
+    tag: str | None = Query(None, description="标签过滤"),
+    status: str | None = Query(None, description="审核状态过滤（默认 approved）"),
+    search: str | None = Query(None, description="搜索关键词"),
+    source_platform: str | None = Query(
+        None, description="来源平台过滤：user=用户发布, external=外部爬取"
+    ),
     db: Session = Depends(get_db),
 ):
     """获取经验贴列表（默认展示已通过的内容）。
@@ -64,7 +67,9 @@ def list_experience_posts(
     - cursor 分页：传 cursor + page_size（高性能，适合无限滚动）
     """
     # 生成缓存键
-    cache_key = f"exp_posts:list:{page}:{page_size}:{category}:{tag}:{status}:{search}:{source_platform}"
+    cache_key = (
+        f"exp_posts:list:{page}:{page_size}:{category}:{tag}:{status}:{search}:{source_platform}"
+    )
 
     # 尝试从缓存获取
     cached_result = cache.get(cache_key)
@@ -92,8 +97,20 @@ def list_experience_posts(
             items=[
                 ExperiencePostResponse.model_validate(p).model_copy(
                     update={
-                        "author_name": (user_map[p.user_id].nickname or user_map[p.user_id].username or user_map[p.user_id].name) if (not p.is_anonymous and p.user_id in user_map) else None,
-                        "author_avatar": user_map[p.user_id].avatar_url if (not p.is_anonymous and p.user_id in user_map) else None,
+                        "author_name": (
+                            (
+                                user_map[p.user_id].nickname
+                                or user_map[p.user_id].username
+                                or user_map[p.user_id].name
+                            )
+                            if (not p.is_anonymous and p.user_id in user_map)
+                            else None
+                        ),
+                        "author_avatar": (
+                            user_map[p.user_id].avatar_url
+                            if (not p.is_anonymous and p.user_id in user_map)
+                            else None
+                        ),
                     }
                 )
                 for p in items
@@ -122,8 +139,20 @@ def list_experience_posts(
             items=[
                 ExperiencePostResponse.model_validate(p).model_copy(
                     update={
-                        "author_name": (user_map[p.user_id].nickname or user_map[p.user_id].username or user_map[p.user_id].name) if (not p.is_anonymous and p.user_id in user_map) else None,
-                        "author_avatar": user_map[p.user_id].avatar_url if (not p.is_anonymous and p.user_id in user_map) else None,
+                        "author_name": (
+                            (
+                                user_map[p.user_id].nickname
+                                or user_map[p.user_id].username
+                                or user_map[p.user_id].name
+                            )
+                            if (not p.is_anonymous and p.user_id in user_map)
+                            else None
+                        ),
+                        "author_avatar": (
+                            user_map[p.user_id].avatar_url
+                            if (not p.is_anonymous and p.user_id in user_map)
+                            else None
+                        ),
                     }
                 )
                 for p in posts
@@ -255,7 +284,7 @@ def reject_experience_post_endpoint(
 @router.post("/{post_id}/pin")
 def pin_experience_post_endpoint(
     post_id: UUID,
-    body: Optional[dict] = None,
+    body: dict | None = None,
     db: Session = Depends(get_db),
     admin: User = Depends(get_admin_user),
 ):
@@ -264,4 +293,8 @@ def pin_experience_post_endpoint(
     post = set_experience_post_pin(db, post_id, pinned)
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="经验贴不存在")
-    return {"message": "已置顶" if pinned else "已取消置顶", "post_id": str(post.id), "is_pinned": post.is_pinned}
+    return {
+        "message": "已置顶" if pinned else "已取消置顶",
+        "post_id": str(post.id),
+        "is_pinned": post.is_pinned,
+    }

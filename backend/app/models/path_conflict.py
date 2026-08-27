@@ -6,6 +6,7 @@
 2. 转向推荐
 3. 折中方案
 """
+
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, Integer, String, Text

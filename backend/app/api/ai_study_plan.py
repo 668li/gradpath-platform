@@ -1,16 +1,17 @@
 """AI 智能学习计划 API"""
+
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field, validator
 from sqlalchemy.orm import Session
-from typing import Optional
-from uuid import UUID
 
 from app.core.deps import get_current_user
 from app.database import get_db
-from app.models.user import User
 from app.models.study_plan import StudyPlan
+from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +21,7 @@ router = APIRouter(prefix="/api/ai-study-plan", tags=["AI 学习计划"])
 # ============ Schemas ============
 class GeneratePlanRequest(BaseModel):
     """生成学习计划请求"""
+
     target_school: str = Field(..., min_length=1, max_length=200, description="目标院校")
     target_major: str = Field(..., min_length=1, max_length=200, description="目标专业")
     current_score: int = Field(..., ge=0, le=750, description="当前分数（预估）")
@@ -47,6 +49,7 @@ class GeneratePlanRequest(BaseModel):
 
 class SubjectPlan(BaseModel):
     """科目计划"""
+
     subject: str
     daily_hours: float
     tasks: list[str]
@@ -54,6 +57,7 @@ class SubjectPlan(BaseModel):
 
 class WeeklyPlan(BaseModel):
     """周计划"""
+
     week: int
     subjects: list[SubjectPlan]
     weekly_test: str
@@ -62,6 +66,7 @@ class WeeklyPlan(BaseModel):
 
 class Phase(BaseModel):
     """阶段计划"""
+
     name: str
     duration_days: int
     weekly_plan: list[WeeklyPlan]
@@ -70,6 +75,7 @@ class Phase(BaseModel):
 
 class DailySchedule(BaseModel):
     """每日时间安排"""
+
     morning: str
     afternoon: str
     evening: str
@@ -77,6 +83,7 @@ class DailySchedule(BaseModel):
 
 class GeneratePlanResponse(BaseModel):
     """生成学习计划响应"""
+
     total_days: int
     target_school: str
     target_major: str
@@ -90,12 +97,14 @@ class GeneratePlanResponse(BaseModel):
 
 class SavePlanRequest(BaseModel):
     """保存学习计划请求"""
+
     plan_data: GeneratePlanRequest
     generated_plan: dict
 
 
 class ProgressUpdate(BaseModel):
     """进度更新"""
+
     week: int
     completed_tasks: list[str]
 
@@ -114,7 +123,7 @@ def _calculate_phases(total_days: int) -> list[dict]:
     basic_days = int(total_days * 0.4)
     strengthen_days = int(total_days * 0.3)
     sprint_days = total_days - basic_days - strengthen_days
-    
+
     return [
         {"name": "基础阶段", "duration_days": basic_days, "description": "系统学习，打牢基础"},
         {"name": "强化阶段", "duration_days": strengthen_days, "description": "重点突破，查漏补缺"},
@@ -122,10 +131,12 @@ def _calculate_phases(total_days: int) -> list[dict]:
     ]
 
 
-def _generate_weekly_tasks(subject: str, phase: str, week_in_phase: int, is_weak: bool) -> list[str]:
+def _generate_weekly_tasks(
+    subject: str, phase: str, week_in_phase: int, is_weak: bool
+) -> list[str]:
     """根据科目、阶段和周数生成任务"""
     tasks = []
-    
+
     if subject == "数学":
         if phase == "基础阶段":
             tasks = ["完成高等数学教材习题", "每日练习10道计算题", "整理错题本"]
@@ -154,10 +165,10 @@ def _generate_weekly_tasks(subject: str, phase: str, week_in_phase: int, is_weak
             tasks = ["重点章节深入", "真题研究", "专题整理"]
         else:
             tasks = ["真题模拟", "重点知识背诵", "查漏补缺"]
-    
+
     if is_weak and week_in_phase % 2 == 0:
         tasks.append("额外加练薄弱知识点")
-    
+
     return tasks
 
 
@@ -170,26 +181,26 @@ def _generate_plan(request: GeneratePlanRequest) -> GeneratePlanResponse:
         total_days = (exam_date - today).days
     except ValueError:
         raise HTTPException(status_code=400, detail="日期格式错误，请使用 YYYY-MM-DD")
-    
+
     if total_days <= 0:
         raise HTTPException(status_code=400, detail="考试日期必须在未来")
-    
+
     if total_days < 30:
         raise HTTPException(status_code=400, detail="备考时间过短，建议至少30天")
-    
+
     # 生成阶段
     phases_data = _calculate_phases(total_days)
-    
+
     # 确定科目列表
     subjects = ["数学", "英语", "专业课"]
     if total_days > 90:
         subjects.append("政治")  # 政治一般最后3个月开始
-    
+
     # 计算各科目每日时长分配
     weak_set = set(request.weak_subjects)
     subject_hours = {}
     total_weight = 0
-    
+
     for subject in subjects:
         if subject in weak_set:
             weight = 1.5  # 薄弱科目加权
@@ -197,21 +208,21 @@ def _generate_plan(request: GeneratePlanRequest) -> GeneratePlanResponse:
             weight = 1.0
         subject_hours[subject] = weight
         total_weight += weight
-    
+
     # 分配时间
     available_hours = request.study_hours_per_day - 1  # 预留1小时休息
     for subject in subjects:
         base_hours = (subject_hours[subject] / total_weight) * available_hours
         subject_hours[subject] = round(max(1, min(base_hours, 4)), 1)
-    
+
     # 生成各阶段计划
     phases = []
     week_counter = 1
-    
+
     for phase_data in phases_data:
         weeks_in_phase = max(1, phase_data["duration_days"] // 7)
         weekly_plans = []
-        
+
         for w in range(weeks_in_phase):
             week_subjects = []
             for subject in subjects:
@@ -223,20 +234,11 @@ def _generate_plan(request: GeneratePlanRequest) -> GeneratePlanResponse:
                         hours = max(subject_hours[subject] - 0.5, 1)
                 else:
                     hours = subject_hours[subject]
-                
-                tasks = _generate_weekly_tasks(
-                    subject,
-                    phase_data["name"],
-                    w,
-                    subject in weak_set
-                )
-                
-                week_subjects.append(SubjectPlan(
-                    subject=subject,
-                    daily_hours=hours,
-                    tasks=tasks
-                ))
-            
+
+                tasks = _generate_weekly_tasks(subject, phase_data["name"], w, subject in weak_set)
+
+                week_subjects.append(SubjectPlan(subject=subject, daily_hours=hours, tasks=tasks))
+
             # 生成周测和里程碑
             if phase_data["name"] == "基础阶段":
                 weekly_test = f"第{w+1}周基础测试"
@@ -247,29 +249,33 @@ def _generate_plan(request: GeneratePlanRequest) -> GeneratePlanResponse:
             else:
                 weekly_test = f"第{w+1}周模拟考试"
                 milestone = "模拟实战训练"
-            
-            weekly_plans.append(WeeklyPlan(
-                week=week_counter,
-                subjects=week_subjects,
-                weekly_test=weekly_test,
-                milestone=milestone
-            ))
+
+            weekly_plans.append(
+                WeeklyPlan(
+                    week=week_counter,
+                    subjects=week_subjects,
+                    weekly_test=weekly_test,
+                    milestone=milestone,
+                )
+            )
             week_counter += 1
-        
-        phases.append(Phase(
-            name=phase_data["name"],
-            duration_days=phase_data["duration_days"],
-            weekly_plan=weekly_plans,
-            goals=[phase_data["description"], "保质保量完成每日任务", "及时复习巩固"]
-        ))
-    
+
+        phases.append(
+            Phase(
+                name=phase_data["name"],
+                duration_days=phase_data["duration_days"],
+                weekly_plan=weekly_plans,
+                goals=[phase_data["description"], "保质保量完成每日任务", "及时复习巩固"],
+            )
+        )
+
     # 生成每日时间安排
     daily_schedule = DailySchedule(
         morning="08:00-12:00 数学/专业课（高难度科目）",
         afternoon="14:00-18:00 英语/政治（中等难度科目）",
-        evening="19:00-21:00 复习巩固 + 错题整理"
+        evening="19:00-21:00 复习巩固 + 错题整理",
     )
-    
+
     # 生成备考建议
     tips = [
         "保持规律作息，每天保证7-8小时睡眠",
@@ -277,9 +283,9 @@ def _generate_plan(request: GeneratePlanRequest) -> GeneratePlanResponse:
         "建立错题本，定期回顾薄弱知识点",
         "多做真题，熟悉考试题型和时间分配",
         f"目标院校：{request.target_school}，目标专业：{request.target_major}",
-        f"从当前{request.current_score}分提升至{request.target_score}分，需要{total_days}天系统备考"
+        f"从当前{request.current_score}分提升至{request.target_score}分，需要{total_days}天系统备考",
     ]
-    
+
     # 生成AI总结
     ai_summary = f"""
 📚 智能学习计划总结
@@ -303,7 +309,7 @@ def _generate_plan(request: GeneratePlanRequest) -> GeneratePlanResponse:
 
 祝你备考顺利，金榜题名！🎓
 """.strip()
-    
+
     return GeneratePlanResponse(
         total_days=total_days,
         target_school=request.target_school,
@@ -313,7 +319,7 @@ def _generate_plan(request: GeneratePlanRequest) -> GeneratePlanResponse:
         phases=phases,
         daily_schedule=daily_schedule,
         tips=tips,
-        ai_summary=ai_summary
+        ai_summary=ai_summary,
     )
 
 
@@ -345,7 +351,7 @@ async def save_plan(
             end_date=body.plan_data.exam_date,
             subjects=body.plan_data.weak_subjects + ["数学", "英语", "专业课"],
             completed=False,
-            progress=0
+            progress=0,
         )
         db.add(plan)
         db.commit()
@@ -388,23 +394,20 @@ async def get_plan_progress(
     user: User = Depends(get_current_user),
 ):
     """获取学习计划进度跟踪"""
-    plan = db.query(StudyPlan).filter(
-        StudyPlan.id == plan_id,
-        StudyPlan.user_id == user.id
-    ).first()
-    
+    plan = db.query(StudyPlan).filter(StudyPlan.id == plan_id, StudyPlan.user_id == user.id).first()
+
     if not plan:
         raise HTTPException(status_code=404, detail="学习计划不存在")
-    
+
     # 计算进度信息
     start = datetime.strptime(plan.start_date, "%Y-%m-%d") if plan.start_date else None
     end = datetime.strptime(plan.end_date, "%Y-%m-%d") if plan.end_date else None
     now = datetime.now()
-    
+
     total_days = (end - start).days if start and end else 0
     elapsed_days = (now - start).days if start else 0
     remaining_days = (end - now).days if end else 0
-    
+
     return {
         "plan_id": str(plan.id),
         "title": plan.title,
@@ -414,7 +417,9 @@ async def get_plan_progress(
         "remaining_days": max(0, remaining_days),
         "start_date": plan.start_date,
         "end_date": plan.end_date,
-        "is_on_track": plan.progress >= (elapsed_days / total_days * 100) if total_days > 0 else False,
+        "is_on_track": (
+            plan.progress >= (elapsed_days / total_days * 100) if total_days > 0 else False
+        ),
     }
 
 
@@ -427,10 +432,11 @@ async def update_plan_progress(
 ):
     """更新学习计划进度"""
     try:
-        plan = db.query(StudyPlan).filter(
-            StudyPlan.id == plan_id,
-            StudyPlan.user_id == user.id
-        ).first()
+        plan = (
+            db.query(StudyPlan)
+            .filter(StudyPlan.id == plan_id, StudyPlan.user_id == user.id)
+            .first()
+        )
 
         if not plan:
             raise HTTPException(status_code=404, detail="学习计划不存在")

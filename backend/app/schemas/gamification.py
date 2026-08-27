@@ -1,5 +1,6 @@
 # backend/app/schemas/gamification.py
 """游戏化相关 Pydantic 模型。"""
+
 from pydantic import BaseModel
 
 

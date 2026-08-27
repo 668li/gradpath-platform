@@ -3,6 +3,7 @@
 AI 从对话中自动抽取结构化事实（如"用户偏好金融行业""用户 GPA 3.8"），
 下次调用时注入 system prompt，实现"AI 记得用户"的差异化体验。
 """
+
 import enum
 from datetime import datetime
 from uuid import UUID
@@ -16,12 +17,13 @@ from app.models.base import GUID, TimestampMixin, UUIDMixin
 
 class MemoryFactType(str, enum.Enum):
     """记忆事实类型 — 用于结构化分类与检索过滤。"""
-    preference = "preference"        # 用户偏好（行业/城市/工作风格）
-    background = "background"        # 用户背景（学校/GPA/技能）
-    goal = "goal"                    # 用户目标（短期/长期）
-    constraint = "constraint"        # 用户约束（家庭/经济/时间）
-    behavior = "behavior"            # 用户行为模式（决策风格/反应模式）
-    fact = "fact"                    # 客观事实（已发生的事件）
+
+    preference = "preference"  # 用户偏好（行业/城市/工作风格）
+    background = "background"  # 用户背景（学校/GPA/技能）
+    goal = "goal"  # 用户目标（短期/长期）
+    constraint = "constraint"  # 用户约束（家庭/经济/时间）
+    behavior = "behavior"  # 用户行为模式（决策风格/反应模式）
+    fact = "fact"  # 客观事实（已发生的事件）
 
 
 class UserMemoryFact(UUIDMixin, TimestampMixin, Base):
@@ -33,6 +35,7 @@ class UserMemoryFact(UUIDMixin, TimestampMixin, Base):
     - 来源可追溯：source + conversation_id 记录事实来源，便于纠错
     - 反馈闭环：use_count + last_used_at 跟踪使用情况，user_feedback 接收反馈
     """
+
     __tablename__ = "user_memory_facts"
 
     user_id: Mapped[UUID] = mapped_column(

@@ -1,4 +1,5 @@
 """种子脚本：初始化导师和评价数据"""
+
 import sys
 from pathlib import Path
 
@@ -6,12 +7,14 @@ from pathlib import Path
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
+from datetime import datetime
+from uuid import uuid4
+
 from sqlalchemy.orm import Session
-from app.database import SessionLocal, engine, Base
+
+from app.database import Base, SessionLocal, engine
 from app.models.mentor import Mentor
 from app.models.mentor_review import MentorReview
-from uuid import uuid4
-from datetime import datetime
 
 
 def create_tables():
@@ -24,22 +27,34 @@ def create_tables():
 def seed_mentors(db: Session):
     """导入导师数据"""
     print("\n导入导师数据...")
-    
+
     # 检查是否已有数据
     existing_count = db.query(Mentor).count()
     if existing_count > 0:
         print(f"✓ 已存在 {existing_count} 位导师，跳过导入")
         return
-    
+
     # 从爬虫模块导入数据
     from app.crawlers.grad.mentor_crawler import _MENTOR_DATA
-    
+
     mentors_created = 0
     for data in _MENTOR_DATA:
-        (name, university, department, title, research_directions,
-         paper_count, project_count, citation_count, h_index,
-         enrollment_status, enrollment_directions, contact_email, tags) = data
-        
+        (
+            name,
+            university,
+            department,
+            title,
+            research_directions,
+            paper_count,
+            project_count,
+            citation_count,
+            h_index,
+            enrollment_status,
+            enrollment_directions,
+            contact_email,
+            tags,
+        ) = data
+
         mentor = Mentor(
             id=uuid4(),
             name=name,
@@ -70,7 +85,7 @@ def seed_mentors(db: Session):
         )
         db.add(mentor)
         mentors_created += 1
-    
+
     db.commit()
     print(f"✓ 成功导入 {mentors_created} 位导师")
 
@@ -78,40 +93,62 @@ def seed_mentors(db: Session):
 def seed_reviews(db: Session):
     """导入评价数据"""
     print("\n导入评价数据...")
-    
+
     # 检查是否已有数据
     existing_count = db.query(MentorReview).count()
     if existing_count > 0:
         print(f"✓ 已存在 {existing_count} 条评价，跳过导入")
         return
-    
+
     # 从聚合器模块导入数据
     from app.crawlers.grad.mentor_review_aggregator import _MENTOR_REVIEW_DATA
-    
+
     reviews_created = 0
     for data in _MENTOR_REVIEW_DATA:
-        (mentor_name, university, department, reviewer_identity, is_anonymous,
-         rating_academic, rating_guidance, rating_relationship,
-         rating_funding, rating_workload, rating_career,
-         title, content, pros, cons, like_count) = data
-        
+        (
+            mentor_name,
+            university,
+            department,
+            reviewer_identity,
+            is_anonymous,
+            rating_academic,
+            rating_guidance,
+            rating_relationship,
+            rating_funding,
+            rating_workload,
+            rating_career,
+            title,
+            content,
+            pros,
+            cons,
+            like_count,
+        ) = data
+
         # 查找对应的导师
-        mentor = db.query(Mentor).filter(
-            Mentor.name == mentor_name,
-            Mentor.university == university,
-            Mentor.department == department
-        ).first()
-        
+        mentor = (
+            db.query(Mentor)
+            .filter(
+                Mentor.name == mentor_name,
+                Mentor.university == university,
+                Mentor.department == department,
+            )
+            .first()
+        )
+
         if not mentor:
             print(f"⚠ 未找到导师：{mentor_name} ({university} {department})，跳过")
             continue
-        
+
         # 计算综合评分
         overall_rating = (
-            rating_academic + rating_guidance + rating_relationship +
-            rating_funding + rating_workload + rating_career
+            rating_academic
+            + rating_guidance
+            + rating_relationship
+            + rating_funding
+            + rating_workload
+            + rating_career
         ) / 6
-        
+
         review = MentorReview(
             id=uuid4(),
             mentor_id=mentor.id,
@@ -139,7 +176,7 @@ def seed_reviews(db: Session):
         )
         db.add(review)
         reviews_created += 1
-    
+
     db.commit()
     print(f"✓ 成功导入 {reviews_created} 条评价")
 
@@ -147,16 +184,17 @@ def seed_reviews(db: Session):
 def update_mentor_stats(db: Session):
     """更新导师评分统计"""
     print("\n更新导师评分统计...")
-    
+
     mentors = db.query(Mentor).all()
     updated_count = 0
-    
+
     for mentor in mentors:
-        reviews = db.query(MentorReview).filter(
-            MentorReview.mentor_id == mentor.id,
-            MentorReview.review_status == "approved"
-        ).all()
-        
+        reviews = (
+            db.query(MentorReview)
+            .filter(MentorReview.mentor_id == mentor.id, MentorReview.review_status == "approved")
+            .all()
+        )
+
         if reviews:
             mentor.review_count = len(reviews)
             mentor.avg_rating = sum(r.overall_rating for r in reviews) / len(reviews)
@@ -167,7 +205,7 @@ def update_mentor_stats(db: Session):
             mentor.rating_workload = sum(r.rating_workload for r in reviews) / len(reviews)
             mentor.rating_career = sum(r.rating_career for r in reviews) / len(reviews)
             updated_count += 1
-    
+
     db.commit()
     print(f"✓ 更新了 {updated_count} 位导师的评分统计")
 
@@ -177,34 +215,34 @@ def main():
     print("=" * 60)
     print("考研导师数据初始化脚本")
     print("=" * 60)
-    
+
     # 创建数据库表
     create_tables()
-    
+
     # 创建数据库会话
     db = SessionLocal()
-    
+
     try:
         # 导入导师数据
         seed_mentors(db)
-        
+
         # 导入评价数据
         seed_reviews(db)
-        
+
         # 更新导师评分统计
         update_mentor_stats(db)
-        
+
         print("\n" + "=" * 60)
         print("✓ 数据初始化完成！")
         print("=" * 60)
-        
+
         # 打印统计信息
         mentor_count = db.query(Mentor).count()
         review_count = db.query(MentorReview).count()
         print(f"\n统计信息：")
         print(f"  - 导师数量：{mentor_count}")
         print(f"  - 评价数量：{review_count}")
-        
+
     except Exception as e:
         print(f"\n✗ 数据初始化失败：{e}")
         db.rollback()

@@ -3,8 +3,8 @@
 Uses Bing (primary) -> Sogou (fallback) -> Yandex (fallback) for web search.
 DuckDuckGo is unreliable in Docker environments due to DNS issues.
 """
+
 import logging
-import re
 from dataclasses import dataclass
 
 import httpx
@@ -17,6 +17,7 @@ SEARCH_TIMEOUT = 15
 @dataclass
 class WebSearchResult:
     """Single web search result."""
+
     title: str = ""
     url: str = ""
     snippet: str = ""
@@ -56,11 +57,14 @@ class WebSearchService:
     async def _search_bing(self, query: str, max_results: int) -> list[WebSearchResult]:
         """Scrape Bing search results using BeautifulSoup."""
         from bs4 import BeautifulSoup
+
         results = []
         async with httpx.AsyncClient(
             timeout=SEARCH_TIMEOUT,
             follow_redirects=True,
-            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125.0.0.0 Safari/537.36"},
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125.0.0.0 Safari/537.36"
+            },
         ) as client:
             resp = await client.get(f"https://www.bing.com/search?q={query}")
             resp.raise_for_status()
@@ -75,18 +79,23 @@ class WebSearchService:
                 snippet_tag = item.select_one("p, .b_caption p, .b_algoSlug")
                 snippet = snippet_tag.get_text(strip=True)[:300] if snippet_tag else ""
                 if title and url.startswith("http"):
-                    results.append(WebSearchResult(title=title, url=url, snippet=snippet, source="bing"))
+                    results.append(
+                        WebSearchResult(title=title, url=url, snippet=snippet, source="bing")
+                    )
 
         return results
 
     async def _search_sogou(self, query: str, max_results: int) -> list[WebSearchResult]:
         """Scrape Sogou search results using BeautifulSoup."""
         from bs4 import BeautifulSoup
+
         results = []
         async with httpx.AsyncClient(
             timeout=SEARCH_TIMEOUT,
             follow_redirects=True,
-            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125.0.0.0 Safari/537.36"},
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125.0.0.0 Safari/537.36"
+            },
         ) as client:
             resp = await client.get(f"https://www.sogou.com/web?query={query}")
             resp.raise_for_status()
@@ -101,18 +110,23 @@ class WebSearchService:
                 snippet_tag = item.select_one("p.space-txt, div.str-text-info, .star-wiki")
                 snippet = snippet_tag.get_text(strip=True)[:300] if snippet_tag else ""
                 if title and "http" in url:
-                    results.append(WebSearchResult(title=title, url=url, snippet=snippet, source="sogou"))
+                    results.append(
+                        WebSearchResult(title=title, url=url, snippet=snippet, source="sogou")
+                    )
 
         return results
 
     async def _search_yandex(self, query: str, max_results: int) -> list[WebSearchResult]:
         """Scrape Yandex search results using BeautifulSoup."""
         from bs4 import BeautifulSoup
+
         results = []
         async with httpx.AsyncClient(
             timeout=SEARCH_TIMEOUT,
             follow_redirects=True,
-            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125.0.0.0 Safari/537.36"},
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125.0.0.0 Safari/537.36"
+            },
         ) as client:
             resp = await client.get(f"https://yandex.com/search/?text={query}")
             resp.raise_for_status()
@@ -127,6 +141,8 @@ class WebSearchService:
                 snippet_tag = item.select_one("span.OrganicText, div.OrganicText")
                 snippet = snippet_tag.get_text(strip=True)[:300] if snippet_tag else ""
                 if title and url.startswith("http"):
-                    results.append(WebSearchResult(title=title, url=url, snippet=snippet, source="yandex"))
+                    results.append(
+                        WebSearchResult(title=title, url=url, snippet=snippet, source="yandex")
+                    )
 
         return results

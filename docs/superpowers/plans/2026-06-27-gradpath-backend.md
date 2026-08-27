@@ -2491,6 +2491,6 @@ git commit -m "feat: add dashboard overview API and ReferenceSnapshot model (res
 
 ## Execution Handoff
 
-Plan complete and saved to `docs/superpowers/plans/2026-06-27-gradpath-backend.md`. 
+Plan complete and saved to `docs/superpowers/plans/2026-06-27-gradpath-backend.md`.
 
 **Execution approach: Inline Execution** — 按任务顺序执行，每个任务完成后验证测试通过再进入下一个。

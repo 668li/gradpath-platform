@@ -14,6 +14,7 @@
 匹配度：若用户有 holland 测评结果，按 RIASEC 维度与路径特征计算；
 没有则给中性默认值（match_score=60, 通用说明）。
 """
+
 from __future__ import annotations
 
 import logging
@@ -229,21 +230,23 @@ def generate_comparison(
             preset, holland_code, recommended_directions, target_role
         )
 
-        metrics.append({
-            "path_type": path_type,
-            "target_role": target_role,
-            "income_1y": preset["income_1y"],
-            "income_3y": preset["income_3y"],
-            "income_5y": preset["income_5y"],
-            "risk_level": preset["risk_level"],
-            "risk_description": preset["risk_description"],
-            "growth_score": preset["growth_score"],
-            "time_cost_months": preset["time_cost_months"],
-            "match_score": match_score,
-            "match_description": match_desc,
-            "pros": list(preset["pros"]),
-            "cons": list(preset["cons"]),
-        })
+        metrics.append(
+            {
+                "path_type": path_type,
+                "target_role": target_role,
+                "income_1y": preset["income_1y"],
+                "income_3y": preset["income_3y"],
+                "income_5y": preset["income_5y"],
+                "risk_level": preset["risk_level"],
+                "risk_description": preset["risk_description"],
+                "growth_score": preset["growth_score"],
+                "time_cost_months": preset["time_cost_months"],
+                "match_score": match_score,
+                "match_description": match_desc,
+                "pros": list(preset["pros"]),
+                "cons": list(preset["cons"]),
+            }
+        )
 
     recommendation = get_recommendation(metrics, holland_code)
 
@@ -368,6 +371,7 @@ def get_recommendation(metrics: list[dict[str, Any]], holland_code: str = "") ->
 
 def _pick_best_income(metrics: list[dict[str, Any]]) -> dict[str, Any] | None:
     """选 5 年收入上限最高的路径（按区间上限整数比较）。"""
+
     def _upper(s: str) -> int:
         # "20-35万" → 35
         try:
@@ -375,6 +379,7 @@ def _pick_best_income(metrics: list[dict[str, Any]]) -> dict[str, Any] | None:
             return int("".join(c for c in tail if c.isdigit()))
         except Exception:
             return 0
+
     if not metrics:
         return None
     return max(metrics, key=lambda m: _upper(m.get("income_5y", "")))

@@ -4,6 +4,7 @@
 提供用户职业规划的列表、详情与里程碑状态更新（Phase 11），
 以及里程碑执行日志管理与到期提醒（Phase 12）。
 """
+
 from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
@@ -36,9 +37,7 @@ def list_plans(db: Session, user_id: UUID) -> list[CareerPlan]:
 def get_plan(db: Session, user_id: UUID, plan_id: UUID) -> CareerPlan | None:
     """获取规划详情（验证所有权）。"""
     return (
-        db.query(CareerPlan)
-        .filter(CareerPlan.id == plan_id, CareerPlan.user_id == user_id)
-        .first()
+        db.query(CareerPlan).filter(CareerPlan.id == plan_id, CareerPlan.user_id == user_id).first()
     )
 
 
@@ -84,6 +83,7 @@ def update_milestone(
 # ======================================================================
 # Phase 12: 里程碑执行日志与到期提醒
 # ======================================================================
+
 
 def add_milestone_log(
     db: Session, user_id: UUID, plan_id: UUID, milestone_index: int, content: str
@@ -151,16 +151,16 @@ def delete_milestone_log(db: Session, user_id: UUID, log_id: str) -> MilestoneLo
         log = db.query(MilestoneLog).filter(MilestoneLog.id == log_uuid).first()
     except (ValueError, AttributeError, TypeError):
         pass
-    
+
     if not log:
         # 尝试直接用字符串匹配（SQLite 存储为无连字符字符串）
         log = db.query(MilestoneLog).filter(MilestoneLog.id == log_id).first()
-    
+
     if not log:
         # 尝试去掉连字符后匹配
         clean_id = log_id.replace("-", "")
         log = db.query(MilestoneLog).filter(MilestoneLog.id == clean_id).first()
-    
+
     if not log:
         return None
 

@@ -3,6 +3,7 @@
 路径与 DTO 对齐系统设计 §3.2.M2.2 接口清单；
 user_id 一律由登录态 token 推断（get_current_user），不在请求体传。
 """
+
 from fastapi import APIRouter, Depends, Header
 from sqlalchemy.orm import Session
 
@@ -33,9 +34,7 @@ def get_today_actions(
 ):
     """获取今日行动清单（按权重降序）。"""
     items = action_service.list_today_actions(db, user.id)
-    return ActionListVO(
-        items=[ActionVO.model_validate(a) for a in items], total=len(items)
-    )
+    return ActionListVO(items=[ActionVO.model_validate(a) for a in items], total=len(items))
 
 
 @router.post("", response_model=ActionVO)
@@ -46,9 +45,7 @@ def create_action(
     x_idempotency_key: str | None = Header(default=None, alias="X-Idempotency-Key"),
 ):
     """生成行动项（幂等：X-Idempotency-Key → t_action.biz_req_no）。"""
-    action = action_service.create_action(
-        db, user.id, body, idempotency_key=x_idempotency_key
-    )
+    action = action_service.create_action(db, user.id, body, idempotency_key=x_idempotency_key)
     return ActionVO.model_validate(action)
 
 
@@ -87,9 +84,7 @@ def list_action_checkins(
 ):
     """查询打卡历史。"""
     items, total = action_service.list_action_checkins(db, user.id, action_id)
-    return CheckinListVO(
-        items=[CheckinVO.model_validate(c) for c in items], total=total
-    )
+    return CheckinListVO(items=[CheckinVO.model_validate(c) for c in items], total=total)
 
 
 @router.get("/streaks", response_model=StreakVO)

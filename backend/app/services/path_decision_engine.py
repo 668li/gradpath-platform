@@ -13,6 +13,7 @@
 输出兼容 path_comparison_service 的 PathMetrics 结构（extra 字段 evidence），
 持久化复用 PathComparison 表（JSONB），不新建表。
 """
+
 from __future__ import annotations
 
 import logging
@@ -109,9 +110,7 @@ def generate_decision(
 # ----------------------------------------------------------------------
 # 考研路
 # ----------------------------------------------------------------------
-def _build_kaoyan_path(
-    db: Session, major: str, school_tier: str | None
-) -> dict[str, Any]:
+def _build_kaoyan_path(db: Session, major: str, school_tier: str | None) -> dict[str, Any]:
     pattern = f"%{escape_like(major)}%"
     base = db.query(GradScorelineRecord).filter(
         GradScorelineRecord.major_name.ilike(pattern, escape="\\")
@@ -120,7 +119,9 @@ def _build_kaoyan_path(
     evidence: list[dict[str, Any]] = []
 
     if total == 0:
-        return _empty_path("kaoyan", "考研深造", "该专业暂无分数线数据，可尝试更宽泛的关键词（如只输入学科大类）。")
+        return _empty_path(
+            "kaoyan", "考研深造", "该专业暂无分数线数据，可尝试更宽泛的关键词（如只输入学科大类）。"
+        )
 
     # 分数线聚合（total_score_line=0 为脏数据占位，视为未公布，排除后再聚合）
     line_base = base.filter(
@@ -151,19 +152,17 @@ def _build_kaoyan_path(
     ):
         ratio = _format_ratio(row.application_count, row.enrollment_count)
         ratio_samples.append(f"{row.university_name}（{row.year}）报录 {ratio}")
-        ratio_ev.append(_evidence(
-            f"报录比 · {row.university_name} {row.year}",
-            f"报考 {row.application_count} / 录取 {row.enrollment_count}，"
-            f"复试线 {row.total_score_line} 分",
-            sources=row.data_sources,
-        ))
+        ratio_ev.append(
+            _evidence(
+                f"报录比 · {row.university_name} {row.year}",
+                f"报考 {row.application_count} / 录取 {row.enrollment_count}，"
+                f"复试线 {row.total_score_line} 分",
+                sources=row.data_sources,
+            )
+        )
 
     # 分数证据（同样排除 0 分占位脏数据）
-    line_rows = (
-        line_base.order_by(GradScorelineRecord.year.desc())
-        .limit(SCORELINE_LIMIT)
-        .all()
-    )
+    line_rows = line_base.order_by(GradScorelineRecord.year.desc()).limit(SCORELINE_LIMIT).all()
     for row in line_rows:
         ev = _evidence(
             f"分数线 · {row.university_name} {row.year}",
@@ -178,9 +177,7 @@ def _build_kaoyan_path(
         GradYanzhaoProgram.major_name.ilike(pattern, escape="\\")
     )
     yz_total = yz.count()
-    yz_quota = yz.with_entities(
-        func.sum(GradYanzhaoProgram.enrollment_quota)
-    ).scalar()
+    yz_quota = yz.with_entities(func.sum(GradYanzhaoProgram.enrollment_quota)).scalar()
     quota_text = (
         f"研招目录相关专业 {yz_total} 个，公布招生名额合计约 {int(yz_quota)} 人"
         if yz_quota
@@ -197,11 +194,11 @@ def _build_kaoyan_path(
 
     # 难度评估：有报录比样本则参考；学校层次越高越难
     risk = "high"
-    risk_desc = (
-        "考研录取率通常低于 30%，备考失败损失约 1 年时间。"
-    )
+    risk_desc = "考研录取率通常低于 30%，备考失败损失约 1 年时间。"
     if ratio_samples:
-        risk_desc = "报考热度：\n" + "\n".join(f"- {s}" for s in ratio_samples[:5]) + "\n\n" + risk_desc
+        risk_desc = (
+            "报考热度：\n" + "\n".join(f"- {s}" for s in ratio_samples[:5]) + "\n\n" + risk_desc
+        )
     if school_tier:
         risk_desc += f"本科层次「{school_tier}」在复试/调剂中会影响部分院校的隐性筛选。"
 
@@ -246,13 +243,9 @@ def _build_civil_service_path(
         GwyPosition.major_req.ilike(pattern, escape="\\"),
     )
     if region:
-        gwy = gwy.filter(
-            GwyPosition.work_location.like(f"%{escape_like(region)}%", escape="\\")
-        )
+        gwy = gwy.filter(GwyPosition.work_location.like(f"%{escape_like(region)}%", escape="\\"))
     gwy_total = gwy.count()
-    gwy_recruit = gwy.with_entities(
-        func.sum(GwyPosition.recruit_count)
-    ).scalar()
+    gwy_recruit = gwy.with_entities(func.sum(GwyPosition.recruit_count)).scalar()
     gwy_recruit_text = f"招录合计 {int(gwy_recruit)} 人" if gwy_recruit else "招录人数未公布"
 
     # 进面分：按 position_code 关联 gwy_score_line
@@ -292,9 +285,7 @@ def _build_civil_service_path(
     if province_scope:
         gwy_p = gwy_p.filter(GwyProvincePosition.province == province_scope)
     p_total = gwy_p.count()
-    p_recruit = gwy_p.with_entities(
-        func.sum(GwyProvincePosition.recruit_count)
-    ).scalar()
+    p_recruit = gwy_p.with_entities(func.sum(GwyProvincePosition.recruit_count)).scalar()
     p_recruit_text = f"招录合计 {int(p_recruit)} 人" if p_recruit else "招录人数未公布"
 
     for row in gwy_p.limit(GWY_POSITION_LIMIT).all():
@@ -315,9 +306,7 @@ def _build_civil_service_path(
         )
 
     region_text = f"{region} " if region else ""
-    risk_desc = (
-        "国考整体录取率约 1-3%，省考约 3-5%；岗位分配与专业限制不确定性高。"
-    )
+    risk_desc = "国考整体录取率约 1-3%，省考约 3-5%；岗位分配与专业限制不确定性高。"
     if region:
         risk_desc += f"（仅覆盖 {region} 的省考数据）"
 
@@ -383,11 +372,13 @@ def _build_employment_path(
     md_salary: list[str] = []
     for row in md_query.order_by(MarketData.year.desc()).limit(MARKET_LIMIT).all():
         md_salary.append(f"{row.indicator} {_format_value(row.value, row.unit)}（{row.year}）")
-        evidence.append(_evidence(
-            f"行业数据 · {row.indicator}",
-            f"{row.value} {row.unit}（{row.year}）",
-            url=row.source_url,
-        ))
+        evidence.append(
+            _evidence(
+                f"行业数据 · {row.indicator}",
+                f"{row.value} {row.unit}（{row.year}）",
+                url=row.source_url,
+            )
+        )
     if md_salary:
         coverage_parts.append(f"{scope_label}行业薪资带：" + "、".join(md_salary[:3]))
 
@@ -402,17 +393,20 @@ def _build_employment_path(
     sb_total = sb.count()
     sb_parts: list[str] = []
     for row in sb.order_by(SalaryBenchmark.year.desc()).limit(SALARY_LIMIT).all():
-        sb_parts.append(
-            f"{row.company}·{row.position} {row.salary_min}k-{row.salary_max}k"
+        sb_parts.append(f"{row.company}·{row.position} {row.salary_min}k-{row.salary_max}k")
+        evidence.append(
+            _evidence(
+                f"岗位薪资 · {row.company} {row.position}",
+                f"{row.salary_min}k-{row.salary_max}k（中位 {row.salary_median}k，{row.year}）",
+                url=None,
+                note=f"来源：{row.source}（无链接）",
+            )
         )
-        evidence.append(_evidence(
-            f"岗位薪资 · {row.company} {row.position}",
-            f"{row.salary_min}k-{row.salary_max}k（中位 {row.salary_median}k，{row.year}）",
-            url=None,
-            note=f"来源：{row.source}（无链接）",
-        ))
     if sb_parts:
-        coverage_parts.append(f"{region or ''}应届岗位薪资样本 {sb_total} 条：\n" + "\n".join(f"- {s}" for s in sb_parts[:5]))
+        coverage_parts.append(
+            f"{region or ''}应届岗位薪资样本 {sb_total} 条：\n"
+            + "\n".join(f"- {s}" for s in sb_parts[:5])
+        )
 
     # ---- schools：地区就业率/考研率 ----
     sc = db.query(School)
@@ -429,13 +423,17 @@ def _build_employment_path(
             rate_parts.append(f"就业率 {emp_rate:.1f}%")
         if grad_rate is not None:
             rate_parts.append(f"考研率 {grad_rate:.1f}%")
-        coverage_parts.append(f"{region or '全国'}{school_tier or ''}层次院校平均" + "、".join(rate_parts))
+        coverage_parts.append(
+            f"{region or '全国'}{school_tier or ''}层次院校平均" + "、".join(rate_parts)
+        )
         for row in sc.limit(SCHOOL_LIMIT).all():
-            evidence.append(_evidence(
-                f"院校参考 · {row.name}",
-                f"就业率 {row.employment_rate or '?'}% / 考研率 {row.grad_school_rate or '?'}%",
-                url=row.report_index_url,
-            ))
+            evidence.append(
+                _evidence(
+                    f"院校参考 · {row.name}",
+                    f"就业率 {row.employment_rate or '?'}% / 考研率 {row.grad_school_rate or '?'}%",
+                    url=row.report_index_url,
+                )
+            )
 
     # ---- 汇总 ----
     if not coverage_parts:
@@ -565,8 +563,7 @@ def _build_recommendation(metrics: list[dict[str, Any]], input_summary: dict) ->
             )
         else:
             lines.append(
-                f"- 就业：{m['pros'][0] if m['pros'] else '薪资数据有限'}，"
-                f"行业波动需留意。"
+                f"- 就业：{m['pros'][0] if m['pros'] else '薪资数据有限'}，" f"行业波动需留意。"
             )
 
     lines.append("")

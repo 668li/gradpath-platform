@@ -4,11 +4,12 @@
 到期后系统推送通知，用户完成回顾后 AI 对比 prediction vs actual_outcome，
 累积决策准确率模型，反哺用户画像。
 """
+
 import enum
 from datetime import date, datetime
 from uuid import UUID
 
-from sqlalchemy import Date, DateTime, Enum, ForeignKey, String, Text
+from sqlalchemy import Date, DateTime, Enum, ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -17,11 +18,12 @@ from app.models.base import GUID, JSONB, TimestampMixin, UUIDMixin
 
 class ReviewStatus(str, enum.Enum):
     """回顾任务状态 — 决策飞轮生命周期的状态机。"""
-    pending = "pending"        # 待回顾（未到 scheduled_at 或已到未完成）
-    notified = "notified"      # 已推送通知（用户未操作）
-    completed = "completed"    # 已完成回顾（AI 已生成分析）
-    skipped = "skipped"        # 用户主动跳过
-    cancelled = "cancelled"    # 决策变更，回顾取消
+
+    pending = "pending"  # 待回顾（未到 scheduled_at 或已到未完成）
+    notified = "notified"  # 已推送通知（用户未操作）
+    completed = "completed"  # 已完成回顾（AI 已生成分析）
+    skipped = "skipped"  # 用户主动跳过
+    cancelled = "cancelled"  # 决策变更，回顾取消
 
 
 class DecisionReviewQueue(UUIDMixin, TimestampMixin, Base):
@@ -33,14 +35,17 @@ class DecisionReviewQueue(UUIDMixin, TimestampMixin, Base):
     - ai_review_result 存储 AI 对比分析结果（结构化 JSONB）
     - 完成后 completed_at 记录时间，用于准确率统计
     """
+
     __tablename__ = "decision_review_queue"
 
     user_id: Mapped[UUID] = mapped_column(
         GUID(), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     decision_id: Mapped[UUID] = mapped_column(
-        GUID(), ForeignKey("destination_decisions.id", ondelete="CASCADE"),
-        nullable=False, index=True
+        GUID(),
+        ForeignKey("destination_decisions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
 
     # === 调度信息 ===

@@ -9,7 +9,7 @@ with sync_playwright() as p:
     browser = p.chromium.launch(headless=True)
     ctx = browser.new_context(viewport={"width": 1280, "height": 900})
     page = ctx.new_page()
-    
+
     # Login
     page.goto('http://localhost:3000/login', wait_until='networkidle', timeout=30000)
     page.wait_for_timeout(1000)
@@ -23,7 +23,7 @@ with sync_playwright() as p:
                 break
     page.wait_for_timeout(3000)
     print(f'Login OK: {page.url}')
-    
+
     # Test: Dark Knowledge with 1000+ entries
     page.goto('http://localhost:3000/grad-war-room', wait_until='networkidle', timeout=30000)
     page.wait_for_timeout(2000)
@@ -35,7 +35,7 @@ with sync_playwright() as p:
         body = page.inner_text('body')
         stages = sum(1 for s in ['决策', '择校', '备考', '复试', '调剂', '职业', '心理', '初试'] if s in body)
         print(f'Dark Knowledge: {stages} stages visible in frontend')
-    
+
     # Test: Community with expanded data
     page.goto('http://localhost:3000/kaoyan/community', wait_until='networkidle', timeout=30000)
     page.wait_for_timeout(2000)
@@ -43,6 +43,6 @@ with sync_playwright() as p:
     body = page.inner_text('body')
     post_count = body.count('经验')
     print(f'Community page loaded, posts visible: {post_count > 0}')
-    
+
     browser.close()
     print('\nEnd-to-end verification COMPLETE!')

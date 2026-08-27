@@ -4,6 +4,7 @@
 - 列表 / 详情 / 统计：公开访问，无需登录
 - 分享案例 / 标记有帮助：需登录，但匿名存储（不写 user_id）
 """
+
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
@@ -34,8 +35,12 @@ router = APIRouter(prefix="/api/failure-cases", tags=["失败案例库"])
 
 @router.get("", response_model=FailureCaseListResponse)
 def list_cases(
-    path_type: str | None = Query(None, description="路径筛选：kaoyan/civil_service/employment/study_abroad"),
-    stage: str | None = Query(None, description="阶段筛选：preparation/interview/final_year1/year2_plus"),
+    path_type: str | None = Query(
+        None, description="路径筛选：kaoyan/civil_service/employment/study_abroad"
+    ),
+    stage: str | None = Query(
+        None, description="阶段筛选：preparation/interview/final_year1/year2_plus"
+    ),
     page: int = Query(1, ge=1, description="页码"),
     size: int = Query(10, ge=1, le=50, description="每页数量"),
     db: Session = Depends(get_db),

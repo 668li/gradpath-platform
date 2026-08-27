@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Import real articles from real_articles.json into the GradPath database.
 
 Usage (inside Docker):
@@ -8,7 +7,11 @@ Or locally:
     cd backend
     python -m app.crawlers.real_data.import_real_data
 """
-import sys, json, os, re
+
+import json
+import os
+import re
+import sys
 from pathlib import Path
 
 # Add backend to path if running locally
@@ -16,13 +19,15 @@ backend_dir = Path(__file__).parent.parent.parent.parent
 if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
 
-from sqlalchemy import select, func
+import uuid
+
+from sqlalchemy import func, select
+
 from app.database import Base, SessionLocal, engine
-from app.models.user import User
 from app.models.experience_post import ExperiencePost
 from app.models.qa import QA
 from app.models.qa_answer import QAAnswer
-import uuid
+from app.models.user import User
 
 SEED_USER_EMAIL = "kaoyan_seed@gradpath.local"
 SEED_USER_NAME = "考研帮官方"
@@ -50,11 +55,11 @@ def clean_content(raw):
     if not raw:
         return ""
     # Remove excessive CSS noise if present
-    text = re.sub(r'\{[^}]*\}', '', raw)
-    text = re.sub(r'/\*!.*?\*/', '', text)
-    text = re.sub(r'--tw-[^:]+:[^;]+;', '', text)
-    text = re.sub(r'\n{3,}', '\n\n', text)
-    text = re.sub(r' {2,}', ' ', text)
+    text = re.sub(r"\{[^}]*\}", "", raw)
+    text = re.sub(r"/\*!.*?\*/", "", text)
+    text = re.sub(r"--tw-[^:]+:[^;]+;", "", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    text = re.sub(r" {2,}", " ", text)
     text = text.strip()
     return text
 
@@ -82,9 +87,7 @@ def get_or_create_seed_user(db):
 
 def get_existing_urls(db):
     """Get all existing source URLs from experience_posts."""
-    stmt = select(ExperiencePost.source_url).where(
-        ExperiencePost.source_url.isnot(None)
-    )
+    stmt = select(ExperiencePost.source_url).where(ExperiencePost.source_url.isnot(None))
     return {row[0] for row in db.execute(stmt).all()}
 
 
@@ -156,7 +159,8 @@ def generate_qa_from_articles(db, articles, existing_titles, seed_user):
 
     # Select articles that are Q&A suitable (adjustment guides, experience tips)
     qa_suitable = [
-        a for a in articles
+        a
+        for a in articles
         if a.get("category") in ("调剂指南", "调剂经验", "备考经验", "考试技巧")
         and a.get("title") not in existing_titles
     ]
@@ -230,7 +234,7 @@ def main():
         print(f"\n✗ 文件不存在: {json_path}")
         sys.exit(1)
 
-    with open(json_path, "r", encoding="utf-8") as f:
+    with open(json_path, encoding="utf-8") as f:
         articles = json.load(f)
     print(f"\n2. 加载文章数据: {len(articles)} 篇")
 
@@ -272,6 +276,7 @@ def main():
         print(f"\n✗ 导入失败: {e}")
         db.rollback()
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
     finally:

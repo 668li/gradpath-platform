@@ -1,12 +1,15 @@
 # backend/tests/test_api_sources.py
 """DataSource API 测试。"""
+
 import pytest
+
 from app.models.user import User
 
 
 @pytest.fixture
 def admin_headers(client, db_session):
     from app.core.security import hash_password
+
     admin = User(
         email="admin@test.com",
         password_hash=hash_password("Admin1234!"),

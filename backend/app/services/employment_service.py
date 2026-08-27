@@ -39,9 +39,7 @@ def search_employment(
 
     # 模糊匹配学校（转义 LIKE 通配符，避免 %/_ 被当作通配符）
     school_obj = (
-        db.query(School)
-        .filter(School.name.ilike(f"%{escape_like(school)}%", escape="\\"))
-        .first()
+        db.query(School).filter(School.name.ilike(f"%{escape_like(school)}%", escape="\\")).first()
     )
 
     if not school_obj:
@@ -74,29 +72,36 @@ def search_employment(
     records = []
     for emp in results:
         report = emp.report
-        records.append({
-            "year": report.year,
-            "degree": emp.degree.value,
-            "total_graduates": emp.total_graduates,
-            "rates": {
-                "employment": emp.employment_rate,
-                "further_study": emp.further_study_rate,
-                "civil_service": emp.civil_service_rate,
-                "abroad": emp.abroad_rate,
-                "startup": emp.startup_rate,
-                "gap_year": emp.gap_year_rate,
-            },
-            "employer_ranking": emp.employer_ranking,
-            "industry_distribution": emp.industry_distribution,
-            "destination_region": emp.destination_region,
-            "school_for_further_study": emp.school_for_further_study,
-        })
+        records.append(
+            {
+                "year": report.year,
+                "degree": emp.degree.value,
+                "total_graduates": emp.total_graduates,
+                "rates": {
+                    "employment": emp.employment_rate,
+                    "further_study": emp.further_study_rate,
+                    "civil_service": emp.civil_service_rate,
+                    "abroad": emp.abroad_rate,
+                    "startup": emp.startup_rate,
+                    "gap_year": emp.gap_year_rate,
+                },
+                "employer_ranking": emp.employer_ranking,
+                "industry_distribution": emp.industry_distribution,
+                "destination_region": emp.destination_region,
+                "school_for_further_study": emp.school_for_further_study,
+            }
+        )
 
     # 构建趋势
     trend = _build_trend(results)
 
     result = {
-        "school": {"id": str(school_obj.id), "name": school_obj.name, "slug": school_obj.slug, "code": school_obj.code},
+        "school": {
+            "id": str(school_obj.id),
+            "name": school_obj.name,
+            "slug": school_obj.slug,
+            "code": school_obj.code,
+        },
         "major": results[0].major if results else None,
         "records": records,
         "trend": trend,
@@ -182,16 +187,17 @@ def list_schools(db: Session) -> list[dict]:
 def list_majors(db: Session, school: str) -> list[str]:
     """列出某校已收录专业"""
     school_obj = (
-        db.query(School)
-        .filter(School.name.ilike(f"%{escape_like(school)}%", escape="\\"))
-        .first()
+        db.query(School).filter(School.name.ilike(f"%{escape_like(school)}%", escape="\\")).first()
     )
     if not school_obj:
         return []
     majors = (
         db.query(distinct(EmploymentData.major))
         .join(ReportRecord)
-        .filter(ReportRecord.school_id == school_obj.id, ReportRecord.parse_status == ParseStatus.published)
+        .filter(
+            ReportRecord.school_id == school_obj.id,
+            ReportRecord.parse_status == ParseStatus.published,
+        )
         .all()
     )
     return [m[0] for m in majors]

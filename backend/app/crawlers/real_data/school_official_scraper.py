@@ -1,12 +1,12 @@
-# -*- coding: utf-8 -*-
 """School official website scraper for GradPath.
 
 Attempts to scrape graduate school websites. If blocked, generates realistic data.
 """
+
 import json
 import os
-from datetime import datetime, timedelta
 import random
+from datetime import datetime, timedelta
 
 OUTPUT_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "school_official.json")
 
@@ -27,9 +27,7 @@ def try_scrape():
     }
 
     results = []
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-    }
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 
     for uni, url in urls.items():
         try:
@@ -37,12 +35,14 @@ def try_scrape():
                 resp = client.get(url)
                 if resp.status_code == 200:
                     print(f"  ✓ {uni} - fetched successfully")
-                    results.append({
-                        "university": uni,
-                        "url": url,
-                        "status": "success",
-                        "content_length": len(resp.text),
-                    })
+                    results.append(
+                        {
+                            "university": uni,
+                            "url": url,
+                            "status": "success",
+                            "content_length": len(resp.text),
+                        }
+                    )
                 else:
                     print(f"  ✗ {uni} - status {resp.status_code}")
         except Exception as e:
@@ -151,14 +151,16 @@ def generate_realistic_data():
         date_offset = timedelta(days=random.randint(0, 300))
         date = (base_date + date_offset).strftime("%Y-%m-%d")
 
-        records.append({
-            "university": uni_name,
-            "title": title,
-            "content": f"{title}\n\n{summary}\n\n详情请访问研究生院网站：https://{domain}",
-            "date": date,
-            "category": category,
-            "url": f"https://{domain}/info/{random.randint(10000, 99999)}",
-        })
+        records.append(
+            {
+                "university": uni_name,
+                "title": title,
+                "content": f"{title}\n\n{summary}\n\n详情请访问研究生院网站：https://{domain}",
+                "date": date,
+                "category": category,
+                "url": f"https://{domain}/info/{random.randint(10000, 99999)}",
+            }
+        )
 
     return records
 

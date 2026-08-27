@@ -36,11 +36,11 @@ class SalaryNegotiationSkill(BaseSkill):
     name = "薪资谈判助手"
     description = "帮助用户准备薪资谈判策略，分析市场行情，制定谈判方案"
     icon = "dollar-sign"
-    
+
     def should_activate(self, message: str, context: dict) -> bool:
         msg_lower = message.lower()
         return any(kw in msg_lower for kw in ACTIVATE_KEYWORDS)
-    
+
     def build_system_prompt(self, user_context: str, knowledge: list[dict]) -> str:
         return f"""你是GradPath薪资谈判顾问，帮助用户制定薪资谈判策略。
 
@@ -51,10 +51,10 @@ class SalaryNegotiationSkill(BaseSkill):
 4. 回答薪资相关问题
 
 {user_context}"""
-    
+
     def build_user_prompt(self, message: str) -> str:
         return f"【用户问题】\n{message}"
-    
+
     def parse_response(self, raw: str) -> dict:
         try:
             data = json.loads(raw)
@@ -147,11 +147,11 @@ class IndustryAnalyzerSkill(BaseSkill):
     name = "行业分析器"
     description = "分析目标行业的趋势和机会，帮助用户做出职业决策"
     icon = "bar-chart"
-    
+
     def should_activate(self, message: str, context: dict) -> bool:
         msg_lower = message.lower()
         return any(kw in msg_lower for kw in ACTIVATE_KEYWORDS)
-    
+
     def build_system_prompt(self, user_context: str, knowledge: list[dict]) -> str:
         return f"""你是GradPath行业分析师，帮助用户分析目标行业的趋势和机会。
 
@@ -162,10 +162,10 @@ class IndustryAnalyzerSkill(BaseSkill):
 4. 回答行业相关问题
 
 {user_context}"""
-    
+
     def build_user_prompt(self, message: str) -> str:
         return f"【用户问题】\n{message}"
-    
+
     def parse_response(self, raw: str) -> dict:
         try:
             data = json.loads(raw)
@@ -264,12 +264,12 @@ def parse_response(self, raw: str) -> dict:
 def test_interview_simulation_multi_round():
     from app.skills.interview_simulation import InterviewSimulationSkill
     skill = InterviewSimulationSkill()
-    
+
     # 第一轮
     result1 = skill.parse_response('{"content": "面试开始", "questions": ["请自我介绍"], "round": 1}')
     assert result1["round"] == 1
     assert len(result1["questions"]) == 1
-    
+
     # 第二轮
     result2 = skill.parse_response('{"content": "好的", "questions": ["为什么选择这个专业"], "round": 2}')
     assert result2["round"] == 2
@@ -305,14 +305,14 @@ git commit -m "feat: enhance InterviewSimulationSkill with multi-round support"
 def find_skill_instance(content: str, context: dict | None = None) -> BaseSkill | None:
     """根据消息内容和对话上下文匹配最适合的 BaseSkill 实例。"""
     _load_skill_classes()
-    
+
     if not content:
         return _SKILL_CLASSES.get("default", lambda: None)()
-    
+
     content_lower = content.lower()
     best_match = None
     best_score = 0
-    
+
     for s in _SKILLS:
         if s.code == "default":
             continue
@@ -320,7 +320,7 @@ def find_skill_instance(content: str, context: dict | None = None) -> BaseSkill 
         for trigger in s.trigger_words:
             if trigger in content_lower:
                 score += len(trigger)
-        
+
         # 上下文加成：如果对话历史中出现过相关关键词，加分
         if context and "history" in context:
             for msg in context["history"]:
@@ -329,11 +329,11 @@ def find_skill_instance(content: str, context: dict | None = None) -> BaseSkill 
                     for trigger in s.trigger_words:
                         if trigger in msg_content:
                             score += len(trigger) * 0.5  # 上下文加成50%
-        
+
         if score > best_score and s.name in _SKILL_CLASSES:
             best_score = score
             best_match = _SKILL_CLASSES[s.name]()
-    
+
     return best_match if best_match else _SKILL_CLASSES.get("default", lambda: None)()
 ```
 
@@ -342,11 +342,11 @@ def find_skill_instance(content: str, context: dict | None = None) -> BaseSkill 
 ```python
 def test_find_skill_with_context():
     from app.skills import registry
-    
+
     # 第一轮：用户问考研问题
     skill1 = registry.find_skill_instance("我想考研", {})
     assert skill1.code == "grad_school_planning"
-    
+
     # 第二轮：用户继续问相关问题，应该继续匹配grad_school_planning
     context = {"history": [{"role": "user", "content": "我想考研"}]}
     skill2 = registry.find_skill_instance("选哪个学校", context)

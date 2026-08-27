@@ -3,6 +3,7 @@
 在决策前就预想失败（Pre-mortem），用加权矩阵量化选项，
 用红队问题检验假设。真正提升决策质量。
 """
+
 import json
 import re
 from uuid import UUID
@@ -31,10 +32,12 @@ def create_analysis(db: Session, user_id: UUID, data: dict) -> DecisionAnalysis:
                 weight = c.get("weight", 0)
                 score = scores.get(cname, 0)
                 total += weight * score / 100
-            weighted_results.append({
-                "option": option_name,
-                "total_score": round(total, 2),
-            })
+            weighted_results.append(
+                {
+                    "option": option_name,
+                    "total_score": round(total, 2),
+                }
+            )
         if weighted_results:
             winner = max(weighted_results, key=lambda x: x["total_score"])["option"]
 
@@ -90,12 +93,21 @@ def compute_matrix(criteria: list[dict], matrix_scores: list[dict]) -> dict:
             score = scores.get(cname, 0)
             weighted = weight * score / 100
             total += weighted
-            breakdown.append({"criterion": cname, "weight": weight, "score": score, "weighted": round(weighted, 2)})
-        results.append({
-            "option": option_name,
-            "total_score": round(total, 2),
-            "breakdown": breakdown,
-        })
+            breakdown.append(
+                {
+                    "criterion": cname,
+                    "weight": weight,
+                    "score": score,
+                    "weighted": round(weighted, 2),
+                }
+            )
+        results.append(
+            {
+                "option": option_name,
+                "total_score": round(total, 2),
+                "breakdown": breakdown,
+            }
+        )
     results.sort(key=lambda x: x["total_score"], reverse=True)
     winner = results[0]["option"] if results else None
     return {"results": results, "winner": winner}
@@ -144,7 +156,9 @@ async def analyze_premortem(title: str, options: list[str], reasons: list[str]) 
     return data
 
 
-async def generate_red_team_questions(title: str, options: list[str], reasoning: str | None) -> list[str]:
+async def generate_red_team_questions(
+    title: str, options: list[str], reasoning: str | None
+) -> list[str]:
     """AI 生成红队质疑问题。"""
     system_prompt = """你是一位红队分析师，任务是质疑一个决策的薄弱假设。
 
@@ -164,7 +178,9 @@ async def generate_red_team_questions(title: str, options: list[str], reasoning:
     orchestrator = AIOrchestrator()
     raw = await orchestrator.chat(system_prompt=system_prompt, user_prompt=context, timeout=30)
 
-    questions = [q.strip().lstrip("0123456789.、）) ") for q in raw.strip().split("\n") if q.strip()]
+    questions = [
+        q.strip().lstrip("0123456789.、）) ") for q in raw.strip().split("\n") if q.strip()
+    ]
     return questions[:7]
 
 

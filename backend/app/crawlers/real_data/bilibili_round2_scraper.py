@@ -1,4 +1,5 @@
 """B站考研视频 Round 2 爬虫 — Playwright + API 双通道采集。"""
+
 import json
 import re
 import time
@@ -53,6 +54,7 @@ def _clean_title(html: str) -> str:
 
 
 # ── 1. Playwright 采集 ───────────────────────────────────────────
+
 
 def scrape_playwright() -> list[dict]:
     """通过 Playwright 模拟浏览器搜索 B 站，提取视频列表。"""
@@ -126,16 +128,18 @@ def scrape_playwright() -> list[dict]:
                         # 避免重复
                         if any(v.get("bvid") == bvid for v in videos):
                             continue
-                        videos.append({
-                            "title": d["title"][:200],
-                            "author": "",
-                            "views": 0,
-                            "description": "",
-                            "url": f"https://www.bilibili.com/video/{bvid}",
-                            "bvid": bvid,
-                            "keyword": kw,
-                            "source": "bilibili_playwright",
-                        })
+                        videos.append(
+                            {
+                                "title": d["title"][:200],
+                                "author": "",
+                                "views": 0,
+                                "description": "",
+                                "url": f"https://www.bilibili.com/video/{bvid}",
+                                "bvid": bvid,
+                                "keyword": kw,
+                                "source": "bilibili_playwright",
+                            }
+                        )
                     print(f"  JS 方式提取 {len(items_data)} 条")
                     time.sleep(0.5)
                     continue
@@ -156,7 +160,9 @@ def scrape_playwright() -> list[dict]:
                         views_text = view_el.inner_text().strip() if view_el else "0"
                         views = _parse_view_count(views_text)
 
-                        desc_el = item.query_selector(".desc") or item.query_selector(".content-desc")
+                        desc_el = item.query_selector(".desc") or item.query_selector(
+                            ".content-desc"
+                        )
                         desc = desc_el.inner_text().strip() if desc_el else ""
 
                         link_el = item.query_selector("a[href*='video']")
@@ -167,16 +173,18 @@ def scrape_playwright() -> list[dict]:
                             if m:
                                 bvid = m.group(1)
 
-                        videos.append({
-                            "title": title,
-                            "author": author,
-                            "views": views,
-                            "description": desc,
-                            "url": f"https://www.bilibili.com/video/{bvid}" if bvid else href,
-                            "bvid": bvid,
-                            "keyword": kw,
-                            "source": "bilibili_playwright",
-                        })
+                        videos.append(
+                            {
+                                "title": title,
+                                "author": author,
+                                "views": views,
+                                "description": desc,
+                                "url": f"https://www.bilibili.com/video/{bvid}" if bvid else href,
+                                "bvid": bvid,
+                                "keyword": kw,
+                                "source": "bilibili_playwright",
+                            }
+                        )
                     except Exception as e:
                         print(f"  解析单条视频出错: {e}")
                         continue
@@ -210,6 +218,7 @@ def _parse_view_count(text: str) -> int:
 
 
 # ── 2. API 采集 ──────────────────────────────────────────────────
+
 
 def scrape_api() -> list[dict]:
     """通过 B站搜索 API 直接获取视频数据（含 412 重试）。"""
@@ -251,20 +260,22 @@ def scrape_api() -> list[dict]:
                     desc = item.get("description", "") or item.get("desc", "")
                     tags = [t.strip() for t in (item.get("tag", "") or "").split(",") if t.strip()]
 
-                    videos.append({
-                        "title": title,
-                        "author": item.get("author", ""),
-                        "views": _to_int(item.get("play")),
-                        "danmaku": _to_int(item.get("video_review")),
-                        "description": desc,
-                        "duration": item.get("duration", ""),
-                        "pub_date": item.get("pubdate", 0),
-                        "url": arcurl or f"https://www.bilibili.com/video/{bvid}",
-                        "bvid": bvid,
-                        "keyword": kw,
-                        "source": "bilibili_api",
-                        "tags": tags,
-                    })
+                    videos.append(
+                        {
+                            "title": title,
+                            "author": item.get("author", ""),
+                            "views": _to_int(item.get("play")),
+                            "danmaku": _to_int(item.get("video_review")),
+                            "description": desc,
+                            "duration": item.get("duration", ""),
+                            "pub_date": item.get("pubdate", 0),
+                            "url": arcurl or f"https://www.bilibili.com/video/{bvid}",
+                            "bvid": bvid,
+                            "keyword": kw,
+                            "source": "bilibili_api",
+                            "tags": tags,
+                        }
+                    )
 
                 break  # 成功，跳出重试循环
 
@@ -292,6 +303,7 @@ def scrape_api() -> list[dict]:
 
 
 # ── 主入口 ───────────────────────────────────────────────────────
+
 
 def main():
     print("=" * 60)

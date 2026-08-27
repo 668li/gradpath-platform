@@ -1,16 +1,19 @@
 # backend/app/skills/user_referral.py
 """用户推荐助手 Skill — 帮助用户生成推荐链接，追踪推荐效果，提供推荐奖励。"""
+
 from __future__ import annotations
 
 import json
 import re
-import uuid
-from datetime import datetime
 
 from app.skills.base import BaseSkill
 
 ACTIVATE_KEYWORDS = [
-    "推荐朋友", "邀请好友", "推荐链接", "user referral", "邀请注册",
+    "推荐朋友",
+    "邀请好友",
+    "推荐链接",
+    "user referral",
+    "邀请注册",
 ]
 
 OUTPUT_FORMAT = """\
@@ -73,7 +76,9 @@ class UserReferralSkill(BaseSkill):
         )
 
     def build_user_prompt(self, message: str) -> str:
-        return f"【用户推荐咨询】\n{message}\n\n请基于以上信息生成推荐方案（严格按 JSON 格式输出）。"
+        return (
+            f"【用户推荐咨询】\n{message}\n\n请基于以上信息生成推荐方案（严格按 JSON 格式输出）。"
+        )
 
     def parse_response(self, llm_output: str) -> dict:
         """解析 LLM 输出，提取 referral_info 数据。"""
@@ -115,6 +120,7 @@ def _safe_parse_json(content: str) -> dict:
 
 def _coerce_referral_info(raw: dict) -> dict:
     """将解析后的 referral_info dict 强制转换为标准结构。"""
+
     def _as_dict(v) -> dict:
         return v if isinstance(v, dict) else {}
 

@@ -1,4 +1,5 @@
 """考研数据可视化 API — 概览统计、分数趋势、院校对比。"""
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -17,17 +18,13 @@ router = APIRouter(prefix="/api/grad-intel/visualization", tags=["考研可视�
 @router.get("/overview")
 def get_overview(db: Session = Depends(get_db)):
     """返回聚合统计：院校总数、专业总数、平均分数线。"""
-    total_schools = db.query(
-        func.count(func.distinct(GradSchoolIntel.school_name))
-    ).scalar() or 0
+    total_schools = db.query(func.count(func.distinct(GradSchoolIntel.school_name))).scalar() or 0
 
-    total_programs = db.query(
-        func.count(func.distinct(GradYanzhaoProgram.major_name))
-    ).scalar() or 0
+    total_programs = (
+        db.query(func.count(func.distinct(GradYanzhaoProgram.major_name))).scalar() or 0
+    )
 
-    avg_scoreline = db.query(
-        func.avg(GradScorelineRecord.total_score_line)
-    ).scalar()
+    avg_scoreline = db.query(func.avg(GradScorelineRecord.total_score_line)).scalar()
 
     return {
         "total_schools": total_schools,
@@ -61,8 +58,7 @@ def get_score_trends(
         else:
             idx = years.index(r.year)
             if r.total_score_line and (
-                total_score_lines[idx] is None
-                or r.total_score_line < total_score_lines[idx]
+                total_score_lines[idx] is None or r.total_score_line < total_score_lines[idx]
             ):
                 total_score_lines[idx] = r.total_score_line
 
@@ -100,13 +96,15 @@ def get_school_comparison(
             .scalar()
         ) or 0
 
-        results.append({
-            "university_name": name,
-            "latest_year": latest_record.year if latest_record else None,
-            "latest_scoreline": latest_record.total_score_line if latest_record else None,
-            "program_count": program_count,
-            "adjustment_count": adjustment_count,
-        })
+        results.append(
+            {
+                "university_name": name,
+                "latest_year": latest_record.year if latest_record else None,
+                "latest_scoreline": latest_record.total_score_line if latest_record else None,
+                "program_count": program_count,
+                "adjustment_count": adjustment_count,
+            }
+        )
 
     return {"schools": results}
 
@@ -128,9 +126,12 @@ def get_score_distribution(
             GradScorelineRecord.university_name == GradSchoolIntel.school_name,
         ).filter(GradSchoolIntel.school_tier == tier)
 
-    records = query.filter(
-        GradScorelineRecord.total_score_line.isnot(None)
-    ).order_by(GradScorelineRecord.year.desc()).limit(500).all()
+    records = (
+        query.filter(GradScorelineRecord.total_score_line.isnot(None))
+        .order_by(GradScorelineRecord.year.desc())
+        .limit(500)
+        .all()
+    )
 
     if not records:
         return {"tiers": {}, "distribution": []}
@@ -167,12 +168,7 @@ def get_crawler_quality(db: Session = Depends(get_db)):
     """返回爬虫数据质量指标。"""
     from app.models.crawler_run import CrawlerRun
 
-    recent_runs = (
-        db.query(CrawlerRun)
-        .order_by(CrawlerRun.created_at.desc())
-        .limit(50)
-        .all()
-    )
+    recent_runs = db.query(CrawlerRun).order_by(CrawlerRun.created_at.desc()).limit(50).all()
 
     total_runs = len(recent_runs)
     success_runs = sum(1 for r in recent_runs if r.status == "success")

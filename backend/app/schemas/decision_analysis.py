@@ -1,4 +1,5 @@
 """决策分析 Schemas。"""
+
 from datetime import datetime
 from uuid import UUID
 
@@ -66,12 +67,14 @@ class DecisionAnalysisResponse(BaseModel):
 
 class MatrixComputeRequest(BaseModel):
     """计算决策矩阵加权得分。"""
+
     criteria: list[Criterion]
     matrix_scores: list[MatrixOption]
 
 
 class PremortemAnalyzeRequest(BaseModel):
     """AI 分析预验尸结果。"""
+
     title: str
     options: list[str]
     premortem_reasons: list[str]
@@ -79,6 +82,7 @@ class PremortemAnalyzeRequest(BaseModel):
 
 class RedTeamGenerateRequest(BaseModel):
     """AI 生成红队质疑问题。"""
+
     title: str
     options: list[str]
     reasoning: str | None = None

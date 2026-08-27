@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """国家统计局年度统计公报采集器（杠杆化 #4，2026-08-16）。
 
 背景：统计年鉴近年（2015+）表格全部为 JPG 图片无法解析；统计局数据查询 API
@@ -17,6 +16,7 @@
 
 Run:  py -3.13 stats_gongbao_scraper.py
 """
+
 import json
 import posixpath
 import re
@@ -87,22 +87,38 @@ def strip_to_text(html):
 # 指标抽取正则（容忍公报注释标记 [7] 夹在数字前）
 _PATTERNS = [
     # (indicator, category, unit, regex, group)
-    ("全国就业人员数", "全体", "万人",
-     r"年末全国就业人员\s*(?:\[\d+\])?\s*(\d+)\s*万人", 1),
-    ("城镇就业人员数", "全体", "万人",
-     r"其中城镇就业人员\s*(\d+)\s*万人", 1),
-    ("城镇新增就业人数", "全体", "万人",
-     r"全年(?:全国)?城镇新增就业\s*(?:\[\d+\])?\s*(\d+)\s*万人", 1),
-    ("城镇调查失业率", "全体", "%",
-     r"全年全国城镇调查失业率平均值为\s*(\d+\.\d+)\s*%", 1),
-    ("农民工总量", "全体", "万人",
-     r"全国农民工\s*(?:\[\d+\])?\s*总量\s*(\d+)\s*万人", 1),
-    ("全国居民人均可支配收入", "全体", "元/年",
-     r"全国居民人均可支配收入\s*(?:\[\d+\])?\s*(\d+)\s*元", 1),
-    ("全国居民人均可支配收入", "城镇", "元/年",
-     r"城镇居民人均可支配收入\s*(?:\[\d+\])?\s*(\d+)\s*元", 1),
-    ("全国居民人均可支配收入", "农村", "元/年",
-     r"农村居民人均可支配收入\s*(?:\[\d+\])?\s*(\d+)\s*元", 1),
+    ("全国就业人员数", "全体", "万人", r"年末全国就业人员\s*(?:\[\d+\])?\s*(\d+)\s*万人", 1),
+    ("城镇就业人员数", "全体", "万人", r"其中城镇就业人员\s*(\d+)\s*万人", 1),
+    (
+        "城镇新增就业人数",
+        "全体",
+        "万人",
+        r"全年(?:全国)?城镇新增就业\s*(?:\[\d+\])?\s*(\d+)\s*万人",
+        1,
+    ),
+    ("城镇调查失业率", "全体", "%", r"全年全国城镇调查失业率平均值为\s*(\d+\.\d+)\s*%", 1),
+    ("农民工总量", "全体", "万人", r"全国农民工\s*(?:\[\d+\])?\s*总量\s*(\d+)\s*万人", 1),
+    (
+        "全国居民人均可支配收入",
+        "全体",
+        "元/年",
+        r"全国居民人均可支配收入\s*(?:\[\d+\])?\s*(\d+)\s*元",
+        1,
+    ),
+    (
+        "全国居民人均可支配收入",
+        "城镇",
+        "元/年",
+        r"城镇居民人均可支配收入\s*(?:\[\d+\])?\s*(\d+)\s*元",
+        1,
+    ),
+    (
+        "全国居民人均可支配收入",
+        "农村",
+        "元/年",
+        r"农村居民人均可支配收入\s*(?:\[\d+\])?\s*(\d+)\s*元",
+        1,
+    ),
 ]
 
 
@@ -114,26 +130,27 @@ def extract_gongbao_metrics(text, data_year, source_url, published_at):
         if not m:
             continue
         value = float(m.group(group))
-        records.append({
-            "indicator": indicator,
-            "category": category,
-            "value": value,
-            "unit": unit,
-            "region": None,
-            "industry": None,
-            "year": data_year,
-            "source": SOURCE,
-            "source_url": source_url,
-            "published_at": published_at,
-        })
+        records.append(
+            {
+                "indicator": indicator,
+                "category": category,
+                "value": value,
+                "unit": unit,
+                "region": None,
+                "industry": None,
+                "year": data_year,
+                "source": SOURCE,
+                "source_url": source_url,
+                "published_at": published_at,
+            }
+        )
     return records
 
 
 def scrape_gongbao(data_year, url):
     html = fetch(url)
     m = re.search(r"/t(\d{4})(\d{2})(\d{2})_", url)
-    published_at = (f"{m.group(1)}-{m.group(2)}-{m.group(3)}"
-                    if m else f"{data_year}-02-28")
+    published_at = f"{m.group(1)}-{m.group(2)}-{m.group(3)}" if m else f"{data_year}-02-28"
     records = extract_gongbao_metrics(strip_to_text(html), data_year, url, published_at)
     return records
 
@@ -158,8 +175,7 @@ def main():
             seen.add(key)
             unique.append(r)
 
-    OUTPUT_FILE.write_text(
-        json.dumps(unique, ensure_ascii=False, indent=2), encoding="utf-8")
+    OUTPUT_FILE.write_text(json.dumps(unique, ensure_ascii=False, indent=2), encoding="utf-8")
 
     print("=" * 72)
     for name, status, n in report:

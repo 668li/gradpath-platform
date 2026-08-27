@@ -4,19 +4,15 @@
 - POST /api/path-decision/analyze — 输入学生档案，生成三路对比（含溯源证据）
 - GET  /api/path-decision/history  — 获取历史对比记录（按时间倒序）
 """
+
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
 from app.database import get_db
 from app.models.user import User
-from app.schemas.path_comparison import (
-    DecisionEngineRequest,
-    DecisionEngineResponse,
-    PathMetrics,
-)
-from app.services import path_comparison_service
-from app.services import path_decision_engine
+from app.schemas.path_comparison import DecisionEngineRequest, DecisionEngineResponse, PathMetrics
+from app.services import path_comparison_service, path_decision_engine
 
 router = APIRouter(prefix="/api/path-decision", tags=["三路对比决策引擎"])
 
@@ -41,8 +37,7 @@ def analyze_paths(
 
     # 复用 PathComparison 表持久化（JSONB），不新建表
     paths_payload = [
-        {"path_type": m["path_type"], "target_role": m["target_role"]}
-        for m in decision["metrics"]
+        {"path_type": m["path_type"], "target_role": m["target_role"]} for m in decision["metrics"]
     ]
     record = path_comparison_service.save_comparison(
         db=db,
@@ -74,11 +69,13 @@ def get_history(
         metrics = result.get("metrics", [])
         if not metrics:
             continue
-        responses.append(DecisionEngineResponse(
-            id=str(r.id),
-            metrics=[PathMetrics(**m) for m in metrics],
-            recommendation=r.recommendation or result.get("recommendation", ""),
-            input=result.get("input", {}),
-            created_at=r.created_at,
-        ))
+        responses.append(
+            DecisionEngineResponse(
+                id=str(r.id),
+                metrics=[PathMetrics(**m) for m in metrics],
+                recommendation=r.recommendation or result.get("recommendation", ""),
+                input=result.get("input", {}),
+                created_at=r.created_at,
+            )
+        )
     return responses

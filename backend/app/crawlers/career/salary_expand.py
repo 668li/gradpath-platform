@@ -8,14 +8,14 @@
 提取字段：position, city, salary_min, salary_max, experience, education
 去重规则：position + city + experience_level
 """
-import re
+
 import logging
+import re
 from datetime import datetime
-from typing import Optional
 
 import httpx
 from bs4 import BeautifulSoup
-from sqlalchemy import select, and_
+from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 
 from app.crawlers.base_crawler import BaseCrawler
@@ -49,24 +49,69 @@ EXPERIENCE_MAP = {
 
 # 城市列表
 CITIES = [
-    "北京", "上海", "广州", "深圳", "杭州", "成都", "南京", "武汉",
-    "西安", "重庆", "苏州", "长沙", "天津", "郑州", "东莞", "青岛",
-    "合肥", "佛山", "宁波", "昆明", "福州", "厦门", "大连", "济南",
+    "北京",
+    "上海",
+    "广州",
+    "深圳",
+    "杭州",
+    "成都",
+    "南京",
+    "武汉",
+    "西安",
+    "重庆",
+    "苏州",
+    "长沙",
+    "天津",
+    "郑州",
+    "东莞",
+    "青岛",
+    "合肥",
+    "佛山",
+    "宁波",
+    "昆明",
+    "福州",
+    "厦门",
+    "大连",
+    "济南",
 ]
 
 # 热门职位列表
 POSITIONS = [
-    "软件工程师", "Java开发", "Python开发", "前端开发", "后端开发",
-    "全栈工程师", "算法工程师", "数据分析师", "产品经理", "UI设计师",
-    "测试工程师", "运维工程师", "数据库管理员", "网络安全工程师",
-    "人工智能工程师", "机器学习工程师", "大数据工程师", "云计算工程师",
-    "嵌入式工程师", "硬件工程师", "项目经理", "技术总监",
-    "销售经理", "市场专员", "人力资源", "财务专员", "行政专员",
-    "运营专员", "内容运营", "新媒体运营", "电商运营",
+    "软件工程师",
+    "Java开发",
+    "Python开发",
+    "前端开发",
+    "后端开发",
+    "全栈工程师",
+    "算法工程师",
+    "数据分析师",
+    "产品经理",
+    "UI设计师",
+    "测试工程师",
+    "运维工程师",
+    "数据库管理员",
+    "网络安全工程师",
+    "人工智能工程师",
+    "机器学习工程师",
+    "大数据工程师",
+    "云计算工程师",
+    "嵌入式工程师",
+    "硬件工程师",
+    "项目经理",
+    "技术总监",
+    "销售经理",
+    "市场专员",
+    "人力资源",
+    "财务专员",
+    "行政专员",
+    "运营专员",
+    "内容运营",
+    "新媒体运营",
+    "电商运营",
 ]
 
 
-def parse_salary_range(text: str) -> tuple[Optional[int], Optional[int]]:
+def parse_salary_range(text: str) -> tuple[int | None, int | None]:
     """解析薪资范围文本，返回 (min, max) 单位：元/月。
 
     支持格式：
@@ -199,14 +244,16 @@ class SalaryExpandCrawler(BaseCrawler):
                             salary_text = item.get_text(strip=True)
                             min_sal, max_sal = parse_salary_range(salary_text)
                             if min_sal and max_sal:
-                                data.append({
-                                    "position": position,
-                                    "city": city,
-                                    "salary_min": min_sal,
-                                    "salary_max": max_sal,
-                                    "experience": "1-3年",
-                                    "company": "职友集数据",
-                                })
+                                data.append(
+                                    {
+                                        "position": position,
+                                        "city": city,
+                                        "salary_min": min_sal,
+                                        "salary_max": max_sal,
+                                        "experience": "1-3年",
+                                        "company": "职友集数据",
+                                    }
+                                )
                 except Exception as e:
                     self.stats["errors"] += 1
                     logger.debug(f"职友集爬取失败 {city}/{position}: {e}")
@@ -252,14 +299,16 @@ class SalaryExpandCrawler(BaseCrawler):
                                         max_sal = int(high_val * 1000)
 
                                     if 3000 < min_sal < 100000 and min_sal < max_sal:
-                                        data.append({
-                                            "position": position,
-                                            "city": city,
-                                            "salary_min": min_sal,
-                                            "salary_max": max_sal,
-                                            "experience": "1-3年",
-                                            "company": "搜索聚合",
-                                        })
+                                        data.append(
+                                            {
+                                                "position": position,
+                                                "city": city,
+                                                "salary_min": min_sal,
+                                                "salary_max": max_sal,
+                                                "experience": "1-3年",
+                                                "company": "搜索聚合",
+                                            }
+                                        )
                                         break  # 每个结果只取一个
                     except Exception as e:
                         self.stats["errors"] += 1
@@ -356,12 +405,30 @@ class SalaryExpandCrawler(BaseCrawler):
 
         # 城市薪资系数
         city_factors = {
-            "北京": 1.0, "上海": 1.0, "广州": 0.9, "深圳": 1.0,
-            "杭州": 0.9, "成都": 0.75, "南京": 0.85, "武汉": 0.75,
-            "西安": 0.7, "重庆": 0.7, "苏州": 0.8, "长沙": 0.7,
-            "天津": 0.75, "郑州": 0.65, "东莞": 0.75, "青岛": 0.7,
-            "合肥": 0.7, "佛山": 0.75, "宁波": 0.8, "昆明": 0.6,
-            "福州": 0.7, "厦门": 0.75, "大连": 0.7, "济南": 0.7,
+            "北京": 1.0,
+            "上海": 1.0,
+            "广州": 0.9,
+            "深圳": 1.0,
+            "杭州": 0.9,
+            "成都": 0.75,
+            "南京": 0.85,
+            "武汉": 0.75,
+            "西安": 0.7,
+            "重庆": 0.7,
+            "苏州": 0.8,
+            "长沙": 0.7,
+            "天津": 0.75,
+            "郑州": 0.65,
+            "东莞": 0.75,
+            "青岛": 0.7,
+            "合肥": 0.7,
+            "佛山": 0.75,
+            "宁波": 0.8,
+            "昆明": 0.6,
+            "福州": 0.7,
+            "厦门": 0.75,
+            "大连": 0.7,
+            "济南": 0.7,
         }
 
         data = []
@@ -379,14 +446,16 @@ class SalaryExpandCrawler(BaseCrawler):
                     ExperienceLevel.lead: "10年以上",
                 }[level]
 
-                data.append({
-                    "position": position,
-                    "city": city,
-                    "salary_min": adjusted_min,
-                    "salary_max": adjusted_max,
-                    "experience": exp_text,
-                    "company": "市场基准数据",
-                })
+                data.append(
+                    {
+                        "position": position,
+                        "city": city,
+                        "salary_min": adjusted_min,
+                        "salary_max": adjusted_max,
+                        "experience": exp_text,
+                        "company": "市场基准数据",
+                    }
+                )
 
         return data
 
@@ -398,17 +467,19 @@ class SalaryExpandCrawler(BaseCrawler):
             max_sal = item.get("salary_max", 0)
             median_sal = (min_sal + max_sal) // 2
 
-            parsed.append({
-                "company": item.get("company", "未知公司"),
-                "position": item.get("position", ""),
-                "city": item.get("city", ""),
-                "experience_level": map_experience(item.get("experience", "")),
-                "salary_min": min_sal,
-                "salary_median": median_sal,
-                "salary_max": max_sal,
-                "source": "salary_expand",
-                "year": datetime.now().year,
-            })
+            parsed.append(
+                {
+                    "company": item.get("company", "未知公司"),
+                    "position": item.get("position", ""),
+                    "city": item.get("city", ""),
+                    "experience_level": map_experience(item.get("experience", "")),
+                    "salary_min": min_sal,
+                    "salary_median": median_sal,
+                    "salary_max": max_sal,
+                    "source": "salary_expand",
+                    "year": datetime.now().year,
+                }
+            )
         return parsed
 
     def store(self, items: list[dict], db: Session) -> int:
@@ -420,7 +491,11 @@ class SalaryExpandCrawler(BaseCrawler):
             dedup_key = (
                 item["position"],
                 item["city"],
-                item["experience_level"].value if hasattr(item["experience_level"], "value") else item["experience_level"],
+                (
+                    item["experience_level"].value
+                    if hasattr(item["experience_level"], "value")
+                    else item["experience_level"]
+                ),
             )
 
             if dedup_key in seen:
@@ -429,15 +504,19 @@ class SalaryExpandCrawler(BaseCrawler):
             seen.add(dedup_key)
 
             # 检查数据库中是否已存在
-            existing = db.execute(
-                select(SalaryBenchmark).where(
-                    and_(
-                        SalaryBenchmark.position == item["position"],
-                        SalaryBenchmark.city == item["city"],
-                        SalaryBenchmark.experience_level == item["experience_level"],
+            existing = (
+                db.execute(
+                    select(SalaryBenchmark).where(
+                        and_(
+                            SalaryBenchmark.position == item["position"],
+                            SalaryBenchmark.city == item["city"],
+                            SalaryBenchmark.experience_level == item["experience_level"],
+                        )
                     )
                 )
-            ).scalars().first()
+                .scalars()
+                .first()
+            )
 
             if existing is None:
                 salary = SalaryBenchmark(
@@ -466,7 +545,7 @@ if __name__ == "__main__":
     # 直接运行爬虫
     crawler = SalaryExpandCrawler()
     result = crawler.run()
-    print(f"\n===== 爬取结果 =====")
+    print("\n===== 爬取结果 =====")
     print(f"状态: {result['status']}")
     print(f"抓取条数: {result['fetched']}")
     print(f"入库条数: {result['stored']}")

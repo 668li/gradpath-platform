@@ -2,20 +2,19 @@
 
 使用SQL批量插入提高速度，去重检查防止重复导入。
 """
+
 import json
 import os
 import re
 import sys
-from datetime import datetime, timezone
 
 from sqlalchemy import text
-from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 # 确保 app 包可导入
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
-from app.database import SessionLocal, engine
-from app.models import ExperiencePost, KnowledgeArticle, School, KaoyanNews
+from app.database import SessionLocal
+from app.models import ExperiencePost, KaoyanNews, KnowledgeArticle, School
 
 DATA_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -23,18 +22,18 @@ DATA_DIR = os.path.dirname(os.path.abspath(__file__))
 def clean_content(raw: str) -> str:
     """清理爬取内容中的CSS、HTML标签和多余空白。"""
     # 去除嵌入的CSS块 (/* tailwindcss ... */ 及 @layer 块)
-    text = re.sub(r'/\*!?\s*tailwindcss[^*]*\*/', '', raw)
-    text = re.sub(r'/\*[^*]*\*/', '', text)
-    text = re.sub(r'@layer[^{]*\{[^}]*\}', '', text)
+    text = re.sub(r"/\*!?\s*tailwindcss[^*]*\*/", "", raw)
+    text = re.sub(r"/\*[^*]*\*/", "", text)
+    text = re.sub(r"@layer[^{]*\{[^}]*\}", "", text)
     # 去除 HTML 标签
-    text = re.sub(r'<[^>]+>', ' ', text)
+    text = re.sub(r"<[^>]+>", " ", text)
     # 去除 CSS 属性声明
-    text = re.sub(r'[\w-]+\s*:\s*[^;{}]+;', '', text)
+    text = re.sub(r"[\w-]+\s*:\s*[^;{}]+;", "", text)
     # 去除 @media / @keyframes 等
-    text = re.sub(r'@media[^{]*\{[^@]*\}', '', text)
-    text = re.sub(r'@keyframes[^{]*\{[^}]*\}', '', text)
+    text = re.sub(r"@media[^{]*\{[^@]*\}", "", text)
+    text = re.sub(r"@keyframes[^{]*\{[^}]*\}", "", text)
     # 合并多余空白
-    text = re.sub(r'\s+', ' ', text).strip()
+    text = re.sub(r"\s+", " ", text).strip()
     return text
 
 
@@ -43,22 +42,22 @@ def extract_title_from_content(content: str, url: str = "") -> str:
     # 尝试匹配常见的文章标题模式
     # 模式1: "标题 发布于" 或 "标题 考研帮"
     patterns = [
-        r'考研网（kaoyan.com）\s+(.{5,80}?)(?:\s+考研帮|\s+考研网|\s+发布于)',
-        r'考研网（kaoyan.com）\s+(.{5,80}?)(?:\s+PART)',
-        r'中财大MEM|研究生毕业|2026年|2027|海南|升学无忧|宁诺|澳门|欢迎报考|《2026|温肯|硬科技',
+        r"考研网（kaoyan.com）\s+(.{5,80}?)(?:\s+考研帮|\s+考研网|\s+发布于)",
+        r"考研网（kaoyan.com）\s+(.{5,80}?)(?:\s+PART)",
+        r"中财大MEM|研究生毕业|2026年|2027|海南|升学无忧|宁诺|澳门|欢迎报考|《2026|温肯|硬科技",
     ]
     for pat in patterns:
         m = re.search(pat, content)
         if m:
             title = m.group(0) if m.lastindex is None else m.group(1)
-            title = re.sub(r'\s+', ' ', title).strip()
+            title = re.sub(r"\s+", " ", title).strip()
             if len(title) > 200:
                 title = title[:200]
             return title
 
     # 从URL提取
     if "uuid=" in url:
-        return f"考研经验分享"
+        return "考研经验分享"
     if "chsi.com.cn" in url:
         parts = url.split("/")
         if len(parts) > 5:
@@ -99,12 +98,24 @@ def extract_tags(content: str) -> list:
     """从内容中提取标签。"""
     tags = []
     tag_keywords = {
-        "政治": "政治", "英语": "英语", "数学": "数学",
-        "专业课": "专业课", "复试": "复试", "调剂": "调剂",
-        "择校": "择校", "经验": "经验", "备考": "备考",
-        "背诵": "背诵", "冲刺": "冲刺", "大纲": "大纲",
-        "真题": "真题", "作文": "作文", "阅读": "阅读",
-        "奖学金": "奖学金", "资助": "资助", "招生": "招生",
+        "政治": "政治",
+        "英语": "英语",
+        "数学": "数学",
+        "专业课": "专业课",
+        "复试": "复试",
+        "调剂": "调剂",
+        "择校": "择校",
+        "经验": "经验",
+        "备考": "备考",
+        "背诵": "背诵",
+        "冲刺": "冲刺",
+        "大纲": "大纲",
+        "真题": "真题",
+        "作文": "作文",
+        "阅读": "阅读",
+        "奖学金": "奖学金",
+        "资助": "资助",
+        "招生": "招生",
     }
     for kw, tag in tag_keywords.items():
         if kw in content:
@@ -119,7 +130,7 @@ def import_fast_kaoyan(db, system_user_id):
         print(f"[SKIP] {path} not found")
         return 0
 
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         items = json.load(f)
 
     if not items:
@@ -128,7 +139,8 @@ def import_fast_kaoyan(db, system_user_id):
 
     # 获取已有URL去重
     existing_urls = set(
-        row[0] for row in db.query(ExperiencePost.source_url)
+        row[0]
+        for row in db.query(ExperiencePost.source_url)
         .filter(ExperiencePost.source_url.isnot(None))
         .all()
     )
@@ -171,7 +183,7 @@ def import_fast_yz(db):
         print(f"[SKIP] {path} not found")
         return 0
 
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         items = json.load(f)
 
     if not items:
@@ -180,7 +192,9 @@ def import_fast_yz(db):
 
     # 获取已有URL去重
     existing_urls = set()
-    rows = db.execute(text("SELECT metadata->>'url' FROM knowledge_articles WHERE metadata->>'url' IS NOT NULL")).fetchall()
+    rows = db.execute(
+        text("SELECT metadata->>'url' FROM knowledge_articles WHERE metadata->>'url' IS NOT NULL")
+    ).fetchall()
     existing_urls = set(row[0] for row in rows if row[0])
 
     count = 0
@@ -218,7 +232,7 @@ def import_bilibili_loop(db):
         print(f"[SKIP] {path} not found")
         return 0
 
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         items = json.load(f)
 
     if not items:
@@ -227,7 +241,9 @@ def import_bilibili_loop(db):
 
     # 获取已有URL去重
     existing_urls = set()
-    rows = db.execute(text("SELECT metadata->>'url' FROM knowledge_articles WHERE metadata->>'url' IS NOT NULL")).fetchall()
+    rows = db.execute(
+        text("SELECT metadata->>'url' FROM knowledge_articles WHERE metadata->>'url' IS NOT NULL")
+    ).fetchall()
     existing_urls = set(row[0] for row in rows if row[0])
 
     count = 0
@@ -273,7 +289,7 @@ def import_college_loop(db):
         print(f"[SKIP] {path} not found")
         return 0
 
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         items = json.load(f)
 
     if not items:
@@ -282,8 +298,11 @@ def import_college_loop(db):
 
     # 获取已有去重
     existing_ids = set(
-        row[0] for row in db.execute(
-            text("SELECT metadata->>'crawler_id' FROM knowledge_articles WHERE metadata->>'crawler_id' IS NOT NULL")
+        row[0]
+        for row in db.execute(
+            text(
+                "SELECT metadata->>'crawler_id' FROM knowledge_articles WHERE metadata->>'crawler_id' IS NOT NULL"
+            )
         ).fetchall()
     )
 
@@ -297,7 +316,9 @@ def import_college_loop(db):
         clean = clean_content(raw_content)
 
         # 尝试从内容提取标题
-        title_match = re.search(r'考研网（kaoyan.com）\s*(.{5,80}?)(?:\s+考研帮|\s+发布于)', raw_content)
+        title_match = re.search(
+            r"考研网（kaoyan.com）\s*(.{5,80}?)(?:\s+考研帮|\s+发布于)", raw_content
+        )
         title = title_match.group(1).strip() if title_match else f"院校信息-{crawler_id}"
 
         article = KnowledgeArticle(
@@ -327,7 +348,7 @@ def import_firecrawl_loop(db):
         print(f"[SKIP] {path} not found")
         return 0
 
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         data = json.load(f)
 
     items = data.get("articles", [])
@@ -337,7 +358,9 @@ def import_firecrawl_loop(db):
 
     # 获取已有URL去重
     existing_urls = set()
-    rows = db.execute(text("SELECT metadata->>'url' FROM knowledge_articles WHERE metadata->>'url' IS NOT NULL")).fetchall()
+    rows = db.execute(
+        text("SELECT metadata->>'url' FROM knowledge_articles WHERE metadata->>'url' IS NOT NULL")
+    ).fetchall()
     existing_urls = set(row[0] for row in rows if row[0])
 
     count = 0
@@ -381,7 +404,7 @@ def import_yz_loop(db):
         print(f"[SKIP] {path} not found")
         return 0
 
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         data = json.load(f)
 
     sections = data.get("sections", {})
@@ -391,7 +414,9 @@ def import_yz_loop(db):
 
     # 获取已有URL去重
     existing_urls = set()
-    rows = db.execute(text("SELECT metadata->>'url' FROM knowledge_articles WHERE metadata->>'url' IS NOT NULL")).fetchall()
+    rows = db.execute(
+        text("SELECT metadata->>'url' FROM knowledge_articles WHERE metadata->>'url' IS NOT NULL")
+    ).fetchall()
     existing_urls = set(row[0] for row in rows if row[0])
 
     section_name_map = {
@@ -443,7 +468,7 @@ def import_sina_koolearn(db):
         print(f"[SKIP] {path} not found")
         return 0
 
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         items = json.load(f)
 
     if not items:
@@ -452,7 +477,9 @@ def import_sina_koolearn(db):
 
     # 获取已有URL去重
     existing_urls = set()
-    rows = db.execute(text("SELECT metadata->>'url' FROM knowledge_articles WHERE metadata->>'url' IS NOT NULL")).fetchall()
+    rows = db.execute(
+        text("SELECT metadata->>'url' FROM knowledge_articles WHERE metadata->>'url' IS NOT NULL")
+    ).fetchall()
     existing_urls = set(row[0] for row in rows if row[0])
 
     count = 0
@@ -490,7 +517,7 @@ def import_webfetch_articles(db):
         print(f"[SKIP] {path} not found")
         return 0
 
-    with open(path, "r", encoding="utf-8-sig") as f:
+    with open(path, encoding="utf-8-sig") as f:
         items = json.load(f)
 
     if not items:
@@ -499,7 +526,9 @@ def import_webfetch_articles(db):
 
     # 获取已有URL去重
     existing_urls = set()
-    rows = db.execute(text("SELECT metadata->>'url' FROM knowledge_articles WHERE metadata->>'url' IS NOT NULL")).fetchall()
+    rows = db.execute(
+        text("SELECT metadata->>'url' FROM knowledge_articles WHERE metadata->>'url' IS NOT NULL")
+    ).fetchall()
     existing_urls = set(row[0] for row in rows if row[0])
 
     count = 0
@@ -552,6 +581,7 @@ def main():
 
     # 获取系统用户ID
     from app.models import User
+
     system_user = db.query(User).filter(User.name == "系统").first()
     if not system_user:
         print("[ERROR] 找不到系统用户，请先创建用户 '系统'")
@@ -613,7 +643,15 @@ def main():
         delta = count - before[name]
         print(f"  {name}: {count} (+{delta})")
 
-    total_ka = yz_count + college_count + bilibili_count + firecrawl_count + yz_loop_count + sina_count + webfetch_count
+    total_ka = (
+        yz_count
+        + college_count
+        + bilibili_count
+        + firecrawl_count
+        + yz_loop_count
+        + sina_count
+        + webfetch_count
+    )
     print("\n" + "=" * 60)
     print("导入完成!")
     print(f"  experience_posts 新增: {kaoyan_count}")

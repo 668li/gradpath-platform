@@ -1,13 +1,14 @@
 # backend/app/schemas/ai.py
 """AI 决策指导与外部数据查询的 Pydantic Schema 定义。"""
+
 from datetime import date
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-
 # ======================================================================
 # AI 决策指导
 # ======================================================================
+
 
 class DecisionAdviceRequest(BaseModel):
     """AI 决策指导请求体。"""
@@ -16,7 +17,9 @@ class DecisionAdviceRequest(BaseModel):
     company: str | None = Field(None, max_length=100, description="意向公司")
     position: str | None = Field(None, max_length=100, description="意向岗位")
     city: str | None = Field(None, max_length=100, description="意向城市")
-    expected_salary: str | None = Field(None, max_length=50, description="期望薪资区间（如 25k_50k）")
+    expected_salary: str | None = Field(
+        None, max_length=50, description="期望薪资区间（如 25k_50k）"
+    )
 
 
 class AlternativeOption(BaseModel):
@@ -42,6 +45,7 @@ class DecisionAdviceResponse(BaseModel):
 # ======================================================================
 # AI 成长洞察
 # ======================================================================
+
 
 class GrowthInsightRequest(BaseModel):
     """成长洞察请求体。"""
@@ -71,6 +75,7 @@ class GrowthInsightResponse(BaseModel):
 # ======================================================================
 # 外部数据查询响应
 # ======================================================================
+
 
 class CompanyResponse(BaseModel):
     """公司元数据响应。"""

@@ -3,6 +3,7 @@
 定期记录用户在 8 个生活维度的自评分数，形成历史演变曲线。
 维度：职业、财务、健康、关系、成长、乐趣、环境、灵性。
 """
+
 from datetime import date
 from uuid import UUID
 

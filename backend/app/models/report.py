@@ -1,4 +1,5 @@
 """内容/用户举报模型 — 社区治理。"""
+
 import enum
 import uuid
 from datetime import datetime
@@ -39,9 +40,7 @@ class Report(UUIDMixin, TimestampMixin, Base):
     reporter_id: Mapped[uuid.UUID] = mapped_column(
         GUID(), ForeignKey("users.id"), nullable=False, index=True
     )
-    target_type: Mapped[ReportTargetType] = mapped_column(
-        Enum(ReportTargetType), nullable=False
-    )
+    target_type: Mapped[ReportTargetType] = mapped_column(Enum(ReportTargetType), nullable=False)
     target_id: Mapped[str] = mapped_column(String(64), nullable=False)
     reason: Mapped[str] = mapped_column(String(100), nullable=False)
     detail: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -54,7 +53,5 @@ class Report(UUIDMixin, TimestampMixin, Base):
     processed_by: Mapped[uuid.UUID | None] = mapped_column(
         GUID(), ForeignKey("users.id"), nullable=True
     )
-    processed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     processed_note: Mapped[str | None] = mapped_column(String(500), nullable=True)

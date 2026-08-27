@@ -18,13 +18,13 @@
 
 运行：py -3.13 -m app.crawlers.run --source rsshub_research
 """
+
 from __future__ import annotations
 
 import logging
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
 from urllib.parse import urlparse
 
 if __name__ == "__main__":
@@ -52,28 +52,28 @@ RSSHUB_HOST = "127.0.0.1"
 # 实测可用路由（2026-08-16 逐路由 HTTP 200 验证；503=上游暂不可达，保留待恢复）。
 # 全部为高校研究生院/研招办公开公告，来源域名 edu.cn。
 DEFAULT_ROUTES: list[str] = [
-    "cau/yjs",                    # 中国农业大学研究生院
-    "dhu/yjs/news",               # 东华大学研究生院新闻
-    "ecnu/yjs",                   # 华东师范大学研究生院
-    "hust/yjs",                   # 华中科技大学研究生院
-    "nankai/yzb",                 # 南开大学研究生招生
-    "nenu/yjsy",                  # 东北师范大学研究生院
-    "nudt/yjszs",                 # 国防科技大学研究生招生
-    "scnu/yjs",                   # 华南师范大学研究生院
-    "scut/yjs",                   # 华南理工大学研究生院
-    "sdu/cs/yjsgz",               # 山东大学计算机学院研究生工作
-    "sdust/yjsy/zhaosheng",       # 山东科技大学研究生招生
-    "seu/yjs",                    # 东南大学研究生院
-    "snnu/yjs",                   # 陕西师范大学研究生院
-    "sustech/yjs",                # 南方科技大学研究生院
-    "swjtu/gsee/yjs",             # 西南交大地球科学与环境工程研究生
-    "tju/yzb",                    # 天津大学研究生招生
-    "tongji/yjs",                 # 同济大学研究生院
-    "upc/yjs",                    # 中国石油大学研究生院
-    "gov/moe/policy_anal",        # 教育部政策解读（gov.cn）
+    "cau/yjs",  # 中国农业大学研究生院
+    "dhu/yjs/news",  # 东华大学研究生院新闻
+    "ecnu/yjs",  # 华东师范大学研究生院
+    "hust/yjs",  # 华中科技大学研究生院
+    "nankai/yzb",  # 南开大学研究生招生
+    "nenu/yjsy",  # 东北师范大学研究生院
+    "nudt/yjszs",  # 国防科技大学研究生招生
+    "scnu/yjs",  # 华南师范大学研究生院
+    "scut/yjs",  # 华南理工大学研究生院
+    "sdu/cs/yjsgz",  # 山东大学计算机学院研究生工作
+    "sdust/yjsy/zhaosheng",  # 山东科技大学研究生招生
+    "seu/yjs",  # 东南大学研究生院
+    "snnu/yjs",  # 陕西师范大学研究生院
+    "sustech/yjs",  # 南方科技大学研究生院
+    "swjtu/gsee/yjs",  # 西南交大地球科学与环境工程研究生
+    "tju/yzb",  # 天津大学研究生招生
+    "tongji/yjs",  # 同济大学研究生院
+    "upc/yjs",  # 中国石油大学研究生院
+    "gov/moe/policy_anal",  # 教育部政策解读（gov.cn）
     # 资讯流（杠杆 #5，2026-08-16）：知乎日报/想法热榜，只存标题+摘要+链接，正文跳原文
-    "zhihu/daily",                # 知乎日报（30 条/次，实测 200）
-    "zhihu/pin/hotlist",          # 知乎想法热榜（15 条/次，实测 200）
+    "zhihu/daily",  # 知乎日报（30 条/次，实测 200）
+    "zhihu/pin/hotlist",  # 知乎想法热榜（15 条/次，实测 200）
 ]
 
 # 资讯流路由 → 资讯分类（研招公告路由保持原分类；未知资讯流路由回落原逻辑）
@@ -140,11 +140,13 @@ class RSSHubCrawler(BaseCrawler):
                     logger.warning(f"[{self.name}] {route} 解析警告: {parsed.bozo_exception}")
                 feed_title = parsed.feed.get("title", "") if parsed.feed else route
                 for entry in parsed.entries:
-                    all_entries.append({
-                        "_route": route,
-                        "_feed_title": feed_title,
-                        "entry": entry,
-                    })
+                    all_entries.append(
+                        {
+                            "_route": route,
+                            "_feed_title": feed_title,
+                            "entry": entry,
+                        }
+                    )
                 logger.info(f"[{self.name}] {route} 获取 {len(parsed.entries)} 条")
             except Exception as e:
                 self.stats["errors"] += 1
@@ -167,7 +169,9 @@ class RSSHubCrawler(BaseCrawler):
                 ResearchTransformer._strip_html(_extract_text(entry, "summary", "description"))
             )[:500]
             content = ResearchTransformer._clean_text(
-                ResearchTransformer._strip_html(_extract_text(entry, "content", "summary", "description"))
+                ResearchTransformer._strip_html(
+                    _extract_text(entry, "content", "summary", "description")
+                )
             )
             source_url = entry.get("link", "") or entry.get("id", "")
             if not source_url:

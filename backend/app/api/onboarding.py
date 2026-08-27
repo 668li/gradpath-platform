@@ -6,6 +6,7 @@ POST /api/onboarding/generate: 生成 AI 诊断
 POST /api/onboarding/skip: 跳过 onboarding
 GET /api/onboarding/status: 检查是否已完成
 """
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session

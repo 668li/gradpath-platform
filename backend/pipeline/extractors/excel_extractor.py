@@ -1,5 +1,6 @@
 # backend/pipeline/extractors/excel_extractor.py
 """Excel 文本提取器 — 使用 openpyxl。"""
+
 from openpyxl import load_workbook
 
 from app.models.pipeline_enums import ContentType

@@ -1,5 +1,6 @@
 # backend/pipeline/extractors/html_extractor.py
 """HTML 文本提取器 — 从现有 extractor.py 的 _clean_html 提取为独立模块。"""
+
 from bs4 import BeautifulSoup
 
 from app.models.pipeline_enums import ContentType

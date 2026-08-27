@@ -11,6 +11,7 @@
 - web_vitals_service.track_event / track_page_view / track_click 通用埋点
 - Prometheus 指标记录（record_web_vital 增加计数器）
 """
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -129,9 +130,7 @@ class TestWebVitalsReportAPI:
         )
         assert resp.status_code == 422
 
-    def test_report_lowercase_name_normalized(
-        self, client: TestClient, auth_headers: dict
-    ):
+    def test_report_lowercase_name_normalized(self, client: TestClient, auth_headers: dict):
         """小写指标名应被规范化为大写。"""
         resp = client.post(
             "/api/metrics/web-vitals",
@@ -141,9 +140,7 @@ class TestWebVitalsReportAPI:
         assert resp.status_code == 201
         assert resp.json()["name"] == "LCP"
 
-    def test_report_uppercase_rating_normalized(
-        self, client: TestClient, auth_headers: dict
-    ):
+    def test_report_uppercase_rating_normalized(self, client: TestClient, auth_headers: dict):
         """大写评级应被规范化为小写。"""
         resp = client.post(
             "/api/metrics/web-vitals",
@@ -157,9 +154,7 @@ class TestWebVitalsReportAPI:
         self, client: TestClient, auth_headers: dict, db_session
     ):
         """上报后应持久化到 events 表。"""
-        before_count = (
-            db_session.query(Event).filter(Event.event_type == "web_vital").count()
-        )
+        before_count = db_session.query(Event).filter(Event.event_type == "web_vital").count()
         resp = client.post(
             "/api/metrics/web-vitals",
             headers=auth_headers,
@@ -175,9 +170,7 @@ class TestWebVitalsReportAPI:
         )
         assert resp.status_code == 201
 
-        after_count = (
-            db_session.query(Event).filter(Event.event_type == "web_vital").count()
-        )
+        after_count = db_session.query(Event).filter(Event.event_type == "web_vital").count()
         assert after_count == before_count + 1
 
         # 验证最新事件的字段
@@ -212,9 +205,7 @@ class TestWebVitalsReportAPI:
         )
         assert resp.status_code == 422
 
-    def test_report_negative_value_accepted(
-        self, client: TestClient, auth_headers: dict
-    ):
+    def test_report_negative_value_accepted(self, client: TestClient, auth_headers: dict):
         """负值被接受（CLS 可能为 0 或极小负数，不强制非负）。"""
         resp = client.post(
             "/api/metrics/web-vitals",
@@ -252,9 +243,7 @@ class TestWebVitalsSummaryAPI:
         assert lcp_stats["avg"] == round((1000 + 2500 + 5000) / 3, 3)
         assert lcp_stats["poor_rate"] == round(1 / 3, 4)
 
-    def test_summary_filter_by_page(
-        self, client: TestClient, auth_headers: dict
-    ):
+    def test_summary_filter_by_page(self, client: TestClient, auth_headers: dict):
         """按 page 过滤聚合查询。"""
         # 上报到不同页面
         client.post(
@@ -585,8 +574,8 @@ class TestWebVitalsConstants:
 
     def test_allowed_vital_names(self):
         """允许的指标名集合正确。"""
-        assert ALLOWED_VITAL_NAMES == frozenset({"LCP", "CLS", "INP", "TTFB", "FCP"})
+        assert frozenset({"LCP", "CLS", "INP", "TTFB", "FCP"}) == ALLOWED_VITAL_NAMES
 
     def test_allowed_ratings(self):
         """允许的评级集合正确。"""
-        assert ALLOWED_RATINGS == frozenset({"good", "needs-improvement", "poor"})
+        assert frozenset({"good", "needs-improvement", "poor"}) == ALLOWED_RATINGS

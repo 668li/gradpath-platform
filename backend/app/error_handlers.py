@@ -10,6 +10,7 @@
 为兼容历史调用方（前端 client.ts 解析 detail 字段），同时返回 detail 字段，
 其值与 message 相同。
 """
+
 import logging
 
 from fastapi import FastAPI, Request

@@ -1,5 +1,6 @@
 # backend/app/skills/learning_plan_generator.py
 """学习计划生成器 Skill — 根据用户目标生成详细的学习计划和时间表。"""
+
 from __future__ import annotations
 
 import json
@@ -9,7 +10,10 @@ from app.skills.base import BaseSkill
 
 # 激活关键词
 ACTIVATE_KEYWORDS = [
-    "学习计划", "制定计划", "学习安排", "备考计划",
+    "学习计划",
+    "制定计划",
+    "学习安排",
+    "备考计划",
 ]
 
 # 期望的 LLM JSON 输出格式说明

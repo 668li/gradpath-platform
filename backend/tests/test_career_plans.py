@@ -1,5 +1,6 @@
 # backend/tests/test_career_plans.py
 """职业规划 API 测试 — Phase 11 / Phase 12。"""
+
 import uuid
 from datetime import datetime, timedelta
 
@@ -11,8 +12,20 @@ def _seed_plan(db_session, user_id, milestones=None, status="draft"):
     """预置一条职业规划。"""
     if milestones is None:
         milestones = [
-            {"title": "掌握Go基础", "description": "学习Go语法", "deadline": "2025-03-01", "skills": ["Go"], "status": "pending"},
-            {"title": "刷算法题", "description": "LeetCode 200道", "deadline": "2025-05-01", "skills": ["算法"], "status": "pending"},
+            {
+                "title": "掌握Go基础",
+                "description": "学习Go语法",
+                "deadline": "2025-03-01",
+                "skills": ["Go"],
+                "status": "pending",
+            },
+            {
+                "title": "刷算法题",
+                "description": "LeetCode 200道",
+                "deadline": "2025-05-01",
+                "skills": ["算法"],
+                "status": "pending",
+            },
         ]
     plan = CareerPlan(
         user_id=user_id,
@@ -87,6 +100,7 @@ class TestMilestoneUpdate:
 # ======================================================================
 # Phase 12: 里程碑执行日志
 # ======================================================================
+
 
 class TestMilestoneLogCreate:
     def test_add_log_201(self, auth_headers, client, db_session):
@@ -205,6 +219,7 @@ class TestMilestoneLogDelete:
 # Phase 12: 到期提醒
 # ======================================================================
 
+
 class TestReminders:
     def test_reminders_overdue_and_upcoming(self, auth_headers, client, db_session):
         """到期提醒正确分类 overdue 与 upcoming。"""
@@ -216,10 +231,30 @@ class TestReminders:
         done_date = (today - timedelta(days=5)).strftime("%Y-%m-%d")
 
         milestones = [
-            {"title": "逾期任务", "description": "已过期", "target_date": overdue_date, "status": "pending"},
-            {"title": "即将到期", "description": "3天后", "target_date": upcoming_date, "status": "pending"},
-            {"title": "远期任务", "description": "30天后", "target_date": far_date, "status": "pending"},
-            {"title": "已完成任务", "description": "已完成不提醒", "target_date": done_date, "status": "done"},
+            {
+                "title": "逾期任务",
+                "description": "已过期",
+                "target_date": overdue_date,
+                "status": "pending",
+            },
+            {
+                "title": "即将到期",
+                "description": "3天后",
+                "target_date": upcoming_date,
+                "status": "pending",
+            },
+            {
+                "title": "远期任务",
+                "description": "30天后",
+                "target_date": far_date,
+                "status": "pending",
+            },
+            {
+                "title": "已完成任务",
+                "description": "已完成不提醒",
+                "target_date": done_date,
+                "status": "done",
+            },
         ]
         plan = _seed_plan(db_session, user.id, milestones=milestones, status="active")
 
@@ -252,7 +287,12 @@ class TestReminders:
         today = datetime.utcnow().date()
         overdue_date = (today - timedelta(days=3)).strftime("%Y-%m-%d")
         milestones = [
-            {"title": "逾期任务", "description": "已过期", "target_date": overdue_date, "status": "pending"},
+            {
+                "title": "逾期任务",
+                "description": "已过期",
+                "target_date": overdue_date,
+                "status": "pending",
+            },
         ]
         # status=draft，不应产生提醒
         _seed_plan(db_session, user.id, milestones=milestones, status="draft")
@@ -271,6 +311,7 @@ class TestReminders:
 # ======================================================================
 # Phase 12: 每日重点 (daily-focus)
 # ======================================================================
+
 
 class TestDailyFocus:
     def test_daily_focus_returns_pending_milestone(self, auth_headers, client, db_session):
@@ -313,9 +354,7 @@ class TestDailyFocus:
 
         user = db_session.query(User).filter(User.email == "test@example.com").first()
         plan = _seed_plan(db_session, user.id, status="active")
-        db_session.add(
-            MilestoneLog(plan_id=str(plan.id), milestone_index=0, content="日志")
-        )
+        db_session.add(MilestoneLog(plan_id=str(plan.id), milestone_index=0, content="日志"))
         db_session.commit()
 
         resp = client.get("/api/career-plans/daily-focus", headers=auth_headers)

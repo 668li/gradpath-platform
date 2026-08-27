@@ -1,6 +1,6 @@
 """失败案例库服务层 — 匿名分享、列表筛选、统计、互动。"""
+
 import logging
-from typing import Optional
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -20,16 +20,10 @@ from app.schemas.failure_case import (
 logger = logging.getLogger(__name__)
 
 
-def _atomic_increment(
-    db: Session, item_id: UUID, column: str, delta: int = 1
-) -> bool:
+def _atomic_increment(db: Session, item_id: UUID, column: str, delta: int = 1) -> bool:
     """原子 UPDATE — 避免 read-modify-write 在高并发下丢失更新。"""
     col = getattr(FailureCase, column)
-    rows = (
-        db.query(FailureCase)
-        .filter(FailureCase.id == item_id)
-        .update({col: col + delta})
-    )
+    rows = db.query(FailureCase).filter(FailureCase.id == item_id).update({col: col + delta})
     return rows > 0
 
 
@@ -69,15 +63,15 @@ def create_case(db: Session, data: FailureCaseCreate) -> FailureCase:
     return case
 
 
-def get_case(db: Session, case_id: UUID) -> Optional[FailureCase]:
+def get_case(db: Session, case_id: UUID) -> FailureCase | None:
     """获取单个失败案例。"""
     return db.query(FailureCase).filter(FailureCase.id == case_id).first()
 
 
 def list_approved_cases(
     db: Session,
-    path_type: Optional[str] = None,
-    stage: Optional[str] = None,
+    path_type: str | None = None,
+    stage: str | None = None,
     page: int = 1,
     size: int = 10,
 ) -> FailureCaseListResponse:
@@ -98,12 +92,7 @@ def list_approved_cases(
 
     total = query.count()
     offset = (page - 1) * size
-    items = (
-        query.order_by(FailureCase.created_at.desc())
-        .offset(offset)
-        .limit(size)
-        .all()
-    )
+    items = query.order_by(FailureCase.created_at.desc()).offset(offset).limit(size).all()
 
     return FailureCaseListResponse(
         items=[FailureCaseResponse.model_validate(c) for c in items],
@@ -113,7 +102,7 @@ def list_approved_cases(
     )
 
 
-def mark_helpful(db: Session, case_id: UUID) -> Optional[FailureCase]:
+def mark_helpful(db: Session, case_id: UUID) -> FailureCase | None:
     """标记案例有帮助（helpful_count + 1）。"""
     case = get_case(db, case_id)
     if not case:

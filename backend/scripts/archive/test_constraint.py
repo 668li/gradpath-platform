@@ -1,5 +1,7 @@
 from sqlalchemy import text
+
 from app.database import engine
+
 conn = engine.connect()
 # Check if there are actually duplicates
 r = conn.execute(text("""

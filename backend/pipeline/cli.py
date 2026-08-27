@@ -1,9 +1,10 @@
 # backend/pipeline/cli.py
 """管道 CLI 入口"""
+
 import asyncio
+from uuid import UUID
 
 import click
-from uuid import UUID
 
 from app.database import SessionLocal
 from pipeline.extractor import extract_report

@@ -1,4 +1,5 @@
 """决策分析 API — 预验尸 + 决策矩阵 + 红队质疑。"""
+
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -29,7 +30,9 @@ def list_analyses(
     return [DecisionAnalysisResponse.model_validate(a) for a in analyses]
 
 
-@router.post("/create", response_model=DecisionAnalysisResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/create", response_model=DecisionAnalysisResponse, status_code=status.HTTP_201_CREATED
+)
 def create_analysis(
     body: DecisionAnalysisCreate,
     db: Session = Depends(get_db),
@@ -100,7 +103,9 @@ async def generate_ai_analysis(
     # 修复 bug: service 层 raise ValueError("分析不存在") -> 500，应转 404
     # 安全修复 H4: 传入 user.id 验证所有权，防止 IDOR
     try:
-        analysis = await decision_analysis_service.generate_ai_analysis(db, analysis_id, user_id=user.id)
+        analysis = await decision_analysis_service.generate_ai_analysis(
+            db, analysis_id, user_id=user.id
+        )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
     return {"ai_analysis": analysis}

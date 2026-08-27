@@ -4,11 +4,11 @@
 覆盖 70 所 985/211 院校的主要专业。store() 更新已存在 grad_school_intel 记录的
 score_line 字段，不存在则创建新记录。
 """
+
 from sqlalchemy.orm import Session
 
 from app.crawlers.base_crawler import BaseCrawler
 from app.crawlers.registry import register_crawler
-
 
 # 预置复试分数线数据 — 字段顺序：
 # (school, major, year, score_line)
@@ -405,19 +405,22 @@ class ScorelineCrawler(BaseCrawler):
         parsed: list[dict] = []
         for r in raw_items:
             school, major, year, score_line = r
-            parsed.append({
-                "school_name": school,
-                "major_name": major,
-                "year": year,
-                "score_line": score_line,
-                "data_sources": ["院校官网"],
-                "tags": ["复试分数线"],
-            })
+            parsed.append(
+                {
+                    "school_name": school,
+                    "major_name": major,
+                    "year": year,
+                    "score_line": score_line,
+                    "data_sources": ["院校官网"],
+                    "tags": ["复试分数线"],
+                }
+            )
         return parsed
 
     def store(self, items: list[dict], db: Session) -> int:
         """更新已存在记录的 score_line 字段，使用批量UPSERT提升性能。"""
         from uuid import UUID
+
         from app.models.grad_intel import GradSchoolIntel
 
         SYSTEM_USER_ID = UUID("00000000-0000-0000-0000-000000000000")

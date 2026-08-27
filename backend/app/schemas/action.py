@@ -2,6 +2,7 @@
 
 字段严格对齐契约 DTO，枚举字段按契约以 str + 注释形式声明（不额外收紧类型）。
 """
+
 from datetime import date, datetime
 from uuid import UUID
 

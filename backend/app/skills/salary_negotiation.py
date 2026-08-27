@@ -1,5 +1,6 @@
 # backend/app/skills/salary_negotiation.py
 """薪资谈判助手 Skill — 帮助用户准备薪资谈判策略。"""
+
 from __future__ import annotations
 
 import json
@@ -9,7 +10,12 @@ from app.skills.base import BaseSkill
 
 # 激活关键词
 ACTIVATE_KEYWORDS = [
-    "薪资谈判", "谈薪", "工资谈判", "薪资", "salary", "negotiation",
+    "薪资谈判",
+    "谈薪",
+    "工资谈判",
+    "薪资",
+    "salary",
+    "negotiation",
 ]
 
 # 期望的 LLM JSON 输出格式说明
@@ -113,6 +119,7 @@ def _safe_parse_json(content: str) -> dict:
 
 def _coerce_negotiation(raw: dict) -> dict:
     """将解析后的 salary_negotiation dict 强制转换为标准结构。"""
+
     def _as_dict(v) -> dict:
         return v if isinstance(v, dict) else {}
 

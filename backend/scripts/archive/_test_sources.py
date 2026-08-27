@@ -1,5 +1,6 @@
-import httpx
 import json
+
+import httpx
 
 targets = {
     "bilibili_api": "https://api.bilibili.com/x/web-interface/search/type?search_type=video&keyword=考研&page=1",

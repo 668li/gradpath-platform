@@ -8,7 +8,8 @@ paths:
   - frontend/components
   - frontend/lib
   - frontend/stores
-  - frontend/middleware.ts
+# 注意：不要在 paths 中列单文件（如曾经的 frontend/middleware.ts）——
+# python autobuild 对文件路径做目录遍历会抛 NotADirectoryError 导致 Analyze 失败
 
 paths-ignore:
   - backend/migrations

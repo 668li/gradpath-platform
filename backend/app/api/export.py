@@ -1,5 +1,6 @@
 # backend/app/api/export.py
 """数据导出 API 路由 — PDF 时间线、JSON 备份、公开技能分享。"""
+
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
@@ -25,9 +26,7 @@ def export_pdf(
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
-        headers={
-            "Content-Disposition": "attachment; filename=gradpath-timeline.pdf"
-        },
+        headers={"Content-Disposition": "attachment; filename=gradpath-timeline.pdf"},
     )
 
 

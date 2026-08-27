@@ -1,5 +1,6 @@
 # backend/pipeline/router.py
 """智能路由 — 确定性规则优先，LLM 兜底。"""
+
 import logging
 from pathlib import Path
 
@@ -52,6 +53,7 @@ def route_by_mime(mime_type: str) -> ContentType | None:
 def route_by_url(url: str) -> ContentType | None:
     """根据 URL 后缀判断类型，无后缀返回 html（爬虫默认）。"""
     from urllib.parse import urlparse
+
     path = urlparse(url).path
     ext = Path(path).suffix.lower()
     if ext:
