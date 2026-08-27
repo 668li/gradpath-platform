@@ -22,7 +22,7 @@ from typing import Any
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
-from app.models.grad_intel import GradScorelineRecord, GradYanzhaoProgram
+from app.models.grad_intel import GradSchoolIntel, GradScorelineRecord, GradYanzhaoProgram
 from app.models.gwy_position import GwyPosition
 from app.models.gwy_province_position import GwyProvincePosition
 from app.models.gwy_score_line import GwyScoreLine
@@ -58,6 +58,16 @@ PATH_LABELS = {
 # 空数据占位（诚实降级）
 _NO_DATA = "暂无相关数据"
 
+# ----------------------------------------------------------------------
+# 个人条件可报边界（决策飞轮第一圈）
+# ----------------------------------------------------------------------
+# 学历档位（用于 education_req 匹配）
+_EDU_RANK = {"大专": 1, "本科": 2, "硕士": 3, "博士": 4}
+# 应届限定词：出现在 remarks 中即视为「限应届」岗（"非应届"表述优先排除）
+_FRESH_MARKERS = ("限应届", "仅限应届", "面向应届毕业生", "应届高校毕业生")
+# 进面线分级阈值（预估分相对岗位进面线）
+_STEADY_DIFF = 10  # 高于进面线 10+ 分 → 稳健；低于 10+ 分 → 冲刺
+
 
 # ----------------------------------------------------------------------
 # 主入口
@@ -68,6 +78,13 @@ def generate_decision(
     region: str | None = None,
     school_tier: str | None = None,
     graduation_year: int | None = None,
+    *,
+    fresh_status: str | None = None,
+    party_status: str | None = None,
+    education: str | None = None,
+    has_grassroots: bool | None = None,
+    gender: str | None = None,
+    estimated_score: int | None = None,
 ) -> dict[str, Any]:
     """生成三路对比结果。
 
@@ -77,12 +94,18 @@ def generate_decision(
         region: 地区（如「广东」；考公路限定省份，就业路限定城市/省份）
         school_tier: 学校层次（985/211/双一流/普通；用于考研难度与就业参考）
         graduation_year: 毕业年份（默认 2026，考公按应届筛选参考）
+        fresh_status / party_status / education / has_grassroots / gender:
+            个人条件包（keyword-only，全部默认 None → 与旧行为完全兼容）：
+            参与考公可报边界过滤与岗位分级，均为可选。
+        estimated_score: 行测+申论预估总分（200 分制），用于岗位竞争力分级。
 
     Returns:
         {
             "metrics": [3 条 PathMetrics 兼容 dict（含 evidence）, ...],
             "recommendation": 条件式综合建议文本,
-            "input": {major, region, school_tier, graduation_year},
+            "input": {major, region, school_tier, graduation_year, ...个人条件},
+            "position_analysis": 考公岗位级分析（可报数/进面线分布/个人分级）| None,
+            "school_analysis": 考研院校级分析（竞争档位/隐性情报）| None,
         }
     """
     year = graduation_year or 2026
@@ -92,18 +115,40 @@ def generate_decision(
         "school_tier": school_tier or "不限",
         "graduation_year": year,
     }
+    # 个人条件包（None 即未填写，该维度不过滤）
+    conditions: dict[str, Any] = {}
+    if fresh_status:
+        conditions["fresh_status"] = fresh_status
+        input_summary["fresh_status"] = fresh_status
+    if party_status:
+        conditions["party_status"] = party_status
+        input_summary["party_status"] = party_status
+    if education:
+        conditions["education"] = education
+        input_summary["education"] = education
+    if has_grassroots is not None:
+        conditions["has_grassroots"] = has_grassroots
+        input_summary["has_grassroots"] = has_grassroots
+    if gender:
+        conditions["gender"] = gender
+        input_summary["gender"] = gender
+    if estimated_score is not None:
+        conditions["estimated_score"] = estimated_score
+        input_summary["estimated_score"] = estimated_score
 
-    kaoyan = _build_kaoyan_path(db, major, school_tier)
-    civil = _build_civil_service_path(db, major, region, year)
+    kaoyan, school_analysis = _build_kaoyan_path(db, major, school_tier)
+    civil, position_analysis = _build_civil_service_path(db, major, region, year, conditions)
     employment = _build_employment_path(db, major, region, school_tier)
 
     metrics = [kaoyan, civil, employment]
-    recommendation = _build_recommendation(metrics, input_summary)
+    recommendation = _build_recommendation(metrics, input_summary, conditions)
 
     return {
         "metrics": metrics,
         "recommendation": recommendation,
         "input": input_summary,
+        "position_analysis": position_analysis,
+        "school_analysis": school_analysis,
     }
 
 
@@ -119,8 +164,13 @@ def _build_kaoyan_path(db: Session, major: str, school_tier: str | None) -> dict
     evidence: list[dict[str, Any]] = []
 
     if total == 0:
-        return _empty_path(
-            "kaoyan", "考研深造", "该专业暂无分数线数据，可尝试更宽泛的关键词（如只输入学科大类）。"
+        return (
+            _empty_path(
+                "kaoyan",
+                "考研深造",
+                "该专业暂无分数线数据，可尝试更宽泛的关键词（如只输入学科大类）。",
+            ),
+            None,
         )
 
     # 分数线聚合（total_score_line=0 为脏数据占位，视为未公布，排除后再聚合）
@@ -128,6 +178,8 @@ def _build_kaoyan_path(db: Session, major: str, school_tier: str | None) -> dict
         GradScorelineRecord.total_score_line.isnot(None),
         GradScorelineRecord.total_score_line > 0,
     )
+    # 全量命中行（院校级分析用；聚合与抽查共用）
+    line_rows_all = line_base.all()
     line_agg = line_base.with_entities(
         func.avg(GradScorelineRecord.total_score_line),
         func.min(GradScorelineRecord.total_score_line),
@@ -202,38 +254,46 @@ def _build_kaoyan_path(db: Session, major: str, school_tier: str | None) -> dict
     if school_tier:
         risk_desc += f"本科层次「{school_tier}」在复试/调剂中会影响部分院校的隐性筛选。"
 
-    return {
-        "path_type": "kaoyan",
-        "target_role": "考研深造",
-        "income_1y": "0-5万",
-        "income_3y": "暂无数据（读研期间）",
-        "income_5y": "暂无数据",
-        "risk_level": risk,
-        "risk_description": risk_desc,
-        "growth_score": _GROWTH_SCORE["kaoyan"],
-        "time_cost_months": _TIME_COST["kaoyan"],
-        "match_score": _coverage_score(total, 20),
-        "match_description": f"依据现有数据覆盖度估算（命中 {total} 条分数线记录），"
-        f"{_NO_DATA}个人画像匹配数据。",
-        "pros": [
-            f"相关专业分数线记录 {total} 条（{year_min}–{year_max} 年），"
-            f"平均复试线 {line_desc}",
-            quota_text,
-        ],
-        "cons": [
-            "报录比数据覆盖有限（仅少量院校公开报考人数），难以精确估算竞争",
-            "复试线只代表门槛，不代表录取实际难度",
-        ],
-        "evidence": evidence,
-    }
+    return (
+        {
+            "path_type": "kaoyan",
+            "target_role": "考研深造",
+            "income_1y": "0-5万",
+            "income_3y": "暂无数据（读研期间）",
+            "income_5y": "暂无数据",
+            "risk_level": risk,
+            "risk_description": risk_desc,
+            "growth_score": _GROWTH_SCORE["kaoyan"],
+            "time_cost_months": _TIME_COST["kaoyan"],
+            "match_score": _coverage_score(total, 20),
+            "match_description": f"依据现有数据覆盖度估算（命中 {total} 条分数线记录），"
+            f"{_NO_DATA}个人画像匹配数据。",
+            "pros": [
+                f"相关专业分数线记录 {total} 条（{year_min}–{year_max} 年），"
+                f"平均复试线 {line_desc}",
+                quota_text,
+            ],
+            "cons": [
+                "报录比数据覆盖有限（仅少量院校公开报考人数），难以精确估算竞争",
+                "复试线只代表门槛，不代表录取实际难度",
+            ],
+            "evidence": evidence,
+        },
+        _build_school_analysis(db, line_rows_all),
+    )
 
 
 # ----------------------------------------------------------------------
 # 考公路
 # ----------------------------------------------------------------------
 def _build_civil_service_path(
-    db: Session, major: str, region: str | None, year: int
-) -> dict[str, Any]:
+    db: Session, major: str, region: str | None, year: int, conditions: dict[str, Any]
+) -> tuple[dict[str, Any], dict[str, Any] | None]:
+    """考公路 — 返回 (路径卡 dict, 岗位级分析 dict|None)。
+
+    岗位级分析基于个人条件做可报边界过滤（政治面貌/学历/应届/性别/基层经历），
+    关联进面线给出分布与个人竞争力分级；一切以真实字段为准，无法判定的保守放行。
+    """
     pattern = f"%{escape_like(major)}%"
     evidence: list[dict[str, Any]] = []
 
@@ -299,10 +359,13 @@ def _build_civil_service_path(
 
     # ---- 汇总 ----
     if gwy_total == 0 and p_total == 0:
-        return _empty_path(
-            "civil_service",
-            "考公",
-            "该专业暂无国考/省考可报岗位数据，可尝试更宽泛的专业关键词或清空地区。",
+        return (
+            _empty_path(
+                "civil_service",
+                "考公",
+                "该专业暂无国考/省考可报岗位数据，可尝试更宽泛的专业关键词或清空地区。",
+            ),
+            None,
         )
 
     region_text = f"{region} " if region else ""
@@ -317,29 +380,35 @@ def _build_civil_service_path(
     if avg_min_score:
         coverage_parts.append(f"国考平均进面最低分约 {avg_min_score:.1f} 分")
 
-    return {
-        "path_type": "civil_service",
-        "target_role": "考公",
-        "income_1y": "暂无数据",
-        "income_3y": "暂无数据",
-        "income_5y": "暂无数据",
-        "risk_level": "high",
-        "risk_description": risk_desc,
-        "growth_score": _GROWTH_SCORE["civil_service"],
-        "time_cost_months": _TIME_COST["civil_service"],
-        "match_score": _coverage_score(gwy_total + p_total, 30),
-        "match_description": f"依据现有数据覆盖度估算（命中 {gwy_total + p_total} 个岗位），"
-        f"{_NO_DATA}个人画像匹配数据。",
-        "pros": [
-            " · ".join(coverage_parts),
-            "体制内稳定，福利保障完善",
-        ],
-        "cons": [
-            "薪资增长缓慢，晋升论资排辈",
-            "岗位分配不确定，调动困难",
-        ],
-        "evidence": evidence,
-    }
+    # ---- 岗位级分析（个人可报边界 + 进面线分布 + 竞争力分级）----
+    position_analysis = _build_position_analysis(db, gwy.all(), gwy_p.all(), year, conditions)
+
+    return (
+        {
+            "path_type": "civil_service",
+            "target_role": "考公",
+            "income_1y": "暂无数据",
+            "income_3y": "暂无数据",
+            "income_5y": "暂无数据",
+            "risk_level": "high",
+            "risk_description": risk_desc,
+            "growth_score": _GROWTH_SCORE["civil_service"],
+            "time_cost_months": _TIME_COST["civil_service"],
+            "match_score": _coverage_score(gwy_total + p_total, 30),
+            "match_description": f"依据现有数据覆盖度估算（命中 {gwy_total + p_total} 个岗位），"
+            f"{_NO_DATA}个人画像匹配数据。",
+            "pros": [
+                " · ".join(coverage_parts),
+                "体制内稳定，福利保障完善",
+            ],
+            "cons": [
+                "薪资增长缓慢，晋升论资排辈",
+                "岗位分配不确定，调动困难",
+            ],
+            "evidence": evidence,
+        },
+        position_analysis,
+    )
 
 
 # ----------------------------------------------------------------------
@@ -388,11 +457,14 @@ def _build_employment_path(
     )
     if region:
         sb = sb.filter(SalaryBenchmark.city.like(f"%{escape_like(region)}%", escape="\\"))
+        sample_rows = sb.order_by(SalaryBenchmark.year.desc()).limit(SALARY_LIMIT).all()
+        sb_total = sb.count()
     else:
-        sb = sb.limit(0)  # 未指定地区时不展示岗位薪资样本（城市粒度才有意义）
-    sb_total = sb.count()
+        # 未指定地区时不展示岗位薪资样本（城市粒度才有意义）
+        sample_rows = []
+        sb_total = 0
     sb_parts: list[str] = []
-    for row in sb.order_by(SalaryBenchmark.year.desc()).limit(SALARY_LIMIT).all():
+    for row in sample_rows:
         sb_parts.append(f"{row.company}·{row.position} {row.salary_min}k-{row.salary_max}k")
         evidence.append(
             _evidence(
@@ -538,11 +610,430 @@ def _coverage_score(hits: int, cap: int) -> int:
 
 
 # ----------------------------------------------------------------------
+# 个人条件可报边界（决策飞轮第一圈）
+# ----------------------------------------------------------------------
+def _is_fresh_limited(remarks: str | None) -> bool:
+    """remarks 是否限定应届 — 规则保守：明确出现限定词才认定（含"非应届"视为不限）。"""
+    if not remarks or "非应届" in remarks:
+        return False
+    return any(m in remarks for m in _FRESH_MARKERS)
+
+
+def _is_gender_limited(remarks: str | None, only: str) -> bool:
+    """remarks 是否限定某性别（如"限男性"）；未明确出现限定词视为不限。"""
+    if not remarks:
+        return False
+    return ("限" + only) in remarks or ("仅限" + only) in remarks
+
+
+def _party_eligible(political_status: str | None, user_party: str) -> bool:
+    """政治面貌匹配：不限岗全放行；党员岗仅党员；党/团员岗放行党员与团员。"""
+    if not political_status or political_status == "不限":
+        return True
+    if "共青团员" in political_status or "团员" in political_status:
+        return user_party in ("中共党员", "党员或团员")
+    if "中共党员" in political_status or "党员" in political_status:
+        return user_party == "中共党员"
+    return True
+
+
+def _edu_eligible(education_req: str | None, user_edu: str) -> bool:
+    """学历档位匹配 — "仅限X"需精确档位；"及以上/或"等开放表述满足最低档即可。
+
+    未知学历表述视为不限（保守放行，避免误伤）。
+    """
+    if not education_req or not user_edu:
+        return True
+    levels = [l for l in ("博士", "硕士", "本科", "大专") if l in education_req]
+    if not levels:
+        return True
+    user_rank = _EDU_RANK[user_edu]
+    if "仅限" in education_req:
+        return user_rank == _EDU_RANK[levels[0]]
+    return user_rank >= min(_EDU_RANK[l] for l in levels)
+
+
+def _province_fresh_limited(raw: str | None) -> bool:
+    """省考 fresh_grad_only 官方字段：'否'/空 → 不限应届；其余（'是'/应届毕业生等）→ 限应届。"""
+    if not raw or "否" in raw:
+        return False
+    return True
+
+
+def _position_eligible(row: Any, conditions: dict[str, Any]) -> bool:
+    """国考岗位可报边界判断（无个人条件的维度自动放行）。"""
+    if conditions.get("fresh_status") == "非应届" and _is_fresh_limited(row.remarks):
+        return False
+    if conditions.get("gender") == "男" and _is_gender_limited(row.remarks, "女"):
+        return False
+    if conditions.get("gender") == "女" and _is_gender_limited(row.remarks, "男"):
+        return False
+    if conditions.get("party_status") and not _party_eligible(
+        row.political_status, conditions["party_status"]
+    ):
+        return False
+    if conditions.get("education") and not _edu_eligible(
+        row.education_req, conditions["education"]
+    ):
+        return False
+    if conditions.get("has_grassroots") is False and (
+        row.grassroots_exp_req not in (None, "", "无限制")
+    ):
+        return False
+    return True
+
+
+def _province_position_eligible(row: Any, conditions: dict[str, Any]) -> bool:
+    """省考岗位可报边界判断（用官方结构化字段，不做文本解析）。"""
+    if conditions.get("fresh_status") == "非应届" and _province_fresh_limited(row.fresh_grad_only):
+        return False
+    if conditions.get("education") and not _edu_eligible(
+        row.education_req, conditions["education"]
+    ):
+        return False
+    if conditions.get("has_grassroots") is False and row.grassroots_exp_req == "是":
+        return False
+    return True
+
+
+def _applied_conditions_text(conditions: dict[str, Any]) -> str:
+    """已应用的可报边界过滤描述（用于 analysis.notes）。"""
+    parts = []
+    if conditions.get("fresh_status"):
+        parts.append(f"应届/非应届（{conditions['fresh_status']}）")
+    if conditions.get("party_status"):
+        parts.append(f"政治面貌（{conditions['party_status']}）")
+    if conditions.get("education"):
+        parts.append(f"学历（{conditions['education']}）")
+    if conditions.get("has_grassroots") is True:
+        parts.append("基层经历（有）")
+    elif conditions.get("has_grassroots") is False:
+        parts.append("基层经历（无）")
+    if conditions.get("gender"):
+        parts.append(f"性别（{conditions['gender']}）")
+    return "、".join(parts)
+
+
+def _percentile(sorted_vals: list[float], q: float) -> float:
+    """线性插值分位数（q ∈ [0,1]，vals 已升序）。"""
+    n = len(sorted_vals)
+    if n == 0:
+        return 0.0
+    idx = q * (n - 1)
+    lo, hi = int(idx), min(int(idx) + 1, n - 1)
+    w = idx - lo
+    return sorted_vals[lo] * (1 - w) + sorted_vals[hi] * w
+
+
+def _classify_level(est: int, line: float) -> str:
+    diff = est - line
+    if diff >= _STEADY_DIFF:
+        return "稳健"
+    if diff <= -_STEADY_DIFF:
+        return "冲刺"
+    return "均衡"
+
+
+def _build_position_analysis(
+    db: Session,
+    gwy_rows: list[Any],
+    province_rows: list[Any],
+    year: int,
+    conditions: dict[str, Any],
+) -> dict[str, Any] | None:
+    """考公岗位级分析 — 个人可报清单（按 position_code 去重）+ 进面线分层。
+
+    应届/性别限定来自职位备注文本解析，无法判定的视为可报并在 notes 标注；
+    所有数字均来自职位表/进面线真实字段。
+    """
+    eligible_rows = [r for r in gwy_rows if _position_eligible(r, conditions)]
+    # 同一 position_code 对应多条专业/学历记录，去重后才是真实岗位数
+    by_code: dict[str, Any] = {}
+    for r in eligible_rows:
+        if r.position_code and r.position_code not in by_code:
+            by_code[r.position_code] = r
+    eligible_count = len(by_code)
+
+    p_eligible = [r for r in province_rows if _province_position_eligible(r, conditions)]
+    p_by_code: dict[str, Any] = {}
+    for r in p_eligible:
+        if r.position_code and r.position_code not in p_by_code:
+            p_by_code[r.position_code] = r
+    province_count = len(p_by_code)
+
+    if eligible_count == 0 and province_count == 0:
+        return {
+            "eligible_count": 0,
+            "province_count": 0,
+            "score_band": "无可报岗位数据",
+            "personalized_level": None,
+            "tier_summary": None,
+            "top_positions": [],
+            "notes": [
+                f"已按个人条件过滤：{_applied_conditions_text(conditions) or '未应用'}；"
+                "无符合全部条件的岗位。"
+            ],
+        }
+
+    # ---- 进面线：按 position_code 关联，同 code 多批次取第一条（首批优先）----
+    score_map: dict[str, float] = {}
+    codes = list(by_code.keys())
+    if codes:
+        for line in (
+            db.query(GwyScoreLine)
+            .filter(GwyScoreLine.year == year, GwyScoreLine.position_code.in_(codes))
+            .order_by(GwyScoreLine.batch == "首批")
+            .all()
+        ):
+            if line.min_score and line.position_code not in score_map:
+                score_map[line.position_code] = line.min_score
+
+    scores = sorted(score_map.values())
+    has_score = len(scores) > 0
+
+    # ---- 分数带（P25/P50/P75）----
+    score_band = "本数据集中暂无进面线公布（面试名单未收录）"
+    scored_ratio_text = f"{len(scores)}/{eligible_count} 岗已公布" if has_score else ""
+    if has_score:
+        p25, p50, p75 = (
+            _percentile(scores, 0.25),
+            _percentile(scores, 0.5),
+            _percentile(scores, 0.75),
+        )
+        score_band = (
+            f"进面线集中 {p25:.0f}–{p75:.0f} 分（中位 {p50:.0f}，公布 {scored_ratio_text}）"
+        )
+
+    # ---- 个人竞争力分级（仅国考有进面线的岗位）----
+    personalized_level: str | None = None
+    tier_summary: str | None = None
+    est = conditions.get("estimated_score")
+    if est is not None and has_score:
+        tier_counts: dict[str, int] = {"稳健": 0, "均衡": 0, "冲刺": 0}
+        for line_score in scores:
+            tier_counts[_classify_level(est, line_score)] += 1
+        personalized_level = max(tier_counts, key=tier_counts.get)
+        tier_summary = (
+            f"按预估 {est} 分对比岗位进面线：稳健 {tier_counts['稳健']} 岗 · "
+            f"均衡 {tier_counts['均衡']} 岗 · 冲刺 {tier_counts['冲刺']} 岗（仅统计已公布线岗位）"
+        )
+    elif est is not None:
+        tier_summary = f"按预估 {est} 分：暂无已公布进面线可供分级（公布 {scored_ratio_text}）"
+
+    # ---- 示例岗位（招录人数优先，≤5 个；带进面线与分级标签）----
+    top_positions: list[dict[str, Any]] = []
+    for r in sorted(
+        by_code.values(), key=lambda x: (x.recruit_count or 0, x.position_code or ""), reverse=True
+    )[:5]:
+        line_score = score_map.get(r.position_code)
+        label = "进面线未收录"
+        if line_score:
+            if est is not None:
+                level = _classify_level(est, line_score)
+                diff = est - line_score
+                label = f"进面 {line_score:.0f} 分 · 你{'高' if diff >= 0 else '低'}{abs(diff):.0f} 分（{level}）"
+            else:
+                label = f"进面 {line_score:.0f} 分"
+        top_positions.append(
+            {
+                "dept_name": r.dept_name or r.bureau or "部门未公布",
+                "position_name": r.position_name or "职位未公布",
+                "work_location": r.work_location,
+                "recruit_count": r.recruit_count,
+                "min_score": line_score,
+                "score_label": label,
+                "source_url": r.source_url,
+            }
+        )
+
+    # ---- 数据诚实标注 ----
+    notes: list[str] = []
+    applied = _applied_conditions_text(conditions)
+    if applied:
+        notes.append(f"已按个人条件过滤：{applied}")
+    is_text_parsed = bool(conditions.get("fresh_status")) or bool(conditions.get("gender"))
+    if is_text_parsed:
+        notes.append("应届/性别限定来自职位备注文本解析，个别岗位可能有偏差")
+    if province_count > 0:
+        notes.append("省考岗位无进面线数据，仅统计可报数")
+
+    return {
+        "eligible_count": eligible_count,
+        "province_count": province_count,
+        "score_band": score_band,
+        "personalized_level": personalized_level,
+        "tier_summary": tier_summary,
+        "top_positions": top_positions,
+        "notes": notes,
+    }
+
+
+# ----------------------------------------------------------------------
+# 考研院校级分析（决策飞轮第一圈）
+# ----------------------------------------------------------------------
+_BG_DISCRIMINATION_LABEL = {
+    "none": "不卡第一学历",
+    "light": "轻度卡第一学历",
+    "moderate": "明显卡第一学历",
+    "severe": "严重卡第一学历",
+}
+_FIRST_CHOICE_LABEL = {
+    "yes": "保护一志愿",
+    "partial": "部分保护一志愿",
+    "no": "不保护一志愿",
+}
+
+
+def _school_intel_summary(db: Session, university: str) -> str | None:
+    """院校隐性情报摘要（grad_school_intel）— 真实行优先，AI 生成行显式标注。"""
+    row = (
+        db.query(GradSchoolIntel)
+        .filter(GradSchoolIntel.school_name == university)
+        .order_by(GradSchoolIntel.is_ai_generated.asc(), GradSchoolIntel.updated_at.desc())
+        .first()
+    )
+    if row is None:
+        return None
+    parts: list[str] = []
+    bg = _BG_DISCRIMINATION_LABEL.get(row.background_discrimination or "")
+    if bg:
+        parts.append(bg)
+    fcp = _FIRST_CHOICE_LABEL.get(row.first_choice_protection or "")
+    if fcp:
+        parts.append(fcp)
+    if row.admission_ratio:
+        parts.append(f"报录比约 {row.admission_ratio}")
+    if not parts:
+        return None
+    text = "；".join(parts)
+    if row.is_ai_generated:
+        text = f"{text}（AI 生成情报，未经核实）"
+    return text
+
+
+def _build_school_analysis(
+    db: Session, line_rows: list[GradScorelineRecord]
+) -> dict[str, Any] | None:
+    """考研院校级分析 — 命中院校按复试线竞争档位分组 + 隐性情报。
+
+    档位边界：院校最近年份复试线相对样本中位数 ±10 分为界线（偏高/中等/偏低），
+    样本过少（<3 校）时全部标"中等"并用覆盖说明兜底。
+    """
+    if not line_rows:
+        return None
+
+    # 按院校取最近年份记录
+    group: dict[str, GradScorelineRecord] = {}
+    for row in line_rows:
+        cur = group.get(row.university_name)
+        if cur is None or row.year >= cur.year:
+            group[row.university_name] = row
+
+    items: list[dict[str, Any]] = []
+    lines = [r.total_score_line or 0 for r in group.values()]
+    if len(lines) >= 3:
+        median_line = sorted(lines)[len(lines) // 2]
+        for uni, row in sorted(group.items(), key=lambda kv: (kv[1].total_score_line or 0, kv[0])):
+            score = row.total_score_line
+            if score is None:
+                competition = "中等"
+            elif score > median_line + _STEADY_DIFF:
+                competition = "偏高"
+            elif score < median_line - _STEADY_DIFF:
+                competition = "偏低"
+            else:
+                competition = "中等"
+            ratio = (
+                _format_ratio(row.application_count, row.enrollment_count)
+                if row.application_count and row.enrollment_count
+                else None
+            )
+            items.append(
+                {
+                    "university_name": uni,
+                    "major_name": row.major_name,
+                    "degree_type": row.degree_type,
+                    "year": row.year,
+                    "score_line": score,
+                    "ratio": ratio,
+                    "competition": competition,
+                    "intel": _school_intel_summary(db, uni),
+                    "source_url": (row.data_sources or [None])[0]
+                    if isinstance(row.data_sources, list)
+                    else None,
+                }
+            )
+    else:
+        # 样本过少：不强行分档，全部标中等避免误导
+        for uni, row in sorted(group.items(), key=lambda kv: (kv[1].total_score_line or 0, kv[0])):
+            ratio = (
+                _format_ratio(row.application_count, row.enrollment_count)
+                if row.application_count and row.enrollment_count
+                else None
+            )
+            items.append(
+                {
+                    "university_name": uni,
+                    "major_name": row.major_name,
+                    "degree_type": row.degree_type,
+                    "year": row.year,
+                    "score_line": row.total_score_line,
+                    "ratio": ratio,
+                    "competition": "中等",
+                    "intel": _school_intel_summary(db, uni),
+                    "source_url": (row.data_sources or [None])[0]
+                    if isinstance(row.data_sources, list)
+                    else None,
+                }
+            )
+
+    return {
+        "matched_school_count": len(items),
+        "coverage_note": (
+            f"命中 {len(items)} 所院校（基于现有复试线数据；数据覆盖有限，未覆盖院校不在此列，"
+            "竞争档位仅供参考）"
+        ),
+        "items": items[:8],
+    }
+
+
+# ----------------------------------------------------------------------
 # 综合建议
 # ----------------------------------------------------------------------
-def _build_recommendation(metrics: list[dict[str, Any]], input_summary: dict) -> str:
+def _personal_condition_line(conditions: dict[str, Any]) -> str | None:
+    """个人条件摘要行（无任何个人条件时返回 None，输出与旧版逐字一致）。"""
+    parts = []
+    if conditions.get("fresh_status"):
+        parts.append(conditions["fresh_status"])
+    if conditions.get("education"):
+        parts.append(f"{conditions['education']}学历")
+    if conditions.get("party_status"):
+        parts.append(conditions["party_status"])
+    if conditions.get("gender"):
+        parts.append(conditions["gender"])
+    if conditions.get("has_grassroots") is True:
+        parts.append("有基层经历")
+    if not parts and conditions.get("estimated_score") is None:
+        return None
+    cond_text = "、".join(parts) if parts else "档案条件"
+    est_text = (
+        f"，预估行测+申论 {conditions['estimated_score']} 分"
+        if conditions.get("estimated_score")
+        else ""
+    )
+    return f"以你的条件（{cond_text}{est_text}）为准，考公可报岗位已按可报边界过滤（详见考公卡片下「岗位分析」）。"
+
+
+def _build_recommendation(
+    metrics: list[dict[str, Any]], input_summary: dict, conditions: dict[str, Any] | None = None
+) -> str:
     """三路对比后的条件式建议 — 纯规则，不替用户决定。"""
+    conditions = conditions or {}
     lines: list[str] = []
+    personal_line = _personal_condition_line(conditions)
+    if personal_line:
+        lines.append(personal_line)
+        lines.append("")
     lines.append(
         f"针对「{input_summary['major']} · {input_summary['region']} · "
         f"{input_summary['school_tier']} · {input_summary['graduation_year']} 届」的三路对比："
@@ -553,8 +1044,7 @@ def _build_recommendation(metrics: list[dict[str, Any]], input_summary: dict) ->
             continue
         if m["path_type"] == "kaoyan":
             lines.append(
-                f"- 考研：{m['pros'][0] if m['pros'] else '数据有限'}，"
-                f"难度评估 {m['risk_level']}。"
+                f"- 考研：{m['pros'][0] if m['pros'] else '数据有限'}，难度评估 {m['risk_level']}。"
             )
         elif m["path_type"] == "civil_service":
             lines.append(
@@ -563,7 +1053,7 @@ def _build_recommendation(metrics: list[dict[str, Any]], input_summary: dict) ->
             )
         else:
             lines.append(
-                f"- 就业：{m['pros'][0] if m['pros'] else '薪资数据有限'}，" f"行业波动需留意。"
+                f"- 就业：{m['pros'][0] if m['pros'] else '薪资数据有限'}，行业波动需留意。"
             )
 
     lines.append("")
