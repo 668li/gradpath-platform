@@ -34,10 +34,12 @@ export default defineConfig({
   ],
 
   // 自动启动 Next.js dev server
+  // CI 里由 workflow 步骤预启动(带 DATABASE_URL/NEXT_PUBLIC_API_URL 等环境),这里直接复用;
+  // 本地未启动时才由 Playwright 拉起
   webServer: {
     command: "npm run dev",
     url: "http://localhost:3000",
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: true,
     timeout: 60 * 1000,
   },
 });
