@@ -194,3 +194,44 @@ def delete(
     db: Session = Depends(get_db),
 ):
     delete_post(db, user, post_id)
+
+
+@router.get("/{post_id}/replies", response_model=list[PostResponse])
+def list_replies(
+    post_id: str,
+    db: Session = Depends(get_db),
+):
+    """列出帖子的回复（社区帖"评论"即一层回复，按时间正序）。"""
+    try:
+        pid = UUID(post_id)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="帖子不存在")
+    parent = db.query(Post).filter(Post.id == pid).first()
+    if not parent:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="帖子不存在")
+    replies = (
+        db.query(Post)
+        .filter(Post.parent_id == pid)
+        .order_by(Post.created_at.asc())
+        .all()
+    )
+    user_ids = {r.user_id for r in replies}
+    users = db.query(User).filter(User.id.in_(list(user_ids))).all() if user_ids else []
+    user_map = {u.id: (u.nickname or u.username or u.name) for u in users}
+    items = []
+    for r in replies:
+        resp = PostResponse(
+            id=str(r.id),
+            topic_type=r.topic_type.value if hasattr(r.topic_type, "value") else r.topic_type,
+            topic_key=r.topic_key,
+            title=r.title,
+            content=r.content,
+            author_id=str(r.user_id),
+            author_name=user_map.get(r.user_id, "未知用户"),
+            parent_id=str(r.parent_id) if r.parent_id else None,
+            created_at=r.created_at,
+            updated_at=r.updated_at,
+            replies=[],
+        )
+        items.append(resp)
+    return items

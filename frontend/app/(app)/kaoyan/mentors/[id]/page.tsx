@@ -61,7 +61,7 @@ export default function MentorDetailPage() {
 
   const handleLikeReview = async (reviewId: string) => {
     try {
-      await mentorApi.likeReview(mentorId, reviewId);
+      await mentorApi.likeReview(reviewId);
       toast.push("点赞成功", "success");
       loadReviews();
     } catch {

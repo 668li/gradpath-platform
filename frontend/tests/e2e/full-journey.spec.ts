@@ -22,6 +22,7 @@ test.describe.serial("端到端完整旅程", () => {
   // 共享测试数据
   const POST_TITLE = `Journey 测试帖 - ${Date.now()}`;
   const POST_CONTENT = "端到端旅程测试中发布的帖子。";
+  const COMMENT_CONTENT = `Journey 测试评论 - ${Date.now()}`;
   const DECISION_TITLE = "字节 vs 阿里 offer 选择";
   const OPTION_A = "字节跳动";
   const OPTION_B = "阿里巴巴";
@@ -263,7 +264,7 @@ test.describe.serial("端到端完整旅程", () => {
     await expect(page.locator("body")).toContainText(DECISION_TITLE, { timeout: 5000 });
   });
 
-  test("Step 4: 社区发帖", async ({ page }) => {
+  test("Step 4: 社区发帖 + 评论", async ({ page }) => {
     // 登录
     await page.goto("/login");
     await page.fill('input[type="email"]', TEST_EMAIL);
@@ -284,9 +285,12 @@ test.describe.serial("端到端完整旅程", () => {
     // 验证帖子可见
     await expect(page.locator("body")).toContainText(POST_TITLE, { timeout: 10000 });
 
-    // 注：社区帖（posts 表）的评论后端未实现——评论接口 comments 表外键
-    // 绑定经验贴 experience_posts，对社区帖评论会 400"帖子不存在"。
-    // 该产品缺口修复（新评论表/端点）属于功能开发，不在本测试覆盖内。
+    // 展开评论并发表（社区帖评论 = 讨论帖回复）
+    await page.locator('button:has-text("评论")').first().click();
+    await expect(page.locator('[data-testid="comment-input"]')).toBeVisible({ timeout: 5000 });
+    await page.locator('[data-testid="comment-input"]').fill(COMMENT_CONTENT);
+    await page.locator('[data-testid="submit-comment-button"]').click();
+    await expect(page.locator("body")).toContainText(COMMENT_CONTENT, { timeout: 10000 });
   });
 
   test("Step 5: 上岸报告生成", async ({ page }) => {

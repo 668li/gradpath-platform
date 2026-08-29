@@ -27,7 +27,7 @@ export { skillsApi, skillApi } from "./skills";
 export { retrospectivesApi } from "./retrospectives";
 export { employmentApi, communityApi, interviewApi } from "./employment";
 export { pipelineApi, externalDataApi } from "./pipeline";
-export { postsApi, commentApi, followApi } from "./posts";
+export { postsApi, commentApi, postRepliesApi, followApi } from "./posts";
 export { notificationsApi } from "./notifications";
 export { bookmarksApi } from "./bookmarks";
 export type { NotificationResponse, NotificationListResponse } from "./notifications";

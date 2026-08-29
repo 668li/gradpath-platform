@@ -281,3 +281,58 @@ class TestDeletePost:
 
         resp = client.delete(f"/api/posts/{post_id}", headers=other_headers)
         assert resp.status_code == 403
+
+
+# ======================================================================
+# 回复列表（社区帖"评论"）
+# ======================================================================
+
+
+class TestListReplies:
+    def test_list_replies_empty(self, auth_headers, client):
+        """无回复的帖子返回空列表。"""
+        top = _create_post(client, auth_headers)
+        top_id = top.json()["id"]
+
+        resp = client.get(f"/api/posts/{top_id}/replies")
+        assert resp.status_code == 200
+        assert resp.json() == []
+
+    def test_list_replies_returns_replies_in_order(self, auth_headers, client):
+        """回复按时间正序返回，且带作者名。"""
+        top = _create_post(client, auth_headers)
+        top_id = top.json()["id"]
+
+        for i in range(3):
+            resp = _create_post(client, auth_headers, content=f"回复 {i}", parent_id=top_id)
+            assert resp.status_code == 201
+
+        resp = client.get(f"/api/posts/{top_id}/replies")
+        assert resp.status_code == 200
+        items = resp.json()
+        assert len(items) == 3
+        assert [it["content"] for it in items] == ["回复 0", "回复 1", "回复 2"]
+        assert all(it["author_name"] == "测试用户" for it in items)
+        assert all(it["parent_id"] == top_id for it in items)
+
+    def test_list_replies_excludes_other_posts(self, auth_headers, client):
+        """其他帖子的回复不会串进来。"""
+        top_a = _create_post(client, auth_headers)
+        top_b = _create_post(client, auth_headers, content="另一个帖子")
+        a_id = top_a.json()["id"]
+
+        _create_post(client, auth_headers, content="A 的回复", parent_id=a_id)
+
+        resp_b = client.get(f"/api/posts/{top_b.json()['id']}/replies")
+        assert resp_b.status_code == 200
+        assert resp_b.json() == []
+
+    def test_list_replies_post_not_found(self, client):
+        """不存在的帖子返回 404。"""
+        resp = client.get("/api/posts/00000000-0000-0000-0000-000000000000/replies")
+        assert resp.status_code == 404
+
+    def test_list_replies_invalid_uuid(self, client):
+        """非法 UUID 返回 404（而非 500）。"""
+        resp = client.get("/api/posts/not-a-uuid/replies")
+        assert resp.status_code == 404

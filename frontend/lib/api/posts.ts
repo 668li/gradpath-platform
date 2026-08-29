@@ -63,7 +63,24 @@ export const followApi = {
     ),
 };
 
-// ===== 评论 =====
+// ===== 社区帖评论（复用讨论帖回复结构：Post.parent_id）=====
+// 注意：/api/comments 系列只服务经验贴（experience_posts 表），
+// 社区广场帖（posts 表）的评论走这里的回复端点。
+export const postRepliesApi = {
+  list: (postId: string) => request<PostItem[]>(`/api/posts/${postId}/replies`),
+  create: (parent: { id: string; topic_type: string; topic_key: string }, content: string) =>
+    request<PostItem>("/api/posts", {
+      method: "POST",
+      body: JSON.stringify({
+        topic_type: parent.topic_type,
+        topic_key: parent.topic_key,
+        content,
+        parent_id: parent.id,
+      }),
+    }),
+};
+
+// ===== 经验贴评论 =====
 export const commentApi = {
   listByPost: (postId: string, params?: { offset?: number; limit?: number }) =>
     request<CommentListResponse>(

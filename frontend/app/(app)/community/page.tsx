@@ -14,7 +14,7 @@ import {
   Bell,
   Search,
 } from "lucide-react";
-import { postsApi, commentApi, followApi, communityApi, employmentApi } from "@/lib/api";
+import { postsApi, postRepliesApi, followApi, communityApi, employmentApi } from "@/lib/api";
 import { Button, Input, Textarea } from "@/components/ui/form-controls";
 import { EmptyState } from "@/components/ui/empty";
 import { ListSkeleton } from "@/components/ui/skeleton";
@@ -25,7 +25,6 @@ import { cn } from "@/lib/utils";
 import type {
   PostItem,
   UserResponse,
-  CommentResponse,
   SchoolInfo,
   CommunityStats,
   CommunityReport,
@@ -170,8 +169,9 @@ function FeedTab({ currentUser }: { currentUser: UserResponse | null }) {
   const [searchText, setSearchText] = useState("");
   const PAGE_SIZE = 10;
 
-  const load = useCallback(() => {
-    setLoading(true);
+  const load = useCallback((opts?: { silent?: boolean }) => {
+    // 静默刷新（评论/点赞后）不整屏换骨架屏，避免卡片状态（展开的评论区）丢失
+    if (!opts?.silent) setLoading(true);
     postsApi
       .publicList({ page, page_size: PAGE_SIZE })
       .then((d) => {
@@ -271,7 +271,7 @@ function FeedTab({ currentUser }: { currentUser: UserResponse | null }) {
           {posts
             .filter((p) => !searchText || (p.title?.toLowerCase().includes(searchText.toLowerCase())) || p.content.toLowerCase().includes(searchText.toLowerCase()))
             .map((p) => (
-            <PostCard key={p.id} post={p} currentUser={currentUser} onChanged={load} />
+            <PostCard key={p.id} post={p} currentUser={currentUser} onChanged={() => load({ silent: true })} />
           ))}
         </div>
       )}
@@ -300,7 +300,7 @@ function PostCard({
   const toast = useToast();
   const [following, setFollowing] = useState(false);
   const [showComments, setShowComments] = useState(false);
-  const [comments, setComments] = useState<CommentResponse[]>([]);
+  const [comments, setComments] = useState<PostItem[]>([]);
   const [commentText, setCommentText] = useState("");
   const isMine = currentUser && post.author_id === currentUser.id;
 
@@ -320,9 +320,9 @@ function PostCard({
   };
 
   const loadComments = () => {
-    commentApi
-      .listByPost(post.id, { limit: 50 })
-      .then((d) => setComments(d.items))
+    postRepliesApi
+      .list(post.id)
+      .then((d) => setComments(d))
       .catch(() => {});
   };
 
@@ -333,8 +333,11 @@ function PostCard({
 
   const submitComment = () => {
     if (!commentText.trim()) return;
-    commentApi
-      .create({ post_id: post.id, content: commentText.trim() })
+    postRepliesApi
+      .create(
+        { id: post.id, topic_type: post.topic_type, topic_key: post.topic_key },
+        commentText.trim(),
+      )
       .then(() => {
         setCommentText("");
         loadComments();
@@ -378,7 +381,7 @@ function PostCard({
         <div className="mt-3 space-y-2 border-t border-paper-200 pt-3">
           {comments.map((c) => (
             <div key={c.id} className="text-sm" data-testid={`comment-item-${c.id}`}>
-              <span className="font-medium text-ink-700">{c.author_nickname}：</span>
+              <span className="font-medium text-ink-700">{c.author_name}：</span>
               <span className="text-ink-600">{c.content}</span>
             </div>
           ))}

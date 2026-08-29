@@ -68,9 +68,9 @@ export const mentorApi = {
       body: JSON.stringify(data),
     }),
 
-  /** 点赞评价 */
-  likeReview: (mentorId: string, reviewId: string) =>
-    request<{ success: boolean }>(`/api/mentors/kaoyan-mentors/${mentorId}/reviews/${reviewId}/like`, {
+  /** 点赞评价（后端路径不带 mentorId：POST /api/mentors/kaoyan-reviews/{review_id}/like） */
+  likeReview: (reviewId: string) =>
+    request<{ success: boolean }>(`/api/mentors/kaoyan-reviews/${reviewId}/like`, {
       method: "POST",
     }),
 
