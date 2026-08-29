@@ -194,7 +194,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:1200/healthz >/dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:1200/', r => process.exit(r.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))\""]
       interval: 60s
       timeout: 10s
       retries: 3
@@ -229,6 +229,7 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-gradpath}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-gradpath}
       ENVIRONMENT: production
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
       CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/1
       CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@redis:6379/2
@@ -254,47 +255,6 @@ services:
         reservations:
           memory: 256M
           cpus: "0.25"
-    restart: unless-stopped
-
-  # ======================================================================
-  # flower — Celery 任务监控面板（仅 127.0.0.1 访问）
-  # ======================================================================
-  flower:
-    build:
-      context: ./backend
-      target: production
-    command: >
-      celery --app=app.celery_app.celery_app flower
-      --port=5555
-      --broker=redis://:${REDIS_PASSWORD}@redis:6379/1
-      --url-prefix=flower
-      --basic-auth=${FLOWER_USER:-admin}:${FLOWER_PASSWORD:?FLOWER_PASSWORD is required}
-    environment:
-      FLOWER_USER: ${FLOWER_USER:-admin}
-      FLOWER_PASSWORD: ${FLOWER_PASSWORD:?FLOWER_PASSWORD is required}
-    ports:
-      # FASTAPI-DEPLOY-001: 端口仅绑定 127.0.0.1
-      - "127.0.0.1:5555:5555"
-    depends_on:
-      redis:
-        condition: service_healthy
-      celery-worker:
-        condition: service_started
-    healthcheck:
-      test: ["CMD-SHELL", "python -c \"import socket; s=socket.socket(); s.settimeout(5); s.connect(('localhost',5555)); s.close()\""]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-    logging: *default-logging
-    deploy:
-      resources:
-        limits:
-          memory: 256M
-          cpus: "0.25"
-        reservations:
-          memory: 64M
-          cpus: "0.1"
     restart: unless-stopped
 
   # ======================================================================
