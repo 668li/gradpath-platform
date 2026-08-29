@@ -131,7 +131,11 @@ async def post_message(
             )
     try:
         result = await send_message(
-            db, user.id, conversation_id, body.content, body.skill_hint,
+            db,
+            user.id,
+            conversation_id,
+            body.content,
+            body.skill_hint,
             llm_override=llm_override,
         )
         # B8: 调用成功后递增配额计数

@@ -7,8 +7,14 @@ from pydantic import BaseModel, Field
 
 
 class UserLLMConfigSaveRequest(BaseModel):
-    provider: str = Field("custom", max_length=30, description="供应商标识：zhipu/deepseek/moonshot/openai/custom")
-    base_url: str = Field(..., max_length=500, description="OpenAI 兼容接口根地址，如 https://open.bigmodel.cn/api/paas/v4/")
+    provider: str = Field(
+        "custom", max_length=30, description="供应商标识：zhipu/deepseek/moonshot/openai/custom"
+    )
+    base_url: str = Field(
+        ...,
+        max_length=500,
+        description="OpenAI 兼容接口根地址，如 https://open.bigmodel.cn/api/paas/v4/",
+    )
     model: str = Field(..., max_length=100, description="模型名称，如 glm-4-flash")
     api_key: str = Field("", max_length=500, description="API Key；留空表示沿用已保存的 Key")
     is_enabled: bool = Field(True, description="是否启用自带配置（关闭则回退服务器默认）")

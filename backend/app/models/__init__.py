@@ -96,10 +96,10 @@ from app.models.skill_node import SkillNode
 from app.models.streak import StreakRecord
 from app.models.user import User, UserStage
 from app.models.user_badge import UserBadge
+from app.models.user_llm_config import UserLLMConfig
 
 # 决策副驾驶护城河
 from app.models.user_memory import MemoryFactType, UserMemoryFact
-from app.models.user_llm_config import UserLLMConfig
 from app.models.user_setting import UserSetting
 
 __all__ = [

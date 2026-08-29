@@ -209,12 +209,7 @@ def list_replies(
     parent = db.query(Post).filter(Post.id == pid).first()
     if not parent:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="帖子不存在")
-    replies = (
-        db.query(Post)
-        .filter(Post.parent_id == pid)
-        .order_by(Post.created_at.asc())
-        .all()
-    )
+    replies = db.query(Post).filter(Post.parent_id == pid).order_by(Post.created_at.asc()).all()
     user_ids = {r.user_id for r in replies}
     users = db.query(User).filter(User.id.in_(list(user_ids))).all() if user_ids else []
     user_map = {u.id: (u.nickname or u.username or u.name) for u in users}

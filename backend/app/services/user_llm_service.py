@@ -159,12 +159,17 @@ async def verify_user_llm(
     if resp.status_code in (401, 403):
         return UserLLMVerifyResponse(ok=False, message="API Key 无效或无权限（401/403）")
     if resp.status_code == 404:
-        return UserLLMVerifyResponse(ok=False, message="端点不存在（404），请检查 Base URL 是否包含版本路径")
+        return UserLLMVerifyResponse(
+            ok=False, message="端点不存在（404），请检查 Base URL 是否包含版本路径"
+        )
     detail = ""
     try:
         detail = str(resp.json().get("error", {}).get("message", ""))[:200]
     except Exception:
         pass
     return UserLLMVerifyResponse(
-        ok=False, message=f"服务返回 {resp.status_code}：{detail}" if detail else f"服务返回 {resp.status_code}"
+        ok=False,
+        message=(
+            f"服务返回 {resp.status_code}：{detail}" if detail else f"服务返回 {resp.status_code}"
+        ),
     )

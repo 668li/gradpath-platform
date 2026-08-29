@@ -29,8 +29,8 @@ from app.models.retrospective import Retrospective
 from app.models.skill_node import SkillNode
 from app.models.user import User
 from app.services.ai_orchestrator import AIOrchestrator
-from app.services.user_llm_service import LLMOverride
 from app.services.knowledge_service import search_articles
+from app.services.user_llm_service import LLMOverride
 from app.skills.registry import find_skill_instance, get_skill_instance
 
 logger = logging.getLogger(__name__)

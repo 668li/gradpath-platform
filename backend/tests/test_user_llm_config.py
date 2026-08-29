@@ -164,9 +164,7 @@ class TestUserLLMVerify:
         _FakeClient._status_code = 401
         try:
             with patch.object(user_llm_service.httpx, "AsyncClient", _FakeClient):
-                resp = client.post(
-                    "/api/user-llm-config/verify", headers=auth_headers, json=VALID
-                )
+                resp = client.post("/api/user-llm-config/verify", headers=auth_headers, json=VALID)
         finally:
             _FakeClient._status_code = 200
         assert resp.status_code == 200
@@ -243,8 +241,6 @@ class TestChatWithByok:
 
 
 def _create_conv(client, auth_headers):
-    resp = client.post(
-        "/api/chat/conversations", headers=auth_headers, json={"title": "BYOK 测试"}
-    )
+    resp = client.post("/api/chat/conversations", headers=auth_headers, json={"title": "BYOK 测试"})
     assert resp.status_code == 201, resp.text
     return resp.json()
