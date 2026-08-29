@@ -14,6 +14,8 @@ repos:
         exclude: ^frontend/
       - id: check-yaml
         files: \.(yaml|yml)$
+        # docker-compose.grey.yml 使用 docker compose 专属标签 !override，标准 YAML 解析器不认
+        exclude: ^docker-compose\.grey\.yml$
       - id: check-toml
         files: \.toml$
       - id: check-json
