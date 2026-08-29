@@ -33,32 +33,119 @@ const LEVEL_COLOR: Record<number, "slate" | "blue" | "purple"> = {
 };
 
 // ===== Hot Technologies 技能热度榜（增强2：灵感来源 O*NET）=====
+// 按用户身份分赛道展示：不同身份的人需要的能力完全不同，
+// 原版只有互联网技术栈，无法覆盖考研/考公/泛就业人群。
 type TechTrend = "up" | "down" | "stable";
 
 interface HotTech {
   name: string;
   heat: number; // 1-100 热度指数
   trend: TechTrend;
-  roles: string; // 常见岗位
+  roles: string; // 常见用途/岗位
 }
 
-const HOT_TECHNOLOGIES: HotTech[] = [
-  { name: "Python", heat: 98, trend: "up", roles: "后端/数据/AI" },
-  { name: "JavaScript", heat: 95, trend: "stable", roles: "前端/全栈" },
-  { name: "React", heat: 90, trend: "up", roles: "前端" },
-  { name: "TypeScript", heat: 88, trend: "up", roles: "前端/全栈" },
-  { name: "Java", heat: 85, trend: "stable", roles: "后端/Android" },
-  { name: "SQL", heat: 82, trend: "stable", roles: "数据/后端" },
-  { name: "Docker", heat: 78, trend: "up", roles: "运维/后端" },
-  { name: "AWS", heat: 75, trend: "up", roles: "运维/后端" },
-  { name: "Vue", heat: 72, trend: "stable", roles: "前端" },
-  { name: "Go", heat: 70, trend: "up", roles: "后端" },
-  { name: "Node.js", heat: 68, trend: "stable", roles: "全栈" },
-  { name: "Kubernetes", heat: 65, trend: "up", roles: "运维" },
-  { name: "Machine Learning", heat: 62, trend: "up", roles: "AI/数据" },
-  { name: "Flutter", heat: 55, trend: "stable", roles: "移动端" },
-  { name: "Rust", heat: 50, trend: "up", roles: "系统编程" },
+interface IdentityTrack {
+  key: string;
+  label: string;
+  basis: string; // 热度数据口径说明
+  skills: HotTech[];
+}
+
+const IDENTITY_TRACKS: IdentityTrack[] = [
+  {
+    key: "kaoyan",
+    label: "考研升学",
+    basis: "基于全国硕士研究生报考科目与招生需求",
+    skills: [
+      { name: "专业课", heat: 96, trend: "up", roles: "目标院校自命题" },
+      { name: "考研英语", heat: 94, trend: "stable", roles: "英语(一)/(二) 统考" },
+      { name: "考研政治", heat: 92, trend: "stable", roles: "全国统考公共课" },
+      { name: "考研数学", heat: 90, trend: "stable", roles: "数学(一)/(二)/(三)" },
+      { name: "复试面试表达", heat: 84, trend: "up", roles: "综合面试/英文问答" },
+      { name: "择校与信息检索", heat: 78, trend: "up", roles: "报录比/招简分析" },
+      { name: "学术文献阅读", heat: 72, trend: "up", roles: "复试/读研衔接" },
+      { name: "学术写作", heat: 68, trend: "stable", roles: "研究计划/论文" },
+      { name: "编程上机", heat: 58, trend: "up", roles: "工科/计算机专业课" },
+      { name: "二外/小语种", heat: 45, trend: "down", roles: "外语类专业课" },
+    ],
+  },
+  {
+    key: "kaogong",
+    label: "考公考编",
+    basis: "基于国考/省考/事业编笔试面试考察模块",
+    skills: [
+      { name: "申论写作", heat: 96, trend: "stable", roles: "笔试主观题" },
+      { name: "行测-资料分析", heat: 93, trend: "stable", roles: "笔试/性价比最高" },
+      { name: "行测-言语理解", heat: 92, trend: "stable", roles: "笔试" },
+      { name: "行测-判断推理", heat: 91, trend: "stable", roles: "笔试" },
+      { name: "面试结构化表达", heat: 88, trend: "up", roles: "面试翻盘关键" },
+      { name: "时政热点积累", heat: 86, trend: "up", roles: "常识+申论素材" },
+      { name: "常识判断", heat: 85, trend: "stable", roles: "笔试" },
+      { name: "公共基础知识", heat: 78, trend: "stable", roles: "事业编/三支一扶" },
+      { name: "公文写作", heat: 74, trend: "up", roles: "申论贯彻/上岸后" },
+      { name: "计算机操作", heat: 62, trend: "up", roles: "岗位技能要求" },
+    ],
+  },
+  {
+    key: "jiuye",
+    label: "求职就业",
+    basis: "基于 2024-2025 全行业招聘市场需求",
+    skills: [
+      { name: "沟通表达", heat: 92, trend: "stable", roles: "全行业通用" },
+      { name: "Excel/数据分析", heat: 90, trend: "stable", roles: "职能/运营/市场" },
+      { name: "AI 工具应用", heat: 89, trend: "up", roles: "全行业提效" },
+      { name: "简历与面试", heat: 88, trend: "stable", roles: "求职基本功" },
+      { name: "英语", heat: 82, trend: "down", roles: "外企/跨境/大厂" },
+      { name: "Python", heat: 80, trend: "up", roles: "数据/自动化/财务" },
+      { name: "新媒体运营", heat: 75, trend: "up", roles: "内容/市场岗" },
+      { name: "项目管理", heat: 73, trend: "stable", roles: "互联网/制造业" },
+      { name: "PPT/演示设计", heat: 70, trend: "stable", roles: "咨询/汇报场景" },
+      { name: "SQL", heat: 68, trend: "up", roles: "运营/产品/数据岗" },
+    ],
+  },
+  {
+    key: "tech",
+    label: "互联网技术",
+    basis: "基于 2024-2025 互联网技术岗招聘趋势",
+    skills: [
+      { name: "Python", heat: 98, trend: "up", roles: "后端/数据/AI" },
+      { name: "JavaScript", heat: 95, trend: "stable", roles: "前端/全栈" },
+      { name: "React", heat: 90, trend: "up", roles: "前端" },
+      { name: "TypeScript", heat: 88, trend: "up", roles: "前端/全栈" },
+      { name: "Java", heat: 85, trend: "stable", roles: "后端/Android" },
+      { name: "SQL", heat: 82, trend: "stable", roles: "数据/后端" },
+      { name: "Docker", heat: 78, trend: "up", roles: "运维/后端" },
+      { name: "AWS", heat: 75, trend: "up", roles: "运维/后端" },
+      { name: "Vue", heat: 72, trend: "stable", roles: "前端" },
+      { name: "Go", heat: 70, trend: "up", roles: "后端" },
+      { name: "Node.js", heat: 68, trend: "stable", roles: "全栈" },
+      { name: "Kubernetes", heat: 65, trend: "up", roles: "运维" },
+      { name: "Machine Learning", heat: 62, trend: "up", roles: "AI/数据" },
+      { name: "Flutter", heat: 55, trend: "stable", roles: "移动端" },
+      { name: "Rust", heat: 50, trend: "up", roles: "系统编程" },
+    ],
+  },
+  {
+    key: "campus",
+    label: "在校通用",
+    basis: "基于在校生评奖保研与实习求职基础能力",
+    skills: [
+      { name: "英语四六级", heat: 90, trend: "stable", roles: "毕业/保研硬门槛" },
+      { name: "专业成绩 GPA", heat: 88, trend: "stable", roles: "保研/奖学金" },
+      { name: "实习经历积累", heat: 85, trend: "up", roles: "秋招/春招敲门砖" },
+      { name: "AI 辅助学习", heat: 83, trend: "up", roles: "效率/信息处理" },
+      { name: "Office 办公技能", heat: 80, trend: "stable", roles: "课业/实习通用" },
+      { name: "时间管理", heat: 78, trend: "stable", roles: "多线任务平衡" },
+      { name: "演讲/展示表达", heat: 76, trend: "up", roles: "课堂展示/答辩" },
+      { name: "团队协作", heat: 74, trend: "stable", roles: "小组项目/社团" },
+      { name: "论文/报告写作", heat: 72, trend: "stable", roles: "课程论文/毕设" },
+      { name: "竞赛与证书", heat: 70, trend: "stable", roles: "保研加分/简历" },
+    ],
+  },
 ];
+
+const HOT_TAB_STORAGE_KEY = "skills:hot-track";
+const HOT_MARKS_STORAGE_KEY = "skills:hot-marks";
 
 type TechMark = "want" | "mastered" | null;
 
@@ -73,38 +160,69 @@ function TrendIcon({ trend }: { trend: TechTrend }) {
 }
 
 function HotTechnologiesCard() {
-  // 用户标记：技能名 → 标记状态
-  const [marks, setMarks] = useState<Record<string, TechMark>>({});
+  const [trackKey, setTrackKey] = useState<string>(IDENTITY_TRACKS[0].key);
+  // 用户标记：身份 → (技能名 → 标记状态)，按身份分开存储并持久化
+  const [marksByTrack, setMarksByTrack] = useState<Record<string, Record<string, TechMark>>>({});
 
-  const cycleMark = (name: string) => {
-    setMarks((prev) => {
-      const current = prev[name] ?? null;
-      const next: TechMark =
-        current === null ? "want" : current === "want" ? "mastered" : null;
-      const updated = { ...prev };
-      if (next === null) {
-        delete updated[name];
-      } else {
-        updated[name] = next;
+  useEffect(() => {
+    try {
+      const savedTab = localStorage.getItem(HOT_TAB_STORAGE_KEY);
+      if (savedTab && IDENTITY_TRACKS.some((t) => t.key === savedTab)) {
+        setTrackKey(savedTab);
       }
-      return updated;
-    });
+      const savedMarks = localStorage.getItem(HOT_MARKS_STORAGE_KEY);
+      if (savedMarks) setMarksByTrack(JSON.parse(savedMarks));
+    } catch {
+      // 本地缓存损坏时静默降级为初始状态
+    }
+  }, []);
+
+  const track = IDENTITY_TRACKS.find((t) => t.key === trackKey) ?? IDENTITY_TRACKS[0];
+  const marks = marksByTrack[track.key] ?? {};
+
+  const persist = (next: Record<string, Record<string, TechMark>>) => {
+    setMarksByTrack(next);
+    try {
+      localStorage.setItem(HOT_MARKS_STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      // 忽略存储失败（隐私模式等）
+    }
   };
 
-  const wantCount = Object.values(marks).filter((m) => m === "want").length;
-  const masteredCount = Object.values(marks).filter((m) => m === "mastered").length;
+  const cycleMark = (name: string) => {
+    const current = marks[name] ?? null;
+    const next: TechMark = current === null ? "want" : current === "want" ? "mastered" : null;
+    const updated = { ...marks };
+    if (next === null) {
+      delete updated[name];
+    } else {
+      updated[name] = next;
+    }
+    persist({ ...marksByTrack, [track.key]: updated });
+  };
+
+  const switchTrack = (key: string) => {
+    setTrackKey(key);
+    try {
+      localStorage.setItem(HOT_TAB_STORAGE_KEY, key);
+    } catch {
+      // 忽略存储失败
+    }
+  };
+
+  const markValues = Object.values(marks);
+  const wantCount = markValues.filter((m) => m === "want").length;
+  const masteredCount = markValues.filter((m) => m === "mastered").length;
 
   return (
     <div className="card p-5">
-      <div className="flex items-center justify-between mb-1">
+      <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <Flame className="h-4 w-4 text-orange-500 shrink-0" />
           <h2 className="font-semibold text-ink-800 text-sm">
             技能热度榜
           </h2>
-          <span className="text-xs text-ink-400">
-            · 基于 2024-2025 招聘市场趋势
-          </span>
+          <span className="text-xs text-ink-400">· {track.basis}</span>
         </div>
         <div className="flex items-center gap-3 text-xs">
           <span className="flex items-center gap-1 text-brand-600">
@@ -117,12 +235,30 @@ function HotTechnologiesCard() {
           </span>
         </div>
       </div>
+      {/* 身份切换：不同身份需要的能力不同，各赛道榜单与标记互相独立 */}
+      <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+        {IDENTITY_TRACKS.map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => switchTrack(t.key)}
+            className={cn(
+              "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+              t.key === track.key
+                ? "bg-brand-600 text-white"
+                : "bg-ink-50 text-ink-600 hover:bg-ink-100",
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
       <p className="text-xs text-ink-400 mb-3">
-        点击技能标记为「想学 → 已掌握 → 取消」，热度指数反映市场招聘需求强度
+        点击技能标记为「想学 → 已掌握 → 取消」，热度指数反映该身份下的能力需求强度
       </p>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-        {HOT_TECHNOLOGIES.map((tech) => {
+        {track.skills.map((tech) => {
           const mark = marks[tech.name] ?? null;
           return (
             <button
