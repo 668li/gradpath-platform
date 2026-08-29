@@ -1,0 +1,8 @@
+# 备案前的 IP 灰度启动覆盖（备案通过配置 TLS 后请删除本文件的使用）：
+#   docker compose -f docker-compose.prod.yml -f docker-compose.grey.yml up -d
+# 作用：把 nginx 从 127.0.0.1:80 改绑到公网 0.0.0.0:80，允许 http://<服务器IP> 直接访问。
+# 注意：！override 标签使 ports 列表整体替换而非合并（需 docker compose v2.24+，服务器已预装）。
+services:
+  nginx:
+    ports: !override
+      - "80:80"

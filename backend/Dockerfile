@@ -1,6 +1,10 @@
 # ---- Stage 1: builder (install build deps, build full wheel) ----
 FROM python:3.11-slim AS builder
 
+# 国内服务器构建时可传国内 PyPI 镜像：--build-arg PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
+ARG PIP_INDEX_URL=https://pypi.org/simple
+ENV PIP_INDEX_URL=${PIP_INDEX_URL}
+
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -15,6 +19,9 @@ RUN pip install --no-cache-dir "build==1.2.2.post1" && \
 
 # ---- Stage 2: production (runtime only, no dev deps) ----
 FROM python:3.11-slim AS production
+
+ARG PIP_INDEX_URL=https://pypi.org/simple
+ENV PIP_INDEX_URL=${PIP_INDEX_URL}
 
 RUN groupadd -r gradpath && useradd --no-log-init -r -g gradpath gradpath
 
