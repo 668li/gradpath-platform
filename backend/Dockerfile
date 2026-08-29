@@ -4,6 +4,11 @@ FROM python:3.11-slim AS builder
 # 国内服务器构建时可传国内 PyPI 镜像：--build-arg PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
 ARG PIP_INDEX_URL=https://pypi.org/simple
 ENV PIP_INDEX_URL=${PIP_INDEX_URL}
+# 同理可传国内 debian 镜像：--build-arg DEBIAN_MIRROR=http://mirrors.tencentyun.com
+ARG DEBIAN_MIRROR=""
+# DEBIAN_MIRROR 为空时不改源（CI/海外构建不受影响）
+RUN if [ -n "$DEBIAN_MIRROR" ]; then \
+        sed -i "s|http://deb.debian.org|$DEBIAN_MIRROR|g" /etc/apt/sources.list.d/debian.sources; fi
 
 WORKDIR /app
 
