@@ -9,6 +9,8 @@
 - chat 链路：服务器无 Key 时配置 BYOK 后可成功对话
 """
 
+import asyncio
+import uuid
 from unittest.mock import patch
 
 from app.core.secret_crypto import decrypt_secret
@@ -244,3 +246,118 @@ def _create_conv(client, auth_headers):
     resp = client.post("/api/chat/conversations", headers=auth_headers, json={"title": "BYOK 测试"})
     assert resp.status_code == 201, resp.text
     return resp.json()
+
+
+# ======================================================================
+# 请求上下文 BYOK：中间件注入 user_id → AIOrchestrator 自动使用用户 Key
+# ======================================================================
+class TestContextOverride:
+    def test_orchestrator_uses_context_override(self, client, auth_headers, db_session, monkeypatch):
+        """ContextVar 有 user_id 且用户配了 BYOK → Orchestrator 自动用用户 Key。"""
+        from app.core import llm_context
+        from app.services import ai_orchestrator as orch_mod
+
+        # Orchestrator 内部用 SessionLocal 独立查库，测试中指到内存会话
+        monkeypatch.setattr("app.database.SessionLocal", lambda: db_session)
+
+        client.put("/api/user-llm-config", headers=auth_headers, json=VALID)
+        cfg = db_session.query(UserLLMConfig).one()
+        user_id = cfg.user_id
+
+        token = llm_context.current_llm_user_id.set(user_id)
+        try:
+            orch = orch_mod.AIOrchestrator()
+            assert orch.ai_service.api_key == FAKE_KEY
+            assert orch.ai_service.model == VALID["model"]
+        finally:
+            llm_context.current_llm_user_id.reset(token)
+
+    def test_orchestrator_server_default_without_context(self, db_session, monkeypatch):
+        """无上下文（Celery/未登录）→ 服务器默认。"""
+        from app.core import llm_context
+        from app.services import ai_orchestrator as orch_mod
+        from app.services import ai_service
+
+        monkeypatch.setattr(ai_service.settings, "LLM_API_KEY", "server-key")
+        monkeypatch.setattr(ai_service.settings, "LLM_MODEL", "glm-4")
+
+        token = llm_context.current_llm_user_id.set(None)
+        try:
+            orch = orch_mod.AIOrchestrator()
+            assert orch.ai_service.api_key == "server-key"
+            assert orch.ai_service.model == "glm-4"
+        finally:
+            llm_context.current_llm_user_id.reset(token)
+
+    def test_orchestrator_explicit_args_beat_context(self, db_session):
+        """显式传参最优先（chat 链路已显式解析）。"""
+        from app.core import llm_context
+        from app.services import ai_orchestrator as orch_mod
+
+        token = llm_context.current_llm_user_id.set(uuid.uuid4())
+        try:
+            orch = orch_mod.AIOrchestrator(api_key="explicit", model="m1")
+            assert orch.ai_service.api_key == "explicit"
+            assert orch.ai_service.model == "m1"
+        finally:
+            llm_context.current_llm_user_id.reset(token)
+
+    def test_orchestrator_user_without_config_falls_back(self, db_session, monkeypatch):
+        """上下文有 user_id 但该用户没配 BYOK → 服务器默认。"""
+        from app.core import llm_context
+        from app.services import ai_orchestrator as orch_mod
+        from app.services import ai_service
+
+        monkeypatch.setattr(ai_service.settings, "LLM_API_KEY", "server-key")
+        token = llm_context.current_llm_user_id.set(uuid.uuid4())
+        try:
+            orch = orch_mod.AIOrchestrator()
+            assert orch.ai_service.api_key == "server-key"
+        finally:
+            llm_context.current_llm_user_id.reset(token)
+
+    def test_middleware_sets_context_for_request(self, client, auth_headers, db_session):
+        """带 Bearer token 的 scope 经中间件后 ContextVar 注入登录用户 id。"""
+        from app.core import llm_context
+
+        client.put("/api/user-llm-config", headers=auth_headers, json=VALID)
+        cfg = db_session.query(UserLLMConfig).one()
+
+        token_str = auth_headers["Authorization"].split(" ", 1)[1]
+        captured = {}
+
+        async def dummy_app(scope, receive, send):
+            captured["uid"] = llm_context.current_llm_user_id.get()
+
+        mw = llm_context.LLMUserContextMiddleware(dummy_app)
+        scope = {
+            "type": "http",
+            "headers": [(b"authorization", f"Bearer {token_str}".encode())],
+        }
+        asyncio.run(mw(scope, None, None))
+        assert captured["uid"] == cfg.user_id
+
+    def test_middleware_invalid_token_leaves_context_empty(self):
+        from app.core import llm_context
+
+        captured = {}
+
+        async def dummy_app(scope, receive, send):
+            captured["uid"] = llm_context.current_llm_user_id.get()
+
+        mw = llm_context.LLMUserContextMiddleware(dummy_app)
+        scope = {"type": "http", "headers": [(b"authorization", b"Bearer garbage")]}
+        asyncio.run(mw(scope, None, None))
+        assert captured["uid"] is None
+
+    def test_middleware_non_http_passthrough(self):
+        from app.core import llm_context
+
+        called = {}
+
+        async def dummy_app(scope, receive, send):
+            called["type"] = scope["type"]
+
+        mw = llm_context.LLMUserContextMiddleware(dummy_app)
+        asyncio.run(mw({"type": "websocket"}, None, None))
+        assert called["type"] == "websocket"

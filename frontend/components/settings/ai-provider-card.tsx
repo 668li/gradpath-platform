@@ -138,8 +138,9 @@ export function AiProviderCard() {
             <KeyRound className="h-5 w-5 text-brand-500" /> AI 对话服务
           </h2>
           <p className="mt-1 text-sm text-ink-500">
-            填入你自己的大模型 API Key 即可启用 <Link href="/chat" className="text-brand-600 hover:underline">AI 对话</Link>。
-            Key 加密存储，费用由你的供应商账户承担。
+            填入你自己的大模型 API Key 即可启用全站 AI 功能：
+            <Link href="/chat" className="text-brand-600 hover:underline">AI 对话</Link>
+            、导师人设、决策分析、研招情报等。Key 加密存储，费用由你的供应商账户承担。
           </p>
         </div>
         {saved && saved.is_enabled && (

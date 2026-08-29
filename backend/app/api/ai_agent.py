@@ -67,7 +67,8 @@ def _sanitize_prompt_input(text: str) -> str:
 # ---------------------------------------------------------------------------
 # Singleton services (created once at import time)
 # ---------------------------------------------------------------------------
-_ai = AIOrchestrator()
+# _ai 不能模块级实例化：AIOrchestrator 在构造时解析 BYOK 上下文，
+# import 期创建会永远绑定服务器默认 Key；改为每请求构造。
 _web_search = WebSearchService()
 
 
@@ -457,7 +458,7 @@ async def agent_endpoint(
 请基于以上资料回答用户问题。"""
 
     try:
-        answer = await _ai.chat(system_prompt, user_prompt, timeout=30)
+        answer = await AIOrchestrator().chat(system_prompt, user_prompt, timeout=30)
         # B8: LLM 调用成功后递增当日配额计数
         await incr_llm_quota(user.id)
     except AICircuitBreakerOpenError as e:

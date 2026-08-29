@@ -108,6 +108,12 @@ app.add_middleware(
 # 安全响应头中间件 — 注入 X-Frame-Options / X-Content-Type-Options / HSTS 等
 app.add_middleware(SecurityHeadersMiddleware)
 
+# BYOK LLM 用户上下文中间件 — 从 Bearer token 解出 user_id 注入 ContextVar，
+# AIOrchestrator 据此自动使用用户自带的 LLM 配置（纯 ASGI，无 DB 查询）
+from app.core.llm_context import LLMUserContextMiddleware
+
+app.add_middleware(LLMUserContextMiddleware)
+
 # Gzip 压缩中间件 — 响应体 > 500 bytes 时自动 gzip 压缩，减少传输体积 ~60-70%
 app.add_middleware(GZipMiddleware, minimum_size=500)
 

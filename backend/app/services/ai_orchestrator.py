@@ -34,10 +34,40 @@ class AIOrchestrator:
         model: str | None = None,
         base_url: str | None = None,
     ):
-        # BYOK：用户自带的 Key/模型/端点优先，未传时回退服务器默认
+        # BYOK：显式传入的参数最优先；其次按请求上下文中的用户解析其自带配置；
+        # 都没有时回退服务器默认（config.py）
+        if api_key is None:
+            override = self._resolve_context_override()
+            if override is not None:
+                api_key, model, base_url = override.api_key, override.model, override.base_url
         self.ai_service = AIService(api_key=api_key, model=model, base_url=base_url)
         self.cache = cache
         self.circuit_breaker = ai_circuit_breaker
+
+    @staticmethod
+    def _resolve_context_override():
+        """从请求上下文（中间件注入的 user_id）解析用户自带 LLM 配置。
+
+        独立短会话查询（单条索引查询，代价远小于一次 LLM 调用）；
+        任何失败都静默回退服务器默认，绝不影响请求。
+        """
+        from app.core.llm_context import current_llm_user_id
+
+        user_id = current_llm_user_id.get()
+        if user_id is None:
+            return None
+        try:
+            from app.database import SessionLocal
+            from app.services.user_llm_service import resolve_user_llm_override
+
+            db = SessionLocal()
+            try:
+                return resolve_user_llm_override(db, user_id)
+            finally:
+                db.close()
+        except Exception as e:
+            logger.warning("BYOK 上下文解析失败，回退服务器默认: %s", e)
+            return None
 
     @staticmethod
     def _cache_key(system_prompt: str, user_prompt: str, timeout: int) -> str:
