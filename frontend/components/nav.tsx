@@ -240,7 +240,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           <p className="font-display text-lg font-semibold text-paper-50 leading-tight tracking-tight">
             GradPath
           </p>
-          <p className="text-[11px] text-ink-400 leading-tight tracking-wide">
+          <p className="text-[11px] text-ink-200 leading-tight tracking-wide">
             职径 · 职业轨迹
           </p>
         </div>
@@ -270,7 +270,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         <Link
           href="/notifications"
           onClick={onNavigate}
-          className="relative flex min-h-[44px] w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-ink-300 hover:bg-ink-700/40 hover:text-paper-100 transition-colors"
+          className="relative flex min-h-[44px] w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-ink-200 hover:bg-ink-700/40 hover:text-paper-100 transition-colors"
         >
           <Bell className="h-[18px] w-[18px] text-ink-400" strokeWidth={1.8} />
           通知
@@ -283,7 +283,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         <Link
           href="/search"
           onClick={onNavigate}
-          className="flex min-h-[44px] w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-ink-300 hover:bg-ink-700/40 hover:text-paper-100 transition-colors"
+          className="flex min-h-[44px] w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-ink-200 hover:bg-ink-700/40 hover:text-paper-100 transition-colors"
         >
           <Search className="h-[18px] w-[18px] text-ink-400" strokeWidth={1.8} />
           搜索
@@ -292,7 +292,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           type="button"
           onClick={handleOpenPalette}
           data-track-id="nav:command-palette"
-          className="group flex min-h-[44px] w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-ink-300 hover:bg-ink-700/40 hover:text-paper-100 transition-colors"
+          className="group flex min-h-[44px] w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-ink-200 hover:bg-ink-700/40 hover:text-paper-100 transition-colors"
           aria-label="打开命令面板"
         >
           <CommandIcon
@@ -301,11 +301,11 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           />
           <span className="flex-1 text-left">命令面板</span>
           <kbd
-            className="inline-flex h-5 items-center gap-0.5 rounded border border-ink-600 bg-ink-900/40 px-1.5 text-[10px] font-medium text-ink-400"
+            className="inline-flex h-5 items-center gap-0.5 rounded border border-ink-600 bg-ink-900/40 px-1.5 text-[10px] font-medium text-ink-200"
             aria-hidden="true"
           >
             {isMac ? "⌘" : "Ctrl"}
-            <span className="text-ink-500">K</span>
+            <span className="text-ink-200">K</span>
           </kbd>
         </button>
         <div className="flex items-center gap-2.5 rounded-lg px-3 py-2">
@@ -316,14 +316,14 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             <p className="truncate text-sm font-medium text-paper-100">
               {user?.name ?? "用户"}
             </p>
-            <p className="truncate text-[11px] text-ink-400">
+            <p className="truncate text-[11px] text-ink-200">
               {user?.email ?? ""}
             </p>
           </div>
         </div>
         <button
           onClick={handleLogout}
-          className="flex min-h-[44px] w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-ink-400 hover:bg-red-500/10 hover:text-red-400 transition-colors"
+          className="flex min-h-[44px] w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-ink-200 hover:bg-red-500/10 hover:text-red-400 transition-colors"
         >
           <LogOut className="h-[18px] w-[18px]" strokeWidth={1.8} />
           退出登录
@@ -364,7 +364,7 @@ function NavSectionItem({
   return (
     <div>
       {showSectionHeader && (
-        <p className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-wider text-ink-500">
+        <p className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-wider text-ink-200">
           {section.section}
         </p>
       )}
@@ -446,7 +446,7 @@ function NavSectionItem({
                   "group relative flex min-h-[40px] items-center gap-3 rounded-lg pl-10 pr-3 py-2 text-[13px] font-medium transition-all duration-200",
                   active
                     ? "bg-brand-500/10 text-brand-300"
-                    : "text-ink-400 hover:bg-ink-700/40 hover:text-paper-100",
+                    : "text-ink-200 hover:bg-ink-700/40 hover:text-paper-100",
                 )}
               >
                 {active && (

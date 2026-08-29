@@ -61,15 +61,15 @@ const SALARY_CHART_GRID_COLOR = "var(--color-paper-200, #f5f3ec)";
 
 // ===== Tab 配置 =====
 const tabs = [
-  { id: "intel", label: "公司情报", icon: Building2, color: "text-blue-500", desc: "查看你保存的公司情报，了解加班强度、裁员风险、晋升前景等关键信息" },
-  { id: "salary", label: "薪资查询", icon: DollarSign, color: "text-green-500", desc: "查询各公司岗位薪资数据，对比分析薪资分布" },
-  { id: "positioning", label: "求职定位", icon: Target, color: "text-purple-500", desc: "基于你的背景进行竞争力评估，获取冲刺/目标/保底公司推荐" },
-  { id: "employment", label: "就业数据", icon: BarChart3, color: "text-amber-500", desc: "查看各高校就业率、行业分布、去向统计等数据" },
-  { id: "dark-knowledge", label: "暗知识", icon: Lightbulb, color: "text-rose-500", desc: "求职过程中那些没人告诉你的关键经验与教训" },
-  { id: "interview", label: "面经库", icon: MessageSquare, color: "text-cyan-500", desc: "海量面试经验分享，助你充分准备每一场面试" },
-  { id: "bright-outlook", label: "朝阳职业", icon: Sparkles, color: "text-orange-500", desc: "Bright Outlook 朝阳职业：高增长、快速扩张与新兴岗位标记，帮你瞄准正在变热的赛道" },
-  { id: "salary-slice", label: "薪资透视", icon: DollarSign, color: "text-emerald-500", desc: "按岗位 × 城市查看薪资四分位分布，校准期望薪资" },
-  { id: "company-reviews", label: "公司口碑", icon: Users, color: "text-indigo-500", desc: "已入职校友匿名评价：优点、缺点与推荐度" },
+  { id: "intel", label: "公司情报", icon: Building2, color: "text-blue-700", desc: "查看你保存的公司情报，了解加班强度、裁员风险、晋升前景等关键信息" },
+  { id: "salary", label: "薪资查询", icon: DollarSign, color: "text-green-700", desc: "查询各公司岗位薪资数据，对比分析薪资分布" },
+  { id: "positioning", label: "求职定位", icon: Target, color: "text-purple-700", desc: "基于你的背景进行竞争力评估，获取冲刺/目标/保底公司推荐" },
+  { id: "employment", label: "就业数据", icon: BarChart3, color: "text-amber-700", desc: "查看各高校就业率、行业分布、去向统计等数据" },
+  { id: "dark-knowledge", label: "暗知识", icon: Lightbulb, color: "text-rose-700", desc: "求职过程中那些没人告诉你的关键经验与教训" },
+  { id: "interview", label: "面经库", icon: MessageSquare, color: "text-cyan-700", desc: "海量面试经验分享，助你充分准备每一场面试" },
+  { id: "bright-outlook", label: "朝阳职业", icon: Sparkles, color: "text-orange-700", desc: "Bright Outlook 朝阳职业：高增长、快速扩张与新兴岗位标记，帮你瞄准正在变热的赛道" },
+  { id: "salary-slice", label: "薪资透视", icon: DollarSign, color: "text-emerald-700", desc: "按岗位 × 城市查看薪资四分位分布，校准期望薪资" },
+  { id: "company-reviews", label: "公司口碑", icon: Users, color: "text-indigo-700", desc: "已入职校友匿名评价：优点、缺点与推荐度" },
   { id: "inspiration", label: "灵感案例", icon: Sparkles, color: "text-pink-500", desc: "精选 Trae Work 论坛 96 个就业类创意方案，获取产品灵感" },
 ];
 

@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 
 from app.api.notifications import push_notification
 from app.core.deps import get_admin_user, get_current_user
+from app.core.rate_limit import rate_limits
 from app.database import get_db
 from app.main import limiter
 from app.models.comment import Comment
@@ -151,7 +152,7 @@ def _apply_moderation(
 
 
 @router.post("/reports", response_model=ReportVO, status_code=status.HTTP_201_CREATED)
-@limiter.limit("5/minute")
+@limiter.limit(rate_limits.REPORT_CREATE)
 def create_report(
     request: Request,
     response: Response,

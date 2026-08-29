@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
 from app.core.exceptions import BusinessError, NotFoundError, RateLimitExceededError
+from app.core.rate_limit import rate_limits
 from app.database import get_db
 from app.main import limiter
 from app.models.user import User
@@ -48,7 +49,7 @@ router = APIRouter(tags=["AI 与外部数据"])
     "/api/ai/decision-advice",
     response_model=DecisionAdviceResponse,
 )
-@limiter.limit("10/minute")
+@limiter.limit(rate_limits.AI_DECISION_ADVICE)
 async def decision_advice(
     request: Request,
     response: Response,
@@ -118,7 +119,7 @@ async def decision_advice(
     "/api/ai/growth-insight",
     response_model=GrowthInsightResponse,
 )
-@limiter.limit("10/minute")
+@limiter.limit(rate_limits.AI_GROWTH_INSIGHT)
 async def growth_insight(
     request: Request,
     response: Response,

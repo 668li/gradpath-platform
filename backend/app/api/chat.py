@@ -18,6 +18,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response,
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
+from app.core.rate_limit import rate_limits
 from app.database import get_db
 from app.main import limiter
 from app.models.user import User
@@ -94,7 +95,7 @@ def get_messages(
     "/conversations/{conversation_id}/messages",
     response_model=SendMessageResponse,
 )
-@limiter.limit("20/minute")
+@limiter.limit(rate_limits.AI_CHAT)
 async def post_message(
     request: Request,
     response: Response,

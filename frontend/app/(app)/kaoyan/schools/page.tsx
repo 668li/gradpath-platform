@@ -239,7 +239,7 @@ export default function SchoolsPage() {
                 className="pl-9"
               />
             </div>
-            <Select value={degreeType} onChange={(e) => setDegreeType(e.target.value)}>
+            <Select aria-label="学位类型" value={degreeType} onChange={(e) => setDegreeType(e.target.value)}>
               <option value="">全部学位类型</option>
               <option value="学术学位">学术学位</option>
               <option value="专业学位">专业学位</option>

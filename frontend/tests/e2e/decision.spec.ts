@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { registerAndLandOnDashboard, uniqueEmail } from "./helpers";
 
 /**
  * 决策助手完整流端到端测试
@@ -115,21 +116,8 @@ test.describe("决策助手完整流", () => {
       });
     });
 
-    // 注册并跳过 onboarding（每个 test 用独立邮箱，避免共享 TEST_EMAIL 二次注册 409）
-    await page.goto("/register");
-    const email = `e2e-decision-${Date.now()}-${Math.floor(Math.random() * 10000)}@test.com`;
-    await page.fill('input[name="name"]', "E2E Decision User");
-    await page.fill('input[type="email"]', email);
-    await page.fill('input[type="password"]', "Test1234!");
-    await page.check('input[name="agree_terms"]');
-    await page.click('button[type="submit"]');
-
-    await page.waitForURL(/\/(onboarding|dashboard)/, { timeout: 15000 });
-    const url = page.url();
-    if (url.includes("/onboarding")) {
-      await page.locator('[data-testid="onboarding-skip-button"]').click();
-      await page.waitForURL("**/dashboard**", { timeout: 15000 });
-    }
+    // 造号走 API（UI 注册在 CI 批量跑下有 hydration 竞态与限流 429 风险）
+    await registerAndLandOnDashboard(page, "E2E Decision User", uniqueEmail("decision"));
   });
 
   test("访问 /decision-lab 看到新建决策按钮", async ({ page }) => {

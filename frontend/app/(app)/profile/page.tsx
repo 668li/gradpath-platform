@@ -39,12 +39,12 @@ const SKILL_LABELS: { key: keyof Pick<CareerProfile, "technical_skill" | "commun
 type ProfileTab = "profile" | "decisions" | "learning-resources" | "achievements" | "notifications" | "search";
 
 const profileTabs: { id: ProfileTab; label: string; icon: typeof UserCircle; href: string; color: string }[] = [
-  { id: "profile", label: "职业画像", icon: UserCircle, href: "/profile", color: "text-brand-500" },
-  { id: "decisions", label: "决策记录", icon: ClipboardList, href: "/decisions", color: "text-blue-500" },
-  { id: "learning-resources", label: "学习资源", icon: Library, href: "/learning-resources", color: "text-green-500" },
-  { id: "achievements", label: "成就徽章", icon: Award, href: "/achievements", color: "text-amber-500" },
-  { id: "notifications", label: "通知", icon: Bell, href: "/notifications", color: "text-red-500" },
-  { id: "search", label: "搜索", icon: Search, href: "/search", color: "text-purple-500" },
+  { id: "profile", label: "职业画像", icon: UserCircle, href: "/profile", color: "text-brand-600" },
+  { id: "decisions", label: "决策记录", icon: ClipboardList, href: "/decisions", color: "text-blue-700" },
+  { id: "learning-resources", label: "学习资源", icon: Library, href: "/learning-resources", color: "text-green-700" },
+  { id: "achievements", label: "成就徽章", icon: Award, href: "/achievements", color: "text-amber-700" },
+  { id: "notifications", label: "通知", icon: Bell, href: "/notifications", color: "text-red-700" },
+  { id: "search", label: "搜索", icon: Search, href: "/search", color: "text-purple-700" },
 ];
 
 type ProfileTopTab = "profile" | "diagnosis" | "achievements" | "notifications";
@@ -442,13 +442,14 @@ function SkillSlider({
       </div>
       <input
         type="range"
+        aria-label={label}
         min={1}
         max={5}
         value={value}
         onChange={(e) => onChange(parseInt(e.target.value))}
         className="w-full h-2 bg-paper-200 rounded-full appearance-none cursor-pointer accent-brand-600"
       />
-      <div className="flex justify-between mt-0.5 text-[10px] text-ink-300">
+      <div className="flex justify-between mt-0.5 text-[10px] text-ink-400">
         <span>初学</span>
         <span>入门</span>
         <span>熟悉</span>

@@ -958,9 +958,11 @@ def _build_school_analysis(
                     "ratio": ratio,
                     "competition": competition,
                     "intel": _school_intel_summary(db, uni),
-                    "source_url": (row.data_sources or [None])[0]
-                    if isinstance(row.data_sources, list)
-                    else None,
+                    "source_url": (
+                        (row.data_sources or [None])[0]
+                        if isinstance(row.data_sources, list)
+                        else None
+                    ),
                 }
             )
     else:
@@ -981,9 +983,11 @@ def _build_school_analysis(
                     "ratio": ratio,
                     "competition": "中等",
                     "intel": _school_intel_summary(db, uni),
-                    "source_url": (row.data_sources or [None])[0]
-                    if isinstance(row.data_sources, list)
-                    else None,
+                    "source_url": (
+                        (row.data_sources or [None])[0]
+                        if isinstance(row.data_sources, list)
+                        else None
+                    ),
                 }
             )
 

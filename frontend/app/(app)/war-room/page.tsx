@@ -49,10 +49,10 @@ function WarRoomPageContent() {
   );
 
   const tabs = [
-    { id: "grad" as const, label: "考研作战室", icon: GraduationCap, color: "text-blue-500" },
-    { id: "civil" as const, label: "考公作战室", icon: Landmark, color: "text-red-500" },
-    { id: "career" as const, label: "求职作战室", icon: Briefcase, color: "text-green-500" },
-    { id: "interview" as const, label: "面经库", icon: Briefcase, color: "text-amber-500" },
+    { id: "grad" as const, label: "考研作战室", icon: GraduationCap, color: "text-blue-700" },
+    { id: "civil" as const, label: "考公作战室", icon: Landmark, color: "text-red-700" },
+    { id: "career" as const, label: "求职作战室", icon: Briefcase, color: "text-green-700" },
+    { id: "interview" as const, label: "面经库", icon: Briefcase, color: "text-amber-700" },
   ];
 
   return (
@@ -262,8 +262,9 @@ function GradWarRoom() {
             </div>
           </div>
           <div className="md:w-40">
-            <label className="block text-xs font-medium text-ink-500 mb-1">院校层次</label>
+            <label htmlFor="grad-tier-select" className="block text-xs font-medium text-ink-500 mb-1">院校层次</label>
             <select
+              id="grad-tier-select"
               value={filterTier}
               onChange={(e) => setFilterTier(e.target.value)}
               className="w-full rounded-lg border border-paper-200 px-3 py-2 text-sm focus:border-brand-400 focus:outline-none"
@@ -684,8 +685,9 @@ function CivilWarRoom() {
             </div>
           </div>
           <div className="md:w-40">
-            <label className="block text-xs font-medium text-ink-500 mb-1">机关层级</label>
+            <label htmlFor="civil-tier-select" className="block text-xs font-medium text-ink-500 mb-1">机关层级</label>
             <select
+              id="civil-tier-select"
               value={filterTier}
               onChange={(e) => setFilterTier(e.target.value)}
               className="w-full rounded-lg border border-paper-200 px-3 py-2 text-sm focus:border-red-400 focus:outline-none"
@@ -1079,8 +1081,9 @@ function CareerWarRoom() {
             </div>
           </div>
           <div className="md:w-48">
-            <label className="block text-xs font-medium text-ink-500 mb-1">行业</label>
+            <label htmlFor="industry-filter-select" className="block text-xs font-medium text-ink-500 mb-1">行业</label>
             <select
+              id="industry-filter-select"
               value={filterIndustry}
               onChange={(e) => setFilterIndustry(e.target.value)}
               data-testid="industry-select"

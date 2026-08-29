@@ -266,6 +266,10 @@ jobs:
           DATABASE_URL=postgresql://gradpath:gradpath_test@localhost:5432/gradpath_test \
           ENVIRONMENT=development \
           SECRET_KEY=ci-test-secret-key-min-32-characters-long-aaaa-bbbb \
+          # E2E 每个 test 都注册新账号，放宽按 IP 的认证类限流避免 429
+          RATE_LIMIT_AUTH_REGISTER=1000/minute \
+          RATE_LIMIT_AUTH_LOGIN=1000/minute \
+          RATE_LIMIT_AUTH_REFRESH=1000/minute \
           uvicorn app.main:app --host 0.0.0.0 --port 8001 &
           # 不用 wait-on：其 CLI 版本仍发 HEAD（/health 只有 GET 会 405），改用 curl GET 轮询就绪
           for i in $(seq 1 30); do

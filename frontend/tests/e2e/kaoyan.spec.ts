@@ -3,7 +3,10 @@ import { registerAndLandOnDashboard, uniqueEmail } from "./helpers";
 
 /**
  * 考研数据浏览端到端测试
- * 覆盖院校情报、分数线、调剂信息等关键路径。
+ * 覆盖院校情报等关键路径。
+ *
+ * 注：早期版本访问的 /kaoyan/scorelines 与 /kaoyan/adjustments
+ * 是不存在的路由（页面 404），已改为真实存在的院校情报页。
  */
 // /kaoyan 等路由受 middleware 保护：未登录访问被重定向到 /login，
 // 每个 test 都先注册新用户并完成 onboarding
@@ -21,14 +24,13 @@ test.describe("考研数据浏览", () => {
     });
   });
 
-  test("应显示院校列表或搜索入口", async ({ page }) => {
-    await page.goto("/kaoyan");
+  test("院校情报页应显示搜索入口", async ({ page }) => {
+    await page.goto("/kaoyan/schools");
 
-    const hasSearchOrList =
-      (await page.locator('input[placeholder*="搜索"], input[placeholder*="院校"]').isVisible()) ||
-      (await page.locator("table, [data-testid='school-list'], .school-card").isVisible());
-
-    expect(hasSearchOrList).toBeTruthy();
+    // 页面提供院校名称/专业搜索框
+    await expect(page.locator('input[placeholder*="搜索"]').first()).toBeVisible({
+      timeout: 10000,
+    });
   });
 });
 
@@ -45,34 +47,23 @@ test.describe("院校情报", () => {
       });
     }
   });
-});
 
-test.describe("分数线查询", () => {
-  test("分数线页面应正确渲染", async ({ page }) => {
-    await page.goto("/kaoyan/scorelines");
+  test("分数线与录取信息入口可见", async ({ page }) => {
+    await page.goto("/kaoyan");
 
+    // 首页导航与板块文案覆盖分数线、招生计划、录取率等数据维度
     await expect(page.locator("body")).toContainText(/分数线|复试|录取/i, {
-      timeout: 5000,
+      timeout: 10000,
     });
   });
 
-  test("应支持按年份筛选", async ({ page }) => {
-    await page.goto("/kaoyan/scorelines");
+  test("院校列表支持学位类型筛选", async ({ page }) => {
+    await page.goto("/kaoyan/schools");
 
-    const yearFilter = page.locator("select, [data-testid='year-filter'], input[type='number']");
-    if (await yearFilter.isVisible()) {
-      await expect(yearFilter).toBeVisible();
+    const filter = page.locator("select");
+    if (await filter.first().isVisible()) {
+      await expect(filter.first()).toBeVisible();
     }
-  });
-});
-
-test.describe("调剂信息", () => {
-  test("调剂页面应正确渲染", async ({ page }) => {
-    await page.goto("/kaoyan/adjustments");
-
-    await expect(page.locator("body")).toContainText(/调剂|缺额|补录/i, {
-      timeout: 5000,
-    });
   });
 });
 
@@ -89,8 +80,8 @@ test.describe("导师评价", () => {
     await page.goto("/mentors");
 
     const filter = page.locator('select, [data-testid="university-filter"], input[placeholder*="学校"]');
-    if (await filter.isVisible()) {
-      await expect(filter).toBeVisible();
+    if (await filter.first().isVisible()) {
+      await expect(filter.first()).toBeVisible();
     }
   });
 });

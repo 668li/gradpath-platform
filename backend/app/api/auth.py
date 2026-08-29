@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user, invalidate_user_cache
 from app.core.exceptions import BusinessError
+from app.core.rate_limit import rate_limits
 from app.core.security import create_access_token, verify_refresh_token
 from app.database import get_db
 from app.main import limiter
@@ -37,7 +38,7 @@ audit_logger = logging.getLogger("gradpath.audit")
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-@limiter.limit("3/minute")
+@limiter.limit(rate_limits.AUTH_REGISTER)
 def register_endpoint(
     request: Request,
     response: Response,
@@ -67,7 +68,7 @@ def register_endpoint(
 
 
 @router.post("/login", response_model=TokenResponse)
-@limiter.limit("5/minute")
+@limiter.limit(rate_limits.AUTH_LOGIN)
 def login_endpoint(
     request: Request,
     response: Response,
@@ -123,7 +124,7 @@ def update_me_endpoint(
 
 
 @router.post("/refresh", response_model=RefreshResponse)
-@limiter.limit("10/minute")
+@limiter.limit(rate_limits.AUTH_REFRESH)
 def refresh_token(
     request: Request,
     response: Response,
@@ -142,7 +143,7 @@ def refresh_token(
 
 # ===== 密码重置 =====
 @router.post("/forgot-password", response_model=MessageResponse)
-@limiter.limit("3/minute")
+@limiter.limit(rate_limits.AUTH_FORGOT_PASSWORD)
 def forgot_password(
     request: Request,
     response: Response,
@@ -174,7 +175,7 @@ def forgot_password(
 
 
 @router.post("/reset-password", response_model=MessageResponse)
-@limiter.limit("5/minute")
+@limiter.limit(rate_limits.AUTH_RESET_PASSWORD)
 def reset_password(
     request: Request,
     response: Response,
@@ -195,7 +196,7 @@ def reset_password(
 
 
 @router.post("/change-password", response_model=MessageResponse)
-@limiter.limit("5/minute")
+@limiter.limit(rate_limits.AUTH_CHANGE_PASSWORD)
 def change_password_endpoint(
     request: Request,
     response: Response,

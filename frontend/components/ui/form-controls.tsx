@@ -56,7 +56,7 @@ export function Field({
     <label className={cn("block", className)}>
       <span className="mb-1.5 block text-sm font-medium text-ink-700">
         {label}
-        {required && <span className="ml-0.5 text-red-500">*</span>}
+        {required && <span className="ml-0.5 text-red-600">*</span>}
       </span>
       {children}
       {hint && <span className="mt-1 block text-xs text-ink-400">{hint}</span>}
