@@ -28,8 +28,14 @@ class AIOrchestrator:
       因此本层的 ``retry`` 参数仅控制「整体调用」的额外重试。
     """
 
-    def __init__(self):
-        self.ai_service = AIService()
+    def __init__(
+        self,
+        api_key: str | None = None,
+        model: str | None = None,
+        base_url: str | None = None,
+    ):
+        # BYOK：用户自带的 Key/模型/端点优先，未传时回退服务器默认
+        self.ai_service = AIService(api_key=api_key, model=model, base_url=base_url)
         self.cache = cache
         self.circuit_breaker = ai_circuit_breaker
 

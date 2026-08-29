@@ -36,6 +36,12 @@ export { aiApi, careerIntelApi, civilServiceIntelApi, proactiveInsightsApi } fro
 export { gamificationApi, streaksApi } from "./gamification";
 export { exportV2Api } from "./exportV2";
 export { chatApi } from "./chat";
+export { userLlmConfigApi } from "./user-llm-config";
+export type {
+  UserLlmConfigResponse,
+  UserLlmConfigSaveRequest,
+  UserLlmVerifyResponse,
+} from "./user-llm-config";
 export { knowledgeApi } from "./knowledge";
 export { careerPlansApi, careerProfileApi, planTemplatesApi } from "./career";
 export { assessmentApi, lifeWheelApi } from "./assessment";

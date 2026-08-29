@@ -29,6 +29,7 @@ from app.models.retrospective import Retrospective
 from app.models.skill_node import SkillNode
 from app.models.user import User
 from app.services.ai_orchestrator import AIOrchestrator
+from app.services.user_llm_service import LLMOverride
 from app.services.knowledge_service import search_articles
 from app.skills.registry import find_skill_instance, get_skill_instance
 
@@ -310,10 +311,12 @@ async def send_message(
     conversation_id: UUID,
     content: str,
     skill_hint: str | None = None,
+    llm_override: LLMOverride | None = None,
 ) -> dict:
     """发送消息并获取 AI 回复。
 
-    流程见模块 docstring。Raises AIServiceNotConfigured if LLM_API_KEY empty.
+    流程见模块 docstring。Raises AIServiceNotConfigured if no LLM key.
+    ``llm_override`` 为用户自带配置（BYOK）；未传时自动从 DB 解析。
 
     Returns:
         {content, skill_used, career_plan}
@@ -388,7 +391,20 @@ async def send_message(
     user_prompt = history_block + skill.build_user_prompt(content)
 
     # 8. 调用 LLM（AIOrchestrator 在 key 为空时抛 AIServiceNotConfigured）
-    orchestrator = AIOrchestrator()
+    # BYOK：用户自带配置优先，未显式传入时从 DB 解析（停用/未配置返回 None → 服务器默认）
+    if llm_override is None:
+        from app.services.user_llm_service import resolve_user_llm_override
+
+        llm_override = resolve_user_llm_override(db, user_id)
+    if llm_override is not None:
+        logger.info("chat 使用用户自带 LLM 配置: provider_key=BYOK model=%s", llm_override.model)
+        orchestrator = AIOrchestrator(
+            api_key=llm_override.api_key,
+            model=llm_override.model,
+            base_url=llm_override.base_url,
+        )
+    else:
+        orchestrator = AIOrchestrator()
     raw = await orchestrator.chat(system_prompt=system_prompt, user_prompt=user_prompt, timeout=30)
 
     # 9. Skill 解析输出

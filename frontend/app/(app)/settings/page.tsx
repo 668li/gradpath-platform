@@ -9,6 +9,7 @@ import {
   UserCircle,
 } from "lucide-react";
 import { authApi, exportV2Api, useApi } from "@/lib/api";
+import { AiProviderCard } from "@/components/settings/ai-provider-card";
 import { LoadingState } from "@/components/ui/empty";
 import { Button, Field, Input, Textarea } from "@/components/ui/form-controls";
 import { useToast } from "@/components/ui/toast";
@@ -145,6 +146,9 @@ export default function SettingsPage() {
           </Button>
         </div>
       </section>
+
+      {/* AI 对话服务（BYOK） */}
+      <AiProviderCard />
 
       {/* 数据导出 */}
       <section className="card p-6 space-y-4">

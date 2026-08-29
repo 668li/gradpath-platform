@@ -99,6 +99,7 @@ from app.models.user_badge import UserBadge
 
 # 决策副驾驶护城河
 from app.models.user_memory import MemoryFactType, UserMemoryFact
+from app.models.user_llm_config import UserLLMConfig
 from app.models.user_setting import UserSetting
 
 __all__ = [
@@ -139,6 +140,7 @@ __all__ = [
     "UserBadge",
     "GrowthInsight",
     "UserSetting",
+    "UserLLMConfig",
     # Phase 11 AI 职业管家
     "KnowledgeArticle",
     "Conversation",

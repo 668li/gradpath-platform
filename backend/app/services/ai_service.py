@@ -62,12 +62,21 @@ def _build_retry_config() -> AsyncRetrying:
 
 
 class AIService:
-    """LLM 调用服务（OpenAI 兼容接口）。"""
+    """LLM 调用服务（OpenAI 兼容接口）。
 
-    def __init__(self):
-        self.api_key = settings.LLM_API_KEY
-        self.model = settings.LLM_MODEL
-        self.base_url = settings.LLM_BASE_URL
+    支持按用户覆盖配置（BYOK）：传入 api_key/model/base_url 时优先生效，
+    否则回退 config.py 的服务器默认值。
+    """
+
+    def __init__(
+        self,
+        api_key: str | None = None,
+        model: str | None = None,
+        base_url: str | None = None,
+    ):
+        self.api_key = api_key or settings.LLM_API_KEY
+        self.model = model or settings.LLM_MODEL
+        self.base_url = base_url or settings.LLM_BASE_URL
 
     def _check_config(self):
         if not self.api_key:

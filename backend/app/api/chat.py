@@ -116,18 +116,27 @@ async def post_message(
     conv = get_conversation(db, user.id, conversation_id)
     if not conv:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="对话不存在")
-    # B8: 配额检查（Redis 不可用时降级到不限制）
+    # BYOK：用户自带 Key 时跳过服务器配额（费用由用户自己的供应商承担）
+    from app.services.user_llm_service import resolve_user_llm_override
+
+    llm_override = resolve_user_llm_override(db, user.id)
+    if llm_override is None:
+        # B8: 配额检查（Redis 不可用时降级到不限制）
+        try:
+            await check_llm_quota(user.id)
+        except AILLMQuotaExceeded:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="今日 AI 调用次数已达上限，请明日再试",
+            )
     try:
-        await check_llm_quota(user.id)
-    except AILLMQuotaExceeded:
-        raise HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail="今日 AI 调用次数已达上限，请明日再试",
+        result = await send_message(
+            db, user.id, conversation_id, body.content, body.skill_hint,
+            llm_override=llm_override,
         )
-    try:
-        result = await send_message(db, user.id, conversation_id, body.content, body.skill_hint)
         # B8: 调用成功后递增配额计数
-        await incr_llm_quota(user.id)
+        if llm_override is None:
+            await incr_llm_quota(user.id)
     except AILLMQuotaExceeded:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -146,7 +155,7 @@ async def post_message(
     except AIServiceNotConfigured:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="AI 服务未配置（LLM_API_KEY 缺失）",
+            detail="AI 服务未配置：请在「设置 → AI 对话服务」填入你自己的 API Key",
         )
     except httpx.TimeoutException:
         raise HTTPException(

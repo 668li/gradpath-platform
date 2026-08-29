@@ -1,0 +1,231 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import {
+  Bot,
+  CheckCircle2,
+  ExternalLink,
+  KeyRound,
+  Loader2,
+  Save,
+  Trash2,
+  XCircle,
+} from "lucide-react";
+import { Button, Field, Input, Select } from "@/components/ui/form-controls";
+import { useToast } from "@/components/ui/toast";
+import { userLlmConfigApi } from "@/lib/api";
+import type { UserLlmConfigResponse } from "@/lib/api/user-llm-config";
+import { cn } from "@/lib/utils";
+
+/** OpenAI 兼容供应商标识与默认端点 */
+const PROVIDERS: { value: string; label: string; baseUrl: string; model: string }[] = [
+  { value: "zhipu", label: "智谱 GLM", baseUrl: "https://open.bigmodel.cn/api/paas/v4/", model: "glm-4-flash" },
+  { value: "deepseek", label: "DeepSeek", baseUrl: "https://api.deepseek.com/v1", model: "deepseek-chat" },
+  { value: "moonshot", label: "月之暗面 Kimi", baseUrl: "https://api.moonshot.cn/v1", model: "moonshot-v1-8k" },
+  { value: "qwen", label: "阿里通义千问", baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1", model: "qwen-plus" },
+  { value: "openai", label: "OpenAI", baseUrl: "https://api.openai.com/v1", model: "gpt-4o-mini" },
+  { value: "custom", label: "自定义（OpenAI 兼容）", baseUrl: "", model: "" },
+];
+
+export function AiProviderCard() {
+  const toast = useToast();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const [saved, setSaved] = useState<UserLlmConfigResponse | null>(null);
+  const [provider, setProvider] = useState("zhipu");
+  const [baseUrl, setBaseUrl] = useState(PROVIDERS[0].baseUrl);
+  const [model, setModel] = useState(PROVIDERS[0].model);
+  const [apiKey, setApiKey] = useState("");
+  const [verifyResult, setVerifyResult] = useState<{ ok: boolean; message: string } | null>(null);
+
+  useEffect(() => {
+    userLlmConfigApi
+      .getConfig()
+      .then((cfg) => {
+        if (cfg) {
+          setSaved(cfg);
+          setProvider(cfg.provider);
+          setBaseUrl(cfg.base_url);
+          setModel(cfg.model);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleProviderChange = (value: string) => {
+    setProvider(value);
+    const preset = PROVIDERS.find((p) => p.value === value);
+    if (preset && preset.baseUrl) {
+      setBaseUrl(preset.baseUrl);
+      setModel(preset.model);
+    }
+  };
+
+  const buildBody = () => ({
+    provider,
+    base_url: baseUrl.trim(),
+    model: model.trim(),
+    api_key: apiKey.trim(),
+    is_enabled: true,
+  });
+
+  const handleVerify = async () => {
+    setVerifying(true);
+    setVerifyResult(null);
+    try {
+      const res = await userLlmConfigApi.verifyConfig(buildBody());
+      setVerifyResult({ ok: res.ok, message: res.latency_ms ? `${res.message}（${res.latency_ms}ms）` : res.message });
+    } catch (e) {
+      const err = e as { message?: string };
+      setVerifyResult({ ok: false, message: err.message || "验证请求失败" });
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const cfg = await userLlmConfigApi.saveConfig(buildBody());
+      setSaved(cfg);
+      setApiKey(""); // 保存后清空明文输入
+      setVerifyResult(null);
+      toast.success("AI 服务配置已保存");
+    } catch (e) {
+      const err = e as { message?: string };
+      toast.error(err.message || "保存失败，请检查填写内容");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm("确认删除已保存的 AI 服务配置？删除后 AI 对话将不可用（除非管理员已配置）。")) return;
+    setDeleting(true);
+    try {
+      await userLlmConfigApi.deleteConfig();
+      setSaved(null);
+      setApiKey("");
+      setVerifyResult(null);
+      toast.success("已删除 AI 服务配置");
+    } catch {
+      toast.error("删除失败");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <section className="card p-6">
+        <div className="flex items-center gap-2 text-sm text-ink-400">
+          <Loader2 className="h-4 w-4 animate-spin" /> 加载 AI 服务配置…
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="card p-6 space-y-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-ink-800">
+            <KeyRound className="h-5 w-5 text-brand-500" /> AI 对话服务
+          </h2>
+          <p className="mt-1 text-sm text-ink-500">
+            填入你自己的大模型 API Key 即可启用 <Link href="/chat" className="text-brand-600 hover:underline">AI 对话</Link>。
+            Key 加密存储，费用由你的供应商账户承担。
+          </p>
+        </div>
+        {saved && saved.is_enabled && (
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-600">
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            已启用 {saved.api_key_masked}
+          </span>
+        )}
+      </div>
+
+      <div className="grid gap-5 sm:grid-cols-2">
+        <Field label="供应商">
+          <Select value={provider} onChange={(e) => handleProviderChange(e.target.value)}>
+            {PROVIDERS.map((p) => (
+              <option key={p.value} value={p.value}>
+                {p.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label="模型名称" hint="如 glm-4-flash / deepseek-chat / gpt-4o-mini">
+          <Input value={model} onChange={(e) => setModel(e.target.value)} maxLength={100} />
+        </Field>
+      </div>
+
+      <Field label="API 地址（Base URL）" hint="OpenAI 兼容接口根地址，一般以 /v1 或 /v4/ 结尾">
+        <Input
+          value={baseUrl}
+          onChange={(e) => setBaseUrl(e.target.value)}
+          placeholder="https://open.bigmodel.cn/api/paas/v4/"
+          maxLength={500}
+        />
+      </Field>
+
+      <Field
+        label="API Key"
+        hint={saved ? "留空表示沿用已保存的 Key（**** 掩码不可见）" : "在供应商控制台创建，仅用于你的对话请求"}
+      >
+        <Input
+          type="password"
+          value={apiKey}
+          onChange={(e) => setApiKey(e.target.value)}
+          placeholder={saved ? `已保存 ${saved.api_key_masked}` : "sk-…"}
+          maxLength={500}
+          autoComplete="off"
+        />
+      </Field>
+
+      {verifyResult && (
+        <p
+          className={cn(
+            "flex items-center gap-1.5 text-xs",
+            verifyResult.ok ? "text-green-600" : "text-red-500",
+          )}
+        >
+          {verifyResult.ok ? <CheckCircle2 className="h-3.5 w-3.5" /> : <XCircle className="h-3.5 w-3.5" />}
+          {verifyResult.message}
+        </p>
+      )}
+
+      <div className="flex flex-wrap justify-end gap-3">
+        {saved && (
+          <Button variant="secondary" loading={deleting} onClick={handleDelete}>
+            <Trash2 className="h-4 w-4" /> 删除配置
+          </Button>
+        )}
+        <Button variant="secondary" loading={verifying} onClick={handleVerify}>
+          测试连接
+        </Button>
+        <Button onClick={handleSave} loading={saving}>
+          <Save className="h-4 w-4" /> 保存配置
+        </Button>
+      </div>
+
+      <p className="flex items-center gap-1 text-xs text-ink-400">
+        <Bot className="h-3.5 w-3.5" />
+        需要 OpenAI 兼容接口（绝大多数国内外供应商都支持）。
+        <a
+          href="https://open.bigmodel.cn/usercenter/apikeys"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-0.5 text-brand-500 hover:underline"
+        >
+          智谱 Key 获取 <ExternalLink className="h-3 w-3" />
+        </a>
+      </p>
+    </section>
+  );
+}
