@@ -361,3 +361,12 @@ class TestContextOverride:
         mw = llm_context.LLMUserContextMiddleware(dummy_app)
         asyncio.run(mw({"type": "websocket"}, None, None))
         assert called["type"] == "websocket"
+
+    def test_base_url_trailing_slash_normalized(self):
+        """BYOK 保存的 base_url 无尾斜杠时，AIService 拼接 URL 必须仍正确。"""
+        from app.services.ai_service import AIService
+
+        svc = AIService(base_url="https://open.bigmodel.cn/api/paas/v4")
+        assert svc.base_url == "https://open.bigmodel.cn/api/paas/v4/"
+        svc2 = AIService(base_url="https://api.deepseek.com/v1/")
+        assert svc2.base_url == "https://api.deepseek.com/v1/"

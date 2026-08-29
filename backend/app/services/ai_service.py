@@ -76,7 +76,8 @@ class AIService:
     ):
         self.api_key = api_key or settings.LLM_API_KEY
         self.model = model or settings.LLM_MODEL
-        self.base_url = base_url or settings.LLM_BASE_URL
+        # BYOK 保存的 base_url 去掉了尾斜杠，这里统一补齐（chat 拼接假定以 / 结尾）
+        self.base_url = (base_url or settings.LLM_BASE_URL).rstrip("/") + "/"
 
     def _check_config(self):
         if not self.api_key:
