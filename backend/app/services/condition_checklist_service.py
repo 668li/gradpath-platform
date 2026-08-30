@@ -174,7 +174,12 @@ def build_kaoyan_conditions(db: Session, program: GradYanzhaoProgram) -> list[Co
         )
         # 单科线可能为 None（业务课二覆盖率仅 74%），为空不生成该条
         if line.politics_score:
-            add("politics", "政治单科线", f"政治 ≥{line.politics_score} 分（{year}）", "politics_score")
+            add(
+                "politics",
+                "政治单科线",
+                f"政治 ≥{line.politics_score} 分（{year}）",
+                "politics_score",
+            )
         if line.foreign_language_score:
             add(
                 "foreign_language",

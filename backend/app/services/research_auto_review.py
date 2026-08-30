@@ -144,9 +144,11 @@ def auto_review_pending(
             {"total": 0, "pass_rate": 0.0, "rejected": 0, "approved": 0},
         )
         rejected = rep.get("rejected", 0)
-        if rejected == 0 and (
-            ext.credibility or ""
-        ) == "official_verified" and rep["total"] >= OFFICIAL_MIN_HISTORY:
+        if (
+            rejected == 0
+            and (ext.credibility or "") == "official_verified"
+            and rep["total"] >= OFFICIAL_MIN_HISTORY
+        ):
             # 官方源快速通道：历史零驳回 + official_verified + 少量历史即放行
             pass
         elif rep["total"] < min_history or rep["pass_rate"] < min_pass_rate:

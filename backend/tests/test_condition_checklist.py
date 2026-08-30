@@ -339,8 +339,12 @@ def test_kaoyan_checklist_generation(client, auth_headers):
     # 考研赛道勾选独立落库
     resp = client.put(
         "/api/condition-checklist/status",
-        json={"position_id": "c" * 32, "exam_source": "kaoyan",
-              "condition_key": "total_score", "status": "in_progress"},
+        json={
+            "position_id": "c" * 32,
+            "exam_source": "kaoyan",
+            "condition_key": "total_score",
+            "status": "in_progress",
+        },
         headers=auth_headers,
     )
     assert resp.status_code == 200
