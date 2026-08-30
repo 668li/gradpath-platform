@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
 from app.database import get_db
+from app.models.grad_intel import GradYanzhaoProgram
 from app.models.gwy_position import GwyPosition
 from app.models.gwy_province_position import GwyProvincePosition
 from app.models.user import User
@@ -30,19 +31,27 @@ router = APIRouter(prefix="/api/condition-checklist", tags=["报考条件账本"
 def _load_position(db: Session, position_id: str, exam_source: str):
     if exam_source == "province":
         return db.get(GwyProvincePosition, position_id)
+    if exam_source == "kaoyan":
+        return db.get(GradYanzhaoProgram, position_id)
     return db.get(GwyPosition, position_id)
 
 
-def _valid_condition_keys(position) -> set[str]:
+def _valid_condition_keys(db: Session, position) -> set[str]:
     if isinstance(position, GwyProvincePosition):
         return {c.key for c in build_province_conditions(position)}
+    if isinstance(position, GradYanzhaoProgram):
+        return {c.key for c in build_kaoyan_conditions(db, position)}
     return {c.key for c in build_conditions(position)}
 
 
 @router.get("/{position_id}", response_model=ConditionChecklistResponse)
 def get_checklist(
     position_id: str,
-    source: str = Query("national", pattern="^(national|province)$", description="职位赛道"),
+    source: str = Query(
+        "national",
+        pattern="^(national|province|kaoyan)$",
+        description="赛道：national=国考 / province=省考 / kaoyan=考研",
+    ),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
@@ -63,7 +72,7 @@ def update_condition_status(
     position = _load_position(db, data.position_id, data.exam_source)
     if not position:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "职位不存在")
-    if data.condition_key not in _valid_condition_keys(position):
+    if data.condition_key not in _valid_condition_keys(db, position):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "条件键不在该职位的条件清单中")
     try:
         upsert_status(
@@ -77,4 +86,3 @@ def update_condition_status(
     except ValueError as e:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(e)) from e
     return build_checklist_response(db, user.id, position)
-

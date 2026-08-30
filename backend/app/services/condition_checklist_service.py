@@ -12,6 +12,7 @@ import re
 
 from sqlalchemy.orm import Session
 
+from app.models.grad_intel import GradScorelineRecord, GradYanzhaoProgram
 from app.models.gwy_position import GwyPosition
 from app.models.gwy_province_position import GwyProvincePosition
 from app.models.user_condition_status import (
@@ -137,6 +138,73 @@ def build_province_conditions(position: GwyProvincePosition) -> list[ConditionIt
     return items
 
 
+def _find_kaoyan_scoreline(
+    db: Session, university_name: str, major_name: str
+) -> GradScorelineRecord | None:
+    """按 院校+专业 取最新一年的有效复试线（total_score_line=0 为占位脏数据，须 >0）。"""
+    return (
+        db.query(GradScorelineRecord)
+        .filter(
+            GradScorelineRecord.university_name == university_name,
+            GradScorelineRecord.major_name == major_name,
+            GradScorelineRecord.total_score_line > 0,
+        )
+        .order_by(GradScorelineRecord.year.desc())
+        .first()
+    )
+
+
+def build_kaoyan_conditions(db: Session, program: GradYanzhaoProgram) -> list[ConditionItem]:
+    """考研条件清单 — 目标院校专业的复试线达标项 + 报名要求。
+
+    数据画像（2026-08-30 审计）：分数线记录 811 条中 721 条有效（89%），
+    政治/外语/业务课单科线覆盖 88%/89%/74%，年份 2022-2025；
+    招研专业 150 条，admission_requirements 100% 有值。
+    """
+    items: list[ConditionItem] = []
+
+    def add(key: str, label: str, required: str | None, source: str) -> None:
+        if not required or not str(required).strip():
+            return
+        text = str(required).strip()
+        if text in _VACUOUS_VALUES:
+            return
+        items.append(ConditionItem(key=key, label=label, required=text, source_field=source))
+
+    line = _find_kaoyan_scoreline(db, program.university_name, program.major_name)
+    if line:
+        year = line.year
+        add(
+            "total_score",
+            "复试总分线",
+            f"初试 ≥{line.total_score_line} 分（{year} 复试线）",
+            "total_score_line",
+        )
+        add("politics", "政治单科线", f"政治 ≥{line.politics_score} 分（{year}）", "politics_score")
+        add(
+            "foreign_language",
+            "外语单科线",
+            f"外语 ≥{line.foreign_language_score} 分（{year}）",
+            "foreign_language_score",
+        )
+        add(
+            "business_1",
+            "业务课一单科线",
+            f"业务课一 ≥{line.business_1_score} 分（{year}）",
+            "business_1_score",
+        )
+        add(
+            "business_2",
+            "业务课二单科线",
+            f"业务课二 ≥{line.business_2_score} 分（{year}）",
+            "business_2_score",
+        )
+
+    add("admission", "报名要求", program.admission_requirements, "admission_requirements")
+
+    return items
+
+
 def _is_vacuous(required: str) -> bool:
     """要求原文为『不限/无限制』类时，该条件对任何人自动视为已满足。"""
     return required in _VACUOUS_VALUES
@@ -217,21 +285,34 @@ def upsert_status(
 
 
 def build_checklist_response(
-    db: Session, user_id: str, position: GwyPosition | GwyProvincePosition
+    db: Session,
+    user_id: str,
+    position: GwyPosition | GwyProvincePosition | GradYanzhaoProgram,
 ) -> ConditionChecklistResponse:
     """国考/省考职位行 → 清单+状态+完成率。按模型类型分派规则。"""
-    if isinstance(position, GwyProvincePosition):
+    if isinstance(position, GradYanzhaoProgram):
+        exam_source = "kaoyan"
+        conditions = build_kaoyan_conditions(db, position)
+    elif isinstance(position, GwyProvincePosition):
         exam_source = "province"
         conditions = build_province_conditions(position)
     else:
         exam_source = "national"
         conditions = build_conditions(position)
     statuses = get_status_map(db, user_id, position.id, exam_source)
+    if isinstance(position, GradYanzhaoProgram):
+        position_code = position.department
+        position_name = f"{position.university_name}·{position.major_name}"
+        dept_name = position.university_name
+    else:
+        position_code = position.position_code
+        position_name = position.position_name
+        dept_name = position.dept_name
     return ConditionChecklistResponse(
         position_id=position.id,
-        position_code=position.position_code,
-        position_name=position.position_name,
-        dept_name=position.dept_name,
+        position_code=position_code,
+        position_name=position_name,
+        dept_name=dept_name,
         year=position.year,
         exam_source=exam_source,
         conditions=conditions,
@@ -255,7 +336,9 @@ def get_latest_condition_summary(db: Session, user_id: str) -> dict | None:
     )
     if not latest:
         return None
-    if latest.exam_source == "province":
+    if latest.exam_source == "kaoyan":
+        position = db.get(GradYanzhaoProgram, latest.position_id)
+    elif latest.exam_source == "province":
         position = db.get(GwyProvincePosition, latest.position_id)
     else:
         position = db.get(GwyPosition, latest.position_id)
@@ -271,4 +354,3 @@ def get_latest_condition_summary(db: Session, user_id: str) -> dict | None:
         "met": checklist.progress.met,
         "total": checklist.progress.total,
     }
-
