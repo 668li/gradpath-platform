@@ -252,7 +252,9 @@ def _create_conv(client, auth_headers):
 # 请求上下文 BYOK：中间件注入 user_id → AIOrchestrator 自动使用用户 Key
 # ======================================================================
 class TestContextOverride:
-    def test_orchestrator_uses_context_override(self, client, auth_headers, db_session, monkeypatch):
+    def test_orchestrator_uses_context_override(
+        self, client, auth_headers, db_session, monkeypatch
+    ):
         """ContextVar 有 user_id 且用户配了 BYOK → Orchestrator 自动用用户 Key。"""
         from app.core import llm_context
         from app.services import ai_orchestrator as orch_mod

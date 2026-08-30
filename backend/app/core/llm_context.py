@@ -22,9 +22,7 @@ from app.core.security import decode_token
 logger = logging.getLogger(__name__)
 
 # 当前请求的用户 id（仅用于 LLM 配置解析；None = 无请求上下文或未认证）
-current_llm_user_id: ContextVar[UUID | None] = ContextVar(
-    "current_llm_user_id", default=None
-)
+current_llm_user_id: ContextVar[UUID | None] = ContextVar("current_llm_user_id", default=None)
 
 
 class LLMUserContextMiddleware:
