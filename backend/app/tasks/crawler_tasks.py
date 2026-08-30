@@ -176,6 +176,19 @@ def run_scheduled_crawler_task(source_name: str):
             except Exception as e:
                 logger.warning("定时任务数据更新通知失败: %s", e)
 
+            # 三闸门自动放行（来源信誉+质量分+红线）：新数据不再滞留审核队列。
+            # 独立会话 + 全量异常兜底，绝不影响采集主流程。
+            try:
+                from app.database import SessionLocal as _SL
+                from app.services.research_auto_review import auto_review_pending
+
+                with _SL() as review_db:
+                    review_stats = auto_review_pending(review_db)
+                if review_stats.get("auto_approved") or review_stats.get("chsi_rejected"):
+                    logger.info("定时爬虫 %s 自动放行: %s", source_name, review_stats)
+            except Exception as e:
+                logger.warning("自动放行失败（不影响采集）: %s", e)
+
         logger.info("定时爬虫 %s 完成: %s", source_name, result)
         return result
 

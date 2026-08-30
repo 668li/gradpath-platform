@@ -552,6 +552,16 @@ async def _run_scheduled_crawler(source_name: str):
         if result.get("stored", 0) > 0:
             await _notify_data_update(source_name, result.get("stored", 0))
 
+            # 三闸门自动放行（与 Celery 路径一致）；失败不影响采集
+            try:
+                from app.services.research_auto_review import auto_review_pending
+
+                review_stats = auto_review_pending(db)
+                if review_stats.get("auto_approved") or review_stats.get("chsi_rejected"):
+                    logger.info("定时爬虫 %s 自动放行: %s", source_name, review_stats)
+            except Exception as e:  # noqa: BLE001
+                logger.warning("自动放行失败（不影响采集）: %s", e)
+
         logger.info(f"定时爬虫 {source_name} 完成: {result}")
     except Exception as e:
         logger.error(f"定时爬虫 {source_name} 失败: {e}")

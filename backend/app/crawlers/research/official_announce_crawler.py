@@ -81,6 +81,22 @@ def _extract_content_div(html: str, content_cls: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+# 常见高校 CMS 正文容器候选：新增栏目时 content_cls 可留空，按序自动探测
+_CONTENT_CLS_CANDIDATES = ["v_news_content", "TRS_Editor", "news_content", "article", "content", "zoom"]
+
+# 模板正文过短视为未命中（列表页摘要/空容器）
+_MIN_CONTENT_LEN = 80
+
+
+def _auto_detect_content_cls(html: str) -> str:
+    """按候选序探测正文容器 class，返回第一个能取出足够文本的。"""
+    for cls in _CONTENT_CLS_CANDIDATES:
+        text = _extract_content_div(html, cls)
+        if len(text) >= _MIN_CONTENT_LEN:
+            return cls
+    return ""
+
+
 def _title_from_html(html: str, suffix: str = "") -> str:
     """从 <title> 标签提取标题，去掉站点后缀。"""
     m = re.search(r"<title>(.*?)</title>", html or "", re.S)
@@ -153,13 +169,19 @@ class OfficialAnnounceCrawler(BaseCrawler):
         return raw_items
 
     def _fetch_detail(self, url: str, content_cls: str, title_suffix: str) -> tuple[str, str]:
-        """抓取详情页，返回 (页面标题, 正文)；失败降级为列表信息。"""
+        """抓取详情页，返回 (页面标题, 正文)；失败降级为列表信息。
+
+        content_cls 为空时按常见 CMS 容器候选自动探测（新增栏目零配置成本）。
+        """
         try:
             resp = self._request(url)
             resp.encoding = "utf-8"
             html = resp.text
             title = _title_from_html(html, title_suffix)
-            body = _extract_content_div(html, content_cls) if content_cls else ""
+            if content_cls:
+                body = _extract_content_div(html, content_cls)
+            else:
+                body = _auto_detect_content_cls(html)
             return title, body
         except Exception as e:
             self.stats["errors"] += 1
