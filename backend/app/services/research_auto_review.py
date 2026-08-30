@@ -43,7 +43,9 @@ def _score(ext: ExternalResearchItem) -> int:
     meta = ext.external_meta or {}
     if ext.item_type == "experience_post":
         tags = [t for t in (meta.get("tags") or []) if isinstance(t, str)]
-        is_promotion, _conf, promo_reason = detect_promotion(ext.title or "", ext.content or "", tags)
+        is_promotion, _conf, promo_reason = detect_promotion(
+            ext.title or "", ext.content or "", tags
+        )
         detail = score_experience_item_detailed(
             title=ext.title or "",
             content=ext.content or "",

@@ -82,7 +82,14 @@ def _extract_content_div(html: str, content_cls: str) -> str:
 
 
 # 常见高校 CMS 正文容器候选：新增栏目时 content_cls 可留空，按序自动探测
-_CONTENT_CLS_CANDIDATES = ["v_news_content", "TRS_Editor", "news_content", "article", "content", "zoom"]
+_CONTENT_CLS_CANDIDATES = [
+    "v_news_content",
+    "TRS_Editor",
+    "news_content",
+    "article",
+    "content",
+    "zoom",
+]
 
 # 模板正文过短视为未命中（列表页摘要/空容器）
 _MIN_CONTENT_LEN = 80

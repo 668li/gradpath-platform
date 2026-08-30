@@ -166,5 +166,7 @@ def test_dry_run_makes_no_changes(seeded):
     )
     stats = auto_review_pending(seeded, dry_run=True)
     assert stats["auto_approved"] == 1
-    pending = seeded.query(ReviewQueueItem).filter(ReviewQueueItem.review_status == "PENDING").count()
+    pending = (
+        seeded.query(ReviewQueueItem).filter(ReviewQueueItem.review_status == "PENDING").count()
+    )
     assert pending >= 1  # dry-run 未改动

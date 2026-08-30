@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import {
   Compass,
+  Crosshair,
   History as TimelineIcon,
   Network,
   ClipboardList,
@@ -372,6 +373,42 @@ export default function DashboardPage() {
           hint={data.latest_retrospective?.title ?? "暂无"}
         />
       </div>
+
+      {/* 报考条件账本摘要 — 北极星「条件完成率」的看板视图 */}
+      {data.condition_ledger && (
+        <section className="card p-5 animate-fade-in">
+          <div className="mb-2 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Crosshair className="h-5 w-5 text-brand-600" />
+              <h2 className="text-lg font-semibold text-ink-800">报考条件账本</h2>
+            </div>
+            <Link href="/skills" className="text-xs text-brand-600 hover:underline">
+              去核对
+            </Link>
+          </div>
+          <p className="text-sm text-ink-800">
+            {data.condition_ledger.dept_name} · {data.condition_ledger.position_name}
+            <span className="ml-2 text-[11px] text-ink-400">
+              {data.condition_ledger.exam_source === "province" ? "省考" : "国考"}{" "}
+              {data.condition_ledger.position_code}
+            </span>
+          </p>
+          <div className="mt-2 flex items-center gap-3">
+            <div className="h-2 flex-1 overflow-hidden rounded-full bg-paper-200">
+              <div
+                className="h-full rounded-full bg-brand-500 transition-all"
+                style={{ width: `${data.condition_ledger.rate}%` }}
+              />
+            </div>
+            <span className="shrink-0 text-sm font-bold text-brand-600">
+              {data.condition_ledger.rate}%
+            </span>
+            <span className="shrink-0 text-[11px] text-ink-400">
+              已满足 {data.condition_ledger.met}/{data.condition_ledger.total}
+            </span>
+          </div>
+        </section>
+      )}
 
       {/* 今日行动 — AI 从三中心聚合的今日优先级助推 */}
       <section className="card p-5 animate-fade-in">
