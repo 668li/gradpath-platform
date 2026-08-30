@@ -152,6 +152,115 @@ def test_checklist_404_for_unknown_position(client, auth_headers):
     assert resp.status_code == 404
 
 
+def _make_province_position(**overrides):
+    from app.models.gwy_province_position import GwyProvincePosition
+
+    base = dict(
+        id="b" * 32,
+        year=2026,
+        province="广东",
+        position_code="119000125001",
+        position_name="一级警员",
+        dept_name="深圳市公安局",
+        education_req="本科以上",
+        degree_req="学士以上",
+        major_req_undergrad="法学类（A0301）、公安学类（A0306）",
+        grassroots_exp_req="否",
+        psych_test="是",
+        fresh_grad_only="应届毕业生",
+        other_requirements="中共党员",
+    )
+    base.update(overrides)
+    return GwyProvincePosition(**base)
+
+
+def _seed_row(client, row):
+    from app.main import app
+
+    session = None
+    for override in app.dependency_overrides.values():
+        session = next(override())
+        break
+    assert session is not None, "get_db override 未注册"
+    session.add(row)
+    session.commit()
+
+
+def test_province_checklist_generation(client, auth_headers):
+    """省考清单：三档专业合并、是/否型列按值生成、other_requirements 短文本成条。"""
+    _seed_row(client, _make_province_position())
+
+    resp = client.get(
+        "/api/condition-checklist/" + "b" * 32 + "?source=province",
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    assert data["exam_source"] == "province"
+
+    keys = {c["key"] for c in data["conditions"]}
+    assert "education" in keys and "degree" in keys and "major" in keys
+    # grassroots=否 → 不生成；psych_test=是 → 生成；应届限制 → 生成
+    assert "grassroots" not in keys
+    assert "psych_test" in keys
+    assert "fresh_grad" in keys
+    # other_requirements=中共党员 → 其他要求条目
+    assert "other_req" in keys
+    merged = next(c for c in data["conditions"] if c["key"] == "major")
+    assert "本科：" in merged["required"]
+
+    # 省考赛道勾选独立落库
+    resp = client.put(
+        "/api/condition-checklist/status",
+        json={
+            "position_id": "b" * 32,
+            "exam_source": "province",
+            "condition_key": "education",
+            "status": "met",
+        },
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    assert resp.json()["statuses"]["education"] == "met"
+
+    # 国考表里没有这个 id → 404（赛道隔离）
+    resp = client.get(
+        "/api/condition-checklist/" + "b" * 32,
+        headers=auth_headers,
+    )
+    assert resp.status_code == 404
+
+
+def test_latest_condition_summary(client, auth_headers):
+    """摘要取最近核对的目标职位：完成率与赛道正确。"""
+    from app.database import get_db
+    from app.main import app
+    from app.services.condition_checklist_service import get_latest_condition_summary
+
+    _seed_row(client, _make_position())  # a*32 国考
+
+    session = next(app.dependency_overrides[get_db]())
+    headers = auth_headers
+
+    # 无勾选 → None
+    resp = client.get("/api/auth/me", headers=headers)
+    user_id = resp.json()["id"]
+    assert get_latest_condition_summary(session, user_id) is None
+
+    # 勾选一条 → 摘要出现，rate = 1/total
+    client.put(
+        "/api/condition-checklist/status",
+        json={"position_id": "a" * 32, "condition_key": "education", "status": "met"},
+        headers=headers,
+    )
+    summary = get_latest_condition_summary(session, user_id)
+    assert summary is not None
+    assert summary["exam_source"] == "national"
+    assert summary["position_code"] == "0401267001"
+    assert summary["met"] >= 1
+    assert 0 < summary["rate"] <= 100
+
+
 def test_checklist_requires_auth(client):
     resp = client.get("/api/condition-checklist/" + "a" * 32)
     assert resp.status_code in (401, 403)

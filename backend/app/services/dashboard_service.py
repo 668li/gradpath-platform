@@ -110,10 +110,16 @@ def get_overview(db: Session, user_id: UUID) -> dict:
         )
     timeline.sort(key=lambda x: x["date"], reverse=True)
 
+    # 条件账本摘要：最近核对的目标职位与完成率（北极星「条件完成率」的看板视图）
+    from app.services.condition_checklist_service import get_latest_condition_summary
+
+    condition_ledger = get_latest_condition_summary(db, str(user_id))
+
     result = {
         "decisions_count": len(decisions),
         "events_count": len(events),
         "skills_count": skills_count,
+        "condition_ledger": condition_ledger,
         "retrospectives_count": len(retros),
         "latest_decision": latest_decision,
         "recent_events": recent_events,

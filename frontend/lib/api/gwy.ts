@@ -2,6 +2,7 @@ import type {
   GwyPositionListResponse,
   GwyPositionResponse,
   GwyPositionStatsResponse,
+  GwyProvincePositionListResponse,
   GwyScoreLineListResponse,
   GwyScoreLineStatsResponse,
 } from "@/types";
@@ -60,5 +61,27 @@ export const gwyScoreLinesApi = {
   stats: (params?: { year?: number }) =>
     request<GwyScoreLineStatsResponse>(
       `/api/gwy-score-lines/stats${buildQuery((params as Record<string, string | number | undefined | null>) || {})}`,
+    ),
+};
+
+/**
+ * 省考职位 API（公开只读）。
+ *
+ * 对应后端 /api/gwy-province-positions：各省考试录用公务员职位表（首例广东 2026）。
+ */
+export const provincePositionsApi = {
+  list: (params?: {
+    page?: number;
+    page_size?: number;
+    q?: string;
+    province?: string;
+    education_req?: string;
+    exam_region?: string;
+    fresh_grad_only?: string;
+    sheet_name?: string;
+    year?: number;
+  }) =>
+    request<GwyProvincePositionListResponse>(
+      `/api/gwy-province-positions${buildQuery((params as Record<string, string | number | undefined | null>) || {})}`,
     ),
 };

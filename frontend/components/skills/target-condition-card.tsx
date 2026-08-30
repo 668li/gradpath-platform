@@ -11,15 +11,22 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Crosshair, Search, RotateCcw, X } from "lucide-react";
 import { conditionChecklistApi } from "@/lib/api";
-import { gwyPositionsApi } from "@/lib/api/gwy";
+import { gwyPositionsApi, provincePositionsApi } from "@/lib/api/gwy";
 import { cn } from "@/lib/utils";
 import type {
   ConditionChecklistResponse,
   ConditionStatusUpdateRequest,
 } from "@/types";
-import type { GwyPositionResponse } from "@/types";
+
 
 const TARGET_POSITION_STORAGE_KEY = "skills:target-position-id";
+
+// 赛道：national=国考 / province=省考
+const SOURCES = [
+  { key: "national", label: "国考" },
+  { key: "province", label: "省考(广东)" },
+] as const;
+type SourceKey = (typeof SOURCES)[number]["key"];
 
 const STATUS_ORDER = ["unmet", "in_progress", "met"] as const;
 const STATUS_LABEL: Record<string, string> = {
@@ -63,19 +70,30 @@ function StatusSegment({
 }
 
 export function TargetConditionCard() {
+  const [source, setSource] = useState<SourceKey>("national");
   const [checklist, setChecklist] = useState<ConditionChecklistResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<GwyPositionResponse[]>([]);
+  // 搜索结果统一为最小形状：两个职位表的列表项都满足
+  interface PositionOption {
+    id: string;
+    position_name: string | null;
+    dept_name: string | null;
+    position_code: string;
+    education_req: string | null;
+    recruit_count: number | null;
+  }
+  const [results, setResults] = useState<PositionOption[]>([]);
   const [searching, setSearching] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const loadChecklist = useCallback(async (positionId: string) => {
+  const loadChecklist = useCallback(async (positionId: string, src: SourceKey) => {
     setLoading(true);
     try {
-      const data = await conditionChecklistApi.getChecklist(positionId);
+      const data = await conditionChecklistApi.getChecklist(positionId, src);
       setChecklist(data);
+      setSource(src);
     } catch {
       // 职位可能已不在当前批次，清掉本地记忆回到搜索态
       localStorage.removeItem(TARGET_POSITION_STORAGE_KEY);
@@ -89,8 +107,18 @@ export function TargetConditionCard() {
   // 恢复上次选定的目标职位
   useEffect(() => {
     const saved = localStorage.getItem(TARGET_POSITION_STORAGE_KEY);
-    if (saved) loadChecklist(saved);
-    else setShowSearch(true);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as { id: string; source: SourceKey };
+        loadChecklist(parsed.id, parsed.source);
+        return;
+      } catch {
+        // 旧格式裸 id → 国考
+        loadChecklist(saved, "national");
+        return;
+      }
+    }
+    setShowSearch(true);
   }, [loadChecklist]);
 
   // 关键词搜索（防抖）
@@ -104,7 +132,11 @@ export function TargetConditionCard() {
     setSearching(true);
     debounceRef.current = setTimeout(async () => {
       try {
-        const resp = await gwyPositionsApi.list({ q: query.trim(), page_size: 8 });
+        const q = query.trim();
+        const resp =
+          source === "province"
+            ? await provincePositionsApi.list({ q, province: "广东", page_size: 8 })
+            : await gwyPositionsApi.list({ q, page_size: 8 });
         setResults(resp.items);
       } catch {
         setResults([]);
@@ -115,14 +147,14 @@ export function TargetConditionCard() {
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [query]);
+  }, [query, source]);
 
-  const selectPosition = (p: GwyPositionResponse) => {
-    localStorage.setItem(TARGET_POSITION_STORAGE_KEY, p.id);
+  const selectPosition = (p: PositionOption) => {
+    localStorage.setItem(TARGET_POSITION_STORAGE_KEY, JSON.stringify({ id: p.id, source }));
     setQuery("");
     setResults([]);
     setShowSearch(false);
-    loadChecklist(p.id);
+    loadChecklist(p.id, source);
   };
 
   const clearTarget = () => {
@@ -135,6 +167,7 @@ export function TargetConditionCard() {
     if (!checklist) return;
     const body: ConditionStatusUpdateRequest = {
       position_id: checklist.position_id,
+      exam_source: checklist.exam_source,
       condition_key: conditionKey,
       status,
     };

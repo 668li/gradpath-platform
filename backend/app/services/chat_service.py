@@ -228,6 +228,24 @@ def build_user_context(db: Session, user_id: UUID) -> str:
     else:
         lines.append("（暂无记录）")
 
+    # 条件账本：用户正在核对的目标职位与完成率，让 AI 建议能对准报考目标
+    from app.services.condition_checklist_service import get_latest_condition_summary
+
+    try:
+        ledger = get_latest_condition_summary(db, str(user_id))
+    except Exception as e:
+        logger.debug("condition ledger summary failed: %s", e)
+        ledger = None
+    lines.append("【报考条件账本（最近核对的目标职位）】")
+    if ledger:
+        lines.append(
+            f"- 目标：{ledger['dept_name']}·{ledger['position_name']}"
+            f"（{ledger['exam_source'] == 'province' and '省考' or '国考'} {ledger['position_code']}）"
+            f" 条件完成率 {ledger['rate']}%（已满足 {ledger['met']}/{ledger['total']}）"
+        )
+    else:
+        lines.append("（暂未选定目标职位）")
+
     # 最近 10 条职业事件
     events = (
         db.query(CareerEvent)

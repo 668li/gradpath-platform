@@ -13,7 +13,12 @@ import re
 from sqlalchemy.orm import Session
 
 from app.models.gwy_position import GwyPosition
-from app.models.user_condition_status import CONDITION_STATUSES, UserConditionStatus
+from app.models.gwy_province_position import GwyProvincePosition
+from app.models.user_condition_status import (
+    CONDITION_STATUSES,
+    EXAM_SOURCES,
+    UserConditionStatus,
+)
 from app.schemas.user_condition import (
     ConditionChecklistResponse,
     ConditionItem,
@@ -77,6 +82,61 @@ def build_conditions(position: GwyPosition) -> list[ConditionItem]:
     return items
 
 
+def build_province_conditions(position: GwyProvincePosition) -> list[ConditionItem]:
+    """省考条件清单 — 列结构与国考不同（无政治面貌/年限列，专业分三档，
+    要求集中在 other_requirements），单独一套规则。
+
+    数据画像（scripts/audit 抽查 9344 行广东 2026）：
+    grassroots_exp_req 否/是；fresh_grad_only 否/应届毕业生/2026届高校毕业生；
+    other_requirements 38% 有值，多为『中共党员』类短文本。
+    """
+    items: list[ConditionItem] = []
+
+    def add(key: str, label: str, required: str | None, source: str) -> None:
+        if not required or not str(required).strip():
+            return
+        text = str(required).strip()
+        if text in _VACUOUS_VALUES:
+            return
+        items.append(ConditionItem(key=key, label=label, required=text, source_field=source))
+
+    add("education", "学历要求", position.education_req, "education_req")
+    add("degree", "学位要求", position.degree_req, "degree_req")
+
+    # 专业三档合并为一条（研究生：…；本科：…；大专：…），只列有值的档
+    tiers: list[str] = []
+    for label, col in (
+        ("研究生", "major_req_grad"),
+        ("本科", "major_req_undergrad"),
+        ("大专", "major_req_junior"),
+    ):
+        val = str(getattr(position, col) or "").strip()
+        if val and val not in _VACUOUS_VALUES:
+            tiers.append(f"{label}：{val}")
+    if tiers:
+        merged = "；".join(tiers)
+        if len(merged) > 120:
+            merged = merged[:117] + "..."
+        items.append(
+            ConditionItem(
+                key="major", label="专业要求", required=merged, source_field="major_req_*"
+            )
+        )
+
+    if (position.grassroots_exp_req or "").strip() == "是":
+        add("grassroots", "基层工作经历", "需具有基层工作经历", "grassroots_exp_req")
+    if (position.psych_test or "").strip() == "是":
+        add("psych_test", "心理测评", "需参加心理素质测评", "psych_test")
+
+    fresh = (position.fresh_grad_only or "").strip()
+    if fresh and fresh != "否":
+        add("fresh_grad", "应届生限制", f"仅限{fresh}", "fresh_grad_only")
+
+    add("other_req", "其他要求", position.other_requirements, "other_requirements")
+
+    return items
+
+
 def _is_vacuous(required: str) -> bool:
     """要求原文为『不限/无限制』类时，该条件对任何人自动视为已满足。"""
     return required in _VACUOUS_VALUES
@@ -103,11 +163,14 @@ def compute_progress(
     return ConditionProgress(total=total, met=met, in_progress=in_progress, unmet=unmet, rate=rate)
 
 
-def get_status_map(db: Session, user_id: str, position_id: str) -> dict[str, str]:
+def get_status_map(
+    db: Session, user_id: str, position_id: str, exam_source: str = "national"
+) -> dict[str, str]:
     rows = (
         db.query(UserConditionStatus)
         .filter(
             UserConditionStatus.user_id == user_id,
+            UserConditionStatus.exam_source == exam_source,
             UserConditionStatus.position_id == position_id,
         )
         .all()
@@ -116,14 +179,22 @@ def get_status_map(db: Session, user_id: str, position_id: str) -> dict[str, str
 
 
 def upsert_status(
-    db: Session, user_id: str, position_id: str, condition_key: str, status: str
+    db: Session,
+    user_id: str,
+    position_id: str,
+    condition_key: str,
+    status: str,
+    exam_source: str = "national",
 ) -> UserConditionStatus:
     if status not in CONDITION_STATUSES:
         raise ValueError(f"非法状态: {status}")
+    if exam_source not in EXAM_SOURCES:
+        raise ValueError(f"非法赛道: {exam_source}")
     row = (
         db.query(UserConditionStatus)
         .filter(
             UserConditionStatus.user_id == user_id,
+            UserConditionStatus.exam_source == exam_source,
             UserConditionStatus.position_id == position_id,
             UserConditionStatus.condition_key == condition_key,
         )
@@ -134,6 +205,7 @@ def upsert_status(
     else:
         row = UserConditionStatus(
             user_id=user_id,
+            exam_source=exam_source,
             position_id=position_id,
             condition_key=condition_key,
             status=status,
@@ -145,17 +217,57 @@ def upsert_status(
 
 
 def build_checklist_response(
-    db: Session, user_id: str, position: GwyPosition
+    db: Session, user_id: str, position: GwyPosition | GwyProvincePosition
 ) -> ConditionChecklistResponse:
-    conditions = build_conditions(position)
-    statuses = get_status_map(db, user_id, position.id)
+    """国考/省考职位行 → 清单+状态+完成率。按模型类型分派规则。"""
+    if isinstance(position, GwyProvincePosition):
+        exam_source = "province"
+        conditions = build_province_conditions(position)
+    else:
+        exam_source = "national"
+        conditions = build_conditions(position)
+    statuses = get_status_map(db, user_id, position.id, exam_source)
     return ConditionChecklistResponse(
         position_id=position.id,
         position_code=position.position_code,
         position_name=position.position_name,
         dept_name=position.dept_name,
         year=position.year,
+        exam_source=exam_source,
         conditions=conditions,
         statuses=statuses,
         progress=compute_progress(conditions, statuses),
     )
+
+
+def get_latest_condition_summary(db: Session, user_id: str) -> dict | None:
+    """用户最近核对的目标职位摘要 — 供 dashboard/AI 对话沉淀上下文。
+
+    取最近更新的一条勾选记录定位目标职位，返回
+    {exam_source, position_name, dept_name, position_code, rate, met, total}
+    或 None（从未用过条件账本）。
+    """
+    latest = (
+        db.query(UserConditionStatus)
+        .filter(UserConditionStatus.user_id == user_id)
+        .order_by(UserConditionStatus.updated_at.desc())
+        .first()
+    )
+    if not latest:
+        return None
+    if latest.exam_source == "province":
+        position = db.get(GwyProvincePosition, latest.position_id)
+    else:
+        position = db.get(GwyPosition, latest.position_id)
+    if not position:
+        return None
+    checklist = build_checklist_response(db, user_id, position)
+    return {
+        "exam_source": checklist.exam_source,
+        "position_name": checklist.position_name,
+        "dept_name": checklist.dept_name,
+        "position_code": checklist.position_code,
+        "rate": checklist.progress.rate,
+        "met": checklist.progress.met,
+        "total": checklist.progress.total,
+    }

@@ -30,6 +30,7 @@ class ConditionChecklistResponse(BaseModel):
     position_name: str | None = None
     dept_name: str | None = None
     year: int
+    exam_source: str = Field("national", description="national=国考 / province=省考")
     conditions: list[ConditionItem]
     statuses: dict[str, str] = Field(..., description="条件键 → unmet/in_progress/met")
     progress: ConditionProgress
@@ -39,5 +40,6 @@ class ConditionStatusUpdateRequest(BaseModel):
     """勾选一条条件的完成状态。"""
 
     position_id: str = Field(..., min_length=32, max_length=32)
+    exam_source: str = Field("national", pattern="^(national|province)$")
     condition_key: str = Field(..., min_length=1, max_length=50)
     status: str = Field(..., pattern="^(unmet|in_progress|met)$")

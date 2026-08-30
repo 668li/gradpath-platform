@@ -9,8 +9,10 @@ import type {
 } from "@/types";
 
 export const conditionChecklistApi = {
-  getChecklist: (positionId: string) =>
-    request<ConditionChecklistResponse>(`/api/condition-checklist/${positionId}`),
+  getChecklist: (positionId: string, source: "national" | "province" = "national") =>
+    request<ConditionChecklistResponse>(
+      `/api/condition-checklist/${positionId}?source=${source}`,
+    ),
 
   updateStatus: (data: ConditionStatusUpdateRequest) =>
     request<ConditionChecklistResponse>(`/api/condition-checklist/status`, {

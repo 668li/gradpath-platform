@@ -15,16 +15,27 @@ from app.models.base import TimestampMixin, UUIDMixin
 # 条件状态三态：未满足 → 进行中 → 已满足
 CONDITION_STATUSES = ("unmet", "in_progress", "met")
 
+# 条件来源赛道：national=国考职位表，province=省考职位表
+EXAM_SOURCES = ("national", "province")
+
 
 class UserConditionStatus(UUIDMixin, TimestampMixin, Base):
     __tablename__ = "user_condition_status"
     __table_args__ = (
-        UniqueConstraint("user_id", "position_id", "condition_key", name="uq_user_condition_key"),
+        UniqueConstraint(
+            "user_id",
+            "exam_source",
+            "position_id",
+            "condition_key",
+            name="uq_user_condition_key",
+        ),
     )
 
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
-    # gwy_position.id（整行 sha256 摘要），不设外键：职位表按批次重建，
+    # 职位表主键（整行 sha256 摘要），不设外键：职位表按批次重建，
     # 历史勾选保留但清单以当前职位表为准
     position_id: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    # 国考/省考职位分表存储，唯一约束带上赛道避免跨表哈希碰撞
+    exam_source: Mapped[str] = mapped_column(String(10), nullable=False, default="national")
     condition_key: Mapped[str] = mapped_column(String(50), nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="unmet")
