@@ -706,6 +706,56 @@ class TestDiscourageCards:
         assert any("单个批次" in n for n in result["position_analysis"]["notes"])
 
 
+class TestKaoyanAvoidSchools:
+    """考研院校劝退卡 — 模考估分显著低于复试线的院校诚实拒绝。"""
+
+    def test_avoid_schools_triggered_with_alternatives(self, db_session, seed_decision_data):
+        """seed：中山 350 / 华工 340 / 北大 380。est=300 → 北大低 80、中山低 50 劝退，华工低 40 劝退。"""
+        result = generate_decision(
+            db_session, major="计算机", region="广东", kaoyan_estimated_score=300
+        )
+        sa = result["school_analysis"]
+        names = {a["university_name"] for a in sa["avoid_schools"]}
+        assert names == {"北京大学", "中山大学", "华南理工大学"}
+        pk = next(a for a in sa["avoid_schools"] if a["university_name"] == "北京大学")
+        assert pk["verdict"] == "建议放弃"
+        assert "复试线 380" in pk["basis"] and "低 80 分" in pk["basis"]
+        assert "不等于录取线" in pk["confidence"]
+        # 替代建议来自估分高于其复试线的院校——全部低于 300 时为空
+        assert all(a["alternatives"] == [] for a in sa["avoid_schools"])
+
+    def test_avoid_schools_boundary(self, db_session, seed_decision_data):
+        """阈值边界：est=310 时华工(340) 低 30 → 触发；est=311 时低 29 → 不触发。"""
+        edge = generate_decision(
+            db_session, major="计算机", region="广东", kaoyan_estimated_score=310
+        )
+        avoided = {a["university_name"] for a in edge["school_analysis"]["avoid_schools"]}
+        assert "华南理工大学" in avoided
+
+        safe = generate_decision(
+            db_session, major="计算机", region="广东", kaoyan_estimated_score=311
+        )
+        assert "华南理工大学" not in {
+            a["university_name"] for a in safe["school_analysis"]["avoid_schools"]
+        }
+
+    def test_avoid_schools_with_alternatives(self, db_session, seed_decision_data):
+        """est=345：只有北大（380，低 35）被劝退；替代建议含估分达线的华工（340）。"""
+        result = generate_decision(
+            db_session, major="计算机", region="广东", kaoyan_estimated_score=345
+        )
+        sa = result["school_analysis"]
+        assert {a["university_name"] for a in sa["avoid_schools"]} == {"北京大学"}
+        alts = sa["avoid_schools"][0]["alternatives"]
+        assert len(alts) == 1
+        assert "复试线 340" in alts[0]
+
+    def test_no_est_keeps_avoid_schools_empty(self, db_session, seed_decision_data):
+        """未填考研估分：不出劝退卡（向后兼容）。"""
+        result = generate_decision(db_session, major="计算机", region="广东")
+        assert result["school_analysis"]["avoid_schools"] == []
+
+
 class TestSchoolAnalysis:
     def test_school_analysis_structure(self, db_session, seed_decision_data):
         """3 所命中院校（中山/华工/北大）触发分档；带覆盖率说明与来源。"""

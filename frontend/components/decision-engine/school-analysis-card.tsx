@@ -3,7 +3,7 @@
 // frontend/components/decision-engine/school-analysis-card.tsx
 // 考研院校级分析 — 命中院校的竞争档位 + 隐性情报（决策飞轮第一圈）
 
-import { GraduationCap, Info } from "lucide-react";
+import { Ban, GraduationCap, Info, ShieldAlert } from "lucide-react";
 import { Badge } from "@/components/ui/form-controls";
 import type { SchoolAnalysis } from "@/types/path-comparison";
 
@@ -25,6 +25,39 @@ export function SchoolAnalysisCard({ analysis }: { analysis: SchoolAnalysis }) {
           <p className="text-xs text-ink-500">{analysis.coverage_note}</p>
         </div>
       </div>
+
+      {/* 考研劝退卡（诚实拒绝）— 结论 → 依据 → 替代院校 → 置信标签 */}
+      {(analysis.avoid_schools?.length ?? 0) > 0 && (
+        <div className="mt-4">
+          <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-red-700">
+            <ShieldAlert className="h-3.5 w-3.5" />
+            诚实劝退（模考估分明显低于复试线的院校）
+          </div>
+          <ul className="space-y-2">
+            {analysis.avoid_schools!.map((card) => (
+              <li
+                key={card.university_name}
+                className="rounded-lg border border-red-200 bg-red-50/60 p-3"
+              >
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <Ban className="h-3.5 w-3.5 text-red-600" />
+                  <span className="text-sm font-semibold text-red-800">{card.verdict}</span>
+                  <span className="text-sm font-medium text-ink-800">{card.university_name}</span>
+                  {card.major_name && <span className="text-xs text-ink-500">{card.major_name}</span>}
+                </div>
+                <p className="mt-1 text-xs leading-relaxed text-ink-600">{card.basis}</p>
+                {card.alternatives.length > 0 && (
+                  <div className="mt-1.5 text-xs text-ink-600">
+                    <span className="font-medium text-emerald-700">更有把握的替代：</span>
+                    {card.alternatives.join("；")}
+                  </div>
+                )}
+                <div className="mt-1 text-[11px] text-ink-400">{card.confidence}</div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <ul className="mt-4 space-y-2">
         {analysis.items.map((s) => (

@@ -75,6 +75,9 @@ export function EngineForm({ loading, onSubmit, initial }: EngineFormProps) {
   const [estimatedScore, setEstimatedScore] = useState(
     initial?.estimated_score?.toString() ?? "",
   );
+  const [kaoyanEstimate, setKaoyanEstimate] = useState(
+    initial?.kaoyan_estimated_score?.toString() ?? "",
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,6 +94,7 @@ export function EngineForm({ loading, onSubmit, initial }: EngineFormProps) {
       has_grassroots:
         grassroots === "" ? undefined : grassroots === "yes",
       estimated_score: estimatedScore ? Number(estimatedScore) : undefined,
+      kaoyan_estimated_score: kaoyanEstimate ? Number(kaoyanEstimate) : undefined,
     });
   };
 
@@ -202,6 +206,17 @@ export function EngineForm({ loading, onSubmit, initial }: EngineFormProps) {
               value={estimatedScore}
               onChange={(e) => setEstimatedScore(e.target.value)}
               placeholder="如 128"
+              disabled={loading}
+            />
+          </Field>
+          <Field label="考研模考估分" hint="初试 500 分制，用于院校劝退判定">
+            <Input
+              type="number"
+              min={0}
+              max={500}
+              value={kaoyanEstimate}
+              onChange={(e) => setKaoyanEstimate(e.target.value)}
+              placeholder="如 345"
               disabled={loading}
             />
           </Field>

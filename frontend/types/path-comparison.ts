@@ -68,6 +68,8 @@ export interface DecisionEngineInput {
   gender?: string;
   /** 行测+申论预估总分（200 分制） */
   estimated_score?: number;
+  /** 考研初试模考估分（500 分制），用于院校劝退判定 */
+  kaoyan_estimated_score?: number;
 }
 
 /** 可报岗位示例 — 考公岗位级分析的展示单位 */
@@ -114,6 +116,17 @@ export interface PositionAnalysis {
   notes: string[];
 }
 
+/** 考研院校劝退卡 — 模考估分显著低于复试线的院校（结论/依据/替代/置信） */
+export interface AvoidSchool {
+  university_name: string;
+  major_name?: string | null;
+  verdict: string;
+  basis: string;
+  confidence: string;
+  alternatives: string[];
+  source_url?: string | null;
+}
+
 /** 考研院校级竞争力 — 竞争档位 + 隐性情报 */
 export interface SchoolCompetitionItem {
   university_name: string;
@@ -132,6 +145,8 @@ export interface SchoolAnalysis {
   matched_school_count: number;
   coverage_note: string;
   items: SchoolCompetitionItem[];
+  /** 劝退卡（模考估分显著低于复试线的院校，含替代建议；未填估分则为空） */
+  avoid_schools?: AvoidSchool[];
 }
 
 /** 结果回传信息（响应内嵌） */

@@ -124,6 +124,12 @@ class DecisionEngineRequest(BaseModel):
     estimated_score: int | None = Field(
         default=None, ge=0, le=200, description="行测+申论预估总分（200 分制），用于个人竞争力分级"
     )
+    kaoyan_estimated_score: int | None = Field(
+        default=None,
+        ge=0,
+        le=500,
+        description="考研初试模考估分（500 分制），用于院校劝退判定",
+    )
 
     @field_validator("fresh_status", "party_status", "education", "gender")
     @classmethod
@@ -191,6 +197,24 @@ class PositionAnalysis(BaseModel):
     notes: list[str] = Field(default_factory=list, description="数据说明（如文本解析标注）")
 
 
+class AvoidSchool(BaseModel):
+    """考研院校劝退卡 — 诚实拒绝：模考估分显著低于复试线的院校。
+
+    与考公 AvoidPosition 同构（结论/依据/替代/置信），复用同一信任纪律：
+    数据不足不出卡，绝不编造替代。
+    """
+
+    university_name: str = Field(..., description="院校名称")
+    major_name: str | None = Field(default=None, description="专业名称")
+    verdict: str = Field(default="建议放弃", description="劝退结论")
+    basis: str = Field(..., description="判定依据（复试线/估分差/年份）")
+    confidence: str = Field(..., description="数据置信标签（单年数据/复试线非录取线）")
+    alternatives: list[str] = Field(
+        default_factory=list, description="替代建议：估分更有把握的院校（最多 2 个）"
+    )
+    source_url: str | None = Field(default=None, description="分数线来源链接")
+
+
 class SchoolCompetitionItem(BaseModel):
     """考研院校级竞争力 — 命中院校的竞争档位 + 隐性情报。"""
 
@@ -211,6 +235,10 @@ class SchoolAnalysis(BaseModel):
     matched_school_count: int = Field(..., description="命中院校数")
     coverage_note: str = Field(..., description="覆盖说明（如'当前覆盖 39 所院校'）")
     items: list[SchoolCompetitionItem] = Field(default_factory=list, description="院校竞争力明细")
+    avoid_schools: list[AvoidSchool] = Field(
+        default_factory=list,
+        description="劝退卡（模考估分显著低于复试线的院校，含替代建议；未填估分则为空）",
+    )
 
 
 class DecisionOutcomeSubmit(BaseModel):

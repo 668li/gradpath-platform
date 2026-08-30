@@ -72,6 +72,10 @@ _STEADY_DIFF = 10  # 高于进面线 10+ 分 → 稳健；低于 10+ 分 → 冲
 # 宁缺毋滥：阈值取「冲刺档再跌一整档」，且数据不足时不出卡——
 # 劝退错一次毁掉的信任十倍于推荐对一次。
 _DISCOURAGE_DIFF = 20
+# 考研劝退阈值：模考估分低于复试线 30+ 分 → 建议放弃。
+# 考研初试 500 分制、复试线只是门槛（录取均分更高），30 分是"冲刺档（10 分）的三倍"，
+# 与考公劝退阈值取同一纪律：宁可少劝，不可错劝。
+_KAOYAN_DISCOURAGE_DIFF = 30
 # 进面线数据的单年声明（当前 gwy_score_line 仅 2026 一个批次）
 _SCORE_YEAR_NOTE = "进面线数据目前仅覆盖单个批次，无历史趋势可校验，请结合自身模考波动判断"
 
@@ -95,6 +99,7 @@ def generate_decision(
     has_grassroots: bool | None = None,
     gender: str | None = None,
     estimated_score: int | None = None,
+    kaoyan_estimated_score: int | None = None,
 ) -> dict[str, Any]:
     """生成三路对比结果。
 
@@ -132,6 +137,7 @@ def generate_decision(
             has_grassroots,
             gender,
             estimated_score,
+            kaoyan_estimated_score,
         )
     )
     cached_decision = cache.get(cache_key)
@@ -164,8 +170,11 @@ def generate_decision(
     if estimated_score is not None:
         conditions["estimated_score"] = estimated_score
         input_summary["estimated_score"] = estimated_score
+    if kaoyan_estimated_score is not None:
+        conditions["kaoyan_estimated_score"] = kaoyan_estimated_score
+        input_summary["kaoyan_estimated_score"] = kaoyan_estimated_score
 
-    kaoyan, school_analysis = _build_kaoyan_path(db, major, school_tier)
+    kaoyan, school_analysis = _build_kaoyan_path(db, major, school_tier, kaoyan_estimated_score)
     civil, position_analysis = _build_civil_service_path(db, major, region, year, conditions)
     employment = _build_employment_path(db, major, region, school_tier)
 
@@ -186,7 +195,9 @@ def generate_decision(
 # ----------------------------------------------------------------------
 # 考研路
 # ----------------------------------------------------------------------
-def _build_kaoyan_path(db: Session, major: str, school_tier: str | None) -> dict[str, Any]:
+def _build_kaoyan_path(
+    db: Session, major: str, school_tier: str | None, est: int | None = None
+) -> dict[str, Any]:
     pattern = f"%{escape_like(major)}%"
     # 一次取回全部命中行，count/聚合/证据/院校级分析都在 Python 侧算（原来同一查询跑 3 遍）
     rows = (
@@ -318,7 +329,7 @@ def _build_kaoyan_path(db: Session, major: str, school_tier: str | None) -> dict
             ],
             "evidence": evidence,
         },
-        _build_school_analysis(db, line_rows_all),
+        _build_school_analysis(db, line_rows_all, est=est),
     )
 
 
@@ -1116,12 +1127,13 @@ def _school_intel_summary(intel: GradSchoolIntel | None) -> str | None:
 
 
 def _build_school_analysis(
-    db: Session, line_rows: list[GradScorelineRecord]
+    db: Session, line_rows: list[GradScorelineRecord], est: int | None = None
 ) -> dict[str, Any] | None:
-    """考研院校级分析 — 命中院校按复试线竞争档位分组 + 隐性情报。
+    """考研院校级分析 — 命中院校按复试线竞争档位分组 + 隐性情报 + 劝退卡。
 
     档位边界：院校最近年份复试线相对样本中位数 ±10 分为界线（偏高/中等/偏低），
     样本过少（<3 校）时全部标"中等"并用覆盖说明兜底。
+    est（考研模考估分）非空时对"估分低于复试线 30+ 分"的院校出劝退卡。
     """
     if not line_rows:
         return None
@@ -1197,6 +1209,38 @@ def _build_school_analysis(
                 }
             )
 
+    # ---- 考研劝退卡：模考估分显著低于复试线的院校（诚实拒绝镜像）----
+    avoid_schools: list[dict[str, Any]] = []
+    if est is not None:
+        for uni, row in sorted(group.items(), key=lambda kv: (kv[1].total_score_line or 0, kv[0])):
+            score = row.total_score_line
+            if score is None or est > score - _KAOYAN_DISCOURAGE_DIFF:
+                continue
+            # 替代建议：估分高于其复试线的院校，按复试线降序（越接近估分越值得冲）
+            safe_alts = [
+                f"{u}（复试线 {r.total_score_line:.0f} 分）"
+                for u, r in group.items()
+                if r.total_score_line is not None and est >= r.total_score_line and u != uni
+            ]
+            avoid_schools.append(
+                {
+                    "university_name": uni,
+                    "major_name": row.major_name,
+                    "verdict": "建议放弃",
+                    "basis": (
+                        f"{row.year} 年复试线 {score:.0f} 分，你的模考估分 {est} 分"
+                        f"低 {score - est:.0f} 分（复试线仅为进入门槛，实际录取均分通常更高）"
+                    ),
+                    "confidence": "该院校为单年分数线数据；复试线不等于录取线，请结合招生人数判断",
+                    "alternatives": safe_alts[:2],
+                    "source_url": (
+                        (row.data_sources or [None])[0]
+                        if isinstance(row.data_sources, list)
+                        else None
+                    ),
+                }
+            )
+
     return {
         "matched_school_count": len(items),
         "coverage_note": (
@@ -1204,6 +1248,7 @@ def _build_school_analysis(
             "竞争档位仅供参考）"
         ),
         "items": items[:8],
+        "avoid_schools": avoid_schools[:5],
     }
 
 

@@ -156,10 +156,33 @@ async def analyze_premortem(title: str, options: list[str], reasons: list[str]) 
     return data
 
 
+def _heuristic_red_team_questions(
+    title: str, options: list[str], reasoning: str | None
+) -> list[str]:
+    """规则化红队问题 — 零 LLM 的决策科学启发式，LLM 不可用时的诚实降级。
+
+    框架与 LLM prompt 同源（未验证前提/替代论证/二阶效应/安静成本/可逆性），
+    问题嵌入用户自己的选项文本，保证针对性而非泛泛清单。
+    """
+    a = options[0] if options else "当前选项"
+    b = options[1] if len(options) > 1 else "另一个选项"
+    more = options[2:] if len(options) > 2 else []
+    more_text = f"（还有 {'、'.join(more)}）" if more else ""
+    return [
+        "这个决定最依赖哪个假设？如果该假设在半年后被证伪，你会如何发现？",
+        f"支持「{b}」的最强论据是什么？请用自己的话说出来，说不出来说明你还没认真考虑过它。",
+        f"如果选了「{a}」，6 个月后你的日常状态会有什么具体不同？{more_text}",
+        f"选择「{a}」要放弃什么安静成本（时间、注意力、机会）？你为它们标过价吗？",
+        f"如果选错了，从「{a}」退回「{b}」的真实代价是什么？这个决定可逆吗？",
+        "做这个决定前，你最缺的一条关键信息是什么？拿到它需要多少时间或金钱？",
+        "和你条件相似、做过同样选择的人，结果如何？你真正了解几例（而不是只记得成功的）？",
+    ]
+
+
 async def generate_red_team_questions(
     title: str, options: list[str], reasoning: str | None
 ) -> list[str]:
-    """AI 生成红队质疑问题。"""
+    """AI 生成红队质疑问题；LLM 不可用/返回为空时降级到规则化问题（零 LLM 可跑）。"""
     system_prompt = """你是一位红队分析师，任务是质疑一个决策的薄弱假设。
 
 请生成 7 个尖锐的红队质疑问题，覆盖：
@@ -175,12 +198,16 @@ async def generate_red_team_questions(
 选项：{', '.join(options)}
 决策理由：{reasoning or '未提供'}"""
 
-    orchestrator = AIOrchestrator()
-    raw = await orchestrator.chat(system_prompt=system_prompt, user_prompt=context, timeout=30)
-
-    questions = [
-        q.strip().lstrip("0123456789.、）) ") for q in raw.strip().split("\n") if q.strip()
-    ]
+    try:
+        orchestrator = AIOrchestrator()
+        raw = await orchestrator.chat(system_prompt=system_prompt, user_prompt=context, timeout=30)
+        questions = [
+            q.strip().lstrip("0123456789.、）) ") for q in raw.strip().split("\n") if q.strip()
+        ]
+    except Exception:
+        questions = []
+    if not questions:
+        questions = _heuristic_red_team_questions(title, options, reasoning)
     return questions[:7]
 
 

@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { LoadingState, EmptyState } from "@/components/ui/empty";
 import { Button, Input, Select, Field } from "@/components/ui/form-controls";
 import { useToast } from "@/components/ui/toast";
+import { SurvivorshipBalanceSection } from "@/components/outcome-report/survivorship-balance-section";
 
 const CURRENT_YEAR = new Date().getFullYear();
 
@@ -293,6 +294,9 @@ export default function LandingWallPage() {
           ))}
         </div>
       )}
+
+      {/* 幸存者偏差矫正：失败案例教训与上岸案例同墙并列 */}
+      <SurvivorshipBalanceSection />
 
       {/* Pagination */}
       {totalPages > 1 && (

@@ -369,6 +369,20 @@ function Tab1Intel() {
             <p className="text-sm text-ink-600 line-clamp-2">{intel.insider_notes}</p>
           )}
 
+          {/* 情报时效标注 — 诚实规则：过时就说可能过时 */}
+          {(() => {
+            const ageDays = Math.floor((Date.now() - new Date(intel.created_at).getTime()) / 86400000);
+            if (!Number.isFinite(ageDays) || ageDays < 0) return null;
+            const stale = ageDays > 180;
+            return (
+              <p className={cn("mt-2 text-[11px]", stale ? "text-amber-600" : "text-ink-400")}>
+                情报生成于 {new Date(intel.created_at).toLocaleDateString("zh-CN")}
+                （{ageDays === 0 ? "今天" : `${ageDays} 天前`}）
+                {stale && " · 已超过半年，市场环境可能已变化，建议交叉验证"}
+              </p>
+            );
+          })()}
+
           {intel.risk_warnings.length > 0 && (
             <div className="mt-3 flex items-start gap-2 text-sm text-amber-600">
               <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
@@ -1236,6 +1250,11 @@ function Tab9CompanyReviews() {
         </div>
         <p className="text-sm text-blue-800">
           参考 Glassdoor 匿名评价，聚合已入职校友对目标公司的优缺点与推荐度，帮你跳出招聘话术看真实体验。
+        </p>
+        <p className="mt-2 text-xs leading-relaxed text-blue-700/80">
+          诚实声明：以下为公开评价的<strong>静态聚合摘要</strong>（非实时、无逐条样本量统计），
+          优点与缺点并列呈现——同一公司既有好评价也有坏评价，<strong>分歧本身就是信息</strong>；
+          重大求职决策请结合最新在职者反馈交叉验证。
         </p>
       </div>
 

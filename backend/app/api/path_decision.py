@@ -77,6 +77,7 @@ def analyze_paths(
         has_grassroots=req.has_grassroots,
         gender=req.gender,
         estimated_score=req.estimated_score,
+        kaoyan_estimated_score=req.kaoyan_estimated_score,
     )
 
     # 复用 PathComparison 表持久化（JSONB），不新建表

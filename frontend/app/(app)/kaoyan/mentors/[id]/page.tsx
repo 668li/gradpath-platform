@@ -329,6 +329,10 @@ export default function MentorDetailPage() {
             <div className="py-8 text-center text-ink-500">暂无评价</div>
           ) : (
             <div className="space-y-4">
+              <p className="text-[11px] leading-relaxed text-ink-400">
+                评价按时间倒序排列，<strong className="text-ink-500">低分与负面评价不会被隐藏或降权</strong>
+                ；"已验证"标记表示评价人身份经过核验，匿名投稿与实名评价同等展示。
+              </p>
               {reviews.map((review) => (
                 <ReviewCard
                   key={review.id}
