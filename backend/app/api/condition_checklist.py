@@ -14,10 +14,7 @@ from app.models.grad_intel import GradYanzhaoProgram
 from app.models.gwy_position import GwyPosition
 from app.models.gwy_province_position import GwyProvincePosition
 from app.models.user import User
-from app.schemas.user_condition import (
-    ConditionChecklistResponse,
-    ConditionStatusUpdateRequest,
-)
+from app.schemas.user_condition import ConditionChecklistResponse, ConditionStatusUpdateRequest
 from app.services.condition_checklist_service import (
     build_checklist_response,
     build_conditions,

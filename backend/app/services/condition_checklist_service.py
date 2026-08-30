@@ -15,16 +15,8 @@ from sqlalchemy.orm import Session
 from app.models.grad_intel import GradScorelineRecord, GradYanzhaoProgram
 from app.models.gwy_position import GwyPosition
 from app.models.gwy_province_position import GwyProvincePosition
-from app.models.user_condition_status import (
-    CONDITION_STATUSES,
-    EXAM_SOURCES,
-    UserConditionStatus,
-)
-from app.schemas.user_condition import (
-    ConditionChecklistResponse,
-    ConditionItem,
-    ConditionProgress,
-)
+from app.models.user_condition_status import CONDITION_STATUSES, EXAM_SOURCES, UserConditionStatus
+from app.schemas.user_condition import ConditionChecklistResponse, ConditionItem, ConditionProgress
 
 # 证书类要求的句子特征（四六级 425 分、计算机等级、资格证、普通话等）
 _CERT_SENTENCE_PAT = re.compile(
