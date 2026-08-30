@@ -36,6 +36,10 @@ SYSTEM_ADMIN_EMAIL = "system@gradpath.local"
 DEFAULT_MIN_SCORE = 60
 DEFAULT_MIN_HISTORY = 30
 DEFAULT_MIN_PASS_RATE = 0.9
+# 官方源快速通道：edu.cn/gov.cn（credibility=official_verified）历史驳回为 0 且
+# 已审核 ≥ OFFICIAL_MIN_HISTORY 条即可自动放行。否则新官方源会冷启动死锁：
+# 没有历史→被信誉闸挡→要凑历史又必须先人工审 30 条。
+OFFICIAL_MIN_HISTORY = 5
 
 
 def _score(ext: ExternalResearchItem) -> int:
@@ -135,8 +139,17 @@ def auto_review_pending(
             stats["chsi_rejected"] += 1
             continue
 
-        rep = reputation.get(ext.crawler_name or "", {"total": 0, "pass_rate": 0.0})
-        if rep["total"] < min_history or rep["pass_rate"] < min_pass_rate:
+        rep = reputation.get(
+            ext.crawler_name or "",
+            {"total": 0, "pass_rate": 0.0, "rejected": 0, "approved": 0},
+        )
+        rejected = rep.get("rejected", 0)
+        if rejected == 0 and (
+            ext.credibility or ""
+        ) == "official_verified" and rep["total"] >= OFFICIAL_MIN_HISTORY:
+            # 官方源快速通道：历史零驳回 + official_verified + 少量历史即放行
+            pass
+        elif rep["total"] < min_history or rep["pass_rate"] < min_pass_rate:
             stats["gate_reputation"] += 1
             continue
         if _score(ext) < min_score:

@@ -157,6 +157,83 @@ def test_chsi_redline_defensively_rejected(seeded):
     assert ext.review_status == "REJECTED"
 
 
+def test_official_fast_track_bypasses_history_threshold(db_session):
+    """官方源快速通道：零驳回 + official_verified + 历史≥5 即放行（不足 30）。"""
+    _mk_admin(db_session)
+    official = "official_announce"
+    # 历史 6 条全过（<30，走普通信誉闸会被挡）
+    for i in range(6):
+        db_session.add(
+            ExternalResearchItem(
+                crawler_name=official,
+                crawler_run_id="seed",
+                item_type="kaoyan_news",
+                title=f"官方公告历史 {i}",
+                content="官方历史内容" * 30,
+                source_url=f"https://yjs.hzau.edu.cn/info/1/{i}.htm",
+                source_platform="official",
+                credibility="official_verified",
+                review_status="APPROVED",
+            )
+        )
+    db_session.commit()
+    ext = _mk_pending(
+        db_session,
+        official,
+        "华中农业大学2026年硕士研究生招生复试资格线公告",
+        "https://yjs.hzau.edu.cn/info/2/2026.htm",
+    )
+    ext.credibility = "official_verified"
+    db_session.commit()
+    stats = auto_review_pending(db_session)
+    assert stats["auto_approved"] == 1
+    db_session.refresh(ext)
+    assert ext.review_status == "APPROVED"
+
+
+def test_official_with_rejection_history_needs_full_threshold(db_session):
+    """官方源一旦有驳回历史，必须走普通信誉闸（≥30 条）。"""
+    _mk_admin(db_session)
+    official = "official_announce"
+    for i in range(6):
+        db_session.add(
+            ExternalResearchItem(
+                crawler_name=official,
+                crawler_run_id="seed",
+                item_type="kaoyan_news",
+                title=f"官方公告历史 {i}",
+                content="官方历史内容" * 30,
+                source_url=f"https://yjs.hzau.edu.cn/info/1/{i}.htm",
+                source_platform="official",
+                credibility="official_verified",
+                review_status="APPROVED",
+            )
+        )
+    db_session.add(
+        ExternalResearchItem(
+            crawler_name=official,
+            crawler_run_id="seed",
+            item_type="kaoyan_news",
+            title="被驳回的官方条目",
+            content="内容" * 50,
+            source_url="https://yjs.hzau.edu.cn/info/1/bad.htm",
+            source_platform="official",
+            credibility="official_verified",
+            review_status="REJECTED",
+        )
+    )
+    db_session.commit()
+    _mk_pending(
+        db_session,
+        official,
+        "华中农业大学2026年硕士研究生招生复试资格线公告",
+        "https://yjs.hzau.edu.cn/info/2/2026.htm",
+    )
+    stats = auto_review_pending(db_session)
+    assert stats["gate_reputation"] == 1
+    assert stats["auto_approved"] == 0
+
+
 def test_dry_run_makes_no_changes(seeded):
     _mk_pending(
         seeded,
