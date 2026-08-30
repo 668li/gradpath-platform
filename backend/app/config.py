@@ -34,6 +34,11 @@ class Settings(BaseSettings):
     # compose 注入 http://rsshub:1200。爬虫按此 URL 推导放行主机名。
     RSSHUB_BASE_URL: str = "http://127.0.0.1:1200"
 
+    # RAG 向量化模型。库内向量与查询向量必须同模型生成。
+    # 默认 bge-small-zh-v1.5（512 维）：2核4G 轻量服务器 CPU 可负担；
+    # 换模型必须同时重跑 scripts/vectorize_data.py 全量重建 document_embeddings。
+    EMBEDDING_MODEL: str = "BAAI/bge-small-zh-v1.5"
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
     @model_validator(mode="after")

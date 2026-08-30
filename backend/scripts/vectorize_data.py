@@ -8,6 +8,13 @@
     2. 文本分块
     3. 生成 Embedding
     4. 存入 document_embeddings 表
+
+    服务器内存不足以加载 Embedding 模型时的替代流程（推荐）:
+    本地: python scripts/vectorize_data.py --clear          # 本地库全量向量化
+          python scripts/vectorize_data.py --export emb.jsonl
+    服务器: docker cp emb.jsonl <backend容器>:/tmp/
+          docker exec <backend容器> python scripts/import_embeddings_jsonl.py /tmp/emb.jsonl
+    注意: 库内向量与 app.config.EMBEDDING_MODEL 生成的查询向量必须同模型。
 """
 
 import json
@@ -48,8 +55,11 @@ def get_model():
     if _model is None:
         from sentence_transformers import SentenceTransformer
 
-        _model = SentenceTransformer("BAAI/bge-large-zh-v1.5")
-        logger.info("Embedding 模型加载完成")
+        from app.config import settings
+
+        # 与 rag_service.embed_text 使用同一配置，保证库内向量与查询向量同模型
+        _model = SentenceTransformer(settings.EMBEDDING_MODEL)
+        logger.info("Embedding 模型加载完成: %s", settings.EMBEDDING_MODEL)
     return _model
 
 
@@ -401,8 +411,59 @@ def vectorize_salary(db: Session, model) -> int:
     return count
 
 
+def export_embeddings() -> int:
+    """把本地库 document_embeddings 导出为 jsonl 供服务器端导入。
+
+    固定写到脚本运行目录 embeddings_export.jsonl（脚本内禁止动态文件路径）。
+    每行含 source_table/source_id/chunk_index/content/doc_metadata/embedding(list[float])。
+    """
+    import ast
+    from pathlib import Path
+
+    db = SessionLocal()
+    rows = db.execute(
+        text(
+            "SELECT source_table, source_id, chunk_index, content, doc_metadata, embedding_vector "
+            "FROM document_embeddings WHERE embedding_vector IS NOT NULL"
+        )
+    ).fetchall()
+    db.close()
+
+    count = 0
+    lines: list[str] = []
+    for r in rows:
+        # 导出前校验可反序列化，防止坏数据污染生产库
+        try:
+            vec = ast.literal_eval(r.embedding_vector)
+            if not isinstance(vec, list) or not vec:
+                continue
+        except (ValueError, SyntaxError):
+            continue
+        lines.append(
+            json.dumps(
+                {
+                    "source_table": r.source_table,
+                    "source_id": str(r.source_id),
+                    "chunk_index": r.chunk_index,
+                    "content": r.content,
+                    "doc_metadata": r.doc_metadata,
+                    "embedding": vec,
+                },
+                ensure_ascii=False,
+            )
+        )
+        count += 1
+    Path("embeddings_export.jsonl").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    logger.info("已导出 %d 条向量到 embeddings_export.jsonl", count)
+    return count
+
+
 def main():
-    """主函数 — 执行全量向量化。"""
+    """主函数 — 执行全量向量化。传 --export 则只导出已生成的向量。"""
+    if "--export" in sys.argv:
+        export_embeddings()
+        return
+
     logger.info("=== 开始数据向量化 ===")
     start_time = time.time()
 

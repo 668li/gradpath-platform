@@ -229,6 +229,11 @@ class RAGEngine:
             "knowledge_articles": "knowledge",
             "qas": "qa",
             "dark_knowledge": "dark",
+            # vectorize_data.py 写入的是单数形式，历史上与这里的键不一致
+            # 导致语义结果被静默丢弃；两种命名都映射，兼容存量数据。
+            "experience_post": "experience",
+            "knowledge_article": "knowledge",
+            "qa": "qa",
         }
         for r in vec_results:
             mapped_type = source_type_map.get(r["source_table"], r["source_table"])
