@@ -8,10 +8,18 @@ import {
   Bug,
   Inbox,
   Network,
+  Database,
   ArrowRight,
 } from "lucide-react";
 
 const ADMIN_CARDS = [
+  {
+    href: "/admin/data-coverage",
+    title: "数据北极星",
+    desc: "四件套完整率仪表盘：招生目录/情报/分数线覆盖与待补院校",
+    icon: Database,
+    color: "text-indigo-600 bg-indigo-50",
+  },
   {
     href: "/admin/moderation",
     title: "内容审核",

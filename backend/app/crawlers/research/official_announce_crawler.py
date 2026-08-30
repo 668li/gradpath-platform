@@ -55,6 +55,15 @@ DEFAULT_SECTIONS: list[dict[str, Any]] = [
         "content_cls": "v_news_content",
         "title_suffix": "-华中农业大学研究生院",
     },
+    {
+        # 2026-08-30 单校纵深实验发现的第二 CMS 模板（news_list）：
+        # 苏州大学研究生院，正文容器 post-content（不在默认探测候选里，显式指定）
+        "name": "苏州大学研究生院硕士招生",
+        "list_url": "https://yjs.suda.edu.cn/8386/list.htm",
+        "detail_url_re": r"/page\.htm$",
+        "content_cls": "post-content",
+        "cms": "news_list",
+    },
 ]
 
 # 通用列表条目：<li><a href="...htm">标题</a><span>YYYY-MM-DD</span></li>
@@ -63,6 +72,32 @@ _LIST_ITEM_RE = re.compile(
     r"<span>(?P<date>\d{4}-\d{2}-\d{2})</span></li>",
     re.S,
 )
+
+# news-list-item 模板（苏州大学等 modern CMS）：
+# <li class="news-list-item"><a href="URL" title="标题">…<span>日</span><b>YYYY.MM</b>…
+_NEWS_LIST_ITEM_RE = re.compile(
+    r'<li class="news-list-item">\s*<a href="(?P<url>[^"]+)" title="(?P<title>[^"]+)"'
+    r'.*?<span>(?P<day>\d{1,2})</span>\s*<b>(?P<year>\d{4})\.(?P<month>\d{1,2})</b>',
+    re.S,
+)
+
+
+def _parse_list_entries(html: str, template: str) -> list[dict]:
+    """按栏目配置的 CMS 模板解析列表条目。template: boda（默认）| news_list。"""
+    entries: list[dict] = []
+    if template == "news_list":
+        for m in _NEWS_LIST_ITEM_RE.finditer(html):
+            entries.append(
+                {
+                    "url": m.group("url"),
+                    "title": m.group("title"),
+                    "date": f"{m.group('year')}-{int(m.group('month')):02d}-{int(m.group('day')):02d}",
+                }
+            )
+        return entries
+    for m in _LIST_ITEM_RE.finditer(html):
+        entries.append({"url": m.group("url"), "title": m.group("title"), "date": m.group("date")})
+    return entries
 
 
 def _extract_content_div(html: str, content_cls: str) -> str:
@@ -84,6 +119,7 @@ def _extract_content_div(html: str, content_cls: str) -> str:
 # 常见高校 CMS 正文容器候选：新增栏目时 content_cls 可留空，按序自动探测
 _CONTENT_CLS_CANDIDATES = [
     "v_news_content",
+    "post-content",
     "TRS_Editor",
     "news_content",
     "article",
@@ -139,18 +175,20 @@ class OfficialAnnounceCrawler(BaseCrawler):
             if not list_url:
                 continue
             detail_re = re.compile(section.get("detail_url_re", r"\.htm$"))
+            template = section.get("cms", "boda")
             try:
                 resp = self._request(list_url)
                 resp.encoding = "utf-8"
                 section_items = 0
-                for m in _LIST_ITEM_RE.finditer(resp.text):
-                    href = m.group("url")
+                for entry in _parse_list_entries(resp.text, template):
+                    href = entry["url"]
+                    title = entry["title"]
+                    date = entry["date"]
                     # 只收录匹配详情模式的条目（过滤 pdf/附件跳转）
                     if not detail_re.search(href):
                         continue
                     url = urljoin(list_url, href)
-                    title = re.sub(r"\s+", " ", html_lib.unescape(m.group("title"))).strip()
-                    date = m.group("date")
+                    title = re.sub(r"\s+", " ", html_lib.unescape(title)).strip()
                     if not title or not url:
                         continue
                     detail_text = ""

@@ -180,3 +180,87 @@ def refresh_source(
         logger.exception("Failed to refresh source %s: %s", source_name, e)
         raise HTTPException(status_code=500, detail=f"Failed to trigger refresh for {source_name}")
     return {"message": f"Refresh triggered for {source_name}"}
+
+
+# ----------------------------------------------------------------------
+# 决策实体库四件套完整率（根本重审后的数据北极星，2026-08-30）
+# 四件套 = 招生目录 ∩ 院校情报(含报录比) ∩ 有效分数线
+# ----------------------------------------------------------------------
+
+def _norm_name(name: str | None) -> str:
+    """院校名归一化（去空白/全半角差异），防止跨表名称匹配误判。"""
+    return (name or "").replace(" ", "").replace("　", "").strip()
+
+
+def _compute_coverage(db: Session) -> dict:
+    """计算实体库四件套覆盖。纯 ORM + Python 集合运算，避免方言差异。"""
+    from app.models.grad_intel import GradSchoolIntel, GradScorelineRecord, GradYanzhaoProgram
+    from app.models.school import School
+
+    total_schools = db.query(School).count()
+
+    catalog_names = {_norm_name(r[0]) for r in db.query(GradYanzhaoProgram.university_name).distinct()}
+    intel_names = {_norm_name(r[0]) for r in db.query(GradSchoolIntel.school_name).distinct()}
+    scoreline_names = {
+        _norm_name(r[0])
+        for r in db.query(GradScorelineRecord.university_name)
+        .filter(GradScorelineRecord.total_score_line.isnot(None))
+        .filter(GradScorelineRecord.total_score_line > 0)
+        .distinct()
+    }
+    full_set = catalog_names & intel_names & scoreline_names
+
+    # Top100 = 软科排名前 100 作为报考热度代理（未上榜的院校不参与该口径）
+    ranked = (
+        db.query(School.name, School.ranking)
+        .filter(School.ranking.isnot(None))
+        .order_by(School.ranking.asc())
+        .limit(100)
+        .all()
+    )
+    top100_total = len(ranked)
+    top100_rows = []
+    top100_full = 0
+    for name, ranking in ranked:
+        n = _norm_name(name)
+        has_catalog, has_intel, has_line = n in catalog_names, n in intel_names, n in scoreline_names
+        if has_catalog and has_intel and has_line:
+            top100_full += 1
+        else:
+            top100_rows.append(
+                {
+                    "school": name,
+                    "ranking": ranking,
+                    "missing": [lbl for lbl, ok in
+                                (("catalog", has_catalog), ("intel", has_intel), ("scoreline", has_line)) if not ok],
+                }
+            )
+
+    return {
+        "definition": "四件套=招生目录∩院校情报∩有效分数线(total_score_line>0)；Top100=软科排名前100为报考热度代理",
+        "overall": {
+            "schools_total": total_schools,
+            "with_catalog": len(catalog_names),
+            "with_intel": len(intel_names),
+            "with_scoreline": len(scoreline_names),
+            "full_set": len(full_set),
+            "full_set_rate": round(len(full_set) / total_schools, 4) if total_schools else 0,
+        },
+        "top100": {
+            "total": top100_total,
+            "full_set": top100_full,
+            "full_set_rate": round(top100_full / top100_total, 4) if top100_total else 0,
+            "missing_sample": top100_rows[:20],
+            "missing_total": len(top100_rows),
+        },
+    }
+
+
+@router.get("/coverage")
+def entity_coverage(db: Session = Depends(get_db), admin: User = Depends(get_admin_user)):
+    """决策实体库四件套完整率（数据北极星）。管理端可见。"""
+    try:
+        return _compute_coverage(db)
+    except Exception as e:
+        logger.exception("coverage 计算失败: %s", e)
+        raise HTTPException(status_code=500, detail=f"coverage 计算失败: {e}")
