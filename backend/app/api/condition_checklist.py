@@ -77,3 +77,4 @@ def update_condition_status(
     except ValueError as e:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(e)) from e
     return build_checklist_response(db, user.id, position)
+

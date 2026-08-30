@@ -187,6 +187,7 @@ def refresh_source(
 # 四件套 = 招生目录 ∩ 院校情报(含报录比) ∩ 有效分数线
 # ----------------------------------------------------------------------
 
+
 def _norm_name(name: str | None) -> str:
     """院校名归一化（去空白/全半角差异），防止跨表名称匹配误判。"""
     return (name or "").replace(" ", "").replace("　", "").strip()
@@ -199,7 +200,9 @@ def _compute_coverage(db: Session) -> dict:
 
     total_schools = db.query(School).count()
 
-    catalog_names = {_norm_name(r[0]) for r in db.query(GradYanzhaoProgram.university_name).distinct()}
+    catalog_names = {
+        _norm_name(r[0]) for r in db.query(GradYanzhaoProgram.university_name).distinct()
+    }
     intel_names = {_norm_name(r[0]) for r in db.query(GradSchoolIntel.school_name).distinct()}
     scoreline_names = {
         _norm_name(r[0])
@@ -223,7 +226,11 @@ def _compute_coverage(db: Session) -> dict:
     top100_full = 0
     for name, ranking in ranked:
         n = _norm_name(name)
-        has_catalog, has_intel, has_line = n in catalog_names, n in intel_names, n in scoreline_names
+        has_catalog, has_intel, has_line = (
+            n in catalog_names,
+            n in intel_names,
+            n in scoreline_names,
+        )
         if has_catalog and has_intel and has_line:
             top100_full += 1
         else:
@@ -231,8 +238,15 @@ def _compute_coverage(db: Session) -> dict:
                 {
                     "school": name,
                     "ranking": ranking,
-                    "missing": [lbl for lbl, ok in
-                                (("catalog", has_catalog), ("intel", has_intel), ("scoreline", has_line)) if not ok],
+                    "missing": [
+                        lbl
+                        for lbl, ok in (
+                            ("catalog", has_catalog),
+                            ("intel", has_intel),
+                            ("scoreline", has_line),
+                        )
+                        if not ok
+                    ],
                 }
             )
 

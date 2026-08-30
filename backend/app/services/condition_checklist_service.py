@@ -271,3 +271,4 @@ def get_latest_condition_summary(db: Session, user_id: str) -> dict | None:
         "met": checklist.progress.met,
         "total": checklist.progress.total,
     }
+

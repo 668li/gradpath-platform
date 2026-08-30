@@ -77,7 +77,7 @@ _LIST_ITEM_RE = re.compile(
 # <li class="news-list-item"><a href="URL" title="标题">…<span>日</span><b>YYYY.MM</b>…
 _NEWS_LIST_ITEM_RE = re.compile(
     r'<li class="news-list-item">\s*<a href="(?P<url>[^"]+)" title="(?P<title>[^"]+)"'
-    r'.*?<span>(?P<day>\d{1,2})</span>\s*<b>(?P<year>\d{4})\.(?P<month>\d{1,2})</b>',
+    r".*?<span>(?P<day>\d{1,2})</span>\s*<b>(?P<year>\d{4})\.(?P<month>\d{1,2})</b>",
     re.S,
 )
 

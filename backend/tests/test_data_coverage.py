@@ -47,14 +47,33 @@ def seeded_coverage(db_session):
     SYS = "00000000000000000000000000000000"
     db_session.add_all(
         [
-            GradYanzhaoProgram(university_name="苏州大学", department="计算机学院", major_name="计算机", degree_type="学硕"),
-            GradYanzhaoProgram(university_name="云南大学", department="法学院", major_name="法学", degree_type="学硕"),
-            GradYanzhaoProgram(university_name="苏 州大学", department="计算机学院", major_name="软件", degree_type="专硕"),
+            GradYanzhaoProgram(
+                university_name="苏州大学",
+                department="计算机学院",
+                major_name="计算机",
+                degree_type="学硕",
+            ),
+            GradYanzhaoProgram(
+                university_name="云南大学",
+                department="法学院",
+                major_name="法学",
+                degree_type="学硕",
+            ),
+            GradYanzhaoProgram(
+                university_name="苏 州大学",
+                department="计算机学院",
+                major_name="软件",
+                degree_type="专硕",
+            ),
             GradSchoolIntel(school_name="苏州大学", major_name="计算机", year=2026, user_id=SYS),
             GradSchoolIntel(school_name="云南大学", major_name="法学", year=2026, user_id=SYS),
             GradSchoolIntel(school_name="苏州大学", major_name="软件", year=2026, user_id=SYS),
-            GradScorelineRecord(university_name="苏州大学", major_name="计算机", year=2026, total_score_line=350),
-            GradScorelineRecord(university_name="云南大学", major_name="法学", year=2026, total_score_line=0),
+            GradScorelineRecord(
+                university_name="苏州大学", major_name="计算机", year=2026, total_score_line=350
+            ),
+            GradScorelineRecord(
+                university_name="云南大学", major_name="法学", year=2026, total_score_line=0
+            ),
         ]
     )
     db_session.commit()
