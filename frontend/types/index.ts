@@ -247,6 +247,7 @@ export interface DashboardOverview {
   decisions_count: number;
   events_count: number;
   skills_count: number;
+  condition_ledger: ConditionLedgerSummary | null;
   retrospectives_count: number;
   latest_decision: {
     id: string;
@@ -2344,6 +2345,7 @@ export interface ConditionChecklistResponse {
   position_name: string | null;
   dept_name: string | null;
   year: number;
+  exam_source: string;
   conditions: ConditionItem[];
   statuses: Record<string, string>;
   progress: ConditionProgress;
@@ -2351,8 +2353,19 @@ export interface ConditionChecklistResponse {
 
 export interface ConditionStatusUpdateRequest {
   position_id: string;
+  exam_source: string;
   condition_key: string;
   status: string;
+}
+
+export interface ConditionLedgerSummary {
+  exam_source: string;
+  position_name: string | null;
+  dept_name: string | null;
+  position_code: string;
+  rate: number;
+  met: number;
+  total: number;
 }
 
 // ===== 决策副驾驶护城河（Phase D） =====
