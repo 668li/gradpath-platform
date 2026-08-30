@@ -7,7 +7,9 @@ ARG NPM_REGISTRY=https://registry.npmjs.org
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm config set registry "${NPM_REGISTRY}" && npm ci
+# npm 缓存挂载：lockfile 变更时重装依赖不必重新下载全部包
+RUN --mount=type=cache,target=/root/.npm \
+    npm config set registry "${NPM_REGISTRY}" && npm ci
 
 # ---- Stage 2: build ----
 FROM node:20-alpine AS build
@@ -16,7 +18,9 @@ WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npm run build
+# webpack 持久缓存挂载：.next/cache 跨构建复用，二次构建大幅提速（BuildKit cache mount）
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN --mount=type=cache,target=/app/.next/cache npm run build
 
 # ---- Stage 3: production ----
 FROM node:20-alpine AS production

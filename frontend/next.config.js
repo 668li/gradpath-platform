@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // 服务器构建提速：lint 已由 CI(github actions) 与本地 npm run lint 覆盖，
+  // 2 核云服务器构建时重复跑全量 ESLint 只拖慢发布，不做质量兜底
+  eslint: { ignoreDuringBuilds: true },
   // 将 /api/* 代理到后端，避免浏览器跨域（后端未启用 CORS）
   // 端口约定红线：本地后端固定 8001（Docker 部署时由 BACKEND_URL=http://backend:8000 覆盖）
   async rewrites() {
