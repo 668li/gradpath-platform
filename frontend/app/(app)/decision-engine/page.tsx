@@ -12,6 +12,7 @@ import { PathResultCard } from "@/components/decision-engine/path-result-card";
 import { PositionAnalysisCard } from "@/components/decision-engine/position-analysis-card";
 import { SchoolAnalysisCard } from "@/components/decision-engine/school-analysis-card";
 import { OutcomeForm } from "@/components/decision-engine/outcome-form";
+import { ReciprocityBlock } from "@/components/decision-engine/reciprocity-block";
 import { EmptyState, LoadingState } from "@/components/ui/empty";
 import { useToast } from "@/components/ui/toast";
 import type { DecisionEngineInput, DecisionEngineResponse } from "@/types/path-comparison";
@@ -91,6 +92,9 @@ export default function DecisionEnginePage() {
               <PathResultCard key={m.path_type} metric={m} />
             ))}
           </div>
+
+          {/* 互惠回传引导（回传闭环的信任底座，展示真实回传量） */}
+          <ReciprocityBlock />
 
           {/* 个人化深挖：考公岗位级 + 考研院校级（有条件才有） */}
           {result.position_analysis && <PositionAnalysisCard analysis={result.position_analysis} />}

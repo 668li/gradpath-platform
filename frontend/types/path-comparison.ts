@@ -81,6 +81,24 @@ export interface TopPosition {
   source_url?: string | null;
 }
 
+/** 劝退卡 — 诚实拒绝：预估分显著低于进面线的岗位（结论/依据/替代/置信标签） */
+export interface AvoidPosition {
+  dept_name: string;
+  position_name: string;
+  verdict: string;
+  basis: string;
+  confidence: string;
+  alternatives: string[];
+  source_url?: string | null;
+}
+
+/** 全站结果回传统计（匿名聚合，互惠展示用） */
+export interface OutcomeStats {
+  total_outcomes: number;
+  by_status: Record<string, number>;
+  by_selected_path: Record<string, number>;
+}
+
 /** 考公岗位级分析 — 个人可报清单 + 进面线分层 */
 export interface PositionAnalysis {
   eligible_count: number;
@@ -89,6 +107,10 @@ export interface PositionAnalysis {
   personalized_level?: string | null;
   tier_summary?: string | null;
   top_positions: TopPosition[];
+  /** 劝退卡（预估分显著低于进面线的岗位，含替代建议） */
+  avoid_positions?: AvoidPosition[];
+  /** 可报岗位中触发劝退档的数量 */
+  discouraged_count?: number;
   notes: string[];
 }
 

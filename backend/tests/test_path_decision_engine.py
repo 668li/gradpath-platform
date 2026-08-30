@@ -619,6 +619,93 @@ class TestPositionAnalysisOutput:
         assert result["recommendation"].startswith("以你的条件（应届、本科学历）为准")
 
 
+@pytest.fixture
+def seed_discourage_data(db_session, seed_decision_data):
+    """劝退卡测试：在 seed_decision_data 基础上补一个低进面线同部门岗位作替代出口。
+
+    进面线全景：1301001=118.5、1301002=121、1301004=85（同部门「测试部门」）。
+    est=95 时 1301002 低 26 分（最绝望）、1301001 低 23.5 分 → 均劝退；1301004 高 10 分 → 稳健。
+    """
+    db_session.add_all(
+        [
+            _make_gwy_position(
+                "4",
+                position_code="1301004",
+                major_req="计算机类",
+                work_location="广东省广州市白云区",
+                recruit_count=1,
+            ),
+            _make_score_line("4", position_code="1301004", min_score=85.0),
+        ]
+    )
+    db_session.commit()
+
+
+class TestDiscourageCards:
+    """劝退卡（诚实拒绝）— 估分低于进面线 20+ 分的岗位给结论/依据/替代/置信标签。"""
+
+    def test_discourage_triggered_with_alternatives(self, db_session, seed_discourage_data):
+        result = generate_decision(db_session, major="计算机", region="广东", estimated_score=95)
+        pos = result["position_analysis"]
+        assert pos["discouraged_count"] == 2
+        assert len(pos["avoid_positions"]) == 2
+        # 最绝望的排最前：1301002（低 26 分）> 1301001（低 23.5 分）
+        first = pos["avoid_positions"][0]
+        assert first["verdict"] == "建议放弃"
+        assert "进面最低分 121" in first["basis"]
+        assert "低 26 分" in first["basis"]
+        assert "中位" in first["basis"]
+        # 置信标签如实声明单年数据
+        assert "单批数据" in first["confidence"]
+        # 替代建议指向同部门稳健岗（1301004 进面 85，高 10 分）
+        assert any("1301004" not in a and "高 10 分" in a for a in first["alternatives"])
+        assert first["source_url"]
+
+    def test_discourage_boundary(self, db_session, seed_decision_data):
+        """阈值边界：-21 劝退、-19 不劝退（阈值 20）。"""
+        # est=102 → 1301001 低 16.5、1301002 低 19 → 都不触发
+        safe = generate_decision(db_session, major="计算机", region="广东", estimated_score=102)
+        assert safe["position_analysis"]["discouraged_count"] == 0
+        assert safe["position_analysis"]["avoid_positions"] == []
+
+        # est=100 → 1301001 低 18.5（不触发）、1301002 低 21（触发）
+        edge = generate_decision(db_session, major="计算机", region="广东", estimated_score=100)
+        pos = edge["position_analysis"]
+        assert pos["discouraged_count"] == 1
+        assert len(pos["avoid_positions"]) == 1
+        assert "低 21 分" in pos["avoid_positions"][0]["basis"]
+
+    def test_discourage_no_alternatives_when_all_hopeless(self, db_session, seed_decision_data):
+        """全部可报岗都低于进面线时不出替代建议（绝不编造出口）。"""
+        result = generate_decision(db_session, major="计算机", region="广东", estimated_score=95)
+        pos = result["position_analysis"]
+        assert pos["discouraged_count"] == 2
+        assert all(card["alternatives"] == [] for card in pos["avoid_positions"])
+
+    def test_top_position_label_says_discourage(self, db_session, seed_discourage_data):
+        """示例岗位标签用「建议放弃」替代误导性的「冲刺」档。"""
+        result = generate_decision(db_session, major="计算机", region="广东", estimated_score=95)
+        labels = [p["score_label"] for p in result["position_analysis"]["top_positions"]]
+        assert any("（建议放弃）" in l for l in labels)
+        assert not any("（冲刺）" in l for l in labels)
+
+    def test_tier_summary_mentions_discourage(self, db_session, seed_discourage_data):
+        result = generate_decision(db_session, major="计算机", region="广东", estimated_score=95)
+        assert "进面希望渺茫" in result["position_analysis"]["tier_summary"]
+
+    def test_no_est_keeps_avoid_empty(self, db_session, seed_discourage_data):
+        """未填估分：不出劝退卡（向后兼容旧输出）。"""
+        result = generate_decision(db_session, major="计算机", region="广东")
+        pos = result["position_analysis"]
+        assert pos["avoid_positions"] == []
+        assert pos["discouraged_count"] == 0
+
+    def test_score_year_note_in_notes(self, db_session, seed_decision_data):
+        """有进面线数据时 notes 必须声明单年口径。"""
+        result = generate_decision(db_session, major="计算机", region="广东", estimated_score=95)
+        assert any("单个批次" in n for n in result["position_analysis"]["notes"])
+
+
 class TestSchoolAnalysis:
     def test_school_analysis_structure(self, db_session, seed_decision_data):
         """3 所命中院校（中山/华工/北大）触发分档；带覆盖率说明与来源。"""
@@ -765,6 +852,35 @@ class TestPersonalAndOutcomeAPI:
         # 历史记录应带 outcome
         hist = client.get("/api/path-decision/history", headers=auth_headers)
         assert hist.json()[0]["outcome"]["outcome_status"] == "following"
+
+    def test_outcome_stats_requires_auth(self, client):
+        resp = client.get("/api/path-decision/outcome-stats")
+        assert resp.status_code == 401
+
+    def test_outcome_stats_aggregates(self, client, auth_headers, db_session, seed_decision_data):
+        """回传统计：两条记录分别回传 → 总数与分布正确（匿名聚合，跨用户）。"""
+        for path, status in [("civil_service", "following"), ("kaoyan", "achieved")]:
+            resp = client.post(
+                "/api/path-decision/analyze",
+                json={"major": "计算机", "region": "广东"},
+                headers=auth_headers,
+            )
+            rid = resp.json()["id"]
+            out = client.post(
+                f"/api/path-decision/{rid}/outcome",
+                json={"selected_path": path, "outcome_status": status},
+                headers=auth_headers,
+            )
+            assert out.status_code == 200, out.text
+
+        stats = client.get("/api/path-decision/outcome-stats", headers=auth_headers)
+        assert stats.status_code == 200, stats.text
+        body = stats.json()
+        assert body["total_outcomes"] == 2
+        assert body["by_status"]["following"] == 1
+        assert body["by_status"]["achieved"] == 1
+        assert body["by_selected_path"]["civil_service"] == 1
+        assert body["by_selected_path"]["kaoyan"] == 1
 
     def test_outcome_not_owned_404(self, client, auth_headers, db_session, seed_decision_data):
         resp = client.post(

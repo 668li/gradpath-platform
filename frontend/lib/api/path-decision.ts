@@ -3,6 +3,7 @@ import type {
   DecisionEngineInput,
   DecisionEngineResponse,
   DecisionOutcomeSubmit,
+  OutcomeStats,
 } from "@/types/path-comparison";
 
 const BASE = "/api/path-decision";
@@ -27,4 +28,7 @@ export const pathDecisionApi = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     }),
+
+  /** 全站结果回传统计（匿名聚合，互惠展示） */
+  getOutcomeStats: () => request<OutcomeStats>(BASE + "/outcome-stats"),
 };

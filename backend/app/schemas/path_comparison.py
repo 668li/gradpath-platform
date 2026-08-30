@@ -153,6 +153,24 @@ class TopPosition(BaseModel):
     source_url: str | None = Field(default=None, description="来源链接")
 
 
+class AvoidPosition(BaseModel):
+    """劝退卡 — 诚实拒绝：预估分显著低于进面线的岗位，给结论、依据与替代出口。
+
+    原则：每个数字可溯源；数据不足时不出卡（宁缺毋滥，劝退错一次的信任代价
+    远高于推荐对一次）。
+    """
+
+    dept_name: str = Field(..., description="招录部门")
+    position_name: str = Field(..., description="职位名称")
+    verdict: str = Field(default="建议放弃", description="劝退结论")
+    basis: str = Field(..., description="判定依据（具体数字：进面线/估分差/同类岗位分位）")
+    confidence: str = Field(..., description="数据置信标签（如「仅 2026 年单批数据」）")
+    alternatives: list[str] = Field(
+        default_factory=list, description="替代建议：同部门/同条件下更有把握的岗位（最多 2 个）"
+    )
+    source_url: str | None = Field(default=None, description="岗位来源链接")
+
+
 class PositionAnalysis(BaseModel):
     """考公岗位级分析 — 基于个人条件的可报清单 + 进面线分层。"""
 
@@ -164,6 +182,12 @@ class PositionAnalysis(BaseModel):
     )
     tier_summary: str | None = Field(default=None, description="分级岗位统计摘要")
     top_positions: list[TopPosition] = Field(default_factory=list, description="可报岗位示例")
+    avoid_positions: list[AvoidPosition] = Field(
+        default_factory=list, description="劝退卡（预估分显著低于进面线的岗位，含替代建议）"
+    )
+    discouraged_count: int = Field(
+        default=0, description="可报岗位中触发劝退档的数量（估分低于进面线 20+ 分）"
+    )
     notes: list[str] = Field(default_factory=list, description="数据说明（如文本解析标注）")
 
 
@@ -251,3 +275,15 @@ class DecisionEngineResponse(BaseModel):
     )
 
     model_config = {"from_attributes": True}
+
+
+class OutcomeStats(BaseModel):
+    """全站结果回传统计 — 匿名聚合，用于互惠展示（回传闭环的信任底座）。"""
+
+    total_outcomes: int = Field(..., ge=0, description="全站已回传的结果总数")
+    by_status: dict[str, int] = Field(
+        default_factory=dict, description="按结果状态的分布（如 上岸/进面/未上岸）"
+    )
+    by_selected_path: dict[str, int] = Field(
+        default_factory=dict, description="按当时所选路径的分布"
+    )

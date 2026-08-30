@@ -7,6 +7,7 @@
 """
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
@@ -18,6 +19,7 @@ from app.schemas.path_comparison import (
     DecisionEngineResponse,
     DecisionOutcomeInfo,
     DecisionOutcomeSubmit,
+    OutcomeStats,
     PathMetrics,
 )
 from app.services import path_comparison_service, path_decision_engine
@@ -122,3 +124,29 @@ def submit_outcome(
     if record is None:
         raise HTTPException(status_code=404, detail="对比记录不存在或不属于当前用户")
     return _response_from_record(record)
+
+
+@router.get("/outcome-stats", response_model=OutcomeStats)
+def get_outcome_stats(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> OutcomeStats:
+    """全站结果回传统计（匿名聚合）— 用于互惠展示：「算法的准，靠大家交回真实结果」。"""
+    rows = (
+        db.query(PathComparison.selected_path, PathComparison.outcome_status, func.count())
+        .filter(
+            or_(PathComparison.selected_path.isnot(None), PathComparison.outcome_status.isnot(None))
+        )
+        .group_by(PathComparison.selected_path, PathComparison.outcome_status)
+        .all()
+    )
+    by_status: dict[str, int] = {}
+    by_path: dict[str, int] = {}
+    total = 0
+    for selected_path, outcome_status, count in rows:
+        total += count
+        if outcome_status:
+            by_status[outcome_status] = by_status.get(outcome_status, 0) + count
+        if selected_path:
+            by_path[selected_path] = by_path.get(selected_path, 0) + count
+    return OutcomeStats(total_outcomes=total, by_status=by_status, by_selected_path=by_path)

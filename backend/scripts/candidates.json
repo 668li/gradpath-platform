@@ -1,0 +1,19 @@
+[
+  {
+    "name": "样本-估分低",
+    "major": "计算机",
+    "region": "广东",
+    "estimated_score": 95
+  },
+  {
+    "name": "样本-估分中",
+    "major": "计算机",
+    "region": "广东",
+    "estimated_score": 130
+  },
+  {
+    "name": "样本-无估分",
+    "major": "计算机",
+    "region": "广东"
+  }
+]

@@ -20,8 +20,9 @@ import logging
 from typing import Any
 
 from sqlalchemy import func, or_
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, load_only
 
+from app.core.cache import cache
 from app.models.grad_intel import GradSchoolIntel, GradScorelineRecord, GradYanzhaoProgram
 from app.models.gwy_position import GwyPosition
 from app.models.gwy_province_position import GwyProvincePosition
@@ -67,6 +68,15 @@ _EDU_RANK = {"大专": 1, "本科": 2, "硕士": 3, "博士": 4}
 _FRESH_MARKERS = ("限应届", "仅限应届", "面向应届毕业生", "应届高校毕业生")
 # 进面线分级阈值（预估分相对岗位进面线）
 _STEADY_DIFF = 10  # 高于进面线 10+ 分 → 稳健；低于 10+ 分 → 冲刺
+# 劝退阈值：低于进面线 20+ 分 → 建议放弃（诚实拒绝）。
+# 宁缺毋滥：阈值取「冲刺档再跌一整档」，且数据不足时不出卡——
+# 劝退错一次毁掉的信任十倍于推荐对一次。
+_DISCOURAGE_DIFF = 20
+# 进面线数据的单年声明（当前 gwy_score_line 仅 2026 一个批次）
+_SCORE_YEAR_NOTE = "进面线数据目前仅覆盖单个批次，无历史趋势可校验，请结合自身模考波动判断"
+
+# analyze 结果缓存：同输入（专业/地区/条件包）直接复用，TTL 10 分钟（数据每日更新）
+_DECISION_CACHE_TTL = 600
 
 
 # ----------------------------------------------------------------------
@@ -109,6 +119,25 @@ def generate_decision(
         }
     """
     year = graduation_year or 2026
+    cache_key = "pathdecision:" + ":".join(
+        str(x)
+        for x in (
+            major,
+            region,
+            school_tier,
+            graduation_year,
+            fresh_status,
+            party_status,
+            education,
+            has_grassroots,
+            gender,
+            estimated_score,
+        )
+    )
+    cached_decision = cache.get(cache_key)
+    if cached_decision is not None:
+        return cached_decision
+
     input_summary = {
         "major": major,
         "region": region or "全国",
@@ -143,13 +172,15 @@ def generate_decision(
     metrics = [kaoyan, civil, employment]
     recommendation = _build_recommendation(metrics, input_summary, conditions)
 
-    return {
+    decision = {
         "metrics": metrics,
         "recommendation": recommendation,
         "input": input_summary,
         "position_analysis": position_analysis,
         "school_analysis": school_analysis,
     }
+    cache.set(cache_key, decision, ttl=_DECISION_CACHE_TTL)
+    return decision
 
 
 # ----------------------------------------------------------------------
@@ -157,10 +188,25 @@ def generate_decision(
 # ----------------------------------------------------------------------
 def _build_kaoyan_path(db: Session, major: str, school_tier: str | None) -> dict[str, Any]:
     pattern = f"%{escape_like(major)}%"
-    base = db.query(GradScorelineRecord).filter(
-        GradScorelineRecord.major_name.ilike(pattern, escape="\\")
+    # 一次取回全部命中行，count/聚合/证据/院校级分析都在 Python 侧算（原来同一查询跑 3 遍）
+    rows = (
+        db.query(GradScorelineRecord)
+        .options(
+            load_only(
+                GradScorelineRecord.university_name,
+                GradScorelineRecord.major_name,
+                GradScorelineRecord.degree_type,
+                GradScorelineRecord.year,
+                GradScorelineRecord.total_score_line,
+                GradScorelineRecord.application_count,
+                GradScorelineRecord.enrollment_count,
+                GradScorelineRecord.data_sources,
+            )
+        )
+        .filter(GradScorelineRecord.major_name.ilike(pattern, escape="\\"))
+        .all()
     )
-    total = base.count()
+    total = len(rows)
     evidence: list[dict[str, Any]] = []
 
     if total == 0:
@@ -174,34 +220,26 @@ def _build_kaoyan_path(db: Session, major: str, school_tier: str | None) -> dict
         )
 
     # 分数线聚合（total_score_line=0 为脏数据占位，视为未公布，排除后再聚合）
-    line_base = base.filter(
-        GradScorelineRecord.total_score_line.isnot(None),
-        GradScorelineRecord.total_score_line > 0,
-    )
-    # 全量命中行（院校级分析用；聚合与抽查共用）
-    line_rows_all = line_base.all()
-    line_agg = line_base.with_entities(
-        func.avg(GradScorelineRecord.total_score_line),
-        func.min(GradScorelineRecord.total_score_line),
-        func.max(GradScorelineRecord.total_score_line),
-        func.min(GradScorelineRecord.year),
-        func.max(GradScorelineRecord.year),
-    ).one()
-    avg_line, min_line, max_line, year_min, year_max = line_agg
+    line_rows_all = [r for r in rows if r.total_score_line is not None and r.total_score_line > 0]
+    line_scores = [r.total_score_line for r in line_rows_all]
+    avg_line = sum(line_scores) / len(line_scores) if line_scores else None
+    min_line = min(line_scores) if line_scores else None
+    max_line = max(line_scores) if line_scores else None
+    if line_rows_all:
+        year_min = min(r.year for r in line_rows_all)
+        year_max = max(r.year for r in line_rows_all)
+    else:
+        year_min = year_max = None
     line_desc = _format_line(avg_line, min_line, max_line)
 
     # 报录情况：有 application_count 与 enrollment_count 的条目才计算（无则诚实省略）
+    ratio_rows = [
+        r for r in rows if r.application_count is not None and r.enrollment_count is not None
+    ]
+    ratio_rows.sort(key=lambda r: r.year, reverse=True)
     ratio_samples: list[str] = []
     ratio_ev: list[dict[str, Any]] = []
-    for row in (
-        base.filter(
-            GradScorelineRecord.application_count.isnot(None),
-            GradScorelineRecord.enrollment_count.isnot(None),
-        )
-        .order_by(GradScorelineRecord.year.desc())
-        .limit(SCORELINE_LIMIT)
-        .all()
-    ):
+    for row in ratio_rows[:SCORELINE_LIMIT]:
         ratio = _format_ratio(row.application_count, row.enrollment_count)
         ratio_samples.append(f"{row.university_name}（{row.year}）报录 {ratio}")
         ratio_ev.append(
@@ -214,7 +252,7 @@ def _build_kaoyan_path(db: Session, major: str, school_tier: str | None) -> dict
         )
 
     # 分数证据（同样排除 0 分占位脏数据）
-    line_rows = line_base.order_by(GradScorelineRecord.year.desc()).limit(SCORELINE_LIMIT).all()
+    line_rows = sorted(line_rows_all, key=lambda r: r.year, reverse=True)[:SCORELINE_LIMIT]
     for row in line_rows:
         ev = _evidence(
             f"分数线 · {row.university_name} {row.year}",
@@ -228,8 +266,9 @@ def _build_kaoyan_path(db: Session, major: str, school_tier: str | None) -> dict
     yz = db.query(GradYanzhaoProgram).filter(
         GradYanzhaoProgram.major_name.ilike(pattern, escape="\\")
     )
-    yz_total = yz.count()
-    yz_quota = yz.with_entities(func.sum(GradYanzhaoProgram.enrollment_quota)).scalar()
+    yz_total, yz_quota = yz.with_entities(
+        func.count(), func.sum(GradYanzhaoProgram.enrollment_quota)
+    ).one()
     quota_text = (
         f"研招目录相关专业 {yz_total} 个，公布招生名额合计约 {int(yz_quota)} 人"
         if yz_quota
@@ -297,33 +336,43 @@ def _build_civil_service_path(
     pattern = f"%{escape_like(major)}%"
     evidence: list[dict[str, Any]] = []
 
-    # ---- 国考：专业 + 工作地点 ----
-    gwy = db.query(GwyPosition).filter(
+    # ---- 国考：专业 + 工作地点（一次取回全部命中行，count/求和/证据/岗位分析都在 Python 侧）----
+    gwy_query = db.query(GwyPosition).options(
+        load_only(
+            GwyPosition.position_code,
+            GwyPosition.dept_name,
+            GwyPosition.bureau,
+            GwyPosition.position_name,
+            GwyPosition.position_distribution,
+            GwyPosition.work_location,
+            GwyPosition.recruit_count,
+            GwyPosition.source_url,
+            GwyPosition.remarks,
+            GwyPosition.political_status,
+            GwyPosition.education_req,
+            GwyPosition.grassroots_exp_req,
+        )
+    )
+    gwy_query = gwy_query.filter(
         GwyPosition.year == year,
         GwyPosition.major_req.ilike(pattern, escape="\\"),
     )
     if region:
-        gwy = gwy.filter(GwyPosition.work_location.like(f"%{escape_like(region)}%", escape="\\"))
-    gwy_total = gwy.count()
-    gwy_recruit = gwy.with_entities(func.sum(GwyPosition.recruit_count)).scalar()
+        gwy_query = gwy_query.filter(
+            GwyPosition.work_location.like(f"%{escape_like(region)}%", escape="\\")
+        )
+    gwy_rows = gwy_query.all()
+    gwy_total = len(gwy_rows)
+    gwy_recruit = sum(r.recruit_count or 0 for r in gwy_rows)
     gwy_recruit_text = f"招录合计 {int(gwy_recruit)} 人" if gwy_recruit else "招录人数未公布"
 
-    # 进面分：按 position_code 关联 gwy_score_line
-    codes = [row.position_code for row in gwy.limit(500).all() if row.position_code]
-    avg_min_score = None
-    if codes:
-        avg_min_score = (
-            db.query(func.avg(GwyScoreLine.min_score))
-            .filter(
-                GwyScoreLine.year == year,
-                GwyScoreLine.position_code.in_(codes),
-            )
-            .scalar()
-        )
+    # 进面分：按 position_code 关联 gwy_score_line（一次取回，均值与岗位分析共用）
+    codes = [r.position_code for r in gwy_rows if r.position_code]
+    score_line_rows = _load_score_lines(db, year, codes)
+    avg_min_score = _avg_min_score(score_line_rows)
 
     # 国考证据
-    gwy_rows = gwy.limit(GWY_POSITION_LIMIT).all()
-    for row in gwy_rows:
+    for row in gwy_rows[:GWY_POSITION_LIMIT]:
         ev = _evidence(
             f"国考岗位 · {row.dept_name or row.bureau or '部门'}",
             f"{row.position_name}（{row.position_distribution or row.work_location or '地点未公布'}），"
@@ -333,9 +382,23 @@ def _build_civil_service_path(
         if ev not in evidence:
             evidence.append(ev)
 
-    # ---- 省考：专业（本科要求）+ 省份 ----
+    # ---- 省考：专业（本科要求）+ 省份（同样一次取回）----
     province_scope = region  # 省考按省份限定（如「广东」）
-    gwy_p = db.query(GwyProvincePosition).filter(
+    p_query = db.query(GwyProvincePosition).options(
+        load_only(
+            GwyProvincePosition.position_code,
+            GwyProvincePosition.dept_name,
+            GwyProvincePosition.position_name,
+            GwyProvincePosition.exam_region,
+            GwyProvincePosition.province,
+            GwyProvincePosition.recruit_count,
+            GwyProvincePosition.source_url,
+            GwyProvincePosition.education_req,
+            GwyProvincePosition.fresh_grad_only,
+            GwyProvincePosition.grassroots_exp_req,
+        )
+    )
+    p_query = p_query.filter(
         GwyProvincePosition.year == year,
         or_(
             GwyProvincePosition.major_req_undergrad.ilike(pattern, escape="\\"),
@@ -343,12 +406,13 @@ def _build_civil_service_path(
         ),
     )
     if province_scope:
-        gwy_p = gwy_p.filter(GwyProvincePosition.province == province_scope)
-    p_total = gwy_p.count()
-    p_recruit = gwy_p.with_entities(func.sum(GwyProvincePosition.recruit_count)).scalar()
+        p_query = p_query.filter(GwyProvincePosition.province == province_scope)
+    p_rows = p_query.all()
+    p_total = len(p_rows)
+    p_recruit = sum(r.recruit_count or 0 for r in p_rows)
     p_recruit_text = f"招录合计 {int(p_recruit)} 人" if p_recruit else "招录人数未公布"
 
-    for row in gwy_p.limit(GWY_POSITION_LIMIT).all():
+    for row in p_rows[:GWY_POSITION_LIMIT]:
         ev = _evidence(
             f"省考岗位 · {row.dept_name or '部门'}",
             f"{row.position_name}（{row.exam_region or row.province}），招 {row.recruit_count or '?'} 人",
@@ -381,7 +445,9 @@ def _build_civil_service_path(
         coverage_parts.append(f"国考平均进面最低分约 {avg_min_score:.1f} 分")
 
     # ---- 岗位级分析（个人可报边界 + 进面线分布 + 竞争力分级）----
-    position_analysis = _build_position_analysis(db, gwy.all(), gwy_p.all(), year, conditions)
+    position_analysis = _build_position_analysis(
+        gwy_rows, p_rows, year, conditions, score_line_rows
+    )
 
     return (
         {
@@ -423,23 +489,35 @@ def _build_employment_path(
 
     # ---- market_data：行业薪资带（宏观，带 source_url）----
     # 行业宏观数据多为全国口径：优先匹配地区，无命中则回退全国（诚实标注口径）。
-    md = db.query(MarketData).filter(
+    # market_data 全表千余行，一次取回命中行在 Python 侧计数/排序（原 count+取数两查）。
+    md_base = db.query(MarketData).filter(
         MarketData.industry.ilike(f"%{escape_like(major)}%", escape="\\")
     )
-    md_region = md
-    if region:
-        md_region = md_region.filter(
-            MarketData.region.like(f"%{escape_like(region)}%", escape="\\")
-        )
-    md_total = md_region.count()
-    # 取数查询：地区命中用地区，否则回退全国
-    md_query = md_region if md_total else md
+    md_total = 0
     scope_label = region or "全国"
-    if region and not md_total:
-        logger.info("就业路 market_data 无 %s 地区数据，回退全国口径", region)
-        scope_label = f"{region}（全国口径）"
     md_salary: list[str] = []
-    for row in md_query.order_by(MarketData.year.desc()).limit(MARKET_LIMIT).all():
+    if region:
+        md_region_rows = md_base.filter(
+            MarketData.region.like(f"%{escape_like(region)}%", escape="\\")
+        ).all()
+        md_total = len(md_region_rows)
+        if md_region_rows:
+            md_rows = sorted(md_region_rows, key=lambda r: r.year, reverse=True)[:MARKET_LIMIT]
+        else:
+            logger.info("就业路 market_data 无 %s 地区数据，回退全国口径", region)
+            scope_label = f"{region}（全国口径）"
+            md_rows = (
+                db.query(MarketData)
+                .filter(MarketData.industry.ilike(f"%{escape_like(major)}%", escape="\\"))
+                .order_by(MarketData.year.desc())
+                .limit(MARKET_LIMIT)
+                .all()
+            )
+    else:
+        md_rows_all = md_base.all()
+        md_total = len(md_rows_all)
+        md_rows = sorted(md_rows_all, key=lambda r: r.year, reverse=True)[:MARKET_LIMIT]
+    for row in md_rows:
         md_salary.append(f"{row.indicator} {_format_value(row.value, row.unit)}（{row.year}）")
         evidence.append(
             _evidence(
@@ -452,17 +530,22 @@ def _build_employment_path(
         coverage_parts.append(f"{scope_label}行业薪资带：" + "、".join(md_salary[:3]))
 
     # ---- salary_benchmarks：城市岗位薪资（entry 级）----
-    sb = db.query(SalaryBenchmark).filter(
-        SalaryBenchmark.experience_level == "entry",
-    )
     if region:
-        sb = sb.filter(SalaryBenchmark.city.like(f"%{escape_like(region)}%", escape="\\"))
-        sample_rows = sb.order_by(SalaryBenchmark.year.desc()).limit(SALARY_LIMIT).all()
-        sb_total = sb.count()
-    else:
         # 未指定地区时不展示岗位薪资样本（城市粒度才有意义）
-        sample_rows = []
+        sb_rows = (
+            db.query(SalaryBenchmark)
+            .filter(
+                SalaryBenchmark.experience_level == "entry",
+                SalaryBenchmark.city.like(f"%{escape_like(region)}%", escape="\\"),
+            )
+            .order_by(SalaryBenchmark.year.desc())
+            .all()
+        )
+        sb_total = len(sb_rows)
+        sample_rows = sb_rows[:SALARY_LIMIT]
+    else:
         sb_total = 0
+        sample_rows = []
     sb_parts: list[str] = []
     for row in sample_rows:
         sb_parts.append(f"{row.company}·{row.position} {row.salary_min}k-{row.salary_max}k")
@@ -480,15 +563,18 @@ def _build_employment_path(
             + "\n".join(f"- {s}" for s in sb_parts[:5])
         )
 
-    # ---- schools：地区就业率/考研率 ----
-    sc = db.query(School)
+    # ---- schools：地区就业率/考研率（一次取回，count/均值/样本都在 Python 侧）----
+    sc_query = db.query(School)
     if region:
-        sc = sc.filter(School.province == region)
+        sc_query = sc_query.filter(School.province == region)
     if school_tier:
-        sc = sc.filter(School.level == school_tier)
-    sc_total = sc.count()
-    emp_rate = sc.with_entities(func.avg(School.employment_rate)).scalar()
-    grad_rate = sc.with_entities(func.avg(School.grad_school_rate)).scalar()
+        sc_query = sc_query.filter(School.level == school_tier)
+    sc_rows = sc_query.all()
+    sc_total = len(sc_rows)
+    emp_rates = [r.employment_rate for r in sc_rows if r.employment_rate is not None]
+    grad_rates = [r.grad_school_rate for r in sc_rows if r.grad_school_rate is not None]
+    emp_rate = sum(emp_rates) / len(emp_rates) if emp_rates else None
+    grad_rate = sum(grad_rates) / len(grad_rates) if grad_rates else None
     if sc_total and (emp_rate is not None or grad_rate is not None):
         rate_parts = []
         if emp_rate is not None:
@@ -498,7 +584,7 @@ def _build_employment_path(
         coverage_parts.append(
             f"{region or '全国'}{school_tier or ''}层次院校平均" + "、".join(rate_parts)
         )
-        for row in sc.limit(SCHOOL_LIMIT).all():
+        for row in sc_rows[:SCHOOL_LIMIT]:
             evidence.append(
                 _evidence(
                     f"院校参考 · {row.name}",
@@ -734,12 +820,74 @@ def _classify_level(est: int, line: float) -> str:
     return "均衡"
 
 
+def _alternatives_for(
+    target_row: Any,
+    by_code: dict[str, Any],
+    score_map: dict[str, float],
+    est: int,
+    max_n: int = 2,
+) -> list[str]:
+    """为劝退岗位找替代出口：同部门（bureau/dept_name）中估分高于进面线的岗位。
+
+    按安全余量降序取前 max_n 个；同部门无合格岗位则回退到全量稳健档
+    （最多同样数量）。找不到就返回空列表——绝不编造替代。
+    """
+    scored = [
+        (row, score_map[code])
+        for code, row in by_code.items()
+        if code in score_map and row is not target_row
+    ]
+    safe = [(r, s) for r, s in scored if est - s > 0]
+    same_dept = [
+        (r, s)
+        for r, s in safe
+        if (r.bureau and r.bureau == target_row.bureau)
+        or (r.dept_name and r.dept_name == target_row.dept_name)
+    ]
+    pool = same_dept or safe
+    pool.sort(key=lambda pair: pair[1])  # 进面线低 = 余量大 = 更稳
+    alts = []
+    for r, s in pool[:max_n]:
+        alts.append(
+            f"{r.dept_name or r.bureau or '部门未公布'}·{r.position_name or '职位未公布'}"
+            f"（进面 {s:.0f} 分，你高 {est - s:.0f} 分）"
+        )
+    return alts
+
+
+def _load_score_lines(db: Session, year: int, codes: list[str]) -> list[Any]:
+    """一次取回指定职位代码的进面线（供均值聚合与岗位级分析共用，替代两次独立查询）。"""
+    if not codes:
+        return []
+    return (
+        db.query(GwyScoreLine)
+        .options(
+            load_only(
+                GwyScoreLine.position_code,
+                GwyScoreLine.min_score,
+                GwyScoreLine.batch,
+            )
+        )
+        .filter(GwyScoreLine.year == year, GwyScoreLine.position_code.in_(codes))
+        .order_by(GwyScoreLine.batch == "首批")
+        .all()
+    )
+
+
+def _avg_min_score(score_line_rows: list[Any]) -> float | None:
+    """进面线均值（与 SQL AVG 一致：忽略 NULL；无行返回 None）。"""
+    scores = [line.min_score for line in score_line_rows if line.min_score is not None]
+    if not scores:
+        return None
+    return sum(scores) / len(scores)
+
+
 def _build_position_analysis(
-    db: Session,
     gwy_rows: list[Any],
     province_rows: list[Any],
     year: int,
     conditions: dict[str, Any],
+    score_line_rows: list[Any],
 ) -> dict[str, Any] | None:
     """考公岗位级分析 — 个人可报清单（按 position_code 去重）+ 进面线分层。
 
@@ -776,17 +924,11 @@ def _build_position_analysis(
         }
 
     # ---- 进面线：按 position_code 关联，同 code 多批次取第一条（首批优先）----
+    # score_line_rows 由调用方一次取回（覆盖全部命中岗位），这里只筛可报岗位的 code
     score_map: dict[str, float] = {}
-    codes = list(by_code.keys())
-    if codes:
-        for line in (
-            db.query(GwyScoreLine)
-            .filter(GwyScoreLine.year == year, GwyScoreLine.position_code.in_(codes))
-            .order_by(GwyScoreLine.batch == "首批")
-            .all()
-        ):
-            if line.min_score and line.position_code not in score_map:
-                score_map[line.position_code] = line.min_score
+    for line in score_line_rows:
+        if line.min_score and line.position_code in by_code and line.position_code not in score_map:
+            score_map[line.position_code] = line.min_score
 
     scores = sorted(score_map.values())
     has_score = len(scores) > 0
@@ -807,6 +949,8 @@ def _build_position_analysis(
     # ---- 个人竞争力分级（仅国考有进面线的岗位）----
     personalized_level: str | None = None
     tier_summary: str | None = None
+    avoid_positions: list[dict[str, Any]] = []
+    discouraged_count = 0
     est = conditions.get("estimated_score")
     if est is not None and has_score:
         tier_counts: dict[str, int] = {"稳健": 0, "均衡": 0, "冲刺": 0}
@@ -817,6 +961,34 @@ def _build_position_analysis(
             f"按预估 {est} 分对比岗位进面线：稳健 {tier_counts['稳健']} 岗 · "
             f"均衡 {tier_counts['均衡']} 岗 · 冲刺 {tier_counts['冲刺']} 岗（仅统计已公布线岗位）"
         )
+
+        # ---- 劝退卡：估分低于进面线 20+ 分的岗位，诚实拒绝 + 替代出口 ----
+        discouraged = sorted(
+            ((code, row, score_map[code]) for code, row in by_code.items() if code in score_map),
+            key=lambda t: est - t[2],  # 估分差越小越绝望，排最前
+        )
+        p50 = _percentile(scores, 0.5)
+        for code, row, line_score in discouraged:
+            if est - line_score > -_DISCOURAGE_DIFF:
+                break
+            discouraged_count += 1
+            if len(avoid_positions) < 5:
+                avoid_positions.append(
+                    {
+                        "dept_name": row.dept_name or row.bureau or "部门未公布",
+                        "position_name": row.position_name or "职位未公布",
+                        "verdict": "建议放弃",
+                        "basis": (
+                            f"{year} 年此岗进面最低分 {line_score:.0f} 分，你的预估 {est} 分"
+                            f"低 {line_score - est:.0f} 分；同类可报岗位进面线中位 {p50:.0f} 分"
+                        ),
+                        "confidence": f"仅 {year} 年单批数据，{_SCORE_YEAR_NOTE}",
+                        "alternatives": _alternatives_for(row, by_code, score_map, est),
+                        "source_url": row.source_url,
+                    }
+                )
+        if discouraged_count:
+            tier_summary += f"；其中 {discouraged_count} 岗进面希望渺茫（详见劝退分析）"
     elif est is not None:
         tier_summary = f"按预估 {est} 分：暂无已公布进面线可供分级（公布 {scored_ratio_text}）"
 
@@ -829,8 +1001,11 @@ def _build_position_analysis(
         label = "进面线未收录"
         if line_score:
             if est is not None:
-                level = _classify_level(est, line_score)
                 diff = est - line_score
+                if diff <= -_DISCOURAGE_DIFF:
+                    level = "建议放弃"
+                else:
+                    level = _classify_level(est, line_score)
                 label = f"进面 {line_score:.0f} 分 · 你{'高' if diff >= 0 else '低'}{abs(diff):.0f} 分（{level}）"
             else:
                 label = f"进面 {line_score:.0f} 分"
@@ -856,6 +1031,8 @@ def _build_position_analysis(
         notes.append("应届/性别限定来自职位备注文本解析，个别岗位可能有偏差")
     if province_count > 0:
         notes.append("省考岗位无进面线数据，仅统计可报数")
+    if has_score:
+        notes.append(f"进面线口径：{_SCORE_YEAR_NOTE}")
 
     return {
         "eligible_count": eligible_count,
@@ -864,6 +1041,8 @@ def _build_position_analysis(
         "personalized_level": personalized_level,
         "tier_summary": tier_summary,
         "top_positions": top_positions,
+        "avoid_positions": avoid_positions,
+        "discouraged_count": discouraged_count,
         "notes": notes,
     }
 
@@ -884,29 +1063,54 @@ _FIRST_CHOICE_LABEL = {
 }
 
 
-def _school_intel_summary(db: Session, university: str) -> str | None:
-    """院校隐性情报摘要（grad_school_intel）— 真实行优先，AI 生成行显式标注。"""
-    row = (
+def _load_intel_map(db: Session, universities: list[str]) -> dict[str, GradSchoolIntel]:
+    """批量取回院校隐性情报（每校一行：真实行优先，AI 行次之，同为真实取最近更新）。
+
+    替代院校循环里逐校查询的 N+1；排序语义与原逐校 first() 一致。
+    """
+    if not universities:
+        return {}
+    rows = (
         db.query(GradSchoolIntel)
-        .filter(GradSchoolIntel.school_name == university)
-        .order_by(GradSchoolIntel.is_ai_generated.asc(), GradSchoolIntel.updated_at.desc())
-        .first()
+        .options(
+            load_only(
+                GradSchoolIntel.school_name,
+                GradSchoolIntel.background_discrimination,
+                GradSchoolIntel.first_choice_protection,
+                GradSchoolIntel.admission_ratio,
+                GradSchoolIntel.is_ai_generated,
+            )
+        )
+        .filter(GradSchoolIntel.school_name.in_(universities))
+        .order_by(
+            GradSchoolIntel.is_ai_generated.asc(),
+            GradSchoolIntel.updated_at.desc(),
+        )
+        .all()
     )
-    if row is None:
+    intel_map: dict[str, GradSchoolIntel] = {}
+    for row in rows:
+        intel_map.setdefault(row.school_name, row)
+    return intel_map
+
+
+def _school_intel_summary(intel: GradSchoolIntel | None) -> str | None:
+    """院校隐性情报摘要文本（grad_school_intel）— 真实行优先，AI 生成行显式标注。"""
+    if intel is None:
         return None
     parts: list[str] = []
-    bg = _BG_DISCRIMINATION_LABEL.get(row.background_discrimination or "")
+    bg = _BG_DISCRIMINATION_LABEL.get(intel.background_discrimination or "")
     if bg:
         parts.append(bg)
-    fcp = _FIRST_CHOICE_LABEL.get(row.first_choice_protection or "")
+    fcp = _FIRST_CHOICE_LABEL.get(intel.first_choice_protection or "")
     if fcp:
         parts.append(fcp)
-    if row.admission_ratio:
-        parts.append(f"报录比约 {row.admission_ratio}")
+    if intel.admission_ratio:
+        parts.append(f"报录比约 {intel.admission_ratio}")
     if not parts:
         return None
     text = "；".join(parts)
-    if row.is_ai_generated:
+    if intel.is_ai_generated:
         text = f"{text}（AI 生成情报，未经核实）"
     return text
 
@@ -928,6 +1132,8 @@ def _build_school_analysis(
         cur = group.get(row.university_name)
         if cur is None or row.year >= cur.year:
             group[row.university_name] = row
+
+    intel_map = _load_intel_map(db, list(group.keys()))
 
     items: list[dict[str, Any]] = []
     lines = [r.total_score_line or 0 for r in group.values()]
@@ -957,7 +1163,7 @@ def _build_school_analysis(
                     "score_line": score,
                     "ratio": ratio,
                     "competition": competition,
-                    "intel": _school_intel_summary(db, uni),
+                    "intel": _school_intel_summary(intel_map.get(uni)),
                     "source_url": (
                         (row.data_sources or [None])[0]
                         if isinstance(row.data_sources, list)
@@ -982,7 +1188,7 @@ def _build_school_analysis(
                     "score_line": row.total_score_line,
                     "ratio": ratio,
                     "competition": "中等",
-                    "intel": _school_intel_summary(db, uni),
+                    "intel": _school_intel_summary(intel_map.get(uni)),
                     "source_url": (
                         (row.data_sources or [None])[0]
                         if isinstance(row.data_sources, list)

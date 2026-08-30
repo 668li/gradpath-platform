@@ -2,8 +2,9 @@
 
 // frontend/components/decision-engine/position-analysis-card.tsx
 // 考公岗位级分析 — 基于个人条件的可报清单 + 进面线分布 + 竞争力分级（决策飞轮第一圈）
+// 劝退卡（诚实拒绝）：预估分显著低于进面线的岗位，给结论、依据与替代出口。
 
-import { Landmark, MapPin, Target, Users } from "lucide-react";
+import { Ban, Landmark, MapPin, ShieldAlert, Target, Users } from "lucide-react";
 import { Badge } from "@/components/ui/form-controls";
 import type { PositionAnalysis } from "@/types/path-comparison";
 
@@ -103,6 +104,49 @@ export function PositionAnalysisCard({ analysis }: { analysis: PositionAnalysis 
                   )}
                 </div>
                 <div className="mt-1 text-[11px] text-ink-500">{p.score_label}</div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* 劝退卡（诚实拒绝）— 结论 → 依据 → 替代出口 → 置信标签 */}
+      {(analysis.avoid_positions?.length ?? 0) > 0 && (
+        <div className="mt-4">
+          <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-red-700">
+            <ShieldAlert className="h-3.5 w-3.5" />
+            诚实劝退（预估分明显低于进面线的岗位）
+          </div>
+          <ul className="space-y-2">
+            {analysis.avoid_positions!.map((card, i) => (
+              <li
+                key={`${card.dept_name}-${card.position_name}-${i}`}
+                className="rounded-lg border border-red-200 bg-red-50/60 p-3"
+              >
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <Ban className="h-3.5 w-3.5 text-red-600" />
+                  <span className="text-sm font-semibold text-red-800">{card.verdict}</span>
+                  <span className="text-sm font-medium text-ink-800">{card.dept_name}</span>
+                  <span className="text-xs text-ink-500">{card.position_name}</span>
+                </div>
+                <p className="mt-1 text-xs leading-relaxed text-ink-600">{card.basis}</p>
+                {card.alternatives.length > 0 && (
+                  <div className="mt-1.5 text-xs text-ink-600">
+                    <span className="font-medium text-emerald-700">更有把握的替代：</span>
+                    {card.alternatives.join("；")}
+                  </div>
+                )}
+                <div className="mt-1 text-[11px] text-ink-400">{card.confidence}</div>
+                {card.source_url && (
+                  <a
+                    href={card.source_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-0.5 inline-block text-[11px] text-brand-600 hover:underline"
+                  >
+                    查看岗位来源
+                  </a>
+                )}
               </li>
             ))}
           </ul>
