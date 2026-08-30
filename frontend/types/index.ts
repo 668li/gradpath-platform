@@ -2322,6 +2322,39 @@ export interface CommentListResponse {
   total: number;
 }
 
+// ===== 报考条件账本（技能树转型：目标职位条件对照） =====
+export interface ConditionItem {
+  key: string;
+  label: string;
+  required: string;
+  source_field: string;
+}
+
+export interface ConditionProgress {
+  total: number;
+  met: number;
+  in_progress: number;
+  unmet: number;
+  rate: number;
+}
+
+export interface ConditionChecklistResponse {
+  position_id: string;
+  position_code: string;
+  position_name: string | null;
+  dept_name: string | null;
+  year: number;
+  conditions: ConditionItem[];
+  statuses: Record<string, string>;
+  progress: ConditionProgress;
+}
+
+export interface ConditionStatusUpdateRequest {
+  position_id: string;
+  condition_key: string;
+  status: string;
+}
+
 // ===== 决策副驾驶护城河（Phase D） =====
 // 类型定义位于 ./decision-copilot，此处 re-export 保持单一类型入口
 export * from "./decision-copilot";

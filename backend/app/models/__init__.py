@@ -96,6 +96,7 @@ from app.models.skill_node import SkillNode
 from app.models.streak import StreakRecord
 from app.models.user import User, UserStage
 from app.models.user_badge import UserBadge
+from app.models.user_condition_status import UserConditionStatus
 from app.models.user_llm_config import UserLLMConfig
 
 # 决策副驾驶护城河
@@ -141,6 +142,7 @@ __all__ = [
     "GrowthInsight",
     "UserSetting",
     "UserLLMConfig",
+    "UserConditionStatus",
     # Phase 11 AI 职业管家
     "KnowledgeArticle",
     "Conversation",

@@ -13,6 +13,7 @@ import { useToast } from "@/components/ui/toast";
 import { SkillRadar } from "@/components/charts";
 import { SkillForm } from "@/components/skill-form";
 import { SkillMapView } from "@/components/skills/skill-map-view";
+import { TargetConditionCard } from "@/components/skills/target-condition-card";
 import type { SkillResponse, SkillStats } from "@/types";
 
 // 优化：D3.js 树状图依赖 DOM，仅在客户端渲染，按需加载减少首屏 JS 体积
@@ -582,6 +583,9 @@ export default function SkillsPage() {
       {/* 技能树视图 */}
       {topView === "tree" && (
         <>
+        {/* 转型核心：目标条件对照 — 完成率即北极星「条件完成率」的职位级视图 */}
+        <TargetConditionCard />
+
         {/* 增强2：Hot Technologies 技能热度榜 */}
         <HotTechnologiesCard />
 

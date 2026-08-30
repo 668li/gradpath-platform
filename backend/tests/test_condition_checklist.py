@@ -1,0 +1,157 @@
+"""报考条件账本测试 — 条件清单规则生成 + 勾选状态 + 完成率。"""
+
+from app.models.gwy_position import GwyPosition
+
+
+def _make_position(**overrides) -> GwyPosition:
+    base = dict(
+        id="a" * 32,
+        year=2026,
+        exam_type="国考",
+        position_code="0401267001",
+        position_name="科技管理一级行政执法员",
+        dept_name="杭州海关",
+        major_req="计算机科学与技术、软件工程、网络工程",
+        education_req="仅限本科",
+        degree_req="学士",
+        political_status="不限",
+        min_work_years="无限制",
+        grassroots_exp_req="无限制",
+        professional_test="否",
+        interview_ratio="3:1",
+        remarks="应届高校毕业生；大学英语四级考试425分及以上；现场一线岗位",
+    )
+    base.update(overrides)
+    return GwyPosition(**base)
+
+
+def _seed(client):
+    from app.main import app
+
+    # 拿到 client 背后的 session 种入职位
+    session = None
+    for override in app.dependency_overrides.values():
+        gen = override()
+        session = next(gen)
+        break
+    assert session is not None, "get_db override 未注册"
+    session.add(_make_position())
+    session.commit()
+
+
+def test_checklist_generation_rules(client, auth_headers):
+    """条件清单按规则生成：证书从 remarks 提取，『不限』类不生成无效条目。"""
+    _seed(client)
+    resp = client.get("/api/condition-checklist/" + "a" * 32, headers=auth_headers)
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+
+    keys = [c["key"] for c in data["conditions"]]
+    assert "education" in keys and "major" in keys and "degree" in keys
+    # 政治面貌=不限、基层年限=无限制 → 不生成条目
+    assert "political" not in keys
+    assert "work_years" not in keys
+    assert "grassroots" not in keys
+    # professional_test=否 → 不生成
+    assert "professional_test" not in keys
+    # 证书要求从 remarks 提取到英语四级
+    cert_keys = [k for k in keys if k.startswith("cert_")]
+    assert len(cert_keys) >= 1
+    cert_item = next(c for c in data["conditions"] if c["key"] == cert_keys[0])
+    assert "四级" in cert_item["required"]
+    assert cert_item["source_field"] == "remarks"
+    # 溯源字段
+    edu_item = next(c for c in data["conditions"] if c["key"] == "education")
+    assert edu_item["required"] == "仅限本科"
+    assert edu_item["source_field"] == "education_req"
+
+
+def test_checklist_progress_and_vacuous_automet(client, auth_headers):
+    """『不限』类条件自动计为已满足；未勾选条件默认 unmet。"""
+    from app.schemas.user_condition import ConditionItem
+    from app.services.condition_checklist_service import compute_progress
+
+    conditions = [
+        ConditionItem(
+            key="education", label="学历要求", required="仅限本科", source_field="education_req"
+        ),
+        ConditionItem(
+            key="cert_0", label="证书要求 1", required="英语四级425分及以上", source_field="remarks"
+        ),
+    ]
+    progress = compute_progress(conditions, {})
+    assert progress.total == 2
+    assert progress.unmet == 2
+    assert progress.rate == 0.0
+
+    progress = compute_progress(conditions, {"education": "met", "cert_0": "in_progress"})
+    assert progress.met == 1 and progress.in_progress == 1
+    assert progress.rate == 50.0
+
+    # 『不限』条件无需勾选即自动已满足
+    vacuous = [
+        ConditionItem(
+            key="political", label="政治面貌", required="不限", source_field="political_status"
+        )
+    ]
+    progress = compute_progress(vacuous, {})
+    assert progress.met == 1 and progress.rate == 100.0
+
+
+def test_status_upsert_roundtrip(client, auth_headers):
+    """勾选状态落库并在清单响应里反映完成率。"""
+    _seed(client)
+    pid = "a" * 32
+
+    resp = client.put(
+        "/api/condition-checklist/status",
+        json={"position_id": pid, "condition_key": "education", "status": "met"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    assert data["statuses"]["education"] == "met"
+    assert data["progress"]["met"] >= 1
+
+    # 再勾一条 → 覆盖为 in_progress
+    resp = client.put(
+        "/api/condition-checklist/status",
+        json={"position_id": pid, "condition_key": "education", "status": "in_progress"},
+        headers=auth_headers,
+    )
+    assert resp.json()["statuses"]["education"] == "in_progress"
+
+    # 完成率出现在响应中且为百分比
+    assert 0 <= resp.json()["progress"]["rate"] <= 100
+
+
+def test_status_rejects_invalid_key_and_value(client, auth_headers):
+    """条件键必须在该职位清单中；状态必须为三态之一。"""
+    _seed(client)
+    pid = "a" * 32
+
+    # 非清单内的条件键 → 400
+    resp = client.put(
+        "/api/condition-checklist/status",
+        json={"position_id": pid, "condition_key": "not_exist", "status": "met"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 400
+
+    # 非法状态 → 422（schema pattern 校验）
+    resp = client.put(
+        "/api/condition-checklist/status",
+        json={"position_id": pid, "condition_key": "major", "status": "done"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 422
+
+
+def test_checklist_404_for_unknown_position(client, auth_headers):
+    resp = client.get("/api/condition-checklist/" + "f" * 32, headers=auth_headers)
+    assert resp.status_code == 404
+
+
+def test_checklist_requires_auth(client):
+    resp = client.get("/api/condition-checklist/" + "a" * 32)
+    assert resp.status_code in (401, 403)

@@ -24,6 +24,7 @@ export { dashboardApi } from "./dashboard";
 export { decisionsApi, decisionJournalApi, decisionAnalysisApi } from "./decisions";
 export { eventsApi } from "./events";
 export { skillsApi, skillApi } from "./skills";
+export { conditionChecklistApi } from "./conditions";
 export { retrospectivesApi } from "./retrospectives";
 export { employmentApi, communityApi, interviewApi } from "./employment";
 export { pipelineApi, externalDataApi } from "./pipeline";
