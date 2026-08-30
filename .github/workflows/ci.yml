@@ -87,12 +87,14 @@ jobs:
           pip install -e ".[dev]"
           pip install pytest-cov
 
+      # 1500+ 用例下 -v 的逐条渲染有明显开销，CI 出报告用 --tb=short 即可
       - name: Run tests with coverage
         env:
           SECRET_KEY: ci-test-secret-key-min-32-characters-long-aaaa-bbbb
           ENVIRONMENT: development
         # 80% 覆盖率门槛从未真实达成（虚设），先产出报告不设阈值；补测后恢复 --cov-fail-under
-        run: pytest tests/ -v --tb=short --cov=app --cov-report=term-missing --cov-report=html
+        # -n auto：pytest-xdist 并行（套件本地实测 9.5min → 1.75min），1500+ 用例已验证并行安全
+        run: pytest tests/ -q -n auto --tb=short --cov=app --cov-report=term-missing --cov-report=html
 
       - name: Upload coverage
         if: always()
@@ -191,30 +193,8 @@ jobs:
           retention-days: 7
 
   # ===== 前端构建验证 =====
-  frontend-build:
-    name: Frontend Production Build
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build Next.js (production)
-        env:
-          NEXT_PUBLIC_API_URL: ""
-        run: npm run build
-
+  # 2026-08-30 移除独立 frontend-build job：tsc --noEmit 在 frontend-lint 已跑，
+  # 完整生产构建在 docker-build 的前端镜像内执行（含 prerender），无需双份构建。
   # ===== E2E 测试 =====
   frontend-e2e:
     name: Frontend E2E Tests
@@ -286,6 +266,13 @@ jobs:
           npm run dev &
           npx wait-on http://localhost:3000 --timeout 60000
 
+      # Playwright 浏览器 ~150MB，每次运行重新下载约 1-2 分钟；按 lock 文件指纹缓存
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+
       - name: Install Playwright
         working-directory: frontend
         run: npx playwright install --with-deps
@@ -346,6 +333,12 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      # pre-commit 的钩子环境按 config 指纹缓存，避免每次运行重建全部 hook venv
+      - name: Cache pre-commit environments
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
       - name: Install pre-commit
         run: pip install pre-commit
       - name: Run pre-commit

@@ -2438,14 +2438,12 @@ def seed_companies(db: Session) -> int:
         新插入的公司数量
     """
     inserted = 0
-    seen_names = set()
+    # 一次取回已存在的公司名，替代逐行 1200 次存在性查询
+    existing_names = {name for (name,) in db.query(Company.name).all()}
     for name, industry, size, stage, hq, desc in COMPANIES:
-        if name in seen_names:
+        if name in existing_names:
             continue
-        seen_names.add(name)
-        existing = db.query(Company).filter(Company.name == name).first()
-        if existing:
-            continue
+        existing_names.add(name)
         db.add(
             Company(
                 name=name,

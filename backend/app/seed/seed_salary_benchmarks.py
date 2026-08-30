@@ -61,31 +61,54 @@ def _load_real_salaries() -> list[dict[str, Any]]:
     return records
 
 
+# 解析结果按数据目录缓存 — JSON 是静态的，测试套件里每个测试重读 2 万行纯属浪费
+_SALARY_RECORDS_CACHE: dict[str, tuple[dict[str, Any], ...]] = {}
+
+
+def _load_real_salaries_cached(data_dir: str) -> tuple[dict[str, Any], ...]:
+    cached = _SALARY_RECORDS_CACHE.get(data_dir)
+    if cached is None:
+        cached = tuple(_load_real_salaries())
+        _SALARY_RECORDS_CACHE[data_dir] = cached
+    return cached
+
+
 def seed_salary_benchmarks(db: Session) -> int:
     """插入薪资基准种子数据（幂等：若该公司+岗位+城市+级别+年份已存在则跳过）。
 
     数据全部来自真实调研 JSON，不做任何推导/放大。
+    批量实现：一次取回已存在键 + add_all 单次 commit（原逐行 2 万次存在性查询，
+    在测试套件里每个测试要跑一遍，单次 20+ 秒是最大时间浪费点）。
 
     Returns:
         新插入的记录数量
     """
-    all_records = _load_real_salaries()
-    inserted = 0
+    all_records = _load_real_salaries_cached(str(_real_data_dir()))
+    existing = {
+        (company, position, city, level, year)
+        for company, position, city, level, year in db.query(
+            SalaryBenchmark.company,
+            SalaryBenchmark.position,
+            SalaryBenchmark.city,
+            SalaryBenchmark.experience_level,
+            SalaryBenchmark.year,
+        ).all()
+    }
+    new_objs: list[SalaryBenchmark] = []
     for rec in all_records:
-        existing = (
-            db.query(SalaryBenchmark)
-            .filter(
-                SalaryBenchmark.company == rec["company"],
-                SalaryBenchmark.position == rec["position"],
-                SalaryBenchmark.city == rec["city"],
-                SalaryBenchmark.experience_level == rec["experience_level"],
-                SalaryBenchmark.year == rec["year"],
-            )
-            .first()
+        key = (
+            rec["company"],
+            rec["position"],
+            rec["city"],
+            rec["experience_level"],
+            rec["year"],
         )
-        if existing:
+        if key in existing:
             continue
-        db.add(SalaryBenchmark(**rec))
-        inserted += 1
+        existing.add(key)
+        new_objs.append(SalaryBenchmark(**rec))
+    if not new_objs:
+        return 0
+    db.add_all(new_objs)
     db.commit()
-    return inserted
+    return len(new_objs)

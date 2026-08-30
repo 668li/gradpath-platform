@@ -1,12 +1,11 @@
 name: Security Scan
 
+# 2026-08-30 提速：bandit+safety 已在 ci.yml backend-security 每次 push 运行，
+# 本 workflow 收敛为每周全量 + 手动触发，消除每个 push 双份扫描。
 on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main, develop]
   schedule:
     - cron: "0 6 * * 1"  # Weekly Monday 06:00 UTC
+  workflow_dispatch:
 
 permissions:
   contents: read
