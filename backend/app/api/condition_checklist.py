@@ -21,6 +21,7 @@ from app.schemas.user_condition import (
 from app.services.condition_checklist_service import (
     build_checklist_response,
     build_conditions,
+    build_kaoyan_conditions,
     build_province_conditions,
     upsert_status,
 )
@@ -32,8 +33,27 @@ def _load_position(db: Session, position_id: str, exam_source: str):
     if exam_source == "province":
         return db.get(GwyProvincePosition, position_id)
     if exam_source == "kaoyan":
-        return db.get(GradYanzhaoProgram, position_id)
+        # 兼容 hyphenated UUID 与 32-hex 两种入参（研招目录 API 返回前者）
+        import uuid as _uuid
+
+        try:
+            return db.get(GradYanzhaoProgram, _uuid.UUID(position_id))
+        except (ValueError, AttributeError, TypeError):
+            return None
     return db.get(GwyPosition, position_id)
+
+
+def _position_ref(position) -> str:
+    """勾选记录用的职位引用键：考研专业转 32-hex，其余原样（sha256 十六进制）。"""
+    import uuid as _uuid
+
+    if isinstance(position, GradYanzhaoProgram):
+        return (
+            position.id.hex
+            if isinstance(position.id, _uuid.UUID)
+            else str(position.id).replace("-", "")
+        )
+    return str(position.id)
 
 
 def _valid_condition_keys(db: Session, position) -> set[str]:
@@ -78,7 +98,7 @@ def update_condition_status(
         upsert_status(
             db,
             user.id,
-            data.position_id,
+            _position_ref(position),
             data.condition_key,
             data.status,
             exam_source=data.exam_source,

@@ -299,17 +299,24 @@ def build_checklist_response(
     else:
         exam_source = "national"
         conditions = build_conditions(position)
-    statuses = get_status_map(db, user_id, position.id, exam_source)
+    # 考研专业表主键是原生 UUID（hyphenated 36 字符），统一转 32-hex 存取
+    if isinstance(position, GradYanzhaoProgram):
+        position_ref = position.id.hex
+    else:
+        position_ref = position.id
+    statuses = get_status_map(db, user_id, position_ref, exam_source)
     if isinstance(position, GradYanzhaoProgram):
         position_code = position.department
         position_name = f"{position.university_name}·{position.major_name}"
         dept_name = position.university_name
+        response_position_id = position_ref
     else:
         position_code = position.position_code
         position_name = position.position_name
         dept_name = position.dept_name
+        response_position_id = position.id
     return ConditionChecklistResponse(
-        position_id=position.id,
+        position_id=response_position_id,
         position_code=position_code,
         position_name=position_name,
         dept_name=dept_name,
@@ -337,7 +344,9 @@ def get_latest_condition_summary(db: Session, user_id: str) -> dict | None:
     if not latest:
         return None
     if latest.exam_source == "kaoyan":
-        position = db.get(GradYanzhaoProgram, latest.position_id)
+        import uuid as _uuid
+
+        position = db.get(GradYanzhaoProgram, _uuid.UUID(latest.position_id))
     elif latest.exam_source == "province":
         position = db.get(GwyProvincePosition, latest.position_id)
     else:
