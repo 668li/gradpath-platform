@@ -38,8 +38,13 @@ docker compose -f docker-compose.prod.yml -f docker-compose.grey.yml build \
 echo "[restart] 滚动重启..."
 docker compose -f docker-compose.prod.yml -f docker-compose.grey.yml up -d --pull never --remove-orphans
 
-echo "[migrate] 数据库迁移到 head..."
-sleep 15
+echo "[migrate] 等待 backend 健康后迁移（轮询 /health，最多 60s）..."
+i=0
+until docker exec gradpath-prod-backend-1 sh -c "python -c \"import httpx; httpx.get('http://localhost:8000/health', timeout=3).raise_for_status()\"" >/dev/null 2>&1; do
+  i=$((i+1))
+  if [ "$i" -ge 60 ]; then echo "[warn] backend 60s 未就绪，仍尝试迁移"; break; fi
+  sleep 1
+done
 docker exec gradpath-prod-backend-1 sh -c "cd /app && python -m alembic upgrade head"
 
 echo "=== 更新完成 ==="

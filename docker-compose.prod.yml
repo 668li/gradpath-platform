@@ -105,7 +105,7 @@ services:
     restart: unless-stopped
 
   # ======================================================================
-  # backend — FastAPI (uvicorn 4 workers)
+  # backend — FastAPI（uvicorn 2 workers，与 backend/Dockerfile CMD 一致；2 核机 2 worker 为宜）
   # ======================================================================
   backend:
     build:

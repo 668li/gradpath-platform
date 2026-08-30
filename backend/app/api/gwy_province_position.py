@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
+from app.core.cache import cache
 from app.database import get_db
 from app.models.gwy_province_position import GwyProvincePosition
 from app.schemas.gwy_province_position import (
@@ -26,7 +27,15 @@ def gwy_province_position_stats(
     province: str | None = Query(None, description="省份（默认全部，如：广东）"),
     db: Session = Depends(get_db),
 ):
-    """省考职位统计：总数 + 按招录系统/学历/考区/应届限制分组，含总招录人数。"""
+    """省考职位统计：总数 + 按招录系统/学历/考区/应届限制分组，含总招录人数。
+
+    筛选选项一天不变，6 个聚合查询走 5 分钟缓存（原每次请求都全表聚合）。
+    """
+    cache_key = f"gwyprov:stats:{year or 'all'}:{province or 'all'}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return GwyProvincePositionStatsResponse.model_validate(cached)
+
     base = db.query(GwyProvincePosition)
     if year:
         base = base.filter(GwyProvincePosition.year == year)
@@ -49,7 +58,7 @@ def gwy_province_position_stats(
             if k is not None and str(k).strip() != ""
         ]
 
-    return GwyProvincePositionStatsResponse(
+    response = GwyProvincePositionStatsResponse(
         total=total,
         total_recruit=total_recruit or 0,
         by_sheet=group_counts(GwyProvincePosition.sheet_name),
@@ -57,6 +66,8 @@ def gwy_province_position_stats(
         by_region=group_counts(GwyProvincePosition.exam_region),
         by_fresh_grad_only=group_counts(GwyProvincePosition.fresh_grad_only),
     )
+    cache.set(cache_key, response.model_dump(), ttl=300)
+    return response
 
 
 @router.get("", response_model=GwyProvincePositionListResponse)

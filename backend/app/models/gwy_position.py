@@ -58,4 +58,10 @@ class GwyPosition(TimestampMixin, Base):
     __table_args__ = (
         # 列表筛选 + 统计的主查询路径：按年份 + 职位代码定位
         Index("ix_gwy_position_year_code", "year", "position_code"),
+        # 高频过滤列（列表页筛选 + 决策引擎可报边界）；trgm GIN 见 pgtrgm 迁移
+        Index("ix_gwy_position_education_req", "education_req"),
+        Index("ix_gwy_position_political_status", "political_status"),
+        Index("ix_gwy_position_org_level", "org_level"),
+        Index("ix_gwy_position_exam_category", "exam_category"),
+        Index("ix_gwy_position_work_location", "work_location"),
     )

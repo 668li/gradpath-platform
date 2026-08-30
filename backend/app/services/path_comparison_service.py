@@ -460,12 +460,16 @@ def save_comparison(
     return record
 
 
-def list_history(db: Session, user_id) -> list[PathComparison]:
-    """获取用户的历史对比记录（按时间倒序）。"""
+def list_history(db: Session, user_id, limit: int = 50) -> list[PathComparison]:
+    """获取用户的历史对比记录（按时间倒序，默认最近 50 条）。
+
+    每条 comparison_result JSONB 含完整证据链，无上限会随使用越来越重。
+    """
     return (
         db.query(PathComparison)
         .filter(PathComparison.user_id == user_id)
         .order_by(PathComparison.created_at.desc())
+        .limit(limit)
         .all()
     )
 

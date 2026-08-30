@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
+from app.core.cache import cache
 from app.database import get_db
 from app.models.gwy_position import GwyPosition
 from app.schemas.gwy_position import (
@@ -25,7 +26,15 @@ def gwy_position_stats(
     year: int | None = Query(None, description="招考年份（默认全部）"),
     db: Session = Depends(get_db),
 ):
-    """国考职位统计：总数 + 按省份/学历/机构层级/考试类别分组计数。"""
+    """国考职位统计：总数 + 按省份/学历/机构层级/考试类别分组计数。
+
+    筛选选项一天不变，5 个 group-by 聚合走 5 分钟缓存（原每次请求都全表聚合）。
+    """
+    cache_key = f"gwy:stats:{year or 'all'}"
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return GwyPositionStatsResponse.model_validate(cached)
+
     base = db.query(GwyPosition)
     if year:
         base = base.filter(GwyPosition.year == year)
@@ -45,13 +54,15 @@ def gwy_position_stats(
             if k is not None and str(k).strip() != ""
         ]
 
-    return GwyPositionStatsResponse(
+    response = GwyPositionStatsResponse(
         total=total,
         by_province=group_counts(GwyPosition.work_location),
         by_education=group_counts(GwyPosition.education_req),
         by_org_level=group_counts(GwyPosition.org_level),
         by_exam_category=group_counts(GwyPosition.exam_category),
     )
+    cache.set(cache_key, response.model_dump(), ttl=300)
+    return response
 
 
 @router.get("", response_model=GwyPositionListResponse)
