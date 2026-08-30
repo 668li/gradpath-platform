@@ -11,6 +11,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Crosshair, Search, RotateCcw, X } from "lucide-react";
 import { conditionChecklistApi } from "@/lib/api";
+import { gradIntelApi } from "@/lib/api/grad";
 import { gwyPositionsApi, provincePositionsApi } from "@/lib/api/gwy";
 import { cn } from "@/lib/utils";
 import type {
@@ -25,6 +26,7 @@ const TARGET_POSITION_STORAGE_KEY = "skills:target-position-id";
 const SOURCES = [
   { key: "national", label: "国考" },
   { key: "province", label: "省考(广东)" },
+  { key: "kaoyan", label: "考研" },
 ] as const;
 type SourceKey = (typeof SOURCES)[number]["key"];
 
@@ -133,11 +135,32 @@ export function TargetConditionCard() {
     debounceRef.current = setTimeout(async () => {
       try {
         const q = query.trim();
-        const resp =
-          source === "province"
-            ? await provincePositionsApi.list({ q, province: "广东", page_size: 8 })
-            : await gwyPositionsApi.list({ q, page_size: 8 });
-        setResults(resp.items);
+        if (source === "kaoyan") {
+          const programs = await gradIntelApi.listYanzhaoPrograms({
+            university_name: q,
+            limit: 4,
+          });
+          const byMajor =
+            programs.length > 0
+              ? programs
+              : await gradIntelApi.listYanzhaoPrograms({ major_name: q, limit: 4 });
+          setResults(
+            byMajor.map((p) => ({
+              id: String(p.id),
+              position_name: p.major_name,
+              dept_name: p.university_name,
+              position_code: p.department,
+              education_req: p.degree_type,
+              recruit_count: p.enrollment_quota,
+            })),
+          );
+        } else {
+          const resp =
+            source === "province"
+              ? await provincePositionsApi.list({ q, province: "广东", page_size: 8 })
+              : await gwyPositionsApi.list({ q, page_size: 8 });
+          setResults(resp.items);
+        }
       } catch {
         setResults([]);
       } finally {
@@ -205,7 +228,11 @@ export function TargetConditionCard() {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="搜索职位名称 / 部门 / 专业（如：海关、计算机）"
+              placeholder={
+                source === "kaoyan"
+                  ? "搜索院校或专业（如：清华大学、计算机）"
+                  : "搜索职位名称 / 部门 / 专业（如：海关、计算机）"
+              }
               className="flex-1 text-sm outline-none bg-transparent text-ink-800 placeholder:text-ink-300"
             />
             {query && (

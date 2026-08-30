@@ -389,7 +389,11 @@ export default function DashboardPage() {
           <p className="text-sm text-ink-800">
             {data.condition_ledger.dept_name} · {data.condition_ledger.position_name}
             <span className="ml-2 text-[11px] text-ink-400">
-              {data.condition_ledger.exam_source === "province" ? "省考" : "国考"}{" "}
+              {data.condition_ledger.exam_source === "province"
+                ? "省考"
+                : data.condition_ledger.exam_source === "kaoyan"
+                  ? "考研"
+                  : "国考"}{" "}
               {data.condition_ledger.position_code}
             </span>
           </p>

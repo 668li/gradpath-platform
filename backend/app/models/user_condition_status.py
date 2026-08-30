@@ -15,8 +15,8 @@ from app.models.base import TimestampMixin, UUIDMixin
 # 条件状态三态：未满足 → 进行中 → 已满足
 CONDITION_STATUSES = ("unmet", "in_progress", "met")
 
-# 条件来源赛道：national=国考职位表，province=省考职位表
-EXAM_SOURCES = ("national", "province")
+# 条件来源赛道：national=国考职位表，province=省考职位表，kaoyan=考研专业目录
+EXAM_SOURCES = ("national", "province", "kaoyan")
 
 
 class UserConditionStatus(UUIDMixin, TimestampMixin, Base):

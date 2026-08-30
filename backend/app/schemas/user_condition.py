@@ -40,6 +40,6 @@ class ConditionStatusUpdateRequest(BaseModel):
     """勾选一条条件的完成状态。"""
 
     position_id: str = Field(..., min_length=32, max_length=32)
-    exam_source: str = Field("national", pattern="^(national|province)$")
+    exam_source: str = Field("national", pattern="^(national|province|kaoyan)$")
     condition_key: str = Field(..., min_length=1, max_length=50)
     status: str = Field(..., pattern="^(unmet|in_progress|met)$")

@@ -261,6 +261,104 @@ def test_latest_condition_summary(client, auth_headers):
     assert 0 < summary["rate"] <= 100
 
 
+def _make_kaoyan_program(**overrides):
+    from app.models.grad_intel import GradYanzhaoProgram
+
+    base = dict(
+        id="c" * 32,
+        university_name="清华大学",
+        department="计算机系",
+        major_name="计算机科学与技术",
+        degree_type="学硕",
+        year=2026,
+        enrollment_quota=25,
+        admission_requirements="仅接收推免生以外的统考生；不接受同等学力报考",
+    )
+    base.update(overrides)
+    return GradYanzhaoProgram(**base)
+
+
+def _make_kaoyan_scoreline(**overrides):
+    from app.models.grad_intel import GradScorelineRecord
+
+    base = dict(
+        id="d" * 32,
+        university_name="清华大学",
+        major_name="计算机科学与技术",
+        degree_type="学硕",
+        year=2025,
+        total_score_line=380,
+        politics_score=50,
+        foreign_language_score=50,
+        business_1_score=90,
+        business_2_score=95,
+    )
+    base.update(overrides)
+    return GradScorelineRecord(**base)
+
+
+def test_kaoyan_checklist_generation(client, auth_headers):
+    """考研清单：最新一年复试线总分+四门单科线+报名要求；total=0 脏数据不生成。"""
+    _seed_row(client, _make_kaoyan_program())
+    _seed_row(
+        client,
+        _make_kaoyan_scoreline(),
+    )
+    # 更早年份的另一条线 → 必须取 2025 最新
+    _seed_row(
+        client,
+        _make_kaoyan_scoreline(id="e" * 32, year=2024, total_score_line=372),
+    )
+    # 同院校另一专业的 0 分占位脏数据 → 不得污染
+    _seed_row(
+        client,
+        _make_kaoyan_scoreline(
+            id="f" * 32,
+            major_name="软件工程",
+            total_score_line=0,
+            politics_score=0,
+        ),
+    )
+
+    resp = client.get(
+        "/api/condition-checklist/" + "c" * 32 + "?source=kaoyan",
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    assert data["exam_source"] == "kaoyan"
+    assert data["dept_name"] == "清华大学"
+    assert "计算机科学与技术" in data["position_name"]
+
+    by_key = {c["key"]: c for c in data["conditions"]}
+    assert by_key["total_score"]["required"] == "初试 ≥380 分（2025 复试线）"
+    assert by_key["politics"]["required"] == "政治 ≥50 分（2025）"
+    assert by_key["business_2"]["required"] == "业务课二 ≥95 分（2025）"
+    assert "admission" in by_key
+
+    # 考研赛道勾选独立落库
+    resp = client.put(
+        "/api/condition-checklist/status",
+        json={"position_id": "c" * 32, "exam_source": "kaoyan",
+              "condition_key": "total_score", "status": "in_progress"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    assert resp.json()["statuses"]["total_score"] == "in_progress"
+
+
+def test_kaoyan_checklist_without_scoreline(client, auth_headers):
+    """无分数线匹配时清单只剩报名要求，不报错。"""
+    _seed_row(client, _make_kaoyan_program(id="9" * 32, university_name="未知大学"))
+    resp = client.get(
+        "/api/condition-checklist/" + "9" * 32 + "?source=kaoyan",
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    keys = {c["key"] for c in resp.json()["conditions"]}
+    assert keys == {"admission"}
+
+
 def test_checklist_requires_auth(client):
     resp = client.get("/api/condition-checklist/" + "a" * 32)
     assert resp.status_code in (401, 403)

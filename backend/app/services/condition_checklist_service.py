@@ -180,25 +180,30 @@ def build_kaoyan_conditions(db: Session, program: GradYanzhaoProgram) -> list[Co
             f"初试 ≥{line.total_score_line} 分（{year} 复试线）",
             "total_score_line",
         )
-        add("politics", "政治单科线", f"政治 ≥{line.politics_score} 分（{year}）", "politics_score")
-        add(
-            "foreign_language",
-            "外语单科线",
-            f"外语 ≥{line.foreign_language_score} 分（{year}）",
-            "foreign_language_score",
-        )
-        add(
-            "business_1",
-            "业务课一单科线",
-            f"业务课一 ≥{line.business_1_score} 分（{year}）",
-            "business_1_score",
-        )
-        add(
-            "business_2",
-            "业务课二单科线",
-            f"业务课二 ≥{line.business_2_score} 分（{year}）",
-            "business_2_score",
-        )
+        # 单科线可能为 None（业务课二覆盖率仅 74%），为空不生成该条
+        if line.politics_score:
+            add("politics", "政治单科线", f"政治 ≥{line.politics_score} 分（{year}）", "politics_score")
+        if line.foreign_language_score:
+            add(
+                "foreign_language",
+                "外语单科线",
+                f"外语 ≥{line.foreign_language_score} 分（{year}）",
+                "foreign_language_score",
+            )
+        if line.business_1_score:
+            add(
+                "business_1",
+                "业务课一单科线",
+                f"业务课一 ≥{line.business_1_score} 分（{year}）",
+                "business_1_score",
+            )
+        if line.business_2_score:
+            add(
+                "business_2",
+                "业务课二单科线",
+                f"业务课二 ≥{line.business_2_score} 分（{year}）",
+                "business_2_score",
+            )
 
     add("admission", "报名要求", program.admission_requirements, "admission_requirements")
 
