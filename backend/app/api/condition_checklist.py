@@ -20,10 +20,26 @@ from app.services.condition_checklist_service import (
     build_conditions,
     build_kaoyan_conditions,
     build_province_conditions,
+    settle_checklist,
     upsert_status,
 )
 
 router = APIRouter(prefix="/api/condition-checklist", tags=["报考条件账本"])
+
+
+@router.get("/my-profile-summary")
+def get_my_profile_summary(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """条件账本结算 — 回答「我能不能报 / 还差什么 / 可补项怎么做」。
+
+    从用户最近核对的目标职位汇总：
+    - 可报性结论（hard_gate 硬门槛是否全部满足）
+    - 未满足清单（分硬门槛 / 可补项，各带行动建议）
+    纯规则、零 LLM。未核对过任何职位时返回 has_target=false 引导文案。
+    """
+    return settle_checklist(db, user.id)
 
 
 def _load_position(db: Session, position_id: str, exam_source: str):

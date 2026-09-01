@@ -366,3 +366,121 @@ def test_kaoyan_checklist_without_scoreline(client, auth_headers):
 def test_checklist_requires_auth(client):
     resp = client.get("/api/condition-checklist/" + "a" * 32)
     assert resp.status_code in (401, 403)
+
+
+def test_my_profile_summary_verdict_and_importable(client, auth_headers):
+    """结算端点给出可报性结论、硬门槛/可补项拆分与可导入决策引擎的身份包。"""
+    # 构造一个带硬门槛（仅限本科 + 中共党员）与可补项（英语四级）的国考职位
+    # 国考无 fresh_grad_only 列（仅省考有），这里不传
+    _seed_row(
+        client,
+        _make_position(
+            id="7" * 32,
+            political_status="中共党员",
+            grassroots_exp_req="否",
+            remarks="大学英语四级考试425分及以上",
+        ),
+    )
+    pid = "7" * 32
+
+    # 未核对过 → has_target=False
+    resp = client.get("/api/condition-checklist/my-profile-summary", headers=auth_headers)
+    assert resp.status_code == 200, resp.text
+    data = resp.json()
+    assert data["has_target"] is False
+
+    # 勾选 education=met、cert_0 设为 in_progress（政治面貌保持默认 unmet）
+    for key, status in [
+        ("education", "met"),
+        ("cert_0", "in_progress"),
+    ]:
+        client.put(
+            "/api/condition-checklist/status",
+            json={"position_id": pid, "condition_key": key, "status": status},
+            headers=auth_headers,
+        )
+
+    resp = client.get("/api/condition-checklist/my-profile-summary", headers=auth_headers)
+    data = resp.json()
+    assert data["has_target"] is True
+    assert data["exam_source"] == "national"
+
+    # 硬门槛未满足（political 默认 unmet）→ 暂不可报
+    hg = data["unmet"]["hard_gate"]
+    assert any(u["key"] == "political" for u in hg)
+    assert "暂不可报" in data["verdict"]
+    # political 硬门槛带行动建议
+    pol = next(u for u in hg if u["key"] == "political")
+    assert pol["hint"]
+
+    # 可补项拆分出证书条目（in_progress 未 met 也算未满足清单）
+    action = data["unmet"]["actionable"]
+    assert any(u["key"].startswith("cert_") for u in action)
+
+    # 已满足的硬门槛 education → 导入身份包带出学历
+    assert data["importable"]["education"] == "本科"
+
+
+def test_my_profile_summary_importable_fresh_grassroots(client, auth_headers):
+    """应届与基层经历导入：省考职位条件已满足/未满足均能如实映射为决策引擎字段。"""
+    _seed_row(
+        client,
+        _make_province_position(
+            id="5" * 32,
+            grassroots_exp_req="是",
+            fresh_grad_only="应届毕业生",
+        ),
+    )
+    pid = "5" * 32
+    # 勾选应届与基层经历为已满足
+    client.put(
+        "/api/condition-checklist/status",
+        json={
+            "position_id": pid,
+            "exam_source": "province",
+            "condition_key": "fresh_grad",
+            "status": "met",
+        },
+        headers=auth_headers,
+    )
+    client.put(
+        "/api/condition-checklist/status",
+        json={
+            "position_id": pid,
+            "exam_source": "province",
+            "condition_key": "grassroots",
+            "status": "met",
+        },
+        headers=auth_headers,
+    )
+    resp = client.get("/api/condition-checklist/my-profile-summary", headers=auth_headers)
+    data = resp.json()
+    assert data["exam_source"] == "province"
+    assert data["importable"]["fresh_status"] == "应届"
+    assert data["importable"]["has_grassroots"] is True
+
+    # 改成未满足 → 导出相反字段
+    client.put(
+        "/api/condition-checklist/status",
+        json={
+            "position_id": pid,
+            "exam_source": "province",
+            "condition_key": "fresh_grad",
+            "status": "unmet",
+        },
+        headers=auth_headers,
+    )
+    client.put(
+        "/api/condition-checklist/status",
+        json={
+            "position_id": pid,
+            "exam_source": "province",
+            "condition_key": "grassroots",
+            "status": "unmet",
+        },
+        headers=auth_headers,
+    )
+    resp = client.get("/api/condition-checklist/my-profile-summary", headers=auth_headers)
+    data = resp.json()
+    assert data["importable"]["fresh_status"] == "非应届"
+    assert data["importable"]["has_grassroots"] is False

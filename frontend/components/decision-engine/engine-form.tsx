@@ -4,8 +4,9 @@
 // 三路决策引擎输入表单 — 学生档案（专业/地区/学校层次/毕业年份）+ 个人条件包（考公可报边界）
 
 import { useState } from "react";
-import { Compass, Play } from "lucide-react";
+import { Compass, Import, Play } from "lucide-react";
 import { Button, Field, Input, Select } from "@/components/ui/form-controls";
+import { conditionChecklistApi } from "@/lib/api/conditions";
 import type { DecisionEngineInput } from "@/types/path-comparison";
 
 const SCHOOL_TIERS = [
@@ -78,6 +79,46 @@ export function EngineForm({ loading, onSubmit, initial }: EngineFormProps) {
   const [kaoyanEstimate, setKaoyanEstimate] = useState(
     initial?.kaoyan_estimated_score?.toString() ?? "",
   );
+  const [importNote, setImportNote] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
+
+  /** 从条件账本导入身份 — 消除重复填表。只应用账本里已诚实核实的二元事实。 */
+  const handleImportFromLedger = async () => {
+    setImporting(true);
+    setImportNote(null);
+    try {
+      const summary = await conditionChecklistApi.getProfileSummary();
+      const pkg = summary?.importable;
+      if (!summary?.has_target || !pkg || Object.keys(pkg).length === 0) {
+        setImportNote("条件账本还没有可导入的已核实身份字段。先去「目标条件对照」勾选几项真实条件再回来。");
+        return;
+      }
+      let count = 0;
+      if (pkg.fresh_status) {
+        setFreshStatus(pkg.fresh_status);
+        count += 1;
+      }
+      if (pkg.party_status) {
+        setPartyStatus(pkg.party_status);
+        count += 1;
+      }
+      if (pkg.education) {
+        setEducation(pkg.education);
+        count += 1;
+      }
+      if (pkg.has_grassroots !== undefined) {
+        setGrassroots(pkg.has_grassroots ? "yes" : "no");
+        count += 1;
+      }
+      setImportNote(
+        `已从条件账本（${summary.position_name ?? summary.exam_source}）导入 ${count} 项已核实身份。其余条件账本不能可靠推导，请在下方人工核对。`,
+      );
+    } catch {
+      setImportNote("读取条件账本失败，请稍后再试或直接手动填写。");
+    } finally {
+      setImporting(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -159,9 +200,25 @@ export function EngineForm({ loading, onSubmit, initial }: EngineFormProps) {
 
       {/* 决策飞轮：个人条件包（参与考公可报边界过滤与岗位分级） */}
       <div className="mt-4 border-t border-paper-100 pt-4">
-        <p className="mb-2 text-xs font-medium text-ink-600">
-          个人条件（可选）—— 用于考公路的可报岗位过滤与竞争力分级
-        </p>
+        <div className="mb-2 flex items-center justify-between gap-2 flex-wrap">
+          <p className="text-xs font-medium text-ink-600">
+            个人条件（可选）—— 用于考公路的可报岗位过滤与竞争力分级
+          </p>
+          <button
+            type="button"
+            onClick={handleImportFromLedger}
+            disabled={importing}
+            className="inline-flex items-center gap-1 rounded-md border border-brand-200 bg-brand-50 px-2 py-1 text-[11px] font-medium text-brand-700 hover:bg-brand-100 disabled:opacity-50"
+          >
+            <Import className="h-3 w-3" />
+            {importing ? "读取中…" : "从条件账本导入"}
+          </button>
+        </div>
+        {importNote && (
+          <p className="mb-2 rounded-md bg-ink-50 px-2 py-1.5 text-[11px] text-ink-500">
+            {importNote}
+          </p>
+        )}
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
           <Field label="应届状态">
             <Select value={freshStatus} onChange={(e) => setFreshStatus(e.target.value)} disabled={loading}>

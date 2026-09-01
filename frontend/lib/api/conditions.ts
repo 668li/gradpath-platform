@@ -6,6 +6,7 @@ import { request } from "./client";
 import type {
   ConditionChecklistResponse,
   ConditionStatusUpdateRequest,
+  MyProfileSummary,
 } from "@/types";
 
 export const conditionChecklistApi = {
@@ -16,6 +17,10 @@ export const conditionChecklistApi = {
     request<ConditionChecklistResponse>(
       `/api/condition-checklist/${positionId}?source=${source}`,
     ),
+
+  /** 我的条件账本结算：可报性结论 + 硬门槛/可补项未满足清单 */
+  getProfileSummary: () =>
+    request<MyProfileSummary>(`/api/condition-checklist/my-profile-summary`),
 
   updateStatus: (data: ConditionStatusUpdateRequest) =>
     request<ConditionChecklistResponse>(`/api/condition-checklist/status`, {

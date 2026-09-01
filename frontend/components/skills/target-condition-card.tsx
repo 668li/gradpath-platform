@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import type {
   ConditionChecklistResponse,
   ConditionStatusUpdateRequest,
+  MyProfileSummary,
 } from "@/types";
 
 
@@ -74,6 +75,7 @@ function StatusSegment({
 export function TargetConditionCard() {
   const [source, setSource] = useState<SourceKey>("national");
   const [checklist, setChecklist] = useState<ConditionChecklistResponse | null>(null);
+  const [summary, setSummary] = useState<MyProfileSummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState("");
   // 搜索结果统一为最小形状：两个职位表的列表项都满足
@@ -90,21 +92,31 @@ export function TargetConditionCard() {
   const [showSearch, setShowSearch] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const refreshSummary = useCallback(async () => {
+    try {
+      setSummary(await conditionChecklistApi.getProfileSummary());
+    } catch {
+      // 结算接口不可用时不影响清单主流程
+    }
+  }, []);
+
   const loadChecklist = useCallback(async (positionId: string, src: SourceKey) => {
     setLoading(true);
     try {
       const data = await conditionChecklistApi.getChecklist(positionId, src);
       setChecklist(data);
       setSource(src);
+      refreshSummary();
     } catch {
       // 职位可能已不在当前批次，清掉本地记忆回到搜索态
       localStorage.removeItem(TARGET_POSITION_STORAGE_KEY);
       setChecklist(null);
+      setSummary(null);
       setShowSearch(true);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [refreshSummary]);
 
   // 恢复上次选定的目标职位
   useEffect(() => {
@@ -183,6 +195,7 @@ export function TargetConditionCard() {
   const clearTarget = () => {
     localStorage.removeItem(TARGET_POSITION_STORAGE_KEY);
     setChecklist(null);
+    setSummary(null);
     setShowSearch(true);
   };
 
@@ -197,6 +210,7 @@ export function TargetConditionCard() {
     // 后端返回更新后的完整清单（含重算的完成率），直接替换状态
     const updated = await conditionChecklistApi.updateStatus(body);
     setChecklist(updated);
+    refreshSummary();
   };
 
   const progress = checklist?.progress;
@@ -295,6 +309,42 @@ export function TargetConditionCard() {
             </span>
           </div>
 
+          {/* 可报性结论：回答「能不能报 / 还差什么」 */}
+          {summary?.verdict && (
+            <div
+              className={cn(
+                "mt-3 rounded-lg px-3 py-2 text-xs leading-relaxed",
+                summary.unmet?.hard_gate?.length
+                  ? "bg-rose-50 text-rose-700 border border-rose-100"
+                  : "bg-emerald-50 text-emerald-700 border border-emerald-100",
+              )}
+            >
+              <p className="font-medium mb-1">
+                {summary.unmet?.hard_gate?.length ? "⚠️ 暂不可报" : "✓ 可报性判定"}
+              </p>
+              <p>{summary.verdict}</p>
+              {summary.unmet?.actionable && summary.unmet.actionable.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  <p className="font-medium">可补项（不影响报考资格，但提高上岸把握）：</p>
+                  {summary.unmet.actionable.map((u) => (
+                    <p key={u.key}>
+                      · <span className="font-medium">{u.label}</span>
+                      {u.hint ? `：${u.hint}` : ""}
+                    </p>
+                  ))}
+                </div>
+              )}
+              {summary.unmet?.hard_gate
+                ? summary.unmet.hard_gate.map((u) => (
+                    <p key={u.key} className="mt-1">
+                      · <span className="font-medium line-through">{u.label}</span>
+                      {u.hint ? `：${u.hint}` : ""}
+                    </p>
+                  ))
+                : null}
+            </div>
+          )}
+
           <div className="mt-3 space-y-2">
             {checklist.conditions.map((c) => {
               const status = checklist.statuses[c.key] ?? "unmet";
@@ -304,7 +354,24 @@ export function TargetConditionCard() {
                   className="flex items-center justify-between gap-3 rounded-lg border border-paper-300 bg-white px-3 py-2"
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium text-ink-500">{c.label}</p>
+                    <p className="text-xs font-medium text-ink-500 flex items-center gap-1.5">
+                      {c.label}
+                      {c.category === "hard_gate" && (
+                        <span className="shrink-0 rounded bg-rose-50 text-rose-500 border border-rose-100 px-1 text-[10px] leading-4">
+                          硬门槛
+                        </span>
+                      )}
+                      {c.category === "actionable" && (
+                        <span className="shrink-0 rounded bg-amber-50 text-amber-600 border border-amber-100 px-1 text-[10px] leading-4">
+                          可补项
+                        </span>
+                      )}
+                      {c.category === "unclassified" && (
+                        <span className="shrink-0 rounded bg-ink-50 text-ink-400 border border-ink-100 px-1 text-[10px] leading-4">
+                          需人工核对
+                        </span>
+                      )}
+                    </p>
                     <p className="text-sm text-ink-800 truncate" title={c.required}>
                       {c.required}
                     </p>

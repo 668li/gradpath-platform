@@ -10,6 +10,11 @@ class ConditionItem(BaseModel):
     label: str = Field(..., description="条件名称，如 学历要求")
     required: str = Field(..., description="职位表原文要求")
     source_field: str = Field(..., description="溯源：来自职位表的哪个字段")
+    # 条件类型 — 决定「未满足」时该关注什么：
+    #   hard_gate  资格硬门槛（学位/政治面貌/基层年限等锁死项，不满足基本无望）
+    #   actionable 可补项（证书/考试/分数等，努力可获得，不影响"能不能报"）
+    #   unclassified 无法可靠判定类型（措辞开放），不武断
+    category: str = Field("unclassified", description="hard_gate / actionable / unclassified")
 
 
 class ConditionProgress(BaseModel):

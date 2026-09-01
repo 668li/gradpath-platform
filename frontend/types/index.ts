@@ -2329,6 +2329,7 @@ export interface ConditionItem {
   label: string;
   required: string;
   source_field: string;
+  category?: "hard_gate" | "actionable" | "unclassified";
 }
 
 export interface ConditionProgress {
@@ -2366,6 +2367,34 @@ export interface ConditionLedgerSummary {
   rate: number;
   met: number;
   total: number;
+}
+
+export interface UnmetConditionItem {
+  key: string;
+  label: string;
+  required: string;
+  hint: string | null;
+}
+
+export interface MyProfileSummary {
+  has_target: boolean;
+  exam_source?: string;
+  position_name?: string | null;
+  dept_name?: string | null;
+  position_code?: string;
+  progress?: ConditionProgress;
+  verdict: string;
+  unmet?: {
+    hard_gate: UnmetConditionItem[];
+    actionable: UnmetConditionItem[];
+  };
+  /** 从条件账本可诚实推导、可导入决策引擎的身份字段（其余不猜，留人工填） */
+  importable?: {
+    fresh_status?: string;
+    party_status?: string;
+    education?: string;
+    has_grassroots?: boolean;
+  };
 }
 
 // ===== 决策副驾驶护城河（Phase D） =====
