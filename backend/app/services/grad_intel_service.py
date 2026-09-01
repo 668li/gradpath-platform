@@ -1184,11 +1184,13 @@ _ANNOUNCE_DOMAIN_SCHOOL: dict[str, str] = {
     "snnu.edu.cn": "陕西师范大学",
     "hust.edu.cn": "华中科技大学",
     "ecnu.edu.cn": "华东师范大学",
+    # zs.gs.upc.edu.cn 校区歧义已解歧：该域公告标题均写明"中国石油大学（华东）"
+    # （如"中国石油大学（华东）2026年…成绩查询及复核通知"），归口华东校区。
+    "zs.gs.upc.edu.cn": "中国石油大学（华东）",
 }
 
-# 明确不归口：校区歧义 / 教育部 / 第三方聚合 / 公众号
+# 明确不归口：教育部 / 第三方聚合 / 公众号
 _ANNOUNCE_SKIP_DOMAINS = {
-    "zs.gs.upc.edu.cn",  # 中国石油大学（北京/华东）校区歧义
     "www.moe.gov.cn",  # 教育部政策，非院校
     "yz.kaoyan.com",  # 第三方聚合
     "mp.weixin.qq.com",  # 公众号，非院校官方域
@@ -1200,7 +1202,7 @@ def get_school_announcements(db: Session, school_name: str, limit: int = 20) -> 
 
     归口规则（只认真实数据，宁可少不可错）：
     1. source_url 域名后缀命中该校（学院级域名由后缀自动覆盖）
-    2. 跳过校区歧义 / 教育部 / 第三方聚合 / 公众号域名
+    2. 跳过教育部 / 第三方聚合 / 公众号域名
     3. 只取 status=approved 的公告
     """
     from app.models.kaoyan_news import KaoyanNews

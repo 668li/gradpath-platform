@@ -755,3 +755,94 @@ class TestEdgeCases:
     def test_school_summary_no_auth_required(self, client: TestClient):
         resp = client.get("/api/grad-intel/schools/test/summary")
         assert resp.status_code == 200
+
+
+# ======================================================================
+# 院校官方公告归口
+# ======================================================================
+class TestSchoolAnnouncements:
+    """验证归口规则：域名后缀匹配 + 校区歧义解歧 + skip 域名过滤。"""
+
+    def _seed_approved_news(self, db_session, url: str, category: str, title: str):
+        from app.models.kaoyan_news import KaoyanNews
+
+        news = KaoyanNews(
+            title=title,
+            summary="测试摘要",
+            source_url=url,
+            source_platform="rss",
+            status="approved",
+            category=category,
+            tags=["测试"],
+        )
+        db_session.add(news)
+        db_session.commit()
+        return news
+
+    def test_cup_east_campus_attributed(self, client: TestClient, db_session):
+        """zs.gs.upc.edu.cn（华东校区）应归口到中国石油大学（华东）。"""
+        self._seed_approved_news(
+            db_session,
+            "http://zs.gs.upc.edu.cn/2026/0612/c10708a494873/page.htm",
+            "研招公告·中国石油大学研究生院",
+            "中国石油大学（华东）2026年硕士研究生招生考试初试成绩复核结果",
+        )
+        cache.clear()
+        resp = client.get("/api/grad-intel/schools/中国石油大学（华东）/announcements")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data) == 1
+        assert "复核结果" in data[0]["title"]
+
+    def test_cup_east_not_attributed_to_beijing(self, client: TestClient, db_session):
+        """华东公告不应归口到中国石油大学（北京）。"""
+        self._seed_approved_news(
+            db_session,
+            "http://zs.gs.upc.edu.cn/2026/0612/c10708a494873/page.htm",
+            "研招公告·中国石油大学研究生院",
+            "中国石油大学（华东）2026年硕士研究生招生考试初试成绩复核结果",
+        )
+        cache.clear()
+        resp = client.get("/api/grad-intel/schools/中国石油大学（北京）/announcements")
+        assert resp.status_code == 200
+        assert resp.json() == []
+
+    def test_skip_domain_still_filtered(self, client: TestClient, db_session):
+        """教育部 / 公众号域名仍不归口到任何院校。"""
+        self._seed_approved_news(
+            db_session,
+            "http://www.moe.gov.cn/2026/some-policy.htm",
+            "研招公告·政策解读",
+            "教育部政策公告",
+        )
+        self._seed_approved_news(
+            db_session,
+            "https://mp.weixin.qq.com/s/abc123",
+            "研招公告·某校研究生院",
+            "公众号文章",
+        )
+        cache.clear()
+        for school in ("清华大学", "北京大学", "中国石油大学（华东）"):
+            resp = client.get(f"/api/grad-intel/schools/{school}/announcements")
+            assert resp.status_code == 200
+            assert resp.json() == []
+
+    def test_pending_news_not_attributed(self, client: TestClient, db_session):
+        """未审核（pending）公告不归口。"""
+        from app.models.kaoyan_news import KaoyanNews
+
+        news = KaoyanNews(
+            title="待审核公告",
+            summary=None,
+            source_url="http://zs.gs.upc.edu.cn/2026/9999/c99999a999999/page.htm",
+            source_platform="rss",
+            status="pending",
+            category="研招公告·中国石油大学研究生院",
+            tags=["测试"],
+        )
+        db_session.add(news)
+        db_session.commit()
+        cache.clear()
+        resp = client.get("/api/grad-intel/schools/中国石油大学（华东）/announcements")
+        assert resp.status_code == 200
+        assert resp.json() == []
