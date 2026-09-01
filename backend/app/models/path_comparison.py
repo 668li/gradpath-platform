@@ -47,3 +47,9 @@ class PathComparison(UUIDMixin, TimestampMixin, Base):
     # 综合满意度 1-5
     satisfaction: Mapped[int | None] = mapped_column(Integer, nullable=True)
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    # === 报告分享（决策报告公开页）===
+    # 公开分享令牌：非空即已开启分享；用 secrets.token_urlsafe 生成防枚举
+    share_token: Mapped[str | None] = mapped_column(
+        String(64), nullable=True, unique=True, index=True
+    )

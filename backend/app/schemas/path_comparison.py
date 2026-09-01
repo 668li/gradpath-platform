@@ -282,6 +282,29 @@ class DecisionOutcomeInfo(BaseModel):
     reviewed_at: datetime | None = None
 
 
+class PeerDestItem(BaseModel):
+    """同分人群去向单项 — 一个结果去向的聚合。"""
+
+    label: str = Field(..., description="去向标签，如 '上岸 中山大学' / '考公上岸'")
+    count: int = Field(..., ge=0, description="该去向的人数")
+    rate: float = Field(..., ge=0, le=1, description="占同分人群的比例 0-1")
+
+
+class PeerDestinations(BaseModel):
+    """同分人群去向 — 和你预估分相近的人，最终都去了哪。
+
+    数据底座为 outcome_reports（回传的上岸报告）。当前为 0 条时
+    has_data=False，前端据此诚实占位「你是最早的一批」。
+    """
+
+    has_data: bool = Field(..., description="是否已有同分人群数据")
+    peer_count: int = Field(..., ge=0, description="同分人群样本数（±30 分窗）")
+    score_ref: int | None = Field(default=None, description="用于聚合的参照分（考研预估分）")
+    distribution: list[PeerDestItem] = Field(
+        default_factory=list, description="去向分布（按样本数降序）"
+    )
+
+
 class DecisionEngineResponse(BaseModel):
     """三路对比响应体。"""
 
@@ -301,8 +324,29 @@ class DecisionEngineResponse(BaseModel):
     outcome: DecisionOutcomeInfo | None = Field(
         default=None, description="结果回传信息（已记录时为非空）"
     )
+    peer_destinations: PeerDestinations | None = Field(
+        default=None, description="同分人群去向（当前为空则 has_data=false）"
+    )
 
     model_config = {"from_attributes": True}
+
+
+class ShareDecisionResponse(BaseModel):
+    """公开分享的决策报告 — 匿名化。
+
+    不含用户身份与登录信息，仅含可用于可视化的决策内容，供 `/share/decision/{token}` 渲染。
+    """
+
+    id: str = Field(..., description="决策记录 ID（对外无意义，仅作标识）")
+    metrics: list[PathMetrics] = Field(..., description="三路量化指标（含证据溯源）")
+    recommendation: str = Field(..., description="综合建议（自然语言）")
+    input: dict = Field(default_factory=dict, description="实际使用的输入档案")
+    created_at: datetime | None = Field(default=None, description="报告生成时间")
+    position_analysis: PositionAnalysis | None = Field(default=None, description="考公岗位级分析")
+    school_analysis: SchoolAnalysis | None = Field(default=None, description="考研院校级分析")
+    peer_destinations: PeerDestinations | None = Field(
+        default=None, description="同分人群去向（无数据时 has_data=false）"
+    )
 
 
 class OutcomeStats(BaseModel):

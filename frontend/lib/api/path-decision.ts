@@ -4,6 +4,7 @@ import type {
   DecisionEngineResponse,
   DecisionOutcomeSubmit,
   OutcomeStats,
+  ShareDecisionResponse,
 } from "@/types/path-comparison";
 
 const BASE = "/api/path-decision";
@@ -20,6 +21,12 @@ export const pathDecisionApi = {
   /** 获取用户的历史三路对比记录 */
   getHistory: () =>
     request<DecisionEngineResponse[]>(BASE + "/history"),
+
+  /** 生成报告分享链接（防枚举 token，分享页匿名渲染） */
+  createShare: (id: string) =>
+    request<ShareDecisionResponse>(`${BASE}/${id}/share`, {
+      method: "POST",
+    }),
 
   /** 结果回传：记录「当时选了哪条路、结果如何」 */
   submitOutcome: (id: string, payload: DecisionOutcomeSubmit) =>

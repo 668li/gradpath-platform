@@ -149,6 +149,30 @@ export interface SchoolAnalysis {
   avoid_schools?: AvoidSchool[];
 }
 
+/** 同分人群去向 — 单项分布（label/人数/占比） */
+export interface PeerDestItem {
+  label: string;
+  count: number;
+  rate: number;
+}
+
+/**
+ * 同分人群去向 — 与你预估分 ±30 分内的真实回传样本聚合。
+ * has_data=false 时前端诚实占位（"你是最早的一批"），绝不编造。
+ */
+export interface PeerDestinations {
+  has_data: boolean;
+  peer_count: number;
+  score_ref?: number | null;
+  distribution: PeerDestItem[];
+}
+
+/** 分享链接生成结果 */
+export interface ShareDecisionResponse {
+  token: string;
+  url: string;
+}
+
 /** 结果回传信息（响应内嵌） */
 export interface DecisionOutcomeInfo {
   selected_path?: string | null;
@@ -181,4 +205,6 @@ export interface DecisionEngineResponse {
   school_analysis?: SchoolAnalysis | null;
   /** 结果回传信息（已记录时为非空） */
   outcome?: DecisionOutcomeInfo | null;
+  /** 同分人群去向（与你预估分 ±30 分内的真实回传样本；0 条时 has_data=false） */
+  peer_destinations?: PeerDestinations | null;
 }

@@ -18,12 +18,15 @@
 from __future__ import annotations
 
 import logging
+import secrets
 from datetime import datetime, timezone
 from typing import Any
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models.assessment import Assessment
+from app.models.outcome_report import OutcomeReport
 from app.models.path_comparison import PathComparison
 
 logger = logging.getLogger(__name__)
@@ -500,11 +503,141 @@ def submit_outcome(
 
 
 def to_response(record: PathComparison) -> dict[str, Any]:
-    """将 PathComparison ORM 实例转为 API 响应 dict。"""
+    """将 PathComparison 对象转 API 响应 dict。"""
     result = record.comparison_result or {}
     return {
         "id": str(record.id),
         "metrics": result.get("metrics", []),
         "recommendation": record.recommendation or result.get("recommendation", ""),
         "created_at": record.created_at.isoformat() if record.created_at else None,
+    }
+
+
+# ----------------------------------------------------------------------
+# 同分人群去向（决策报告「和你分数相近的人最终去哪了」）
+# ----------------------------------------------------------------------
+# 数据底座为 outcome_reports（用户回传的上岸报告）。当前样本为 0 时
+# 返回 has_data=False，前端据此诚实占位「你是最早的一批」，绝不编造数据。
+_PEER_SCORE_WINDOW = 30  # ±30 分窗
+
+
+def build_peer_destinations(
+    db: Session, kaoyan_score: int | None, limit: int = 5
+) -> dict[str, Any]:
+    """按考研预估分聚合「同分人群去向」。
+
+    只读 outcome_reports，按 score_total 落在 [估分-30, 估分+30] 窗内聚合，
+    去向标签由 outcome_type + 实际上岸院校派生，按样本数降序取 Top N。
+
+    - 无参照分或库为空 → has_data=False，distribution=[]
+    - 永不抛错（诚实降级，不阻塞决策主流程）
+    """
+    empty = {"has_data": False, "peer_count": 0, "score_ref": kaoyan_score, "distribution": []}
+    if not kaoyan_score:
+        return empty
+
+    try:
+        lo, hi = kaoyan_score - _PEER_SCORE_WINDOW, kaoyan_score + _PEER_SCORE_WINDOW
+        rows = (
+            db.query(
+                OutcomeReport.outcome_type,
+                OutcomeReport.actual_school,
+                func.count().label("cnt"),
+            )
+            .filter(OutcomeReport.score_total.isnot(None))
+            .filter(OutcomeReport.score_total >= lo, OutcomeReport.score_total <= hi)
+            .group_by(OutcomeReport.outcome_type, OutcomeReport.actual_school)
+            .order_by(func.count().desc())
+            .limit(limit)
+            .all()
+        )
+    except Exception:  # pragma: no cover - 底层异常一律降级
+        logger.exception("build_peer_destinations 聚合失败，降级为空")
+        return empty
+
+    if not rows:
+        return empty
+
+    total = sum(r.cnt for r in rows)
+    distribution = []
+    for outcome_type, actual_school, cnt in rows:
+        if outcome_type == "failed":
+            label = "未上岸"
+        elif (outcome_type or "").startswith("adjust"):
+            label = f"调剂 {actual_school}" if actual_school else "调剂"
+        else:
+            label = f"上岸 {actual_school}" if actual_school else "上岸"
+        distribution.append(
+            {
+                "label": label,
+                "count": cnt,
+                "rate": round(cnt / total, 3),
+            }
+        )
+
+    return {
+        "has_data": True,
+        "peer_count": sum(d["count"] for d in distribution),
+        "score_ref": kaoyan_score,
+        "distribution": distribution,
+    }
+
+
+# ----------------------------------------------------------------------
+# 报告公开分享（决策报告 → /share/decision/{token}）
+# ----------------------------------------------------------------------
+
+
+def _new_share_token() -> str:
+    """生成防枚举的公开分享令牌。"""
+    return secrets.token_urlsafe(32)
+
+
+def create_share_token(db: Session, record_id: str, user_id) -> str | None:
+    """为某条属于当前用户的决策生成分享令牌并落库。
+
+    记录不存在或不属于该用户返回 None（调用方转 404）。已存在则复用原 token。
+    """
+    record = (
+        db.query(PathComparison)
+        .filter(PathComparison.id == record_id, PathComparison.user_id == user_id)
+        .first()
+    )
+    if record is None:
+        return None
+    if not record.share_token:
+        record.share_token = _new_share_token()
+        db.commit()
+        db.refresh(record)
+    return record.share_token
+
+
+def get_shareable_report(db: Session, share_token: str) -> dict[str, Any] | None:
+    """根据分享令牌返回匿名化的决策报告；token 无效/无报告返回 None。
+
+    仅返回 metrics / recommendation / input / position_analysis / school_analysis /
+    peer_destinations，**不包含用户名、结果回传（outcome）等个人数据**。
+    """
+    if not share_token:
+        return None
+    record = db.query(PathComparison).filter(PathComparison.share_token == share_token).first()
+    if record is None:
+        return None
+
+    result = record.comparison_result or {}
+    input_ctx = record.user_context or {}
+    # user_context 形如 {"input": {...}}；老数据可能没有 input 键
+    decision_input = result.get("input") or input_ctx.get("input") or {}
+
+    return {
+        "id": str(record.id),
+        "metrics": result.get("metrics", []),
+        "recommendation": record.recommendation or result.get("recommendation", ""),
+        "input": decision_input,
+        "created_at": record.created_at.isoformat() if record.created_at else None,
+        "position_analysis": result.get("position_analysis"),
+        "school_analysis": result.get("school_analysis"),
+        "peer_destinations": build_peer_destinations(
+            db, (decision_input or {}).get("kaoyan_estimated_score")
+        ),
     }

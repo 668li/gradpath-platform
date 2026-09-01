@@ -12,6 +12,7 @@ from app.services.export_service import (
     export_timeline_pdf,
     get_shareable_skills,
 )
+from app.services.path_comparison_service import get_shareable_report
 
 router = APIRouter(tags=["导出"])
 
@@ -43,6 +44,22 @@ def export_json(
 def share_skills(token: str, db: Session = Depends(get_db)):
     """公开技能分享页面数据（无需认证）。"""
     result = get_shareable_skills(db, token)
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="分享链接无效或已关闭",
+        )
+    return result
+
+
+@router.get("/api/share/decision/{token}")
+def share_decision(token: str, db: Session = Depends(get_db)):
+    """公开决策报告分享页面数据（无需认证）。
+
+    返回匿名化的「我的报考决策报告」：三路指标 / 综合建议 / 岗位与院校分析 /
+    同分人群去向，不含用户名、结果回传等个人数据。
+    """
+    result = get_shareable_report(db, token)
     if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

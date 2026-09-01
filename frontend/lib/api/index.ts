@@ -19,7 +19,7 @@ export {
 } from "./swr-config";
 
 export { authApi } from "./auth";
-export { fetchShareSkills } from "./export";
+export { fetchShareSkills, fetchShareDecision } from "./export";
 export { dashboardApi } from "./dashboard";
 export { decisionsApi, decisionJournalApi, decisionAnalysisApi } from "./decisions";
 export { eventsApi } from "./events";

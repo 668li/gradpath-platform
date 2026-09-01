@@ -21,14 +21,21 @@ from app.schemas.path_comparison import (
     DecisionOutcomeSubmit,
     OutcomeStats,
     PathMetrics,
+    PeerDestinations,
 )
 from app.services import path_comparison_service, path_decision_engine
 
 router = APIRouter(prefix="/api/path-decision", tags=["三路对比决策引擎"])
 
 
-def _response_from_record(record: PathComparison) -> DecisionEngineResponse:
-    """统一组装响应 — 历史记录与分析结果共用。"""
+def _response_from_record(
+    record: PathComparison, db: Session | None = None
+) -> DecisionEngineResponse:
+    """统一组装响应 — 历史记录与分析结果共用。
+
+    传入 db 时附加同分人群去向（实时聚合，不进缓存）；历史列表不传 db，
+    避免每条记录各打一次 outcome_reports 聚合查询。
+    """
     result = record.comparison_result or {}
     metrics = result.get("metrics", [])
     outcome = None
@@ -41,6 +48,14 @@ def _response_from_record(record: PathComparison) -> DecisionEngineResponse:
             satisfaction=record.satisfaction,
             reviewed_at=record.reviewed_at,
         )
+    peer_destinations = None
+    if db is not None:
+        decision_input = result.get("input") or (record.user_context or {}).get("input") or {}
+        kaoyan_score = decision_input.get("kaoyan_estimated_score")
+        if kaoyan_score:
+            peer_destinations = PeerDestinations(
+                **path_comparison_service.build_peer_destinations(db, kaoyan_score)
+            )
     return DecisionEngineResponse(
         id=str(record.id),
         metrics=[PathMetrics(**m) for m in metrics],
@@ -49,6 +64,7 @@ def _response_from_record(record: PathComparison) -> DecisionEngineResponse:
         position_analysis=result.get("position_analysis"),
         school_analysis=result.get("school_analysis"),
         outcome=outcome,
+        peer_destinations=peer_destinations,
         created_at=record.created_at,
     )
 
@@ -92,7 +108,24 @@ def analyze_paths(
         user_context={"input": decision["input"]},
     )
 
-    return _response_from_record(record)
+    return _response_from_record(record, db=db)
+
+
+@router.post("/{decision_id}/share")
+def share_decision(
+    decision_id: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    """为决策生成公开分享链接（幂等：已生成则复用）。
+
+    返回 { token, url }，url 形如 /share/decision/{token}。
+    分享页渲染匿名化报告，不含用户名与登录信息。
+    """
+    token = path_comparison_service.create_share_token(db, decision_id, user.id)
+    if token is None:
+        raise HTTPException(status_code=404, detail="对比记录不存在或不属于当前用户")
+    return {"token": token, "url": f"/share/decision/{token}"}
 
 
 @router.get("/history", response_model=list[DecisionEngineResponse])
