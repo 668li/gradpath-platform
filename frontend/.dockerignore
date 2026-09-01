@@ -1,6 +1,22 @@
+# 依赖与构建产物（镜像内自行生成/挂缓存）
 node_modules
 .next
+coverage
+test-results
+playwright-report
+tsconfig.tsbuildinfo
+
+# 版本控制与本地配置
 .git
 .gitignore
+.dockerignore
+Dockerfile.dev
+
+# 环境变量（运行时由 compose 注入，绝不进镜像）
 .env
 .env.local
+.env.*.local
+
+# 本地开发残留
+dev_server.log
+*.log
