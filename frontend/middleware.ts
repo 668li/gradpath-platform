@@ -66,6 +66,7 @@ const PUBLIC_PREFIXES = [
   "/login",
   "/register",
   "/share",
+  "/preview",
   "/api",
   "/_next",
 ];

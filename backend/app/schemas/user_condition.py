@@ -48,3 +48,55 @@ class ConditionStatusUpdateRequest(BaseModel):
     exam_source: str = Field("national", pattern="^(national|province|kaoyan)$")
     condition_key: str = Field(..., min_length=1, max_length=50)
     status: str = Field(..., pattern="^(unmet|in_progress|met)$")
+
+
+class ConditionPreviewRequest(BaseModel):
+    """免费可报性预览 — 免登录勾选身份字段，立即判定能否报考。
+
+    与登录后条件账本共用同一套可报性判定（path_decision_engine.blockers），
+    只是无需用户身份：访客手动填的字段即身份快照。
+    """
+
+    exam_source: str = Field("national", pattern="^(national|province|kaoyan)$")
+    position_ref: str = Field(
+        ..., min_length=1, max_length=100, description="职位主键；考研传专业 UUID"
+    )
+    fresh_status: str | None = Field(None, description="应届/非应届")
+    party_status: str | None = Field(None, description="中共党员/党员或团员/群众")
+    education: str | None = Field(None, description="博士/硕士/本科/大专")
+    has_grassroots: bool | None = Field(None, description="是否已满足基层工作经历")
+    gender: str | None = Field(None, description="男/女")
+    estimated_score: int | None = Field(None, ge=0, le=300, description="国考/省考总分估分")
+    kaoyan_estimated_score: int | None = Field(None, ge=0, le=500, description="考研初试估分")
+
+
+class ConditionBlockItem(BaseModel):
+    """一条被挡住的资格维度 — 免费预览结果卡逐条展示。"""
+
+    key: str
+    label: str
+    reason: str
+
+
+class ConditionPreviewResponse(BaseModel):
+    """免费可报性预览判定结果。
+
+    national/province：eligible + blockers + verdict_text；
+    kaoyan：level + total_score_line + score_lines + verdict_text（eligible 恒为 None）。
+    """
+
+    exam_source: str
+    position_ref: str
+    position_name: str | None = None
+    dept_name: str | None = None
+    eligible: bool | None = None
+    blockers: list[ConditionBlockItem] = Field(default_factory=list)
+    verdict_text: str | None = None
+    # kaoyan 专用
+    university_name: str | None = None
+    major_name: str | None = None
+    level: str | None = None
+    total_score_line: float | None = None
+    score_lines: dict[str, float] | None = Field(
+        None, description="单科线：politics / foreign_language / business_1 / business_2"
+    )

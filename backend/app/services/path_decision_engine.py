@@ -757,40 +757,97 @@ def _province_fresh_limited(raw: str | None) -> bool:
     return True
 
 
-def _position_eligible(row: Any, conditions: dict[str, Any]) -> bool:
-    """国考岗位可报边界判断（无个人条件的维度自动放行）。"""
+def _position_eligible_blockers(row: Any, conditions: dict[str, Any]) -> list[dict]:
+    """国考岗位可报边界 — 返回不满足的资格维度 [{key,label,reason}]；空列表=可报。
+
+    与 _position_eligible 判定完全一致（同一套规则、单一实现），供免登录预览复用。
+    无个人条件的维度自动放行（不参与判定）。
+    """
+    blockers: list[dict] = []
     if conditions.get("fresh_status") == "非应届" and _is_fresh_limited(row.remarks):
-        return False
+        blockers.append(
+            {"key": "fresh_grad", "label": "应届生要求", "reason": "该职位限应届毕业生报考"}
+        )
     if conditions.get("gender") == "男" and _is_gender_limited(row.remarks, "女"):
-        return False
+        blockers.append({"key": "gender", "label": "性别要求", "reason": "该职位限女性报考"})
     if conditions.get("gender") == "女" and _is_gender_limited(row.remarks, "男"):
-        return False
+        blockers.append({"key": "gender", "label": "性别要求", "reason": "该职位限男性报考"})
     if conditions.get("party_status") and not _party_eligible(
         row.political_status, conditions["party_status"]
     ):
-        return False
+        blockers.append(
+            {
+                "key": "party_status",
+                "label": "政治面貌要求",
+                "reason": f"该职位要求「{row.political_status}」，与你的政治面貌"
+                f"（{conditions['party_status']}）不符",
+            }
+        )
     if conditions.get("education") and not _edu_eligible(
         row.education_req, conditions["education"]
     ):
-        return False
+        blockers.append(
+            {
+                "key": "education",
+                "label": "学历要求",
+                "reason": f"该职位学历要求「{row.education_req}」，与你的学历"
+                f"（{conditions['education']}）不符",
+            }
+        )
     if conditions.get("has_grassroots") is False and (
         row.grassroots_exp_req not in (None, "", "无限制")
     ):
-        return False
-    return True
+        blockers.append(
+            {
+                "key": "grassroots",
+                "label": "基层工作经历",
+                "reason": f"该职位要求基层工作经历（{row.grassroots_exp_req}），你不满足",
+            }
+        )
+    return blockers
+
+
+def _position_eligible(row: Any, conditions: dict[str, Any]) -> bool:
+    """国考岗位可报边界判断（无个人条件的维度自动放行）。"""
+    return not _position_eligible_blockers(row, conditions)
+
+
+def _province_position_eligible_blockers(row: Any, conditions: dict[str, Any]) -> list[dict]:
+    """省考岗位可报边界 — 返回不满足维度；空列表=可报（官方结构化字段，不做文本解析）。"""
+    blockers: list[dict] = []
+    if conditions.get("fresh_status") == "非应届" and _province_fresh_limited(row.fresh_grad_only):
+        blockers.append(
+            {
+                "key": "fresh_grad",
+                "label": "应届生要求",
+                "reason": f"该职位仅限应届毕业生（{row.fresh_grad_only}）",
+            }
+        )
+    if conditions.get("education") and not _edu_eligible(
+        row.education_req, conditions["education"]
+    ):
+        blockers.append(
+            {
+                "key": "education",
+                "label": "学历要求",
+                "reason": f"该职位学历要求「{row.education_req}」，与你的学历"
+                f"（{conditions['education']}）不符",
+            }
+        )
+    if conditions.get("has_grassroots") is False and row.grassroots_exp_req == "是":
+        blockers.append(
+            {
+                "key": "grassroots",
+                "label": "基层工作经历",
+                "reason": "该职位要求基层工作经历，你不满足",
+            }
+        )
+    return blockers
 
 
 def _province_position_eligible(row: Any, conditions: dict[str, Any]) -> bool:
     """省考岗位可报边界判断（用官方结构化字段，不做文本解析）。"""
-    if conditions.get("fresh_status") == "非应届" and _province_fresh_limited(row.fresh_grad_only):
-        return False
-    if conditions.get("education") and not _edu_eligible(
-        row.education_req, conditions["education"]
-    ):
-        return False
-    if conditions.get("has_grassroots") is False and row.grassroots_exp_req == "是":
-        return False
-    return True
+    return not _province_position_eligible_blockers(row, conditions)
 
 
 def _applied_conditions_text(conditions: dict[str, Any]) -> str:
