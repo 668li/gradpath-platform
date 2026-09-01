@@ -410,6 +410,42 @@ def get_school_summary(
     return result
 
 
+class SchoolAnnouncementResponse(BaseModel):
+    """院校官方公告条目（归口自已审核研招公告）。"""
+
+    id: str
+    title: str
+    summary: str | None = None
+    source_url: str
+    source_platform: str
+    published_at: str | None = None
+    category: str
+    quality_grade: str | None = None
+
+
+@router.get(
+    "/schools/{university_name}/announcements",
+    response_model=list[SchoolAnnouncementResponse],
+)
+def get_school_announcements(
+    university_name: str,
+    limit: int = Query(20, ge=1, le=50, description="返回条数"),
+    db: Session = Depends(get_db),
+):
+    """获取归口到某院校的已审核官方公告（公开接口，5分钟缓存）。
+
+    归口规则见 grad_intel_service.get_school_announcements：
+    域名后缀匹配，跳过校区歧义/第三方聚合/公众号，只取 approved。
+    """
+    cache_key = f"school_announcements:{university_name}:{limit}"
+    cached_result = cache.get(cache_key)
+    if cached_result is not None:
+        return cached_result
+    result = grad_intel_service.get_school_announcements(db, university_name, limit=limit)
+    cache.set(cache_key, result, ttl=300)
+    return result
+
+
 class SchoolBatchRequest(BaseModel):
     """批量获取院校数据汇总请求体。"""
 

@@ -10,6 +10,7 @@
 import ipaddress
 import logging
 import socket
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -45,13 +46,26 @@ class BaseCrawler(ABC):
         self.session.headers.update({"User-Agent": self.USER_AGENT})
         self.stats = {"fetched": 0, "stored": 0, "errors": 0, "duplicates": 0}
         self._rate_limit = self.config.get("rate_limit", 1.0)  # 默认1秒间隔
-        # robots.txt 解析缓存（按 host 缓存一次，单次运行内不重复拉取）
+        # robots.txt 解析缓存（按 host 缓存一次，单次运行内不重复拉取）。
+        # 并发爬虫共享实例时用锁保护 get/set，避免多线程同时拉取同一 host。
         self._robots_cache: dict[str, RobotFileParser] = {}
+        self._robots_lock = threading.Lock()
+        # stats 并发累加锁：并发爬虫下多线程对 self.stats["errors"] 等做 += 会丢计数
+        self._stats_lock = threading.Lock()
         # 合规护栏：单次任务抓取上限（0 表示不限制，研招网来源必须显式配置）
         self._max_pages = int(self.config.get("max_pages", 0))
         self._max_items = int(self.config.get("max_items", 0))
-        # 并发=1（固定串行，不提供并发执行入口）
-        self._concurrency = 1
+        # 并发窗口：默认 1（串行）。>1 由子类在 fetch() 里启用并发 worker。
+        # 并发时每线程用独立 Session（requests.Session 非线程安全），
+        # 且用信号量把"同刻执行中的 HTTP 请求数"限制在窗口内，限速仍生效。
+        self._concurrency = int(self.config.get("concurrency", 1))
+        self._request_sem = threading.Semaphore(self._concurrency)
+        # 每线程独立 Session 池：thread-id -> requests.Session
+        self._thread_sessions: dict = {}
+        self._thread_sessions_lock = threading.Lock()
+        # 全局节流锁：并发下仍保证每次网络往返之间至少间隔 _rate_limit
+        self._throttle_lock = threading.Lock()
+        self._last_request_ts = 0.0
 
     @abstractmethod
     def fetch(self) -> list[dict]:
@@ -108,12 +122,38 @@ class BaseCrawler(ABC):
             if own_db:
                 db.close()
 
+    def _bump_stats(self, key: str, n: int = 1) -> None:
+        """线程安全地累加 stats 计数（并发爬虫下避免 += 丢计数）。"""
+        with self._stats_lock:
+            self.stats[key] = self.stats.get(key, 0) + n
+
+    def _get_session(self) -> requests.Session:
+        """返回当前线程的独立 Session。
+
+        requests.Session 非线程安全：并发爬虫下每个线程必须用自己
+        的 Session，避免多线程共享连接池产生竞态。串行模式(并发=1)
+        只有一个线程，退化为共享 self.session，行为与历史一致。
+        """
+        if self._concurrency <= 1:
+            return self.session
+        tid = threading.get_ident()
+        with self._thread_sessions_lock:
+            s = self._thread_sessions.get(tid)
+            if s is None:
+                s = requests.Session()
+                s.headers.update({"User-Agent": self.USER_AGENT})
+                self._thread_sessions[tid] = s
+            return s
+
     def _request(self, url: str, method: str = "GET", **kwargs) -> requests.Response:
         """带限速和重试的HTTP请求。
 
         外发安全护栏（Mimosa 约束）：发请求前校验 host（仅 http/https，
         拒绝 localhost/环回/私有/保留地址，DNS 解析失败 fail-safe 拒绝）；
         robots.txt 不允许则跳过该 URL 并如实记录。
+
+        并发安全：窗口内并发 HTTP 请求数受 self._request_sem 限制，且
+        每次网络往返之间至少间隔 _rate_limit（全局串行化，保证限速不失效）。
         """
         ok, reason = self._validate_outbound_url(url)
         if not ok:
@@ -124,9 +164,17 @@ class BaseCrawler(ABC):
         max_retries = self.config.get("max_retries", 3)
         for attempt in range(max_retries):
             try:
-                resp = self.session.request(method, url, timeout=30, **kwargs)
+                # 并发窗口信号量：限制同刻在飞的 HTTP 请求数（并发=1 时不阻塞）
+                with self._request_sem:
+                    # 全局节流：保证即使并发 worker 也不会突破 _rate_limit
+                    with self._throttle_lock:
+                        now = time.monotonic()
+                        wait = self._rate_limit - (now - self._last_request_ts)
+                        if wait > 0:
+                            time.sleep(wait)
+                        self._last_request_ts = time.monotonic()
+                    resp = self._get_session().request(method, url, timeout=30, **kwargs)
                 resp.raise_for_status()
-                time.sleep(self._rate_limit)
                 return resp
             except requests.RequestException as e:
                 if attempt < max_retries - 1:
@@ -224,12 +272,14 @@ class BaseCrawler(ABC):
             return False
 
         cache_key = f"{parsed.scheme}://{host}"
-        rp = self._robots_cache.get(cache_key)
+        with self._robots_lock:
+            rp = self._robots_cache.get(cache_key)
         if rp is None:
             rp = self._fetch_robots_parser(cache_key)
             if rp is None:
                 return False  # robots 取不到 → fail-safe 拒绝
-            self._robots_cache[cache_key] = rp
+            with self._robots_lock:
+                self._robots_cache[cache_key] = rp
         allowed = rp.can_fetch(self.USER_AGENT, url)
         if not allowed:
             logger.warning(f"[{self.name}] robots.txt 禁止抓取: {url}")

@@ -164,54 +164,83 @@ class OfficialAnnounceCrawler(BaseCrawler):
         self.sections = self.config.get("sections", DEFAULT_SECTIONS)
         self._rate_limit = self.config.get("rate_limit", 1.5)
         self.fetch_detail = bool(self.config.get("fetch_detail", True))
+        # 并发窗口：config 显式设置并发时启用（默认 1 保持串行）。
+        # 由 BaseCrawler 提供每线程独立 Session 与全局节流，网络限速不失效。
+        self._concurrency = int(self.config.get("concurrency", 1))
 
-    # ===== fetch：逐栏目抓列表 + 逐条详情 =====
+    # ===== fetch：逐栏目抓列表 + 逐条详情（可选并发） =====
 
     def fetch(self) -> list[dict]:
-        """遍历栏目：列表页条目 (title, url, date) → 详情页正文。"""
+        """遍历栏目：列表页条目 (title, url, date) → 详情页正文。
+
+        并发>1 时对栏目做线程池并行（每个栏目内部仍串行抓列表+详情，
+        避免对单一站点并发轰炸）；并发绝不触碰 robots 护栏（_request 保留
+        SSRF/robots/重试/限速）。结果顺序不保证，调用方不依赖次序。
+        """
+        if self._concurrency <= 1 or len(self.sections) <= 1:
+            raw_items: list[dict] = []
+            for section in self.sections:
+                raw_items.extend(self._fetch_section(section))
+            return raw_items
+
+        from concurrent.futures import ThreadPoolExecutor
+
         raw_items: list[dict] = []
-        for section in self.sections:
-            list_url = section.get("list_url", "")
-            if not list_url:
-                continue
-            detail_re = re.compile(section.get("detail_url_re", r"\.htm$"))
-            template = section.get("cms", "boda")
-            try:
-                resp = self._request(list_url)
-                resp.encoding = "utf-8"
-                section_items = 0
-                for entry in _parse_list_entries(resp.text, template):
-                    href = entry["url"]
-                    title = entry["title"]
-                    date = entry["date"]
-                    # 只收录匹配详情模式的条目（过滤 pdf/附件跳转）
-                    if not detail_re.search(href):
-                        continue
-                    url = urljoin(list_url, href)
-                    title = re.sub(r"\s+", " ", html_lib.unescape(title)).strip()
-                    if not title or not url:
-                        continue
-                    detail_text = ""
-                    detail_title = title
-                    if self.fetch_detail:
-                        detail_title, detail_text = self._fetch_detail(
-                            url, section.get("content_cls", ""), section.get("title_suffix", "")
-                        )
-                    raw_items.append(
-                        {
-                            "title": detail_title or title,
-                            "url": url,
-                            "published_at": date,
-                            "detail_text": detail_text,
-                            "source_name": section.get("name", list_url),
-                        }
-                    )
-                    section_items += 1
-                logger.info(f"[{self.name}] 栏目 {section.get('name')} 解析 {section_items} 条")
-            except Exception as e:
-                self.stats["errors"] += 1
-                logger.error(f"[{self.name}] 栏目 {list_url} 抓取失败: {e}")
+        max_workers = min(self._concurrency, len(self.sections))
+        with ThreadPoolExecutor(max_workers=max_workers) as ex:
+            futures = [ex.submit(self._fetch_section, s) for s in self.sections]
+            for fut in futures:
+                try:
+                    raw_items.extend(fut.result())
+                except Exception as e:
+                    self._bump_stats("errors")
+                    logger.error(f"[{self.name}] 并发栏目抓取异常: {e}")
         return raw_items
+
+    def _fetch_section(self, section: dict) -> list[dict]:
+        """抓取单个栏目：列表页 → 逐条详情，返回条目数组（不抛未捕获异常）。"""
+        collected: list[dict] = []
+        list_url = section.get("list_url", "")
+        if not list_url:
+            return collected
+        detail_re = re.compile(section.get("detail_url_re", r"\.htm$"))
+        template = section.get("cms", "boda")
+        try:
+            resp = self._request(list_url)
+            resp.encoding = "utf-8"
+            section_items = 0
+            for entry in _parse_list_entries(resp.text, template):
+                href = entry["url"]
+                title = entry["title"]
+                date = entry["date"]
+                # 只收录匹配详情模式的条目（过滤 pdf/附件跳转）
+                if not detail_re.search(href):
+                    continue
+                url = urljoin(list_url, href)
+                title = re.sub(r"\s+", " ", html_lib.unescape(title)).strip()
+                if not title or not url:
+                    continue
+                detail_text = ""
+                detail_title = title
+                if self.fetch_detail:
+                    detail_title, detail_text = self._fetch_detail(
+                        url, section.get("content_cls", ""), section.get("title_suffix", "")
+                    )
+                collected.append(
+                    {
+                        "title": detail_title or title,
+                        "url": url,
+                        "published_at": date,
+                        "detail_text": detail_text,
+                        "source_name": section.get("name", list_url),
+                    }
+                )
+                section_items += 1
+            logger.info(f"[{self.name}] 栏目 {section.get('name')} 解析 {section_items} 条")
+        except Exception as e:
+            self._bump_stats("errors")
+            logger.error(f"[{self.name}] 栏目 {list_url} 抓取失败: {e}")
+        return collected
 
     def _fetch_detail(self, url: str, content_cls: str, title_suffix: str) -> tuple[str, str]:
         """抓取详情页，返回 (页面标题, 正文)；失败降级为列表信息。
@@ -229,7 +258,7 @@ class OfficialAnnounceCrawler(BaseCrawler):
                 body = _auto_detect_content_cls(html)
             return title, body
         except Exception as e:
-            self.stats["errors"] += 1
+            self._bump_stats("errors")
             logger.warning(f"[{self.name}] 详情页抓取失败，降级列表信息: {url} | {e}")
             return "", ""
 

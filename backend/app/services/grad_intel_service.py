@@ -1158,3 +1158,95 @@ def get_school_data_summary(db: Session, university_name: str) -> dict:
         "has_adjustment": len(adjustments) > 0,
         "adjustment_count": len(adjustments),
     }
+
+
+# ======================================================================
+# 院校官方公告归口 — 已 APPROVED 研招公告按域名后缀归口到院校
+# ======================================================================
+# 归口键：研招公告 source_url 的注册域名后缀（学院级域名也被后缀自动覆盖，
+# 如 csyh.sdu.edu.cn 命中 sdu.edu.cn -> 山东大学）。
+# 只维护实际有公告的院校，自包含、无爬虫导入耦合。
+_ANNOUNCE_DOMAIN_SCHOOL: dict[str, str] = {
+    "nankai.edu.cn": "南开大学",
+    "scnu.edu.cn": "华南师范大学",
+    "sdu.edu.cn": "山东大学",
+    "sdust.edu.cn": "山东科技大学",
+    "sustech.edu.cn": "南方科技大学",
+    "swjtu.edu.cn": "西南交通大学",
+    "tju.edu.cn": "天津大学",
+    "dhu.edu.cn": "东华大学",
+    "seu.edu.cn": "东南大学",
+    "cau.edu.cn": "中国农业大学",
+    "tongji.edu.cn": "同济大学",
+    "nenu.edu.cn": "东北师范大学",
+    "nudt.edu.cn": "国防科技大学",
+    "scut.edu.cn": "华南理工大学",
+    "snnu.edu.cn": "陕西师范大学",
+    "hust.edu.cn": "华中科技大学",
+    "ecnu.edu.cn": "华东师范大学",
+}
+
+# 明确不归口：校区歧义 / 教育部 / 第三方聚合 / 公众号
+_ANNOUNCE_SKIP_DOMAINS = {
+    "zs.gs.upc.edu.cn",  # 中国石油大学（北京/华东）校区歧义
+    "www.moe.gov.cn",  # 教育部政策，非院校
+    "yz.kaoyan.com",  # 第三方聚合
+    "mp.weixin.qq.com",  # 公众号，非院校官方域
+}
+
+
+def get_school_announcements(db: Session, school_name: str, limit: int = 20) -> list[dict]:
+    """获取归口到某院校的已审核官方公告（研招公告类别）。
+
+    归口规则（只认真实数据，宁可少不可错）：
+    1. source_url 域名后缀命中该校（学院级域名由后缀自动覆盖）
+    2. 跳过校区歧义 / 教育部 / 第三方聚合 / 公众号域名
+    3. 只取 status=approved 的公告
+    """
+    from app.models.kaoyan_news import KaoyanNews
+
+    news = (
+        db.query(KaoyanNews)
+        .filter(
+            KaoyanNews.status == "approved",
+            KaoyanNews.category.like("研招公告%"),
+        )
+        .order_by(
+            KaoyanNews.published_at.desc().nullslast(),
+            KaoyanNews.created_at.desc(),
+        )
+        .all()
+    )
+
+    results: list[dict] = []
+    for item in news:
+        if len(results) >= limit:
+            break
+        m = re.match(r"https?://([^/]+)", item.source_url or "")
+        host = (m.group(1).lower() if m else "") or ""
+        # 域名后缀匹配
+        matched = None
+        for suffix, sname in _ANNOUNCE_DOMAIN_SCHOOL.items():
+            if host == suffix or host.endswith("." + suffix):
+                matched = sname
+                break
+        if not matched:
+            continue
+        # 跳过明确不归口域名（校区歧义/第三方）
+        if any(skip in host for skip in _ANNOUNCE_SKIP_DOMAINS):
+            continue
+        if matched != school_name:
+            continue
+        results.append(
+            {
+                "id": str(item.id),
+                "title": item.title,
+                "summary": item.summary,
+                "source_url": item.source_url,
+                "source_platform": item.source_platform,
+                "published_at": item.published_at.isoformat() if item.published_at else None,
+                "category": item.category,
+                "quality_grade": item.quality_grade,
+            }
+        )
+    return results

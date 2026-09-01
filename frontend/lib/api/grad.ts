@@ -12,6 +12,7 @@ import type {
   GradScorelineTrend,
   GradAdjustmentInfo,
   GradSchoolDataSummary,
+  SchoolAnnouncement,
   PaginatedResponse,
 } from "@/types";
 import { request, buildQuery } from "./client";
@@ -103,6 +104,11 @@ export const gradIntelApi = {
     ),
   getSchoolSummary: (university_name: string) =>
     request<GradSchoolDataSummary>(`/api/grad-intel/schools/${encodeURIComponent(university_name)}/summary`),
+  // 院校官方公告（归口已审核研招公告，按域名后缀匹配）
+  getSchoolAnnouncements: (university_name: string, limit = 20) =>
+    request<SchoolAnnouncement[]>(
+      `/api/grad-intel/schools/${encodeURIComponent(university_name)}/announcements?limit=${limit}`,
+    ),
   // 批量获取院校汇总（消除前端 N+1 调用）
   batchSchoolSummaries: (universityNames: string[]) =>
     request<GradSchoolDataSummary[]>(`/api/grad-intel/schools/batch`, {

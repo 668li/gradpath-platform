@@ -16,6 +16,7 @@ import {
   BarChart3,
   Search,
   ArrowRight,
+  Megaphone,
 } from "lucide-react";
 import { Button, Badge } from "@/components/ui/form-controls";
 import { LoadingState, EmptyState } from "@/components/ui/empty";
@@ -40,6 +41,7 @@ import type {
   GradAdjustmentInfo,
   GradSchoolDataSummary,
   GradScorelineTrend,
+  SchoolAnnouncement,
 } from "@/types";
 
 export default function SchoolDetailPage() {
@@ -55,20 +57,23 @@ export default function SchoolDetailPage() {
   const [adjustments, setAdjustments] = useState<GradAdjustmentInfo[]>([]);
   const [trend, setTrend] = useState<GradScorelineTrend | null>(null);
   const [selectedMajor, setSelectedMajor] = useState<string>("");
+  const [announcements, setAnnouncements] = useState<SchoolAnnouncement[]>([]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [s, p, sl, adj] = await Promise.all([
+      const [s, p, sl, adj, ann] = await Promise.all([
         gradIntelApi.getSchoolSummary(universityName),
         gradIntelApi.listYanzhaoPrograms({ university_name: universityName, limit: 100 }),
         gradIntelApi.listScorelines({ university_name: universityName, limit: 200 }),
         gradIntelApi.listAdjustments({ university_name: universityName, limit: 100 }),
+        gradIntelApi.getSchoolAnnouncements(universityName),
       ]);
       setSummary(s);
       setPrograms(p);
       setScorelines(sl);
       setAdjustments(adj);
+      setAnnouncements(ann);
 
       // 默认选择第一个有分数线数据的专业
       const firstMajor = sl[0]?.major_name || p[0]?.major_name;
@@ -266,6 +271,48 @@ export default function SchoolDetailPage() {
             color="amber"
           />
         </div>
+
+        {/* 院校官方公告 — 归口自已审核的真实研招公告 */}
+        {announcements.length > 0 && (
+          <div className="mb-6 rounded-xl border border-paper-200 bg-white p-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+              <Megaphone className="h-5 w-5 text-brand-600" />
+              <h2 className="text-base font-semibold text-ink-800">官方发布</h2>
+              <span className="rounded-full bg-brand-50 px-2 py-0.5 text-xs font-medium text-brand-700">
+                {announcements.length} 条
+              </span>
+            </div>
+            <div className="grid gap-3 md:grid-cols-2">
+              {announcements.map((a) => (
+                <a
+                  key={a.id}
+                  href={a.source_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="group rounded-lg border border-paper-200 p-4 transition-all hover:border-brand-300 hover:shadow-sm"
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <Badge color="green">已审核</Badge>
+                    <span className="text-xs text-ink-400 line-clamp-1 flex-1">{a.source_platform}</span>
+                    {a.published_at && (
+                      <span className="text-xs text-ink-400 whitespace-nowrap">{a.published_at.slice(0, 10)}</span>
+                    )}
+                  </div>
+                  <h3 className="font-medium text-ink-900 leading-snug group-hover:text-brand-700 line-clamp-2">
+                    {a.title}
+                  </h3>
+                  {a.summary && (
+                    <p className="mt-1.5 text-xs leading-relaxed text-ink-500 line-clamp-2">{a.summary}</p>
+                  )}
+                  <div className="mt-2 flex items-center gap-1 text-xs font-medium text-brand-600 opacity-0 transition-opacity group-hover:opacity-100">
+                    查看原文
+                    <ArrowRight className="h-3 w-3" />
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Left: Trend Chart */}

@@ -1357,6 +1357,17 @@ export interface GradSchoolDataSummary {
   adjustment_count: number;
 }
 
+export interface SchoolAnnouncement {
+  id: string;
+  title: string;
+  summary: string | null;
+  source_url: string;
+  source_platform: string;
+  published_at: string | null;
+  category: string;
+  quality_grade: string | null;
+}
+
 // ===== AI 推荐系统 =====
 export interface SchoolRecommendation {
   name: string;
