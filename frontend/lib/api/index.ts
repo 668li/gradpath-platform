@@ -43,6 +43,16 @@ export type {
   UserLlmConfigSaveRequest,
   UserLlmVerifyResponse,
 } from "./user-llm-config";
+export { majorProspectApi } from "./major-prospects";
+export type {
+  MajorListItem,
+  IndustrySalary,
+  PositionSalary,
+  ProspectCompany,
+  GradPath,
+  CivilServiceInfo,
+  MajorProspect,
+} from "./major-prospects";
 export { knowledgeApi } from "./knowledge";
 export { careerPlansApi, careerProfileApi, planTemplatesApi } from "./career";
 export { assessmentApi, lifeWheelApi } from "./assessment";

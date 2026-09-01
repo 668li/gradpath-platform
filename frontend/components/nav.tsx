@@ -45,6 +45,7 @@ import {
   Settings,
   Landmark,
   Newspaper,
+  Telescope,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth";
@@ -96,6 +97,7 @@ function getNavSections(): NavSection[] {
         { href: "/civil-service", label: "考公情报", icon: Building2 },
         { href: "/civil-service/positions", label: "国考职位", icon: Landmark },
         { href: "/employment", label: "就业情报", icon: Briefcase },
+        { href: "/major-prospects", label: "专业前景", icon: Telescope },
         { href: "/interview", label: "面试经验", icon: MessageSquare },
         { href: "/failure-cases", label: "失败案例库", icon: HeartCrack },
       ],
