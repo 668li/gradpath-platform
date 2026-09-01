@@ -41,6 +41,11 @@ def register(db: Session, data: RegisterRequest) -> User:
         email=data.email,
         password_hash=hash_password(data.password),
         name=data.name,
+        fresh_status=data.fresh_status,
+        party_status=data.party_status,
+        education=data.education,
+        gender=data.gender,
+        has_grassroots=data.has_grassroots,
     )
     db.add(user)
     db.commit()

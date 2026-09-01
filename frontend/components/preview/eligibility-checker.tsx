@@ -10,12 +10,20 @@
  * 落地页（/）与独立公开路由（/preview）共用此组件。
  */
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Crosshair, Play, RotateCcw, Search, X } from "lucide-react";
+import { authApi } from "@/lib/api/auth";
+import { getToken } from "@/lib/api/client";
 import { gradIntelApi } from "@/lib/api/grad";
 import { gwyPositionsApi, provincePositionsApi } from "@/lib/api/gwy";
 import { conditionPreviewApi, type ConditionPreviewResponse } from "@/lib/api/preview";
+import {
+  clearIdentitySnapshot,
+  isIdentitySnapshotEmpty,
+  loadIdentitySnapshot,
+  saveIdentitySnapshot,
+} from "@/lib/identity-snapshot";
 import { cn } from "@/lib/utils";
 import type { GwyPositionResponse, GwyProvincePositionResponse, GradYanzhaoProgram } from "@/types";
 
@@ -137,8 +145,48 @@ export function EligibilityChecker() {
   const [verdictLoading, setVerdictLoading] = useState(false);
   const [verdictError, setVerdictError] = useState<string | null>(null);
 
+  // 登录态与档案保存（W1-D3/D4 身份包预填）
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+
   const setIdentityField = (key: keyof IdentityState, value: string) =>
     setIdentity((prev) => ({ ...prev, [key]: value }));
+
+  // 身份包预填：登录用户读档案，访客读上次预览快照（刷新不丢）
+  useEffect(() => {
+    const boolToStr = (v: boolean | null | undefined) =>
+      v === null || v === undefined ? "" : v ? "yes" : "no";
+    if (getToken()) {
+      setLoggedIn(true);
+      authApi
+        .me()
+        .then((user) => {
+          setIdentity((prev) => ({
+            ...prev,
+            fresh_status: user.fresh_status ?? prev.fresh_status,
+            party_status: user.party_status ?? prev.party_status,
+            education: user.education ?? prev.education,
+            gender: user.gender ?? prev.gender,
+            grassroots: boolToStr(user.has_grassroots) || prev.grassroots,
+          }));
+        })
+        .catch(() => {
+          // 档案读取失败不阻塞预览主流程
+        });
+    } else {
+      const snap = loadIdentitySnapshot();
+      if (!isIdentitySnapshotEmpty(snap)) {
+        setIdentity((prev) => ({
+          ...prev,
+          fresh_status: snap!.fresh_status ?? prev.fresh_status,
+          party_status: snap!.party_status ?? prev.party_status,
+          education: snap!.education ?? prev.education,
+          gender: snap!.gender ?? prev.gender,
+          grassroots: boolToStr(snap!.has_grassroots) || prev.grassroots,
+        }));
+      }
+    }
+  }, []);
 
   // 关键词搜索（防抖，复用 target-condition-card 的搜索模式）
   const doSearch = useCallback(async (q: string, src: SourceKey) => {
@@ -238,10 +286,39 @@ export function EligibilityChecker() {
           : undefined,
       });
       setVerdict(data);
+      // 身份快照：注册/登录时带回（W1-D3/D4），仅存身份字段不含估分
+      saveIdentitySnapshot({
+        fresh_status: identity.fresh_status || null,
+        party_status: identity.party_status || null,
+        education: identity.education || null,
+        gender: identity.gender || null,
+        has_grassroots:
+          identity.grassroots === "" ? null : identity.grassroots === "yes",
+      });
     } catch {
       setVerdictError("判定失败，请稍后重试。");
     } finally {
       setVerdictLoading(false);
+    }
+  };
+
+  // 登录用户：把当前身份包保存到档案（只传已填字段，exclude_unset 不清空已存值）
+  const handleSaveToProfile = async () => {
+    setSaveState("saving");
+    try {
+      const updates: Record<string, string | boolean> = {};
+      if (identity.fresh_status) updates.fresh_status = identity.fresh_status;
+      if (identity.party_status) updates.party_status = identity.party_status;
+      if (identity.education) updates.education = identity.education;
+      if (identity.gender) updates.gender = identity.gender;
+      if (identity.grassroots !== "") updates.has_grassroots = identity.grassroots === "yes";
+      if (Object.keys(updates).length > 0) {
+        await authApi.updateMe(updates);
+      }
+      clearIdentitySnapshot();
+      setSaveState("saved");
+    } catch {
+      setSaveState("error");
     }
   };
 
@@ -424,12 +501,38 @@ export function EligibilityChecker() {
                 <EligibilityVerdict verdict={verdict} />
               )}
               <div className="mt-3 border-t border-paper-100 pt-3">
-                <Link
-                  href="/register"
-                  className="text-xs font-medium text-brand-600 hover:text-brand-700"
-                >
-                  登录保存这份判定，并解锁完整条件账本 → 
-                </Link>
+                {loggedIn ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSaveToProfile}
+                      disabled={saveState === "saving" || saveState === "saved"}
+                      className="text-xs font-medium text-brand-600 hover:text-brand-700 disabled:opacity-60"
+                    >
+                      {saveState === "saved"
+                        ? "✓ 已保存到我的档案"
+                        : saveState === "saving"
+                          ? "保存中…"
+                          : "保存这份身份到我的档案 →"}
+                    </button>
+                    <Link
+                      href="/decision-engine"
+                      className="text-xs text-ink-400 hover:text-ink-600"
+                    >
+                      去生成完整报考决策报告 →
+                    </Link>
+                  </div>
+                ) : (
+                  <Link
+                    href="/register"
+                    className="text-xs font-medium text-brand-600 hover:text-brand-700"
+                  >
+                    登录保存这份判定，并解锁完整条件账本 →
+                  </Link>
+                )}
+                {saveState === "error" && (
+                  <p className="mt-1 text-xs text-rose-600">保存失败，请稍后重试。</p>
+                )}
               </div>
             </div>
           )}

@@ -1,11 +1,16 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { GraduationCap } from "lucide-react";
 import { authApi, setRefreshToken } from "@/lib/api";
 import { registerSchema } from "@/lib/validations";
+import {
+  clearIdentitySnapshot,
+  isIdentitySnapshotEmpty,
+  loadIdentitySnapshot,
+} from "@/lib/identity-snapshot";
 import { useAuthStore } from "@/stores/auth";
 import { useToast } from "@/components/ui/toast";
 import { Button, Field, FieldError, Input } from "@/components/ui/form-controls";
@@ -22,6 +27,12 @@ export default function RegisterPage() {
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  // 免费预览带回的身份快照（W1-D3/D4）：注册即落库，登录后自动预填
+  const [identityHint, setIdentityHint] = useState(false);
+
+  useEffect(() => {
+    setIdentityHint(!isIdentitySnapshotEmpty(loadIdentitySnapshot()));
+  }, []);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -45,8 +56,21 @@ export default function RegisterPage() {
     setErrors({});
     setLoading(true);
     try {
-      // 1. 注册（返回 UserResponse，无 token）；显式传递 agree_terms 以满足后端合规校验
-      await authApi.register({ name, email, password, agree_terms: true });
+      // 1. 注册（返回 UserResponse，无 token）；显式传递 agree_terms 以满足后端合规校验。
+      //    免费预览带回的身份快照（W1-D3/D4）一并落库，只带已填字段。
+      const snap = loadIdentitySnapshot();
+      const identityBody: Record<string, string | boolean> = {};
+      if (snap && !isIdentitySnapshotEmpty(snap)) {
+        if (snap.fresh_status) identityBody.fresh_status = snap.fresh_status;
+        if (snap.party_status) identityBody.party_status = snap.party_status;
+        if (snap.education) identityBody.education = snap.education;
+        if (snap.gender) identityBody.gender = snap.gender;
+        if (snap.has_grassroots !== null && snap.has_grassroots !== undefined) {
+          identityBody.has_grassroots = snap.has_grassroots;
+        }
+      }
+      await authApi.register({ name, email, password, agree_terms: true, ...identityBody });
+      clearIdentitySnapshot();
       // 2. 自动登录获取 token
       const tokenRes = await authApi.login({ email, password });
       // 修复: REACT-AUTH-001 注册流程需与登录流程一致保存 refresh_token,
@@ -79,6 +103,11 @@ export default function RegisterPage() {
         </div>
 
         <form onSubmit={onSubmit} noValidate className="card space-y-4">
+          {identityHint && (
+            <p className="rounded-md bg-brand-50 px-3 py-2 text-xs text-brand-700">
+              已带上你在免费预览里填过的报考身份，注册后自动保存，无需重复填写。
+            </p>
+          )}
           <Field label="昵称" required>
             <Input
               name="name"

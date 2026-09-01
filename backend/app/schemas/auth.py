@@ -13,6 +13,12 @@ class RegisterRequest(BaseModel):
     # B3 合规：注册需明确同意《隐私政策》《用户协议》。
     # 默认 True 以保持与既有调用方兼容；service 层会显式拒绝 False。
     agree_terms: bool = True
+    # 报考身份包（W1-D3/D4）：免费预览带回，注册即落库，登录后自动预填。
+    fresh_status: str | None = Field(None, description="应届/非应届")
+    party_status: str | None = Field(None, description="中共党员/党员或团员/群众")
+    education: str | None = Field(None, description="博士/硕士/本科/大专")
+    gender: str | None = Field(None, description="男/女")
+    has_grassroots: bool | None = Field(None, description="是否已满足基层工作经历")
 
 
 class LoginRequest(BaseModel):
@@ -38,6 +44,12 @@ class UserResponse(BaseModel):
     graduation_year: int | None = None
     is_admin: bool = False
     created_at: datetime
+    # 报考身份包
+    fresh_status: str | None = None
+    party_status: str | None = None
+    education: str | None = None
+    gender: str | None = None
+    has_grassroots: bool | None = None
 
     model_config = {"from_attributes": True}
 
@@ -46,6 +58,7 @@ class UpdateMeRequest(BaseModel):
     """轻量设置页可编辑字段（C2；改密码/头像不在本轮范围）。
 
     全部可空：None 表示清除该字段，未传字段保持原值（exclude_unset）。
+    身份包字段与决策引擎/免费预览共用同一取值口径。
     """
 
     nickname: str | None = Field(default=None, max_length=50)
@@ -53,6 +66,11 @@ class UpdateMeRequest(BaseModel):
     major: str | None = Field(default=None, max_length=255)
     graduation_year: int | None = Field(default=None, ge=1970, le=2100)
     bio: str | None = Field(default=None, max_length=500)
+    fresh_status: str | None = Field(default=None, max_length=10)
+    party_status: str | None = Field(default=None, max_length=20)
+    education: str | None = Field(default=None, max_length=10)
+    gender: str | None = Field(default=None, max_length=4)
+    has_grassroots: bool | None = Field(default=None)
 
 
 class RefreshRequest(BaseModel):

@@ -9,7 +9,16 @@ export interface PaginatedResponse<T> {
 }
 
 // ===== 认证 =====
-export interface UserResponse {
+// 报考身份包（W1-D3/D4）：免费预览/决策引擎填过的身份持久化，注册带回、登录后自动预填
+export interface IdentityPackage {
+  fresh_status?: string | null;
+  party_status?: string | null;
+  education?: string | null;
+  gender?: string | null;
+  has_grassroots?: boolean | null;
+}
+
+export interface UserResponse extends IdentityPackage {
   id: string;
   email: string;
   name: string;
@@ -23,7 +32,7 @@ export interface UserResponse {
   created_at: string;
 }
 
-export interface UpdateMeRequest {
+export interface UpdateMeRequest extends IdentityPackage {
   nickname?: string | null;
   school?: string | null;
   major?: string | null;
@@ -37,7 +46,7 @@ export interface TokenResponse {
   token_type: string;
 }
 
-export interface RegisterRequest {
+export interface RegisterRequest extends IdentityPackage {
   email: string;
   password: string;
   name: string;

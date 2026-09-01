@@ -6,6 +6,11 @@ import { useRouter } from "next/navigation";
 import { GraduationCap } from "lucide-react";
 import { authApi, setRefreshToken } from "@/lib/api";
 import { loginSchema } from "@/lib/validations";
+import {
+  clearIdentitySnapshot,
+  isIdentitySnapshotEmpty,
+  loadIdentitySnapshot,
+} from "@/lib/identity-snapshot";
 import { useAuthStore } from "@/stores/auth";
 import { useToast } from "@/components/ui/toast";
 import { Button, Field, FieldError, Input } from "@/components/ui/form-controls";
@@ -47,6 +52,26 @@ export default function LoginPage() {
         return;
       }
       toast.push("登录成功", "success");
+      // 免费预览带回的身份快照（W1-D3/D4）：老用户登录也落库，只带已填字段不清空已有档案
+      try {
+        const snap = loadIdentitySnapshot();
+        if (snap && !isIdentitySnapshotEmpty(snap)) {
+          const updates: Record<string, string | boolean> = {};
+          if (snap.fresh_status) updates.fresh_status = snap.fresh_status;
+          if (snap.party_status) updates.party_status = snap.party_status;
+          if (snap.education) updates.education = snap.education;
+          if (snap.gender) updates.gender = snap.gender;
+          if (snap.has_grassroots !== null && snap.has_grassroots !== undefined) {
+            updates.has_grassroots = snap.has_grassroots;
+          }
+          if (Object.keys(updates).length > 0) {
+            await authApi.updateMe(updates);
+          }
+          clearIdentitySnapshot();
+        }
+      } catch {
+        // 带回失败不影响登录主流程
+      }
       router.replace("/dashboard");
     } catch (err) {
       toast.push("登录失败,请检查邮箱和密码是否正确", "error");

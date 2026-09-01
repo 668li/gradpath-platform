@@ -5,8 +5,9 @@
 // 报告式布局（三路横评 / 分数三档 / 岗位与院校分析 / 同分人群去向 / 行动时间线 / 综合建议）
 // + 结果回传闭环 + 分享（匿名链接 / 复制文案）。
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { pathDecisionApi } from "@/lib/api";
+import { useAuthStore } from "@/stores/auth";
 import { EngineForm } from "@/components/decision-engine/engine-form";
 import { DecisionReport } from "@/components/decision-engine/decision-report";
 import { ShareReportActions } from "@/components/decision-engine/share-report-actions";
@@ -18,9 +19,23 @@ import type { DecisionEngineInput, DecisionEngineResponse } from "@/types/path-c
 
 export default function DecisionEnginePage() {
   const toast = useToast();
+  const user = useAuthStore((s) => s.user);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<DecisionEngineResponse | null>(null);
   const [input, setInput] = useState<DecisionEngineInput | null>(null);
+
+  // 身份包预填（W1-D3/D4）：档案里的报考身份做底，本次会话已提交的 input 优先
+  const initial = useMemo<Partial<DecisionEngineInput> | undefined>(() => {
+    if (!user) return input ?? undefined;
+    return {
+      ...(input ?? {}),
+      fresh_status: input?.fresh_status ?? user.fresh_status ?? undefined,
+      party_status: input?.party_status ?? user.party_status ?? undefined,
+      education: input?.education ?? user.education ?? undefined,
+      gender: input?.gender ?? user.gender ?? undefined,
+      has_grassroots: input?.has_grassroots ?? user.has_grassroots ?? undefined,
+    };
+  }, [user, input]);
 
   const handleAnalyze = async (values: DecisionEngineInput) => {
     setLoading(true);
@@ -52,7 +67,7 @@ export default function DecisionEnginePage() {
       </div>
 
       {/* 输入表单 */}
-      <EngineForm loading={loading} onSubmit={handleAnalyze} initial={input ?? undefined} />
+      <EngineForm loading={loading} onSubmit={handleAnalyze} initial={initial} />
 
       {/* 结果区 */}
       {loading && (

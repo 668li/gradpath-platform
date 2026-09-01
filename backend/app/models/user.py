@@ -34,6 +34,13 @@ class User(UUIDMixin, TimestampMixin, Base):
     school: Mapped[str | None] = mapped_column(String(255), nullable=True)
     major: Mapped[str | None] = mapped_column(String(255), nullable=True)
     graduation_year: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # 报考身份包（W1-D3/D4）：免费预览/决策引擎填过的身份持久化，注册后自动预填。
+    # 取值口径与 ConditionPreviewRequest/决策引擎一致；估分（瞬时值）不入库。
+    fresh_status: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    party_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    education: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    gender: Mapped[str | None] = mapped_column(String(4), nullable=True)
+    has_grassroots: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     bio: Mapped[str | None] = mapped_column(String(500), nullable=True)
     avatar_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
