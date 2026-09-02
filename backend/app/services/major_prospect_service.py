@@ -1540,8 +1540,9 @@ def _grad_paths(
 
     `outgoing_tier`（本科出身层次）传入时做个性化：grad_school_intel 里每条记录的
     school_tier 是**目标院校**层次、background_discrimination 是**目标校卡第一学历程度**。
-    出身越下沉，越把出身敏感目标校（severe）降权、把出身友好目标校前置——用真实字段回答
-    双非/专科出身"我这种学历考这些研现实吗"，而不是凭空造"层次×就业薪资"数字。
+    出身越下沉，越把出身敏感目标校（severe）降权、把出身友好目标校前置，回答双非/专科出身
+    "我这种学历考这些研现实吗"。**零造假红线：出身敏感度仅在该记录带可核验来源
+    （data_sources 非空）时生效**——历史数据多为无来源预置，不冒充院校公开信息。
     """
     rows = db.query(GradSchoolIntel).all()
     name = major
@@ -1557,10 +1558,14 @@ def _grad_paths(
                 continue
             matched.append(r)
 
-    # 出身个性化：根据 background_discrimination 是否为 severe 生成"出身友好/高险"注解，并用于排序
+    # 出身个性化：根据 background_discrimination 是否为 severe 生成"出身友好/高险"注解，并用于排序。
+    # 零造假红线：仅当该记录 data_sources 非空（带可核验来源）才标注/降权；无来源的历史数据
+    # 视为不可信，保持中立——不冒充院校公开信息。
     for r in matched:
         r._outgoing_note = None
         r._outgoing_risk = None
+        if not r.data_sources:
+            continue
         disc = (r.background_discrimination or "").lower()
         if outgoing_tier and outgoing_tier in ("二本", "专科"):
             if disc == "severe":
@@ -1580,8 +1585,10 @@ def _grad_paths(
                 r._outgoing_note = None
                 r._outgoing_risk = None
 
-    # 排序：出身下沉时，出身友好校优先；否则维持分数线降序
-    if outgoing_tier and outgoing_tier in ("二本", "专科"):
+    personalized = bool(outgoing_tier and any(r._outgoing_risk for r in matched))
+
+    # 排序：仅当确有带来源的出身敏感度时才按风险重排；否则维持分数线降序（中立）
+    if personalized:
         _risk_rank = {"friendly": 0, "acceptable": 1, "careful": 2, "high": 3, None: 2}
         matched.sort(key=lambda r: (_risk_rank.get(r._outgoing_risk, 2), -(r.score_line or 0)))
     else:
@@ -1607,7 +1614,7 @@ def _grad_paths(
             }
             for r in matched[:limit]
         ],
-        "personalized": bool(outgoing_tier and outgoing_tier in ("二本", "专科", "一本", "双一流")),
+        "personalized": personalized,
     }
 
 
@@ -1629,7 +1636,7 @@ def get_prospect(db: Session, major: str, outgoing_tier: str | None = None) -> d
     companies = _companies(db, entry.company_keywords)
     grad = _grad_paths(db, entry.grad_aliases, matched_name, outgoing_tier=outgoing_tier)
 
-    # 出身层次制度性事实（公开可核实的通用数字，非某校特定造数）
+    # 出身层次制度性事实（一般性公开常识，非某校特定造数；不打"真实数据"标签）
     tier_facts = {
         "985": "985 院校保研率普遍 20%~35%，考研统考名额少，主要走推免；直接就业品牌溢价明显",
         "211": "211 院校保研率约 10%~20%，考研统考竞争小一些，考公/校招有优势",
@@ -1659,6 +1666,6 @@ def get_prospect(db: Session, major: str, outgoing_tier: str | None = None) -> d
         "data_notes": [
             "行业薪资来自国家统计局（城镇单位就业人员年平均工资），为行业整体口径而非应届生起薪",
             "岗位薪资来自各市人社局发布的工资价位，为中位数口径",
-            "考研数据来自院校研究生院公开信息整理；出身友好性标注基于目标校'是否看重第一学历'的真实字段",
+            "考研数据来自院校研究生院公开信息整理；出身友好度标注仅在目标校信息带可核验来源时展示（当前多数院校暂无来源，默认不标注）",
         ],
     }

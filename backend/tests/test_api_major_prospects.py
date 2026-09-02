@@ -71,7 +71,8 @@ def _seed(db_session):
             score_line=0,
         )
     )
-    # 出身个性化用：severe（卡第一学历）与 none（不卡）两条，验证排序与注解
+    # 出身个性化用：severe（卡第一学历）与 none（不卡）两条，验证排序与注解。
+    # 两条都带 data_sources（可核验来源），否则来源闸门会关闭个性化。
     db_session.add(
         GradSchoolIntel(
             user_id=user.id,
@@ -82,6 +83,7 @@ def _seed(db_session):
             admission_ratio="10:1",
             score_line=390,
             background_discrimination="severe",
+            data_sources=[{"source": "2026年招生章程（测试）"}],
         )
     )
     db_session.add(
@@ -94,6 +96,7 @@ def _seed(db_session):
             admission_ratio="5:1",
             score_line=360,
             background_discrimination="none",
+            data_sources=[{"source": "2026年招生章程（测试）"}],
         )
     )
     db_session.add(
@@ -282,6 +285,40 @@ def test_grad_paths_outgoing_tier_zhuanke_personalizes(db_session):
     order = [g["school_name"] for g in p["grad_paths"]]
     # friendly 排 severe 之前，即便 severe 分数更高
     assert order.index("出身友好大学") < order.index("出身敏感大学")
+
+
+def test_grad_paths_unsourced_row_not_credited(db_session):
+    _seed(db_session)
+    from app.services.major_prospect_service import get_prospect
+
+    # 加一条"无来源 + severe"的记录（最高分 400）：来源闸门是**逐条**生效——
+    # 该行不标注、不参与风险降权；但已带来源的 seeded 行仍可触发整体个性化。
+    user = db_session.query(User).filter_by(email="crawler@example.com").first()
+    db_session.add(
+        GradSchoolIntel(
+            user_id=user.id,
+            school_name="无来源敏感大学",
+            major_name="计算机科学与技术",
+            school_tier="985",
+            year=2026,
+            admission_ratio="8:1",
+            score_line=400,
+            background_discrimination="severe",
+            # data_sources 缺省 = []（零溯源，视为不可信）
+        )
+    )
+    db_session.commit()
+    p = get_prospect(db_session, "计算机科学与技术", outgoing_tier="专科")
+    # 已带来源的 seeded 行仍触发个性化
+    assert p["grad_personalized"] is True
+    by_name = {g["school_name"]: g for g in p["grad_paths"]}
+    # 无来源行：severe 不得被标注（不冒充院校公开信息）
+    assert by_name["无来源敏感大学"]["outgoing_risk"] is None
+    assert by_name["无来源敏感大学"]["outgoing_note"] is None
+    # 无来源行不带风险 → 不被当作 severe"高险"降权；同 neutral 分组内按其分数线排序，
+    # 故 400 分的无来源行仍排在同为 neutral 的清华大学(380)之前（未被出身敏感度挤出）
+    order = [g["school_name"] for g in p["grad_paths"]]
+    assert order.index("无来源敏感大学") < order.index("清华大学")
 
 
 def test_grad_paths_outgoing_tier_985_not_downgraded(db_session):

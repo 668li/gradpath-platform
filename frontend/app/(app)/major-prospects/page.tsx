@@ -66,7 +66,7 @@ const OUTGOING_TIER_OPTIONS: OutgoingTier[] = [
   "专科",
 ];
 
-// 出身个性化标注的徽章颜色（基于目标校真实"卡第一学历"程度）
+// 出身个性化标注的徽章颜色（仅当目标校出身敏感度带可核验来源时才会出现）
 const OUTGOING_RISK_BADGES: Record<string, { text: string; cls: string }> = {
   friendly: { text: "出身友好", cls: "bg-green-100 text-green-700" },
   acceptable: { text: "可冲", cls: "bg-blue-100 text-blue-700" },
@@ -155,7 +155,7 @@ function ProspectResult({ data }: { data: MajorProspect }) {
         )}
       </div>
 
-      {/* 出身层次制度性事实（公开可核实，非某校特定造数） */}
+      {/* 出身层次制度性事实（一般性公开常识，非某校特定造数，不与"真实数据"混标） */}
       {data.grad_personalized && data.tier_fact && (
         <div className="flex items-start gap-2 rounded-xl border border-blue-200 bg-blue-50 p-3.5 text-sm text-blue-800">
           <Info className="mt-0.5 h-4 w-4 shrink-0" />
@@ -282,7 +282,7 @@ function ProspectResult({ data }: { data: MajorProspect }) {
         <SectionCard
           icon={GraduationCap}
           title="升学路径 · 考研情报"
-          desc="该专业考研的真实竞争格局（院校公开信息）"
+          desc={data.grad_personalized ? "该专业考研竞争格局（标注来自带可核验来源的院校信息）" : "该专业考研竞争格局，按公开分数线排序（多数院校出身敏感度暂缺可核验来源，未标注）"}
         >
           <div className="space-y-2.5">
             {data.grad_paths.map((g) => {
@@ -490,11 +490,16 @@ export default function MajorProspectsPage() {
               </button>
             ))}
           </div>
-          {outgoingTier && major && (
-            <p className="mt-2 text-xs text-ink-400">
-              已按「{outgoingTier}」出身个性化升学路径。
-            </p>
-          )}
+          {outgoingTier && major &&
+            (data?.grad_personalized ? (
+              <p className="mt-2 text-xs text-ink-400">
+                已按「{outgoingTier}」出身个性化升学路径（依据带可核验来源的院校出身敏感度）。
+              </p>
+            ) : (
+              <p className="mt-2 rounded-md bg-amber-50 px-2.5 py-1.5 text-xs text-amber-700">
+                已选「{outgoingTier}」出身，但这些院校暂缺带可核验来源的出身敏感度数据，升学路径暂按公开分数线排序，未做出身降权。
+              </p>
+            ))}
         </div>
 
         {/* 热门专业 chips */}
