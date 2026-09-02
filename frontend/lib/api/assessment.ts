@@ -3,6 +3,7 @@ import type {
   Question,
   AssessmentSubmit,
   AssessmentResponse,
+  AssessmentInterpretResponse,
   LifeWheelSubmit,
   LifeWheelSnapshot,
   LifeWheelDimension,
@@ -20,6 +21,10 @@ export const assessmentApi = {
     }),
   getResult: () => request<AssessmentResponse | null>("/api/assessment/result"),
   getHistory: () => request<AssessmentResponse[]>("/api/assessment/history"),
+  interpret: () =>
+    request<AssessmentInterpretResponse>("/api/assessment/interpret", {
+      method: "POST",
+    }),
 };
 
 // ===== 护城河功能：人生平衡轮 =====

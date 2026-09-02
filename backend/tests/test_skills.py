@@ -669,3 +669,112 @@ class TestRegistryUserReferral:
         assert info is not None
         assert info["display_name"] == "用户推荐助手"
         assert info["category"] == "generator"
+
+
+# ======================================================================
+# Phase C1: 情景分组匹配（零历史用户的一句话也能命中正确 skill）
+# ======================================================================
+
+
+class TestScenarioGroupedMatching:
+    """验证 registry 情景分组：模糊句子命中情景泛化词 → 落到正确的 skill 簇。"""
+
+    def _codes(self, skill):
+        return skill.code if skill else None
+
+    def test_choice_scenario_lands_on_kaoyan(self):
+        # 升学情景："读研" 泛化词 → grad_school_planning
+        skill = registry.find_skill_instance("我想读研但不知道怎么规划", {})
+        assert skill is not None
+        assert skill.code in {"grad_school_planning", "kaoyan-advisor", "career_planning"}
+
+    def test_scoreline_scenario_lands_on_kaoyan(self):
+        skill = registry.find_skill_instance("这个学校上岸要多少分", {})
+        assert skill is not None
+        assert skill.code in {"kaoyan-advisor", "grad_school_planning"}
+
+    def test_prep_scenario_lands_on_learning(self):
+        skill = registry.find_skill_instance("我每天该学多久", {})
+        assert skill is not None
+        assert skill.code in {"learning_plan_generator", "kaoyan-advisor", "grad_school_planning"}
+
+    def test_interview_scenario_lands_on_interview(self):
+        skill = registry.find_skill_instance("复试怎么准备", {})
+        assert skill is not None
+        assert skill.code in {"interview_simulation", "interview_coach"}
+
+    def test_career_direction_scenario(self):
+        skill = registry.find_skill_instance("这个行业有前途吗", {})
+        assert skill is not None
+        assert skill.code in {
+            "industry_analyzer",
+            "career_planning",
+            "career_path_mapper",
+            "company_review",
+            "salary_benchmark",
+        }
+
+    def test_direct_trigger_still_beats_scenario(self):
+        # 直接触发词命中必须优先于情景加成
+        skill = registry.find_skill_instance("我想谈谈薪资", {})
+        assert skill is not None
+        assert skill.code == "salary_negotiation"
+
+    def test_no_match_returns_default(self):
+        skill = registry.find_skill_instance("帮我写个爬虫", {})
+        assert skill is not None
+        assert skill.code == "default"
+
+    def test_scenario_match_available(self):
+        matched = registry._scenario_match("这个学校上岸要多少分")
+        assert matched is not None
+        assert "scoreline" in matched
+
+
+# ======================================================================
+# Phase C2: BaseSkill.inject_data 数据注入钩子
+# ======================================================================
+
+
+def test_base_skill_inject_data_default_empty():
+    """默认 BaseSkill.inject_data 返回空串，通用 skill 不注入专有数据。"""
+    from app.skills.base import BaseSkill
+
+    class _EmptySkill(BaseSkill):
+        code = "test_empty"
+        name = "test_empty"
+        description = ""
+        icon = ""
+
+        def should_activate(self, message, context) -> bool:
+            return True
+
+        def build_system_prompt(self, user_context, knowledge) -> str:
+            return "sys"
+
+        def build_user_prompt(self, message) -> str:
+            return message
+
+    skill = _EmptySkill()
+    assert skill.inject_data(db=None, user_id="u1", content="hello") == ""
+
+
+def test_inject_data_hook_can_override():
+    """数据型 skill 可覆写 inject_data，返回可追加到 system prompt 的专有数据。"""
+
+    class _DataSkill:
+        """与 BaseSkill 同契约的轻量桩，验证 hook 签名与返回追加到 prompt。"""
+
+        def build_system_prompt(self, user_context, knowledge):
+            return "基础提示词"
+
+        def inject_data(self, db, user_id, content):
+            return f"进面线数据(user={user_id}, 提到={content})"
+
+    skill = _DataSkill()
+    injected = skill.inject_data(db=object(), user_id=7, content="双一流进面线")
+    assert injected == "进面线数据(user=7, 提到=双一流进面线)"
+    # 验证 chat_service 的拼装约定：追加【专有数据】区块
+    system_prompt = f"{skill.build_system_prompt('', [])}\n\n【专有数据】\n{injected}"
+    assert "【专有数据】" in system_prompt
+    assert "双一流进面线" in system_prompt

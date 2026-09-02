@@ -5,11 +5,10 @@
 - POST /api/assessment/submit — 提交答案，计算结果并保存
 - GET /api/assessment/result — 获取最近一次测评结果
 - GET /api/assessment/history — 获取历史记录
+- POST /api/assessment/interpret — 测评 × 专有报考数据 → 专属路径解读（护城河）
 
 支持的测评类型：holland | mbti | big_five | disc
 """
-
-from collections import Counter
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
@@ -20,6 +19,7 @@ from app.database import get_db
 from app.models.assessment import Assessment
 from app.models.user import User
 from app.schemas.assessment import AssessmentResponse, AssessmentSubmit, Question
+from app.services.assessment_interpret_service import build_interpretation
 from app.services.assessment_service import ASSESSMENT_CALCULATORS, ASSESSMENT_QUESTIONS
 
 router = APIRouter(prefix="/api/assessment", tags=["职业测评"])
@@ -27,18 +27,88 @@ router = APIRouter(prefix="/api/assessment", tags=["职业测评"])
 # 合法测评类型集合
 _VALID_TYPES = set(ASSESSMENT_QUESTIONS.keys())
 
+# 每种测评每题的合法答案取值（用于完整性 + 取值合法性校验）
+_ASSESSMENT_ANSWER_VALUES = {
+    "holland": {"R", "I", "A", "S", "E", "C"},
+    "mbti": {"E", "I", "S", "N", "T", "F", "J", "P"},
+    "big_five": {str(i) for i in range(1, 6)},  # Likert 1~5
+    "disc": {"D", "I", "S", "C"},
+}
+
+
+def _compute_scores_fallback(assessment_type: str, answers: dict) -> dict[str, float]:
+    """旧数据（scores 列未回填前）按 answers 实时计算维度分。"""
+    calculator = ASSESSMENT_CALCULATORS.get(assessment_type)
+    if not calculator:
+        return {}
+    result = calculator(answers)
+    return {k: float(v) for k, v in (result.get("scores") or {}).items()}
+
 
 def _to_response(assessment: Assessment) -> AssessmentResponse:
-    """将 Assessment ORM 对象组装为响应（scores 由 answers 实时计算）。"""
+    """将 Assessment ORM 对象组装为响应。
+
+    scores 优先读入库的维度分（真实语义：大五为均分 dict[str,float]），
+    旧行或缺失时按 answers 实时回填，保证响应里的分数永远是对的。
+    """
+    scores = assessment.scores or _compute_scores_fallback(
+        assessment.assessment_type, assessment.answers or {}
+    )
     return AssessmentResponse(
         id=assessment.id,
         assessment_type=assessment.assessment_type,
         result_code=assessment.result_code,
         result_summary=assessment.result_summary,
         recommended_directions=assessment.recommended_directions or [],
-        scores=dict(Counter(assessment.answers.values())),
+        scores=scores,
         created_at=assessment.created_at,
     )
+
+
+def _validate_answers(assessment_type: str, answers: dict) -> list[str]:
+    """校验答案完整性与作答可信度，返回警告列表（空列表 = 完全正常）。
+
+    完整性：必须覆盖该类型全部题目且取值合法（防止只交几题就出结果）。
+    可信度：作答模式异常（答全但大量同一答案 / 大五方差过小）→ 附信度警示，
+    把"防作弊/防乱答"从仅前端搬到后端，杜绝绕开前端直接打接口。
+    所有题目数据是内置常量，无需查库。
+    """
+    warnings: list[str] = []
+    questions = ASSESSMENT_QUESTIONS.get(assessment_type) or []
+    required_ids = {q["id"] for q in questions}
+    submitted_ids = set(answers.keys())
+    legal_values = _ASSESSMENT_ANSWER_VALUES.get(assessment_type, set())
+
+    missing = required_ids - submitted_ids
+    extra = submitted_ids - required_ids
+    illegal = {
+        qid for qid, val in answers.items() if qid in required_ids and val not in legal_values
+    }
+    if missing:
+        warnings.append(
+            f"缺失 {len(missing)} 题未作答（如 {sorted(missing)[:3]}），结果不完整、仅供参考。"
+        )
+    if extra:
+        warnings.append(f"存在 {len(extra)} 个未知题号（{sorted(extra)[:3]}），已忽略。")
+    if illegal:
+        warnings.append(f"{len(illegal)} 题答案取值非法，已忽略。")
+    if required_ids and not missing:
+        # 完整作答仍全同/极低区分度 → 存疑（诚实标注，不武断判作弊）
+        values = [answers[qid] for qid in sorted(required_ids) if qid in answers]
+        unique = len({v for v in values if v in legal_values})
+        if unique <= 1:
+            warnings.append("你的作答几乎都为同一选项，结果可能偏颇，解读时请留意。")
+        if assessment_type == "big_five":
+            nums = [
+                int(answers[qid])
+                for qid in required_ids
+                if qid in answers and answers[qid] in legal_values
+            ]
+            if len(nums) >= 5:
+                variance = sum((x - sum(nums) / len(nums)) ** 2 for x in nums) / len(nums)
+                if variance < 0.3:
+                    warnings.append("你的作答选项集中在很小范围内，结果区分度低，仅供参考。")
+    return warnings
 
 
 @router.get("/questions", response_model=list[Question])
@@ -68,7 +138,8 @@ def submit_assessment(
 ):
     """提交答案，计算结果并保存到数据库。
 
-    根据 body.assessment_type 调用对应的计算函数。
+    根据 body.assessment_type 调用对应的计算函数；先做后端答案校验，
+    把信度警示与结果一并返回（不阻断提交，但如实标注）。
     """
     assessment_type = body.assessment_type
     calculator = ASSESSMENT_CALCULATORS.get(assessment_type)
@@ -78,14 +149,20 @@ def submit_assessment(
             detail=f"不支持的测评类型: {assessment_type}，可选值: {sorted(_VALID_TYPES)}",
         )
 
+    warnings = _validate_answers(assessment_type, body.answers)
     result = calculator(body.answers)
+    result_summary = result["result_summary"]
+    if warnings:
+        result_summary += "\n\n【作答提示】" + "；".join(warnings)
+
     assessment = Assessment(
         user_id=user.id,
         assessment_type=assessment_type,
         answers=body.answers,
         result_code=result["result_code"],
-        result_summary=result["result_summary"],
+        result_summary=result_summary,
         recommended_directions=result["recommended_directions"],
+        scores=result["scores"],
     )
     db.add(assessment)
     db.commit()
@@ -128,3 +205,17 @@ def get_history(
         .all()
     )
     return [_to_response(a) for a in assessments]
+
+
+@router.post("/interpret")
+def interpret_assessment(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """测评 × 专有报考数据 → 专属路径解读（护城河）。
+
+    读最新测评 + 个人档案（专业/学校层次/应届/目标方向），
+    结合真实报考数据（三路决策、进面线、薪资前景、同分人群去向）产出专属解读。
+    未完成测评时返回 has_assessment=False 引导补全，不报错。
+    """
+    return build_interpretation(db, user.id)

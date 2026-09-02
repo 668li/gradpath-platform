@@ -39,13 +39,24 @@ export interface ContextCareerProfile {
   self_introduction: string | null;
 }
 
+export interface OnboardingInsight {
+  type: "strength" | "risk" | "opportunity";
+  text: string;
+}
+
+export interface OnboardingPath {
+  short_term: string[];
+  mid_term: string[];
+  long_term: string[];
+}
+
 export interface ContextOnboarding {
   current_stage: string;
   target_direction: string;
   target_industry: string | null;
   ai_diagnosis: string | null;
-  recommended_path: string[] | null;
-  key_insights: string[] | null;
+  recommended_path: OnboardingPath | null;
+  key_insights: OnboardingInsight[] | null;
   completed_at: string | null;
 }
 
@@ -171,8 +182,8 @@ export interface OnboardingRecord {
   self_assessment: Record<string, unknown>;
   status: OnboardingStatus;
   ai_diagnosis: string | null;
-  recommended_path: string[] | null;
-  key_insights: string[] | null;
+  recommended_path: OnboardingPath | null;
+  key_insights: OnboardingInsight[] | null;
   completed_at: string | null;
   created_at: string | null;
 }

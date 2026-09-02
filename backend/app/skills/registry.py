@@ -385,6 +385,127 @@ _SKILLS: list[SkillInfo] = [
 ]
 
 
+# ===== 情景组（Phase C1：让零历史用户的一句话也能命中正确 skill）=====
+# 每个情景组是一个"用户心智中的目标"，用粗粒度的高频口语触发词标识。
+# 当消息命中某情景的泛化词时，给该情景下所有 skill 一个小的加成（因子 < 1），
+# 使直接触发词匹配仍始终优先，但零历史用户的模糊一句话能落到正确的 skill 簇。
+_SCENARIOS: list[dict] = [
+    {
+        "id": "choice",
+        "label": "选岗 / 方向选择",
+        "keywords": [
+            "不知道该选",
+            "怎么选",
+            "选什么",
+            "选哪个",
+            "该选",
+            "方向选择",
+            "何去何从",
+            "迷茫",
+            "适合做什么",
+            "我该怎么办",
+        ],
+        "skills": [
+            "kaoyan-advisor",
+            "career_planning",
+            "grad_school_planning",
+            "career_transition",
+            "career_path_mapper",
+        ],
+    },
+    {
+        "id": "scoreline",
+        "label": "查线 / 分数线",
+        "keywords": [
+            "线多少",
+            "分数线",
+            "进面线",
+            "上岸要多少分",
+            "录取线",
+            "国家线",
+            "分数要求",
+            "要考多少",
+        ],
+        "skills": ["kaoyan-advisor", "grad_school_planning"],
+    },
+    {
+        "id": "prep",
+        "label": "备考 / 学习",
+        "keywords": [
+            "怎么复习",
+            "备考",
+            "学习计划",
+            "时间安排",
+            "每天学",
+            "复习安排",
+            "怎么学",
+            "该学",
+            "学多久",
+            "怎么备考",
+            "安排学习",
+            "看书",
+        ],
+        "skills": ["learning_plan_generator", "kaoyan-advisor", "grad_school_planning"],
+    },
+    {
+        "id": "volunteer",
+        "label": "志愿 / 升学期望",
+        "keywords": ["志愿", "填报", "预估分", "能上什么", "能报", "够得着", "稳不稳", "冲稳保"],
+        "skills": ["kaoyan-advisor", "grad_school_planning"],
+    },
+    {
+        "id": "interview",
+        "label": "面试",
+        "keywords": ["面试", "面经", "回答", "自我介绍", "HR面", "技术面", "复试"],
+        "skills": ["interview_simulation", "interview_coach"],
+    },
+    {
+        "id": "career_direction",
+        "label": "职业方向",
+        "keywords": [
+            "做什么工作",
+            "什么岗位",
+            "哪个行业",
+            "职业方向",
+            "就业前景",
+            "好不好就业",
+            "有前途",
+            "待遇怎么样",
+        ],
+        "skills": [
+            "industry_analyzer",
+            "career_planning",
+            "career_path_mapper",
+            "company_review",
+            "salary_benchmark",
+        ],
+    },
+    {
+        "id": "advancement",
+        "label": "升学",
+        "keywords": ["考研", "保研", "读研", "硕士", "研究生", "学硕", "专硕", "考公", "考编"],
+        "skills": ["grad_school_planning", "kaoyan-advisor", "career_planning"],
+    },
+]
+
+# 情景加成因子：直接触发词命中得分 x 1.0，情景泛化词命中得分 x SCENARIO_BOOST
+SCENARIO_BOOST = 0.6
+
+
+def _scenario_match(content_lower: str) -> dict[str, float] | None:
+    """返回内容命中的情景 id → 得分（词典，可能为 None）。"""
+    matched: dict[str, float] = {}
+    for scen in _SCENARIOS:
+        for kw in scen["keywords"]:
+            if kw in content_lower:
+                matched[scen["id"]] = matched.get(scen["id"], 0) + len(kw)
+    return matched or None
+
+
+# 情景 id → 该情景覆盖的 skill code 集合
+_SCENARIO_SKILLS: dict[str, set[str]] = {s["id"]: set(s["skills"]) for s in _SCENARIOS}
+
+
 def list_skills() -> list[dict]:
     """列出所有 skill，返回字典列表。"""
     return [
@@ -456,15 +577,24 @@ def find_skill(content: str, context: dict | None = None) -> dict | None:
         return None
 
     content_lower = content.lower()
+
+    # 情景加分：命中某情景的泛化词 → 该情景下所有 skill 共享加成
+    scenario_scores = _scenario_match(content_lower) or {}
+
     best_match = None
     best_score = 0
 
     for s in _SKILLS:
-        # 计算触发词匹配分数
+        # 计算触发词匹配分数（直接触发词始终优先，x1.0）
         score = 0
         for trigger in s.trigger_words:
             if trigger in content_lower:
                 score += len(trigger)  # 长触发词权重更高
+
+        # 情景加成：该 skill 属于某命中情景时，用泛化词得分 x 加成因子
+        for scen_id, scen_score in scenario_scores.items():
+            if s.code in _SCENARIO_SKILLS.get(scen_id, set()):
+                score += scen_score * SCENARIO_BOOST
 
         if score > best_score:
             best_score = score
@@ -559,6 +689,10 @@ def find_skill_instance(content: str, context: dict | None = None) -> BaseSkill 
         return _SKILL_CLASSES.get("default", lambda: None)()
 
     content_lower = content.lower()
+
+    # 情景加分（Phase C1：零历史用户的模糊一句话也能命中正确 skill 簇）
+    scenario_scores = _scenario_match(content_lower) or {}
+
     best_match = None
     best_score = 0
 
@@ -576,10 +710,15 @@ def find_skill_instance(content: str, context: dict | None = None) -> BaseSkill 
             continue  # skip default in scoring
         score = 0
 
-        # 当前消息匹配
+        # 当前消息匹配（直接触发词 x1.0）
         for trigger in s.trigger_words:
             if trigger in content_lower:
                 score += len(trigger)
+
+        # 情景加成：该 skill 属于某命中情景时，泛化词得分 x 加成因子
+        for scen_id, scen_score in scenario_scores.items():
+            if s.code in _SCENARIO_SKILLS.get(scen_id, set()):
+                score += scen_score * SCENARIO_BOOST
 
         # 上下文加成：对话历史中出现过相关关键词
         if history_content:

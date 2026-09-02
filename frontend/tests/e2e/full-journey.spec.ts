@@ -48,8 +48,15 @@ test.describe.serial("端到端完整旅程", () => {
           target_industry: "互联网/IT",
           self_assessment: { skills: { technical: 4, communication: 3, leadership: 3, creativity: 4 } },
           ai_diagnosis: "mock 诊断：建议聚焦互联网行业，加强项目经验。",
-          key_insights: ["技术能力较强", "需要加强沟通"],
-          recommended_path: ["完成 2-3 个项目", "参与开源贡献"],
+          key_insights: [
+            { type: "strength", text: "技术能力较强" },
+            { type: "risk", text: "需要加强沟通" },
+          ],
+          recommended_path: {
+            short_term: ["完成 2-3 个项目", "参与开源贡献"],
+            mid_term: [],
+            long_term: [],
+          },
           completed: true,
           created_at: new Date().toISOString(),
         }),

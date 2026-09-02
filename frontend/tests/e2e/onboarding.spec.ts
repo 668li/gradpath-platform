@@ -27,8 +27,15 @@ test.describe("5 分钟诊断完整流", () => {
           target_industry: null,
           self_assessment: { skills: { technical: 4, communication: 3, leadership: 3, creativity: 4 } },
           ai_diagnosis: "这是一份 mock 的 AI 诊断报告：你的考研准备路径整体合理，建议加强真题训练。",
-          key_insights: ["数学基础扎实", "英语需要加强"],
-          recommended_path: ["暑期完成 10 套真题", "9 月开始模拟面试"],
+          key_insights: [
+            { type: "strength", text: "数学基础扎实" },
+            { type: "risk", text: "英语需要加强" },
+          ],
+          recommended_path: {
+            short_term: ["暑期完成 10 套真题"],
+            mid_term: ["9 月开始模拟面试"],
+            long_term: [],
+          },
           completed: true,
           created_at: new Date().toISOString(),
         }),

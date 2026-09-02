@@ -53,8 +53,8 @@ const LEVEL_COLOR: Record<string, "green" | "blue" | "amber" | "slate"> = {
   冲刺: "amber",
 };
 
-/** 考研档位徽章颜色（冲/稳/保） */
-const KAOYAN_BAND_COLOR: Record<string, "green" | "blue" | "amber"> = {
+/** 考研档位徽章颜色（冲/稳/保；未知态用 slate） */
+const KAOYAN_BAND_COLOR: Record<string, "green" | "blue" | "amber" | "slate"> = {
   稳: "green",
   均衡: "blue",
   冲: "amber",
@@ -166,13 +166,14 @@ export function DecisionReport({ result, shared }: DecisionReportProps) {
   const position = result.position_analysis;
   const school = result.school_analysis;
 
-  // 考研冲/稳/保：由模考估分 vs 各院校复试线派生（标注「由现有数据派生」）
+  // 考研冲/稳/保：优先消费后端同口径 kaoyan_band；
+  // 旧报告/后端未下发时回退到「由估分派生」的逻辑（保留，但标注来源）
   const kaoyanScore =
     typeof input.kaoyan_estimated_score === "number"
       ? (input.kaoyan_estimated_score as number)
       : undefined;
   const kaoyanBands = useMemo(() => {
-    if (kaoyanScore == null || !school?.items?.length) return [];
+    if (!school?.items?.length) return [];
     return school.items
       .filter((s) => s.score_line != null && s.score_line > 0)
       .slice(0, 6)
@@ -180,7 +181,10 @@ export function DecisionReport({ result, shared }: DecisionReportProps) {
         name: s.university_name,
         major: s.major_name,
         line: s.score_line as number,
-        band: deriveKaoyanBand(kaoyanScore, s.score_line as number),
+        band: (s.kaoyan_band as "稳" | "均衡" | "冲" | undefined) ??
+          (kaoyanScore != null
+            ? deriveKaoyanBand(kaoyanScore, s.score_line as number)
+            : undefined),
       }));
   }, [kaoyanScore, school]);
 
@@ -265,10 +269,14 @@ export function DecisionReport({ result, shared }: DecisionReportProps) {
           <div className="mt-3">
             <div className="flex items-center justify-between">
               <div className="text-xs font-medium text-ink-600">
-                考研 · 按模考估分分档
+                考研 · 院校冲/稳/保分档
                 {kaoyanScore != null && <span className="text-ink-400">（估分 {kaoyanScore} 分）</span>}
               </div>
-              <span className="text-[10px] text-ink-400">由现有数据派生</span>
+              <span className="text-[10px] text-ink-400">
+                {kaoyanBands.every((b) => !!b.band)
+                  ? "后端统一口径"
+                  : "估算派生 · 仅供参考"}
+              </span>
             </div>
             <ul className="mt-2 space-y-1.5">
               {kaoyanBands.map((b) => (
@@ -276,9 +284,13 @@ export function DecisionReport({ result, shared }: DecisionReportProps) {
                   key={`${b.name}-${b.major}`}
                   className="flex items-center gap-2 rounded-lg border border-paper-100 bg-paper-50/60 px-3 py-2 text-xs"
                 >
-                  <Badge color={KAOYAN_BAND_COLOR[b.band]}>
-                    {b.band}
-                  </Badge>
+                  {b.band ? (
+                    <Badge color={KAOYAN_BAND_COLOR[b.band]}>
+                      {b.band}
+                    </Badge>
+                  ) : (
+                    <Badge color="slate">未知</Badge>
+                  )}
                   <span className="font-medium text-ink-800">{b.name}</span>
                   <span className="text-ink-500">{b.major}</span>
                   <span className="ml-auto text-ink-400">复试线 {b.line} 分</span>
@@ -286,7 +298,7 @@ export function DecisionReport({ result, shared }: DecisionReportProps) {
               ))}
             </ul>
             <p className="mt-1.5 text-[11px] text-ink-400">
-              冲/稳/保由「模考估分 − 复试线」派生：±15 分内为均衡，高于为稳，低于为冲。
+              冲/稳/保阈值由后端「模考估分 − 复试线」统一判定（±10 分内为均衡，高于为稳，低于为冲）。
             </p>
           </div>
         )}

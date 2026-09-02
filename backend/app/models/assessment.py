@@ -28,3 +28,6 @@ class Assessment(UUIDMixin, TimestampMixin, Base):
     recommended_directions: Mapped[list] = mapped_column(
         JSONB, nullable=False
     )  # ["后端开发", "数据分析", ...]
+    # 维度分（各测评的真实维度得分；大五为均分 dict[str,float]，其余为计数）。
+    # 旧行可能为 NULL，读取时由 answers 实时回填（见 assessment.py 的 _to_response）。
+    scores: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # {"R": 9, "I": 7, ...}

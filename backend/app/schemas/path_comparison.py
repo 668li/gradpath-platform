@@ -227,6 +227,10 @@ class SchoolCompetitionItem(BaseModel):
     competition: str = Field(..., description="竞争档位：偏高 / 中等 / 偏低")
     intel: str | None = Field(default=None, description="隐性情报（卡第一学历 / 保护一志愿等）")
     source_url: str | None = Field(default=None, description="来源链接")
+    kaoyan_band: str | None = Field(
+        default=None,
+        description="考研冲/稳/保档位（后端按估分 vs 复试线统一口径计算；未填估分或无线为 null）",
+    )
 
 
 class SchoolAnalysis(BaseModel):
@@ -290,18 +294,43 @@ class PeerDestItem(BaseModel):
     rate: float = Field(..., ge=0, le=1, description="占同分人群的比例 0-1")
 
 
+class ScorelineFallbackItem(BaseModel):
+    """同分人群「无用户回传时的真实历史进面线」兜底项。
+
+    数据来自 grad_scoreline_records 中通过溯源闸门校验的真实记录
+    （只信 URL/数据文件来源，绝不展示伪造的自申报来源），非用户回传结果。
+    """
+
+    university_name: str = Field(
+        ..., description="院校名称；国家线记录时为 '国家线' → 展示为 'XX学科国家线'"
+    )
+    major_name: str = Field(..., description="专业 / 学科门类名称")
+    year: int = Field(..., description="数据年份")
+    line: int = Field(..., ge=0, description="进面线（复试线 / 国家线）")
+    is_national_line: bool = Field(default=False, description="是否为国家线")
+
+
 class PeerDestinations(BaseModel):
     """同分人群去向 — 和你预估分相近的人，最终都去了哪。
 
-    数据底座为 outcome_reports（回传的上岸报告）。当前为 0 条时
-    has_data=False，前端据此诚实占位「你是最早的一批」。
+    数据底座为 outcome_reports（回传的上岸报告）。当前为 0 条时：
+    - 若用户所在 ±30 分窗内存在真实历史进面线（溯源闸门校验通过），回退展示该分布
+      （source="scoreline"，明确标注「历史数据 ≠ 用户回传」）。
+    - 否则 has_data=False 且无兜底，前端诚实占位「你是最早的一批」。
     """
 
-    has_data: bool = Field(..., description="是否已有同分人群数据")
+    has_data: bool = Field(..., description="是否已有同分人群回传数据")
+    source: str = Field(
+        default="user", description="数据来源：user=用户回传聚合 / scoreline=真实历史进面线兜底"
+    )
     peer_count: int = Field(..., ge=0, description="同分人群样本数（±30 分窗）")
     score_ref: int | None = Field(default=None, description="用于聚合的参照分（考研预估分）")
     distribution: list[PeerDestItem] = Field(
         default_factory=list, description="去向分布（按样本数降序）"
+    )
+    fallback: list[ScorelineFallbackItem] = Field(
+        default_factory=list,
+        description="无用户回传时的真实历史进面线兜底（带溯源，非回传）",
     )
 
 

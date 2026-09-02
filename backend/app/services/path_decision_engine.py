@@ -376,7 +376,8 @@ def _build_civil_service_path(
             GwyPosition.work_location.like(f"%{escape_like(region)}%", escape="\\")
         )
     gwy_rows = gwy_query.all()
-    gwy_total = len(gwy_rows)
+    # 同一 position_code 对应多条专业/学历记录，岗位数须按 code 去重（与岗位级分析口径一致）
+    gwy_total = len({r.position_code for r in gwy_rows if r.position_code})
     gwy_recruit = sum(r.recruit_count or 0 for r in gwy_rows)
     gwy_recruit_text = f"招录合计 {int(gwy_recruit)} 人" if gwy_recruit else "招录人数未公布"
 
@@ -422,7 +423,7 @@ def _build_civil_service_path(
     if province_scope:
         p_query = p_query.filter(GwyProvincePosition.province == province_scope)
     p_rows = p_query.all()
-    p_total = len(p_rows)
+    p_total = len({r.position_code for r in p_rows if r.position_code})
     p_recruit = sum(r.recruit_count or 0 for r in p_rows)
     p_recruit_text = f"招录合计 {int(p_recruit)} 人" if p_recruit else "招录人数未公布"
 
@@ -891,6 +892,20 @@ def _classify_level(est: int, line: float) -> str:
     return "均衡"
 
 
+def _classify_kaoyan_band(est: int, line: float) -> str:
+    """考研冲/稳/保档位 — 与考公 `_classify_level` 同一阈值（±_STEADY_DIFF）。
+
+    单一真源：统一由后端按预估分 vs 复试线口径判定，前端不再用另一套 ±15 自行推导，
+    避免同一份报告前后端口径打架。标签用「稳/均衡/冲」与前端展示一致。
+    """
+    diff = est - line
+    if diff >= _STEADY_DIFF:
+        return "稳"
+    if diff <= -_STEADY_DIFF:
+        return "冲"
+    return "均衡"
+
+
 def _alternatives_for(
     target_row: Any,
     by_code: dict[str, Any],
@@ -927,7 +942,12 @@ def _alternatives_for(
 
 
 def _load_score_lines(db: Session, year: int, codes: list[str]) -> list[Any]:
-    """一次取回指定职位代码的进面线（供均值聚合与岗位级分析共用，替代两次独立查询）。"""
+    """一次取回指定职位代码的进面线（供均值聚合与岗位级分析共用，替代两次独立查询）。
+
+    不做 DB 内排序——同一 position_code 可能命中多条批次（首批/调剂/补充录用），
+    权威线的选取统一交给 Python 侧 `_authoritative_score_line`，避免依赖 DB 的
+    任意 tie-break 顺序。
+    """
     if not codes:
         return []
     return (
@@ -940,9 +960,23 @@ def _load_score_lines(db: Session, year: int, codes: list[str]) -> list[Any]:
             )
         )
         .filter(GwyScoreLine.year == year, GwyScoreLine.position_code.in_(codes))
-        .order_by(GwyScoreLine.batch == "首批")
         .all()
     )
+
+
+def _authoritative_score_line(rows: list[Any]) -> float | None:
+    """从同一 position_code 的多批次进面线中确定性选取权威线。
+
+    规则：优先取「首批」批次；无首批则取其余批次的**最低分**（同一岗位多批次中
+    「补充录用/调剂」常低于首批，取最低分代表最宽松的进面底线）。仍无则返回 None。
+    """
+    if not rows:
+        return None
+    primary = [r.min_score for r in rows if r.batch == "首批" and r.min_score is not None]
+    if primary:
+        return primary[0]
+    rest = [r.min_score for r in rows if r.min_score is not None]
+    return min(rest) if rest else None
 
 
 def _avg_min_score(score_line_rows: list[Any]) -> float | None:
@@ -994,12 +1028,19 @@ def _build_position_analysis(
             ],
         }
 
-    # ---- 进面线：按 position_code 关联，同 code 多批次取第一条（首批优先）----
+    # ---- 进面线：按 position_code 关联，同一 code 多批次用权威线（首批优先，其次最低分）----
     # score_line_rows 由调用方一次取回（覆盖全部命中岗位），这里只筛可报岗位的 code
-    score_map: dict[str, float] = {}
+    # 先按 position_code 分组一次，O(n) 而非对每个可报岗位重复过滤整表
+    lines_by_code: dict[str, list[Any]] = {}
     for line in score_line_rows:
-        if line.min_score and line.position_code in by_code and line.position_code not in score_map:
-            score_map[line.position_code] = line.min_score
+        code = line.position_code
+        if code in by_code:
+            lines_by_code.setdefault(code, []).append(line)
+    score_map: dict[str, float] = {}
+    for code, rows in lines_by_code.items():
+        authoritative = _authoritative_score_line(rows)
+        if authoritative is not None:
+            score_map[code] = authoritative
 
     scores = sorted(score_map.values())
     has_score = len(scores) > 0
@@ -1235,6 +1276,11 @@ def _build_school_analysis(
                     "score_line": score,
                     "ratio": ratio,
                     "competition": competition,
+                    "kaoyan_band": (
+                        _classify_kaoyan_band(est, score)
+                        if est is not None and score is not None
+                        else None
+                    ),
                     "intel": _school_intel_summary(intel_map.get(uni)),
                     "source_url": (
                         (row.data_sources or [None])[0]
@@ -1260,6 +1306,11 @@ def _build_school_analysis(
                     "score_line": row.total_score_line,
                     "ratio": ratio,
                     "competition": "中等",
+                    "kaoyan_band": (
+                        _classify_kaoyan_band(est, row.total_score_line)
+                        if est is not None and row.total_score_line is not None
+                        else None
+                    ),
                     "intel": _school_intel_summary(intel_map.get(uni)),
                     "source_url": (
                         (row.data_sources or [None])[0]

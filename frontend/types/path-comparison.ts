@@ -136,6 +136,8 @@ export interface SchoolCompetitionItem {
   score_line?: number | null;
   ratio?: string | null;
   competition: string;
+  /** 考研冲/稳/保档位（后端统一口径 ±10；未填估分或无线为 null） */
+  kaoyan_band?: "稳" | "均衡" | "冲" | null;
   intel?: string | null;
   source_url?: string | null;
 }

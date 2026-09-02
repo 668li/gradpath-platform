@@ -31,9 +31,20 @@ _VACUOUS_VALUES = {"不限", "无限制", "无要求", "否", "无", "不限*"}
 
 # 条件类型分类（保守规则，宁可不武断不可误判）
 # 硬门槛特征词：出现在要求文本中即视为"决定能不能报"的资格锁
-_HARD_GATE_MARKERS = ("仅限", "限", "必须", "中共党员", "应届毕业生", "面向应届")
+_HARD_GATE_MARKERS = (
+    "仅限",
+    "限",
+    "必须",
+    "中共党员",
+    "应届毕业生",
+    "面向应届",
+    "及以上",
+    "或以上",
+)
 # 明确开放/可补的信号：与硬门槛同现或单独出现时，倾向不判定为硬门槛
-_OPEN_MARKERS = ("及以上", "或以上", "或", "不限", "可", "优先", "具有", "取得")
+# 注意：「及以上/或以上」表示"最低档≥"，仍是硬门槛（决定够不够格报），由内部单独识别，
+# 不放入 _OPEN_MARKERS 否则会把最低档要求误判为"无门槛"。
+_OPEN_MARKERS = ("或", "不限", "可", "优先", "具有", "取得")
 # 有效性上决定"能否报名"的条件键（配合文本措辞决定是否标 hard_gate）
 _HARD_GATE_KEYS = {
     "education",
@@ -44,6 +55,21 @@ _HARD_GATE_KEYS = {
     "fresh_grad",
     "major",
 }
+
+
+# 国考应届限定标记词 —— 与 path_decision_engine._FRESH_MARKERS 保持同一组词，
+# 保证"条件清单"与"可报边界"两套口径对同一岗位判定一致（单源，勿单边改动）。
+_GHK_FRESH_MARKERS = ("限应届", "仅限应届", "面向应届毕业生", "应届高校毕业生")
+
+
+def _is_guokao_fresh_limited(remarks: str | None) -> bool:
+    """国考 remarks 是否限定应届 — 规则保守：明确出现限定词才认定（含"非应届"视为不限）。
+
+    与 path_decision_engine._is_fresh_limited 同判据。
+    """
+    if not remarks or "非应届" in remarks:
+        return False
+    return any(m in remarks for m in _GHK_FRESH_MARKERS)
 
 
 def _classify_condition(key: str, required: str) -> str:
@@ -73,6 +99,13 @@ def _classify_condition(key: str, required: str) -> str:
 def _action_hint(key: str, category: str, required: str) -> str | None:
     """给一条『未满足』条件生成行动建议文本（纯规则，零 LLM）。"""
     if category == "hard_gate":
+        threshold = any(m in str(required or "") for m in ("及以上", "或以上"))
+        if threshold:
+            return (
+                "这条是资格最低档硬门槛：「及以上」表示学历/学位/年限达到最低档次才可报，"
+                "到达低档即满足（例如『本科及以上』→本科即可），但低于低档则基本无法报考此职位。"
+                "请核对你的实际档位是否达到最低要求。"
+            )
         return (
             "这条是资格硬门槛：不满足基本无法报考此职位/专业。建议核对是否有同级替代岗，"
             "或改报不限制此项的方向——已满足其余条件也救不回这一条。"
@@ -135,6 +168,19 @@ def build_conditions(position: GwyPosition) -> list[ConditionItem]:
     add("political", "政治面貌", position.political_status, "political_status")
     add("work_years", "基层工作最低年限", position.min_work_years, "min_work_years")
     add("grassroots", "基层工作经历", position.grassroots_exp_req, "grassroots_exp_req")
+
+    # 国考无独立应届列，应届限定藏在 remarks 自由文本，与决策引擎 _is_fresh_limited 同判据
+    # （同一组标记词，保证「不可报边界」与「条件清单」口径一致）
+    if position.remarks and _is_guokao_fresh_limited(position.remarks):
+        items.append(
+            ConditionItem(
+                key="fresh_grad",
+                label="应届生要求",
+                required="限应届毕业生",
+                source_field="remarks",
+                category=_classify_condition("fresh_grad", "限应届毕业生"),
+            )
+        )
 
     if position.professional_test == "是":
         add("professional_test", "专业科目考试", "需参加专业科目笔试", "professional_test")
@@ -614,10 +660,20 @@ def _verdict_and_unmet(checklist) -> tuple[str, list[dict]]:
         else:
             verdict = "这个目标的硬性资格门槛你已全部满足，可以报考。"
     elif not hard_total:
-        verdict = (
-            "这个目标没有可自动判定的资格硬门槛（或门槛措辞开放，不武断）。"
-            "建议对照职位原文逐条核对报考资格。"
-        )
+        # 无任何硬门槛条件。区分两种情况，避免"缺数据当无门槛"误导：
+        if not checklist.conditions:
+            # 该目标一条条件都没解析出来（多为数据覆盖不足，而非真的无条件）
+            verdict = (
+                "这个目标目前解析不到任何报考条件条目，很可能是数据覆盖不足，"
+                "不能据此认定'任意条件都能报'。建议对照官方职位原文核对报考资格，"
+                "或换一个有完整条件的目标再核对。"
+            )
+        else:
+            verdict = (
+                "这个目标没有可自动判定的资格硬门槛（或门槛措辞开放，不武断）。"
+                "如果你尚未逐条核对身份信息（学历/政治面貌/应届等），"
+                "此结论不保证——请对照职位原文逐条确认后再下结论。"
+            )
     else:
         verdict = "资格门槛有部分满足（进度见上），请在硬门槛未满足项上重点核对是否真实不满足。"
 

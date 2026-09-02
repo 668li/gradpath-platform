@@ -18,6 +18,11 @@ _SAMPLE_ANSWERS = {
 }
 
 
+def _full_answers(prefix: str, values: list[str], count: int | None = None) -> dict:
+    """生成覆盖某测评『全部题目』的合法答案（用于完整性校验通过的场景）。"""
+    return {f"{prefix}_q{i}": values[i % len(values)] for i in range(1, (count or 48) + 1)}
+
+
 class TestAssessmentQuestions:
     def test_get_questions_no_auth(self, client):
         """获取题目列表无需认证，返回 48 题（霍兰德扩展题库）。"""
@@ -119,3 +124,135 @@ class TestAssessmentHistory:
         """未认证访问 /result 被拒绝。"""
         resp = client.get("/api/assessment/result")
         assert resp.status_code == 401
+
+
+class TestAssessmentScoresSemantics:
+    """B2：scores 必须是真实维度分，不是大五 Likert 选项计数。"""
+
+    def test_big_five_scores_are_dimension_means(self, auth_headers, client):
+        """大五 scores 为各维度均分 dict[str,float]（0-5），而非答案选项计数。"""
+        answers = _full_answers("bf", ["3"], count=50)  # 全 3 分，每维均分应为 3.0
+        resp = client.post(
+            "/api/assessment/submit",
+            headers=auth_headers,
+            json={"answers": answers, "assessment_type": "big_five"},
+        )
+        assert resp.status_code == 201
+        data = resp.json()
+        assert set(data["scores"].keys()) == {"O", "C", "E", "A", "N"}
+        for dim in ("O", "C", "E", "A", "N"):
+            assert data["scores"][dim] == 3.0
+
+    def test_holland_scores_count_dimensions(self, auth_headers, client):
+        """霍兰德 scores 为维度计数的 int 值。"""
+        answers = _full_answers("q", ["R", "I", "A"], count=48)
+        resp = client.post(
+            "/api/assessment/submit",
+            headers=auth_headers,
+            json={"answers": answers, "assessment_type": "holland"},
+        )
+        assert resp.status_code == 201
+        data = resp.json()
+        for code in ("R", "I", "A"):
+            assert data["scores"].get(code, 0) == 16  # 48 题三选一轮转，各 16
+        assert sum(data["scores"].values()) == 48
+
+
+class TestAssessmentValidation:
+    """B3：后端答案完整性 + 作答可信度校验。"""
+
+    def test_incomplete_submit_appends_warning(self, auth_headers, client):
+        """只交几题就提交 → result_summary 附带缺失警示，但仍返回结果。"""
+        resp = client.post(
+            "/api/assessment/submit",
+            headers=auth_headers,
+            json={"answers": {"q1": "R", "q2": "I"}},
+        )
+        assert resp.status_code == 201
+        assert "作答提示" in resp.json()["result_summary"]
+        assert "缺失" in resp.json()["result_summary"]
+
+    def test_single_option_submit_warns_low_discernment(self, auth_headers, client):
+        """全答同一选项 → 附作答模式单一警示（防乱答从后端拦截）。"""
+        answers = {f"q{i}": "R" for i in range(1, 49)}  # 48 题全 R
+        resp = client.post(
+            "/api/assessment/submit",
+            headers=auth_headers,
+            json={"answers": answers, "assessment_type": "holland"},
+        )
+        assert resp.status_code == 201
+        assert "同一选项" in resp.json()["result_summary"]
+
+    def test_big_five_low_variance_warns(self, auth_headers, client):
+        """大五作答集中在小区间 → 附区分度低警示。"""
+        answers = _full_answers("bf", ["3"], count=50)
+        resp = client.post(
+            "/api/assessment/submit",
+            headers=auth_headers,
+            json={"answers": answers, "assessment_type": "big_five"},
+        )
+        assert resp.status_code == 201
+        assert "区分度低" in resp.json()["result_summary"]
+
+
+class TestAssessmentInterpret:
+    """B1：测评 × 专有报考数据 → 专属路径解读。"""
+
+    _post = "/api/assessment/interpret"
+
+    def test_no_assessment_steers_user(self, auth_headers, client):
+        """未完成测评 → has_assessment=False，引导补全而不是抛错。"""
+        resp = client.post(self._post, headers=auth_headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["has_assessment"] is False
+        assert "测评" in data["message"]
+
+    def test_holland_interpret_honest_empty_paths(self, auth_headers, client):
+        """有霍兰德测评、无画像 → 给出方向偏好，专有数据诚实为空（不造假数字）。"""
+        client.post(
+            "/api/assessment/submit",
+            headers=auth_headers,
+            json={"answers": _full_answers("q", ["R", "I", "A"], count=48)},
+        )
+        resp = client.post(self._post, headers=auth_headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["has_assessment"] is True
+        assert data["assessment"]["type"] == "holland"
+        assert data["interpretation"]["primary_lean"] in {"kaoyan", "civil_service", "employment"}
+        assert data["interpretation"]["reason"]
+        # 无画像（专业/学校层次空）→ 三路为空但结构稳定，recommendation 给出引导
+        assert isinstance(data["paths"], list)
+        assert data["recommendation"]
+
+    def test_interpret_with_profile_major(self, auth_headers, client, db_session):
+        """有测评 + 画像专业 → 走真实决策引擎，input 正确回显专业。"""
+        from app.models.career_profile import CareerProfile
+
+        client.post(
+            "/api/assessment/submit",
+            headers=auth_headers,
+            json={"answers": _full_answers("q", ["S", "E"], count=48)},
+        )
+        # 直接给当前用户建画像（auth_headers 已注册并登录）
+        user_id = client.get("/api/auth/me", headers=auth_headers).json()["id"]
+        db_session.add(
+            CareerProfile(
+                user_id=user_id,
+                major="计算机",
+                school_tier="211",
+                education_level="本科",
+                graduation_year=2026,
+            )
+        )
+        db_session.commit()
+
+        resp = client.post(self._post, headers=auth_headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["profile"]["major"] == "计算机"
+        assert data["input"]["major"] == "计算机"
+        assert data["input"]["school_tier"] == "211"
+        assert isinstance(data["data_notes"], list)
+        assert len(data["data_notes"]) > 0

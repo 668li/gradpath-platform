@@ -33,6 +33,22 @@ class BaseSkill(ABC):
     def build_user_prompt(self, message: str) -> str:
         """构建用户消息 prompt。"""
 
+    def inject_data(self, db, user_id, content: str) -> str:
+        """数据注入钩子（Phase C2，可选覆写）。
+
+        数据型 skill 可覆写此方法，拉取专有数据（进面线/条件账本/测评/专业前景）
+        拼成一段可被直接追加到 system prompt 的正文；通用 coach skill 保持默认空返回。
+
+        Args:
+            db: 数据库会话
+            user_id: 当前用户 id（UUID/str）
+            content: 用户本次消息原文（供按需筛选数据）
+
+        Returns:
+            注入的数据文本（可直接追加到 system prompt），无需数据时返回空字符串。
+        """
+        return ""
+
     def parse_response(self, llm_output: str) -> dict:
         """解析 LLM 输出。默认返回原始文本。
 

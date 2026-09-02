@@ -33,6 +33,9 @@ class AssessmentSubmit(BaseModel):
     {"bf_q1": "4", ...} 或 {"disc_q1": "D", ...}。
     assessment_type 默认 "holland" 以保持向后兼容。
     支持取值："holland" | "mbti" | "big_five" | "disc"。
+
+    服务端会按类型校验答案完整性，并在作答模式异常（过短/单一/方差过低）时
+    附加信度提示（见 api/assessment.py 的 _validate_answers）。
     """
 
     answers: dict[str, str]
@@ -45,7 +48,8 @@ class AssessmentResponse(BaseModel):
     result_code: str
     result_summary: str
     recommended_directions: list[str]
-    scores: dict[str, int]
+    # 维度分：大五为各维度均分（dict[str,float]，0-5），其余为维度计数（int）。
+    scores: dict[str, float]
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

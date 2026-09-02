@@ -38,22 +38,53 @@ interface MessageWithMeta extends Message {
   agent_confidence?: number;
 }
 
-const SUGGESTED_PROMPTS = [
+/**
+ * 情景化 quick-start 卡（Phase C3）。
+ * 面向"没用过 AI"的新用户，按报考/职业真实场景分组，点击自动填 input 并 preselect 对应 skill。
+ * scene: 情景标识（用于分组展示）；skill: 预留 skill code，留空则由后端按情景自动匹配。
+ */
+const QUICK_START_CARDS = [
   {
-    title: "职业规划",
-    text: "我是计算机专业大三学生，想规划进入大厂做后端开发的路径，应该怎么准备？",
+    scene: "考研",
+    sceneIcon: "🎓",
+    title: "考研规划",
+    text: "我是二本计算机专业应届生，想考研，帮我看看怎么择校和备考？",
+    skill: "grad_school_planning",
   },
   {
-    title: "简历诊断",
-    text: "帮我看看我的简历，我有一段实习经历和两个项目，投递后端开发岗位有什么建议？",
+    scene: "考公",
+    sceneIcon: "🏛️",
+    title: "考公方向",
+    text: "我想考公务员，专业是汉语言文学，帮我分析能不能报、怎么准备？",
+    skill: "career_planning",
   },
   {
-    title: "面试模拟",
-    text: "我想模拟一下字节跳动后端开发岗的面试，请给我出几道高频面试题。",
+    scene: "就业",
+    sceneIcon: "💼",
+    title: "就业方向",
+    text: "我快毕业了，不知道怎么选工作方向，帮我根据我的情况规划一下？",
+    skill: "career_planning",
   },
   {
-    title: "深造 vs 就业",
-    text: "我目前在纠结考研还是直接就业，能不能根据我的技能和经历帮我分析一下？",
+    scene: "选岗",
+    sceneIcon: "📍",
+    title: "我能报什么岗",
+    text: "我本科毕业、专业是计算机，帮我看看国考有哪些岗位我能报、进面线多少？",
+    skill: "",
+  },
+  {
+    scene: "查线",
+    sceneIcon: "📈",
+    title: "分数线稳不稳",
+    text: "我想考这个学校，进面线大概多少分？我够不够得着？",
+    skill: "",
+  },
+  {
+    scene: "志愿",
+    sceneIcon: "🪧",
+    title: "冲稳保怎么填",
+    text: "我预估能考 380 分，帮我按冲、稳、保三档列一下能报的院校和专业？",
+    skill: "grad_school_planning",
   },
 ];
 
@@ -140,6 +171,15 @@ export default function ChatPage() {
     } catch {
       toast.push("创建对话失败", "error");
     }
+  };
+
+  // Phase C3：情景卡点击 → 填入输入框 + preselect 对应 skill（后端有 skill 则直取，空则自动匹配）
+  const applyQuickStart = async (card: (typeof QUICK_START_CARDS)[number], useNewConv: boolean) => {
+    if (useNewConv) {
+      await handleNewConversation();
+    }
+    setInput(card.text);
+    setSkillHint(card.skill || "");
   };
 
   const handleSend = async () => {
@@ -386,14 +426,15 @@ export default function ChatPage() {
                     我可以根据你的职业数据提供个性化建议
                   </p>
                   <div className="mt-6 grid w-full max-w-lg grid-cols-1 gap-2 sm:grid-cols-2">
-                    {SUGGESTED_PROMPTS.map((p) => (
+                    {QUICK_START_CARDS.map((p) => (
                       <button
                         key={p.title}
-                        onClick={() => setInput(p.text)}
+                        onClick={() => applyQuickStart(p, false)}
                         className="rounded-lg border border-ink-200 bg-ink-50/50 px-3 py-2.5 text-left transition-colors hover:border-brand-300 hover:bg-brand-50/30"
                       >
                         <p className="text-xs font-medium text-brand-600">
-                          {p.title}
+                          <span className="mr-1">{p.sceneIcon}</span>
+                          {p.scene} · {p.title}
                         </p>
                         <p className="mt-0.5 line-clamp-2 text-xs text-ink-500">
                           {p.text}
@@ -555,19 +596,19 @@ export default function ChatPage() {
             <h2 className="text-xl font-bold text-ink-800">AI 职业规划管家</h2>
             <p className="mt-2 max-w-md text-center text-sm text-ink-500">
               结合你的职业数据、知识库和智能 Skill 系统，为你提供个性化的职业规划指导。
-              支持职业规划、简历诊断、面试模拟等场景。
+              支持选岗、查线、考研考公、就业方向等场景。
             </p>
             <div className="mt-6 grid w-full max-w-lg grid-cols-1 gap-3 sm:grid-cols-2">
-              {SUGGESTED_PROMPTS.map((p) => (
+              {QUICK_START_CARDS.map((p) => (
                 <button
                   key={p.title}
-                  onClick={async () => {
-                    await handleNewConversation();
-                    setInput(p.text);
-                  }}
+                  onClick={() => applyQuickStart(p, true)}
                   className="rounded-xl border border-ink-200 bg-white px-4 py-3 text-left transition-colors hover:border-brand-300 hover:shadow-sm"
                 >
-                  <p className="text-sm font-medium text-brand-600">{p.title}</p>
+                  <p className="text-sm font-medium text-brand-600">
+                    <span className="mr-1">{p.sceneIcon}</span>
+                    {p.scene} · {p.title}
+                  </p>
                   <p className="mt-1 line-clamp-2 text-xs text-ink-500">
                     {p.text}
                   </p>

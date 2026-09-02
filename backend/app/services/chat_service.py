@@ -399,6 +399,10 @@ async def send_message(
 
     # 7. Skill 构建 prompt
     system_prompt = skill.build_system_prompt(user_context, knowledge)
+    # Phase C2：数据注入钩子 — 数据型 skill 拉取专有数据追加到 system prompt
+    injected_data = skill.inject_data(db, user_id, content)
+    if injected_data:
+        system_prompt = f"{system_prompt}\n\n【专有数据】\n{injected_data}"
     # 将对话历史拼入用户 prompt
     history_block = ""
     if len(history) > 1:

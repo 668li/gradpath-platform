@@ -769,6 +769,34 @@ export interface AssessmentResponse {
   created_at: string;
 }
 
+// 测评 × 专有数据 → 专属路径解读（护城河）
+export interface AssessmentInterpretInterpretation {
+  primary_lean: string | null;
+  lean_scores: Record<string, number> | null;
+  reason: string;
+}
+
+export interface AssessmentInterpretResponse {
+  has_assessment: boolean;
+  message?: string;
+  assessment?: {
+    type: string;
+    result_code: string | null;
+    scores: Record<string, number>;
+    result_summary: string | null;
+  };
+  profile: Record<string, unknown> | null;
+  interpretation?: AssessmentInterpretInterpretation;
+  paths: Array<Record<string, unknown>>;
+  recommendation?: string;
+  input?: Record<string, unknown> | null;
+  position_analysis?: Record<string, unknown> | null;
+  school_analysis?: Record<string, unknown> | null;
+  peer_destinations?: Record<string, unknown>;
+  major_prospect?: Record<string, unknown>;
+  data_notes?: string[];
+}
+
 // ===== 每日重点 =====
 export interface DailyFocusItem {
   plan_id: string;

@@ -14,6 +14,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from app.models.assessment import Assessment
 from app.models.career_profile import CareerProfile
 from app.models.decision_review import DecisionReviewQueue, ReviewStatus
 from app.models.destination_decision import DestinationDecision
@@ -74,6 +75,13 @@ def get_user_context(db: Session, user_id: UUID) -> dict[str, Any]:
             .all()
         )
 
+        latest_assessment = (
+            db.query(Assessment)
+            .filter(Assessment.user_id == user_id)
+            .order_by(Assessment.created_at.desc())
+            .first()
+        )
+
         stats = _compute_stats(db, user_id)
 
         return {
@@ -82,6 +90,9 @@ def get_user_context(db: Session, user_id: UUID) -> dict[str, Any]:
             "memory_facts": [_serialize_memory_fact(f) for f in memory_facts],
             "recent_decisions": [_serialize_decision(d) for d in recent_decisions],
             "recent_outcome_reports": [_serialize_report(r) for r in recent_reports],
+            "latest_assessment": (
+                _serialize_assessment(latest_assessment) if latest_assessment else None
+            ),
             "stats": stats,
         }
     except Exception as e:
@@ -92,6 +103,7 @@ def get_user_context(db: Session, user_id: UUID) -> dict[str, Any]:
             "memory_facts": [],
             "recent_decisions": [],
             "recent_outcome_reports": [],
+            "latest_assessment": None,
             "stats": {},
             "error": "context_unavailable",
         }
@@ -220,6 +232,17 @@ def _serialize_report(r: OutcomeReport) -> dict:
     }
 
 
+def _serialize_assessment(a: Assessment) -> dict:
+    """测评摘要 — 为 AI 上下文提供职业兴趣倾向。"""
+    return {
+        "type": a.assessment_type,
+        "result_code": a.result_code,
+        "result_summary": a.result_summary,
+        "recommended_directions": a.recommended_directions or [],
+        "scores": a.scores or {},
+    }
+
+
 def build_context_prompt(db: Session, user_id: UUID) -> str:
     """构建用户上下文 prompt 文本 — 用于注入 AI system prompt。
 
@@ -252,6 +275,15 @@ def build_context_prompt(db: Session, user_id: UUID) -> str:
 
     if ctx["onboarding"] and ctx["onboarding"].get("ai_diagnosis"):
         parts.append(f"【AI 诊断】{ctx['onboarding']['ai_diagnosis']}")
+
+    if ctx["latest_assessment"]:
+        a = ctx["latest_assessment"]
+        lines = [f"【职业测评】类型：{a['type']}，编码：{a['result_code'] or '无'}"]
+        if a.get("result_summary"):
+            lines.append(a["result_summary"])
+        if a.get("recommended_directions"):
+            lines.append(f"推荐方向：{'、'.join(a['recommended_directions'])}")
+        parts.append("；".join(lines))
 
     if ctx["memory_facts"]:
         facts_str = "; ".join(
