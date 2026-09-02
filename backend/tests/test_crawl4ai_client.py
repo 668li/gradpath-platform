@@ -8,7 +8,7 @@ import pytest
 
 from app.crawlers import crawl4ai_client as cc
 from app.crawlers.base_crawler import BaseCrawler
-from app.crawlers.crawl4ai_client import Crawl4aiError, Crawl4aiResult, Crawl4AIClient
+from app.crawlers.crawl4ai_client import Crawl4AIClient, Crawl4aiError, Crawl4aiResult
 
 
 class _ConcreteCrawler(BaseCrawler):
@@ -88,6 +88,7 @@ class TestRobotsGuard:
 class TestResultAlignment:
     def test_results_aligned_with_input_order(self, monkeypatch):
         """结果与输入顺序一一对应；被拒 URL 保持在原位置。"""
+
         def _fake_validate(url):
             if "blocked" in url:
                 return False, "blocked-for-test"
@@ -104,9 +105,7 @@ class TestResultAlignment:
             return [Crawl4aiResult(url=u, success=True, markdown="md") for u in urls]
 
         monkeypatch.setattr(c, "_render_many_async", _fake_render)
-        results = c.fetch_many(
-            ["https://a.com/1", "https://blocked/x", "https://a.com/2"]
-        )
+        results = c.fetch_many(["https://a.com/1", "https://blocked/x", "https://a.com/2"])
         assert [r.url for r in results] == [
             "https://a.com/1",
             "https://blocked/x",
@@ -202,7 +201,9 @@ class TestBaseCrawlerMixin:
         """BaseCrawler.fetch_markdown 委托客户端，返回 Crawl4aiResult。"""
         fake_client = Crawl4aiResult(url="https://a.com/1", markdown="md", success=True)
         monkeypatch.setattr(
-            Crawl4AIClient, "get_instance", lambda: type("F", (), {"fetch_markdown": lambda self, u, **k: fake_client})()
+            Crawl4AIClient,
+            "get_instance",
+            lambda: type("F", (), {"fetch_markdown": lambda self, u, **k: fake_client})(),
         )
         c = _ConcreteCrawler()
         out = c.fetch_markdown("https://a.com/1")

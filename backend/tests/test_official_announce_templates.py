@@ -10,10 +10,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.crawlers.research.official_announce_crawler import (
+    OfficialAnnounceCrawler,
     _auto_detect_content_cls,
     _parse_list_entries,
     parse_detail_markdown,
-    OfficialAnnounceCrawler,
 )
 
 BODA_HTML = (

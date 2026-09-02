@@ -126,7 +126,9 @@ class Crawl4AIClient:
                 )
                 continue
             if not self._robots_checker.check_allowed(url):
-                results.append(Crawl4aiResult(url=url, success=False, error_message="robots.txt 不允许抓取"))
+                results.append(
+                    Crawl4aiResult(url=url, success=False, error_message="robots.txt 不允许抓取")
+                )
                 continue
             pending_indices.append(idx)
             results.append(None)
