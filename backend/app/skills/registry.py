@@ -371,6 +371,38 @@ _SKILLS: list[SkillInfo] = [
         icon="building",
     ),
     SkillInfo(
+        code="life_design",
+        name="life_design",
+        display_name="人生设计",
+        description="斯坦福人生设计深度访谈：一次一问，帮你看清真实位置、分清真问题与重力问题，生成三个五年人生版本与原型行动，产出《个人人生设计蓝图》。",
+        trigger_words=[
+            "人生设计",
+            "规划人生",
+            "我该往哪走",
+            "不知道想做什么",
+            "认识自己",
+            "人生方向",
+            "我不想这样过下去",
+        ],
+        use_cases=[
+            "对未来方向迷茫，想系统梳理人生与职业",
+            "长期自我否定或卡在某个执念里走不出来",
+            "想用斯坦福人生设计法生成多个五年人生版本",
+            "想要一份具体的原型行动清单与第一步",
+        ],
+        capabilities=[
+            "健康/工作/娱乐/爱四维现状评估",
+            "区分重力问题与可设计的真问题",
+            "工作观/人生观一致性诊断",
+            "心流与能量地图绘制",
+            "三个差异化五年人生版本（奥德赛计划）",
+            "本季度原型行动清单与第一小步",
+        ],
+        limitations=["不提供心理诊断或医疗建议", "不做职业测评计分，不替用户做决定"],
+        category="advisor",
+        icon="compass",
+    ),
+    SkillInfo(
         code="default",
         name="default",
         display_name="默认职业咨询",
@@ -478,6 +510,7 @@ _SCENARIOS: list[dict] = [
             "career_path_mapper",
             "company_review",
             "salary_benchmark",
+            "life_design",
         ],
     },
     {
@@ -635,6 +668,7 @@ def _load_skill_classes():
     from app.skills.interview_coach import InterviewCoachSkill
     from app.skills.interview_simulation import InterviewSimulationSkill
     from app.skills.learning_plan_generator import LearningPlanGeneratorSkill
+    from app.skills.life_design import LifeDesignSkill
     from app.skills.resume_diagnosis import ResumeDiagnosisSkill
     from app.skills.resume_optimizer import ResumeOptimizerSkill
     from app.skills.salary_benchmark import SalaryBenchmarkSkill
@@ -657,6 +691,7 @@ def _load_skill_classes():
         CareerPathMapperSkill,
         CompanyReviewSkill,
         UserReferralSkill,
+        LifeDesignSkill,
     ]:
         _SKILL_CLASSES[cls.code] = cls
 

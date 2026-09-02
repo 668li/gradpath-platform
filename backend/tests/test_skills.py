@@ -778,3 +778,59 @@ def test_inject_data_hook_can_override():
     system_prompt = f"{skill.build_system_prompt('', [])}\n\n【专有数据】\n{injected}"
     assert "【专有数据】" in system_prompt
     assert "双一流进面线" in system_prompt
+
+
+def test_life_design_skill():
+    """验证 LifeDesignSkill 元信息、激活逻辑与系统提示内嵌方法。"""
+    from app.skills.life_design import LifeDesignSkill
+
+    skill = LifeDesignSkill()
+
+    assert skill.code == "life_design"
+    assert skill.name == "人生设计"
+    assert skill.icon == "compass"
+
+    # 触发词激活
+    assert skill.should_activate("我想做人生设计", {})
+    assert skill.should_activate("我不知道自己该往哪走", {})
+    assert skill.should_activate("帮我规划人生", {})
+    assert not skill.should_activate("帮我写个爬虫", {})
+
+    # system prompt 内嵌完整人生设计师方法（关键契约：一次一问 + 8000–12000 字蓝图）
+    sys_prompt = skill.build_system_prompt("用户背景：应届本科，对未来迷茫", [])
+    assert "人生设计师" in sys_prompt
+    assert "每一轮只问一个问题" in sys_prompt
+    assert "重力问题" in sys_prompt
+    assert "个人人生设计蓝图" in sys_prompt
+    assert "8000" in sys_prompt
+    assert "用户背景" in sys_prompt
+
+    # user prompt
+    user_prompt = skill.build_user_prompt("健康7分，工作4分，其他还行")
+    assert "本轮回答" in user_prompt
+
+    # parse_response 兜底（蓝图是自由文本，原样返回）
+    result = skill.parse_response("一些蓝图文本")
+    assert result["content"] == "一些蓝图文本"
+    assert result.get("career_plan") is None
+
+
+def test_find_life_design():
+    """验证 registry 能注册并匹配 LifeDesignSkill。"""
+    from app.skills.registry import find_skill_instance, get_skill
+
+    # 元信息存在（get_skill 的字典不含 icon，icon 由 SkillInfo/list_skills 暴露）
+    info = get_skill("life_design")
+    assert info is not None
+    assert info["display_name"] == "人生设计"
+    assert info["category"] == "advisor"
+
+    # 实例化匹配（触发词）
+    instance = find_skill_instance("我接下来不知道想做什么", {})
+    assert instance is not None
+    assert instance.code == "life_design"
+
+    # 非触发词返回 default
+    default_inst = find_skill_instance("帮我写个爬虫", {})
+    assert default_inst is not None
+    assert default_inst.code == "default"
