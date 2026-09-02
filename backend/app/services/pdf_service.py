@@ -242,9 +242,9 @@ def generate_school_report_pdf(
     # 溯源过滤：无具体溯源（URL/数据文件）的记录不进报告
     from app.services.grad_intel_service import scoreline_has_traceable_source
 
-    scorelines = [
-        sl for sl in scoreline_rows if scoreline_has_traceable_source(sl.data_sources)
-    ][:10]
+    scorelines = [sl for sl in scoreline_rows if scoreline_has_traceable_source(sl.data_sources)][
+        :10
+    ]
 
     if not scorelines:
         story.append(Paragraph("暂无分数线记录。", styles["normal"]))
