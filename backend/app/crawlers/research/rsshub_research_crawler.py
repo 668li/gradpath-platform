@@ -72,6 +72,14 @@ DEFAULT_ROUTES: list[str] = [
     "tju/yzb",  # 天津大学研究生招生
     "tongji/yjs",  # 同济大学研究生院
     "upc/yjs",  # 中国石油大学研究生院
+    # 扩源 A（2026-09-02 逐路由实测 200 + 有真实条目）：
+    # 生产 RSSHub 实测存活且有内容的高校研招公告路由，来源均各校官网 edu.cn，合规非 chsi
+    "nju/admission",  # 南京大学研究生招生（实习 200，Top985 高频报考校）
+    "whu/gs",  # 武汉大学研究生院（实习 200）
+    "xjtu/gs/tzgg",  # 西安交通大学研究生院通知公告（实习 200）
+    "cpu/yjsy",  # 中国药科大学研究生院（实习 200）
+    "cug/graduate",  # 中国地质大学研究生（实习 200）
+    "hnust/graduate",  # 湖南科技大学研究生（实习 200，含 2027 招生专业变动）
     "gov/moe/policy_anal",  # 教育部政策解读（gov.cn）
     # 资讯流（杠杆 #5，2026-08-16）：知乎日报/想法热榜，只存标题+摘要+链接，正文跳原文
     "zhihu/daily",  # 知乎日报（30 条/次，实测 200）
@@ -94,7 +102,7 @@ class RSSHubCrawler(BaseCrawler):
 
     name = "rsshub_research"
     category = "research"
-    description = "RSSHub 聚合订阅（19 个研招路由 + 教育部，PENDING 审核队列）"
+    description = "RSSHub 聚合订阅（25 个研招路由 + 教育部，PENDING 审核队列）"
 
     def __init__(self, config: dict = None):
         super().__init__(config)

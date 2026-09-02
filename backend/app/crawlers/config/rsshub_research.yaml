@@ -3,7 +3,7 @@
 # 路由均为实测 200 可用的高校研究生院/研招办公开公告（edu.cn/gov.cn）
 name: rsshub_research
 category: research
-description: 自建 RSSHub 聚合（19 研招/教育部公告路由 + 知乎资讯流路由，PENDING 审核队列）
+description: 自建 RSSHub 聚合（25 研招/教育部公告路由 + 知乎资讯流路由，PENDING 审核队列）
 enabled: true
 schedule: daily  # 研招公告时效性强，每日更新一次
 max_retries: 2
@@ -30,6 +30,13 @@ routes:
   - tju/yzb                 # 天津大学研究生招生
   - tongji/yjs              # 同济大学研究生院
   - upc/yjs                 # 中国石油大学研究生院
+  # 扩源 A（2026-09-02 逐路由实测 200 + 有真实条目）：来源均各校官网 edu.cn，合规非 chsi
+  - nju/admission           # 南京大学研究生招生（Top985 高频报考校）
+  - whu/gs                  # 武汉大学研究生院
+  - xjtu/gs/tzgg            # 西安交通大学研究生院通知公告
+  - cpu/yjsy                # 中国药科大学研究生院
+  - cug/graduate            # 中国地质大学研究生
+  - hnust/graduate          # 湖南科技大学研究生（含 2027 招生专业变动）
   - gov/moe/policy_anal     # 教育部政策解读
   # 资讯流（杠杆 #5：知乎日报/热榜，只存标题+摘要+链接，正文跳原文）
   - zhihu/daily             # 知乎日报
