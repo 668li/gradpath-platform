@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.grad_intel import DarkKnowledge, GradSchoolIntel, GradScorelineRecord
+from app.services.grad_intel_service import scoreline_has_traceable_source
 from app.services.ai_orchestrator import AIOrchestrator
 from app.services.ai_service import AIServiceNotConfigured
 
@@ -171,6 +172,8 @@ def _build_scoreline_trend(db: Session, school: str, major: str) -> list[dict]:
         .order_by(GradScorelineRecord.year)
         .all()
     )
+    # 溯源过滤：无具体溯源（URL/数据文件）的记录不进趋势
+    records = [r for r in records if scoreline_has_traceable_source(r.data_sources)]
     trend = []
     for r in records:
         ratio = None
@@ -311,14 +314,19 @@ async def generate_report(
     )
 
     # 2) 查询最新分数线
-    scoreline = (
+    scoreline_candidates = (
         db.query(GradScorelineRecord)
         .filter(
             GradScorelineRecord.university_name.ilike(f"%{school}%"),
             GradScorelineRecord.major_name.ilike(f"%{major}%"),
         )
         .order_by(GradScorelineRecord.year.desc())
-        .first()
+        .all()
+    )
+    # 溯源过滤：无具体溯源（URL/数据文件）的记录不作分析依据
+    scoreline = next(
+        (r for r in scoreline_candidates if scoreline_has_traceable_source(r.data_sources)),
+        None,
     )
 
     # 3) 计算六维雷达

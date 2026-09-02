@@ -233,13 +233,18 @@ def generate_school_report_pdf(
 
     # ----- 分数线记录 -----
     story.append(Paragraph("复试分数线记录", styles["h2"]))
-    scorelines = (
+    scoreline_rows = (
         db.query(GradScorelineRecord)
         .filter(GradScorelineRecord.university_name == school.name)
         .order_by(GradScorelineRecord.year.desc())
-        .limit(10)
         .all()
     )
+    # 溯源过滤：无具体溯源（URL/数据文件）的记录不进报告
+    from app.services.grad_intel_service import scoreline_has_traceable_source
+
+    scorelines = [
+        sl for sl in scoreline_rows if scoreline_has_traceable_source(sl.data_sources)
+    ][:10]
 
     if not scorelines:
         story.append(Paragraph("暂无分数线记录。", styles["normal"]))

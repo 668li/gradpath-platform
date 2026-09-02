@@ -44,7 +44,7 @@ def _make_scoreline(
         total_score_line=score,
         application_count=application,
         enrollment_count=enrollment,
-        data_sources=["公开院校复试线汇总"],
+        data_sources=["scorelines_real_data.json:2026-07-12"],
     )
 
 
@@ -292,7 +292,7 @@ class TestGenerateDecision:
         assert any("140" in p for p in kaoyan["pros"])
         # 证据溯源：data_sources 名称数组
         assert any(ev["label"].startswith("分数线") for ev in kaoyan["evidence"])
-        assert any("复试线汇总" in (ev["note"] or "") for ev in kaoyan["evidence"])
+        assert any("scorelines_real_data.json" in (ev["note"] or "") for ev in kaoyan["evidence"])
 
     def test_civil_service_path_aggregates(self, db_session, seed_decision_data):
         result = generate_decision(db_session, major="计算机", region="广东")
@@ -769,7 +769,7 @@ class TestSchoolAnalysis:
         for item in sa["items"]:
             assert item["intel"] is None  # seed 无院校情报
             assert item["score_line"] in (350, 340, 380)
-            assert item["source_url"] == "公开院校复试线汇总"
+            assert item["source_url"] == "scorelines_real_data.json:2026-07-12"
         # 报录比：中山 400/40 = 10.0:1
         zsu = next(i for i in sa["items"] if i["university_name"] == "中山大学")
         assert zsu["ratio"] == "10.0:1"

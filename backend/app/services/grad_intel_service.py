@@ -1015,6 +1015,23 @@ def count_yanzhao_programs(
     return query.count()
 
 
+# 进面线来源可信判定：只信带具体溯源（URL / 数据文件）的记录。
+# data_sources 里只写机构泛称（如"院校研究生院官网""研招网"）属自申报标签，
+# 无法核验，一律视为不可信——宁缺勿错，假线比无线危害大十倍。
+_TRACEABLE_SOURCE_RE = re.compile(r"(https?://|\.(json|csv|xlsx)\b)", re.IGNORECASE)
+
+
+def scoreline_has_traceable_source(data_sources) -> bool:
+    """判定分数线的 data_sources 是否含可溯源条目（URL 或数据文件名）。"""
+    if not data_sources:
+        return False
+    if isinstance(data_sources, str):
+        items = [data_sources]
+    else:
+        items = list(data_sources)
+    return any(_TRACEABLE_SOURCE_RE.search(str(s)) for s in items)
+
+
 def list_scoreline_records(
     db: Session,
     *,
@@ -1035,16 +1052,13 @@ def list_scoreline_records(
         query = query.filter(GradScorelineRecord.degree_type == degree_type)
     if year:
         query = query.filter(GradScorelineRecord.year == year)
-    return (
-        query.order_by(
-            GradScorelineRecord.university_name,
-            GradScorelineRecord.major_name,
-            GradScorelineRecord.year.desc(),
-        )
-        .limit(limit)
-        .offset(offset)
-        .all()
-    )
+    records = query.all()
+    # 溯源过滤：无具体溯源（URL/数据文件）的自申报来源记录不对外展示
+    records = [r for r in records if scoreline_has_traceable_source(r.data_sources)]
+    return sorted(
+        records,
+        key=lambda r: (r.university_name, r.major_name, -(r.year or 0)),
+    )[offset : offset + limit]
 
 
 def get_scoreline_trend(
@@ -1061,6 +1075,8 @@ def get_scoreline_trend(
     if degree_type:
         query = query.filter(GradScorelineRecord.degree_type == degree_type)
     records = query.order_by(GradScorelineRecord.year).all()
+    # 溯源过滤：无具体溯源的记录不进趋势图（宁缺勿错）
+    records = [r for r in records if scoreline_has_traceable_source(r.data_sources)]
 
     return {
         "university_name": university_name,

@@ -121,7 +121,7 @@ def _make_scoreline(
         year=year,
         total_score_line=score,
         politics_score=politics,
-        data_sources=["公开院校复试线汇总"],
+        data_sources=["scorelines_real_data.json:2026-07-12"],
     )
 
 

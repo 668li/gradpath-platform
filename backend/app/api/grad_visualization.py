@@ -5,6 +5,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.services.grad_intel_service import scoreline_has_traceable_source
 from app.models.grad_intel import (
     GradAdjustmentInfo,
     GradSchoolIntel,
@@ -24,7 +25,14 @@ def get_overview(db: Session = Depends(get_db)):
         db.query(func.count(func.distinct(GradYanzhaoProgram.major_name))).scalar() or 0
     )
 
-    avg_scoreline = db.query(func.avg(GradScorelineRecord.total_score_line)).scalar()
+    # 溯源过滤：data_sources 只写机构泛称（无 URL/数据文件可核验）的记录不进统计
+    traceable_rows = [
+        r
+        for r in db.query(GradScorelineRecord).all()
+        if scoreline_has_traceable_source(r.data_sources)
+    ]
+    scores = [r.total_score_line for r in traceable_rows if r.total_score_line is not None]
+    avg_scoreline = sum(scores) / len(scores) if scores else None
 
     return {
         "total_schools": total_schools,
@@ -45,6 +53,8 @@ def get_score_trends(
         .order_by(GradScorelineRecord.year)
         .all()
     )
+    # 溯源过滤：无具体溯源（URL/数据文件）的记录不进趋势图
+    records = [r for r in records if scoreline_has_traceable_source(r.data_sources)]
 
     if not records:
         return {"university": university, "years": [], "total_score_lines": []}
@@ -79,11 +89,16 @@ def get_school_comparison(
     results = []
 
     for name in names:
-        latest_record = (
+        latest_candidates = (
             db.query(GradScorelineRecord)
             .filter(GradScorelineRecord.university_name == name)
             .order_by(GradScorelineRecord.year.desc())
-            .first()
+            .all()
+        )
+        # 溯源过滤：无具体溯源（URL/数据文件）的记录不作对比依据
+        latest_record = next(
+            (r for r in latest_candidates if scoreline_has_traceable_source(r.data_sources)),
+            None,
         )
         program_count = (
             db.query(func.count(GradYanzhaoProgram.id))
@@ -119,6 +134,7 @@ def get_score_distribution(
         GradScorelineRecord.university_name,
         GradScorelineRecord.total_score_line,
         GradScorelineRecord.year,
+        GradScorelineRecord.data_sources,
     )
     if tier:
         query = query.join(
@@ -126,12 +142,13 @@ def get_score_distribution(
             GradScorelineRecord.university_name == GradSchoolIntel.school_name,
         ).filter(GradSchoolIntel.school_tier == tier)
 
-    records = (
+    rows = (
         query.filter(GradScorelineRecord.total_score_line.isnot(None))
         .order_by(GradScorelineRecord.year.desc())
-        .limit(500)
         .all()
     )
+    # 溯源过滤：无具体溯源（URL/数据文件）的记录不进分布图
+    records = [r for r in rows if scoreline_has_traceable_source(r.data_sources)]
 
     if not records:
         return {"tiers": {}, "distribution": []}

@@ -11,6 +11,7 @@ from app.core.deps import get_current_user
 from app.database import get_db
 from app.models.grad_intel import GradSchoolIntel, GradScorelineRecord
 from app.models.user import User
+from app.services.grad_intel_service import scoreline_has_traceable_source
 
 logger = logging.getLogger(__name__)
 
@@ -255,6 +256,8 @@ def predict_admission(
             .order_by(GradScorelineRecord.year)
             .all()
         )
+        # 溯源过滤：无具体溯源（URL/数据文件）的记录不进预测依据
+        records = [r for r in records if scoreline_has_traceable_source(r.data_sources)]
 
         if not records:
             # 没有历史数据时，返回低置信度预测
@@ -497,6 +500,8 @@ def get_admission_history(
             .order_by(GradScorelineRecord.year)
             .all()
         )
+        # 溯源过滤：无具体溯源（URL/数据文件）的记录不进历史趋势
+        records = [r for r in records if scoreline_has_traceable_source(r.data_sources)]
 
         history = [
             ScorelineHistory(

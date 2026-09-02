@@ -439,6 +439,7 @@ class TestScorelines:
             major_name="软件工程",
             degree_type="学术学位",
             year=2025,
+            data_sources=["scorelines_real_data.json:2026-07-12"],
             total_score_line=350,
             politics_score=55,
             foreign_language_score=55,
@@ -478,6 +479,7 @@ class TestScorelines:
                 major_name="计算机科学",
                 degree_type="学术学位",
                 year=year,
+                data_sources=["scorelines_real_data.json:2026-07-12"],
                 total_score_line=340 + (year - 2023) * 5,
             )
             db_session.add(record)
@@ -559,6 +561,7 @@ class TestSchoolSummary:
             major_name="计算机科学与技术",
             degree_type="学术学位",
             year=2025,
+            data_sources=["scorelines_real_data.json:2026-07-12"],
             total_score_line=345,
         )
         adj = GradAdjustmentInfo(

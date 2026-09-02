@@ -16,6 +16,7 @@ from app.api.school_analyst import (
 from app.core.deps import get_current_user
 from app.database import get_db
 from app.models.grad_intel import GradSchoolIntel, GradScorelineRecord
+from app.services.grad_intel_service import scoreline_has_traceable_source
 from app.models.user import User
 from app.services.ai_orchestrator import AIOrchestrator
 from app.services.ai_service import AIServiceNotConfigured
@@ -65,14 +66,19 @@ def _analyze_school(db: Session, name: str, major: str, user_score: int) -> dict
         )
         .first()
     )
-    scoreline = (
+    scoreline_candidates = (
         db.query(GradScorelineRecord)
         .filter(
             GradScorelineRecord.university_name.ilike(f"%{name}%"),
             GradScorelineRecord.major_name.ilike(f"%{major}%"),
         )
         .order_by(GradScorelineRecord.year.desc())
-        .first()
+        .all()
+    )
+    # 溯源过滤：无具体溯源（URL/数据文件）的记录不作对比依据
+    scoreline = next(
+        (r for r in scoreline_candidates if scoreline_has_traceable_source(r.data_sources)),
+        None,
     )
 
     radar = _calc_six_dimensions(intel, scoreline)

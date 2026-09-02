@@ -13,6 +13,7 @@ import re
 from sqlalchemy.orm import Session
 
 from app.models.grad_intel import GradScorelineRecord, GradYanzhaoProgram
+from app.services.grad_intel_service import scoreline_has_traceable_source
 from app.models.gwy_position import GwyPosition
 from app.models.gwy_province_position import GwyProvincePosition
 from app.models.user_condition_status import CONDITION_STATUSES, EXAM_SOURCES, UserConditionStatus
@@ -211,7 +212,7 @@ def _find_kaoyan_scoreline(
     db: Session, university_name: str, major_name: str
 ) -> GradScorelineRecord | None:
     """按 院校+专业 取最新一年的有效复试线（total_score_line=0 为占位脏数据，须 >0）。"""
-    return (
+    records = (
         db.query(GradScorelineRecord)
         .filter(
             GradScorelineRecord.university_name == university_name,
@@ -219,8 +220,11 @@ def _find_kaoyan_scoreline(
             GradScorelineRecord.total_score_line > 0,
         )
         .order_by(GradScorelineRecord.year.desc())
-        .first()
+        .all()
     )
+    # 溯源过滤：无具体溯源（URL/数据文件）的记录不作可报性判定依据
+    records = [r for r in records if scoreline_has_traceable_source(r.data_sources)]
+    return records[0] if records else None
 
 
 def build_kaoyan_conditions(db: Session, program: GradYanzhaoProgram) -> list[ConditionItem]:

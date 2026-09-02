@@ -31,6 +31,7 @@ from app.models.market_data import MarketData
 from app.models.salary_benchmark import SalaryBenchmark
 from app.models.school import School
 from app.services.employment_service import escape_like
+from app.services.grad_intel_service import scoreline_has_traceable_source
 
 logger = logging.getLogger(__name__)
 
@@ -217,6 +218,8 @@ def _build_kaoyan_path(
         .filter(GradScorelineRecord.major_name.ilike(pattern, escape="\\"))
         .all()
     )
+    # 溯源过滤：data_sources 只写机构泛称（无 URL/数据文件可核验）的记录不进决策依据
+    rows = [r for r in rows if scoreline_has_traceable_source(r.data_sources)]
     total = len(rows)
     evidence: list[dict[str, Any]] = []
 

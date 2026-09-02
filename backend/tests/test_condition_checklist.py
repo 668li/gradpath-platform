@@ -292,6 +292,7 @@ def _make_kaoyan_scoreline(**overrides):
         foreign_language_score=50,
         business_1_score=90,
         business_2_score=95,
+        data_sources=["scorelines_real_data.json:2026-07-12"],
     )
     base.update(overrides)
     return GradScorelineRecord(**base)

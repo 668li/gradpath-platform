@@ -7,6 +7,7 @@ import numpy as np
 from sqlalchemy.orm import Session
 
 from app.models.grad_intel import GradAdjustmentInfo, GradSchoolIntel, GradScorelineRecord
+from app.services.grad_intel_service import scoreline_has_traceable_source
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,8 @@ class AnalyticsService:
             .order_by(GradScorelineRecord.year)
             .all()
         )
+        # 溯源过滤：无具体溯源（URL/数据文件）的记录不进趋势分析
+        records = [r for r in records if scoreline_has_traceable_source(r.data_sources)]
 
         if not records:
             return {"error": "未找到该院校专业的分数线数据"}

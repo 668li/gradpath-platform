@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.core.cache import cache
 from app.models.grad_intel import DarkKnowledge, GradAdjustmentInfo, GradScorelineRecord
+from app.services.grad_intel_service import scoreline_has_traceable_source
 from app.models.school import School
 
 logger = logging.getLogger(__name__)
@@ -134,6 +135,8 @@ class ContentBasedRecommender:
             ).filter(School.province.ilike(f"%{target_region}%"))
 
         scorelines = scoreline_query.limit(500).all()
+        # 溯源过滤：无具体溯源（URL/数据文件）的记录不作推荐依据
+        scorelines = [sl for sl in scorelines if scoreline_has_traceable_source(sl.data_sources)]
 
         # 构建调剂信息索引
         adj_query = self.db.query(GradAdjustmentInfo).filter(GradAdjustmentInfo.status == "open")
