@@ -11,7 +11,6 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_admin_user
-from app.crawlers.research.bilibili_research_crawler import BilibiliResearchCrawler
 from app.crawlers.research.rss_news_crawler import RssNewsCrawler
 from app.database import get_db
 from app.models.crawler_run import CrawlerRun
@@ -142,67 +141,15 @@ def run_bilibili_research(
     admin: User = Depends(get_admin_user),
     db: Session = Depends(get_db),
 ):
-    """触发 B站调研并导入数据库。"""
-    run_record = _create_run_record(
-        db,
-        "bilibili_research",
-        admin,
-        {
-            "platform": "bilibili",
-            "keyword": body.keyword,
-            "pages": body.pages,
-            "auto_approve": body.auto_approve,
-        },
-    )
+    """触发 B站调研并导入数据库。
 
-    try:
-        crawler = BilibiliResearchCrawler(config={"keyword": body.keyword, "pages": body.pages})
-        raw_items = crawler.fetch()
-        parsed_items = crawler.parse(raw_items)
-        inserted = crawler.store(parsed_items, db)
-
-        # 审核链路统一走新队列（P1 修理）：采集只写 t_external_research_item + t_review_queue_item，
-        # 不再双写 ExperiencePost。auto_approve=True 时管理员显式授权，对本次采集的
-        # 队列条目直接执行审核通过（落业务表）；False 则留在队列待人工审核。
-        promoted = 0
-        pending_count = inserted
-        if body.auto_approve:
-            promoted, pending_count = _auto_approve_last_run(db, crawler.name, admin)
-
-        _finish_run_record(
-            db,
-            run_record,
-            status="success",
-            fetched=len(raw_items),
-            stored=promoted,
-        )
-
-        logger.info(
-            "[research_admin] admin=%s platform=bilibili keyword=%s inserted=%d promoted=%d",
-            admin.id,
-            body.keyword,
-            inserted,
-            promoted,
-        )
-
-        return ResearchTriggerResponse(
-            status="success",
-            fetched=len(raw_items),
-            stored=promoted,
-            pending=pending_count,
-        )
-    except Exception as e:
-        logger.exception("[research_admin] B站调研失败: %s", e)
-        _finish_run_record(
-            db,
-            run_record,
-            status="failed",
-            error=str(e),
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="调研执行失败，请查看服务器日志",
-        )
+    2026-09-02：B站数据源已暂停（用户拍板放弃）。该源 raw tags 是上传者自填
+    营销杂糅词，混入过"三角洲行动/原神/和平精英"等游戏词，导致纯考研帖被 S2
+    离题门禁误判（见 09-02 假阳性事故）。爬虫脚本保留不删（项目红线），但本
+    入口短路拒收，不再 ingest 新内容。恢复需显式移除本守卫。
+    """
+    logger.warning("[research_admin] bilibili 数据源已暂停，拒绝触发 ingest admin=%s", admin.id)
+    return ResearchTriggerResponse(status="suspended", fetched=0, stored=0, pending=0)
 
 
 @router.post("/rss", response_model=ResearchTriggerResponse)

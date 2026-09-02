@@ -199,6 +199,29 @@ def _infer_domain(title: str, content: str) -> str | None:
     return None
 
 
+def _strip_metadata_lines(content: str) -> str:
+    """剔除 bilibili payload 在正文开头合成的元数据行（作者/播放量/标签）。
+
+    这些元数据（尤其"标签："后的 raw tags）是上传者自填的营销杂糅词，
+    不构成内容主题，且常含"三角洲行动/原神"等，若保留会让纯考研帖被判离题。
+    """
+    lines = (content or "").split("\n")
+    kept = []
+    for ln in lines:
+        stripped = ln.strip()
+        if (
+            stripped.startswith("作者：")
+            or stripped.startswith("作者:")
+            or stripped.startswith("播放量：")
+            or stripped.startswith("播放量:")
+            or stripped.startswith("标签：")
+            or stripped.startswith("标签:")
+        ):
+            continue
+        kept.append(ln)
+    return "\n".join(kept)
+
+
 def classify_topic_relevance(
     title: str,
     content: str = "",
@@ -214,6 +237,9 @@ def classify_topic_relevance(
         - domain：命中的领域标签（kaoyan/gongkao/certificate/employment/study），未命中 None
 
     判定策略（09-02 修正：强锚点→领域词→存疑放行，杜绝通用词误伤）：
+        0) 匹配文本只用「标题+正文」——raw tags 是不可信 SEO 杂糅（"原神/正妹/手办"
+           常作为营销标签混入纯考研帖），若纳入会对"26数一140考场回忆"等正当内容误判，
+           见 09-02 生产假阳性。领域推断 _infer_domain 亦只认标题+正文。
         1) 命中 OFF_TOPIC_REJECT_KEYWORDS（强专有名词锚点，如三角洲行动/塔罗/王者荣耀）
            → 立即判离题。即使含"心态/压力"通用词或"考研"也打断——这是三角海事故事故的根治点。
         2) 命中 PLATFORM_DOMAIN_KEYWORDS → 相关（返回归属领域）。
@@ -224,8 +250,11 @@ def classify_topic_relevance(
     """
     title_s = str(title or "")
     content_s = str(content or "")
-    tags_s = " ".join(str(t) for t in (tags or []) if t is not None)
-    text = " ".join(filter(None, [title_s, content_s, tags_s])).lower()
+    # 关键：只按「标题+正文」判定主题，raw tags 视为不可信 SEO 元数据，不参与匹配。
+    # bilibili payload 把 tags 写进 content 的"标签："元数据行——该行含营销杂糅词
+    # （"原神/正妹/手办"混在纯考研帖里），须先剔除再匹配，否则"26数一140考场回忆"
+    # 等正当内容会被"三角洲行动"标签误判离题，见 09-02 生产假阳性事故。
+    text = " ".join(filter(None, [title_s, _strip_metadata_lines(content_s)])).lower()
 
     if not text:
         return None, "无文本可判定", None
