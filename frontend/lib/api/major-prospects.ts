@@ -45,6 +45,8 @@ export interface GradPath {
   push_ratio: string;
   background_discrimination: string;
   first_choice_protection: string;
+  outgoing_note: string | null;
+  outgoing_risk: "friendly" | "acceptable" | "careful" | "high" | null;
 }
 
 export interface CivilServiceInfo {
@@ -62,16 +64,26 @@ export interface MajorProspect {
   positions: PositionSalary[];
   companies: ProspectCompany[];
   grad_paths: GradPath[];
+  grad_personalized: boolean;
   civil_service: CivilServiceInfo;
   related_majors: string[];
+  tier_fact: string;
   data_notes: string[];
 }
+
+/** 本科出身层次（用于升学路径个性化）。专科手动选档，不建专科院校库。 */
+export const OUTGOING_TIERS = ["985", "211", "双一流", "一本", "二本", "专科"] as const;
+export type OutgoingTier = (typeof OUTGOING_TIERS)[number];
 
 // ===== 专业前景 =====
 export const majorProspectApi = {
   majors: () => request<MajorListItem[]>("/api/major-prospects/majors"),
-  detail: (major: string) =>
+  outgoingTiers: () => request<{ tiers: string[] }>("/api/major-prospects/outgoing-tiers"),
+  detail: (major: string, outgoingTier?: OutgoingTier | null) =>
     request<MajorProspect>(
-      `/api/major-prospects/detail${buildQuery({ major })}`,
+      `/api/major-prospects/detail${buildQuery({
+        major,
+        ...(outgoingTier ? { outgoing_tier: outgoingTier } : {}),
+      })}`,
     ),
 };

@@ -71,6 +71,31 @@ def _seed(db_session):
             score_line=0,
         )
     )
+    # 出身个性化用：severe（卡第一学历）与 none（不卡）两条，验证排序与注解
+    db_session.add(
+        GradSchoolIntel(
+            user_id=user.id,
+            school_name="出身敏感大学",
+            major_name="计算机科学与技术",
+            school_tier="985",
+            year=2026,
+            admission_ratio="10:1",
+            score_line=390,
+            background_discrimination="severe",
+        )
+    )
+    db_session.add(
+        GradSchoolIntel(
+            user_id=user.id,
+            school_name="出身友好大学",
+            major_name="计算机科学与技术",
+            school_tier="211",
+            year=2026,
+            admission_ratio="5:1",
+            score_line=360,
+            background_discrimination="none",
+        )
+    )
     db_session.add(
         SalaryBenchmark(
             company="广州市人社局市场价位",
@@ -212,3 +237,75 @@ def test_api_majors_and_detail(client, db_session):
     # 空专业名 422
     resp = client.get("/api/major-prospects/detail", params={"major": "  "})
     assert resp.status_code == 422
+
+
+def test_outgoing_tiers_endpoint(client):
+    resp = client.get("/api/major-prospects/outgoing-tiers")
+    assert resp.status_code == 200
+    tiers = resp.json()["tiers"]
+    assert tiers == ["985", "211", "双一流", "一本", "二本", "专科"]
+    assert "专科" in tiers  # 覆盖专科出身（手动选档，不建专科院校库）
+
+
+def test_grad_paths_sorted_by_score_without_tier(db_session):
+    _seed(db_session)
+    from app.services.major_prospect_service import get_prospect
+
+    # 未传出身层次 → 纯分数线降序；且不产生个性化字段副作用
+    p = get_prospect(db_session, "计算机科学与技术")
+    assert p["grad_personalized"] is False
+    order = [g["school_name"] for g in p["grad_paths"]]
+    # 出身敏感(390)/清华(380)/出身友好(360) 按分数降序
+    assert order.index("出身敏感大学") < order.index("清华大学") < order.index("出身友好大学")
+    for g in p["grad_paths"]:
+        assert g["outgoing_risk"] is None
+        assert g["outgoing_note"] is None
+
+
+def test_grad_paths_outgoing_tier_zhuanke_personalizes(db_session):
+    _seed(db_session)
+    from app.services.major_prospect_service import get_prospect
+
+    # 专科出身 → 出身友好校前置，severe 目标校降权并标 high
+    p = get_prospect(db_session, "计算机科学与技术", outgoing_tier="专科")
+    assert p["grad_personalized"] is True
+    assert p["tier_fact"]  # 出身层次制度性事实始终返回
+
+    by_name = {g["school_name"]: g for g in p["grad_paths"]}
+    friend = by_name["出身友好大学"]
+    sensitive = by_name["出身敏感大学"]
+    assert friend["outgoing_risk"] == "friendly"
+    assert sensitive["outgoing_risk"] == "high"
+    assert "友好" in friend["outgoing_note"]
+    assert "风险偏高" in sensitive["outgoing_note"]
+
+    order = [g["school_name"] for g in p["grad_paths"]]
+    # friendly 排 severe 之前，即便 severe 分数更高
+    assert order.index("出身友好大学") < order.index("出身敏感大学")
+
+
+def test_grad_paths_outgoing_tier_985_not_downgraded(db_session):
+    _seed(db_session)
+    from app.services.major_prospect_service import get_prospect
+
+    # 985 出身 → 不降权、不标注高险，维持分数线降序
+    p = get_prospect(db_session, "计算机科学与技术", outgoing_tier="985")
+    order = [g["school_name"] for g in p["grad_paths"]]
+    assert order.index("出身敏感大学") < order.index("清华大学") < order.index("出身友好大学")
+    sensitive = {g["school_name"]: g for g in p["grad_paths"]}["出身敏感大学"]
+    assert sensitive["outgoing_risk"] is None
+
+
+def test_api_detail_with_outgoing_tier(client, db_session):
+    _seed(db_session)
+    resp = client.get(
+        "/api/major-prospects/detail",
+        params={"major": "计算机科学与技术", "outgoing_tier": "专科"},
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["grad_personalized"] is True
+    assert "tier_fact" in data and data["tier_fact"]
+    by_name = {g["school_name"]: g for g in data["grad_paths"]}
+    assert by_name["出身友好大学"]["outgoing_risk"] == "friendly"
+    assert by_name["出身敏感大学"]["outgoing_risk"] == "high"

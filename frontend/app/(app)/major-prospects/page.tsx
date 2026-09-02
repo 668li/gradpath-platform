@@ -18,6 +18,7 @@ import { majorProspectApi } from "@/lib/api";
 import type {
   MajorListItem,
   MajorProspect,
+  OutgoingTier,
 } from "@/lib/api/major-prospects";
 import { LoadingState, EmptyState } from "@/components/ui/empty";
 
@@ -53,6 +54,24 @@ const DISCRIMINATION_LABELS: Record<string, { text: string; cls: string }> = {
   moderate: { text: "中度看背景", cls: "bg-amber-100 text-amber-700" },
   severe: { text: "严重卡学历", cls: "bg-red-100 text-red-700" },
   unknown: { text: "未知", cls: "bg-ink-100 text-ink-500" },
+};
+
+// 出身层次选项：专科手动选档（系统不建专科院校库，避免把层次强加给专科）
+const OUTGOING_TIER_OPTIONS: OutgoingTier[] = [
+  "985",
+  "211",
+  "双一流",
+  "一本",
+  "二本",
+  "专科",
+];
+
+// 出身个性化标注的徽章颜色（基于目标校真实"卡第一学历"程度）
+const OUTGOING_RISK_BADGES: Record<string, { text: string; cls: string }> = {
+  friendly: { text: "出身友好", cls: "bg-green-100 text-green-700" },
+  acceptable: { text: "可冲", cls: "bg-blue-100 text-blue-700" },
+  careful: { text: "需谨慎", cls: "bg-amber-100 text-amber-700" },
+  high: { text: "风险偏高", cls: "bg-red-100 text-red-700" },
 };
 
 const CIVIL_STYLES: Record<string, string> = {
@@ -135,6 +154,14 @@ function ProspectResult({ data }: { data: MajorProspect }) {
           </div>
         )}
       </div>
+
+      {/* 出身层次制度性事实（公开可核实，非某校特定造数） */}
+      {data.grad_personalized && data.tier_fact && (
+        <div className="flex items-start gap-2 rounded-xl border border-blue-200 bg-blue-50 p-3.5 text-sm text-blue-800">
+          <Info className="mt-0.5 h-4 w-4 shrink-0" />
+          <p className="leading-relaxed">{data.tier_fact}</p>
+        </div>
+      )}
 
       {!hasAny && (
         <EmptyState
@@ -260,32 +287,45 @@ function ProspectResult({ data }: { data: MajorProspect }) {
           <div className="space-y-2.5">
             {data.grad_paths.map((g) => {
               const dis = DISCRIMINATION_LABELS[g.background_discrimination] ?? DISCRIMINATION_LABELS.unknown;
+              const riskBadge = g.outgoing_risk ? OUTGOING_RISK_BADGES[g.outgoing_risk] : null;
               return (
                 <div
                   key={`${g.school_name}-${g.major_name}`}
-                  className="flex flex-wrap items-center gap-2 rounded-lg border border-paper-200 bg-paper-50 px-3 py-2.5 text-sm"
+                  className="rounded-lg border border-paper-200 bg-paper-50 px-3 py-2.5 text-sm"
                 >
-                  <span className="font-medium text-ink-800">
-                    {g.school_name}
-                  </span>
-                  {g.school_tier && (
-                    <span className="rounded bg-brand-100 px-1.5 py-0.5 text-xs text-brand-700">
-                      {g.school_tier}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium text-ink-800">
+                      {g.school_name}
                     </span>
+                    {g.school_tier && (
+                      <span className="rounded bg-brand-100 px-1.5 py-0.5 text-xs text-brand-700">
+                        {g.school_tier}
+                      </span>
+                    )}
+                    <span className="text-ink-400">·</span>
+                    <span className="text-ink-600">{g.major_name}</span>
+                    <span className="ml-auto flex flex-wrap items-center gap-1.5 text-xs">
+                      <span className="rounded bg-white px-1.5 py-0.5 text-ink-500">
+                        报录比 {g.admission_ratio}
+                      </span>
+                      <span className="rounded bg-white px-1.5 py-0.5 text-ink-500">
+                        分数线 {g.score_line}
+                      </span>
+                      <span className={`rounded px-1.5 py-0.5 ${dis.cls}`}>
+                        {dis.text}
+                      </span>
+                      {riskBadge && (
+                        <span className={`rounded px-1.5 py-0.5 ${riskBadge.cls}`}>
+                          {riskBadge.text}
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                  {g.outgoing_note && data.grad_personalized && (
+                    <p className="mt-1.5 text-xs leading-relaxed text-ink-500">
+                      {g.outgoing_note}
+                    </p>
                   )}
-                  <span className="text-ink-400">·</span>
-                  <span className="text-ink-600">{g.major_name}</span>
-                  <span className="ml-auto flex flex-wrap items-center gap-1.5 text-xs">
-                    <span className="rounded bg-white px-1.5 py-0.5 text-ink-500">
-                      报录比 {g.admission_ratio}
-                    </span>
-                    <span className="rounded bg-white px-1.5 py-0.5 text-ink-500">
-                      分数线 {g.score_line}
-                    </span>
-                    <span className={`rounded px-1.5 py-0.5 ${dis.cls}`}>
-                      {dis.text}
-                    </span>
-                  </span>
                 </div>
               );
             })}
@@ -338,6 +378,7 @@ function ProspectResult({ data }: { data: MajorProspect }) {
 export default function MajorProspectsPage() {
   const [input, setInput] = useState("");
   const [major, setMajor] = useState("");
+  const [outgoingTier, setOutgoingTier] = useState<OutgoingTier | null>(null);
 
   const { data: majors } = useSWR<MajorListItem[]>(
     "major-prospect-majors",
@@ -346,8 +387,8 @@ export default function MajorProspectsPage() {
   );
 
   const { data, isLoading, error } = useSWR<MajorProspect>(
-    major ? `major-prospect-${major}` : null,
-    () => majorProspectApi.detail(major),
+    major ? `major-prospect-${major}-${outgoingTier ?? "all"}` : null,
+    () => majorProspectApi.detail(major, outgoingTier),
     { revalidateOnFocus: false },
   );
 
@@ -414,6 +455,47 @@ export default function MajorProspectsPage() {
             查前景
           </button>
         </form>
+
+        {/* 出身层次选档（升学路径个性化） */}
+        <div className="mb-6 rounded-xl border border-paper-200 bg-white p-3.5">
+          <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-ink-500">
+            <GraduationCap className="h-3.5 w-3.5" />
+            <span>你的本科出身层次（可选）</span>
+            <span className="font-normal text-ink-300">
+              · 用于升学路径个性化，不改变薪资/行业数据
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              onClick={() => setOutgoingTier(null)}
+              className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+                outgoingTier === null
+                  ? "border-brand-400 bg-brand-100 text-brand-700"
+                  : "border-paper-300 bg-white text-ink-500 hover:border-brand-300 hover:text-brand-600"
+              }`}
+            >
+              不指定
+            </button>
+            {OUTGOING_TIER_OPTIONS.map((t) => (
+              <button
+                key={t}
+                onClick={() => setOutgoingTier(t)}
+                className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+                  outgoingTier === t
+                    ? "border-brand-400 bg-brand-100 text-brand-700"
+                    : "border-paper-300 bg-white text-ink-500 hover:border-brand-300 hover:text-brand-600"
+                }`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+          {outgoingTier && major && (
+            <p className="mt-2 text-xs text-ink-400">
+              已按「{outgoingTier}」出身个性化升学路径。
+            </p>
+          )}
+        </div>
 
         {/* 热门专业 chips */}
         <div className="mb-8 flex flex-wrap gap-1.5">

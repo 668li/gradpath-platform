@@ -57,6 +57,8 @@ class GradPathItem(BaseModel):
     push_ratio: str
     background_discrimination: str
     first_choice_protection: str
+    outgoing_note: str | None = None
+    outgoing_risk: str | None = None
 
 
 class CivilServiceInfo(BaseModel):
@@ -74,8 +76,10 @@ class ProspectResponse(BaseModel):
     positions: list[PositionSalary]
     companies: list[CompanyItem]
     grad_paths: list[GradPathItem]
+    grad_personalized: bool
     civil_service: CivilServiceInfo
     related_majors: list[str]
+    tier_fact: str = ""
     data_notes: list[str]
 
 
@@ -85,12 +89,22 @@ def majors(db: Session = Depends(get_db)):
     return svc.list_majors(db)
 
 
+@router.get("/outgoing-tiers")
+def outgoing_tiers():
+    """本科出身层次选项（用于升学路径个性化）。专科手动选档，系统不建专科院校库。"""
+    return {"tiers": svc._OUTGOING_TIERS}
+
+
 @router.get("/detail", response_model=ProspectResponse)
 def detail(
     major: str = Query(..., min_length=1, max_length=100, description="专业名称"),
+    outgoing_tier: str | None = Query(
+        None, description="本科出身层次（985/211/双一流/一本/二本/专科），传了才做升学个性化"
+    ),
     db: Session = Depends(get_db),
 ):
-    """按专业聚合前景数据：行业薪资 / 岗位薪资 / 去向公司 / 考研路径 / 考公友好度。"""
+    """按专业聚合前景数据：行业薪资 / 岗位薪资 / 去向公司 / 考研路径 / 考公友好度。
+    传 outgoing_tier 时，考研路径按出身层次个性化（背景歧视真实字段）。"""
     if not major.strip():
         raise HTTPException(status_code=422, detail="专业名称不能为空")
-    return svc.get_prospect(db, major.strip())
+    return svc.get_prospect(db, major.strip(), outgoing_tier=outgoing_tier)

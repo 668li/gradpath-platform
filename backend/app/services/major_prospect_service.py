@@ -23,6 +23,24 @@ from app.models.salary_benchmark import SalaryBenchmark
 # 全国平均工资基准（国家统计局，城镇非私营单位，用于"高于/低于全国平均"对比）
 _NATIONAL_AVG_2025 = 129441.0
 
+# 本科出身层次（用户身份选档）。学历出身影响考研竞争难度，但行业/岗位/公司薪资不按出身分层
+# （市场薪资数据无出身维度，强行分层=造假，见设计契约）。
+# 专科不在软科 590 所名单内，也不在 grad_school_intel 目标校体系里——统一用手动选档表达。
+_OUTGOING_TIERS = ["985", "211", "双一流", "一本", "二本", "专科"]
+
+# background_discrimination（目标校卡第一学历程度）按出身层次的处理策略
+# severe=非常看重第一学历（双非/专科出身高风险）、moderate=中等、mild/light=友好、none=不卡
+# 出身越下沉，越要把"出身敏感"的目标校降权、把"出身友好"的目标校前置。
+_TIER_DISCRIMINATIN_TRADE = {
+    # 出身层次 → 该层次可负担的歧视档（severe 及以上视作高险，需要降权）
+    "985": "severe_pass",
+    "211": "severe_pass",
+    "双一流": "moderate",
+    "一本": "moderate",
+    "二本": "mild",
+    "专科": "mild",
+}
+
 
 @dataclass
 class MajorEntry:
@@ -1515,8 +1533,16 @@ def _companies(db: Session, keywords: list[str], limit: int = 12) -> list[dict]:
     ]
 
 
-def _grad_paths(db: Session, aliases: list[str], major: str, limit: int = 12) -> list[dict]:
-    """考研路径：grad_school_intel 按专业名匹配；score_line<=0 为占位脏数据须过滤（已知坑）。"""
+def _grad_paths(
+    db: Session, aliases: list[str], major: str, outgoing_tier: str | None = None, limit: int = 12
+) -> dict:
+    """考研路径：grad_school_intel 按专业名匹配；score_line<=0 为占位脏数据须过滤（已知坑）。
+
+    `outgoing_tier`（本科出身层次）传入时做个性化：grad_school_intel 里每条记录的
+    school_tier 是**目标院校**层次、background_discrimination 是**目标校卡第一学历程度**。
+    出身越下沉，越把出身敏感目标校（severe）降权、把出身友好目标校前置——用真实字段回答
+    双非/专科出身"我这种学历考这些研现实吗"，而不是凭空造"层次×就业薪资"数字。
+    """
     rows = db.query(GradSchoolIntel).all()
     name = major
     matched = []
@@ -1530,33 +1556,67 @@ def _grad_paths(db: Session, aliases: list[str], major: str, limit: int = 12) ->
             if not r.score_line or r.score_line <= 0:
                 continue
             matched.append(r)
-    # 分数线已过滤脏数据，直接按分数线降序
-    matched.sort(key=lambda r: -(r.score_line or 0))
+
+    # 出身个性化：根据 background_discrimination 是否为 severe 生成"出身友好/高险"注解，并用于排序
+    for r in matched:
+        r._outgoing_note = None
+        r._outgoing_risk = None
+        disc = (r.background_discrimination or "").lower()
+        if outgoing_tier and outgoing_tier in ("二本", "专科"):
+            if disc == "severe":
+                r._outgoing_note = "该校非常看重第一学历，专科/二本出身录取风险偏高，谨慎评估"
+                r._outgoing_risk = "high"
+            elif disc in ("moderate", "mild", "light"):
+                r._outgoing_note = "该校较看重综合能力，专科/二本出身有统考录取机会"
+                r._outgoing_risk = "acceptable"
+            elif disc == "none":
+                r._outgoing_note = "该校不卡第一学历，专科/二本出身友好"
+                r._outgoing_risk = "friendly"
+        elif outgoing_tier in ("一本", "双一流"):
+            if disc == "severe":
+                r._outgoing_note = "该校较看重第一学历，双非出身需更强初试表现"
+                r._outgoing_risk = "careful"
+            else:
+                r._outgoing_note = None
+                r._outgoing_risk = None
+
+    # 排序：出身下沉时，出身友好校优先；否则维持分数线降序
+    if outgoing_tier and outgoing_tier in ("二本", "专科"):
+        _risk_rank = {"friendly": 0, "acceptable": 1, "careful": 2, "high": 3, None: 2}
+        matched.sort(key=lambda r: (_risk_rank.get(r._outgoing_risk, 2), -(r.score_line or 0)))
+    else:
+        matched.sort(key=lambda r: -(r.score_line or 0))
 
     def _ratio(v):
         return v if v else "—"
 
-    return [
-        {
-            "school_name": r.school_name,
-            "school_tier": r.school_tier,
-            "major_name": r.major_name,
-            "year": r.year,
-            "admission_ratio": _ratio(r.admission_ratio),
-            "score_line": r.score_line,
-            "push_ratio": _ratio(r.push_ratio),
-            "background_discrimination": r.background_discrimination,
-            "first_choice_protection": r.first_choice_protection,
-        }
-        for r in matched[:limit]
-    ]
+    return {
+        "items": [
+            {
+                "school_name": r.school_name,
+                "school_tier": r.school_tier,
+                "major_name": r.major_name,
+                "year": r.year,
+                "admission_ratio": _ratio(r.admission_ratio),
+                "score_line": r.score_line,
+                "push_ratio": _ratio(r.push_ratio),
+                "background_discrimination": r.background_discrimination,
+                "first_choice_protection": r.first_choice_protection,
+                "outgoing_note": r._outgoing_note,
+                "outgoing_risk": r._outgoing_risk,
+            }
+            for r in matched[:limit]
+        ],
+        "personalized": bool(outgoing_tier and outgoing_tier in ("二本", "专科", "一本", "双一流")),
+    }
 
 
 _CIVIL_LABEL = {"high": "考公友好", "medium": "考公一般", "low": "考公对口岗少"}
 
 
-def get_prospect(db: Session, major: str) -> dict:
-    """聚合某专业的前景数据。"""
+def get_prospect(db: Session, major: str, outgoing_tier: str | None = None) -> dict:
+    """聚合某专业的前景数据。`outgoing_tier` 为本科出身层次（985/211/双一流/一本/二本/专科），
+    作用于升学路径个性化；行业/岗位/公司薪资不按出身分层（无真实数据支撑，绝不造假）。"""
     matched_name, entry = resolve_major(major)
     if entry is None:
         entry = _fallback_entry(major)
@@ -1567,7 +1627,17 @@ def get_prospect(db: Session, major: str) -> dict:
     industries = _industry_salaries(db, entry.industries)
     positions = _position_salaries(db, entry.position_keywords)
     companies = _companies(db, entry.company_keywords)
-    grad_paths = _grad_paths(db, entry.grad_aliases, matched_name)
+    grad = _grad_paths(db, entry.grad_aliases, matched_name, outgoing_tier=outgoing_tier)
+
+    # 出身层次制度性事实（公开可核实的通用数字，非某校特定造数）
+    tier_facts = {
+        "985": "985 院校保研率普遍 20%~35%，考研统考名额少，主要走推免；直接就业品牌溢价明显",
+        "211": "211 院校保研率约 10%~20%，考研统考竞争小一些，考公/校招有优势",
+        "双一流": "双一流（非 985/211）在选调、落户、人才引进上有政策加成，考研可冲 985/211",
+        "一本": "一本院校保研率约 3%~8%，考研是主流深造通道，需统考主攻",
+        "二本": "二本院校保研通道少，考研主要靠统考，建议避开'很看重第一学历'的目标校",
+        "专科": "专科通道主要为统招专升本→本科后考研，或直接就业考公；专科学历直接考研需工作经历且受限",
+    }
 
     return {
         "major": major,
@@ -1577,16 +1647,18 @@ def get_prospect(db: Session, major: str) -> dict:
         "industries": industries,
         "positions": positions,
         "companies": companies,
-        "grad_paths": grad_paths,
+        "grad_paths": grad["items"],
+        "grad_personalized": grad["personalized"],
         "civil_service": {
             "level": entry.civil_service,
             "label": _CIVIL_LABEL.get(entry.civil_service, "考公一般"),
             "note": entry.civil_note,
         },
         "related_majors": entry.related,
+        "tier_fact": tier_facts.get(outgoing_tier or "", ""),
         "data_notes": [
             "行业薪资来自国家统计局（城镇单位就业人员年平均工资），为行业整体口径而非应届生起薪",
             "岗位薪资来自各市人社局发布的工资价位，为中位数口径",
-            "考研数据来自院校研究生院公开信息整理",
+            "考研数据来自院校研究生院公开信息整理；出身友好性标注基于目标校'是否看重第一学历'的真实字段",
         ],
     }
