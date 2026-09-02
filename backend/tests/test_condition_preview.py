@@ -149,6 +149,51 @@ def test_national_eligible(client, db_session):
     assert "可以报考" in data["verdict_text"]
 
 
+def test_national_eligible_with_missing_fields(client, db_session):
+    """P0-1：身份维度未填齐但判定可报 → 不再静默当"完整可报"，显式标注未填维度。"""
+    db_session.add(_make_gwy_position("06", position_code="13010101006"))
+    db_session.commit()
+
+    resp = client.post(
+        "/api/condition-checklist/preview",
+        json={
+            "exam_source": "national",
+            "position_ref": "gwy-06",
+            "fresh_status": "应届",
+        },
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["eligible"] is True
+    assert data["has_missing"] is True
+    assert set(data["missing_fields"]) == {
+        "party_status",
+        "education",
+        "has_grassroots",
+        "gender",
+    }
+    assert "尚未填写" in data["verdict_text"]
+    assert "建议补全" in data["verdict_text"]
+
+    # 全部填齐 → 无未填标注，保持原文案
+    resp_full = client.post(
+        "/api/condition-checklist/preview",
+        json={
+            "exam_source": "national",
+            "position_ref": "gwy-06",
+            "fresh_status": "应届",
+            "party_status": "群众",
+            "education": "本科",
+            "gender": "男",
+            "has_grassroots": False,
+        },
+    )
+    data_full = resp_full.json()
+    assert data_full["has_missing"] is False
+    assert data_full["missing_fields"] == []
+    assert "尚未填写" not in data_full["verdict_text"]
+
+
 def test_national_blocked_by_fresh(client, db_session):
     db_session.add(_make_gwy_position("02", position_code="13010101002", remarks="仅限应届毕业生"))
     db_session.commit()

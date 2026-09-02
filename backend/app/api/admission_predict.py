@@ -67,6 +67,9 @@ class PredictResponse(BaseModel):
     similar_cases: list[SimilarCase]
     recommendation: str
     risk_level: str  # low / medium / high
+    data_note: str | None = Field(
+        default=None, description="数据完整性说明；结果基于不完整/缺失数据时如实标注"
+    )
 
 
 class ScorelineHistory(BaseModel):
@@ -286,7 +289,20 @@ def predict_admission(
         # 3. 计算统计值
         total_scores = [r.total_score_line for r in records if r.total_score_line]
         if not total_scores:
-            total_scores = [350]  # 默认
+            # 有可用（可溯源）的历史记录，但全部缺分数——不编造默认分（如旧的 [350]），
+            # 否则 40% 权重的分数因子会基于一个假均分算出虚高/虚低概率。
+            # 改为低置信 + 显式标注数据不足，与"缺数据就如实说"的信任经济学一致。
+            return PredictResponse(
+                school_name=body.school_name,
+                major=body.major,
+                probability=0.3,
+                confidence="low",
+                factors=[Factor(factor="复试线缺失", impact="negative", weight=0.4)],
+                similar_cases=[],
+                recommendation="该院校专业暂无可用（可溯源）的复试分数线，无法可靠预测录取概率，建议以院校官网公布为准。",
+                risk_level="high",
+                data_note="该校暂无可用的真实复试分数线，预测基于不完整数据，仅供参考",
+            )
 
         avg_score = sum(total_scores) / len(total_scores)
         max_score = max(total_scores)

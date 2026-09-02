@@ -65,6 +65,22 @@ const GRASSROOTS = [
   { value: "no", label: "不满足" },
 ];
 
+// 身份维度 → 前端 select 的 DOM id（用于「未填」快捷跳转补填）
+const IDENTITY_FIELD_LABELS: Record<string, string> = {
+  fresh_status: "应届状态",
+  party_status: "政治面貌",
+  education: "最高学历",
+  gender: "性别",
+  has_grassroots: "基层工作经历",
+};
+const IDENTITY_FIELD_IDS: Record<string, string> = {
+  fresh_status: "id-fresh_status",
+  party_status: "id-party_status",
+  education: "id-education",
+  gender: "id-gender",
+  has_grassroots: "id-has_grassroots",
+};
+
 // 搜索结果为最小统一形状：国考/省考/考研三个 API 都满足
 interface PositionOption {
   id: string;
@@ -109,13 +125,16 @@ function SelectField({
   value,
   onChange,
   options,
+  id,
 }: {
   value: string;
   onChange: (v: string) => void;
   options: { value: string; label: string }[];
+  id?: string;
 }) {
   return (
     <select
+      id={id}
       value={value}
       onChange={(e) => onChange(e.target.value)}
       className="w-full rounded-lg border border-paper-300 bg-white px-2.5 py-2 text-sm text-ink-800 outline-none focus:border-brand-400"
@@ -435,6 +454,7 @@ export function EligibilityChecker() {
               <>
                 <Field label="应届状态">
                   <SelectField
+                    id={IDENTITY_FIELD_IDS.fresh_status}
                     value={identity.fresh_status}
                     onChange={(v) => setIdentityField("fresh_status", v)}
                     options={FRESH_STATUSES}
@@ -442,6 +462,7 @@ export function EligibilityChecker() {
                 </Field>
                 <Field label="政治面貌">
                   <SelectField
+                    id={IDENTITY_FIELD_IDS.party_status}
                     value={identity.party_status}
                     onChange={(v) => setIdentityField("party_status", v)}
                     options={PARTY_STATUSES}
@@ -449,6 +470,7 @@ export function EligibilityChecker() {
                 </Field>
                 <Field label="最高学历">
                   <SelectField
+                    id={IDENTITY_FIELD_IDS.education}
                     value={identity.education}
                     onChange={(v) => setIdentityField("education", v)}
                     options={EDUCATIONS}
@@ -456,6 +478,7 @@ export function EligibilityChecker() {
                 </Field>
                 <Field label="性别">
                   <SelectField
+                    id={IDENTITY_FIELD_IDS.gender}
                     value={identity.gender}
                     onChange={(v) => setIdentityField("gender", v)}
                     options={GENDERS}
@@ -463,6 +486,7 @@ export function EligibilityChecker() {
                 </Field>
                 <Field label="基层工作经历">
                   <SelectField
+                    id={IDENTITY_FIELD_IDS.has_grassroots}
                     value={identity.grassroots}
                     onChange={(v) => setIdentityField("grassroots", v)}
                     options={GRASSROOTS}
@@ -550,6 +574,13 @@ export function EligibilityChecker() {
 
 function EligibilityVerdict({ verdict }: { verdict: ConditionPreviewResponse }) {
   const eligible = verdict.eligible;
+  const missing = verdict.missing_fields ?? [];
+  const jumpToField = (key: string) => {
+    const id = IDENTITY_FIELD_IDS[key];
+    if (!id) return;
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    document.getElementById(id)?.focus();
+  };
   return (
     <>
       <div
@@ -563,6 +594,26 @@ function EligibilityVerdict({ verdict }: { verdict: ConditionPreviewResponse }) 
         {eligible ? "✓ 你的条件可以报考" : "✕ 该职位暂不可报"}
       </div>
       <p className="mt-2 text-xs text-ink-600 leading-relaxed">{verdict.verdict_text}</p>
+      {verdict.has_missing && missing.length > 0 && (
+        <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
+          <p className="text-[11px] font-medium text-amber-700">
+            判定基于不完整身份，以下维度还没填：
+          </p>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {missing.map((k) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => jumpToField(k)}
+                className="rounded-full border border-amber-300 bg-white px-2 py-0.5 text-[11px] text-amber-700 hover:bg-amber-100"
+              >
+                {IDENTITY_FIELD_LABELS[k] ?? k} ↗
+              </button>
+            ))}
+          </div>
+          <p className="mt-1 text-[11px] text-amber-600">补全后重新判定，才是完整的可报结论。</p>
+        </div>
+      )}
       {verdict.blockers.length > 0 && (
         <ul className="mt-2 space-y-1.5">
           {verdict.blockers.map((b) => (

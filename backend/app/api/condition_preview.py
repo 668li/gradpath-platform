@@ -101,18 +101,27 @@ def preview_eligibility(
     if data.exam_source == "kaoyan":
         return _kaoyan_preview(db, position, data)
 
-    # national / province：身份快照 → blockers 判定（空=可报）
-    conditions = {
-        key: getattr(data, key)
-        for key in (
-            "fresh_status",
-            "party_status",
-            "education",
-            "has_grassroots",
-            "gender",
-        )
-        if getattr(data, key, None) is not None
+    # national / province：身份快照 → blockers 判定（空=可报）。
+    # 拆分「已填」与「未填」维度：未填维度可报考性无据可依，不能当作"已通过"，
+    # 但也不强制填齐（转化漏斗不设门槛），用 missing_fields 显式标注，避免"缺数据当可报"。
+    _IDENTITY_KEYS = (
+        "fresh_status",
+        "party_status",
+        "education",
+        "has_grassroots",
+        "gender",
+    )
+    _MISSING_LABELS = {
+        "fresh_status": "应届状态",
+        "party_status": "政治面貌",
+        "education": "最高学历",
+        "has_grassroots": "基层工作经历",
+        "gender": "性别",
     }
+    conditions = {
+        key: getattr(data, key) for key in _IDENTITY_KEYS if getattr(data, key, None) is not None
+    }
+    missing_fields = [key for key in _IDENTITY_KEYS if key not in conditions]
     if data.exam_source == "province":
         blockers = _province_position_eligible_blockers(position, conditions)
     else:
@@ -120,7 +129,14 @@ def preview_eligibility(
 
     eligible = len(blockers) == 0
     if eligible:
-        verdict = "你的身份条件满足该职位的资格门槛，可以报考。"
+        if missing_fields:
+            missing_labels = "、".join(_MISSING_LABELS[k] for k in missing_fields)
+            verdict = (
+                f"已填条件满足该职位的资格门槛，但尚未填写：{missing_labels}，"
+                "结论基于不完整身份，建议补全后再确认报考。"
+            )
+        else:
+            verdict = "你的身份条件满足该职位的资格门槛，可以报考。"
     else:
         labels = "、".join(b["label"] for b in blockers)
         verdict = f"该职位暂不可报：{labels} 未满足。"
@@ -132,4 +148,6 @@ def preview_eligibility(
         eligible=eligible,
         blockers=blockers,
         verdict_text=verdict,
+        missing_fields=missing_fields,
+        has_missing=len(missing_fields) > 0,
     )

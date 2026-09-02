@@ -37,6 +37,9 @@ export interface ConditionPreviewResponse {
   eligible?: boolean | null;
   blockers: ConditionBlockItem[];
   verdict_text?: string | null;
+  /** 未填身份维度列表（national/province）——判定基于不完整身份时的诚实标注 */
+  missing_fields?: string[];
+  has_missing?: boolean;
   // kaoyan 专用
   university_name?: string | null;
   major_name?: string | null;

@@ -92,6 +92,12 @@ class ConditionPreviewResponse(BaseModel):
     eligible: bool | None = None
     blockers: list[ConditionBlockItem] = Field(default_factory=list)
     verdict_text: str | None = None
+    # 未填维度的可报性提示（仅 national/province）：判定基于不完整身份，标注哪些字段没填
+    missing_fields: list[str] = Field(
+        default_factory=list,
+        description="访客未填写的身份维度（fresh_status/party_status/education/has_grassroots/gender）",
+    )
+    has_missing: bool = Field(default=False, description="是否存在未填写的身份维度")
     # kaoyan 专用
     university_name: str | None = None
     major_name: str | None = None
