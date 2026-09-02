@@ -15,6 +15,7 @@ import time
 import urllib.error
 import urllib.request
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 from urllib.robotparser import RobotFileParser
 
@@ -23,6 +24,9 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 from app.database import SessionLocal
+
+if TYPE_CHECKING:
+    from app.crawlers.crawl4ai_client import Crawl4aiResult
 
 logger = logging.getLogger(__name__)
 
