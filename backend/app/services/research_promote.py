@@ -26,7 +26,12 @@ from app.crawlers.research.experience_quality import (
 )
 from app.crawlers.research.news_meta import extract_news_structured_meta_with_evidence
 from app.crawlers.research.quality import score_item_detailed
-from app.crawlers.research.transformer import SYSTEM_USER_ID, ResearchTransformer
+from app.crawlers.research.transformer import (
+    OFF_TOPIC_REJECT_KEYWORDS,
+    SYSTEM_USER_ID,
+    ResearchTransformer,
+    classify_topic_relevance,
+)
 from app.models.experience_post import ExperiencePost
 from app.models.ingestion import DataSourceMeta, ExternalResearchItem
 from app.models.kaoyan_news import KaoyanNews
@@ -312,6 +317,24 @@ def _promote_experience_post(db: Session, ext_item: ExternalResearchItem, review
     title = ext_item.title
     raw_content = ext_item.content or ""
     tags = [t for t in (payload.get("tags") or []) if isinstance(t, str)]
+
+    # ---- 主题相关度硬门禁（S1）----
+    # 管理员审核通过 ≠ 主题相关：免费/通用情绪词（心态/坚持）可能骗过人工审核。
+    # 这里补一刀：命中离题黑名单 → 打 is_off_topic=True 仍落库（不删、可恢复），
+    # 但 feed 查询显式排除；黑名单命中再额外把 category 规制为 off_topic。
+    topic_off, topic_reason, topic_domain = classify_topic_relevance(
+        title=title, content=raw_content, tags=tags
+    )
+    payload["is_off_topic"] = topic_off
+    payload["topic_reason"] = topic_reason if topic_off else None
+    payload["topic_domain"] = topic_domain
+    if topic_off:
+        logger.warning(
+            "[research_promote] 主题离题仍需写入(打标不展示): %s（%s）", title[:40], topic_reason
+        )
+        # 强离题词命中 → 归类规范化 off_topic，聚合层同样不可见
+        if any(kw.lower() in f"{title} {raw_content}".lower() for kw in OFF_TOPIC_REJECT_KEYWORDS):
+            payload["category"] = "off_topic"
 
     # 1) 软广检测：命中标注但不下架（管理员已人工审核通过，前端知情降权）
     is_promotion, promo_conf, promo_reason = detect_promotion(title, raw_content, tags)

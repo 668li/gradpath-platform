@@ -85,3 +85,9 @@ class ExperiencePost(UUIDMixin, TimestampMixin, Base):
     quality_reasons: Mapped[list | None] = mapped_column(
         JSONB, nullable=True, default=list
     )  # 质量分扣分原因逐条（可解释徽章，Phase I）：["内容完整度 24/30：…", "反软广 0/10：疑似软广(命中:课程)"]
+
+    # 主题相关度门禁（S1）：is_off_topic=True 表示疑似离题（如游戏/娱乐混入），
+    # feed 查询默认排除但保留内容可恢复。topic_reason 记录判定说明，topic_domain 记录归属领域。
+    is_off_topic: Mapped[bool | None] = mapped_column(Boolean, nullable=True, default=False)
+    topic_reason: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    topic_domain: Mapped[str | None] = mapped_column(String(20), nullable=True)

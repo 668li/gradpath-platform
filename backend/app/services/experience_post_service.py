@@ -22,6 +22,10 @@ def _atomic_increment(db: Session, model_cls, item_id: UUID, column: str, delta:
 
 STATUS_CHOICES = {"pending", "approved", "rejected"}
 
+# 主题相关度门禁（S1）：对普通用户隐藏 is_off_topic=True 的内容。
+# 管理员显式请求（status 参数）或 include_unapproved 分支不走此过滤。
+PUBLIC_OFF_TOPIC_FILTER = ~ExperiencePost.is_off_topic.is_(True)
+
 
 def create_experience_post(
     db: Session,
@@ -54,6 +58,7 @@ def get_experience_post(
     query = db.query(ExperiencePost).filter(ExperiencePost.id == post_id)
     if not include_unapproved:
         query = query.filter(ExperiencePost.status == "approved")
+        query = query.filter(PUBLIC_OFF_TOPIC_FILTER)
     return query.first()
 
 
@@ -78,6 +83,7 @@ def get_experience_posts(
         query = query.filter(ExperiencePost.status == status)
     else:
         query = query.filter(ExperiencePost.status == "approved")
+        query = query.filter(PUBLIC_OFF_TOPIC_FILTER)
 
     if source_platform == "user":
         query = query.filter(
@@ -142,6 +148,7 @@ def get_experience_posts_cursor(
         query = query.filter(ExperiencePost.status == status)
     else:
         query = query.filter(ExperiencePost.status == "approved")
+        query = query.filter(PUBLIC_OFF_TOPIC_FILTER)
 
     if source_platform == "user":
         query = query.filter(
