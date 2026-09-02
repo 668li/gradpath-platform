@@ -569,7 +569,7 @@ function ResultView({
   onFinish: () => void;
 }) {
   const hasDiagnosis = !!record.ai_diagnosis;
-  const recommendedPath = record.recommended_path ?? [];
+  const recommendedPath = record.recommended_path ?? { short_term: [], mid_term: [], long_term: [] };
   const keyInsights = record.key_insights ?? [];
 
   return (
@@ -615,7 +615,7 @@ function ResultView({
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-50 text-xs font-bold text-amber-600 mt-0.5">
                   {i + 1}
                 </span>
-                <span className="leading-relaxed">{insight}</span>
+                <span className="leading-relaxed">{insight.text}</span>
               </li>
             ))}
           </ul>
@@ -623,22 +623,35 @@ function ResultView({
       )}
 
       {/* 推荐路径 */}
-      {recommendedPath.length > 0 && (
+      {["short_term", "mid_term", "long_term"].some((k) => recommendedPath[k as keyof typeof recommendedPath].length > 0) && (
         <div className="card space-y-3">
           <div className="flex items-center gap-2">
             <Compass className="h-4 w-4 text-brand-600" />
             <h2 className="font-display font-semibold text-ink-800">推荐路径</h2>
           </div>
-          <ol className="space-y-3">
-            {recommendedPath.map((p, i) => (
-              <li key={`path-${i}`} className="flex items-start gap-3">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand-500 text-white text-xs font-bold">
-                  {i + 1}
-                </span>
-                <p className="text-sm text-ink-700 leading-relaxed pt-1">{p}</p>
-              </li>
+          {(
+            [
+              ["short_term", "短期目标"],
+              ["mid_term", "中期目标"],
+              ["long_term", "长期目标"],
+            ] as const
+          )
+            .filter(([k]) => recommendedPath[k].length > 0)
+            .map(([k, label]) => (
+              <div key={k} className="space-y-1">
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-ink-500">{label}</h3>
+                <ol className="space-y-2">
+                  {recommendedPath[k].map((p, i) => (
+                    <li key={`${k}-${i}`} className="flex items-start gap-3">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand-500 text-white text-xs font-bold">
+                        {i + 1}
+                      </span>
+                      <p className="text-sm text-ink-700 leading-relaxed pt-0.5">{p}</p>
+                    </li>
+                  ))}
+                </ol>
+              </div>
             ))}
-          </ol>
         </div>
       )}
 
