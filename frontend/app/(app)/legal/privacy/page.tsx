@@ -16,7 +16,7 @@ export default function PrivacyPage() {
         <h1 className="font-display text-3xl md:text-4xl font-semibold text-ink-900 tracking-tight mt-4">
           隐私政策
         </h1>
-        <p className="text-sm text-ink-400 mt-2">最后更新：2026 年 7 月 20 日</p>
+        <p className="text-sm text-ink-400 mt-2">最后更新：2026 年 9 月 2 日</p>
 
         <section className="mt-10 space-y-4 text-ink-700 leading-relaxed">
           <p>
@@ -28,6 +28,9 @@ export default function PrivacyPage() {
           <ul className="list-disc pl-6 space-y-1.5">
             <li>
               <strong>账号信息</strong>：邮箱、昵称、加密存储的密码哈希、可选的学校 / 专业 / 毕业年份等画像字段。
+            </li>
+            <li>
+              <strong>报考身份信息（可选）</strong>：应届状态、政治面貌、最高学历、性别、是否有基层服务经历，以及你在免费预览中自填的估分（估分仅当次判定使用，不会保存到档案）。这些字段为选填，跳过不影响使用核心功能。
             </li>
             <li>
               <strong>决策与职业数据</strong>：你在平台创建的去向决策、决策分析、职业事件、技能树、阶段复盘、职业规划方案等。
@@ -46,6 +49,9 @@ export default function PrivacyPage() {
           <h2 className="font-display text-xl font-semibold text-ink-900 mt-8">2. 数据用途</h2>
           <ul className="list-disc pl-6 space-y-1.5">
             <li>提供个性化推荐（院校推荐、岗位推荐、暗知识推送等）；</li>
+            <li>
+              生成报考决策建议：报考身份信息仅用于可报性判定与三路决策引擎的资格筛选（如岗位的政治面貌 / 基层经历门槛），不用于任何营销或对外披露；
+            </li>
             <li>调用第三方大语言模型（LLM）生成 AI 对话、决策建议与成长洞察；</li>
             <li>
               <strong>AI 训练（opt-in）</strong>：默认情况下，你的对话内容<strong>不会</strong>用于模型训练。如未来开放 opt-in 训练计划，我们会单独征求你的明示同意。
@@ -84,7 +90,7 @@ export default function PrivacyPage() {
           <p>你对自己的个人信息享有以下权利：</p>
           <ul className="list-disc pl-6 space-y-1.5">
             <li><strong>查询权</strong>：通过个人中心查看你的账号信息与决策数据；</li>
-            <li><strong>更正权</strong>：在个人中心修改昵称、学校、专业等画像字段；</li>
+            <li><strong>更正权</strong>：在个人中心修改昵称、学校、专业及报考身份（应届状态、政治面貌、学历、性别、基层经历）等画像字段；</li>
             <li><strong>删除权</strong>：可通过"注销账号"功能发起删除请求，我们将在 15 个工作日内处理；</li>
             <li><strong>导出权</strong>：在个人中心发起数据导出，获取你的决策、事件、技能等数据的 JSON / PDF 副本；</li>
             <li><strong>注销权</strong>：注销后账号将停用，敏感数据将在备份保留期（30 天）后清除；</li>
