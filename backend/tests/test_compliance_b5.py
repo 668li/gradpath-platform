@@ -113,14 +113,18 @@ def test_store_research_items_all_pending_and_idempotent(db_session):
 
 
 def test_run_endpoint_rejects_registered_non_whitelisted_crawler(client, admin_headers):
-    """已注册但不在白名单的爬虫（scoreline 直写业务表）→ /run 必须 403。"""
-    assert get_crawler("scoreline") is not None, "前置：scoreline 已注册"
-    assert "scoreline" not in ALLOWED_CRAWLER_SOURCES
+    """已注册但不在白名单的爬虫（mentor 直写业务表）→ /run 必须 403。
+
+    注意：scoreline / scoreline_real / admission_ratio 三个假数据生成器
+    已于 2026-09-02 注销注册，改用 mentor 作为非白注册爬虫代表。
+    """
+    assert get_crawler("mentor") is not None, "前置：mentor 已注册"
+    assert "mentor" not in ALLOWED_CRAWLER_SOURCES
 
     resp = client.post(
         "/api/crawlers/run",
         headers=admin_headers,
-        json={"source_name": "scoreline"},
+        json={"source_name": "mentor"},
     )
     assert resp.status_code == 403
     assert "白名单" in resp.json()["detail"] or "合规" in resp.json()["detail"]
@@ -158,7 +162,7 @@ def test_schedules_rejects_registered_non_whitelisted_crawler(
     resp = client.post(
         "/api/crawlers/schedules",
         headers=admin_headers,
-        json={"source_name": "scoreline", "cron": "0 * * * *"},
+        json={"source_name": "mentor", "cron": "0 * * * *"},
     )
     assert resp.status_code == 403
     assert "白名单" in resp.json()["detail"] or "合规" in resp.json()["detail"]

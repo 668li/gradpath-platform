@@ -33,6 +33,7 @@ dependencies = [
     "tenacity>=8.2.0",
     "celery[redis]>=5.3.6",
     "prometheus_client>=0.20.0",
+    "crawl4ai>=0.9.2",
 ]
 
 # 显式声明包发现范围：backend/ 下有 app/pipeline/migrations/scripts 等多个顶级目录，

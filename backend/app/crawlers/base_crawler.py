@@ -186,6 +186,26 @@ class BaseCrawler(ABC):
                 else:
                     raise
 
+    # ===== 可选浏览器渲染抓取（crawl4ai 集成；客户端不可用时降级 HTTP） =====
+
+    def fetch_markdown(self, url: str, **kwargs) -> "Crawl4aiResult | None":
+        """可选浏览器渲染抓取：返回结构化 markdown；客户端不可用时返回 None。
+
+        与 _request 相同的安全护栏（SSRF + robots.txt + 限速，实现在
+        crawl4ai_client.py，任何 URL 发请求前都经 url_safety.validate_outbound_url
+        校验）。crawl4ai 未安装 / CRAWL4AI_ENABLED=false 时返回 None，调用方
+        降级到 _request 的 HTTP 抽取；渲染本身失败返回 success=False 的结果对象。
+        """
+        try:
+            from app.crawlers.crawl4ai_client import Crawl4AIClient, Crawl4aiError
+        except ImportError:
+            return None
+        try:
+            return Crawl4AIClient.get_instance().fetch_markdown(url, **kwargs)
+        except Crawl4aiError as e:
+            logger.warning(f"[{self.name}] crawl4ai 不可用，降级 HTTP: {e}")
+            return None
+
     # ===== 外发请求安全校验（Mimosa 强制约束：仅 http/https，拒绝内网/保留地址） =====
 
     def _validate_outbound_url(self, url: str) -> tuple[bool, str]:

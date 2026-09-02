@@ -1,3 +1,14 @@
+"""DEPRECATED — 请改用 Crawl4AIClient（app/crawlers/crawl4ai_client.py）。
+
+本文件是 crawl4ai 集成初期的 ad-hoc 验证脚本，存在三处合规问题，已废弃：
+1. 绕过 SSRF 校验：硬编码 kaoyan.com URL，未过 url_safety.validate_outbound_url
+2. 绕过 PENDING 审核队列：直接落盘 real_data/crawl4ai_results.json，不入库
+3. 模块级 asyncio.run：import 本模块即触发真实抓取
+
+正式能力见 Crawl4AIClient（同步封装 + SSRF/robots/限速护栏 + 走审核队列的
+调用方）。本文件仅保留作历史参考，不删除、不注册、不在任何路径被 import。
+"""
+
 import asyncio
 import json
 
@@ -43,4 +54,5 @@ async def scrape_kaoyan():
             print(f'  {r["url"]}: {len(r["markdown"])} chars')
 
 
-asyncio.run(scrape_kaoyan())
+if __name__ == "__main__":
+    asyncio.run(scrape_kaoyan())

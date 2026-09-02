@@ -151,6 +151,32 @@ def _title_from_html(html: str, suffix: str = "") -> str:
     return title
 
 
+def parse_detail_markdown(markdown: str) -> str:
+    """把 crawl4ai 的结构化 markdown 转为纯文本（兼容 _extract_content_div 输出格式）。
+
+    详情页经浏览器渲染后是干净的 markdown（# 标题、列表、加粗等），
+    转纯文本后与 HTTP 正则抽取路径的输出形态一致，下游 summary/content 逻辑不变。
+    """
+    text = markdown or ""
+    # 图片链接整段移除；普通链接保留可见文本
+    text = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", text)
+    text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
+    # markdown 标题/列表/引用标记
+    text = re.sub(r"^#{1,6}\s*", "", text, flags=re.M)
+    text = re.sub(r"^\s*[-*+]\s+", "", text, flags=re.M)
+    text = re.sub(r"^\s*\d+\.\s+", "", text, flags=re.M)
+    text = re.sub(r"^\s*>\s*", "", text, flags=re.M)
+    # 加粗/斜体/行内代码/代码块围栏
+    text = re.sub(r"(\*\*|__|\*|_|`{1,3})", "", text)
+    text = re.sub(r"^```.*$", "", text, flags=re.M)
+    # 水平线
+    text = re.sub(r"^[-*_]{3,}\s*$", "", text, flags=re.M)
+    # 压缩多余空白/空行
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    text = re.sub(r"[ \t]{2,}", " ", text)
+    return text.strip()
+
+
 @register_crawler
 class OfficialAnnounceCrawler(BaseCrawler):
     """官方公告爬虫（高校研招网 / 省级考试院）。"""
@@ -164,6 +190,7 @@ class OfficialAnnounceCrawler(BaseCrawler):
         self.sections = self.config.get("sections", DEFAULT_SECTIONS)
         self._rate_limit = self.config.get("rate_limit", 1.5)
         self.fetch_detail = bool(self.config.get("fetch_detail", True))
+        self._use_browser = bool(self.config.get("use_browser", False))
         # 并发窗口：config 显式设置并发时启用（默认 1 保持串行）。
         # 由 BaseCrawler 提供每线程独立 Session 与全局节流，网络限速不失效。
         self._concurrency = int(self.config.get("concurrency", 1))
@@ -246,7 +273,17 @@ class OfficialAnnounceCrawler(BaseCrawler):
         """抓取详情页，返回 (页面标题, 正文)；失败降级为列表信息。
 
         content_cls 为空时按常见 CMS 容器候选自动探测（新增栏目零配置成本）。
+        use_browser=True 且 crawl4ai 可用时优先浏览器渲染（JS 渲染 + 结构化
+        markdown），渲染失败/为空则降级当前 HTTP 正则抽取。
         """
+        if self._use_browser:
+            result = self.fetch_markdown(url)
+            if result is not None and result.success and result.markdown:
+                title = (result.title or "").strip()
+                body = parse_detail_markdown(result.markdown)
+                if body:
+                    return title, body
+                logger.warning(f"[{self.name}] crawl4ai markdown 为空，降级 HTTP: {url}")
         try:
             resp = self._request(url)
             resp.encoding = "utf-8"
