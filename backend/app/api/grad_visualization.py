@@ -5,13 +5,13 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.services.grad_intel_service import scoreline_has_traceable_source
 from app.models.grad_intel import (
     GradAdjustmentInfo,
     GradSchoolIntel,
     GradScorelineRecord,
     GradYanzhaoProgram,
 )
+from app.services.grad_intel_service import scoreline_has_traceable_source
 
 router = APIRouter(prefix="/api/grad-intel/visualization", tags=["考研可视化"])
 

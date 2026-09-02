@@ -14,8 +14,8 @@ from sqlalchemy.orm import Session
 
 from app.core.cache import cache
 from app.models.grad_intel import DarkKnowledge, GradAdjustmentInfo, GradScorelineRecord
-from app.services.grad_intel_service import scoreline_has_traceable_source
 from app.models.school import School
+from app.services.grad_intel_service import scoreline_has_traceable_source
 
 logger = logging.getLogger(__name__)
 

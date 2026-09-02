@@ -9,9 +9,9 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.grad_intel import DarkKnowledge, GradSchoolIntel, GradScorelineRecord
-from app.services.grad_intel_service import scoreline_has_traceable_source
 from app.services.ai_orchestrator import AIOrchestrator
 from app.services.ai_service import AIServiceNotConfigured
+from app.services.grad_intel_service import scoreline_has_traceable_source
 
 logger = logging.getLogger(__name__)
 

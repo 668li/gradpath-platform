@@ -16,10 +16,10 @@ from app.api.school_analyst import (
 from app.core.deps import get_current_user
 from app.database import get_db
 from app.models.grad_intel import GradSchoolIntel, GradScorelineRecord
-from app.services.grad_intel_service import scoreline_has_traceable_source
 from app.models.user import User
 from app.services.ai_orchestrator import AIOrchestrator
 from app.services.ai_service import AIServiceNotConfigured
+from app.services.grad_intel_service import scoreline_has_traceable_source
 
 logger = logging.getLogger(__name__)
 
