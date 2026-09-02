@@ -128,3 +128,41 @@ def test_update_me_exclude_unset_preserves_existing(client, auth_headers):
     assert data["fresh_status"] == "应届"  # 保持原值
     assert data["party_status"] == "群众"  # 更新
     assert data["education"] == "博士"  # 保持原值
+
+
+def test_register_rejects_dirty_identity_value(client):
+    """注册身份字段取值不在白名单 → 422（防脏值入库卡死决策引擎预填）。"""
+    resp = client.post(
+        "/api/auth/register",
+        json={
+            "email": "dirty@test.com",
+            "password": _TEST_PW,
+            "name": "脏值测试",
+            "fresh_status": "xyz",
+        },
+    )
+    assert resp.status_code == 422
+
+
+def test_register_rejects_overlong_identity_value(client):
+    """注册身份字段超长 → 422 而非 DB 层 500（公开端点防滥用）。"""
+    resp = client.post(
+        "/api/auth/register",
+        json={
+            "email": "long@test.com",
+            "password": _TEST_PW,
+            "name": "超长测试",
+            "gender": "男" * 10,
+        },
+    )
+    assert resp.status_code == 422
+
+
+def test_update_me_rejects_dirty_identity_value(client, auth_headers):
+    """PUT /api/auth/me 身份字段取值不在白名单 → 422，原值不被破坏。"""
+    resp = client.put(
+        "/api/auth/me",
+        json={"party_status": "undefined"},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 422

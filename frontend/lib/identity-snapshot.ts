@@ -8,6 +8,30 @@ import type { IdentityPackage } from "@/types";
 
 const SNAPSHOT_KEY = "gradpath_identity_snapshot";
 
+// 身份取值白名单（与后端 auth schema validator、决策引擎/预览表单同一口径）。
+// localStorage 可能被污染或版本错位，读取时清洗：非白名单值直接丢弃，
+// 避免脏值拼进注册/回存请求被后端 422 拒绝、反而阻塞主流程。
+const ALLOWED = {
+  fresh_status: ["应届", "非应届"],
+  party_status: ["中共党员", "党员或团员", "群众"],
+  education: ["博士", "硕士", "本科", "大专"],
+  gender: ["男", "女"],
+} as const;
+
+function sanitizeIdentity(identity: IdentityPackage): IdentityPackage {
+  const clean: IdentityPackage = {};
+  for (const key of ["fresh_status", "party_status", "education", "gender"] as const) {
+    const v = identity[key];
+    if (typeof v === "string" && (ALLOWED[key] as readonly string[]).includes(v)) {
+      clean[key] = v;
+    }
+  }
+  if (typeof identity.has_grassroots === "boolean") {
+    clean.has_grassroots = identity.has_grassroots;
+  }
+  return clean;
+}
+
 export function saveIdentitySnapshot(identity: IdentityPackage): void {
   if (typeof window === "undefined") return;
   try {
@@ -24,7 +48,7 @@ export function loadIdentitySnapshot(): IdentityPackage | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as IdentityPackage;
     if (typeof parsed !== "object" || parsed === null) return null;
-    return parsed;
+    return sanitizeIdentity(parsed);
   } catch {
     return null;
   }

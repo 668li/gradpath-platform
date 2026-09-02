@@ -149,8 +149,11 @@ export function EligibilityChecker() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
-  const setIdentityField = (key: keyof IdentityState, value: string) =>
+  // 改动身份字段后允许再次保存（否则 saved 状态会永久禁用保存按钮）
+  const setIdentityField = (key: keyof IdentityState, value: string) => {
     setIdentity((prev) => ({ ...prev, [key]: value }));
+    setSaveState((s) => (s === "saved" || s === "error" ? "idle" : s));
+  };
 
   // 身份包预填：登录用户读档案，访客读上次预览快照（刷新不丢）
   useEffect(() => {

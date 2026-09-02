@@ -1,9 +1,33 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from app.models.user import UserStage
+from app.schemas.path_comparison import (
+    _EDUCATION_LEVELS,
+    _FRESH_STATUSES,
+    _GENDERS,
+    _PARTY_STATUSES,
+)
+
+
+def _validate_identity_field(v: str | None, field_name: str) -> str | None:
+    """身份包取值白名单 — 与 DecisionEngineRequest 同一套常量，防止脏值入库。
+
+    脏值入库会在决策引擎预填时被其 validator 422 拒绝，用户卡死在 analyze。
+    """
+    if v is None:
+        return v
+    allowed = {
+        "fresh_status": _FRESH_STATUSES,
+        "party_status": _PARTY_STATUSES,
+        "education": _EDUCATION_LEVELS,
+        "gender": _GENDERS,
+    }[field_name]
+    if v not in allowed:
+        raise ValueError(f"{field_name} must be one of: {', '.join(sorted(allowed))}")
+    return v
 
 
 class RegisterRequest(BaseModel):
@@ -14,11 +38,17 @@ class RegisterRequest(BaseModel):
     # 默认 True 以保持与既有调用方兼容；service 层会显式拒绝 False。
     agree_terms: bool = True
     # 报考身份包（W1-D3/D4）：免费预览带回，注册即落库，登录后自动预填。
-    fresh_status: str | None = Field(None, description="应届/非应届")
-    party_status: str | None = Field(None, description="中共党员/党员或团员/群众")
-    education: str | None = Field(None, description="博士/硕士/本科/大专")
-    gender: str | None = Field(None, description="男/女")
+    # 白名单校验见 _validate_identity_fields（公开端点，防脏值入库+防超长 500）。
+    fresh_status: str | None = Field(None, max_length=10, description="应届/非应届")
+    party_status: str | None = Field(None, max_length=20, description="中共党员/党员或团员/群众")
+    education: str | None = Field(None, max_length=10, description="博士/硕士/本科/大专")
+    gender: str | None = Field(None, max_length=4, description="男/女")
     has_grassroots: bool | None = Field(None, description="是否已满足基层工作经历")
+
+    @field_validator("fresh_status", "party_status", "education", "gender")
+    @classmethod
+    def _validate_identity_fields(cls, v, info):
+        return _validate_identity_field(v, info.field_name)
 
 
 class LoginRequest(BaseModel):
@@ -71,6 +101,11 @@ class UpdateMeRequest(BaseModel):
     education: str | None = Field(default=None, max_length=10)
     gender: str | None = Field(default=None, max_length=4)
     has_grassroots: bool | None = Field(default=None)
+
+    @field_validator("fresh_status", "party_status", "education", "gender")
+    @classmethod
+    def _validate_identity_fields(cls, v, info):
+        return _validate_identity_field(v, info.field_name)
 
 
 class RefreshRequest(BaseModel):
