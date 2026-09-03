@@ -24,6 +24,11 @@ export interface ResearchQueueItem {
   source_platform: string;
   credibility: string; // official_verified / user_reported / model_inferred
   external_meta: Record<string, unknown> | null;
+
+  // === 风险信号（仅 PENDING 计算，已审完为 null）===
+  risk_grade: "high" | "medium" | "low" | null;
+  risk_score: number | null;
+  risk_reasons: string[];
 }
 
 export interface ResearchQueueListResponse extends PaginatedResponse<ResearchQueueItem> {}

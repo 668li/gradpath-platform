@@ -12,6 +12,8 @@ from app.database import get_db
 from app.models.user import User, UserStatus
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
+# 匿名友好版：不带 token 返回 None 而非 401，用于"登录后可看更多"的公开端点
+oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
 
 logger = logging.getLogger(__name__)
 
@@ -128,6 +130,45 @@ def get_current_user(
     except Exception as e:
         logger.debug("user cache set failed: %s", e)
 
+    return user
+
+
+def get_optional_current_user(
+    token: str | None = Depends(oauth2_scheme_optional),
+    db: Session = Depends(get_db),
+) -> User | None:
+    """匿名请求返回 None；带有效 token 返回用户；无效/封禁 token 一律 None（不 401）。
+
+    仅用于公开端点上"登录后可看更多"的场景（如审核状态过滤收归管理员）。
+    需要强制鉴权的端点仍用 get_current_user，不要用本依赖替代。
+    """
+    if not token:
+        return None
+    try:
+        payload = decode_token(token)
+        if payload.get("type") != "access":
+            return None
+        user_id = payload.get("sub")
+        if user_id is None:
+            return None
+        user_uuid = uuid.UUID(user_id)
+    except Exception:
+        return None
+
+    # 复用用户缓存，未命中落库（与 get_current_user 同一套缓存键）
+    try:
+        cached = cache.get(f"user:{user_uuid}")
+        if cached:
+            cached_user = _deserialize_user(cached)
+            if cached_user.status != UserStatus.banned:
+                return cached_user
+            return None
+    except Exception as e:
+        logger.debug("optional user cache get failed: %s", e)
+
+    user = db.query(User).filter(User.id == user_uuid).first()
+    if user is None or user.status == UserStatus.banned:
+        return None
     return user
 
 

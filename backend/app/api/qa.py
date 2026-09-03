@@ -3,9 +3,10 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
+from fastapi import status as http_status
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_admin_user, get_current_user
+from app.core.deps import get_admin_user, get_current_user, get_optional_current_user
 from app.core.rate_limit import rate_limits
 from app.database import get_db
 from app.main import limiter
@@ -72,13 +73,23 @@ def list_questions(
     search: str | None = Query(None, description="搜索关键词"),
     is_resolved: bool | None = Query(None, description="是否已解决"),
     db: Session = Depends(get_db),
+    current_user: User | None = Depends(get_optional_current_user),
 ):
     """获取问题列表（默认展示已通过的内容）。
 
     支持两种分页模式：
     - offset 分页：传 page + page_size（默认）
     - cursor 分页：传 cursor + page_size（高性能，适合无限滚动）
+
+    安全（M1 未审核不可读）：status 非 approved 的查询（pending/rejected）要求
+    管理员身份——否则匿名用户可枚举未审核内容。
     """
+    if status and status != "approved":
+        if current_user is None or not current_user.is_admin:
+            raise HTTPException(
+                status_code=http_status.HTTP_403_FORBIDDEN,
+                detail="查看未审核/被驳回内容需要管理员权限",
+            )
     if cursor:
         items, next_cursor, has_more = get_questions_cursor(
             db,

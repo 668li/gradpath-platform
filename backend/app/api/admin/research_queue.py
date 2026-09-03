@@ -89,7 +89,13 @@ def list_pending_queue(
     admin: User = Depends(get_admin_user),
     db: Session = Depends(get_db),
 ):
-    """待审核列表 — JOIN t_external_research_item 带出标题/内容/URL/可信度。"""
+    """待审核列表 — JOIN t_external_research_item 带出标题/内容/URL/可信度。
+
+    M2 风险排序：review_status=PENDING（默认）时对全部待审条目现算风险
+    （review_risk.compute_review_risk，零 LLM 纯规则），高危在前——管理员
+    优先审最可疑的。队列量级数千以内、纯文本规则计算，可接受；已审完
+    状态（APPROVED/REJECTED/DUPLICATED）保持时间倒序且不算风险（无意义）。
+    """
     query = db.query(ReviewQueueItem, ExternalResearchItem).join(
         ExternalResearchItem,
         ExternalResearchItem.id == ReviewQueueItem.ref_item_id,
@@ -102,12 +108,33 @@ def list_pending_queue(
         query = query.filter(ReviewQueueItem.review_status == review_status)
 
     total = query.count()
-    rows = (
-        query.order_by(ReviewQueueItem.created_time.desc())
-        .offset((page - 1) * page_size)
-        .limit(page_size)
-        .all()
-    )
+
+    if review_status == "PENDING":
+        from app.services.research_auto_review import source_reputation
+        from app.services.review_risk import RISK_ORDER, compute_review_risk
+
+        rep = source_reputation(db)
+        rows = query.all()
+        scored = []
+        for q, e in rows:
+            grade, score, reasons = compute_review_risk(e, rep)
+            scored.append((grade, score, reasons, q, e))
+        scored.sort(
+            key=lambda t: (
+                -RISK_ORDER[t[0]],
+                -t[1],
+                t[3].created_time or datetime.min,
+            )
+        )
+        window = scored[(page - 1) * page_size : (page - 1) * page_size + page_size]
+    else:
+        rows = (
+            query.order_by(ReviewQueueItem.created_time.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+            .all()
+        )
+        window = [(None, None, [], q, e) for q, e in rows]
 
     items = [
         ResearchQueueItemVO(
@@ -127,8 +154,11 @@ def list_pending_queue(
             source_platform=e.source_platform,
             credibility=e.credibility,
             external_meta=e.external_meta,
+            risk_grade=grade,
+            risk_score=score,
+            risk_reasons=reasons,
         )
-        for q, e in rows
+        for grade, score, reasons, q, e in window
     ]
     return ResearchQueueListResponse(items=items, total=total, page=page, page_size=page_size)
 

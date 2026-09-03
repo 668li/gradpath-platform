@@ -48,15 +48,17 @@ export default function ModerationDashboardPage() {
   const loadPosts = useCallback(async () => {
     setLoading(true);
     try {
+      // 直接传 status（含 pending）——后端已把非 approved 过滤收归管理员（M1），
+      // 旧写法 pending 时传 undefined 走默认 approved 再前端过滤，永远得到空集。
       const res = await kaoyanCommunityApi.experiencePosts.list({
         page,
         page_size: PAGE_SIZE,
-        status: statusFilter === "pending" ? undefined : statusFilter,
+        status: statusFilter,
       });
       const filtered = statusFilter === "pending"
         ? res.items.filter((p) => p.status === "pending" || (!["approved", "rejected"].includes(p.status)))
         : res.items.filter((p) => p.status === statusFilter);
-      setPosts(statusFilter === "pending" ? res.items : filtered);
+      setPosts(filtered);
       setTotal(res.total);
     } catch {
       toast.push("加载经验贴失败", "error");

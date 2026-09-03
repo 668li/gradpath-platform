@@ -44,6 +44,22 @@ const STATUS_META: Record<ReviewStatus, { label: string; color: "amber" | "green
   DUPLICATED: { label: "已重复", color: "purple" },
 };
 
+// M2 风险三档色标（后端 review_risk 现算，PENDING 才有值）
+const RISK_META: Record<
+  "high" | "medium" | "low",
+  { label: string; color: "red" | "amber" | "green" }
+> = {
+  high: { label: "高风险", color: "red" },
+  medium: { label: "存疑", color: "amber" },
+  low: { label: "低风险", color: "green" },
+};
+
+function RiskBadge({ grade }: { grade: "high" | "medium" | "low" | null }) {
+  if (!grade) return null;
+  const meta = RISK_META[grade];
+  return <Badge color={meta.color}>{meta.label}</Badge>;
+}
+
 export default function ResearchQueuePage() {
   const toast = useToast();
   const router = useRouter();
@@ -182,7 +198,7 @@ export default function ResearchQueuePage() {
         <div>
           <h1 className="page-title">调研数据审核</h1>
           <p className="text-sm text-ink-500 mt-1">
-            审核外部采集条目（经验帖 / 考研资讯 / 暗知识），通过后统一入库
+            待审核按风险排序（离题/软广/低质优先），通过后统一入库
           </p>
         </div>
         <Button variant="ghost" size="sm" onClick={loadQueue} disabled={loading}>
@@ -244,11 +260,24 @@ export default function ResearchQueuePage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1 flex-wrap">
                       <h3 className="font-semibold text-ink-900 truncate">{item.title || "（无标题）"}</h3>
+                      <RiskBadge grade={item.risk_grade} />
                       <Badge color={statusMeta.color}>{statusMeta.label}</Badge>
                       <CredibilityBadge value={item.credibility} />
                       <Badge color="slate">{item.source_platform}</Badge>
                     </div>
                     <p className="text-sm text-ink-500 line-clamp-2">{item.content}</p>
+                    {item.risk_reasons.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-1.5">
+                        {item.risk_reasons.map((reason) => (
+                          <span
+                            key={reason}
+                            className="inline-flex items-center rounded-md bg-paper-100 px-2 py-0.5 text-xs text-ink-600"
+                          >
+                            {reason}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 

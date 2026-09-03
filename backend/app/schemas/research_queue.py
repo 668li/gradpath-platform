@@ -31,6 +31,17 @@ class ResearchQueueItemVO(BaseModel):
     credibility: str  # official_verified / user_reported / model_inferred
     external_meta: dict | None
 
+    # === 风险信号（M2+S3，列表时现算不落库；仅 PENDING 计算，已审完为 None）===
+    risk_grade: str | None = Field(
+        None, description="风险档位 high/medium/low；仅 review_status=PENDING 时计算"
+    )
+    risk_score: int | None = Field(
+        None, description="风险分 0-100，同档内细分排序用"
+    )
+    risk_reasons: list[str] = Field(
+        default_factory=list, description="风险理由（离题/软广/低质/来源），供管理员快速判读"
+    )
+
     model_config = ConfigDict(from_attributes=True)
 
 
