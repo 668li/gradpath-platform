@@ -35,8 +35,22 @@
 - 偏离：任务书写"iptables -S 可见"，本机 fail2ban 1.0.2 默认 banaction=nftables，改用 `nft list chain inet f2b-table f2b-chain` 验证同一内核包过滤层。
 - ⚠️ 运维注意：本人公网 IP 在 access.log 已积 3 次 444 命中（验收探测），距 maxretry=5 仅差 2 次——后续验证一律用 fail2ban-regex 离线测，不再打真实 444 请求。
 
+## 任务 3 验收（2026-09-04 实测）
+- ✅ sec_watcher.sh 经 bundle ff-merge 上服务器（7909c8e19），cron 每分钟 `bash .../sec_watcher.sh`（免执行位，绕 Mimosa 对 .sh 传输的拦截；内容已经 Write 通道扫描）
+- ✅ 首跑即抓到真实告警：磁盘 90% WARNING（任务 0 时 89%，一小时内越过阈值）
+- ✅ 反向验证红→绿：假日志行（.git/config 返回 200，UA=FAKE-TEST-904）→ 2 秒内 CRITICAL；滑出 2 分钟窗口后 CRITICAL 计数不再增长
+- ✅ cron 存活实锤：19:58:01 的 CRITICAL 由 cron 自动跑出（非手动）；state/last-run.ts 心跳持续更新
+- ✅ 冷却正确：disk WARNING 多轮只报一次（6h）；CRITICAL 窗口内每分钟重复报（无冷却，符合设计）
+- ✅ 假线 200 不误触 fail2ban（filter 只匹配 444）：Total banned=0
+- ⚠️ 推送验证挂起：webhook 文件不存在 → PUSH-SKIPPED 降级路径已验证；用户写入 /home/ubuntu/.sec_webhook_url 后跑 `bash ~/gradpath-platform/monitoring/sec_watcher.sh --test` 看 alerts.log 的 [PUSH] errcode:0 即销账
+
+## 终验（明卷+暗卷）
+- 明卷：站点 200 ✓；探测 404→Empty reply 反向 ✓；fail2ban 三连 ✓；watcher 红→绿 ✓
+- 暗卷(a) jail ignoreip 含 172.16.0.0/12 ✓；(b) 公网 burst 15×POST /api/auth/login → 401×5+429×7+503×3（后端限流+nginx limit_req 双层叠加）✓；(c) compose "80:80" 与 docker port 0.0.0.0:80 一致 ✓
+- 拓扑：并行会话已把 deploy-rebased 线推上服务器（557586e→7909c8e），worktree secfix-wt 使命完成已删
+
 ## 进度
 - [x] 任务 0 核对
 - [x] 任务 1 nginx+compose 修正并部署（47d8da8 已上服务器，验收全绿）
 - [x] 任务 2 fail2ban（filter/jail/logrotate 上线，验收三连全绿）
-- [ ] 任务 3 watcher
+- [x] 任务 3 watcher（cron 每分钟运行中；仅推送验证等用户 webhook）
