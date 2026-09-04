@@ -114,11 +114,15 @@ class TestWebArticleCrawler:
             "第二轮做真题，重点突破操作系统和计算机网络。\n"
         )
 
+        # 同 test_pipeline_fetcher 先例：robots 检查一并 mock——robots.txt 走真实
+        # urllib 网络（r.jina.ai 间歇可达），不 mock 则测试随网络状态抖动
         with patch.object(
             crawler.session,
             "request",
             return_value=MagicMock(text=jina_text, raise_for_status=MagicMock()),
-        ) as mock_request:
+        ) as mock_request, patch.object(
+            crawler, "_check_robots_allowed", return_value=True
+        ):
             raw = crawler.fetch()
 
         assert len(raw) == 1
