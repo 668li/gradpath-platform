@@ -804,6 +804,10 @@ def test_life_design_skill():
     assert "个人人生设计蓝图" in sys_prompt
     assert "8000" in sys_prompt
     assert "用户背景" in sys_prompt
+    # 阶段标记协议（V1：前端进度轨依赖）
+    assert "阶段标记协议" in sys_prompt
+    for marker in ("⟨S1⟩", "⟨S2⟩", "⟨S3⟩", "⟨S4⟩", "⟨DONE⟩"):
+        assert marker in sys_prompt
 
     # user prompt
     user_prompt = skill.build_user_prompt("健康7分，工作4分，其他还行")
@@ -834,3 +838,37 @@ def test_find_life_design():
     default_inst = find_skill_instance("帮我写个爬虫", {})
     assert default_inst is not None
     assert default_inst.code == "default"
+
+
+def test_parse_stage_and_content():
+    """阶段标记解析：⟨S1⟩~⟨S4⟩/⟨DONE⟩ 独占第一行，剥离后返回正文。"""
+    from app.skills.life_design import parse_stage_and_content
+
+    stage, content = parse_stage_and_content("⟨S1⟩\n你好，我们开始…")
+    assert stage == "S1"
+    assert content == "你好，我们开始…"
+
+    stage, content = parse_stage_and_content("⟨S4⟩\n现在我们来聊聊三个五年版本")
+    assert stage == "S4"
+    assert "三个五年版本" in content
+
+    stage, content = parse_stage_and_content("⟨DONE⟩\n# 个人人生设计蓝图\n……")
+    assert stage == "DONE"
+    assert content.startswith("# 个人人生设计蓝图")
+
+    # 兼容半角尖括号（LLM 偶发输出变体）
+    stage, _ = parse_stage_and_content("<S2>\n工作对你意味着什么")
+    assert stage == "S2"
+
+    # 无标记 → None，原样返回
+    stage, content = parse_stage_and_content("普通回复，没有标记")
+    assert stage is None
+    assert content == "普通回复，没有标记"
+
+    # 标记不在开头 → 不解析（避免误吞正文）
+    stage, content = parse_stage_and_content("先说结论 ⟨S3⟩ 然后提问")
+    assert stage is None
+    assert "⟨S3⟩" in content
+
+    # 空串容错
+    assert parse_stage_and_content("") == (None, "")

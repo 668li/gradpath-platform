@@ -76,11 +76,12 @@ function getNavSections(): NavSection[] {
       section: "旅程",
     },
     {
-      href: "/assessment",
+      href: "/self-discovery",
       label: "定位 · 认识自己",
       icon: Compass,
       section: "旅程",
       children: [
+        { href: "/self-discovery", label: "人生设计访谈", icon: Sparkles },
         { href: "/assessment", label: "职业测评", icon: Target },
         { href: "/life-wheel", label: "人生平衡轮", icon: Compass },
         { href: "/skills", label: "技能树", icon: Network },
@@ -124,7 +125,7 @@ function getNavSections(): NavSection[] {
         { href: "/actions", label: "行动任务中心", icon: ListChecks },
         { href: "/career", label: "职业规划", icon: Map },
         { href: "/study-plans", label: "学习计划", icon: Swords },
-        { href: "/life-design", label: "人生设计", icon: Sparkles },
+        { href: "/life-design", label: "90 天冲刺", icon: Sparkles },
         { href: "/timeline", label: "时间线", icon: Calendar },
       ],
     },
@@ -566,14 +567,14 @@ export function AppNav() {
             </button>
             <div className="px-3 pt-14 pb-2">
               <Link
-                href="/assessment"
+                href="/self-discovery"
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-3 rounded-xl bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-3 text-white shadow-lg hover:from-brand-600 hover:to-brand-700 transition-all"
               >
-                <Target className="h-5 w-5 flex-shrink-0" />
+                <Sparkles className="h-5 w-5 flex-shrink-0" />
                 <div>
                   <p className="text-sm font-semibold">快速开始</p>
-                  <p className="text-xs text-white/80">完成评估测试，获取个性化建议</p>
+                  <p className="text-xs text-white/80">一场人生设计访谈，认识真正的你</p>
                 </div>
               </Link>
             </div>

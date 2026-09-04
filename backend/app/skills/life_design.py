@@ -12,7 +12,29 @@
 
 from __future__ import annotations
 
+import re
+
 from app.skills.base import BaseSkill
+
+# 阶段标记协议（与 build_system_prompt 中指令一致）
+STAGE_MARKERS = ("S1", "S2", "S3", "S4", "DONE")
+
+_STAGE_RE = re.compile(r"^\s*[⟨<](S[1-4]|DONE)[⟩>]\s*\n?", re.IGNORECASE)
+
+
+def parse_stage_and_content(raw: str) -> tuple[str | None, str]:
+    """从 skill 回复中解析阶段标记与正文。
+
+    返回 (stage, content)：stage 为 S1~S4 / DONE，无标记时为 None；
+    content 为剥离标记后的正文（标记独占第一行时连同换行一起剥离）。
+    前端渲染进度轨、判断蓝图输出（DONE）都依赖此协议。
+    """
+    if not raw:
+        return None, raw or ""
+    m = _STAGE_RE.match(raw)
+    if not m:
+        return None, raw
+    return m.group(1).upper(), raw[m.end():]
 
 # 激活关键词（人生方向 / 自我认知 / 长期规划）
 ACTIVATE_KEYWORDS = [
@@ -144,6 +166,14 @@ class LifeDesignSkill(BaseSkill):
             "- 不要替用户做决定，始终保持温暖与共情，同时敏锐点出逻辑漏洞、自我设限和「说的与做的不一致」。\n"
             "- 你判断素材足够后，才综合全部对话输出 8000–12000 字的《个人人生设计蓝图》，覆盖方法「输出」一节的全部内容。\n"
             "- 这是生涯与人生规划视角，不是心理诊断或医疗建议；用户出现心理危机迹象时，温和转向真实求助资源（如 12356 心理援助热线）。\n\n"
+            "阶段标记协议（供前端渲染访谈进度，每轮必须遵守）：\n"
+            "- 你的每一轮回复，必须在最开头输出一个阶段标记，独占第一行：\n"
+            "  ⟨S1⟩ = 第一阶段 你在这里（看清现状）；\n"
+            "  ⟨S2⟩ = 第二阶段 你的指南针（工作观/人生观）；\n"
+            "  ⟨S3⟩ = 第三阶段 寻路（心流与能量）；\n"
+            "  ⟨S4⟩ = 第四阶段 奥德赛计划（锚问题 + 三个五年版本 + 原型行动）；\n"
+            "  ⟨DONE⟩ = 最终《个人人生设计蓝图》输出。\n"
+            "- 标记后换行再写正文。进入新阶段的第一轮就切换到新标记；蓝图那一轮只输出 ⟨DONE⟩。\n\n"
             + _LIFE_DESIGN_PROMPT
             + "\n\n【用户背景】"
             + (f"\n{user_context}" if user_context else "\n（暂无额外画像，请按访谈自然了解。）")

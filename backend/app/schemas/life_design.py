@@ -84,3 +84,49 @@ class AuditGenerateRequest(BaseModel):
         default_factory=lambda: ["career", "finance", "health", "relationships", "growth"],
         description="审计聚焦领域",
     )
+
+
+# ======================================================================
+# 人生设计蓝图（认识自己 V1：访谈 ⟨DONE⟩ 轮产出）
+# ======================================================================
+
+class BlueprintTranscriptItem(BaseModel):
+    """访谈问答记录条目。"""
+
+    role: str = Field(..., pattern="^(user|assistant)$")
+    content: str = Field(..., max_length=100000)
+    stage: str | None = Field(default=None, max_length=10)
+
+
+class BlueprintCreate(BaseModel):
+    """保存人生设计蓝图。"""
+
+    content: str = Field(..., min_length=50, max_length=100000)
+    title: str | None = Field(default=None, max_length=200)
+    conversation_id: UUID | None = None
+    transcript: list[BlueprintTranscriptItem] = Field(default_factory=list)
+    status: str = Field(default="completed", pattern="^(draft|completed)$")
+
+
+class BlueprintResponse(BaseModel):
+    id: UUID
+    title: str
+    content: str
+    status: str
+    version: int
+    conversation_id: UUID | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class BlueprintSummary(BaseModel):
+    """列表项：不含全文，避免一次拉多份 8000+ 字。"""
+
+    id: UUID
+    title: str
+    status: str
+    version: int
+    created_at: datetime
+
+    model_config = {"from_attributes": True}

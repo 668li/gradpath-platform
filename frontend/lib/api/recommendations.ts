@@ -6,6 +6,9 @@ import type {
   AuditQuestion,
   SprintCreate,
   SprintResponse,
+  BlueprintCreate,
+  LifeDesignBlueprint,
+  BlueprintSummary,
   WeeklyReviewCreate,
   WeeklyReviewResponse,
 } from "@/types";
@@ -74,4 +77,16 @@ export const lifeDesignApi = {
       body: JSON.stringify(body),
     }),
   listWeeklyReviews: () => request<WeeklyReviewResponse[]>("/api/life-design/weekly-reviews"),
+
+  // ===== 认识自己 V1：人生设计访谈蓝图 =====
+  createBlueprint: (body: BlueprintCreate) =>
+    request<LifeDesignBlueprint>("/api/life-design/blueprints", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  listBlueprints: () => request<BlueprintSummary[]>("/api/life-design/blueprints"),
+  getLatestBlueprint: () =>
+    request<LifeDesignBlueprint | null>("/api/life-design/blueprints/latest"),
+  getBlueprint: (id: string) =>
+    request<LifeDesignBlueprint>(`/api/life-design/blueprints/${id}`),
 };

@@ -79,3 +79,32 @@ class WeeklyReview(UUIDMixin, TimestampMixin, Base):
     energy_level: Mapped[int | None] = mapped_column(Integer, nullable=True)
     # AI 分析
     ai_analysis: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class LifeDesignBlueprint(UUIDMixin, TimestampMixin, Base):
+    """个人人生设计蓝图 — 斯坦福人生设计访谈的最终产出。
+
+    由 /self-discovery 访谈（life_design skill，⟨DONE⟩ 轮）生成，
+    8000–12000 字文档，按版本入库；同一用户可多版（再访谈），
+    版本 diff 属 V3 成长档案闭环。
+    """
+
+    __tablename__ = "life_design_blueprints"
+
+    user_id: Mapped[UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    # 来源会话（弱关联：会话删除不级联蓝图）
+    conversation_id: Mapped[UUID | None] = mapped_column(
+        ForeignKey("conversations.id", ondelete="SET NULL"), nullable=True
+    )
+    # 蓝图标题（默认按版本生成，如「我的人生蓝图 v1」）
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    # 蓝图全文（markdown）
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    # 访谈问答记录 [{role, content, stage}]（复盘与再访谈的上下文）
+    transcript: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    # 状态: draft（访谈中断保存）/ completed（DONE 蓝图）
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="completed")
+    # 同用户版本号，从 1 递增
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)

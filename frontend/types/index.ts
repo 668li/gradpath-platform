@@ -1051,6 +1051,39 @@ export interface WeeklyReviewResponse {
   created_at: string;
 }
 
+// ===== 认识自己 V1：人生设计访谈蓝图 =====
+export interface BlueprintTranscriptItem {
+  role: "user" | "assistant";
+  content: string;
+  stage: string | null;
+}
+
+export interface BlueprintCreate {
+  content: string;
+  title?: string | null;
+  conversation_id?: string | null;
+  transcript?: BlueprintTranscriptItem[];
+  status?: "draft" | "completed";
+}
+
+export interface LifeDesignBlueprint {
+  id: string;
+  title: string;
+  content: string;
+  status: string;
+  version: number;
+  conversation_id: string | null;
+  created_at: string;
+}
+
+export interface BlueprintSummary {
+  id: string;
+  title: string;
+  status: string;
+  version: number;
+  created_at: string;
+}
+
 // ===== 护城河功能：决策深度分析 =====
 export interface Criterion {
   criterion: string;
