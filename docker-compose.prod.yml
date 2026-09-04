@@ -13,14 +13,16 @@ services:
   nginx:
     image: nginx:1.27-alpine
     ports:
-      # FASTAPI-DEPLOY-001: 仅绑定 127.0.0.1，避免 80 端口暴露到公网
-      # 生产环境应在 nginx 前叠一层 CDN/负载均衡提供 TLS 终止
-      - "127.0.0.1:80:80"
-      - "[::1]:80:80"
+      # 2026-09-04 用户拍板：承认公网 80 现实，靠 nginx 拦截+fail2ban+watcher 加固。
+      # 原 "127.0.0.1:80:80" 与运行容器实际 0.0.0.0:80 不一致（容器早于该行改动启动），
+      # 任何 docker compose up -d 会重建成回环绑定 → 全站公网失联，故必须显式公网映射。
+      - "80:80"
+      - "[::]:80:80"
     volumes:
       # 使用安全版 nginx.conf（含 HSTS/CSP/限流/正确 WS 路径）
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - nginx_logs:/var/log/nginx
+      # 真实文件日志（原命名卷内只有 /dev/stdout 符号链接，fail2ban/watcher 读不到）
+      - ./monitoring/nginx-logs:/var/log/nginx
     depends_on:
       backend:
         condition: service_healthy

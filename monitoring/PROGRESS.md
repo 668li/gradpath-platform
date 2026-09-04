@@ -1,0 +1,32 @@
+# PROGRESS — 实时监控与加固（2026-09-04）
+
+目标：nginx 拦探测(444)+登录限流 → fail2ban 自动封 → 每分钟 watcher 推企业微信。
+顺序：任务1（含端口地雷修正，必须最先）→ 任务2 → 任务3。
+最大风险：compose 的 127.0.0.1:80 与运行态 0.0.0.0:80 不一致，任何 up -d 会全站失联——已在同一提交内先改 "80:80"。
+
+## 任务 0 核对结果（2026-09-04 实测）
+- ✅ docker port gradpath-prod-nginx-1 = 0.0.0.0:80 + [::]:80（地雷属实）
+- ✅ fail2ban NOT-INSTALLED；apt 候选可用
+- ✅ 服务器出站 qyapi.weixin.qq.com → 403（可达）
+- ✅ 磁盘 / 89%（51G/59G）
+- ⚠️ 基线偏差：/.git/config 与 /.env 实测 404 body≈13.4KB（书里记 4380B，SSR 页大小随构建变化）。判定标准不变：改前 404 → 改后必须 Empty reply from server。
+- ⚠️ /admin 实测 307（跳登录）、/login 200——均不在拦截正则内，符合预期。
+- ❌ /home/ubuntu/.sec_webhook_url 不存在 → 见 BLOCKED.md，任务 3 推送验证挂起，其余照做。
+
+## 偏离记录
+- 登录限流 location 扩为 login|register|forgot-password 三端点（同 zone）：注册/找回密码与登录同为爆破面，成本为零。验收仍只测 /api/auth/login。
+- 部署走隔离 worktree（服务器 HEAD 38b66c8eb 与本地线分叉）：commit 47d8da8 → bundle refs/heads/main → 服务器 ff-only merge。本地主树（deploy-rebased 55e19b7）随后以同内容提交对齐，防并行会话还原。
+
+## 任务 1 验收（2026-09-04 11:28 实测，全部 --noproxy 直连）
+- ✅ `curl /` → 200（站点可用）
+- ✅ 反向验证：改前基线 `/.git/config` = 404 + 13399B；改后 = `Empty reply from server`（444 生效）。`/.env`、`/phpmyadmin` 同断连。
+- ✅ `/admin` 307、`/login` 200（真实路由不误伤）
+- ✅ `docker port` 仍 0.0.0.0:80 + [::]:80（地雷未复炸）
+- ✅ monitoring/nginx-logs/access.log 收到真实行，探测行状态码=444（fail2ban 可尾随）
+- 注：经 7897 代理时 444 被代理合成为 Content-Length:0，验收一律 --noproxy 直连。
+
+## 进度
+- [x] 任务 0 核对
+- [x] 任务 1 nginx+compose 修正并部署（47d8da8 已上服务器，验收全绿）
+- [ ] 任务 2 fail2ban
+- [ ] 任务 3 watcher

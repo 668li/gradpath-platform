@@ -1,0 +1,11 @@
+/home/ubuntu/gradpath-platform/monitoring/nginx-logs/*.log {
+    daily
+    rotate 7
+    missingok
+    notifempty
+    compress
+    delaycompress
+    postrotate
+        docker exec gradpath-prod-nginx-1 nginx -s reopen
+    endscript
+}
