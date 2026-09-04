@@ -74,7 +74,13 @@ class Crawl4AIClient:
 
     @classmethod
     def get_instance(cls) -> "Crawl4AIClient":
-        """懒初始化单例：首次调用才建实例（不触发 crawl4ai import）。"""
+        """懒初始化单例：首次调用才建实例（不触发 crawl4ai import）。
+
+        每次访问均检查 CRAWL4AI_ENABLED，确保即使单例已创建，运行时
+        关闭开关仍能阻止新请求进入浏览器（防御性，非生产必现路径）。
+        """
+        if not CRAWL4AI_ENABLED:
+            raise Crawl4aiError("CRAWL4AI_ENABLED=false，浏览器渲染已关闭")
         if cls._instance is None:
             with cls._instance_lock:
                 if cls._instance is None:

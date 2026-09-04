@@ -189,6 +189,14 @@ class TestDisabledEnv:
             Crawl4AIClient.get_instance()
         assert Crawl4AIClient._instance is None
 
+    def test_get_instance_blocks_after_singleton_built(self, monkeypatch):
+        """单例已创建后运行时关闭开关，get_instance 仍拒绝（每次访问均检查）。"""
+        built = Crawl4AIClient.get_instance()  # ENABLED=true 先建单例
+        assert built is Crawl4AIClient._instance
+        monkeypatch.setattr(cc, "CRAWL4AI_ENABLED", False)
+        with pytest.raises(Crawl4aiError):
+            Crawl4AIClient.get_instance()
+
 
 class TestBaseCrawlerMixin:
     def test_mixin_returns_none_when_client_unavailable(self, monkeypatch):
