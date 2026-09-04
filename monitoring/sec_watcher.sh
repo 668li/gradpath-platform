@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # GradPath 安全监控 watcher — cron 每分钟一次（2026-09-04 任务书）
-# 5 项检查 → 企业微信群机器人 markdown 推送；告警同时落 alerts.log 留痕。
+# 5 项检查 → Server酱微信推送；告警同时落 alerts.log 留痕。
 # 让步顺序：站点可用 > 拦截有效 > 告警丰富。本脚本只读+推送，不改任何系统状态。
 set -u
 BASE="$(cd "$(dirname "$0")" && pwd)"
 LOG="$BASE/nginx-logs/access.log"
 F2B_LOG="/var/log/fail2ban.log"
-WEBHOOK_FILE="/home/ubuntu/.sec_webhook_url"
+WEBHOOK_FILE="/home/ubuntu/.sec_webhook_url"   # 存 Server酱完整地址 https://sctapi.ftqq.com/<SENDKEY>.send（600 权限，绝不入库）
 ALERTS="$BASE/alerts.log"
 STATE="$BASE/state"
 mkdir -p "$STATE"
@@ -26,18 +26,28 @@ send() {
     return 0
   fi
   date +%s > "$ts"
-  body=$(printf '%s' "$body" | tr -d '"\\')   # 防日志内容破坏 JSON
   printf '%s [%s] %s | %s\n' "$(date '+%F %T')" "$level" "$title" "$body" >> "$ALERTS"
   if [ ! -f "$WEBHOOK_FILE" ]; then
     printf '%s [PUSH-SKIPPED] webhook file missing\n' "$(date '+%F %T')" >> "$ALERTS"
     return 0
   fi
-  local url content resp
+  # Server酱免费版每日 5 条：全局配额封顶，超出只落盘不推送（告警丰富度让位于可用性）
+  CNT_FILE="$STATE/push-$(date +%Y%m%d).count"
+  CNT=$(cat "$CNT_FILE" 2>/dev/null || echo 0)
+  if [ "$CNT" -ge 5 ]; then
+    printf '%s [PUSH-CAPPED] daily quota reached, log-only\n' "$(date '+%F %T')" >> "$ALERTS"
+    return 0
+  fi
+  local url resp
   url=$(cat "$WEBHOOK_FILE")
-  content="**[$level] GradPath $title**\n> $body\n> $(date '+%F %T') $(hostname)"
-  resp=$(curl -s -m 10 -H 'Content-Type: application/json' \
-    -d "{\"msgtype\":\"markdown\",\"markdown\":{\"content\":\"$content\"}}" "$url" 2>&1)
-  printf '%s [PUSH] %s -> %s\n' "$(date '+%F %T')" "$title" "$resp" >> "$ALERTS"
+  resp=$(curl -s -m 10 \
+    --data-urlencode "title=[$level] GradPath $title" \
+    --data-urlencode "content=$body
+
+$(date '+%F %T') $(hostname)" \
+    "$url" 2>&1)
+  echo $((CNT + 1)) > "$CNT_FILE"
+  printf '%s [PUSH] %s -> %s\n' "$(date '+%F %T')" "$title" "$(printf '%s' "$resp" | tr -d '\n' | cut -c1-200)" >> "$ALERTS"
 }
 
 if [ "${1:-}" = "--test" ]; then
