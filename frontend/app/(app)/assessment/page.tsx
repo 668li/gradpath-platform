@@ -32,11 +32,14 @@ import { cn, formatDate } from "@/lib/utils";
 import { LoadingState } from "@/components/ui/empty";
 import { Button } from "@/components/ui/form-controls";
 import { useToast } from "@/components/ui/toast";
+import { InterpretCard } from "@/components/assessment/interpret-card";
+import { topRoles } from "@/components/assessment/role-match";
 import type {
   AssessmentType,
   Question,
   AssessmentSubmit,
   AssessmentResponse,
+  AssessmentInterpretResponse,
 } from "@/types";
 
 // ===== 测评元数据配置 =====
@@ -773,15 +776,42 @@ function ResultView({
   // 社会赞许性检测（灵感：奕言测谎机制轻量化）
   const socialDesirability = detectSocialDesirability(questions, answers);
 
+  // 护城河：结果页挂载即拉「测评 × 专有数据 → 专属路径」解读
+  const [interpret, setInterpret] = useState<AssessmentInterpretResponse | null>(null);
+  const [interpretLoading, setInterpretLoading] = useState(true);
+  const [interpretError, setInterpretError] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    assessmentApi
+      .interpret()
+      .then((d) => {
+        if (!cancelled) setInterpret(d);
+      })
+      .catch((e: unknown) => {
+        if (!cancelled) setInterpretError(e instanceof Error ? e.message : "生成失败");
+      })
+      .finally(() => {
+        if (!cancelled) setInterpretLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // 个人档案目标方向（考研/考公）→ 职业适配榜单的身份加成依据
+  const targetDirection =
+    (interpret?.profile as { target_direction?: string | null } | null)?.target_direction ?? null;
+
   // 职业适配度：仅霍兰德测评计算（灵感：职向"所以呢"转化）
   const isHolland = type === "holland";
   const roleMatches = isHolland
-    ? HOLLAND_ROLE_MATRIX.map((r) => {
-        const { match, bestCode } = calculateHollandMatch(result.result_code, r.codes);
-        return { ...r, match, bestCode };
-      })
-        .sort((a, b) => b.match - a.match)
-        .slice(0, 5)
+    ? topRoles(
+        HOLLAND_ROLE_MATRIX.map((r) => {
+          const { match, bestCode } = calculateHollandMatch(result.result_code, r.codes);
+          return { ...r, match, bestCode };
+        }),
+        targetDirection,
+      )
     : [];
 
   return (
@@ -871,6 +901,9 @@ function ResultView({
           查看相关模板
         </p>
       </div>
+
+      {/* 测评 × 专有数据 → 专属路径（护城河本体） */}
+      <InterpretCard data={interpret} loading={interpretLoading} error={interpretError} />
 
       {/* 职业适配度："所以呢"转化（灵感：职向）—— 仅霍兰德测评显示 */}
       {isHolland && roleMatches.length > 0 && (

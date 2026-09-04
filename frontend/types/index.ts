@@ -1,5 +1,12 @@
 // 与后端 schema 对齐的类型定义
 
+import type {
+  PathMetrics,
+  PositionAnalysis,
+  SchoolAnalysis,
+  PeerDestinations,
+} from "./path-comparison";
+
 // ===== 通用分页响应 =====
 export interface PaginatedResponse<T> {
   items: T[];
@@ -787,12 +794,13 @@ export interface AssessmentInterpretResponse {
   };
   profile: Record<string, unknown> | null;
   interpretation?: AssessmentInterpretInterpretation;
-  paths: Array<Record<string, unknown>>;
+  /** 三路决策指标（与决策引擎同构，可直接渲染 PathResultCard） */
+  paths: PathMetrics[];
   recommendation?: string;
   input?: Record<string, unknown> | null;
-  position_analysis?: Record<string, unknown> | null;
-  school_analysis?: Record<string, unknown> | null;
-  peer_destinations?: Record<string, unknown>;
+  position_analysis?: PositionAnalysis | null;
+  school_analysis?: SchoolAnalysis | null;
+  peer_destinations?: PeerDestinations;
   major_prospect?: Record<string, unknown>;
   data_notes?: string[];
 }
