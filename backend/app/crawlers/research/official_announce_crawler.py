@@ -13,7 +13,9 @@ Phase B2（合规边界内）：
 - content_cls: 详情页正文容器 class（如 v_news_content / TRS_Editor）
 - title_suffix: <title> 标签需去除的后缀（如 "-华中农业大学研究生院"）
 
-新增官方源 = 追加一节配置；校验：列表页 HTML 结构与 <li><a>+<span> 模式一致。
+新增官方源 = 追加一节配置；CMS 结构不匹配既有正则模板时配 cms:"generic"
+（通用列表解析：bs4 + 祖先链日期证据 + 同域护栏），正文由 trafilatura 优先抽取，
+过短/失败自动降级原正则路径。
 """
 
 import logging
@@ -22,7 +24,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 # 当以脚本形式从项目根目录运行时，把 backend 加入 sys.path
 if __name__ == "__main__":
@@ -32,6 +34,8 @@ if __name__ == "__main__":
 
 import html as html_lib
 
+import trafilatura
+from bs4 import BeautifulSoup
 from sqlalchemy.orm import Session
 
 from app.crawlers.base_crawler import BaseCrawler
@@ -82,8 +86,63 @@ _NEWS_LIST_ITEM_RE = re.compile(
 )
 
 
-def _parse_list_entries(html: str, template: str) -> list[dict]:
-    """按栏目配置的 CMS 模板解析列表条目。template: boda（默认）| news_list。"""
+# 祖先链日期证据：2026年6月29日 / 2026-06-29 / 2026.6.29 / 2026/06/29 等
+_DATE_EVIDENCE_RE = re.compile(r"(20\d{2})[年./\-](\d{1,2})[月./\-](\d{1,2})")
+
+
+def parse_list_generic(html: str, base_url: str) -> list[dict]:
+    """通用列表页解析（CMS 无关）：<a> 候选 + 祖先链日期证据 + 同域护栏。
+
+    - 候选 = 带 href 的 <a>、文本 ≥6 字、urljoin 后与 base_url 同主机（忽略 www.）、
+      scheme 为 http/https；
+    - 日期证据：沿祖先链上溯 ≤4 级，第一个文本命中日期的祖先，归一化 YYYY-MM-DD；
+      无日期 = 丢弃（导航/面包屑等噪声自然出局）；
+    - 按 URL 去重、日期降序，返回 [{"url": 绝对URL, "title", "date"}]。
+    """
+    try:
+        base_host = (urlparse(base_url).hostname or "").lower().removeprefix("www.")
+    except ValueError:
+        return []
+    if not base_host:
+        return []
+    soup = BeautifulSoup(html or "", "html.parser")
+    seen: dict[str, dict] = {}
+    for a in soup.find_all("a", href=True):
+        title = a.get_text(" ", strip=True)
+        if len(title) < 6:
+            continue
+        try:
+            url = urljoin(base_url, a["href"].strip())
+            parsed = urlparse(url)
+        except ValueError:
+            continue
+        if parsed.scheme not in ("http", "https"):
+            continue
+        host = (parsed.hostname or "").lower().removeprefix("www.")
+        if host != base_host:
+            continue
+        date = ""
+        node = a.parent
+        for _ in range(4):
+            if node is None:
+                break
+            m = _DATE_EVIDENCE_RE.search(node.get_text(" ", strip=True))
+            if m:
+                y, mo, d = m.groups()
+                date = f"{y}-{int(mo):02d}-{int(d):02d}"
+                break
+            node = node.parent
+        if not date:
+            continue
+        if url not in seen:
+            seen[url] = {"url": url, "title": title, "date": date}
+    return sorted(seen.values(), key=lambda e: e["date"], reverse=True)
+
+
+def _parse_list_entries(html: str, template: str, base_url: str = "") -> list[dict]:
+    """按栏目配置的 CMS 模板解析列表条目。template: boda（默认）| news_list | generic。"""
+    if template == "generic":
+        return parse_list_generic(html, base_url)
     entries: list[dict] = []
     if template == "news_list":
         for m in _NEWS_LIST_ITEM_RE.finditer(html):
@@ -129,6 +188,21 @@ _CONTENT_CLS_CANDIDATES = [
 
 # 模板正文过短视为未命中（列表页摘要/空容器）
 _MIN_CONTENT_LEN = 80
+
+
+def extract_main_text(html: str) -> str:
+    """trafilatura 正文抽取：中文连续无插空格、尾部不截断。
+
+    异常 / None / len < _MIN_CONTENT_LEN 一律返回 ""，调用方降级原正则路径
+    （短正文走原正则，与现状一致）。
+    """
+    try:
+        text = trafilatura.extract(html, include_comments=False, favor_precision=True)
+    except Exception:
+        return ""
+    if not text or len(text) < _MIN_CONTENT_LEN:
+        return ""
+    return text
 
 
 def _auto_detect_content_cls(html: str) -> str:
@@ -236,7 +310,7 @@ class OfficialAnnounceCrawler(BaseCrawler):
             resp = self._request(list_url)
             resp.encoding = "utf-8"
             section_items = 0
-            for entry in _parse_list_entries(resp.text, template):
+            for entry in _parse_list_entries(resp.text, template, list_url):
                 href = entry["url"]
                 title = entry["title"]
                 date = entry["date"]
@@ -273,6 +347,8 @@ class OfficialAnnounceCrawler(BaseCrawler):
         """抓取详情页，返回 (页面标题, 正文)；失败降级为列表信息。
 
         content_cls 为空时按常见 CMS 容器候选自动探测（新增栏目零配置成本）。
+        HTTP 路径优先 trafilatura 抽取，未命中（异常/过短）再走 content_cls 正则
+        或 auto-detect。
         use_browser=True 且 crawl4ai 可用时优先浏览器渲染（JS 渲染 + 结构化
         markdown），渲染失败/为空则降级当前 HTTP 正则抽取。
         """
@@ -289,10 +365,13 @@ class OfficialAnnounceCrawler(BaseCrawler):
             resp.encoding = "utf-8"
             html = resp.text
             title = _title_from_html(html, title_suffix)
-            if content_cls:
-                body = _extract_content_div(html, content_cls)
-            else:
-                body = _auto_detect_content_cls(html)
+            # trafilatura 优先（干净完整正文）；为空降级原正则路径
+            body = extract_main_text(html)
+            if not body:
+                if content_cls:
+                    body = _extract_content_div(html, content_cls)
+                else:
+                    body = _auto_detect_content_cls(html)
             return title, body
         except Exception as e:
             self._bump_stats("errors")
