@@ -1,21 +1,30 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
+import localFont from "next/font/local";
 import { RootLayoutClient } from "./layout-client";
 
 // 字重覆盖 400/500/600/700，匹配全站 font-medium / font-semibold / font-bold 使用
-const fraunces = Fraunces({
-  subsets: ["latin"],
+// 自托管 woff2：服务器构建环境无法访问 Google Fonts，next/font/google 会在 BuildKit
+// 字体缓存被 prune 后必然构建失败（2026-09-04 部署事故），本地字体彻底去掉构建期网络依赖。
+const fraunces = localFont({
+  src: [
+    { path: "./fonts/fraunces-latin-400-normal.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/fraunces-latin-600-normal.woff2", weight: "600", style: "normal" },
+    { path: "./fonts/fraunces-latin-700-normal.woff2", weight: "700", style: "normal" },
+  ],
   display: "swap",
   variable: "--font-display",
-  weight: ["400", "600", "700"],
 });
 
-const jakarta = Plus_Jakarta_Sans({
-  subsets: ["latin"],
+const jakarta = localFont({
+  src: [
+    { path: "./fonts/plus-jakarta-sans-latin-400-normal.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/plus-jakarta-sans-latin-500-normal.woff2", weight: "500", style: "normal" },
+    { path: "./fonts/plus-jakarta-sans-latin-600-normal.woff2", weight: "600", style: "normal" },
+    { path: "./fonts/plus-jakarta-sans-latin-700-normal.woff2", weight: "700", style: "normal" },
+  ],
   display: "swap",
   variable: "--font-sans",
-  weight: ["400", "500", "600", "700"],
 });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://gradpath.example.com";
