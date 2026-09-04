@@ -17,11 +17,6 @@ def get_overview(db: Session, user_id: UUID) -> dict:
     cache_key = f"dashboard_overview:{user_id}"
     cached = cache.get(cache_key)
 
-    # 记录每日打卡（打开看板即视为活跃）— 缓存命中时也记录，保证打卡不丢失
-    from app.services.streak_service import record_activity
-
-    record_activity(db, user_id, "dashboard")
-
     if cached is not None:
         return cached
 

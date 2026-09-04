@@ -373,6 +373,19 @@ async def complete_task(db: Session, task_id: UUID, user_response: str) -> Micro
     task.user_response = user_response
     task.completed_at = datetime.now(timezone.utc)
 
+    # 写穿全局连击账本（P0-2）——真实完成微行动才计入 StreakRecord
+    plan = get_plan(db, task.plan_id)
+    if plan is not None:
+        from app.services.streak_service import record_activity
+
+        record_activity(
+            db,
+            plan.user_id,
+            "micro",
+            xp=3,
+            action_detail=f"微行动 Day {task.day_number}: {task.title}",
+        )
+
     # 尝试生成 AI 洞察，无 LLM key 时使用模板兜底
     insight = await _generate_insight(task)
     task.insight = insight
@@ -381,7 +394,6 @@ async def complete_task(db: Session, task_id: UUID, user_response: str) -> Micro
     db.refresh(task)
 
     # 检查 plan 是否完成
-    plan = get_plan(db, task.plan_id)
     if plan:
         _check_plan_completion(db, plan)
 

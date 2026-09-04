@@ -21,12 +21,14 @@ import {
   ListChecks,
   TrendingUp,
   Calendar,
+  Footprints,
 } from "lucide-react";
 import {
   proactiveInsightsApi,
   useApi,
   darkKnowledgePushApi,
   microActionApi,
+  findNextPendingTask,
 } from "@/lib/api";
 import { streaksApi } from "@/lib/api/gamification";
 import { formatDate, cn } from "@/lib/utils";
@@ -335,6 +337,34 @@ export default function DashboardPage() {
           </p>
         </div>
       </div>
+
+      {/* 续学卡 — 有未完成微行动任务时，一眼看到"继续上次的任务"（P1） */}
+      {(() => {
+        const nextTask = findNextPendingTask(microPlan);
+        if (!nextTask) return null;
+        return (
+          <Link
+            href="/micro-actions"
+            data-track-id="dashboard:resume-learning"
+            className="flex items-center gap-4 rounded-xl border border-brand-200 bg-gradient-to-r from-brand-50 to-paper-50 p-4 transition-all hover:shadow-card-hover hover:border-brand-300"
+          >
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-100 text-brand-600">
+              <Footprints className="h-5 w-5" strokeWidth={1.8} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-display text-sm font-semibold text-ink-800">
+                上次停在第 {nextTask.day_number} 天：{nextTask.title}
+              </p>
+              <p className="mt-0.5 text-xs text-ink-400">
+                从上次的地方继续你的 7 天微行动探索
+              </p>
+            </div>
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-700 transition-colors">
+              继续 <ArrowRight className="h-3.5 w-3.5" />
+            </span>
+          </Link>
+        );
+      })()}
 
       {/* 新手任务清单 — 10 个核心任务引导新用户上手 */}
       <OnboardingQuest />

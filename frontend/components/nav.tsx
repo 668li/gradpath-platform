@@ -211,14 +211,19 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   useEffect(() => {
     if (!user) return;
     let mounted = true;
-    import("@/lib/api").then(({ notificationsApi }) =>
-      notificationsApi
-        .unreadCount()
-        .then((d) => mounted && setUnread(d.unread_count))
-        .catch(() => {}),
-    );
+    const refresh = () =>
+      import("@/lib/api").then(({ notificationsApi }) =>
+        notificationsApi
+          .unreadCount()
+          .then((d) => mounted && setUnread(d.unread_count))
+          .catch(() => {}),
+      );
+    refresh();
+    // 60 秒轮询未读数（P1：从挂载拉一次改为定时刷新）
+    const timer = setInterval(refresh, 60_000);
     return () => {
       mounted = false;
+      clearInterval(timer);
     };
   }, [user]);
 

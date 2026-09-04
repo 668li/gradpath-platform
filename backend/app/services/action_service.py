@@ -206,6 +206,16 @@ def checkin_action(
 
     # 联动 1：连击统计
     _refresh_streak(db, user_id, data.completed_at.date())
+    # 联动 1b：写穿全局连击账本（P0-2）——真实行动才计入 StreakRecord
+    from app.services.streak_service import record_activity
+
+    record_activity(
+        db,
+        user_id,
+        "main",
+        xp=10,
+        action_detail=f"行动打卡: {action.title}",
+    )
     # 联动 2：成长轨迹（幂等键复用 biz_req_no）
     db.add(
         GrowthTrajectory(

@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     # 换模型必须同时重跑 scripts/vectorize_data.py 全量重建 document_embeddings。
     EMBEDDING_MODEL: str = "BAAI/bge-small-zh-v1.5"
 
+    # 中断次日提醒（P1）：默认关闭。开启后每日 21:00（服务器本地时区）
+    # 给「昨天完成微行动任务、今天还没开始」的用户发一条站内 reminder。
+    MICRO_ACTION_REMINDER_D2: bool = False
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
     @model_validator(mode="after")

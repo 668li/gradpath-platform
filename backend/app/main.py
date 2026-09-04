@@ -338,6 +338,17 @@ async def _seed_default_crawler_schedules():
         logger.warning("补齐默认按日定时任务失败（不影响启动）: %s", e)
 
 
+@app.on_event("startup")
+async def _register_d2_reminder_job():
+    """注册中断次日提醒 job（P1，MICRO_ACTION_REMINDER_D2 默认关）。"""
+    try:
+        from app.services.reminder_service import register_d2_reminder_job
+
+        register_d2_reminder_job()
+    except Exception as e:
+        logger.warning("注册中断次日提醒 job 失败（不影响启动）: %s", e)
+
+
 # ----------------------------------------------------------------------
 # 全局异常处理器（C2 改造）— 把 BusinessError 转为统一 JSON 响应
 # {code, message, details, detail}，并对未捕获 Exception 返回 500。

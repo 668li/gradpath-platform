@@ -180,7 +180,8 @@ class TestCompleteTask:
         )
         assert resp.status_code == 400
 
-    def test_complete_empty_response_rejected(self, auth_headers, client):
+    def test_complete_empty_response_allowed(self, auth_headers, client):
+        """P0-3：完成任务允许不写字（空串合法，返回 200）。"""
         plan = _create_plan(client, auth_headers)
         task_id = _get_first_task_id(plan)
         resp = client.post(
@@ -188,7 +189,7 @@ class TestCompleteTask:
             headers=auth_headers,
             json={"user_response": ""},
         )
-        assert resp.status_code == 422
+        assert resp.status_code == 200
 
 
 # ----------------------------------------------------------------------

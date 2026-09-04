@@ -49,4 +49,5 @@ class MicroActionPlanResponse(BaseModel):
 class TaskCompleteRequest(BaseModel):
     """完成任务请求体。"""
 
-    user_response: str = Field(..., min_length=1, description="用户完成任务后的记录")
+    # 允许不写字完成任务（P0-3）：空串合法，service 层有兜底文案
+    user_response: str = Field(default="", description="用户完成任务后的记录（可选）")

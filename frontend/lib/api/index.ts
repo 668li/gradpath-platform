@@ -96,6 +96,8 @@ export type {
 } from "@/types/path-comparison";
 
 export { microActionApi } from "./micro-action";
+export { findNextPendingTask } from "./resume";
+export type { NextPendingTask } from "./resume";
 export type {
   MicroActionTargetPath,
   MicroActionTaskType,
