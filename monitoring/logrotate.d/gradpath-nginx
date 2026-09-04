@@ -1,4 +1,5 @@
 /home/ubuntu/gradpath-platform/monitoring/nginx-logs/*.log {
+    su ubuntu ubuntu
     daily
     rotate 7
     missingok

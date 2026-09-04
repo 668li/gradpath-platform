@@ -25,8 +25,18 @@
 - ✅ monitoring/nginx-logs/access.log 收到真实行，探测行状态码=444（fail2ban 可尾随）
 - 注：经 7897 代理时 444 被代理合成为 Content-Length:0，验收一律 --noproxy 直连。
 
+## 任务 2 验收（2026-09-04 实测）
+- ✅ fail2ban 1.0.2 已装，jail 列表 = nginx-probe + sshd（sshd 顺带真实封了爆破者 43.153.205.159）
+- ✅ fail2ban-regex 对真实 access.log：5/5 matched
+- ✅ banip 203.0.113.66 → nft 链 `tcp dport 80 ip saddr @addr-set-nginx-probe reject` 实况可见；unbanip 后 set 清空
+- ✅ logrotate -f 强制轮转全链路：新 access.log 生成、站点 200、fail2ban File list 继续尾随
+- 坑1（已修）：Ubuntu defaults-debian.conf 的 DEFAULT backend=systemd 吞掉文件日志型 jail → jail 显式 `backend = auto`
+- 坑2（已修）：logrotate 拒绝非 root 属主配置与 ubuntu 属主目录 → 文件 chown root + 配置加 `su ubuntu ubuntu`
+- 偏离：任务书写"iptables -S 可见"，本机 fail2ban 1.0.2 默认 banaction=nftables，改用 `nft list chain inet f2b-table f2b-chain` 验证同一内核包过滤层。
+- ⚠️ 运维注意：本人公网 IP 在 access.log 已积 3 次 444 命中（验收探测），距 maxretry=5 仅差 2 次——后续验证一律用 fail2ban-regex 离线测，不再打真实 444 请求。
+
 ## 进度
 - [x] 任务 0 核对
 - [x] 任务 1 nginx+compose 修正并部署（47d8da8 已上服务器，验收全绿）
-- [ ] 任务 2 fail2ban
+- [x] 任务 2 fail2ban（filter/jail/logrotate 上线，验收三连全绿）
 - [ ] 任务 3 watcher
