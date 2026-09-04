@@ -10,14 +10,14 @@ dependencies = [
     "alembic>=1.13.0",
     "psycopg2-binary>=2.9.9",
     "pydantic>=2.7.0",
-    "pydantic-settings>=2.2.0",
+    "pydantic-settings>=2.14.2",
     "python-jose[cryptography]>=3.3.0",
     "bcrypt>=4.1.0",
     "python-multipart>=0.0.9",
     "email-validator>=2.1.0",
     "python-json-logger>=2.0.0",
     "slowapi>=0.1.9",
-    "fastapi-mcp>=0.4.0",
+    # fastapi-mcp 已摘除：main.py 注释实证零导入（递归 bug 弃用，改 SSE 手动注册）
     "feedparser>=6.0.0",
     "httpx>=0.27.0",
     "pyyaml>=6.0",
@@ -35,6 +35,16 @@ dependencies = [
     "celery[redis]>=5.3.6",
     "prometheus_client>=0.20.0",
     "crawl4ai>=0.9.2",
+    # --- 安全下限（2026-09-04 pip-audit 复审：强制已知漏洞传递依赖的修复版本） ---
+    # starlette<1.3.1 五条已知漏洞（fastapi 底座）；cryptography<50 覆盖 python-jose JWT 链；
+    # aiohttp/pillow/requests/nltk 为 crawl4ai 依赖链；soupsieve 为 beautifulsoup4 依赖链。
+    # nltk 无修复版本，漏洞挂承诺台账跟踪。
+    "starlette>=1.3.1",
+    "cryptography>=50.0.0",
+    "aiohttp>=3.14.3",
+    "pillow>=12.3.0",
+    "requests>=2.33.0",
+    "soupsieve>=2.8.4",
 ]
 
 # 显式声明包发现范围：backend/ 下有 app/pipeline/migrations/scripts 等多个顶级目录，
