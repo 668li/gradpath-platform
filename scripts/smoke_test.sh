@@ -13,8 +13,11 @@ set -u
 # 配置
 BACKEND_URL="http://localhost:8001"
 FRONTEND_URL="http://localhost:4001"
-TEST_EMAIL="test-185651@example.com"
-TEST_PASSWORD="Test12345678!"
+# 冒烟专用一次性账号：可用 SMOKE_TEST_EMAIL / SMOKE_TEST_PASSWORD 环境变量覆盖。
+# 默认值仅适用于本地开发库（账号须已存在，本脚本只登录不注册）；
+# 生产冒烟请注入一次性凭据并在验证后删除账号。
+TEST_EMAIL="${SMOKE_TEST_EMAIL:-test-185651@example.com}"
+TEST_PASSWORD="${SMOKE_TEST_PASSWORD:-Test12345678!}"
 TIMEOUT_SEC=10
 
 # 颜色

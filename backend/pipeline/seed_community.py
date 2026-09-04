@@ -3,11 +3,13 @@
 
 为 10 所高校创建约 40 条社区毕业去向报告，每条关联到一名种子用户。
 种子用户邮箱：community_seed_1@test.com ~ community_seed_10@test.com
-统一密码：Test1234!
+统一密码：由 SEED_PASSWORD 环境变量注入（拒绝硬编码凭据入仓）
 
 注意：由于 CommunityReport 的唯一约束为 (user_id, graduation_year)，
 每个用户的报告必须使用不同的毕业年份。
 """
+
+import os
 
 from sqlalchemy import func
 
@@ -17,7 +19,9 @@ from app.models.community_report import CommunityReport, DestinationType, Salary
 from app.models.employment_data import Degree
 from app.models.user import User
 
-SEED_PASSWORD = "Test1234!"
+SEED_PASSWORD = os.environ.get("SEED_PASSWORD", "")
+if not SEED_PASSWORD:
+    raise RuntimeError("运行演示种子前必须设置 SEED_PASSWORD 环境变量")
 
 # 每个种子用户及其提交的社区报告列表
 # 关键约束：同一用户内 graduation_year 不可重复
