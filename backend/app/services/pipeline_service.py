@@ -1,9 +1,11 @@
 # backend/app/services/pipeline_service.py
 """Pipeline 业务逻辑。"""
 
+import ipaddress
 import json
 import logging
 import re
+import socket
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -51,10 +53,40 @@ _MAX_URL_LENGTH = 2048
 _SAFE_FILENAME_RE = re.compile(r"[^A-Za-z0-9._-]+")
 
 
-def _validate_url(url: str) -> str:
-    """校验 URL scheme 与长度，返回原 url 或抛 ValueError。
+def _reject_private_target(hostname: str | None) -> None:
+    """拒绝指向内网/回环/链路本地/保留地址的 URL（含云元数据 169.254.169.254）。
 
-    修复: FASTAPI-INJECT-001 — SSRF 防护。
+    SSRF 纵深防御第二层（修复: FASTAPI-INJECT-001 复审）：scheme 白名单
+    挡不住 http://169.254.169.254/ 这类 http URL。域名解析失败按 fail-closed
+    拒绝。已知残留：校验与 httpx 请求之间存在 DNS rebinding TOCTOU 窗口，
+    端点为 admin-only，风险可接受；如需彻底闭合须在请求层固定已解析 IP。
+    """
+    if not hostname:
+        raise ValueError("URL 缺少主机名")
+    try:
+        candidates = {ipaddress.ip_address(hostname)}
+    except ValueError:
+        try:
+            infos = socket.getaddrinfo(hostname, None)
+        except socket.gaierror as e:
+            raise ValueError(f"主机名无法解析: {hostname!r}") from e
+        candidates = {ipaddress.ip_address(info[4][0]) for info in infos}
+    for ip in candidates:
+        if (
+            ip.is_private
+            or ip.is_loopback
+            or ip.is_link_local
+            or ip.is_reserved
+            or ip.is_multicast
+            or ip.is_unspecified
+        ):
+            raise ValueError(f"URL 指向非公网地址，已拒绝: {ip}")
+
+
+def _validate_url(url: str) -> str:
+    """校验 URL scheme、长度与解析后 IP 边界，返回原 url 或抛 ValueError。
+
+    修复: FASTAPI-INJECT-001 — SSRF 防护（scheme 白名单 + 私网 IP 边界）。
     """
     if not url or len(url) > _MAX_URL_LENGTH:
         raise ValueError("URL 为空或过长")
@@ -63,6 +95,7 @@ def _validate_url(url: str) -> str:
         raise ValueError(f"不支持的 URL scheme: {parsed.scheme!r}")
     if not parsed.netloc:
         raise ValueError("URL 缺少主机名")
+    _reject_private_target(parsed.hostname)
     return url
 
 

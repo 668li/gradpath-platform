@@ -3,11 +3,13 @@
 
 为 10 家公司创建约 40 条面试经验报告。
 复用 Phase 3 的社区种子用户（community_seed_1~10@test.com）。
-统一密码：Test1234!
+统一密码：由 SEED_PASSWORD 环境变量注入（拒绝硬编码凭据入仓）
 
 注意：InterviewReport 的唯一约束为 (user_id, company, position, interview_year)，
 同一用户对同一公司同岗位同年只能有一条记录。
 """
+
+import os
 
 from sqlalchemy import func
 
@@ -16,7 +18,9 @@ from app.database import SessionLocal
 from app.models.interview_report import InterviewReport, InterviewResult
 from app.models.user import User
 
-SEED_PASSWORD = "Test1234!"
+SEED_PASSWORD = os.environ.get("SEED_PASSWORD", "")
+if not SEED_PASSWORD:
+    raise RuntimeError("运行演示种子前必须设置 SEED_PASSWORD 环境变量")
 
 # 每个种子用户及其提交的面试报告列表
 SEED_DATA = [

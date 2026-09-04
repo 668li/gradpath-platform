@@ -2,6 +2,8 @@
 """Pipeline API 端点测试。"""
 
 import io
+import socket
+from unittest.mock import patch
 
 import pytest
 
@@ -9,6 +11,7 @@ from app.models.employment_data import Degree, EmploymentData
 from app.models.report_record import ParseStatus, ReportRecord
 from app.models.school import School
 from app.models.user import User
+from app.services.pipeline_service import _validate_url
 
 
 @pytest.fixture
@@ -156,15 +159,54 @@ class TestPublishReport:
         assert resp.json()["parse_status"] == "published"
 
 
+class TestUrlValidation:
+    """_validate_url 私网 IP 边界校验（SSRF 纵深防御第二层）。"""
+
+    def test_accepts_public_literal_ip(self):
+        assert _validate_url("https://93.184.216.34/data") == "https://93.184.216.34/data"
+
+    def test_rejects_loopback_literal(self):
+        with pytest.raises(ValueError, match="非公网"):
+            _validate_url("http://127.0.0.1:8001/api")
+
+    def test_rejects_cloud_metadata_ip(self):
+        with pytest.raises(ValueError, match="非公网"):
+            _validate_url("http://169.254.169.254/latest/meta-data/")
+
+    def test_rejects_private_literal(self):
+        with pytest.raises(ValueError, match="非公网"):
+            _validate_url("http://192.168.1.10/api")
+
+    def test_rejects_hostname_resolving_to_private_ip(self):
+        fake = [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("10.0.0.5", 0))]
+        with patch("app.services.pipeline_service.socket.getaddrinfo", return_value=fake):
+            with pytest.raises(ValueError, match="非公网"):
+                _validate_url("https://internal.corp/api")
+
+    def test_rejects_unresolvable_hostname(self):
+        with patch(
+            "app.services.pipeline_service.socket.getaddrinfo",
+            side_effect=socket.gaierror("dns down"),
+        ):
+            with pytest.raises(ValueError, match="无法解析"):
+                _validate_url("https://no-such-host.invalid/api")
+
+    def test_accepts_public_hostname(self):
+        fake = [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("93.184.216.34", 0))]
+        with patch("app.services.pipeline_service.socket.getaddrinfo", return_value=fake):
+            assert _validate_url("https://public.example.com/data")
+
+
 class TestIngestURL:
     def test_ingest_url_school_not_found(self, client, admin_headers):
+        # URL 用字面公网 IP：越过 scheme/IP 校验且不依赖 DNS，让用例聚焦 school 404
         resp = client.post(
             "/api/pipeline/ingest/url",
             json={
                 "source_type": "crawl",
                 "school_slug": "nonexistent",
                 "year": 2024,
-                "url": "https://example.com",
+                "url": "https://93.184.216.34",
             },
             headers=admin_headers,
         )

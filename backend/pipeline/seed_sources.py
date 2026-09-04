@@ -10,7 +10,8 @@ SEED_SOURCES = [
         "name": "教育部高校毕业生就业统计（示例）",
         "source_type": "api",
         "api_url": "https://api.example.edu.gov.cn/employment/stats",
-        "api_key": "demo-key-001",
+        # 示例源未配置真实密钥（is_active=False），None 而非占位串，杜绝假凭据入仓
+        "api_key": None,
         "data_mapping": {
             "majors_path": "data.majors",
             "field_map": {
@@ -25,7 +26,7 @@ SEED_SOURCES = [
         "name": "麦可思就业数据（示例）",
         "source_type": "api",
         "api_url": "https://api.mycos.example.com/v1/reports",
-        "api_key": "demo-key-002",
+        "api_key": None,
         "data_mapping": {
             "majors_path": "result.list",
             "field_map": {
