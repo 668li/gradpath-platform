@@ -1,6 +1,6 @@
 # PROGRESS — 实时监控与加固（2026-09-04）
 
-目标：nginx 拦探测(444)+登录限流 → fail2ban 自动封 → 每分钟 watcher 推企业微信。
+目标：nginx 拦探测(444)+登录限流 → fail2ban 自动封 → 每分钟 watcher 推微信(Server酱)。
 顺序：任务1（含端口地雷修正，必须最先）→ 任务2 → 任务3。
 最大风险：compose 的 127.0.0.1:80 与运行态 0.0.0.0:80 不一致，任何 up -d 会全站失联——已在同一提交内先改 "80:80"。
 
@@ -42,7 +42,7 @@
 - ✅ cron 存活实锤：19:58:01 的 CRITICAL 由 cron 自动跑出（非手动）；state/last-run.ts 心跳持续更新
 - ✅ 冷却正确：disk WARNING 多轮只报一次（6h）；CRITICAL 窗口内每分钟重复报（无冷却，符合设计）
 - ✅ 假线 200 不误触 fail2ban（filter 只匹配 444）：Total banned=0
-- ⚠️ 推送验证挂起：webhook 文件不存在 → PUSH-SKIPPED 降级路径已验证；用户写入 /home/ubuntu/.sec_webhook_url 后跑 `bash ~/gradpath-platform/monitoring/sec_watcher.sh --test` 看 alerts.log 的 [PUSH] errcode:0 即销账
+- ✅ 推送验证（09-04 21:17 销账）：企业微信走不通→用户拍板改 Server酱微信推送。SendKey 写入 /home/ubuntu/.sec_webhook_url（600，未入库），`--test` 实测 `[PUSH] ... -> {"code":0,"error":"SUCCESS"}`，推送链路打通。脚本含每日 5 条配额封顶（PUSH-CAPPED 降级只落盘）。
 
 ## 终验（明卷+暗卷）
 - 明卷：站点 200 ✓；探测 404→Empty reply 反向 ✓；fail2ban 三连 ✓；watcher 红→绿 ✓
@@ -53,4 +53,4 @@
 - [x] 任务 0 核对
 - [x] 任务 1 nginx+compose 修正并部署（47d8da8 已上服务器，验收全绿）
 - [x] 任务 2 fail2ban（filter/jail/logrotate 上线，验收三连全绿）
-- [x] 任务 3 watcher（cron 每分钟运行中；仅推送验证等用户 webhook）
+- [x] 任务 3 watcher（cron 每分钟运行中；Server酱推送已实测 SUCCESS，全链路打通）
