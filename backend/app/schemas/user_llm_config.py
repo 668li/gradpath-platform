@@ -40,3 +40,11 @@ class UserLLMVerifyResponse(BaseModel):
     ok: bool
     message: str
     latency_ms: int | None = None
+
+
+class PlatformLLMStatusResponse(BaseModel):
+    """平台内置 LLM（服务器默认 Key）可用性，供前端自适应文案。"""
+
+    enabled: bool = Field(..., description="平台是否已配置 LLM_API_KEY")
+    model: str = Field(..., description="平台默认模型（enabled 时生效）")
+    daily_quota: int = Field(..., description="未自带 Key 用户的每日调用预算")

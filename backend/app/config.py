@@ -21,8 +21,10 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
 
     # LLM config
+    # 平台默认模型用智谱免费款（GLM-4.7-Flash）：配好 LLM_API_KEY 后无自带 Key 的
+    # 用户开箱即用全部 AI 功能，平台零成本；BYOK 用户自带 model 不受此默认影响。
     LLM_API_KEY: str = ""
-    LLM_MODEL: str = "glm-4"
+    LLM_MODEL: str = "glm-4.7-flash"
     LLM_BASE_URL: str = "https://open.bigmodel.cn/api/paas/v4/"
     # B8: 每用户每日 LLM 调用预算（次）。Redis 不可用时降级到不限制。
     LLM_DAILY_QUOTA: int = 100

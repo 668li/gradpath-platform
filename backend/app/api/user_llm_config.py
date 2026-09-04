@@ -20,6 +20,7 @@ from app.database import get_db
 from app.main import limiter
 from app.models.user import User
 from app.schemas.user_llm_config import (
+    PlatformLLMStatusResponse,
     UserLLMConfigResponse,
     UserLLMConfigSaveRequest,
     UserLLMVerifyRequest,
@@ -45,6 +46,18 @@ def get_config(
     """查询当前用户的 LLM 配置；未配置时返回 null。"""
     cfg = get_user_llm_config(db, user.id)
     return to_response(cfg) if cfg else None
+
+
+@router.get("/platform-status", response_model=PlatformLLMStatusResponse)
+def get_platform_status(user: User = Depends(get_current_user)):
+    """平台内置 LLM 可用性（供前端自适应文案，不暴露任何密钥信息）。"""
+    from app.config import settings
+
+    return PlatformLLMStatusResponse(
+        enabled=bool(settings.LLM_API_KEY.strip()),
+        model=settings.LLM_MODEL,
+        daily_quota=settings.LLM_DAILY_QUOTA,
+    )
 
 
 @router.put("", response_model=UserLLMConfigResponse)
