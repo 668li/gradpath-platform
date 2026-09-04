@@ -9,18 +9,22 @@ import {
   KeyRound,
   Loader2,
   Save,
+  Sparkles,
   Trash2,
   XCircle,
 } from "lucide-react";
 import { Button, Field, Input, Select } from "@/components/ui/form-controls";
 import { useToast } from "@/components/ui/toast";
 import { userLlmConfigApi } from "@/lib/api";
-import type { UserLlmConfigResponse } from "@/lib/api/user-llm-config";
+import type {
+  PlatformLlmStatus,
+  UserLlmConfigResponse,
+} from "@/lib/api/user-llm-config";
 import { cn } from "@/lib/utils";
 
 /** OpenAI 兼容供应商标识与默认端点 */
 const PROVIDERS: { value: string; label: string; baseUrl: string; model: string }[] = [
-  { value: "zhipu", label: "智谱 GLM", baseUrl: "https://open.bigmodel.cn/api/paas/v4/", model: "glm-4-flash" },
+  { value: "zhipu", label: "智谱 GLM", baseUrl: "https://open.bigmodel.cn/api/paas/v4/", model: "glm-4.7-flash" },
   { value: "deepseek", label: "DeepSeek", baseUrl: "https://api.deepseek.com/v1", model: "deepseek-chat" },
   { value: "moonshot", label: "月之暗面 Kimi", baseUrl: "https://api.moonshot.cn/v1", model: "moonshot-v1-8k" },
   { value: "qwen", label: "阿里通义千问", baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1", model: "qwen-plus" },
@@ -36,6 +40,7 @@ export function AiProviderCard() {
   const [deleting, setDeleting] = useState(false);
 
   const [saved, setSaved] = useState<UserLlmConfigResponse | null>(null);
+  const [platform, setPlatform] = useState<PlatformLlmStatus | null>(null);
   const [provider, setProvider] = useState("zhipu");
   const [baseUrl, setBaseUrl] = useState(PROVIDERS[0].baseUrl);
   const [model, setModel] = useState(PROVIDERS[0].model);
@@ -53,6 +58,10 @@ export function AiProviderCard() {
           setModel(cfg.model);
         }
       })
+      .catch(() => {});
+    userLlmConfigApi
+      .getPlatformStatus()
+      .then(setPlatform)
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
@@ -105,7 +114,7 @@ export function AiProviderCard() {
   };
 
   const handleDelete = async () => {
-    if (!confirm("确认删除已保存的 AI 服务配置？删除后 AI 对话将不可用（除非管理员已配置）。")) return;
+    if (!confirm("确认删除已保存的 AI 服务配置？删除后将回退平台免费模型（平台未配置时 AI 对话不可用）。")) return;
     setDeleting(true);
     try {
       await userLlmConfigApi.deleteConfig();
@@ -138,9 +147,18 @@ export function AiProviderCard() {
             <KeyRound className="h-5 w-5 text-brand-500" /> AI 对话服务
           </h2>
           <p className="mt-1 text-sm text-ink-500">
-            填入你自己的大模型 API Key 即可启用全站 AI 功能：
-            <Link href="/chat" className="text-brand-600 hover:underline">AI 对话</Link>
-            、导师人设、决策分析、研招情报等。Key 加密存储，费用由你的供应商账户承担。
+            {platform?.enabled ? (
+              <>
+                平台已内置免费模型，全站 AI 功能开箱即用（每用户每天{" "}
+                {platform.daily_quota} 次）。也可填入自己的 API Key 切换更强模型。
+              </>
+            ) : (
+              <>
+                填入你自己的大模型 API Key 即可启用全站 AI 功能：
+                <Link href="/chat" className="text-brand-600 hover:underline">AI 对话</Link>
+                、导师人设、决策分析、研招情报等。Key 加密存储，费用由你的供应商账户承担。
+              </>
+            )}
           </p>
         </div>
         {saved && saved.is_enabled && (
@@ -150,6 +168,17 @@ export function AiProviderCard() {
           </span>
         )}
       </div>
+
+      {platform?.enabled && (
+        <div className="flex items-start gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-700">
+          <Sparkles className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            免费体验中：平台默认模型 <strong>{platform.model}</strong>
+            （智谱免费款，无需任何配置）。使用平台免费模型时，对话内容由平台接入的大模型服务处理；自带
+            Key 后则由你自己的供应商处理。
+          </span>
+        </div>
+      )}
 
       <div className="grid gap-5 sm:grid-cols-2">
         <Field label="供应商">

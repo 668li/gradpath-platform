@@ -24,10 +24,19 @@ export interface UserLlmVerifyResponse {
   latency_ms: number | null;
 }
 
+/** 平台内置 LLM（免费模型）可用性 */
+export interface PlatformLlmStatus {
+  enabled: boolean;
+  model: string;
+  daily_quota: number;
+}
+
 // ===== AI 对话服务（BYOK）=====
 export const userLlmConfigApi = {
   getConfig: () =>
     request<UserLlmConfigResponse | null>("/api/user-llm-config"),
+  getPlatformStatus: () =>
+    request<PlatformLlmStatus>("/api/user-llm-config/platform-status"),
   saveConfig: (body: UserLlmConfigSaveRequest) =>
     request<UserLlmConfigResponse>("/api/user-llm-config", {
       method: "PUT",

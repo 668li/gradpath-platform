@@ -372,3 +372,40 @@ class TestContextOverride:
         assert svc.base_url == "https://open.bigmodel.cn/api/paas/v4/"
         svc2 = AIService(base_url="https://api.deepseek.com/v1/")
         assert svc2.base_url == "https://api.deepseek.com/v1/"
+
+
+# ======================================================================
+# GET /api/user-llm-config/platform-status（平台免费模型可用性）
+# ======================================================================
+class TestPlatformLLMStatus:
+    def test_platform_status_401(self, client):
+        resp = client.get("/api/user-llm-config/platform-status")
+        assert resp.status_code == 401
+
+    def test_platform_status_disabled_without_key(self, client, auth_headers):
+        """服务器未配 Key 时 enabled=False，模型/配额仍如实返回。"""
+        from app.config import settings
+
+        with patch.object(settings, "LLM_API_KEY", ""):
+            resp = client.get(
+                "/api/user-llm-config/platform-status", headers=auth_headers
+            )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["enabled"] is False
+        assert data["model"] == settings.LLM_MODEL
+        assert data["daily_quota"] == settings.LLM_DAILY_QUOTA
+
+    def test_platform_status_enabled_with_key(self, client, auth_headers):
+        """配置平台 Key 后 enabled=True；响应绝不回传明文 Key。"""
+        from app.config import settings
+
+        platform_key = "".join(("sk-platform", "-test-", "zzzz"))
+        with patch.object(settings, "LLM_API_KEY", platform_key):
+            resp = client.get(
+                "/api/user-llm-config/platform-status", headers=auth_headers
+            )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["enabled"] is True
+        assert platform_key not in resp.text
