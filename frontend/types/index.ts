@@ -786,12 +786,13 @@ export interface AssessmentInterpretInterpretation {
 export interface AssessmentInterpretResponse {
   has_assessment: boolean;
   message?: string;
+  /** 2026-09-05 倒置后：无测评时为 null，但响应仍含 paths/recommendation 等完整结构 */
   assessment?: {
     type: string;
     result_code: string | null;
     scores: Record<string, number>;
     result_summary: string | null;
-  };
+  } | null;
   profile: Record<string, unknown> | null;
   interpretation?: AssessmentInterpretInterpretation;
   /** 三路决策指标（与决策引擎同构，可直接渲染 PathResultCard） */

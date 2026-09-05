@@ -224,13 +224,18 @@ class TestAssessmentInterpret:
 
     _post = "/api/assessment/interpret"
 
-    def test_no_assessment_steers_user(self, auth_headers, client):
-        """未完成测评 → has_assessment=False，引导补全而不是抛错。"""
+    def test_no_assessment_still_returns_paths_structure(self, auth_headers, client):
+        """未完成测评（2026-09-05 倒置后行为翻转）→ has_assessment=False 且仍返回
+        完整路径结构，assessment=None；recommendation/interpretation 诚实引导补全，
+        不再是短 message 响应（原 test_no_assessment_steers_user 锁定的旧行为已废）。"""
         resp = client.post(self._post, headers=auth_headers)
         assert resp.status_code == 200
         data = resp.json()
         assert data["has_assessment"] is False
-        assert "测评" in data["message"]
+        assert data["assessment"] is None
+        assert isinstance(data["paths"], list)
+        assert "测评" in data["interpretation"]["reason"]
+        assert "个人档案" in data["recommendation"]
 
     def test_holland_interpret_honest_empty_paths(self, auth_headers, client):
         """有霍兰德测评、无画像 → 给出方向偏好，专有数据诚实为空（不造假数字）。"""

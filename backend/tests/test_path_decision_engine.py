@@ -979,3 +979,31 @@ class TestPersonalAndOutcomeAPI:
             headers=auth_headers,
         )
         assert resp.status_code == 404
+
+
+class TestEduEligibleGuard:
+    """学历档位护栏（2026-09-05 倒置冒烟抓出 KeyError: 'bachelor'）：
+
+    档位表外的用户学历（档案英文枚举直传/高中）按 0 档处理，
+    宁可不含糊地判不达标，也不 500、不误判可报。
+    """
+
+    def test_unknown_user_edu_does_not_crash_and_fails_requirement(self):
+        from app.services.path_decision_engine import _edu_eligible
+
+        assert _edu_eligible("本科及以上", "bachelor") is False  # 英文枚举直传：0 档
+        assert _edu_eligible("大专及以上", "高中") is False
+
+    def test_unknown_user_edu_passes_when_no_requirement(self):
+        from app.services.path_decision_engine import _edu_eligible
+
+        assert _edu_eligible(None, "bachelor") is True
+        assert _edu_eligible("不限", "bachelor") is True
+
+    def test_ranked_user_edu_still_matches(self):
+        from app.services.path_decision_engine import _edu_eligible
+
+        assert _edu_eligible("本科及以上", "本科") is True
+        assert _edu_eligible("硕士及以上", "本科") is False
+        assert _edu_eligible("仅限硕士", "硕士") is True
+        assert _edu_eligible("仅限博士", "硕士") is False
