@@ -21,7 +21,10 @@ vi.mock("next/navigation", () => ({
   redirect: vi.fn(),
 }));
 
-// Mock next/font/google（避免在测试环境中加载字体）
+// Mock next 字体加载（避免在测试环境中加载字体；已自托管为 next/font/local）
+vi.mock("next/font/local", () => ({
+  default: () => ({ variable: "--font" }),
+}));
 vi.mock("next/font/google", () => ({
   Fraunces: () => ({ variable: "--font-display" }),
   Plus_Jakarta_Sans: () => ({ variable: "--font-sans" }),

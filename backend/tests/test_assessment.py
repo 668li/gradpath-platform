@@ -194,6 +194,30 @@ class TestAssessmentValidation:
         assert resp.status_code == 201
         assert "区分度低" in resp.json()["result_summary"]
 
+    def test_holland_flat_profile_warns_low_discernment(self, auth_headers, client):
+        """霍兰德六维计数无区分度（第1−第4≤2）→ 附降级提示，引导看真实数据解读。"""
+        values = ["R", "I", "A", "S", "E", "C"]
+        answers = {f"q{i}": values[(i - 1) % 6] for i in range(1, 49)}  # 每维 8
+        resp = client.post(
+            "/api/assessment/submit",
+            headers=auth_headers,
+            json={"answers": answers, "assessment_type": "holland"},
+        )
+        assert resp.status_code == 201
+        assert "区分度较低" in resp.json()["result_summary"]
+
+    def test_holland_differentiated_profile_no_flat_warning(self, auth_headers, client):
+        """维度分明显有偏向（第1−第4=8）→ 不附降级提示。"""
+        seq = ["R"] * 14 + ["I"] * 10 + ["A"] * 8 + ["S"] * 6 + ["E"] * 5 + ["C"] * 5
+        answers = {f"q{i}": seq[i - 1] for i in range(1, 49)}
+        resp = client.post(
+            "/api/assessment/submit",
+            headers=auth_headers,
+            json={"answers": answers, "assessment_type": "holland"},
+        )
+        assert resp.status_code == 201
+        assert "区分度较低" not in resp.json()["result_summary"]
+
 
 class TestAssessmentInterpret:
     """B1：测评 × 专有报考数据 → 专属路径解读。"""

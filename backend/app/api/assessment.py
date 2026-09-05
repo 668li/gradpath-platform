@@ -10,6 +10,8 @@
 支持的测评类型：holland | mbti | big_five | disc
 """
 
+from collections import Counter
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
@@ -26,6 +28,10 @@ router = APIRouter(prefix="/api/assessment", tags=["职业测评"])
 
 # 合法测评类型集合
 _VALID_TYPES = set(ASSESSMENT_QUESTIONS.keys())
+
+# 霍兰德平 profile 判定阈值：六维计数排序后"第1名−第4名"≤此值 → 结果无区分度。
+# 48 题/6 维≈每维 8 分，阈值 2 为拍板默认值，调整只改这一个常量。
+_HOLLAND_FLAT_GAP = 2
 
 # 每种测评每题的合法答案取值（用于完整性 + 取值合法性校验）
 _ASSESSMENT_ANSWER_VALUES = {
@@ -108,6 +114,15 @@ def _validate_answers(assessment_type: str, answers: dict) -> list[str]:
                 variance = sum((x - sum(nums) / len(nums)) ** 2 for x in nums) / len(nums)
                 if variance < 0.3:
                     warnings.append("你的作答选项集中在很小范围内，结果区分度低，仅供参考。")
+        if assessment_type == "holland":
+            # 平 profile 诚实降级：六维计数无拉开差距 → top3 代码是随机排序的产物，
+            # 不配当决策依据，如实标注并引导以下方真实数据解读为准（不篡改 result_code）。
+            counts = Counter(v for v in values if v in legal_values)
+            dims = sorted((counts.get(d, 0) for d in "RIASEC"), reverse=True)
+            if dims[0] - dims[3] <= _HOLLAND_FLAT_GAP:
+                warnings.append(
+                    "你的各维度作答接近，本次结果区分度较低，请以下方真实数据解读为准。"
+                )
     return warnings
 
 

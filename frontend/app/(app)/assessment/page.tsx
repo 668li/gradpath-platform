@@ -32,11 +32,16 @@ import { cn, formatDate } from "@/lib/utils";
 import { LoadingState } from "@/components/ui/empty";
 import { Button } from "@/components/ui/form-controls";
 import { useToast } from "@/components/ui/toast";
+import { InterpretCard } from "@/components/assessment/interpret-card";
+import { topRoles } from "@/components/assessment/role-match";
+import { extractWarnings } from "@/components/assessment/warning-utils";
+import { WarningCallout } from "@/components/assessment/warning-callout";
 import type {
   AssessmentType,
   Question,
   AssessmentSubmit,
   AssessmentResponse,
+  AssessmentInterpretResponse,
 } from "@/types";
 
 // ===== 测评元数据配置 =====
@@ -773,16 +778,46 @@ function ResultView({
   // 社会赞许性检测（灵感：奕言测谎机制轻量化）
   const socialDesirability = detectSocialDesirability(questions, answers);
 
+  // 护城河：结果页挂载即拉「测评 × 专有数据 → 专属路径」解读
+  const [interpret, setInterpret] = useState<AssessmentInterpretResponse | null>(null);
+  const [interpretLoading, setInterpretLoading] = useState(true);
+  const [interpretError, setInterpretError] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    assessmentApi
+      .interpret()
+      .then((d) => {
+        if (!cancelled) setInterpret(d);
+      })
+      .catch((e: unknown) => {
+        if (!cancelled) setInterpretError(e instanceof Error ? e.message : "生成失败");
+      })
+      .finally(() => {
+        if (!cancelled) setInterpretLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // 个人档案目标方向（考研/考公）→ 职业适配榜单的身份加成依据
+  const targetDirection =
+    (interpret?.profile as { target_direction?: string | null } | null)?.target_direction ?? null;
+
   // 职业适配度：仅霍兰德测评计算（灵感：职向"所以呢"转化）
   const isHolland = type === "holland";
   const roleMatches = isHolland
-    ? HOLLAND_ROLE_MATRIX.map((r) => {
-        const { match, bestCode } = calculateHollandMatch(result.result_code, r.codes);
-        return { ...r, match, bestCode };
-      })
-        .sort((a, b) => b.match - a.match)
-        .slice(0, 5)
+    ? topRoles(
+        HOLLAND_ROLE_MATRIX.map((r) => {
+          const { match, bestCode } = calculateHollandMatch(result.result_code, r.codes);
+          return { ...r, match, bestCode };
+        }),
+        targetDirection,
+      )
     : [];
+
+  // 信度/完整性警示：后端把【作答提示】折在 result_summary 末尾，这里拆出来亮成警示卡
+  const { cleanSummary, warnings: answerWarnings } = extractWarnings(result.result_summary);
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
@@ -806,9 +841,11 @@ function ResultView({
           {result.result_code}
         </h1>
         <p className="text-sm text-ink-600 max-w-xl mx-auto leading-relaxed whitespace-pre-line">
-          {result.result_summary}
+          {cleanSummary}
         </p>
       </div>
+
+      <WarningCallout warnings={answerWarnings} />
 
       {/* 维度得分（柱状图） */}
       <div className="card space-y-3">
@@ -871,6 +908,9 @@ function ResultView({
           查看相关模板
         </p>
       </div>
+
+      {/* 测评 × 专有数据 → 专属路径（护城河本体） */}
+      <InterpretCard data={interpret} loading={interpretLoading} error={interpretError} />
 
       {/* 职业适配度："所以呢"转化（灵感：职向）—— 仅霍兰德测评显示 */}
       {isHolland && roleMatches.length > 0 && (
@@ -1124,7 +1164,7 @@ function HistoryView({
                             </span>
                           </div>
                           <p className="text-xs text-ink-400 mt-1 line-clamp-1">
-                            {item.result_summary}
+                            {extractWarnings(item.result_summary).cleanSummary}
                           </p>
                         </div>
                         <span className="text-xs text-ink-400 shrink-0">

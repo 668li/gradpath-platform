@@ -7,7 +7,8 @@
 - 测评类型 -> 路径偏好 lean（软信号，透明规则，不编造因果）
 - 用 generate_decision 拉取真实三路数据（考研/考公/就业），每条带溯源
 - 用 get_prospect 拉取专业薪资前景与升学路径（真实口径，含 data_notes）
-- 用 build_peer_destinations 拉取「和你分数相近的人最后去哪」的合计去向（无估分则诚实为空）
+- 用 build_peer_destinations 拉取「和你分数相近的人最后去哪」的合计去向
+  （参照分 = 用户自己最近一条真实回传分；从未回传分数则诚实为空）
 - 每条结论都带来源；数据不足时诚实降级，绝不造假（沿用 581 溯源闸门纪律）
 
 设计边界：
@@ -26,6 +27,7 @@ from sqlalchemy.orm import Session
 
 from app.models.assessment import Assessment
 from app.models.career_profile import CareerProfile
+from app.models.outcome_report import OutcomeReport
 from app.services.major_prospect_service import get_prospect
 from app.services.path_comparison_service import build_peer_destinations
 from app.services.path_decision_engine import generate_decision
@@ -219,8 +221,18 @@ def build_interpretation(db: Session, user_id: UUID) -> dict:
             education=education,
         )
 
-    # 3. 同分人群去向（无考研估分时 build_peer_destinations 诚实降级为空）
-    peer = build_peer_destinations(db, None)
+    # 3. 同分人群去向：参照分 = 用户自己最近一条真实回传分（outcome_reports.score_total，
+    #    估分是瞬时值不入库；从未回传过分数 → 诚实降级为空，不编造参照分）
+    own_score_row = (
+        db.query(OutcomeReport.score_total)
+        .filter(
+            OutcomeReport.user_id == user_id,
+            OutcomeReport.score_total.isnot(None),
+        )
+        .order_by(OutcomeReport.created_at.desc())
+        .first()
+    )
+    peer = build_peer_destinations(db, own_score_row[0] if own_score_row else None)
 
     # 4. 专业薪资前景（真实口径，含 data_notes）
     prospect = {}

@@ -44,3 +44,11 @@
 6. 红线遵守：全程未触碰 chsi 任何域名；所有请求经 BaseCrawler 护栏（robots fail-safe + SSRF 校验 + ≥1.5s 限速，标定用 2s）。
 
 另：PROGRESS.md 为共享文件（含并行会话未提交笔记），按上会话先例只追加、未纳入本 commit；backend/app/services/reminder_service.py 与 backend/tests/test_reminder_d2.py 为并行会话在途改动，未纳入本 commit。
+
+---
+
+# BLOCKED 追加 — 测评结果页三处信任修复会话（2026-09-05）
+
+1.（非阻塞，已按规矩处理）任务 0 基线漂移：书写的 pytest 基线 1687 passed，实测 **1723 passed, 1 skipped**（deploy-assess=4a208bd，本会话动工前、未改任何文件时）。高出部分来自服务器线（70557a3）带入的抽取层黄金夹具/出身条款提取器回归等测试，属基线变强非前提损坏。按「测试数只许 ≥ 基线」上调本任务下限：pytest passed ≥1725（1723+任务1新增2个）；vitest 下限不变 ≥186（实测吻合 182→+4 新增）。
+
+（其余：无阻塞项。）
