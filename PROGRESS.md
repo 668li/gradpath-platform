@@ -36,3 +36,23 @@
 - 顺序：任务0 核对 → 任务1 extract_main_text + _fetch_detail HTTP 分支 → 任务2 parse_list_generic + generic 模板分发 → 全量 pytest → 反向验证 → 单 commit。
 - 最大风险：并行会话在途改动污染基线（实测 3 failed 均在其 streak/micro_action 文件，与本任务无关，见 BLOCKED.md）；trafilatura 短页误吞（用 len<80 门槛兜底走原正则）。
 - 纪律：只改 official_announce_crawler.py / pyproject deps / 新建 test_extraction_upgrade.py；夹具只读；PROGRESS.md 为共享文件，只追加不覆盖。
+
+
+---
+
+# PROGRESS — 测评结果页三处信任修复（本会话，2026-09-05）
+
+## 开工回执（≤10行）
+- 理解的目标：T1 interpret 接用户真实回传分查同分去向（替换写死 None）；T2 信度警告从 result_summary 尾巴上浮为结果区警示卡；T3 paths 非空时结果卡加 /decision-engine 完整报告入口。
+- 顺序：T1 → T2 → T3（后端先行，前端两件共用一次 vitest 回归）。
+- 最大风险：T2 解析标记串「【作答提示】」是前后端冻结契约，后端改文案即失效（已按书冻结）。
+- 任务 0 实测：HEAD=4a208bd ✓、工作区净 ✓、vitest 182 passed ✓、build 绿 ✓（本会话同树实测）、pytest=1723 passed+1 skipped（≠书写的 1687，良性漂移，见 BLOCKED.md，下限上调 1725）。
+- PROGRESS.md 为共享文件，本会话只追加本段。
+
+## 进度
+- [x] 任务 0：基线核对完成
+- [x] 任务 1：同分去向接线（接线+2 pytest+反向验证红→还原绿）
+- [x] 任务 2：信度警告可视化（warning-utils 4 例+callout 2 例+page 主结果/历史接线+反向验证红→还原绿）
+- [x] 任务 3：决策漏斗闭环（/decision-engine CTA+1 vitest 含空态断言）
+- [x] 单 commit + 验收证据（pytest 1725+1skip / vitest 189 / build 绿 / 两 grep 达标）
+

@@ -100,6 +100,12 @@ export function InterpretCard({ data, loading, error }: InterpretCardProps) {
           {paths.map((m) => (
             <PathResultCard key={m.path_type} metric={m} />
           ))}
+          <Link
+            href="/decision-engine"
+            className="inline-block text-xs font-medium text-brand-600 hover:underline"
+          >
+            查看完整三路报告 →
+          </Link>
         </div>
       ) : (
         data.recommendation && (

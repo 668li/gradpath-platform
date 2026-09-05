@@ -82,6 +82,21 @@ describe("InterpretCard", () => {
     expect(screen.queryByText("学术深造")).toBeNull();
   });
 
+  it("paths 非空时提供通往完整三路报告的入口，空态不出现", () => {
+    const { unmount } = render(<InterpretCard data={fullData} loading={false} error={null} />);
+    const cta = screen.getByText("查看完整三路报告 →");
+    expect(cta.closest("a")?.getAttribute("href")).toBe("/decision-engine");
+    unmount();
+
+    const noPaths: AssessmentInterpretResponse = {
+      ...fullData,
+      paths: [],
+      recommendation: "专业未在个人档案填写，暂时无法生成具体岗位/院校/进面线分析。",
+    };
+    render(<InterpretCard data={noPaths} loading={false} error={null} />);
+    expect(screen.queryByText("查看完整三路报告 →")).toBeNull();
+  });
+
   it("同分人群无样本时诚实占位", () => {
     render(<InterpretCard data={fullData} loading={false} error={null} />);
     expect(screen.getByText(/你是最早回传结果的一批/)).toBeDefined();

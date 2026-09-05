@@ -34,6 +34,8 @@ import { Button } from "@/components/ui/form-controls";
 import { useToast } from "@/components/ui/toast";
 import { InterpretCard } from "@/components/assessment/interpret-card";
 import { topRoles } from "@/components/assessment/role-match";
+import { extractWarnings } from "@/components/assessment/warning-utils";
+import { WarningCallout } from "@/components/assessment/warning-callout";
 import type {
   AssessmentType,
   Question,
@@ -814,6 +816,9 @@ function ResultView({
       )
     : [];
 
+  // 信度/完整性警示：后端把【作答提示】折在 result_summary 末尾，这里拆出来亮成警示卡
+  const { cleanSummary, warnings: answerWarnings } = extractWarnings(result.result_summary);
+
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
       {/* 结果头部 - 渐变背景 */}
@@ -836,9 +841,11 @@ function ResultView({
           {result.result_code}
         </h1>
         <p className="text-sm text-ink-600 max-w-xl mx-auto leading-relaxed whitespace-pre-line">
-          {result.result_summary}
+          {cleanSummary}
         </p>
       </div>
+
+      <WarningCallout warnings={answerWarnings} />
 
       {/* 维度得分（柱状图） */}
       <div className="card space-y-3">
@@ -1157,7 +1164,7 @@ function HistoryView({
                             </span>
                           </div>
                           <p className="text-xs text-ink-400 mt-1 line-clamp-1">
-                            {item.result_summary}
+                            {extractWarnings(item.result_summary).cleanSummary}
                           </p>
                         </div>
                         <span className="text-xs text-ink-400 shrink-0">
