@@ -8,8 +8,10 @@
 数据合规说明：
 - 薪资基准种子已改为导入真实调研数据（salary_real.json / salary_expand.json），
   不再生成推导假数据（原 kaggle 标榜实为推导的版本已摘除）。
-- 演示种子（考研情报/暗知识、考研社区、生成的社区内容、分数线）已删除，
-  不再提供 --include-demo 注入路径；真实数据一律走导入管道 + 人工确认入库。
+- 演示种子（考研情报/暗知识、分数线）已删除，不再提供 --include-demo 注入路径。
+- 社区讨论种子（seed_community，8 个假用户+编造讨论帖）已于 2026-09-05 移除并删除：
+  社区只允许用户自己发布的内容，禁止任何脚本灌入非用户内容（用户拍板）。
+  真实数据一律走导入管道 + 人工确认入库。
 """
 
 from uuid import UUID
@@ -17,7 +19,6 @@ from uuid import UUID
 from app.database import SessionLocal
 from app.models.user import User
 from app.seed.seed_civil_service import seed_civil_service_dark_knowledge, seed_civil_service_intel
-from app.seed.seed_community import seed_community
 from app.seed.seed_companies import seed_companies
 from app.seed.seed_knowledge import seed_knowledge
 from app.seed.seed_market_data import seed_market_data
@@ -69,28 +70,23 @@ def run_all_seeds():
         n = seed_civil_service_dark_knowledge(db)
         print(f"   ✓ 新增 {n} 条暗知识")
 
-        # 社区讨论
-        print("\n4. 注入社区讨论...")
-        n = seed_community(db)
-        print(f"   ✓ 新增 {n} 条讨论帖")
-
         # 公司数据
-        print("\n5. 注入公司数据...")
+        print("\n4. 注入公司数据...")
         n = seed_companies(db)
         print(f"   ✓ 新增 {n} 家公司")
 
         # 薪资基准（真实调研数据）
-        print("\n6. 注入薪资基准（真实调研数据）...")
+        print("\n5. 注入薪资基准（真实调研数据）...")
         n = seed_salary_benchmarks(db)
         print(f"   ✓ 新增 {n} 条薪资记录")
 
         # 市场数据
-        print("\n7. 注入市场数据...")
+        print("\n6. 注入市场数据...")
         n = seed_market_data(db)
         print(f"   ✓ 新增 {n} 条市场数据")
 
         # 知识库
-        print("\n8. 注入知识库...")
+        print("\n7. 注入知识库...")
         n = seed_knowledge(db)
         print(f"   ✓ 新增 {n} 条知识条目")
 
