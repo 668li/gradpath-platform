@@ -4,12 +4,13 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { UserCircle, GraduationCap, Target, Star, Save, Download, FileText, FileSpreadsheet, ClipboardList, Library, Award, Bell, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { careerProfileApi, exportV2Api, useApi, useInvalidate } from "@/lib/api";
+import { careerProfileApi, exportV2Api, assessmentApi, useApi, useInvalidate } from "@/lib/api";
 import { LoadingState, EmptyState } from "@/components/ui/empty";
 import { Button, Field, Input, Select, Textarea } from "@/components/ui/form-controls";
 import { FieldError } from "@/components/ui/form-controls";
 import { useToast } from "@/components/ui/toast";
-import type { CareerProfile, CareerProfileCreate } from "@/types";
+import { InterpretCard } from "@/components/assessment/interpret-card";
+import type { AssessmentInterpretResponse, CareerProfile, CareerProfileCreate } from "@/types";
 
 const EDUCATION_LEVELS = [
   { value: "", label: "请选择" },
@@ -93,6 +94,31 @@ function ProfilePageContent() {
   const [selfIntroduction, setSelfIntroduction] = useState("");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [exporting, setExporting] = useState<"profile" | "csv" | "json" | null>(null);
+
+  // 倒置：profile 有专业即出专属路径（测评是可选信号补充，不再是必经入口）
+  const majorFilled = !!profile?.major;
+  const [interpretData, setInterpretData] = useState<AssessmentInterpretResponse | null>(null);
+  const [interpretErr, setInterpretErr] = useState<string | null>(null);
+  useEffect(() => {
+    if (!majorFilled) {
+      setInterpretData(null);
+      setInterpretErr(null);
+      return;
+    }
+    let cancelled = false;
+    setInterpretErr(null);
+    assessmentApi
+      .interpret()
+      .then((d) => {
+        if (!cancelled) setInterpretData(d);
+      })
+      .catch((e: unknown) => {
+        if (!cancelled) setInterpretErr(e instanceof Error ? e.message : "生成失败");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [majorFilled]);
 
   // SWR 数据加载后同步表单字段
   useEffect(() => {
@@ -412,6 +438,15 @@ function ProfilePageContent() {
           </Button>
         </div>
       </div>
+
+      {/* 倒置：专业已填 → 不用做测评，专属路径直接长在这里 */}
+      {majorFilled && (
+        <InterpretCard
+          data={interpretData}
+          loading={!interpretData && !interpretErr}
+          error={interpretErr}
+        />
+      )}
       </div>
       )}
         </>

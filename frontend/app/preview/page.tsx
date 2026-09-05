@@ -38,6 +38,12 @@ export default function PreviewPage() {
         </div>
         <EligibilityChecker />
         <p className="mt-6 text-center text-xs text-ink-400">
+          注册并补全专业后，不用先做测评——
+          <Link href="/register" className="font-medium text-brand-600 hover:text-brand-700">
+            你的专属报考路径（可报岗位/进面线/薪资/同分去向）立即生成 →
+          </Link>
+        </p>
+        <p className="mt-2 text-center text-xs text-ink-400">
           想要保存判定并建立完整条件账本？
           <Link href="/register" className="font-medium text-brand-600 hover:text-brand-700">
             免费注册 →
