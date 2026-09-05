@@ -120,6 +120,29 @@ class GradSchoolPlanningSkill(BaseSkill):
             )
         return "\n".join(blocks)
 
+    def collect_sources(self, db, user_id, content: str) -> list[dict]:
+        """回传注入的分数线/院校情报来源条目。"""
+        from app.services.data_search_service import (
+            extract_major,
+            extract_schools,
+            search_school_intel,
+            search_score_lines,
+        )
+
+        schools = extract_schools(content)
+        if not schools:
+            return []
+        try:
+            hits = search_score_lines(db, schools[0], extract_major(content)) + search_school_intel(
+                db, schools[0]
+            )
+        except Exception:
+            return []
+        return [
+            {"type": "db", "title": h.title[:40], "content": h.content[:120], "url": h.url}
+            for h in hits[:8]
+        ]
+
     def parse_response(self, llm_output: str) -> dict:
         """解析 LLM 输出，提取考研规划数据。
 

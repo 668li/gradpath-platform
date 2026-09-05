@@ -80,3 +80,22 @@ class AnnouncementInterpreterSkill(BaseSkill):
         lines.append("")
         lines.append("（以上为摘要，解读请锚定原文；原文未提及的信息不要推测。）")
         return "\n".join(lines)
+
+    def collect_sources(self, db, user_id, content: str) -> list[dict]:
+        """回传注入公告的来源条目（点亮前端「参考来源」标签）。"""
+        from app.services.data_search_service import (
+            extract_major,
+            extract_schools,
+            search_announcements,
+        )
+
+        schools = extract_schools(content)
+        keyword = schools[0] if schools else extract_major(content)
+        try:
+            hits = search_announcements(db, keyword, limit=3)
+        except Exception:
+            return []
+        return [
+            {"type": "db", "title": h.title[:40], "content": h.content[:120], "url": h.url}
+            for h in hits
+        ]

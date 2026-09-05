@@ -435,6 +435,16 @@ async def send_message(
     )
     if data_block:
         system_prompt = f"{system_prompt}\n\n{data_block}"
+
+    # 数据型 skill 覆盖了搜索域时，通用层无 sources——向 skill 索取注入数据的来源
+    if not data_sources and getattr(skill, "covered_data_domains", frozenset()):
+        try:
+            skill_sources = skill.collect_sources(db, user_id, content)
+            if skill_sources:
+                data_sources = skill_sources
+                data_has_hits = True
+        except Exception as e:
+            logger.debug("skill collect_sources 失败（来源标签降级为空）: %s", e)
     # 将对话历史拼入用户 prompt
     history_block = ""
     if len(history) > 1:

@@ -53,6 +53,15 @@ class BaseSkill(ABC):
         """
         return ""
 
+    def collect_sources(self, db, user_id, content: str) -> list[dict]:
+        """回传注入数据的前端来源条目（可选覆写）。
+
+        数据型 skill 覆写 inject_data 时应同步覆写本方法，返回与注入内容
+        对应的 [{type: "db", title, content, url}]——chat_service 在该 skill
+        覆盖 data_search 域（无通用 sources）时调用它，点亮气泡「参考来源」。
+        """
+        return []
+
     def parse_response(self, llm_output: str) -> dict:
         """解析 LLM 输出。默认返回原始文本。
 

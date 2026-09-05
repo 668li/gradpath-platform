@@ -310,3 +310,50 @@ class TestAnnouncementSearcher:
 
     def test_search_empty_db_returns_empty(self, db_session):
         assert search_announcements(db_session, "不存在") == []
+
+
+# ======================================================================
+# skill 来源回传通道（collect_sources）
+# ======================================================================
+
+
+class TestCollectSources:
+    def test_announcement_skill_returns_sources(self, db_session, seed_announcement):
+        from app.skills.announcement_interpreter import AnnouncementInterpreterSkill
+
+        out = AnnouncementInterpreterSkill().collect_sources(
+            db_session, "u1", "测试大学的简章有什么要注意的"
+        )
+        assert len(out) == 1
+        assert out[0]["type"] == "db"
+        assert out[0]["url"] == "https://gs.test.edu.cn/zhaosheng"
+
+    def test_grad_planning_skill_returns_sources(self, db_session, seed_announcement):
+        from app.skills.grad_school_planning import GradSchoolPlanningSkill
+
+        assert GradSchoolPlanningSkill().collect_sources(db_session, "u1", "帮我做考研规划") == []
+
+    def test_position_skill_requires_params(self, db_session, svc_user):
+        from app.skills.position_advisor import PositionAdvisorSkill
+
+        assert PositionAdvisorSkill().collect_sources(db_session, svc_user.id, "你好") == []
+
+    def test_position_skill_returns_sources(self, db_session, svc_user):
+        from app.models.gwy_position import GwyPosition
+        from app.skills.position_advisor import PositionAdvisorSkill
+
+        db_session.add(
+            GwyPosition(
+                id="px1", year=2026, exam_type="国考", position_code="0701263001",
+                dept_name="国家税务总局北京市税务局", position_name="基层岗",
+                education_req="仅限本科", major_req="计算机类", recruit_count=2,
+                work_location="北京",
+            )
+        )
+        db_session.commit()
+        svc_user.major = "计算机"
+        svc_user.education = "本科"
+        db_session.commit()
+        out = PositionAdvisorSkill().collect_sources(db_session, svc_user.id, "能报什么岗位")
+        assert len(out) == 1
+        assert "税务" in out[0]["title"] or "税务" in out[0]["content"]

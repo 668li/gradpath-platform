@@ -120,3 +120,40 @@ class PositionAdvisorSkill(BaseSkill):
         lines.append("")
         lines.append("（以上为站内职位表最新收录年份的真实记录；招录人数为招考公告口径，以官方公告为准。）")
         return "\n".join(lines)
+
+    def collect_sources(self, db, user_id, content: str) -> list[dict]:
+        """回传注入岗位的来源条目。"""
+        from app.services.data_search_service import (
+            extract_dept,
+            extract_education,
+            extract_major,
+            extract_province,
+            search_positions,
+        )
+
+        education = extract_education(content)
+        province = extract_province(content)
+        dept = extract_dept(content)
+        major = extract_major(content)
+        if not major or not education:
+            try:
+                from app.models.user import User
+
+                user = db.get(User, user_id)
+                if user is not None:
+                    major = major or getattr(user, "major", None) or None
+                    education = education or getattr(user, "education", None) or None
+            except Exception:
+                pass
+        if not any([education, province, dept, major]):
+            return []
+        try:
+            hits = search_positions(
+                db, education=education, province=province, dept=dept, major=major, limit=12
+            )
+        except Exception:
+            return []
+        return [
+            {"type": "db", "title": h.title[:40], "content": h.content[:120], "url": h.url}
+            for h in hits[:8]
+        ]
