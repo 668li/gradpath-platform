@@ -30,9 +30,9 @@ class AssessmentSubmit(BaseModel):
     """提交测评答案。
 
     answers 形如 {"q1": "R", ...} 或 {"mbti_q1": "E", ...} 或
-    {"bf_q1": "4", ...} 或 {"disc_q1": "D", ...}。
+    {"bf_q1": "4", ...} 或 {"bfs_q1": "4", ...} 或 {"disc_q1": "D", ...}。
     assessment_type 默认 "holland" 以保持向后兼容。
-    支持取值："holland" | "mbti" | "big_five" | "disc"。
+    支持取值："holland" | "mbti" | "big_five" | "big_five_short" | "disc"。
 
     服务端会按类型校验答案完整性，并在作答模式异常（过短/单一/方差过低）时
     附加信度提示（见 api/assessment.py 的 _validate_answers）。

@@ -758,7 +758,7 @@ export interface ReminderItem {
 
 // ===== 职业测评 =====
 // 测评类型
-export type AssessmentType = "holland" | "mbti" | "big_five" | "disc";
+export type AssessmentType = "holland" | "mbti" | "big_five" | "big_five_short" | "disc";
 
 // 测评选项
 export interface QuestionOption {
