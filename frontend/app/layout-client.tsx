@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { ToastProvider } from "@/components/ui/toast";
 import { ErrorBoundary } from "@/components/error-boundary";
 import { FeedbackWidget } from "@/components/FeedbackWidget";
+import { AiWelcomeModal } from "@/components/AiWelcomeModal";
 import { initTracker, trackPageView } from "@/lib/tracker";
 
 // 优化：web-vitals 使用动态导入，避免 require 破坏 tree-shaking
@@ -41,6 +42,7 @@ export function RootLayoutClient({ children }: { children: React.ReactNode }) {
       <ToastProvider>
         <TrackerProvider>{children}</TrackerProvider>
         <FeedbackWidget />
+        <AiWelcomeModal />
       </ToastProvider>
     </ErrorBoundary>
   );
