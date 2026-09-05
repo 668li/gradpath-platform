@@ -265,15 +265,8 @@ def _get_blueprint(target_path: str) -> list[dict]:
 # ----------------------------------------------------------------------
 # 服务函数
 # ----------------------------------------------------------------------
-def create_plan(
-    db: Session, user_id: UUID, target_path: str, target_role: str | None = None
-) -> MicroActionPlan:
-    """创建 7 天微行动计划并生成 7 个任务。
-
-    如果用户已有 active plan，先把旧 plan 标记为 abandoned 再创建新的，
-    避免同时存在多个活跃计划。
-    """
-    # 关闭用户已有的 active 计划
+def _abandon_active_plans(db: Session, user_id: UUID) -> None:
+    """关闭用户已有的 active 计划（active-plan 唯一性守卫，两个创建入口共用）。"""
     existing = (
         db.query(MicroActionPlan)
         .filter(
@@ -284,6 +277,17 @@ def create_plan(
     )
     for plan in existing:
         plan.status = "abandoned"
+
+
+def create_plan(
+    db: Session, user_id: UUID, target_path: str, target_role: str | None = None
+) -> MicroActionPlan:
+    """创建 7 天微行动计划并生成 7 个任务。
+
+    如果用户已有 active plan，先把旧 plan 标记为 abandoned 再创建新的，
+    避免同时存在多个活跃计划。
+    """
+    _abandon_active_plans(db, user_id)
 
     blueprint = _get_blueprint(target_path)
     plan = MicroActionPlan(
@@ -308,6 +312,49 @@ def create_plan(
         for item in blueprint
     ]
     db.add_all(tasks)
+    db.commit()
+    db.refresh(plan)
+    return plan
+
+
+def create_plan_from_tasks(
+    db: Session,
+    user_id: UUID,
+    target_path: str,
+    target_role: str | None,
+    tasks: list[dict],
+) -> MicroActionPlan:
+    """从 AI 生成的自定义任务列表创建微行动计划（chat 学习计划师落库通道）。
+
+    与 create_plan 共享 active-plan 唯一性守卫。tasks 为已通过
+    skill 层校验的 {day_number, task_type, title, description,
+    estimated_minutes} 字典列表（见 learning_plan_generator._validate_micro_action_plan）。
+    """
+    if not tasks:
+        raise ValueError("tasks 不能为空")
+    _abandon_active_plans(db, user_id)
+    plan = MicroActionPlan(
+        user_id=user_id,
+        target_path=target_path,
+        target_role=target_role,
+        status="active",
+    )
+    db.add(plan)
+    db.flush()
+    db.add_all(
+        [
+            MicroActionTask(
+                plan_id=plan.id,
+                day_number=t["day_number"],
+                task_type=t["task_type"],
+                title=t["title"],
+                description=t["description"],
+                estimated_minutes=t.get("estimated_minutes") or 20,
+                status="pending",
+            )
+            for t in tasks
+        ]
+    )
     db.commit()
     db.refresh(plan)
     return plan

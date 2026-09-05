@@ -490,6 +490,25 @@ async def send_message(
         except Exception as e:
             logger.debug("user_context cache invalidate after plan save failed: %s", e)
 
+    # 10.5 学习计划师的 7 天微行动计划落库（行为设计闭环：连击/D2 提醒）
+    saved_micro_plan_id = None
+    micro_plan_data = parsed.get("micro_action_plan")
+    if micro_plan_data and micro_plan_data.get("tasks"):
+        try:
+            from app.services.micro_action_service import create_plan_from_tasks
+
+            micro_plan = create_plan_from_tasks(
+                db,
+                user_id,
+                micro_plan_data["target_path"],
+                micro_plan_data.get("target_role"),
+                micro_plan_data["tasks"],
+            )
+            saved_micro_plan_id = str(micro_plan.id)
+        except Exception as e:
+            # 落库失败降级为纯对话回复，不阻塞消息返回
+            logger.warning("微行动计划落库失败（降级为仅对话回复）: %s", e)
+
     # 11. 保存 AI 消息（含 skill_used 与 context_snapshot）
     context_snapshot = {
         "knowledge_count": len(knowledge),
@@ -514,6 +533,7 @@ async def send_message(
         "content": reply_content,
         "skill_used": skill.code,
         "career_plan": saved_plan_id,
+        "micro_action_plan": saved_micro_plan_id,
     }
     if data_sources:
         result["agent_sources"] = data_sources

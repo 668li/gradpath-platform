@@ -691,6 +691,8 @@ export interface SendMessageResponse {
   content: string;
   skill_used: string;
   career_plan: string | null;
+  /** 学习计划师落库的 7 天微行动计划 ID（micro-actions 闭环入口） */
+  micro_action_plan?: string | null;
   /** 站内数据搜索层带回的真实数据来源（前端气泡「参考来源」标签） */
   agent_sources?: AgentSourceItem[] | null;
   agent_confidence?: number | null;

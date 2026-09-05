@@ -423,6 +423,80 @@ def search_market(db: Session, keyword: str | None, limit: int = 5) -> list[Data
     ]
 
 
+def search_announcements(db: Session, keyword: str | None = None, limit: int = 3) -> list[DataHit]:
+    """官方公告（kaoyan_news 正式表 official 来源；暂存表 APPROVED 兜底）。
+
+    正式表尚无 official 行时降级查暂存表（审核晋升前的合法数据源），
+    两处都空返回 []——由上层明示「暂无已收录公告」，绝不编造公告内容。
+    """
+    hits: list[DataHit] = []
+    try:
+        from app.models.kaoyan_news import KaoyanNews
+
+        q = db.query(KaoyanNews).filter(
+            KaoyanNews.status == "approved",
+            KaoyanNews.source_platform == "official",
+        )
+        if keyword:
+            q = q.filter(
+                KaoyanNews.title.like(f"%{keyword}%")
+                | KaoyanNews.content.like(f"%{keyword}%")
+                | KaoyanNews.category.like(f"%{keyword}%")
+            )
+        rows = (
+            q.order_by(KaoyanNews.published_at.desc().nullslast(), KaoyanNews.crawled_at.desc())
+            .limit(limit)
+            .all()
+        )
+        for r in rows:
+            published = r.published_at.strftime("%Y-%m-%d") if r.published_at else "日期未知"
+            body = (r.summary or r.content or "")[:220]
+            hits.append(
+                DataHit(
+                    title=r.title[:80],
+                    content=f"《{r.title}》（{published}，{r.category or ''}）：{body}",
+                    source_table="kaoyan_news",
+                    url=r.source_url or "",
+                    year=r.published_at.year if r.published_at else None,
+                )
+            )
+    except Exception as e:
+        logger.warning("公告正式表搜索失败: %s", e)
+
+    if hits:
+        return hits
+
+    # 暂存表兜底（审核晋升前）
+    try:
+        from app.models.ingestion import ExternalResearchItem
+
+        q2 = db.query(ExternalResearchItem).filter(
+            ExternalResearchItem.source_platform == "official",
+            ExternalResearchItem.review_status == "APPROVED",
+        )
+        if keyword:
+            q2 = q2.filter(
+                ExternalResearchItem.title.like(f"%{keyword}%")
+                | ExternalResearchItem.content.like(f"%{keyword}%")
+            )
+        rows2 = (
+            q2.order_by(ExternalResearchItem.created_at.desc().nullslast()).limit(limit).all()
+        )
+        for r in rows2:
+            body = (r.content or "")[:220]
+            hits.append(
+                DataHit(
+                    title=(r.title or "")[:80],
+                    content=f"《{r.title}》：{body}",
+                    source_table="t_external_research_item",
+                    url=r.source_url or "",
+                )
+            )
+    except Exception as e:
+        logger.warning("公告暂存表搜索失败: %s", e)
+    return hits
+
+
 # ---------------------------------------------------------------------------
 # 代码级意图路由 — 零 LLM 调用，置信不足不查库
 # ---------------------------------------------------------------------------
@@ -432,6 +506,7 @@ _INTEL_WORDS = ("报录比", "推免", "保护一志愿", "卡本科", "卡第�
 _POSITION_WORDS = ("职位", "岗位", "招录", "招考", "国考", "省考", "公务员", "报考条件")
 _SALARY_WORDS = ("薪资", "工资", "待遇", "年薪", "月薪", "薪酬", "挣多少", "赚多少")
 _MARKET_WORDS = ("就业前景", "就业面", "行业趋势", "市场行情")
+_ANNOUNCE_WORDS = ("公告", "简章", "招生信息", "招考通知")
 
 
 def detect_data_intents(content: str) -> list[DataIntent]:
@@ -472,6 +547,9 @@ def detect_data_intents(content: str) -> list[DataIntent]:
         intents.append(DataIntent("salary", {"keyword": major}))
     if any(w in text for w in _MARKET_WORDS):
         intents.append(DataIntent("market", {"keyword": major or extract_dept(text)}))
+    if any(w in text for w in _ANNOUNCE_WORDS):
+        # 公告查询无关键词也能查（返回最新几条），不需要置信门槛
+        intents.append(DataIntent("announcements", {"keyword": schools[0] if schools else major}))
     return intents
 
 
@@ -520,6 +598,8 @@ def run_data_search(
                 found = search_salary(db, intent.params.get("keyword"))
             elif intent.domain == "market":
                 found = search_market(db, intent.params.get("keyword"))
+            elif intent.domain == "announcements":
+                found = search_announcements(db, intent.params.get("keyword"))
             else:
                 found = []
             hits.extend(found)

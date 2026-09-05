@@ -409,6 +409,18 @@ _SKILLS: list[SkillInfo] = [
         icon="compass",
     ),
     SkillInfo(
+        code="announcement_interpreter",
+        name="announcement_interpreter",
+        display_name="公告解读",
+        description="解读站内官方公告：对你的影响、关键日期、本周行动项，带原文来源。",
+        trigger_words=["公告", "简章", "招生简章", "调剂公告", "招考通知", "招生信息", "解读公告"],
+        use_cases=["看到招生简章想知道对自己意味着什么", "查某校最新公告", "把公告翻译成行动项"],
+        capabilities=["按院校/专业检索已收录公告", "身份匹配影响分析", "关键日期与行动项提炼"],
+        limitations=["只覆盖站内已收录并通过审核的公告", "原文未提及的信息不推测"],
+        category="advisor",
+        icon="megaphone",
+    ),
+    SkillInfo(
         code="position_advisor",
         name="position_advisor",
         display_name="选岗参谋",
@@ -687,6 +699,7 @@ def _load_skill_classes():
     from app.skills.interview_simulation import InterviewSimulationSkill
     from app.skills.learning_plan_generator import LearningPlanGeneratorSkill
     from app.skills.life_design import LifeDesignSkill
+    from app.skills.announcement_interpreter import AnnouncementInterpreterSkill
     from app.skills.position_advisor import PositionAdvisorSkill
     from app.skills.resume_diagnosis import ResumeDiagnosisSkill
     from app.skills.resume_optimizer import ResumeOptimizerSkill
@@ -712,6 +725,7 @@ def _load_skill_classes():
         UserReferralSkill,
         LifeDesignSkill,
         PositionAdvisorSkill,
+        AnnouncementInterpreterSkill,
     ]:
         _SKILL_CLASSES[cls.code] = cls
 
