@@ -547,7 +547,13 @@ export default function AssessmentPage() {
 
       <details className="group rounded-xl border border-paper-300 bg-white/60">
         <summary className="flex cursor-pointer select-none items-center justify-between px-5 py-3.5 text-sm font-medium text-ink-600 hover:text-ink-800">
-          <span>更多测评（MBTI / 大五 50 题 / DISC）</span>
+          <span>
+            更多测评（
+            {ASSESSMENTS.filter((a) => a.more)
+              .map((a) => TYPE_NAMES[a.type])
+              .join(" / ")}
+            ）
+          </span>
           <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
         </summary>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-5 pb-5">
@@ -601,7 +607,7 @@ function QuizView({
   const answeredCount = questions.filter((q) => answers[q.id]).length;
   const progress = questions.length ? (answeredCount / questions.length) * 100 : 0;
   // 大五采用 Likert 5 级量表，横向排列
-  const isLikert = type === "big_five";
+  const isLikert = type === "big_five" || type === "big_five_short";
 
   const currentQuestion = questions[currentIdx];
   const isLast = currentIdx === questions.length - 1;

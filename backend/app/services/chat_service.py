@@ -174,12 +174,28 @@ def build_user_context(db: Session, user_id: UUID) -> str:
         if profile.self_introduction:
             lines.append(f"- 自我介绍：{profile.self_introduction}")
 
-    # 最新职业测评结果（霍兰德）
+    # 职业测评（主画像槽只认完整版；短版作学习风格信号附加，防止顶掉主画像）
     from app.models.assessment import Assessment
+    from app.services.user_context_service import (
+        LEARNING_STYLE_ASSESSMENT_TYPE,
+        MAIN_ASSESSMENT_TYPES,
+    )
 
     latest_assessment = (
         db.query(Assessment)
-        .filter(Assessment.user_id == user_id)
+        .filter(
+            Assessment.user_id == user_id,
+            Assessment.assessment_type.in_(MAIN_ASSESSMENT_TYPES),
+        )
+        .order_by(Assessment.created_at.desc())
+        .first()
+    )
+    latest_short = (
+        db.query(Assessment)
+        .filter(
+            Assessment.user_id == user_id,
+            Assessment.assessment_type == LEARNING_STYLE_ASSESSMENT_TYPE,
+        )
         .order_by(Assessment.created_at.desc())
         .first()
     )
@@ -190,6 +206,12 @@ def build_user_context(db: Session, user_id: UUID) -> str:
         lines.append(f"- 结果摘要：{latest_assessment.result_summary}")
         if latest_assessment.recommended_directions:
             lines.append(f"- 推荐方向：{', '.join(latest_assessment.recommended_directions)}")
+    elif latest_short:
+        lines.append("【学习风格信号】")
+        lines.append(f"- 大五短版编码：{latest_short.result_code}（每维 2 题，低分辨率参考）")
+        lines.append(f"- 结果摘要：{latest_short.result_summary}")
+    if latest_short and latest_assessment:
+        lines.append(f"- 学习风格信号（大五短版）：{latest_short.result_code}，低分辨率参考")
 
     # 当前职业规划（active 状态，最多 3 条）
     active_plans = (
