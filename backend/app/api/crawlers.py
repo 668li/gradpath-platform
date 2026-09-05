@@ -22,6 +22,7 @@ from app.database import SessionLocal, get_db
 from app.models.crawler_run import CrawlerRun
 from app.models.user import User
 from app.schemas.crawler_run import CrawlerInfo, CrawlerRunRequest, CrawlerRunResponse
+from app.utils.business_time import BEIJING_TZ
 
 logger = logging.getLogger(__name__)
 
@@ -609,6 +610,7 @@ def seed_default_schedules() -> None:
             day=day,
             month=month,
             day_of_week=day_of_week,
+            timezone=BEIJING_TZ,
         )
         logger.info("已补齐默认按日定时任务: %s (%s)", source_name, cron)
 

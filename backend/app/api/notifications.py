@@ -266,6 +266,7 @@ def create_notification(
     type: str = "system",
     title: str = "",
     content: str = "",
+    link: str | None = None,
 ) -> Notification:
     """创建通知并返回实例（不自动 commit）。"""
     n = Notification(
@@ -273,6 +274,7 @@ def create_notification(
         type=NotificationType(type),
         title=title,
         content=content,
+        link=link,
     )
     db.add(n)
     db.flush()
@@ -285,9 +287,10 @@ async def push_notification(
     type: str = "system",
     title: str = "",
     content: str = "",
+    link: str | None = None,
 ) -> Notification:
     """创建通知并实时推送给用户（自动 commit）。"""
-    n = create_notification(db, user_id, type, title, content)
+    n = create_notification(db, user_id, type, title, content, link=link)
     db.commit()
     db.refresh(n)
     # 实时推送到 WebSocket
@@ -300,6 +303,7 @@ async def push_notification(
                 "type": n.type.value if hasattr(n.type, "value") else str(n.type),
                 "title": n.title,
                 "content": n.content,
+                "link": n.link,
                 "read": n.read,
                 "archived": n.archived,
                 "created_at": n.created_at.isoformat() if n.created_at else None,

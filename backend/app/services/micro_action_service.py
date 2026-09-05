@@ -369,6 +369,12 @@ async def complete_task(db: Session, task_id: UUID, user_response: str) -> Micro
     if task is None:
         raise ValueError("任务不存在")
 
+    # 幂等守卫：重复调用不重复加经验、不重复生成洞察
+    if task.status == "completed":
+        return task
+
+    user_response = (user_response or "").strip()
+
     task.status = "completed"
     task.user_response = user_response
     task.completed_at = datetime.now(timezone.utc)
@@ -405,6 +411,10 @@ def skip_task(db: Session, task_id: UUID) -> MicroActionTask:
     task = get_task(db, task_id)
     if task is None:
         raise ValueError("任务不存在")
+
+    # 幂等守卫：已完成/已跳过的任务不再改状态（complete 后误调 skip 不得覆盖）
+    if task.status in ("completed", "skipped"):
+        return task
 
     task.status = "skipped"
     task.completed_at = datetime.now(timezone.utc)

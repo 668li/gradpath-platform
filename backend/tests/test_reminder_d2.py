@@ -257,3 +257,25 @@ def test_register_job_noop_in_test_env(monkeypatch):
     monkeypatch.setattr(crawlers, "get_scheduler", lambda: _FakeScheduler())
     register_d2_reminder_job()
     assert called["scheduler"] is False
+
+
+# ----------------------------------------------------------------------
+# 深链（漏斗修复）
+# ----------------------------------------------------------------------
+
+
+async def test_d2_reminder_notification_has_deep_link(db_session):
+    """发提醒后落库的 Notification.link 必须是 /micro-actions（可跳转回面板）。"""
+    user = _make_user(db_session, "d2-link@example.com")
+    _make_plan_with_task(db_session, user, completed_yesterday=True)
+
+    sent = await reminder_service.send_d2_reminders(db_session)
+    assert sent == 1
+
+    notification = (
+        db_session.query(Notification)
+        .filter(Notification.user_id == user.id, Notification.type == "reminder")
+        .first()
+    )
+    assert notification is not None
+    assert notification.link == "/micro-actions"

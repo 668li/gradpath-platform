@@ -3,6 +3,9 @@
 
 from collections import Counter
 
+from app.models.streak import StreakRecord
+from app.models.user import User
+
 
 # ----------------------------------------------------------------------
 # 辅助函数
@@ -411,3 +414,66 @@ class TestSelfDiscoveryReport:
         body = resp.json()
         assert body["self_discovery_report"]
         assert "喜好" in body["self_discovery_report"]
+
+
+# ----------------------------------------------------------------------
+# 完成任务幂等守卫 + user_response 清洗
+# ----------------------------------------------------------------------
+class TestCompleteTaskIdempotency:
+    def test_complete_twice_keeps_xp_earned(self, auth_headers, client, db_session):
+        """同一任务连续 complete 两次 → StreakRecord.xp_earned 不变（不重复加经验）。"""
+        plan = _create_plan(client, auth_headers, path="employment")
+        task_id = _get_first_task_id(plan)
+
+        resp1 = client.post(
+            f"/api/micro-actions/tasks/{task_id}/complete",
+            headers=auth_headers,
+            json={"user_response": "第一次完成"},
+        )
+        assert resp1.status_code == 200, resp1.text
+
+        resp2 = client.post(
+            f"/api/micro-actions/tasks/{task_id}/complete",
+            headers=auth_headers,
+            json={"user_response": "第二次完成"},
+        )
+        assert resp2.status_code == 200, resp2.text
+
+        user = db_session.query(User).filter(User.email == "test@example.com").first()
+        records = (
+            db_session.query(StreakRecord).filter(StreakRecord.user_id == user.id).all()
+        )
+        assert len(records) == 1, "重复 complete 不得再记一条连击"
+        assert records[0].xp_earned == 3, "重复 complete 不得重复加经验（micro=3XP）"
+
+    def test_skip_after_complete_keeps_completed(self, auth_headers, client, db_session):
+        """对已完成任务调 skip → status 仍是 completed（不被覆盖）。"""
+        plan = _create_plan(client, auth_headers, path="employment")
+        task_id = _get_first_task_id(plan)
+
+        resp = client.post(
+            f"/api/micro-actions/tasks/{task_id}/complete",
+            headers=auth_headers,
+            json={"user_response": "已完成"},
+        )
+        assert resp.status_code == 200, resp.text
+
+        resp = client.post(
+            f"/api/micro-actions/tasks/{task_id}/skip",
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["status"] == "completed"
+
+    def test_complete_strips_user_response(self, auth_headers, client):
+        """complete_task 内部对 user_response 做首尾空白清洗。"""
+        plan = _create_plan(client, auth_headers, path="employment")
+        task_id = _get_first_task_id(plan)
+
+        resp = client.post(
+            f"/api/micro-actions/tasks/{task_id}/complete",
+            headers=auth_headers,
+            json={"user_response": "  今天完成了 JD 调研  "},
+        )
+        assert resp.status_code == 200, resp.text
+        assert resp.json()["user_response"] == "今天完成了 JD 调研"

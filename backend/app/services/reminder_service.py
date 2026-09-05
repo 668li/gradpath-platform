@@ -14,7 +14,6 @@ from __future__ import annotations
 import logging
 from datetime import date, datetime, time, timedelta, timezone
 from uuid import UUID
-from zoneinfo import ZoneInfo
 
 from sqlalchemy.orm import Session
 
@@ -22,13 +21,14 @@ from app.config import settings
 from app.models.micro_action import MicroActionPlan, MicroActionTask
 from app.models.notification import Notification
 from app.models.streak import StreakRecord
+from app.utils.business_time import BEIJING_TZ as REMINDER_TZ
 
 logger = logging.getLogger(__name__)
 
 REMINDER_JOB_ID = "micro_action_reminder_d2"
 
 # 业务时间基准=用户所在时区（北京时间）。容器 UTC≠宿主机 CST，不许用系统本地时区。
-REMINDER_TZ = ZoneInfo("Asia/Shanghai")
+# REMINDER_TZ 现为 app.utils.business_time.BEIJING_TZ 的别名（对外名字不变）。
 
 # 同一用户同一天最多 1 条提醒，且只提醒「中断次日」场景
 REMINDER_TITLE = "昨天的探索还留着尾巴"
@@ -129,6 +129,7 @@ async def send_d2_reminders(db: Session | None = None) -> int:
                     type="reminder",
                     title=REMINDER_TITLE,
                     content=REMINDER_CONTENT,
+                    link="/micro-actions",
                 )
                 sent += 1
             except Exception:
