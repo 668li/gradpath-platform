@@ -70,14 +70,14 @@ const QUICK_START_CARDS = [
     sceneIcon: "📍",
     title: "我能报什么岗",
     text: "我本科毕业、专业是计算机，帮我看看国考有哪些岗位我能报、进面线多少？",
-    skill: "",
+    skill: "position_advisor",
   },
   {
     scene: "查线",
     sceneIcon: "📈",
     title: "分数线稳不稳",
     text: "我想考这个学校，进面线大概多少分？我够不够得着？",
-    skill: "",
+    skill: "grad_school_planning",
   },
   {
     scene: "志愿",
@@ -143,7 +143,17 @@ export default function ChatPage() {
     setLoadingMsgs(true);
     chatApi
       .getMessages(currentId)
-      .then((msgs) => setMessages(msgs))
+      .then((msgs) =>
+        // 历史消息：从 context_snapshot 恢复站内数据来源标签
+        setMessages(
+          msgs.map((m) => ({
+            ...m,
+            agent_sources:
+              (m.context_snapshot?.data_sources as MessageWithMeta["agent_sources"]) ??
+              m.agent_sources,
+          })),
+        ),
+      )
       .catch(() => toast.push("加载消息失败", "error"))
       .finally(() => setLoadingMsgs(false));
   }, [currentId, toast]);
@@ -229,6 +239,8 @@ export default function ChatPage() {
         content: res.content || "（AI 未返回内容，请重试）",
         skill_used: res.skill_used || null,
         context_snapshot: {},
+        agent_sources: res.agent_sources?.length ? res.agent_sources : undefined,
+        agent_confidence: res.agent_confidence ?? undefined,
         created_at: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, aiMsg]);

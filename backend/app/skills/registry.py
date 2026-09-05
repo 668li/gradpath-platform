@@ -50,6 +50,7 @@ _SKILLS: list[SkillInfo] = [
         limitations=["复杂业务逻辑需手动设计", "不用于第三方 API 集成"],
         category="builder",
         icon="code",
+        is_active=False,
         skill_path="d:\\职业规划\\skills\\api-endpoint-builder",
     ),
     SkillInfo(
@@ -73,6 +74,7 @@ _SKILLS: list[SkillInfo] = [
         limitations=["不用于单条内容创作", "不用于用户 UGC 内容"],
         category="generator",
         icon="users",
+        is_active=False,
         skill_path="d:\\职业规划\\skills\\community-content-generator",
     ),
     SkillInfo(
@@ -95,6 +97,7 @@ _SKILLS: list[SkillInfo] = [
         limitations=["不用于通用爬虫", "不用于实时数据采集", "不破解反爬机制"],
         category="builder",
         icon="database",
+        is_active=False,
         skill_path="d:\\职业规划\\skills\\data-crawler-builder",
     ),
     SkillInfo(
@@ -118,6 +121,7 @@ _SKILLS: list[SkillInfo] = [
         limitations=["不用于复杂交互逻辑", "不用于第三方组件集成"],
         category="builder",
         icon="layout",
+        is_active=False,
         skill_path="d:\\职业规划\\skills\\frontend-page-builder",
     ),
     SkillInfo(
@@ -142,6 +146,7 @@ _SKILLS: list[SkillInfo] = [
         limitations=["不用于具体科目复习指导", "不用于心理疏导"],
         category="advisor",
         icon="graduation-cap",
+        is_active=False,
         skill_path="d:\\职业规划\\skills\\kaoyan-advisor",
     ),
     SkillInfo(
@@ -166,6 +171,7 @@ _SKILLS: list[SkillInfo] = [
         limitations=["不用于真实数据爬取", "不用于用户 UGC"],
         category="generator",
         icon="seed",
+        is_active=False,
         skill_path="d:\\职业规划\\skills\\seed-data-generator",
     ),
     SkillInfo(
@@ -401,6 +407,18 @@ _SKILLS: list[SkillInfo] = [
         limitations=["不提供心理诊断或医疗建议", "不做职业测评计分，不替用户做决定"],
         category="advisor",
         icon="compass",
+    ),
+    SkillInfo(
+        code="position_advisor",
+        name="position_advisor",
+        display_name="选岗参谋",
+        description="按你的学历/专业/意向地区筛选真实公务员岗位，附进面分与来源。",
+        trigger_words=["选岗", "报岗", "职位", "岗位", "国考", "省考", "公务员", "招录", "招考", "岗位表"],
+        use_cases=["考公选岗，想知道自己能报哪些岗位", "对比岗位竞争度与进面分", "按条件筛选职位表"],
+        capabilities=["按学历/地区/系统/专业筛选真实职位", "附去年进面最低分", "条件不足时选项化澄清"],
+        limitations=["只覆盖站内已收录年份的职位表", "不做录取概率承诺"],
+        category="advisor",
+        icon="target",
     ),
     SkillInfo(
         code="default",
@@ -669,6 +687,7 @@ def _load_skill_classes():
     from app.skills.interview_simulation import InterviewSimulationSkill
     from app.skills.learning_plan_generator import LearningPlanGeneratorSkill
     from app.skills.life_design import LifeDesignSkill
+    from app.skills.position_advisor import PositionAdvisorSkill
     from app.skills.resume_diagnosis import ResumeDiagnosisSkill
     from app.skills.resume_optimizer import ResumeOptimizerSkill
     from app.skills.salary_benchmark import SalaryBenchmarkSkill
@@ -692,6 +711,7 @@ def _load_skill_classes():
         CompanyReviewSkill,
         UserReferralSkill,
         LifeDesignSkill,
+        PositionAdvisorSkill,
     ]:
         _SKILL_CLASSES[cls.code] = cls
 

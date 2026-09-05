@@ -403,6 +403,16 @@ async def send_message(
     injected_data = skill.inject_data(db, user_id, content)
     if injected_data:
         system_prompt = f"{system_prompt}\n\n【专有数据】\n{injected_data}"
+
+    # 7.5 站内数据搜索层 — 代码级意图路由（零额外 LLM 调用）。
+    # 数据型 skill 声明 covered_data_domains 的域由上面 inject_data 自己负责，此处去重跳过。
+    from app.services.data_search_service import run_data_search
+
+    data_block, data_sources, data_has_hits = run_data_search(
+        db, content, skip_domains=getattr(skill, "covered_data_domains", frozenset())
+    )
+    if data_block:
+        system_prompt = f"{system_prompt}\n\n{data_block}"
     # 将对话历史拼入用户 prompt
     history_block = ""
     if len(history) > 1:
@@ -464,6 +474,8 @@ async def send_message(
         "knowledge_titles": [k["title"] for k in knowledge],
         "has_career_plan": career_plan_data is not None,
     }
+    if data_sources:
+        context_snapshot["data_sources"] = data_sources
     ai_msg = Message(
         conversation_id=conversation_id,
         role="assistant",
@@ -476,8 +488,12 @@ async def send_message(
     db.refresh(ai_msg)
 
     # 12. 返回结果
-    return {
+    result = {
         "content": reply_content,
         "skill_used": skill.code,
         "career_plan": saved_plan_id,
     }
+    if data_sources:
+        result["agent_sources"] = data_sources
+        result["agent_confidence"] = 0.7 if data_has_hits else 0.3
+    return result

@@ -21,6 +21,10 @@ class BaseSkill(ABC):
     description: str = ""
     icon: str = ""
 
+    # 数据型 skill 声明自己负责注入的数据域（data_search_service 的 domain 名），
+    # chat 通用数据搜索层据此去重，避免同一数据双注入。
+    covered_data_domains: frozenset[str] = frozenset()
+
     @abstractmethod
     def should_activate(self, message: str, context: dict) -> bool:
         """判断是否应该激活此 Skill。"""

@@ -51,6 +51,9 @@ class SendMessageResponse(BaseModel):
     content: str
     skill_used: str
     career_plan: str | None = None  # 保存的 CareerPlan ID
+    # 站内数据搜索层带回的真实数据来源（前端气泡「参考来源」标签+置信度条）
+    agent_sources: list[dict] | None = None
+    agent_confidence: float | None = None
 
 
 class SkillInfo(BaseModel):

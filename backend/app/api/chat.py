@@ -211,5 +211,5 @@ def delete_conv(
 def skills_endpoint(
     user: User = Depends(get_current_user),
 ):
-    """列出可用 Skill。"""
-    return list_skills()
+    """列出可用 Skill（过滤开发期 dev-toolbox 等未激活项）。"""
+    return [s for s in list_skills() if s["is_active"]]

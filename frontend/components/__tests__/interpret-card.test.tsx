@@ -49,7 +49,7 @@ describe("InterpretCard", () => {
   it("无测评时显示引导 message", () => {
     render(
       <InterpretCard
-        data={{ has_assessment: false, message: "完成一次职业测评后解锁" }}
+        data={{ has_assessment: false, message: "完成一次职业测评后解锁", profile: null, paths: [] }}
         loading={false}
         error={null}
       />,
