@@ -158,6 +158,62 @@ class TestAssessmentScoresSemantics:
         assert sum(data["scores"].values()) == 48
 
 
+class TestAssessmentBigFiveShort:
+    """Book 2：大五 10 题短版（big_five_short）——与 50 题版口径一致，摘要如实标注分辨率。"""
+
+    def test_short_flat_answers_are_dimension_means(self, auth_headers, client):
+        answers = _full_answers("bfs", ["3"], count=10)  # 全 3 分，每维均分应为 3.0
+        resp = client.post(
+            "/api/assessment/submit",
+            headers=auth_headers,
+            json={"answers": answers, "assessment_type": "big_five_short"},
+        )
+        assert resp.status_code == 201
+        data = resp.json()
+        assert set(data["scores"].keys()) == {"O", "C", "E", "A", "N"}
+        for dim in ("O", "C", "E", "A", "N"):
+            assert data["scores"][dim] == 3.0
+        assert data["result_code"] == "O3C3E3A3N3"
+        assert "短版" in data["result_summary"]  # 低分辨率如实标注
+
+    def test_short_mixed_scores_and_directions(self, auth_headers, client):
+        answers = {**_full_answers("bfs", ["5"], count=2)}  # O: 5,5
+        answers.update({f"bfs_q{i}": "1" for i in (3, 4)})  # C: 1,1
+        answers.update({f"bfs_q{i}": "3" for i in (5, 6)})  # E: 3,3
+        answers.update({f"bfs_q{i}": "4" for i in (7, 8)})  # A: 4,4
+        answers.update({f"bfs_q{i}": "2" for i in (9, 10)})  # N: 2,2
+        resp = client.post(
+            "/api/assessment/submit",
+            headers=auth_headers,
+            json={"answers": answers, "assessment_type": "big_five_short"},
+        )
+        assert resp.status_code == 201
+        data = resp.json()
+        assert data["scores"] == {"O": 5.0, "C": 1.0, "E": 3.0, "A": 4.0, "N": 2.0}
+        assert data["result_code"] == "O5C1E3A4N2"
+        assert data["recommended_directions"]  # top2 维度（O/A）有推荐方向
+
+    def test_short_incomplete_appends_missing_warning(self, auth_headers, client):
+        answers = _full_answers("bfs", ["3"], count=9)  # 少交 1 题
+        resp = client.post(
+            "/api/assessment/submit",
+            headers=auth_headers,
+            json={"answers": answers, "assessment_type": "big_five_short"},
+        )
+        assert resp.status_code == 201
+        assert "缺失" in resp.json()["result_summary"]
+
+    def test_short_single_option_warns(self, auth_headers, client):
+        answers = _full_answers("bfs", ["4"], count=10)
+        resp = client.post(
+            "/api/assessment/submit",
+            headers=auth_headers,
+            json={"answers": answers, "assessment_type": "big_five_short"},
+        )
+        assert resp.status_code == 201
+        assert "同一选项" in resp.json()["result_summary"]
+
+
 class TestAssessmentValidation:
     """B3：后端答案完整性 + 作答可信度校验。"""
 

@@ -1,9 +1,10 @@
 # backend/app/services/assessment_service.py
-"""职业测评服务层 — 支持 4 种测评体系。
+"""职业测评服务层 — 支持 5 种测评体系。
 
 - 霍兰德职业兴趣测评（48 题，6 维度 R/I/A/S/E/C）
 - MBTI 16 型人格测试（40 题，4 维度 E/I、S/N、T/F、J/P）
 - 大五人格 OCEAN 测评（50 题，5 维度 O/C/E/A/N，Likert 5 级）
+- 大五人格 OCEAN 短版（10 题，每维度 2 题，低分辨率学习风格信号）
 - DISC 行为风格测评（24 题，4 维度 D/I/S/C）
 
 题目内置在 `app/services/assessment_data/` 下，无需数据库表。
@@ -16,6 +17,10 @@ from app.services.assessment_data.big_five_questions import (
     BIG_FIVE_DESCRIPTIONS,
     BIG_FIVE_ITEM_DIMENSIONS,
     BIG_FIVE_QUESTIONS,
+)
+from app.services.assessment_data.big_five_short_questions import (
+    BFS_ITEM_DIMENSIONS,
+    BIG_FIVE_SHORT_QUESTIONS,
 )
 from app.services.assessment_data.disc_questions import DISC_QUESTIONS, DISC_TYPES
 from app.services.assessment_data.holland_questions import HOLLAND_DESCRIPTIONS, HOLLAND_QUESTIONS
@@ -122,19 +127,13 @@ def calculate_mbti_result(answers: dict) -> dict:
 # ----------------------------------------------------------------------
 # 大五人格测评结果计算
 # ----------------------------------------------------------------------
-def calculate_big_five_result(answers: dict) -> dict:
-    """计算大五人格测评结果。answers = {"bf_q1": "4", "bf_q2": "3", ...}
+def _big_five_core(answers: dict, item_dimensions: dict) -> tuple[dict[str, float], str]:
+    """大五共通计算核：按题目→维度映射求各维度均分与 OCEAN 编码。
 
-    每维度 10 题，计算各维度均分（保留 2 位小数）。
-    result_code 形如 "O4C5E3A4N2"（每维度字母 + 四舍五入整数分）。
-    推荐方向取均分最高的 2 个维度的推荐职业合并去重。
-
-    Returns:
-        {"result_code", "result_summary", "recommended_directions", "scores"}
-    """
+    50 题版与 10 题短版共用，保证口径一致（均分保留 2 位、编码取整）。"""
     dim_scores: dict[str, list[int]] = {"O": [], "C": [], "E": [], "A": [], "N": []}
     for qid, score_value in answers.items():
-        dim = BIG_FIVE_ITEM_DIMENSIONS.get(qid)
+        dim = item_dimensions.get(qid)
         if not dim:
             continue
         try:
@@ -156,8 +155,13 @@ def calculate_big_five_result(answers: dict) -> dict:
     result_code = "".join(
         f"{dim}{int(round(avg_scores[dim]))}" for dim in ["O", "C", "E", "A", "N"]
     )
+    return avg_scores, result_code
 
-    # 推荐方向：取均分最高的 2 个维度
+
+def _big_five_directions_and_summary(
+    avg_scores: dict[str, float], result_code: str, *, short: bool
+) -> tuple[list[str], str]:
+    """大五共通收尾：top2 维度推荐方向去重 + 结果摘要（短版如实标注分辨率）。"""
     sorted_dims = sorted(avg_scores.items(), key=lambda x: x[1], reverse=True)
     directions = []
     for dim, _ in sorted_dims[:2]:
@@ -171,17 +175,59 @@ def calculate_big_five_result(answers: dict) -> dict:
             seen.add(d)
             unique_directions.append(d)
 
-    # 摘要
     parts = []
     for dim in ["O", "C", "E", "A", "N"]:
         info = BIG_FIVE_DESCRIPTIONS.get(dim, {})
         parts.append(f"{info.get('name', dim)}：{avg_scores[dim]} 分")
-    summary = f"你的大五人格测评结果为 {result_code}。\n" + "；".join(parts)
+    if short:
+        summary = (
+            f"你的大五人格短版（10 题）结果为 {result_code}。"
+            "每维度仅 2 题，是低分辨率的参考信号（适合了解学习风格，不是精细画像）。\n"
+            + "；".join(parts)
+        )
+    else:
+        summary = f"你的大五人格测评结果为 {result_code}。\n" + "；".join(parts)
+    return unique_directions[:6], summary
+
+
+def calculate_big_five_result(answers: dict) -> dict:
+    """计算大五人格测评结果。answers = {"bf_q1": "4", "bf_q2": "3", ...}
+
+    每维度 10 题，计算各维度均分（保留 2 位小数）。
+    result_code 形如 "O4C5E3A4N2"（每维度字母 + 四舍五入整数分）。
+    推荐方向取均分最高的 2 个维度的推荐职业合并去重。
+
+    Returns:
+        {"result_code", "result_summary", "recommended_directions", "scores"}
+    """
+    avg_scores, result_code = _big_five_core(answers, BIG_FIVE_ITEM_DIMENSIONS)
+    directions, summary = _big_five_directions_and_summary(
+        avg_scores, result_code, short=False
+    )
 
     return {
         "result_code": result_code,
         "result_summary": summary,
-        "recommended_directions": unique_directions[:6],
+        "recommended_directions": directions,
+        "scores": avg_scores,
+    }
+
+
+def calculate_big_five_short_result(answers: dict) -> dict:
+    """计算大五人格短版（10 题）结果。answers = {"bfs_q1": "4", ...}
+
+    每维度 2 题，口径与 50 题版一致（均分/OCEAN 编码），
+    摘要如实标注低分辨率，推荐方向逻辑相同。
+    """
+    avg_scores, result_code = _big_five_core(answers, BFS_ITEM_DIMENSIONS)
+    directions, summary = _big_five_directions_and_summary(
+        avg_scores, result_code, short=True
+    )
+
+    return {
+        "result_code": result_code,
+        "result_summary": summary,
+        "recommended_directions": directions,
         "scores": avg_scores,
     }
 
@@ -238,6 +284,7 @@ ASSESSMENT_QUESTIONS = {
     "holland": HOLLAND_QUESTIONS,
     "mbti": MBTI_QUESTIONS,
     "big_five": BIG_FIVE_QUESTIONS,
+    "big_five_short": BIG_FIVE_SHORT_QUESTIONS,
     "disc": DISC_QUESTIONS,
 }
 
@@ -245,5 +292,6 @@ ASSESSMENT_CALCULATORS = {
     "holland": calculate_holland_result,
     "mbti": calculate_mbti_result,
     "big_five": calculate_big_five_result,
+    "big_five_short": calculate_big_five_short_result,
     "disc": calculate_disc_result,
 }

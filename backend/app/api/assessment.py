@@ -1,5 +1,5 @@
 # backend/app/api/assessment.py
-"""职业测评 API 路由 — 支持 4 种测评体系。
+"""职业测评 API 路由 — 支持 5 种测评体系。
 
 - GET /api/assessment/questions — 获取题目列表（可选 type 参数，默认 holland，无需认证）
 - POST /api/assessment/submit — 提交答案，计算结果并保存
@@ -7,7 +7,7 @@
 - GET /api/assessment/history — 获取历史记录
 - POST /api/assessment/interpret — 测评 × 专有报考数据 → 专属路径解读（护城河）
 
-支持的测评类型：holland | mbti | big_five | disc
+支持的测评类型：holland | mbti | big_five | big_five_short | disc
 """
 
 from collections import Counter
@@ -38,6 +38,7 @@ _ASSESSMENT_ANSWER_VALUES = {
     "holland": {"R", "I", "A", "S", "E", "C"},
     "mbti": {"E", "I", "S", "N", "T", "F", "J", "P"},
     "big_five": {str(i) for i in range(1, 6)},  # Likert 1~5
+    "big_five_short": {str(i) for i in range(1, 6)},  # Likert 1~5（短版）
     "disc": {"D", "I", "S", "C"},
 }
 
@@ -104,7 +105,7 @@ def _validate_answers(assessment_type: str, answers: dict) -> list[str]:
         unique = len({v for v in values if v in legal_values})
         if unique <= 1:
             warnings.append("你的作答几乎都为同一选项，结果可能偏颇，解读时请留意。")
-        if assessment_type == "big_five":
+        if assessment_type in ("big_five", "big_five_short"):
             nums = [
                 int(answers[qid])
                 for qid in required_ids
@@ -127,7 +128,7 @@ def _validate_answers(assessment_type: str, answers: dict) -> list[str]:
 
 
 @router.get("/questions", response_model=list[Question])
-def get_questions(type: str = Query("holland", description="测评类型：holland|mbti|big_five|disc")):
+def get_questions(type: str = Query("holland", description="测评类型：holland|mbti|big_five|big_five_short|disc")):
     """获取指定类型的测评题目列表（无需认证）。
 
     不传 type 时默认返回霍兰德题目，保持向后兼容。
