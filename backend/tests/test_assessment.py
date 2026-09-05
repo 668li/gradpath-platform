@@ -213,6 +213,21 @@ class TestAssessmentBigFiveShort:
         assert resp.status_code == 201
         assert "同一选项" in resp.json()["result_summary"]
 
+    def test_short_low_variance_warns(self, auth_headers, client):
+        """方差过低检查对短版生效：9×3 + 1×4 → 方差 0.09 < 0.3，但 unique=2
+        不触发"同一选项"，只触发"区分度低"。"""
+        answers = _full_answers("bfs", ["3"], count=10)
+        answers["bfs_q5"] = "4"
+        resp = client.post(
+            "/api/assessment/submit",
+            headers=auth_headers,
+            json={"answers": answers, "assessment_type": "big_five_short"},
+        )
+        assert resp.status_code == 201
+        summary = resp.json()["result_summary"]
+        assert "区分度低" in summary
+        assert "同一选项" not in summary
+
 
 class TestAssessmentValidation:
     """B3：后端答案完整性 + 作答可信度校验。"""

@@ -112,6 +112,8 @@ def _validate_answers(assessment_type: str, answers: dict) -> list[str]:
                 if qid in answers and answers[qid] in legal_values
             ]
             if len(nums) >= 5:
+                # 阈值 0.3 系 50 题版原值直接继承，10 题短版未按题数重新标定——
+                # 短版作答集中时更易触发本警示，宁多提示不漏提示（有数据后应回测标定）。
                 variance = sum((x - sum(nums) / len(nums)) ** 2 for x in nums) / len(nums)
                 if variance < 0.3:
                     warnings.append("你的作答选项集中在很小范围内，结果区分度低，仅供参考。")
