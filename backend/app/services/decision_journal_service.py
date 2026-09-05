@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.models.destination_decision import DestinationDecision
 from app.services.ai_orchestrator import AIOrchestrator
+from app.utils.business_time import beijing_today
 
 SYSTEM_PROMPT = """你是一位决策分析教练。用户在做一个决策时记录了预测和假设，现在填写了实际结果。
 
@@ -22,9 +23,11 @@ SYSTEM_PROMPT = """你是一位决策分析教练。用户在做一个决策时�
 请用中文回复，200-300 字，语气客观但鼓励。不要使用 markdown 格式。"""
 
 
-def get_pending_reviews(db: Session, user_id: UUID) -> list[DestinationDecision]:
-    """获取待回溯的决策列表（已到回溯日期但未完成回溯）。"""
-    today = date.today()
+def get_pending_reviews(
+    db: Session, user_id: UUID, today: date | None = None
+) -> list[DestinationDecision]:
+    """获取待回溯的决策列表（已到回溯日期但未完成回溯）。today 可注入供测试。"""
+    today = today or beijing_today()
     return (
         db.query(DestinationDecision)
         .filter(

@@ -11,6 +11,8 @@ from reportlab.lib.units import cm
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 from sqlalchemy.orm import Session
 
+from app.utils.business_time import beijing_today
+
 from app.models.career_event import CareerEvent
 from app.models.community_report import CommunityReport
 from app.models.destination_decision import DestinationDecision
@@ -311,7 +313,7 @@ def export_timeline_pdf(db: Session, user_id: UUID) -> bytes:
     story.append(Spacer(1, 20))
     story.append(
         Paragraph(
-            f"由 GradPath 自动生成 · {_iso(date.today())}",
+            f"由 GradPath 自动生成 · {_iso(beijing_today())}",
             ParagraphStyle(
                 "GPFooter",
                 parent=normal_style,

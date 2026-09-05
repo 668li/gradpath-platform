@@ -20,6 +20,7 @@ import logging
 from datetime import date
 
 from app.config import settings
+from app.utils.business_time import beijing_today
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +78,7 @@ class AIQuotaService:
 
     def _quota_key(self, user_id, today: date | None = None) -> str:
         """构造配额计数 key: ``llm_quota:{user_id}:{YYYY-MM-DD}``"""
-        d = today or date.today()
+        d = today or beijing_today()
         return f"{self.KEY_PREFIX}:{user_id}:{d.isoformat()}"
 
     async def check_llm_quota(self, user_id) -> int | None:
@@ -167,7 +168,7 @@ class AIQuotaService:
                 self._redis.delete(key)
             else:
                 # 清空所有用户的当日配额
-                d = today or date.today()
+                d = today or beijing_today()
                 pattern = f"{self.KEY_PREFIX}:*:{d.isoformat()}"
                 keys = self._redis.keys(pattern)
                 if keys:

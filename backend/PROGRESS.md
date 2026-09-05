@@ -1,4 +1,11 @@
-# 开工回执（2026-09-05）
+# 开工回执（2026-09-05 · 第二批：全仓裸 date.today() 清零）
+- 理解目标：app/ 下 21 处裸 date.today()（12 个文件）全部换 beijing_today()，筛选类函数加可选 today 注入参数，展示类只换日期来源。
+- 核验：grep date.today() app = 23 行（business_time.py 2 行注释 + 真实调用 21 处），分布与任务书逐一吻合 ✓。
+- 执行顺序：任务0基线 → 任务1替换 → 任务2注入参数 → 任务3新增 test_business_time_sweep.py（≥5 条，参数注入禁 mock）→ ruff 孤儿 import 清理 → 4 条验收。
+- 白名单：12 个 app 文件 + tests/test_business_time_sweep.py(新) + PROGRESS.md + BLOCKED.md，不做 git/迁移/frontend。
+- 最大风险：decision_pulse/proactive_insight/peer_insight 等函数被既有测试以位置参数调用，追加可选 today 参数理论零破坏；若基线 <1798 按任务书停写 BLOCKED.md。
+
+# 开工回执（2026-09-05 · 第一批）
 - 理解目标：修 4 实锤缺陷（连击 UTC 日期基准/通知深链/完成幂等/爬虫调度时区）+ 2 边角（user_response strip / docs 度量口径），只动任务书白名单文件。
 - 执行顺序：任务0核验 → 任务1连击换基准 → 任务2深链 → 任务3幂等 → 任务4时区 → 任务5边角 → 全量验收。
 - 核验结果：基线 1750 passed / 0 failed / 0 skipped（≥1750 达标）；streak_service.py date.today() 计数=6 达标；app/utils 不存在 → 将新建目录+__init__.py。

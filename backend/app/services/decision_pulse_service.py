@@ -21,6 +21,7 @@ from app.models.destination_decision import DecisionStatus, DestinationDecision
 from app.models.grad_intel import DarkKnowledge
 from app.models.user_memory import UserMemoryFact
 from app.services.user_context_service import _compute_stats
+from app.utils.business_time import beijing_today
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +31,7 @@ def get_pulse_overview(db: Session, user_id: UUID) -> dict[str, Any]:
     stats = _compute_stats(db, user_id)
 
     # 待回顾决策数（已到期）
-    today = date.today()
+    today = beijing_today()
     due_reviews = (
         db.query(DecisionReviewQueue)
         .filter(
@@ -115,7 +116,7 @@ def get_review_queue(db: Session, user_id: UUID, limit: int = 10) -> list[dict[s
         .limit(limit)
         .all()
     )
-    today = date.today()
+    today = beijing_today()
     return [
         {
             "id": str(r.id),

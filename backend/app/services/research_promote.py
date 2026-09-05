@@ -19,6 +19,7 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.utils.business_time import beijing_today
 from app.crawlers.research.experience_quality import (
     detect_promotion,
     extract_experience_meta_with_evidence,
@@ -68,8 +69,9 @@ _RANGE_RE = re.compile(
 
 # 无年份日期按"最近的该月日"推断年份（未来优先）：10 月报名/12 月初试落在当年，
 # 3-4 月复试/调剂落次年的场景可正确归属；规则版近似，LLM 增强版会精确化。
-def _resolve_year(month: int, day: int) -> int:
-    today = date.today()
+# 年份基准按北京日历（today 可注入供测试）。
+def _resolve_year(month: int, day: int, today: date | None = None) -> int:
+    today = today or beijing_today()
     year = today.year
     if date(year, month, day) < today:
         year += 1

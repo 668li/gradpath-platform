@@ -26,6 +26,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.models.assessment import Assessment
+from app.utils.business_time import beijing_today
 from app.models.career_profile import CareerProfile
 from app.models.outcome_report import OutcomeReport
 from app.services.major_prospect_service import get_prospect
@@ -142,14 +143,15 @@ def _serialize_profile(profile) -> dict | None:
     return {f: getattr(profile, f, None) for f in _PROFILE_FIELDS}
 
 
-def _fresh_from_profile(profile) -> str | None:
+def _fresh_from_profile(profile, today: date | None = None) -> str | None:
     """应届近似判断：毕业年份不早于本年度 => 应届；否则 非应届。
 
     返回值与 path_decision_engine 约定的取值一致（"应届"/"非应届"）。
-    空 graduate_year 则不参与过滤（返回 None）。"""
+    空 graduate_year 则不参与过滤（返回 None）。年度基准按北京日历（today 可注入供测试）。"""
     if profile is None or profile.graduation_year is None:
         return None
-    return "应届" if profile.graduation_year >= date.today().year else "非应届"
+    today = today or beijing_today()
+    return "应届" if profile.graduation_year >= today.year else "非应届"
 
 
 def build_interpretation(db: Session, user_id: UUID) -> dict:
