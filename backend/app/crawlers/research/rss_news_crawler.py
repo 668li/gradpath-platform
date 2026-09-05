@@ -21,7 +21,6 @@ from sqlalchemy.orm import Session
 from app.crawlers.base_crawler import BaseCrawler
 from app.crawlers.registry import register_crawler
 from app.database import SessionLocal
-from app.models.crawler_run import CrawlerRun
 from app.services.research_ingestion import store_research_items
 
 logger = logging.getLogger(__name__)
@@ -176,14 +175,11 @@ class RssNewsCrawler(BaseCrawler):
             db = SessionLocal()
             own_db = True
         try:
-            run_record = CrawlerRun(
-                source_name=self.name,
-                category=self.category,
-                status="running",
-            )
+            run_record = self._new_run_record()
             db.add(run_record)
             db.commit()
             db.refresh(run_record)
+            self.run_record_id = str(run_record.id)
 
             filtered_items = [item for item in items if self._matches_keywords(item)]
             result = store_research_items(
@@ -195,7 +191,7 @@ class RssNewsCrawler(BaseCrawler):
                 run_id=str(run_record.id),
             )
 
-            run_record.status = "success"
+            self._finalize_run_record(run_record)
             run_record.items_fetched = self.stats.get("fetched", 0)
             run_record.items_stored = result["inserted"]
             run_record.items_duplicates = result["duplicated"]

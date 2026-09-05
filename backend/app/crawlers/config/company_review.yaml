@@ -1,8 +1,9 @@
+# 2026-09-04 注销：从未被调度（crawler_runs 零记录）；文件保留待拍板
 # 公司评价爬虫配置
 name: company_review
 category: career
 description: 公司评价爬虫
-enabled: true
+enabled: false
 schedule: weekly  # 每周更新公司评价
 rate_limit: 1.0
 rate_limit_ms: 1000

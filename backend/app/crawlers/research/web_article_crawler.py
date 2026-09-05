@@ -6,6 +6,7 @@ import logging
 import re
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -18,7 +19,6 @@ if _BACKEND_DIR not in sys.path:
 from app.crawlers.base_crawler import BaseCrawler
 from app.crawlers.registry import register_crawler
 from app.database import SessionLocal
-from app.models.crawler_run import CrawlerRun
 from app.services.research_ingestion import store_research_items
 
 logger = logging.getLogger(__name__)
@@ -181,14 +181,11 @@ class WebArticleCrawler(BaseCrawler):
             db = SessionLocal()
             own_db = True
         try:
-            run_record = CrawlerRun(
-                source_name=self.name,
-                category=self.category,
-                status="running",
-            )
+            run_record = self._new_run_record()
             db.add(run_record)
             db.commit()
             db.refresh(run_record)
+            self.run_record_id = str(run_record.id)
 
             result = store_research_items(
                 db,
@@ -199,7 +196,7 @@ class WebArticleCrawler(BaseCrawler):
                 run_id=str(run_record.id),
             )
 
-            run_record.status = "success"
+            self._finalize_run_record(run_record)
             run_record.items_fetched = self.stats.get("fetched", 0)
             run_record.items_stored = result["inserted"]
             run_record.items_duplicates = result["duplicated"]
@@ -234,6 +231,9 @@ class WebArticleCrawler(BaseCrawler):
 
     def run(self, db: Any = None) -> dict:
         """执行 fetch → parse → store，不依赖数据库会话。"""
+        # 单行记账起点：与 BaseCrawler.run 对齐（行创建在 store()，计时覆盖整个 run）
+        self._run_started_at = datetime.now(timezone.utc).isoformat()
+        self._run_start_monotonic = time.monotonic()
         logger.info(f"[{self.name}] 开始爬取...")
         raw = self.fetch()
         self.stats["fetched"] = len(raw)
@@ -246,7 +246,10 @@ class WebArticleCrawler(BaseCrawler):
         self.stats["stored"] = stored
         logger.info(f"[{self.name}] 入库 {stored} 条新数据")
 
-        return {"status": "success", **self.stats}
+        result = {"status": "success", **self.stats}
+        if self.run_record_id:
+            result["run_id"] = self.run_record_id
+        return result
 
 
 def main():

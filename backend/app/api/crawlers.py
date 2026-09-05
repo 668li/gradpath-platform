@@ -211,18 +211,14 @@ def _run_crawler_background(
         config = load_config(source_name)
         crawler = cls(config=config)
 
-        # 创建执行记录
-        run_record = CrawlerRun(
-            source_name=source_name,
-            category=crawler.category,
-            status="running",
-        )
-        db.add(run_record)
-        db.commit()
-        db.refresh(run_record)
-
         # 执行爬虫
         result = crawler.run(db=db) if not dry_run else {"status": "dry_run"}
+
+        # 单行记账：行由爬虫 store() 创建（溯源链在爬虫手上），包装层只更新；
+        # 爬虫未建行（dry_run / 建行前失败）时兜底补一行，执行记录不丢。
+        from app.tasks.crawler_tasks import _resolve_run_record
+
+        run_record = _resolve_run_record(db, source_name, crawler.category, result, crawler)
 
         # 更新记录
         run_record.status = result.get("status", "unknown")
@@ -529,16 +525,13 @@ async def _run_scheduled_crawler(source_name: str):
         config = load_config(source_name)
         crawler = cls(config=config)
 
-        run_record = CrawlerRun(
-            source_name=source_name,
-            category=crawler.category,
-            status="running",
-        )
-        db.add(run_record)
-        db.commit()
-        db.refresh(run_record)
-
         result = crawler.run(db=db)
+
+        # 单行记账：行由爬虫 store() 创建（溯源链在爬虫手上），包装层只更新；
+        # 爬虫未建行（建行前失败）时兜底补一行，执行记录不丢。
+        from app.tasks.crawler_tasks import _resolve_run_record
+
+        run_record = _resolve_run_record(db, source_name, crawler.category, result, crawler)
 
         run_record.status = result.get("status", "unknown")
         run_record.items_fetched = result.get("fetched", 0)

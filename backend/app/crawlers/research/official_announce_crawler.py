@@ -42,7 +42,6 @@ from app.crawlers.base_crawler import BaseCrawler
 from app.crawlers.registry import register_crawler
 from app.crawlers.research.transformer import ResearchTransformer
 from app.database import SessionLocal
-from app.models.crawler_run import CrawlerRun
 from app.services.research_ingestion import store_research_items
 
 logger = logging.getLogger(__name__)
@@ -67,6 +66,69 @@ DEFAULT_SECTIONS: list[dict[str, Any]] = [
         "detail_url_re": r"/page\.htm$",
         "content_cls": "post-content",
         "cms": "news_list",
+    },
+    # ===== 2026-09-05 扩校 9 所（真实抓取标定达标，scripts/calibrate_official_announce.py） =====
+    # 验收线：列表页 parse_list_generic ≥5 条（detail_url_re 过滤后）且含 ≤18 个月内日期、
+    # 详情页 extract_main_text ≥80 字；夹具与黄金测试见 tests/test_extraction_upgrade.py。
+    # cms="generic"（bs4 + 祖先链日期证据 + 同域护栏）；content_cls 留空走自动探测
+    # （trafilatura 优先，未命中降级容器候选探测）。
+    {
+        "name": "西安交通大学研究生院招生通知",
+        "list_url": "https://gs.xjtu.edu.cn/tzgg/zsgz.htm",
+        "detail_url_re": r"/info/\d+/\d+\.htm",
+        "cms": "generic",
+    },
+    {
+        "name": "武汉大学研究生院通知公告",
+        "list_url": "https://gs.whu.edu.cn/",
+        "detail_url_re": r"/info/\d+/\d+\.htm",
+        "cms": "generic",
+    },
+    {
+        "name": "华中科技大学研究生院通知公告",
+        "list_url": "https://gs.hust.edu.cn/",
+        "detail_url_re": r"/info/\d+/\d+\.htm",
+        "cms": "generic",
+    },
+    {
+        "name": "东南大学研究生院通知公告",
+        "list_url": "https://seugs.seu.edu.cn/",
+        "detail_url_re": r"/page\.htm$",
+        "cms": "generic",
+    },
+    {
+        # yz.scu.edu.cn 为川大研究生院/研招办运营的校级官方招生网
+        # （gs.scu.edu.cn 主站 WAF 412 全拦，弃用，见 PROGRESS.md）
+        "name": "四川大学研究生招生通知公告",
+        "list_url": "https://yz.scu.edu.cn/",
+        "detail_url_re": r"/zsxx/Details/[0-9a-f-]{36}",
+        "cms": "generic",
+    },
+    {
+        # yz.sdu.edu.cn 为山大研招办官网（yjsy.sdu.edu.cn 域名不存在）
+        "name": "山东大学研究生招生通知公告",
+        "list_url": "https://yz.sdu.edu.cn/",
+        "detail_url_re": r"/info/\d+/\d+\.htm",
+        "cms": "generic",
+    },
+    {
+        "name": "天津大学研究生院通知公告",
+        "list_url": "https://gs.tju.edu.cn/",
+        "detail_url_re": r"/info/\d+/\d+\.htm",
+        "cms": "generic",
+    },
+    {
+        "name": "厦门大学研究生院通知公告",
+        "list_url": "https://gs.xmu.edu.cn/",
+        "detail_url_re": r"/info/\d+/\d+\.htm",
+        "cms": "generic",
+    },
+    {
+        # yz.cqu.edu.cn 为重大研招办官网（yjs.cqu.edu.cn robots.txt 禁止抓取）
+        "name": "重庆大学研究生招生通知公告",
+        "list_url": "https://yz.cqu.edu.cn/",
+        "detail_url_re": r"/news/\d{4}-\d{2}/\d+\.html",
+        "cms": "generic",
     },
 ]
 
@@ -412,14 +474,11 @@ class OfficialAnnounceCrawler(BaseCrawler):
             db = SessionLocal()
             own_db = True
         try:
-            run_record = CrawlerRun(
-                source_name=self.name,
-                category=self.category,
-                status="running",
-            )
+            run_record = self._new_run_record()
             db.add(run_record)
             db.commit()
             db.refresh(run_record)
+            self.run_record_id = str(run_record.id)
 
             result = store_research_items(
                 db,
@@ -430,7 +489,7 @@ class OfficialAnnounceCrawler(BaseCrawler):
                 run_id=str(run_record.id),
             )
 
-            run_record.status = "success"
+            self._finalize_run_record(run_record)
             run_record.items_fetched = self.stats.get("fetched", 0)
             run_record.items_stored = result["inserted"]
             run_record.items_duplicates = result["duplicated"]

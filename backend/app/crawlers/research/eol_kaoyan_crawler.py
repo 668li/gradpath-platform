@@ -31,7 +31,6 @@ from app.crawlers.base_crawler import BaseCrawler
 from app.crawlers.registry import register_crawler
 from app.crawlers.research.transformer import ResearchTransformer
 from app.database import SessionLocal
-from app.models.crawler_run import CrawlerRun
 from app.models.ingestion import DataFreshness
 from app.services.research_ingestion import store_research_items
 
@@ -171,14 +170,11 @@ class EolKaoyanCrawler(BaseCrawler):
             db = SessionLocal()
             own_db = True
         try:
-            run_record = CrawlerRun(
-                source_name=self.name,
-                category=self.category,
-                status="running",
-            )
+            run_record = self._new_run_record()
             db.add(run_record)
             db.commit()
             db.refresh(run_record)
+            self.run_record_id = str(run_record.id)
 
             result = store_research_items(
                 db,
@@ -202,7 +198,7 @@ class EolKaoyanCrawler(BaseCrawler):
             fresh.status = "active"
             fresh.updated_at = now
 
-            run_record.status = "success"
+            self._finalize_run_record(run_record)
             run_record.items_fetched = self.stats.get("fetched", 0)
             run_record.items_stored = result["inserted"]
             run_record.items_duplicates = result["duplicated"]

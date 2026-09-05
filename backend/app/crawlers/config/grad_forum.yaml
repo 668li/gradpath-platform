@@ -1,8 +1,9 @@
+# 2026-09-04 注销：从未被调度（crawler_runs 零记录）；文件保留待拍板
 # 考研论坛报录比经验爬虫配置
 name: grad_forum
 category: grad
 description: 考研论坛报录比经验数据爬虫（预置论坛帖数据）
-enabled: true
+enabled: false
 schedule: weekly  # 每周更新论坛新帖
 rate_limit: 1.0
 rate_limit_ms: 1000

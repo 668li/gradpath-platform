@@ -1,8 +1,9 @@
+# 2026-09-04 注销：从未被调度（crawler_runs 零记录）；文件保留待拍板
 # 国考职位表爬虫配置
 name: guokao
 category: civil
 description: 国考职位表爬虫
-enabled: true
+enabled: false
 schedule: yearly  # 国考每年一次
 rate_limit: 1.0
 rate_limit_ms: 1000

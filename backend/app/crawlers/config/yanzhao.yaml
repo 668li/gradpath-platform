@@ -1,8 +1,9 @@
+# 2026-09-04 注销：从未被调度（crawler_runs 零记录）；文件保留待拍板
 # 研招网招生简章爬虫配置
 name: yanzhao
 category: grad
 description: 研招网招生简章数据爬虫（预置 985 院校招生信息）
-enabled: true
+enabled: false
 schedule: monthly  # 每年招生季更新
 rate_limit: 1.0
 rate_limit_ms: 1000

@@ -9,12 +9,14 @@
 
 import ipaddress
 import logging
+import math
 import socket
 import threading
 import time
 import urllib.error
 import urllib.request
 from abc import ABC, abstractmethod
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 from urllib.robotparser import RobotFileParser
@@ -27,6 +29,7 @@ from app.database import SessionLocal
 
 if TYPE_CHECKING:
     from app.crawlers.crawl4ai_client import Crawl4aiResult
+    from app.models.crawler_run import CrawlerRun
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +73,11 @@ class BaseCrawler(ABC):
         # 全局节流锁：并发下仍保证每次网络往返之间至少间隔 _rate_limit
         self._throttle_lock = threading.Lock()
         self._last_request_ts = 0.0
+        # 单行记账：一次爬取全程恰一行 CrawlerRun，行由子类 store() 创建
+        # （run_id 溯源链在爬虫手上）；started_at/duration 以整个 run() 计。
+        self.run_record_id = ""
+        self._run_started_at = ""
+        self._run_start_monotonic = 0.0
 
     @abstractmethod
     def fetch(self) -> list[dict]:
@@ -92,6 +100,9 @@ class BaseCrawler(ABC):
         if db is None:
             db = SessionLocal()
             own_db = True
+        # 单行记账起点：行创建在子类 store()，started_at/duration 覆盖整个 run()
+        self._run_started_at = datetime.now(timezone.utc).isoformat()
+        self._run_start_monotonic = time.monotonic()
         try:
             logger.info(f"[{self.name}] 开始爬取...")
             raw = self.fetch()
@@ -117,14 +128,47 @@ class BaseCrawler(ABC):
             self.stats["stored"] = stored
             logger.info(f"[{self.name}] 入库 {stored} 条新数据")
 
-            return {"status": "success", **self.stats}
+            result = {"status": "success", **self.stats}
+            if self.run_record_id:
+                result["run_id"] = self.run_record_id
+            return result
         except Exception as e:
             self.stats["errors"] += 1
             logger.error(f"[{self.name}] 爬取失败: {e}")
-            return {"status": "failed", "error": str(e), **self.stats}
+            result = {"status": "failed", "error": str(e), **self.stats}
+            if self.run_record_id:
+                # 行已建但入库中途失败：回传 run_id 让包装层更新该行，不另建
+                result["run_id"] = self.run_record_id
+            return result
         finally:
             if own_db:
                 db.close()
+
+    # ===== 单行记账：CrawlerRun 行由爬虫内部创建（包装层只更新，不另建） =====
+
+    def _new_run_record(self) -> "CrawlerRun":
+        """创建本次爬取的执行记录行（一次爬取全程恰一行）。
+
+        行创建放爬虫内部（store()）以维持 run_id 溯源链；started_at 取
+        run() 起点而非 store() 时刻，duration 才覆盖整个抓取过程。
+        """
+        from app.models.crawler_run import CrawlerRun
+
+        return CrawlerRun(
+            source_name=self.name,
+            category=self.category,
+            status="running",
+            started_at=self._run_started_at or None,
+        )
+
+    def _finalize_run_record(self, run_record: "CrawlerRun", status: str = "success") -> None:
+        """入库完成后回填 finished_at / duration_seconds / 状态。"""
+        run_record.status = status
+        run_record.finished_at = datetime.now(timezone.utc).isoformat()
+        if self._run_start_monotonic > 0:
+            elapsed = time.monotonic() - self._run_start_monotonic
+            # Integer 列向上取整：任何正时长记账都 >0（秒级观测粒度）
+            run_record.duration_seconds = max(1, math.ceil(elapsed))
 
     def _bump_stats(self, key: str, n: int = 1) -> None:
         """线程安全地累加 stats 计数（并发爬虫下避免 += 丢计数）。"""
