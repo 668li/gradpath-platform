@@ -13,6 +13,9 @@
 from __future__ import annotations
 
 import logging
+import math
+import time
+from datetime import datetime, timezone
 from uuid import uuid4
 
 from app.celery_app import celery_app
@@ -27,6 +30,38 @@ logger = logging.getLogger(__name__)
 
 TASK_CACHE_PREFIX = "crawler_task"
 TASK_CACHE_TTL = 24 * 60 * 60
+
+
+def _resolve_run_record(
+    db, source_name: str, category: str, result: dict, crawler
+) -> CrawlerRun:
+    """单行记账：取爬虫 store() 建的行（result.run_id）；未建行时兜底补一行。
+
+    行以爬虫内部创建为准（run_id 溯源链在爬虫手上），包装层只更新不另建；
+    dry_run / store 建行前失败等场景爬虫未建行，这里补一行保持执行记录不丢，
+    并回填 started_at / duration_seconds（dry_run 无计时则留空）。
+    """
+    run_id = result.get("run_id")
+    if run_id:
+        record = db.get(CrawlerRun, run_id)
+        if record is not None:
+            return record
+    started_at = getattr(crawler, "_run_started_at", "") or None
+    started_mono = getattr(crawler, "_run_start_monotonic", 0.0)
+    record = CrawlerRun(
+        source_name=source_name,
+        category=category,
+        status="running",
+        started_at=started_at,
+    )
+    if started_mono > 0:
+        elapsed = time.monotonic() - started_mono
+        record.duration_seconds = max(1, math.ceil(elapsed))
+        record.finished_at = datetime.now(timezone.utc).isoformat()
+    db.add(record)
+    db.commit()
+    db.refresh(record)
+    return record
 
 
 @celery_app.task(name="app.tasks.crawler_tasks.run_crawler_task", bind=True)
@@ -62,16 +97,11 @@ def run_crawler_task(self, task_id: str, source_name: str, dry_run: bool = False
         config = load_config(source_name)
         crawler = cls(config=config)
 
-        run_record = CrawlerRun(
-            source_name=source_name,
-            category=crawler.category,
-            status="running",
-        )
-        db.add(run_record)
-        db.commit()
-        db.refresh(run_record)
-
         result = crawler.run(db=db) if not dry_run else {"status": "dry_run"}
+
+        # 单行记账：行由爬虫 store() 创建（溯源链在爬虫手上），包装层只更新；
+        # 爬虫未建行（dry_run / 建行前失败）时兜底补一行，执行记录不丢。
+        run_record = _resolve_run_record(db, source_name, crawler.category, result, crawler)
 
         run_record.status = result.get("status", "unknown")
         run_record.items_fetched = result.get("fetched", 0)
@@ -142,16 +172,11 @@ def run_scheduled_crawler_task(source_name: str):
         config = load_config(source_name)
         crawler = cls(config=config)
 
-        run_record = CrawlerRun(
-            source_name=source_name,
-            category=crawler.category,
-            status="running",
-        )
-        db.add(run_record)
-        db.commit()
-        db.refresh(run_record)
-
         result = crawler.run(db=db)
+
+        # 单行记账：行由爬虫 store() 创建（溯源链在爬虫手上），包装层只更新；
+        # 爬虫未建行（建行前失败）时兜底补一行，执行记录不丢。
+        run_record = _resolve_run_record(db, source_name, crawler.category, result, crawler)
 
         run_record.status = result.get("status", "unknown")
         run_record.items_fetched = result.get("fetched", 0)

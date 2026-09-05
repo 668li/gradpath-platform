@@ -1,8 +1,9 @@
+# 2026-09-04 注销：从未被调度（crawler_runs 零记录）；文件保留待拍板
 # 教育部/国家统计局统计数据导入器配置
 name: stats_importer
 category: reports
 description: 教育部/国家统计局统计数据导入器
-enabled: true
+enabled: false
 schedule: yearly  # 每年更新统计数据
 rate_limit: 1.0
 rate_limit_ms: 1000

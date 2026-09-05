@@ -1,0 +1,1351 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>武汉大学研究生院</title><meta name="pageType" content="1">
+<meta name="pageTitle" content="武汉大学研究生院">
+
+
+<META Name="SiteName" Content="武汉大学研究生院" />
+<META Name="SiteDomain" Content="gs.whu.edu.cn" />
+
+    
+    <meta name="description" content="" />
+    <link href="css/bootstrap.css" rel="stylesheet">
+    <!--轮播图样式以及设置-->
+    <link href="js/royalslider/css/royalslider.css" rel="stylesheet">
+    <script src="js/jquery-1.9.1.min.js"></script>
+    <script src="js/royalslider/js/jquery.royalslider.min.js"></script>
+    <!--轮播图样式以及设置结束-->
+    <script src="js/main.js"></script>
+    <link href="css/main.css" rel="stylesheet">
+    <link href="css/moblie.css" rel="stylesheet">
+
+
+<!--Announced by Visual SiteBuilder 9-->
+<link rel="stylesheet" type="text/css" href="_sitegray/_sitegray_d.css" />
+<script language="javascript" src="_sitegray/_sitegray.js"></script>
+<!-- CustomerNO:7765626265723230747f475750515742000300014351 -->
+<link rel="stylesheet" type="text/css" href="index.vsb.css" />
+<script type="text/javascript" src="/system/resource/js/counter.js"></script>
+<script type="text/javascript">_jsq_(1001,'/index.jsp',-1,1602338758)</script>
+</head>
+
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="container">
+                <a href="index.htm" class="logo"><img src="images/logo.png"></a>
+                <div class="header-link">
+                    <div class="container">
+        
+                        <ul class="clearfix top-link"><script language="javascript" src="/system/resource/js/dynclicks.js"></script><script language="javascript" src="/system/resource/js/openlink.js"></script>
+<li>
+    <a href="https://www.whu.edu.cn/" target="_blank"> 武大主页</a>
+</li>                 
+<li>
+    <a href="mailto:yjsy@whu.edu.cn" target="_blank"> 院长信箱</a>
+</li>                 
+</ul>
+        
+                        <div class="change">
+
+                            <a href="https://en.whu.edu.cn/graduate/" target="_blank" style="color:#b2cdf0;">English</a>
+                        
+
+</div>
+        
+                        <div class="search">
+                            <img src="images/search-anliu2.png" class="search_anliu">
+                            <div class="search1"><!-- 3.1.3版本 -->
+
+
+
+<script language="javascript" src="/system/resource/js/base64.js"></script><script language="javascript" src="/system/resource/js/jquery/jquery-latest.min.js"></script><script language="javascript" src="/system/resource/vue/vue.js"></script><script language="javascript" src="/system/resource/vue/bluebird.min.js"></script><script language="javascript" src="/system/resource/vue/axios.js"></script><script language="javascript" src="/system/resource/vue/polyfill.js"></script><script language="javascript" src="/system/resource/vue/token.js"></script><LINK href="/system/resource/vue/static/element/index.css" type="text/css" rel="stylesheet"><script language="javascript" src="/system/resource/vue/static/element/index.js"></script><script language="javascript" src="/system/resource/vue/static/public.js"></script><script language="javascript" src="/system/resource/openapp/search/js/containsHtmlTags.js"></script><script language="javascript" src="/system/resource/openapp/search/layui/layui.js"></script><style>
+    #appu2 .qwss{
+        width: 74%;
+    padding-left: 2%;
+    height: 32px;
+    background: #fff;
+    border: 2px solid #0d2b58;
+    outline: none;float: left;}
+    #appu2 .tj{
+        width: 26%;
+    height: 32px;
+    background: #0d2b58;
+    vertical-align: bottom;
+    color: #fff;
+    font-size: 16px;
+    outline: none;}
+</style>
+<div id="divu2"></div>
+<script type="text/html" id="htmlu2">
+    <div id="appu2">
+        <div v-if="!isError">
+            <input type="text" class="qwss" placeholder="全文搜索" autocomplete=off v-model=query.keyWord @keyup.enter="onSubmit">
+            <input class="tj" name="submit_button" type="button" value="提交" v-on:click="onSubmit()"/>
+        </div>
+        <div v-if="isError" style="color: #b30216; font-size:18px;text-align: center;padding:20px;">
+            应用维护中！
+        </div>
+    </div>
+</script>
+<script>
+    $("#divu2").html($("#htmlu2").text());
+</script>
+<script>
+    var appOwner = "1602338758";
+    var token = 'tourist';
+    var urlPrefix = "/aop_component/";
+
+    jQuery.support.cors = true;
+    $.ajaxSetup({
+        beforeSend: function (request, settings) {
+            request.setRequestHeader("Authorization", token);
+            request.setRequestHeader("owner", appOwner);
+        }
+    });
+
+    new Vue({
+        el: "#appu2",
+        data: function () {
+            return {
+                query: {
+                    keyWord: "",//搜索关键词
+                    owner: appOwner,
+                    token: token,
+                    urlPrefix: urlPrefix,
+                    lang:"i18n_zh_CN"
+                },
+                isError: false
+            }
+        },
+        mounted: function () {
+            var _this = this;
+            // _this.init();
+        },
+        methods: {
+            init: function(){
+                $.ajax({
+                    url: "/aop_component//webber/search/test",
+                    type: "get",
+                    success: function (response) {
+                        if (response.code == "0000") {
+                        } else if (response.code == "220") {
+                            _this.isError = true;
+                            console.log(response);
+                        } else if (!response.code) {
+                            _this.isError = true;
+                            console.log(response);
+                        }
+                    },
+                    error: function (response) {
+                        _this.isError = true;
+                    }
+                });
+            },
+            onSubmit: function (e) {
+                var url = "/aop_views/search/modules/resultpc/soso.html";
+                if ("10" == "1" || "10" == "2") {
+                    url = "" + url;
+                }
+                var _this = this;
+                var query = _this.query;
+                if (url.indexOf("?") > -1) {
+                    url = url.split("?")[0];
+                }
+                if (query.keyWord) {
+                    var query = new Base64().encode(JSON.stringify(query));
+                    window.open(url + "?query=" + query);
+                } else {
+                    alert("请填写搜索内容")
+                }
+            },
+        }
+    })
+</script>
+
+<script>
+   var appElementu2 = document.querySelector("#appu2");
+   if (appElementu2 && appElementu2.__vue__) {
+
+   } else {
+      $("#divu2").html($("#htmlu2").text());
+      var appOwner = "1602338758";   
+      var urlPrefix = "/aop_component/";
+      var ifLogin="";
+      var token = ifLogin=='true'?gettoken(10, true).trim():'tourist';
+      if (containsHtmlTags(token) || !token) { 
+         token = 'tourist';
+      }
+      jQuery.support.cors = true;
+      $.ajaxSetup({
+        beforeSend: function (request, settings) {
+            request.setRequestHeader("Authorization", token);
+            request.setRequestHeader("owner", appOwner);
+        }
+      });
+      var queryInfou2 = {
+        query: {
+            keyWord: "",//搜索关键词
+            owner: appOwner,
+            token: token,
+            urlPrefix: urlPrefix,
+            lang:"i18n_zh_CN"
+        },
+        isError: false
+      };
+      function keyUpFunu2(e){
+        var theEvent = e || window.event;
+        var keyCode = theEvent.keyCode || theEvent.which || theEvent.charCode;
+        if(keyCode == 13){
+          onSubmitu2();
+        }
+      };
+
+      function onSubmitu2(e) {
+        queryInfou2.query.keyWord= $("#appu2  .qwss").val();
+        
+        var url = "/aop_views/search/modules/resultpc/soso.html";      
+        if ("10" == "1" || "10" == "2") {
+           url = "" + url;
+        }
+        var query = queryInfou2.query;
+        if (url.indexOf("?") > -1) {
+            url = url.split("?")[0];
+        }
+        if (query.keyWord) {
+            var query = new Base64().encode(JSON.stringify(query));
+            window.open(url + "?query=" + query);
+        } else {
+            alert("请填写搜索内容")
+        }
+      };
+   }
+</script></div>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="navbar-toggle">
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+            </div>
+            
+        </div>
+    </div>
+
+    <!--  网站导航开始 -->
+    <div class="nav">
+        <div class="container">
+
+            <ul class="daohang clearfix">
+                    <li>
+        <a href="index.htm">首页</a>
+     </li>
+    <li>
+        <a href="jgjj/fzgk.htm">机构简介</a>
+        <ul class="submenu">
+                 <li><a href="jgjj/fzgk.htm">发展概况</a></li>
+                 <li><a href="jgjj/xrld.htm">现任领导</a></li>
+                 <li><a href="jgjj/jgzn.htm">机构职能</a></li>
+                 <li><a href="jgjj/lxfs.htm">联系方式</a></li>
+        </ul>
+     </li>
+    <li>
+        <a href="zsgz/sszs/zsjz.htm">招生工作</a>
+        <ul class="submenu">
+                 <li><a href="zsgz/sszs/a2026n.htm">硕士招生</a></li>
+                 <li><a href="zsgz/bszs/a2026n.htm">博士招生</a></li>
+                 <li><a href="zsgz/gatzs.htm">港澳台招生</a></li>
+        </ul>
+     </li>
+    <li>
+        <a href="pygz/xjgl.htm">培养工作</a>
+        <ul class="submenu">
+                 <li><a href="pygz/xjgl.htm">学籍管理</a></li>
+                 <li><a href="pygz/jxgl.htm">教学管理</a></li>
+                 <li><a href="pygz/xsky.htm">学术科研</a></li>
+                 <li><a href="https://oir.whu.edu.cn/gzzd/xshwxxgl.htm">国际交流</a></li>
+                 <li><a href="pygz/zyxwpy.htm">专业学位培养</a></li>
+                 <li><a href="pygz/cjwtjd.htm">常见问题解答</a></li>
+        </ul>
+     </li>
+    <li>
+        <a href="xwgz/xwsqd.htm">学位工作</a>
+        <ul class="submenu">
+                 <li><a href="xwgz/xwsqd.htm">学位授权点</a></li>
+                 <li><a href="xwgz/dsdw.htm">导师队伍</a></li>
+                 <li><a href="xwgz/xwsy.htm">学位授予</a></li>
+                 <li><a href="xwgz/zyxw.htm">专业学位</a></li>
+        </ul>
+     </li>
+    <li>
+        <a href="zlyzyxw/xwdpg.htm">质量与专业学位</a>
+        <ul class="submenu">
+                 <li><a href="zlyzyxw/xwdpg.htm">学位点评估</a></li>
+                 <li><a href="zlyzyxw/lwcj.htm">论文抽检</a></li>
+                 <li><a href="zlyzyxw/jxpj.htm">绩效评价</a></li>
+                 <li><a href="zlyzyxw/zljk.htm">质量监控</a></li>
+                 <li><a href="zlyzyxw/zyfzgz.htm">职业发展跟踪</a></li>
+                 <li><a href="zlyzyxw/yjsjyfzzlbg.htm">研究生教育发展质量报告</a></li>
+                 <li><a href="zlyzyxw/xwsqdjsbg.htm">学位授权点建设报告</a></li>
+        </ul>
+     </li>
+    <li>
+        <a href="zfjs/zfjswj.htm">作风建设</a>
+        <ul class="submenu">
+                 <li><a href="zfjs/zfjswj.htm">作风建设文件</a></li>
+                 <li><a href="zfjs/gzzd.htm">规章制度</a></li>
+                 <li><a href="zfjs/bslc.htm">办事流程</a></li>
+                 <li><a href="zfjs/fwckgwrysz.htm">服务窗口岗位人员设置</a></li>
+                 <li><a href="zfjs/tsfs.htm">投诉方式</a></li>
+                 <li><a href="zfjs/gzxzcymd1.htm">工作小组成员名单</a></li>
+        </ul>
+     </li>
+    <li>
+        <a href="djgz1.htm">党建工作</a>
+     </li>
+    <li>
+        <a href="xzzq/zs.htm">下载专区</a>
+        <ul class="submenu">
+                 <li><a href="xzzq/zs.htm">招生</a></li>
+                 <li><a href="xzzq/peiyang.htm">培养</a></li>
+                 <li><a href="xzzq/xw.htm">学位</a></li>
+                 <li><a href="xzzq/zh.htm">综合</a></li>
+                 <li><a href="xzzq/zlyzyxw.htm">质量与专业学位</a></li>
+        </ul>
+     </li>
+
+            </ul>
+
+        </div>
+    </div>
+    <!--  网站导航结束 -->
+
+
+    <!--网页轮播图开始-->
+    <div class="banner-box" style="background-color: #fff;">
+        <div class=" index-banner container">
+            <img src="images/banner_shadow.png" class="banner_shadow">
+            <div class="sliderContainer fullWidth clearfix">
+
+                <div id="full-width-slider" class="royalSlider heroSlider rsMinW">
+    <div class="rsContent">
+        <a href="images/0506.jpg" title="">
+            <img class="rsImg" src="images/0506.jpg" alt="" />
+        </a>
+    </div>
+
+    <div class="rsContent">
+        <a href="images/ddl.png" title="">
+            <img class="rsImg" src="images/ddl.png" alt="" />
+        </a>
+    </div>
+
+    <div class="rsContent">
+        <a href="" title="">
+            <img class="rsImg" src="images/banner5.jpg" alt="" />
+        </a>
+    </div>
+
+</div>
+            </div>
+        </div>
+    </div>
+    <!--网页轮播图结束-->
+
+    <!--内容开始-->
+
+    <div class="index-content">
+        <div class="container clearfix">
+            <div class="col-md-7 col-sm-8 col-xs-12 index-news">
+                <div class="title clearfix">
+                    <h3> <img src="images/index-news.png">新闻动态</h3>
+                    <a href="xwdt.htm" class="more">READ MORE<img src="images/index-more.png"></a>
+                </div>
+
+                <div class="news-recom clearfix"><script language="javascript" src="/system/resource/js/centerCutImg.js"></script><script language="javascript" src="/system/resource/js/ajax.js"></script>                    <div class="news-img">
+                        <img src="/__local/E/F5/23/595F6FB2EDA962AF080414E0737_F95AA9B6_C810E.png">
+                    </div>
+                    <div class="news-text">
+                        <a href="info/1053/108471.htm"><h3>武汉大学2026-2027学年第一学期教学工作布置会召开</h3></a>
+                        <p class="news-time clearfix"><span>2026-09-03</span></p>
+                        <p class="news-abstract">（通讯员 钱宏宇、潘奇）9月2日下午，学校召开2026-2027学年第一学期教学工作布置会。党委常委、常务副校长宋保亮出席会议，学院分管本科教学副院长、学院及科研单位分管研究生教学副院长、本科生教学秘书、研究生教学秘书、校督导团、本科生院与研究生院内设机构主任及以上干部、党委学生工作部负责人参加会议。本科生院副院长兼教务处处长焦丽主持会议。 本科生院院长兼教师教学发展中心主任余振围绕以人为本的教务工作、稳步推进的招生工作和开拓创新的质量工作三大维度，...</p>
+                        <a href="info/1053/108471.htm" class="news-more">了解更多&gt;</a>
+
+                    </div>
+                
+
+<script>_showDynClickBatch(['dynclicks_u5_108471'],[108471],"wbnews", 1602338758)</script>
+</div>
+                <ul>                    
+<li>
+                        <a href="info/1053/108371.htm">
+                            <p class="index-list">学校召开研究生院干部任职宣布会议</p>
+                            <span class="index-time">2026-08-04</span>
+                        </a>
+                    </li>
+                    
+<li>
+                        <a href="info/1053/108341.htm">
+                            <p class="index-list">工程管理项目中心“数智赋能・向新而行”2026年第三期系列活动：以实践淬本领，2025级MEM企业参访实践圆满完成</p>
+                            <span class="index-time">2026-07-22</span>
+                        </a>
+                    </li>
+                    
+<li>
+                        <a href="info/1053/108111.htm">
+                            <p class="index-list">学校召开研究生院干部任职宣布会议</p>
+                            <span class="index-time">2026-07-08</span>
+                        </a>
+                    </li>
+                    
+<li>
+                        <a href="info/1053/108101.htm">
+                            <p class="index-list">“治理能力建设”专项巡视第七巡视组向研究生院反馈巡视情况</p>
+                            <span class="index-time">2026-07-08</span>
+                        </a>
+                    </li>
+                    
+<li>
+                        <a href="info/1053/108071.htm">
+                            <p class="index-list">校企协同育人才 产教融合启新程—— 武汉大学与南方电网举办校企联培入企动员会暨录取通知书颁发仪式</p>
+                            <span class="index-time">2026-07-06</span>
+                        </a>
+                    </li>
+                    
+<script>_showDynClickBatch(['dynclicks_u6_108471','dynclicks_u6_108371','dynclicks_u6_108341','dynclicks_u6_108111','dynclicks_u6_108101','dynclicks_u6_108071'],[108471,108371,108341,108111,108101,108071],"wbnews", 1602338758)</script>
+</ul>
+
+            </div>
+            <div class="col-md-5 col-sm-4 col-xs-12 index-gonggao">
+                <div class="gonggao-son clearfix">
+                    <div class="title clearfix">
+                        <h3> <img src="images/index-notice.png">通知公告</h3>
+                    </div>
+                    <div class="notice-link">
+                        <ul class="notice-link-ul"><li class="tab-active">全部</li>
+                        
+<li>招生</li>
+                        
+<li>培养</li>
+                        
+<li>学位</li>
+                        
+<li>质量与专业学位</li>
+                        
+<li>综合</li>
+                        
+
+</ul>
+                    </div>
+
+                    <div class="notice-list tab-content-show"><a href="tzgg/qb.htm" class="more">READ MORE<img src="images/index-more.png"></a>
+                        <ul class="clearfix">
+                            
+<li>
+                                <a href="content.jsp?urltype=news.NewsContentUrl&wbtreeid=1063&wbnewsid=108481" target="_blank">
+                                    <p class="index-list">关于组织2026—2027学年第一学期研究生课程助教选聘的通知</p>
+                                    <span class="index-time">2026-09-03</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="content.jsp?urltype=news.NewsContentUrl&wbtreeid=1063&wbnewsid=108461" target="_blank">
+                                    <p class="index-list">关于做好2026-2027学年第一学期研究生课堂教学检查工作的通知</p>
+                                    <span class="index-time">2026-08-31</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="content.jsp?urltype=news.NewsContentUrl&wbtreeid=1063&wbnewsid=108451" target="_blank">
+                                    <p class="index-list">关于做好2026-2027学年第一学期研究生教学培养工作安排的通知</p>
+                                    <span class="index-time">2026-08-31</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="content.jsp?urltype=news.NewsContentUrl&wbtreeid=1063&wbnewsid=108411" target="_blank">
+                                    <p class="index-list">关于2026级研究生新生图像采集工作的通知</p>
+                                    <span class="index-time">2026-08-25</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="content.jsp?urltype=news.NewsContentUrl&wbtreeid=1063&wbnewsid=108401" target="_blank">
+                                    <p class="index-list">关于做好武汉大学2026级研究生新生入学资格审查的通知</p>
+                                    <span class="index-time">2026-08-25</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="https://ncee.whu.edu.cn/info/1331/9001.htm" target="_blank">
+                                    <p class="index-list">关于开展2026年度工程案例立项征集建设工作的通知</p>
+                                    <span class="index-time">2026-08-25</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1066/108381.htm" target="_blank">
+                                    <p class="index-list">研究生院2026年度非事业编C岗拟录用人员公示</p>
+                                    <span class="index-time">2026-08-22</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1066/108331.htm" target="_blank">
+                                    <p class="index-list">关于研究生院2026年放暑假的通知</p>
+                                    <span class="index-time">2026-07-22</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="content.jsp?urltype=news.NewsContentUrl&wbtreeid=1063&wbnewsid=108311" target="_blank">
+                                    <p class="index-list">关于2026级研究生公共英语课免修申请审核工作的通知</p>
+                                    <span class="index-time">2026-07-21</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1063/108291.htm" target="_blank">
+                                    <p class="index-list">关于2026-2027学年第一学期研究生（老生）报到注册的通知</p>
+                                    <span class="index-time">2026-07-17</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="content.jsp?urltype=news.NewsContentUrl&wbtreeid=1063&wbnewsid=108241" target="_blank">
+                                    <p class="index-list">关于开展2026年“研究生学术创新奖”评选工作的通知</p>
+                                    <span class="index-time">2026-07-17</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1063/108231.htm" target="_blank">
+                                    <p class="index-list">关于组织2025年立项武汉大学研究生导师育人方式创新项目中期检查的通知</p>
+                                    <span class="index-time">2026-07-16</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="content.jsp?urltype=news.NewsContentUrl&wbtreeid=1063&wbnewsid=108221" target="_blank">
+                                    <p class="index-list">关于开展2024年立项武汉大学学位与研究生教育教学改革研究项目结项验收的通知</p>
+                                    <span class="index-time">2026-07-16</span>
+                                </a>
+                            </li>
+                            
+</ul><script>_showDynClickBatch(['dynclicks_u8_108481','dynclicks_u8_108461','dynclicks_u8_108451','dynclicks_u8_108411','dynclicks_u8_108401','dynclicks_u8_108391','dynclicks_u8_108381','dynclicks_u8_108331','dynclicks_u8_108311','dynclicks_u8_108291','dynclicks_u8_108241','dynclicks_u8_108231','dynclicks_u8_108221'],[108481,108461,108451,108411,108401,108391,108381,108331,108311,108291,108241,108231,108221],"wbnews", 1602338758)</script>
+</div>
+
+                    <div class="notice-list tab-content-hide"><a href="tzgg/zs.htm" class="more">READ MORE<img src="images/index-more.png"></a>
+                        <ul class="clearfix">
+                            
+<li>
+                                <a href="info/1062/108021.htm" target="_blank">
+                                    <p class="index-list">​ 关于发放2026级研究生录取通知书的通告</p>
+                                    <span class="index-time">2026-06-26</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="https://wdyz.whu.edu.cn/info/1008/7963.htm" target="_blank">
+                                    <p class="index-list">关于公布武汉大学2026年博士研究生（对口支援专项计划）外语合格线的通知</p>
+                                    <span class="index-time">2026-06-03</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="https://wdyz.whu.edu.cn/info/1008/7943.htm" target="_blank">
+                                    <p class="index-list">武汉大学2026年第三批次（专项计划）博士外语综合水平考试成绩查询及复查公告</p>
+                                    <span class="index-time">2026-06-01</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="https://wdyz.whu.edu.cn/info/1008/7933.htm" target="_blank">
+                                    <p class="index-list">武汉大学2026年第三批次（专项计划）博士外语水平考试公告</p>
+                                    <span class="index-time">2026-05-26</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="https://wdyz.whu.edu.cn/info/1031/7903.htm" target="_blank">
+                                    <p class="index-list">武汉大学2026年招收攻读博士学位研究生报名公告(第三批次普通招考)</p>
+                                    <span class="index-time">2026-05-14</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="https://wdyz.whu.edu.cn/info/1012/7813.htm" target="_blank">
+                                    <p class="index-list">关于做好2026年面向港澳台地区招收研究生复试录取工作的通知</p>
+                                    <span class="index-time">2026-05-13</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="https://wdyz.whu.edu.cn/info/1008/7803.htm" target="_blank">
+                                    <p class="index-list">关于公布武汉大学2026年博士研究生招生部分专项计划外语合格线的通知</p>
+                                    <span class="index-time">2026-04-30</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="https://wdyz.whu.edu.cn/info/1012/7763.htm" target="_blank">
+                                    <p class="index-list">武汉大学2026年港澳台研究生招生考试初试成绩查询及复核工作的通知</p>
+                                    <span class="index-time">2026-04-17</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="https://wdyz.whu.edu.cn/info/1008/7713.htm" target="_blank">
+                                    <p class="index-list">武汉大学2026年第二批次博士外语水平考试公告</p>
+                                    <span class="index-time">2026-04-10</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1062/107231.htm" target="_blank">
+                                    <p class="index-list">武汉大学2026年“退役大学生士兵”专项计划硕士研究生复试录取公告</p>
+                                    <span class="index-time">2026-03-23</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1062/107211.htm" target="_blank">
+                                    <p class="index-list">武汉大学2026年“少数民族高层次骨干人才计划”硕士研究生复试录取工作公告</p>
+                                    <span class="index-time">2026-03-23</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="https://wdyz.whu.edu.cn/info/1008/7623.htm" target="_blank">
+                                    <p class="index-list">武汉大学2026年招收攻读博士学位研究生报名公告(第二批次普通招考)</p>
+                                    <span class="index-time">2026-03-19</span>
+                                </a>
+                            </li>
+                            
+</ul><script>_showDynClickBatch(['dynclicks_u9_108021','dynclicks_u9_107831','dynclicks_u9_107821','dynclicks_u9_107801','dynclicks_u9_107681','dynclicks_u9_107661','dynclicks_u9_107621','dynclicks_u9_107471','dynclicks_u9_107421','dynclicks_u9_107231','dynclicks_u9_107211','dynclicks_u9_107191'],[108021,107831,107821,107801,107681,107661,107621,107471,107421,107231,107211,107191],"wbnews", 1602338758)</script>
+</div>
+
+                    <div class="notice-list tab-content-hide"><a href="tzgg/py.htm" class="more">READ MORE<img src="images/index-more.png"></a>
+                        <ul class="clearfix">
+                            
+<li>
+                                <a href="content.jsp?urltype=news.NewsContentUrl&wbtreeid=1063&wbnewsid=108481" target="_blank">
+                                    <p class="index-list">关于组织2026—2027学年第一学期研究生课程助教选聘的通知</p>
+                                    <span class="index-time">2026-09-03</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="content.jsp?urltype=news.NewsContentUrl&wbtreeid=1063&wbnewsid=108461" target="_blank">
+                                    <p class="index-list">关于做好2026-2027学年第一学期研究生课堂教学检查工作的通知</p>
+                                    <span class="index-time">2026-08-31</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="content.jsp?urltype=news.NewsContentUrl&wbtreeid=1063&wbnewsid=108451" target="_blank">
+                                    <p class="index-list">关于做好2026-2027学年第一学期研究生教学培养工作安排的通知</p>
+                                    <span class="index-time">2026-08-31</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="content.jsp?urltype=news.NewsContentUrl&wbtreeid=1063&wbnewsid=108411" target="_blank">
+                                    <p class="index-list">关于2026级研究生新生图像采集工作的通知</p>
+                                    <span class="index-time">2026-08-25</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="content.jsp?urltype=news.NewsContentUrl&wbtreeid=1063&wbnewsid=108401" target="_blank">
+                                    <p class="index-list">关于做好武汉大学2026级研究生新生入学资格审查的通知</p>
+                                    <span class="index-time">2026-08-25</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="content.jsp?urltype=news.NewsContentUrl&wbtreeid=1063&wbnewsid=108311" target="_blank">
+                                    <p class="index-list">关于2026级研究生公共英语课免修申请审核工作的通知</p>
+                                    <span class="index-time">2026-07-21</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1063/108291.htm" target="_blank">
+                                    <p class="index-list">关于2026-2027学年第一学期研究生（老生）报到注册的通知</p>
+                                    <span class="index-time">2026-07-17</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="content.jsp?urltype=news.NewsContentUrl&wbtreeid=1063&wbnewsid=108241" target="_blank">
+                                    <p class="index-list">关于开展2026年“研究生学术创新奖”评选工作的通知</p>
+                                    <span class="index-time">2026-07-17</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1063/108231.htm" target="_blank">
+                                    <p class="index-list">关于组织2025年立项武汉大学研究生导师育人方式创新项目中期检查的通知</p>
+                                    <span class="index-time">2026-07-16</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="content.jsp?urltype=news.NewsContentUrl&wbtreeid=1063&wbnewsid=108221" target="_blank">
+                                    <p class="index-list">关于开展2024年立项武汉大学学位与研究生教育教学改革研究项目结项验收的通知</p>
+                                    <span class="index-time">2026-07-16</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="content.jsp?urltype=news.NewsContentUrl&wbtreeid=1063&wbnewsid=108211" target="_blank">
+                                    <p class="index-list">关于开展2026年研究生出国（境）交流学习资助工作的通知</p>
+                                    <span class="index-time">2026-07-16</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="content.jsp?urltype=news.NewsContentUrl&wbtreeid=1063&wbnewsid=108051" target="_blank">
+                                    <p class="index-list">关于2026级学术学位研究生培养方案修订工作的补充通知</p>
+                                    <span class="index-time">2026-07-01</span>
+                                </a>
+                            </li>
+                            
+</ul><script>_showDynClickBatch(['dynclicks_u10_108481','dynclicks_u10_108461','dynclicks_u10_108451','dynclicks_u10_108411','dynclicks_u10_108401','dynclicks_u10_108311','dynclicks_u10_108291','dynclicks_u10_108241','dynclicks_u10_108231','dynclicks_u10_108221','dynclicks_u10_108211','dynclicks_u10_108051'],[108481,108461,108451,108411,108401,108311,108291,108241,108231,108221,108211,108051],"wbnews", 1602338758)</script>
+</div>
+
+                    <div class="notice-list tab-content-hide"><a href="tzgg/xw.htm" class="more">READ MORE<img src="images/index-more.png"></a>
+                        <ul class="clearfix">
+                            
+<li>
+                                <a href="info/1064/108041.htm" target="_blank">
+                                    <p class="index-list">关于授予张琪钰等1593人博士学位的公示</p>
+                                    <span class="index-time">2026-06-30</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1064/107591.htm" target="_blank">
+                                    <p class="index-list">关于做好2027年新增专业学位研究生指导教师资格遴选工作的通知</p>
+                                    <span class="index-time">2026-04-30</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1064/107581.htm" target="_blank">
+                                    <p class="index-list">关于做好2027年新增研究生指导教师资格遴选工作的通知</p>
+                                    <span class="index-time">2026-04-30</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1064/107461.htm" target="_blank">
+                                    <p class="index-list">关于2026年全国医学博士外语统一考试成绩查询及复查公告</p>
+                                    <span class="index-time">2026-04-15</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1064/107301.htm" target="_blank">
+                                    <p class="index-list">关于授予卢洁宜等36人博士学位的公示</p>
+                                    <span class="index-time">2026-03-30</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1064/107101.htm" target="_blank">
+                                    <p class="index-list">关于打印全国医学博士专业学位外语考试准考证的通知</p>
+                                    <span class="index-time">2026-03-09</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1064/107071.htm" target="_blank">
+                                    <p class="index-list">关于做好2026年同等学力人员申请硕士学位全国统一考试现场确认的通知</p>
+                                    <span class="index-time">2026-02-28</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1064/106841.htm" target="_blank">
+                                    <p class="index-list">关于2026年在职临床医师申请临床（口腔）医学博士专业学位外语考试报名的通知</p>
+                                    <span class="index-time">2026-01-08</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1064/106811.htm" target="_blank">
+                                    <p class="index-list">关于授予宋姝瑶等626人博士学位的公示</p>
+                                    <span class="index-time">2025-12-29</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="content.jsp?urltype=news.NewsContentUrl&wbtreeid=1064&wbnewsid=106701" target="_blank">
+                                    <p class="index-list">关于做好 2024-2025 学年度博士硕士学位论文统一交存工作的通知</p>
+                                    <span class="index-time">2025-12-18</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="content.jsp?urltype=news.NewsContentUrl&wbtreeid=1064&wbnewsid=106621" target="_blank">
+                                    <p class="index-list">关于开展2025年研究生导师考核工作的通知</p>
+                                    <span class="index-time">2025-12-15</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="content.jsp?urltype=news.NewsContentUrl&wbtreeid=1064&wbnewsid=105221" target="_blank">
+                                    <p class="index-list">关于开展2025年博士生导师信息采集工作的通知</p>
+                                    <span class="index-time">2025-09-29</span>
+                                </a>
+                            </li>
+                            
+</ul><script>_showDynClickBatch(['dynclicks_u11_108041','dynclicks_u11_107591','dynclicks_u11_107581','dynclicks_u11_107461','dynclicks_u11_107301','dynclicks_u11_107101','dynclicks_u11_107071','dynclicks_u11_106841','dynclicks_u11_106811','dynclicks_u11_106701','dynclicks_u11_106621','dynclicks_u11_105221'],[108041,107591,107581,107461,107301,107101,107071,106841,106811,106701,106621,105221],"wbnews", 1602338758)</script>
+</div>
+
+                    <div class="notice-list tab-content-hide"><a href="tzgg/zlyzyxw.htm" class="more">READ MORE<img src="images/index-more.png"></a>
+                        <ul class="clearfix">
+                            
+<li>
+                                <a href="https://ncee.whu.edu.cn/info/1331/9001.htm" target="_blank">
+                                    <p class="index-list">关于开展2026年度工程案例立项征集建设工作的通知</p>
+                                    <span class="index-time">2026-08-25</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1065/107851.htm" target="_blank">
+                                    <p class="index-list">关于2025-2026学年第二学期非全日制硕士研究生期末考试安排的通知</p>
+                                    <span class="index-time">2026-06-04</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1065/107841.htm" target="_blank">
+                                    <p class="index-list">关于2025-2026学年第二学期全日制研究生课程期末考试安排的通知</p>
+                                    <span class="index-time">2026-06-04</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1065/107571.htm" target="_blank">
+                                    <p class="index-list">关于开展武汉大学专业学位研究生教育综合改革立项建设项目中期检查的通知</p>
+                                    <span class="index-time">2026-04-28</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1065/107541.htm" target="_blank">
+                                    <p class="index-list">关于组织编制2025年度学位授予点建设报告的通知</p>
+                                    <span class="index-time">2026-04-24</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1065/107531.htm" target="_blank">
+                                    <p class="index-list">关于开展第十一届“武汉大学研究生教育杰出贡献校长奖”评选工作的通知</p>
+                                    <span class="index-time">2026-04-24</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1065/107511.htm" target="_blank">
+                                    <p class="index-list">关于武汉大学工程类专业学位研究生培养方案制（修）订工作的通知</p>
+                                    <span class="index-time">2026-04-23</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1065/107181.htm" target="_blank">
+                                    <p class="index-list">关于申报2026年武汉大学专业学位研究生教育综合改革项目的通知</p>
+                                    <span class="index-time">2026-03-19</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1065/107141.htm" target="_blank">
+                                    <p class="index-list">关于组织开展2026年度全国研究生教育评估监测专家库更新与报送工作的通知</p>
+                                    <span class="index-time">2026-03-16</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1065/106851.htm" target="_blank">
+                                    <p class="index-list">关于2025级校企联培研究生选拔的通知（南方电网公司-武汉大学）</p>
+                                    <span class="index-time">2026-01-12</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1065/106031.htm" target="_blank">
+                                    <p class="index-list">关于为国家智慧教育公共服务平台征集研究生教育资源的通知</p>
+                                    <span class="index-time">2025-11-17</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1065/105991.htm" target="_blank">
+                                    <p class="index-list">关于开展2025年主题案例项目申报工作的通知</p>
+                                    <span class="index-time">2025-11-13</span>
+                                </a>
+                            </li>
+                            
+</ul><script>_showDynClickBatch(['dynclicks_u12_108391','dynclicks_u12_107851','dynclicks_u12_107841','dynclicks_u12_107571','dynclicks_u12_107541','dynclicks_u12_107531','dynclicks_u12_107511','dynclicks_u12_107181','dynclicks_u12_107141','dynclicks_u12_106851','dynclicks_u12_106031','dynclicks_u12_105991'],[108391,107851,107841,107571,107541,107531,107511,107181,107141,106851,106031,105991],"wbnews", 1602338758)</script>
+</div>
+
+                    <div class="notice-list tab-content-hide"><a href="tzgg/zh.htm" class="more">READ MORE<img src="images/index-more.png"></a>
+                        <ul class="clearfix">
+                            
+<li>
+                                <a href="info/1066/108381.htm" target="_blank">
+                                    <p class="index-list">研究生院2026年度非事业编C岗拟录用人员公示</p>
+                                    <span class="index-time">2026-08-22</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1066/108331.htm" target="_blank">
+                                    <p class="index-list">关于研究生院2026年放暑假的通知</p>
+                                    <span class="index-time">2026-07-22</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1066/107961.htm" target="_blank">
+                                    <p class="index-list">研究生院非事业编制岗位招聘启事</p>
+                                    <span class="index-time">2026-06-22</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1066/106901.htm" target="_blank">
+                                    <p class="index-list">关于研究生院2026年放寒假的通知</p>
+                                    <span class="index-time">2026-01-19</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1066/104621.htm" target="_blank">
+                                    <p class="index-list">关于在研究生院范围内以民主推荐方式选拔研究生院办公室副主任、质量与专业学位处主任秘书的公告</p>
+                                    <span class="index-time">2025-06-16</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1066/104181.htm" target="_blank">
+                                    <p class="index-list">关于开展毕业博士研究生职业发展状况调查工作的通知</p>
+                                    <span class="index-time">2025-04-28</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1066/103151.htm" target="_blank">
+                                    <p class="index-list">关于评选武汉大学2024年度研究生教育管理系列先进个人的通知</p>
+                                    <span class="index-time">2024-12-31</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1066/101351.htm" target="_blank">
+                                    <p class="index-list">《大学与学科》博士生论坛征稿预通知</p>
+                                    <span class="index-time">2024-09-24</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1066/7541.htm" target="_blank">
+                                    <p class="index-list">关于做好当前疫情防控和2021-2022学年第一学期研究生教学培养工作的通知</p>
+                                    <span class="index-time">2021-08-05</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1066/7542.htm" target="_blank">
+                                    <p class="index-list">关于当前疫情防控形势下研究生教学培养有关工作的紧急通知</p>
+                                    <span class="index-time">2021-08-05</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1066/5922.htm" target="_blank">
+                                    <p class="index-list">武汉大学2020年春季学期学生返校安排通知</p>
+                                    <span class="index-time">2020-06-02</span>
+                                </a>
+                            </li>
+                            
+<li>
+                                <a href="info/1066/5923.htm" target="_blank">
+                                    <p class="index-list">关于开学前研究生院值班工作安排的通知</p>
+                                    <span class="index-time">2020-05-05</span>
+                                </a>
+                            </li>
+                            
+</ul><script>_showDynClickBatch(['dynclicks_u13_108381','dynclicks_u13_108331','dynclicks_u13_107961','dynclicks_u13_106901','dynclicks_u13_104621','dynclicks_u13_104181','dynclicks_u13_103151','dynclicks_u13_101351','dynclicks_u13_7541','dynclicks_u13_7542','dynclicks_u13_5922','dynclicks_u13_5923'],[108381,108331,107961,106901,104621,104181,103151,101351,7541,7542,5922,5923],"wbnews", 1602338758)</script>
+</div>
+                </div>
+            </div>
+            
+         
+        </div>
+    </div>
+
+    <div class="index-content2">
+        <div class="container clearfix">
+            <div class="col-md-7 col-sm-8 col-xs-12">
+                <div class=" col-sm-6 col-xs-12 index-xueshu">
+                    <div class="title clearfix">
+                        <h3> <img src="images/index-xueshu.png">学术探索</h3>
+                        <a href="xs_ts.htm" class="more">READ MORE<img src="images/index-more.png"></a>
+                    </div>
+    
+                    <ul class="clearfix"><li>
+                            <a href="https://news.whu.edu.cn/info/1015/496677.htm" target="_blank">
+                                <div class="date-box">
+                                    <h4>21</h4>
+                                    <p>2026.05</p>
+                                </div>
+                                <div class="xueshu-about">
+                                    <h3 class="xueshu-title">冯炼团队揭示全球河流-河漫滩系统地表水连通性的演变</h3>
+                                </div>
+                            </a>
+                        </li>
+                        
+<li>
+                            <a href="https://news.whu.edu.cn/info/1015/496217.htm" target="_blank">
+                                <div class="date-box">
+                                    <h4>11</h4>
+                                    <p>2026.05</p>
+                                </div>
+                                <div class="xueshu-about">
+                                    <h3 class="xueshu-title">张俊团队揭示金属有机框架多物性协同调控机制</h3>
+                                </div>
+                            </a>
+                        </li>
+                        
+<li>
+                            <a href="https://news.whu.edu.cn/info/1015/493307.htm" target="_blank">
+                                <div class="date-box">
+                                    <h4>01</h4>
+                                    <p>2026.04</p>
+                                </div>
+                                <div class="xueshu-about">
+                                    <h3 class="xueshu-title">王植平团队提出“分子刹车”策略提升钙钛矿太阳能电池性能</h3>
+                                </div>
+                            </a>
+                        </li>
+                        
+<li>
+                            <a href="https://news.whu.edu.cn/info/1015/493277.htm" target="_blank">
+                                <div class="date-box">
+                                    <h4>01</h4>
+                                    <p>2026.04</p>
+                                </div>
+                                <div class="xueshu-about">
+                                    <h3 class="xueshu-title">储昭辉团队解析铜诱导的植物免疫反应信号传导途径</h3>
+                                </div>
+                            </a>
+                        </li>
+                        
+<script>_showDynClickBatch(['dynclicks_u14_107751','dynclicks_u14_107761','dynclicks_u14_107391','dynclicks_u14_107381'],[107751,107761,107391,107381],"wbnews", 1602338758)</script>
+</ul>
+    
+                </div>
+                <div class=" col-sm-6 col-xs-12 index-yuanxi">
+                    <div class="title clearfix">
+                        <h3> <img src="images/index-fengcai.png">院系风采</h3>
+                        <a href="yxfc.htm" class="more">READ MORE<img src="images/index-more.png"></a>
+                    </div>
+                    <ul class="clearfix"><li>
+                            <a href="http://eis.whu.edu.cn/index/newListDetail_zw?newsinfo_id=da3400cd24404445a2140b65d3024317" target="_blank">
+                                <div class="date-box">
+                                    <h4>26</h4>
+                                    <p>2026.05</p>
+                                </div>
+                                <div class="yuanxi-about">
+                                    <h3 class="yuanxi-title">深化产教融合 以AI实训培育高层次工程人才 ——《电子信息工程实训》人工智能方向创新课程班圆满结课</h3>
+                                </div>
+                            </a>
+                        </li>
+                        
+<li>
+                            <a href="http://eis.whu.edu.cn/index/newListDetail_zw?newsinfo_id=885070de017a467bac8cf5a07231a813" target="_blank">
+                                <div class="date-box">
+                                    <h4>14</h4>
+                                    <p>2026.04</p>
+                                </div>
+                                <div class="yuanxi-about">
+                                    <h3 class="yuanxi-title">深化产学研融合创新 共商卓越工程师联合培养新模式 ——学院与中原电子开展对接交流活动</h3>
+                                </div>
+                            </a>
+                        </li>
+                        
+<li>
+                            <a href="https://chem.whu.edu.cn/info/1312/68551.htm" target="_blank">
+                                <div class="date-box">
+                                    <h4>31</h4>
+                                    <p>2026.03</p>
+                                </div>
+                                <div class="yuanxi-about">
+                                    <h3 class="yuanxi-title">化学与分子科学学院首次开展“种子计划”入选学生本科毕业论文开题报告</h3>
+                                </div>
+                            </a>
+                        </li>
+                        
+<li>
+                            <a href="https://bio.whu.edu.cn/info/1124/115896.htm" target="_blank">
+                                <div class="date-box">
+                                    <h4>31</h4>
+                                    <p>2026.03</p>
+                                </div>
+                                <div class="yuanxi-about">
+                                    <h3 class="yuanxi-title">于丹教授指导博士生左振君获第三届全国生态学优秀博士学位论文</h3>
+                                </div>
+                            </a>
+                        </li>
+                        
+<script>_showDynClickBatch(['dynclicks_u15_107791','dynclicks_u15_107451','dynclicks_u15_107321','dynclicks_u15_107311'],[107791,107451,107321,107311],"wbnews", 1602338758)</script>
+</ul>
+    
+                </div>
+            </div>
+            <div class="col-md-5 col-sm-4 col-xs-12 index-service">
+                <div class="title clearfix">
+                    <h3> <img src="images/index-service.png">公共信息服务平台</h3>
+                  
+                </div>
+                
+                <ul>
+                    <li>
+                        <a href="https://yz.whu.edu.cn" target="_blank">
+                            <div class="link_img"><img src="images/service-icon1.png"></div>
+                            <p>招生服务平台</p>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="javascript:;" id="example" style="cursor: pointer">
+                            <div class="link_img"><img src="images/service-icon2.png"></div>
+                            <p>综合服务平台</p>
+                            <div class="index-service-more">
+                                点击更多
+                            </div>
+                            <div id="loginbox">
+                                <ul>
+                                    <!--<li>  
+                                        <a href="http://yjs.whu.edu.cn/ssfw/login.jsp" target="_blank">
+                                            <img src="images/shisheng.png" alt="">
+                                            <p>
+                                                培养服务<br>
+                                                (师生入口)
+                                            </p>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="http://yjs.whu.edu.cn/epstar/login/index.jsp" target="_blank">
+                                            <img src="images/peiyang.png" alt="">
+                                            <p>
+                                                培养服务<br>
+                                                (管理入口)
+                                            </p>
+                                        </a>
+                                    </li>-->
+                                    
+                                    <li>
+                                        <a href="http://newyjs.whu.edu.cn/gsapp/sys/yjsemaphome/portal/index.do" target="_blank">
+                                            <img src="images/shisheng.png" alt="">
+                                            <p class="lastp">
+                                                研究生综合服务（统一身份认证）
+                                            </p>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a href="http://newyjs.whu.edu.cn/gsapp/sys/yjsrzfwapp/dbLogin/index.do" target="_blank">
+                                            <img src="images/yanjiusheng0827.png" alt="">
+                                            <p class="lastp yanjiusheng">
+                                                研究生综合服务（本地身份认证）
+                                            </p>
+                                        </a>
+                                    </li>
+                                   <li>
+                                        <a href="http://newyjs.whu.edu.cn/gsapp/sys/gjyxbbmsqappjnu/entrance.do" target="_blank">
+                                            <img src="images/yanjiusheng.png" alt="">
+                                            <p class="lastp yanjiusheng">
+                                                &nbsp;&nbsp;&nbsp;旁听进修生服务
+                                            </p>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://wdyz.whu.edu.cn/" target="_blank">
+                            <div class="link_img"><img src="images/service-icon3.png"></div>
+                            <p>招生信息网</p>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="http://newyjs.whu.edu.cn/gsapp/sys/wslwpylwzxpy/lwzxpy/index.do" target="_blank">
+                            <div class="link_img"><img src="images/service-icon4.png"></div>
+                            <p>学位论文网上评阅</p>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="http://210.42.121.116:81/gsservice/AnswerNotice/" target="_blank">
+                            <div class="link_img"><img src="images/service-icon5.png"></div>
+                            <p>答辩公示</p>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="http://218.197.149.251/index.php/forum_lecture/lists/department_id/57" target="_blank">
+                            <div class="link_img"><img src="images/service-icon6.png"></div>
+                            <p>论坛与讲座</p>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="http://newyjs.whu.edu.cn/gsapp/sys/zzysbmapp/login.do" target="_blank">
+                            <div class="link_img"><img src="images/service-icon7.png"></div>
+                            <p>在职医师外语考试报名</p>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="http://info.whu.edu.cn/uints/submenu_pagelist.jsp?urltype=tree.TreeTempUrl&wbtreeid=1478" target="_blank">
+                            <div class="link_img"><img src="images/service-icon8.png"></div>
+                            <p>信息公开</p>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="zlyzyxw/yjsjyfzzlbg.htm" target="_blank">
+                            <div class="link_img"><img src="images/service-icon9.png"></div>
+                            <p>研究生教育发展质量报告</p>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="zlyzyxw/xwsqdjsbg.htm" target="_blank">
+                            <div class="link_img"><img src="images/service-icon10.png"></div>
+                            <p>学位授权点建设报告</p>
+                        </a>
+                    </li>
+                </ul>
+                
+            </div>
+        </div>
+    </div>
+    
+<script>
+        $("#example").click(function () {
+            if ($("#loginbox").is(":hidden")) {
+                $("#loginbox").show();
+            } else {
+                $("#loginbox").hide();
+            }
+        })
+</script>
+
+
+<script>
+        $(" .notice-link  li").each(function (index) {
+            $(this).click(function () {
+                $("li.tab-active").removeClass("tab-active"); //注意这里
+                $(this).addClass("tab-active"); //注意这里
+                $(".index-gonggao").children(".gonggao-son").children(".notice-list").addClass("tab-content-hide").removeClass("tab-content-show");
+                $(".index-gonggao .notice-list").eq(index).addClass("tab-content-show").removeClass("tab-content-hide");
+            });
+        })
+
+</script>
+
+
+    <!--内容结束-->
+
+
+    <!--底部开始-->
+    <div class="footer">
+
+        <div class="container clearfix">
+
+            <div class="footer-left">
+                   
+<a href="index.htm"><img src="images/bottom-logo.png"></a>
+
+
+            </div>
+
+            <div class="footer-about">
+                <ul>
+    <li><a href="jgjj/fzgk.htm">机构简介</a></li>             
+    <li><a href="zsgz/sszs/zsjz.htm">招生工作</a></li>             
+    <li><a href="pygz/xjgl.htm">培养工作</a></li>             
+    <li><a href="xwgz/xwsqd.htm">学位工作</a></li>             
+</ul>
+                <ul>
+    <li><a href="zlyzyxw/xwdpg.htm">质量与专业学位</a></li>             
+    <li><a href="zfjs/zfjswj.htm">作风建设</a></li>             
+    <li><a href="&lt;span style='color:red;font-size:9pt'&gt;转换链接错误&lt;/span&gt;">党建工作</a></li>             
+    <li><a href="xzzq/zs.htm">下载专区</a></li>             
+</ul>
+            </div>
+
+            <div class="footer-right"><h4>关注我们：</h4>
+<div class="code">
+    <p class="codehover"><img src="images/wechat.png"></p>
+    <div class="ewmbox"><img src="images/code.jpg" width="120"></div>
+</div>
+
+<div class="sina"><a href=""><img src="images/sina.png"></a></div>
+
+<select onchange="window.location=this.value;">
+<option value="">友情链接</option>                   
+<option value="http://www.moe.gov.cn/s78/A22/">国务院学位办</option>
+                    
+<option value="http://www.chinadegrees.cn/">学位网</option>
+                    
+<option value="https://www.chsi.com.cn/">学信网</option>
+                    
+<option value="https://www.csc.edu.cn/">国家留学网</option>
+                    
+<option value="http://my.whu.edu.cn">信息门户</option>
+                    
+<option value="http://ygb.whu.edu.cn/">研工部</option>
+                    
+<option value="http://uc.whu.edu.cn/">本科生院</option>
+                    
+<option value="http://xsjy.whu.edu.cn/">就业指导中心</option>
+                    
+<option value="https://www.lib.whu.edu.cn/">图书馆</option>
+                    
+</select></div>
+
+        </div>
+        <div class="footer-copyright">
+            <div class="container">
+               <!-- 版权内容请在本组件"内容配置-版权"处填写 -->
+<p>Copyright © 2019 武汉大学研究生院 - 鄂ICP备1201700804号-1</p>
+                <p class="visit">访问次数统计：<script language="javascript" src="_dwr/engine.js"></script><script language="javascript" src="_dwr/util.js"></script><script language="javascript" src="_dwr/interface/PageCounterDWR.js"></script><span id="a247722" name="a247722"></span>   
+
+<script>
+function getvisittimea247722()
+{       
+    PageCounterDWR.getVisittime('1602338758','1001','TOTAL_COUNTER','0','6',callbackdataa247722)
+}
+function callbackdataa247722(data)
+{
+    document.getElementById("a247722").innerHTML = data; 
+}
+getvisittimea247722();
+</script>人</p>
+            </div>
+        </div>
+    </div>
+
+    <!--底部结束-->
+</body>
+
+</html>

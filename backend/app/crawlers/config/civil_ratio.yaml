@@ -1,8 +1,9 @@
+# 2026-09-04 注销：从未被调度（crawler_runs 零记录）；文件保留待拍板
 # 考公报录比爬虫配置
 name: civil_ratio
 category: civil
 description: 考公报录比爬虫
-enabled: true
+enabled: false
 schedule: weekly  # 每周更新论坛报录比数据
 rate_limit: 1.0
 rate_limit_ms: 1000
