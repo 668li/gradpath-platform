@@ -429,8 +429,8 @@ class OfficialAnnounceCrawler(BaseCrawler):
                 )
                 section_items += 1
             logger.info(
-                f"[{self.name}] 栏目 {section.get('name')} 解析 {section_items} 条，"
-                f"跳过已收录 {known_skipped} 条"
+                f"[{self.name}] school={section.get('name')} parsed={section_items} "
+                f"known_skipped={known_skipped}"
             )
         except Exception as e:
             self._bump_stats("errors")
