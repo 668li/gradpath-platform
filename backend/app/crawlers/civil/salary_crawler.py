@@ -111,7 +111,9 @@ def _treatment_level(salary_high: int) -> str:
     return "low"
 
 
-@register_crawler
+# 2026-09-05 注销注册：random.seed(42) 合成数据生成器（L124"生成 80 条待遇信息原始数据"）。
+# 真实薪资走政府公开数据导入管道。同三假爬虫先例：文件保留，不删。
+# @register_crawler
 class SalaryCrawler(BaseCrawler):
     """公务员待遇信息爬虫 — 生成 80 条公务员薪资待遇数据。"""
 

@@ -107,7 +107,9 @@ def _competition_level(ratio: int) -> str:
     return "none"
 
 
-@register_crawler
+# 2026-09-05 注销注册：random.seed(42) 合成数据生成器（L119"生成 120 条国考职位原始数据"）。
+# 真实国考职位走 xlsx 官方导入管道（20714 行已入库），此脚本无供给价值。文件保留，不删。
+# @register_crawler
 class GuokaoCrawler(BaseCrawler):
     """国考职位表爬虫 — 生成 120 条国考职位模拟数据。"""
 
