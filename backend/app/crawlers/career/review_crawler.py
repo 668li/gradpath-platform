@@ -74,7 +74,9 @@ _SCORE_RANGES = {
 }
 
 
-@register_crawler
+# 2026-09-05 注销注册：_COMPANIES 写死名单合成数据生成器（L21/L91，"生成 80 条公司评价"），
+# 从未被调度运行过；真供给源选型另行立项。同三假爬虫先例：文件保留，不删。
+# @register_crawler
 class ReviewCrawler(BaseCrawler):
     """公司评价爬虫 — 生成 80 条公司评价（20 公司 × 4 条）。"""
 

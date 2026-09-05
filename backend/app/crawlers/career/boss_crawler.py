@@ -185,7 +185,9 @@ _COMPANIES = [
 ]
 
 
-@register_crawler
+# 2026-09-05 注销注册：random.seed(42) 合成数据生成器（L198，"生成 150 条招聘信息"），
+# 从未被调度运行过；真供给源选型另行立项。同三假爬虫先例：文件保留，不删。
+# @register_crawler
 class BossCrawler(BaseCrawler):
     """BOSS 直聘招聘岗位爬虫 — 生成 150 条招聘信息（15 城市 × 10 岗位）。"""
 

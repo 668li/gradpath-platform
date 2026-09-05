@@ -568,7 +568,9 @@ async def _run_scheduled_crawler(source_name: str):
 # ----------------------------------------------------------------------
 DEFAULT_DAILY_SCHEDULES: dict[str, str] = {
     "eol_kaoyan": "0 2 * * *",  # 每天 02:00 抓取中国教育在线考研频道
-    "official_announce": "0 2 * * *",  # 每天 02:00 抓取高校研究生院官方公告
+    # 每小时整点轮询高校官方公告（URL 级增量：已收录条目跳过详情，列表页
+    # 11 请求/小时成本≈零）；学校发布→可见时差从 ~24h 压到 ~1h
+    "official_announce": "0 * * * *",
     # 每天 02:30 抓自建 RSSHub 研招公告聚合（19 路由）；错峰避开上面两个源
     "rsshub_research": "30 2 * * *",
     # 每周一 03:00 抓 B站考研经验视频（bilibili_research.yaml: schedule weekly；
@@ -577,13 +579,26 @@ DEFAULT_DAILY_SCHEDULES: dict[str, str] = {
 }
 
 
+def _job_cron_str(job) -> str | None:
+    """把 CronTrigger 还原为 "分 时 日 月 周" 字符串；非 cron 触发器返回 None。"""
+    try:
+        fields = {f.name: str(f) for f in job.trigger.fields}
+    except Exception:  # noqa: BLE001 — 异常 job 视为无法比对，走替换路径
+        return None
+    if not fields:
+        return None
+    return " ".join(fields.get(k, "*") for k in ("minute", "hour", "day", "month", "day_of_week"))
+
+
 def seed_default_schedules() -> None:
-    """启动时补齐默认每日 cron（幂等：已存在的 job 跳过）。
+    """启动时补齐默认定时 cron（幂等：job 存在且频率与默认一致才跳过）。
 
     - 仅对合规白名单内的爬虫生效（绕过白名单的直接跳过并告警）
+    - 默认频率变更时覆盖存量 job（一次性迁移，如 official_announce 提频每小时）
     - Redis jobstore 场景进程重启不丢任务；MemoryJobStore（开发环境）
       重启后由本函数重新补齐
-    - 管理员仍可在管理端 /schedules 改期、停用或删除
+    - 管理员仍可在管理端 /schedules 改期、停用或删除（改频后会被下次 seed
+      覆盖回默认，属已知取舍：默认即真理，见 PROGRESS 2026-09-05 记录）
     """
     scheduler = get_scheduler()
     if not scheduler:
@@ -592,8 +607,13 @@ def seed_default_schedules() -> None:
 
     for source_name, cron in DEFAULT_DAILY_SCHEDULES.items():
         job_id = f"crawler_{source_name}"
-        if scheduler.get_job(job_id):
+        job = scheduler.get_job(job_id)
+        if job is not None and _job_cron_str(job) == cron:
             continue
+        if job is not None:
+            logger.info(
+                "默认频率变更，替换定时任务 %s: %s -> %s", source_name, _job_cron_str(job), cron
+            )
         if not is_allowed_crawler(source_name):
             logger.warning("跳过非白名单源 %s 的默认按日定时任务", source_name)
             continue
