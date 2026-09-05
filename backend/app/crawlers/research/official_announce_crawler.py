@@ -40,13 +40,33 @@ from sqlalchemy.orm import Session
 
 from app.crawlers.base_crawler import BaseCrawler
 from app.crawlers.registry import register_crawler
+from app.crawlers.research.dedup import normalize_url
 from app.crawlers.research.transformer import ResearchTransformer
 from app.database import SessionLocal
-from app.services.research_ingestion import store_research_items
+from app.services.research_ingestion import _load_kaoyan_dedup_baseline, store_research_items
 
 logger = logging.getLogger(__name__)
 
 SOURCE_CHANNEL = "official_announce"
+
+
+def _load_known_urls() -> set[str]:
+    """库内已收录条目的归一化 URL 集合（URL 级增量抓取的过滤基线）。
+
+    复用 research_ingestion 的去重基线（approved KaoyanNews + 全部 kaoyan_news
+    类型 ExternalResearchItem 的 source_url）。加载失败返回空集——退化为全量
+    抓取，绝不因增量层故障丢数据。
+    """
+    try:
+        db = SessionLocal()
+        try:
+            _, norm_urls = _load_kaoyan_dedup_baseline(db)
+            return norm_urls
+        finally:
+            db.close()
+    except Exception as e:  # noqa: BLE001 — 增量层故障不阻断采集
+        logger.warning(f"[{SOURCE_CHANNEL}] 已知 URL 集合加载失败，退化为全量抓取: {e}")
+        return set()
 
 # 默认官方栏目：已实测验证（2026-08 抓取确认结构稳定）。
 # 高校研招网公告是考研信息差核心权威源（调剂/复试线/考点公告）。
@@ -327,23 +347,26 @@ class OfficialAnnounceCrawler(BaseCrawler):
         self._rate_limit = self.config.get("rate_limit", 1.5)
         self.fetch_detail = bool(self.config.get("fetch_detail", True))
         self._use_browser = bool(self.config.get("use_browser", False))
-        # 并发窗口：config 显式设置并发时启用（默认 1 保持串行）。
-        # 由 BaseCrawler 提供每线程独立 Session 与全局节流，网络限速不失效。
-        self._concurrency = int(self.config.get("concurrency", 1))
+        # 并发窗口：跨域并行（默认 4；同域仍按 per-host 节流串行，礼貌性不变）。
+        # 由 BaseCrawler 提供每线程独立 Session 与 per-host 节流，网络限速不失效。
+        self._concurrency = int(self.config.get("concurrency", 4))
 
     # ===== fetch：逐栏目抓列表 + 逐条详情（可选并发） =====
 
     def fetch(self) -> list[dict]:
         """遍历栏目：列表页条目 (title, url, date) → 详情页正文。
 
-        并发>1 时对栏目做线程池并行（每个栏目内部仍串行抓列表+详情，
-        避免对单一站点并发轰炸）；并发绝不触碰 robots 护栏（_request 保留
-        SSRF/robots/重试/限速）。结果顺序不保证，调用方不依赖次序。
+        URL 级增量：列表解析出的条目若已收录（归一化 URL 命中库内基线）则
+        跳过详情抓取——高频轮询下 90%+ 条目是重复，跳过它们是吞吐的关键。
+        并发>1 时对栏目做线程池并行（跨域并行、同域仍 per-host 节流串行）；
+        并发绝不触碰 robots 护栏（_request 保留 SSRF/robots/重试/限速）。
+        结果顺序不保证，调用方不依赖次序。
         """
+        known_urls = _load_known_urls()
         if self._concurrency <= 1 or len(self.sections) <= 1:
             raw_items: list[dict] = []
             for section in self.sections:
-                raw_items.extend(self._fetch_section(section))
+                raw_items.extend(self._fetch_section(section, known_urls))
             return raw_items
 
         from concurrent.futures import ThreadPoolExecutor
@@ -351,7 +374,7 @@ class OfficialAnnounceCrawler(BaseCrawler):
         raw_items: list[dict] = []
         max_workers = min(self._concurrency, len(self.sections))
         with ThreadPoolExecutor(max_workers=max_workers) as ex:
-            futures = [ex.submit(self._fetch_section, s) for s in self.sections]
+            futures = [ex.submit(self._fetch_section, s, known_urls) for s in self.sections]
             for fut in futures:
                 try:
                     raw_items.extend(fut.result())
@@ -360,9 +383,11 @@ class OfficialAnnounceCrawler(BaseCrawler):
                     logger.error(f"[{self.name}] 并发栏目抓取异常: {e}")
         return raw_items
 
-    def _fetch_section(self, section: dict) -> list[dict]:
-        """抓取单个栏目：列表页 → 逐条详情，返回条目数组（不抛未捕获异常）。"""
+    def _fetch_section(self, section: dict, known_urls: set[str] | None = None) -> list[dict]:
+        """抓取单个栏目：列表页 → 逐条详情；已收录 URL 跳过详情（URL 级增量）。"""
         collected: list[dict] = []
+        known = known_urls or set()
+        known_skipped = 0
         list_url = section.get("list_url", "")
         if not list_url:
             return collected
@@ -383,6 +408,10 @@ class OfficialAnnounceCrawler(BaseCrawler):
                 title = re.sub(r"\s+", " ", html_lib.unescape(title)).strip()
                 if not title or not url:
                     continue
+                if known and normalize_url(url) in known:
+                    known_skipped += 1
+                    self._bump_stats("known_skipped")
+                    continue
                 detail_text = ""
                 detail_title = title
                 if self.fetch_detail:
@@ -399,7 +428,10 @@ class OfficialAnnounceCrawler(BaseCrawler):
                     }
                 )
                 section_items += 1
-            logger.info(f"[{self.name}] 栏目 {section.get('name')} 解析 {section_items} 条")
+            logger.info(
+                f"[{self.name}] 栏目 {section.get('name')} 解析 {section_items} 条，"
+                f"跳过已收录 {known_skipped} 条"
+            )
         except Exception as e:
             self._bump_stats("errors")
             logger.error(f"[{self.name}] 栏目 {list_url} 抓取失败: {e}")

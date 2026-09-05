@@ -70,9 +70,10 @@ class BaseCrawler(ABC):
         # 每线程独立 Session 池：thread-id -> requests.Session
         self._thread_sessions: dict = {}
         self._thread_sessions_lock = threading.Lock()
-        # 全局节流锁：并发下仍保证每次网络往返之间至少间隔 _rate_limit
+        # 节流锁：按 host 分桶限速——同域请求间隔仍 ≥ _rate_limit，跨域互不拖累
+        # （修复原全局串行"一慢全慢"缺陷；锁本身仍全局，保护分桶字典线程安全）
         self._throttle_lock = threading.Lock()
-        self._last_request_ts = 0.0
+        self._last_request_ts_by_host: dict[str, float] = {}
         # 单行记账：一次爬取全程恰一行 CrawlerRun，行由子类 store() 创建
         # （run_id 溯源链在爬虫手上）；started_at/duration 以整个 run() 计。
         self.run_record_id = ""
@@ -170,6 +171,21 @@ class BaseCrawler(ABC):
             # Integer 列向上取整：任何正时长记账都 >0（秒级观测粒度）
             run_record.duration_seconds = max(1, math.ceil(elapsed))
 
+    def _throttle(self, host: str) -> None:
+        """per-host 节流：同域请求间隔 ≥ _rate_limit，跨域互不等待。线程安全。
+
+        锁只保护分桶字典读写，绝不跨 sleep 持锁——否则一个 host 的等待会把
+        其他 host 全部堵在锁上，per-host 分桶就退化回全局串行。
+        """
+        while True:
+            with self._throttle_lock:
+                now = time.monotonic()
+                wait = self._rate_limit - (now - self._last_request_ts_by_host.get(host, 0.0))
+                if wait <= 0:
+                    self._last_request_ts_by_host[host] = now
+                    return
+            time.sleep(wait)
+
     def _bump_stats(self, key: str, n: int = 1) -> None:
         """线程安全地累加 stats 计数（并发爬虫下避免 += 丢计数）。"""
         with self._stats_lock:
@@ -214,13 +230,8 @@ class BaseCrawler(ABC):
             try:
                 # 并发窗口信号量：限制同刻在飞的 HTTP 请求数（并发=1 时不阻塞）
                 with self._request_sem:
-                    # 全局节流：保证即使并发 worker 也不会突破 _rate_limit
-                    with self._throttle_lock:
-                        now = time.monotonic()
-                        wait = self._rate_limit - (now - self._last_request_ts)
-                        if wait > 0:
-                            time.sleep(wait)
-                        self._last_request_ts = time.monotonic()
+                    # per-host 节流：同域间隔 ≥ _rate_limit；跨域并行互不等待
+                    self._throttle((urlparse(url).hostname or "").lower())
                     resp = self._get_session().request(method, url, timeout=30, **kwargs)
                 resp.raise_for_status()
                 return resp

@@ -180,7 +180,9 @@ _POSITION_LEVELS = [
 _SOURCES = ["OfferShow", "Levels.fyi"]
 
 
-@register_crawler
+# 2026-09-05 注销注册：_COMPANIES 写死名单合成数据生成器（L21/L195，"生成 200 条薪资数据"），
+# 从未被调度运行过；真供给源选型另行立项。同三假爬虫先例：文件保留，不删。
+# @register_crawler
 class SalaryCrawler(BaseCrawler):
     """薪资数据爬虫 — 生成 200 条薪资数据（20 公司 × 5 岗位 × 2 级别）。"""
 
