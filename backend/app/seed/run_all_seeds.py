@@ -11,6 +11,9 @@
 - 演示种子（考研情报/暗知识、分数线）已删除，不再提供 --include-demo 注入路径。
 - 社区讨论种子（seed_community，8 个假用户+编造讨论帖）已于 2026-09-05 移除并删除：
   社区只允许用户自己发布的内容，禁止任何脚本灌入非用户内容（用户拍板）。
+- 考公岗位情报种子（seed_civil_service_intel，43 条手编竞争比/进面分/薪资）
+  已于 2026-09-05 移除并生产清零（用户拍板"可"）：编造统计数据与 581 假进面线
+  同性质。考公暗知识种子（编辑性内容）保留。
   真实数据一律走导入管道 + 人工确认入库。
 """
 
@@ -18,7 +21,7 @@ from uuid import UUID
 
 from app.database import SessionLocal
 from app.models.user import User
-from app.seed.seed_civil_service import seed_civil_service_dark_knowledge, seed_civil_service_intel
+from app.seed.seed_civil_service import seed_civil_service_dark_knowledge
 from app.seed.seed_companies import seed_companies
 from app.seed.seed_knowledge import seed_knowledge
 from app.seed.seed_market_data import seed_market_data
@@ -60,33 +63,28 @@ def run_all_seeds():
         n = seed_schools(db)
         print(f"   ✓ 新增 {n} 所院校")
 
-        # 考公情报
-        print("\n2. 注入考公情报...")
-        n = seed_civil_service_intel(db)
-        print(f"   ✓ 新增 {n} 条考公情报")
-
         # 考公暗知识
-        print("\n3. 注入考公暗知识...")
+        print("\n2. 注入考公暗知识...")
         n = seed_civil_service_dark_knowledge(db)
         print(f"   ✓ 新增 {n} 条暗知识")
 
         # 公司数据
-        print("\n4. 注入公司数据...")
+        print("\n3. 注入公司数据...")
         n = seed_companies(db)
         print(f"   ✓ 新增 {n} 家公司")
 
         # 薪资基准（真实调研数据）
-        print("\n5. 注入薪资基准（真实调研数据）...")
+        print("\n4. 注入薪资基准（真实调研数据）...")
         n = seed_salary_benchmarks(db)
         print(f"   ✓ 新增 {n} 条薪资记录")
 
         # 市场数据
-        print("\n6. 注入市场数据...")
+        print("\n5. 注入市场数据...")
         n = seed_market_data(db)
         print(f"   ✓ 新增 {n} 条市场数据")
 
         # 知识库
-        print("\n7. 注入知识库...")
+        print("\n6. 注入知识库...")
         n = seed_knowledge(db)
         print(f"   ✓ 新增 {n} 条知识条目")
 
