@@ -44,6 +44,9 @@ class TestExtract:
         assert extract_major("计算机专业好考吗") == "计算机"
         assert extract_major("我学的是会计") == "会计"
         assert extract_major("帮我看看学校") is None
+        # 学历前缀误吞回归（生产零命中事故）："本科计算机专业"→"计算机"
+        assert extract_major("本科计算机专业能报什么岗位") == "计算机"
+        assert extract_major("硕士研究生法学专业") == "法学"
 
     def test_extract_education_province_dept(self):
         assert extract_education("本科生能报什么岗位") == "本科"

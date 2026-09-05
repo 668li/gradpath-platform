@@ -99,6 +99,13 @@ def extract_schools(text: str) -> list[str]:
     return list(dict.fromkeys(out))[:3]
 
 
+# 专业候选里常见的学历/届别前缀（贪婪后缀正则会连着吞进来，"本科计算机"→"计算机"）
+_MAJOR_PREFIXES = (
+    "博士研究生", "硕士研究生", "研究生", "博士", "硕士",
+    "本科", "专科", "大专", "应届", "往届",
+)
+
+
 def extract_major(text: str) -> str | None:
     m = _MAJOR_SUFFIX_RE.search(text)
     cand = m.group(1) if (m and len(m.group(1)) <= 10) else None
@@ -106,8 +113,17 @@ def extract_major(text: str) -> str | None:
         # 剥离被贪婪正则误吞的校名与动词前缀："清华大学计算机"→"计算机"
         for school in extract_schools(text):
             cand = cand.replace(school, "")
-        while cand and cand[0] in _SCHOOL_PREFIX_STOP:
-            cand = cand[1:]
+        changed = True
+        while changed and cand:
+            changed = False
+            for p in _MAJOR_PREFIXES:
+                if cand.startswith(p):
+                    cand = cand[len(p):]
+                    changed = True
+                    break
+            if cand and cand[0] in _SCHOOL_PREFIX_STOP:
+                cand = cand[1:]
+                changed = True
         cand = cand.strip()
     if cand:
         return cand
