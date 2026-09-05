@@ -40,6 +40,10 @@ _PATH_LABELS = {
     "employment": "就业",
 }
 
+# profile.education_level 存枚举值（前端 EDUCATION_LEVELS），决策引擎按中文档位匹配。
+# "other" 不映射：用户未给出可比对档位，置 None 让引擎跳过学历过滤（data_notes 已声明放宽）。
+_EDU_ENUM_ZH = {"high_school": "高中", "bachelor": "本科", "master": "硕士", "phd": "博士"}
+
 # 霍兰德 RIASEC -> 侧重路径（数值越大越偏向；行业通识映射，透明可读）
 _HOLLAND_LEAN = {
     "R": {"civil_service": 1, "employment": 3, "kaoyan": 2},  # 实际型：技术就业 + 考研深造
@@ -162,7 +166,9 @@ def build_interpretation(db: Session, user_id: UUID) -> dict:
     profile_ser = _serialize_profile(profile)
     major_hint = (profile.major if profile else None) or ""
     school_tier = profile.school_tier if profile else None
-    education = profile.education_level if profile else None
+    education = (
+        _EDU_ENUM_ZH.get(profile.education_level or "") if profile else None
+    )
     graduation_year = profile.graduation_year if profile else None
     target_direction = profile.target_direction if profile else None
 

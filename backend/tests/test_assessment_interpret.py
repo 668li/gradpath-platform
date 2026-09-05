@@ -108,3 +108,23 @@ def test_no_assessment_no_major_honest_guidance(db_session):
     assert resp["paths"] == []
     assert "个人档案" in resp["recommendation"]
     assert "测评" in resp["interpretation"]["reason"]
+
+
+def test_profile_enum_education_does_not_crash(db_session):
+    """回归（2026-09-05 生产冒烟 KeyError: 'bachelor'）：档案学历存英文枚举值，
+    interpret 必须映射成中文档位再喂决策引擎，绝不把枚举直传进 _EDU_RANK。"""
+    uid = uuid4()
+    db_session.add(
+        CareerProfile(
+            user_id=uid,
+            major="计算机科学与技术",
+            education_level="bachelor",
+            graduation_year=2026,
+        )
+    )
+    db_session.commit()
+
+    resp = build_interpretation(db_session, uid)  # 旧代码此处 KeyError → 500
+    assert resp["has_assessment"] is False
+    assert isinstance(resp["paths"], list)
+    assert isinstance(resp["recommendation"], str)

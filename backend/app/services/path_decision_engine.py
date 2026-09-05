@@ -741,16 +741,18 @@ def _party_eligible(political_status: str | None, user_party: str) -> bool:
 def _edu_eligible(education_req: str | None, user_edu: str) -> bool:
     """学历档位匹配 — "仅限X"需精确档位；"及以上/或"等开放表述满足最低档即可。
 
-    未知学历表述视为不限（保守放行，避免误伤）。
+    未知学历表述视为不限（保守放行，避免误伤）；用户学历不在档位表内
+    （如档案枚举直传的 "bachelor"，或 "高中"）按 0 档处理——宁缺毋滥，
+    岗位有学历要求时不误判可报，无要求时不受影响。
     """
     if not education_req or not user_edu:
         return True
     levels = [l for l in ("博士", "硕士", "本科", "大专") if l in education_req]
     if not levels:
         return True
-    user_rank = _EDU_RANK[user_edu]
+    user_rank = _EDU_RANK.get(user_edu, 0)
     if "仅限" in education_req:
-        return user_rank == _EDU_RANK[levels[0]]
+        return user_rank == _EDU_RANK.get(levels[0], -1)
     return user_rank >= min(_EDU_RANK[l] for l in levels)
 
 
