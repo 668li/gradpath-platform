@@ -435,13 +435,19 @@ def detect_data_intents(content: str) -> list[DataIntent]:
     if (any(w in text for w in _INTEL_WORDS) and schools) or (schools and any(w in text for w in ("考研", "报考", "考"))):
         intents.append(DataIntent("school_intel", {"school": schools[0]}))
     if any(w in text for w in _POSITION_WORDS):
+        dept = extract_dept(text)
+        major = extract_major(text)
+        # 部门词与专业词同词时（"税务岗位"的"税务"），该词是部门不是专业，
+        # 保留会把 major_req LIKE '%税务%' 叠加成零命中（生产实证 11545→0）
+        if major and dept and major == dept:
+            major = None
         intents.append(
             DataIntent(
                 "positions",
                 {
                     "education": extract_education(text),
                     "province": extract_province(text),
-                    "dept": extract_dept(text),
+                    "dept": dept,
                     "major": major,
                 },
             )

@@ -77,6 +77,14 @@ class TestDetectIntents:
         assert pos.params["education"] == "本科"
         assert pos.params["province"] == "广东"
 
+    def test_positions_dept_major_collision_dropped(self):
+        """「税务岗位」的税务是部门词不是专业词，同词时丢弃专业过滤（生产零命中事故回归）。"""
+        pos = next(
+            i for i in detect_data_intents("本科能报什么税务岗位") if i.domain == "positions"
+        )
+        assert pos.params["dept"] == "税务"
+        assert pos.params["major"] is None
+
     def test_salary_intent(self):
         intents = detect_data_intents("计算机专业薪资怎么样")
         assert any(i.domain == "salary" for i in intents)
