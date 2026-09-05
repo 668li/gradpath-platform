@@ -31,7 +31,6 @@ import { useApi } from "@/lib/api/swr-config";
 import { useToast } from "@/components/ui/toast";
 import { EmptyState, LoadingState } from "@/components/ui/empty";
 import { ListSkeleton, CardSkeleton } from "@/components/ui/skeleton";
-import { InspirationCases } from "@/components/inspiration-cases";
 import {
   BarChart as ReBarChart,
   Bar,
@@ -70,7 +69,6 @@ const tabs = [
   { id: "bright-outlook", label: "朝阳职业", icon: Sparkles, color: "text-orange-700", desc: "Bright Outlook 朝阳职业：高增长、快速扩张与新兴岗位标记，帮你瞄准正在变热的赛道" },
   { id: "salary-slice", label: "薪资透视", icon: DollarSign, color: "text-emerald-700", desc: "按岗位 × 城市查看薪资四分位分布，校准期望薪资" },
   { id: "company-reviews", label: "公司口碑", icon: Users, color: "text-indigo-700", desc: "已入职校友匿名评价：优点、缺点与推荐度" },
-  { id: "inspiration", label: "灵感案例", icon: Sparkles, color: "text-pink-500", desc: "精选 Trae Work 论坛 96 个就业类创意方案，获取产品灵感" },
 ];
 
 // ===== 标签颜色映射 =====
@@ -1407,9 +1405,6 @@ function EmploymentPageContent() {
         {activeTab === "bright-outlook" && <Tab7BrightOutlook />}
         {activeTab === "salary-slice" && <Tab8SalarySlice />}
         {activeTab === "company-reviews" && <Tab9CompanyReviews />}
-        {activeTab === "inspiration" && (
-          <InspirationCases category="就业灵感" accentColor="text-pink-500" />
-        )}
       </div>
     </div>
   );

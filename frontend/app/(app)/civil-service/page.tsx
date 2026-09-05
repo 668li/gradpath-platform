@@ -22,7 +22,6 @@ import { cn } from "@/lib/utils";
 import { civilServiceIntelApi } from "@/lib/api/ai";
 import { EmptyState, LoadingState } from "@/components/ui/empty";
 import { Skeleton } from "@/components/ui/skeleton";
-import { InspirationCases } from "@/components/inspiration-cases";
 import type {
   PostIntelResponse,
   CivilServicePositioningResponse,
@@ -35,7 +34,6 @@ const tabs = [
   { id: "positioning", label: "考公定位", icon: Target, color: "text-purple-500" },
   { id: "dark-knowledge", label: "暗知识", icon: BookOpen, color: "text-amber-500" },
   { id: "tools", label: "备考工具", icon: Wrench, color: "text-green-500" },
-  { id: "inspiration", label: "灵感案例", icon: Sparkles, color: "text-pink-500" },
 ];
 
 const importanceMap: Record<string, { label: string; color: string }> = {
@@ -582,10 +580,6 @@ function CivilServicePageContent() {
             <ToolsContent positioning={positioning} />
           )}
         </div>
-      )}
-
-      {activeTab === "inspiration" && (
-        <InspirationCases category="考公灵感" accentColor="text-amber-500" />
       )}
     </div>
   );

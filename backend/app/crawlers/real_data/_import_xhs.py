@@ -1,3 +1,9 @@
+# 已注销（2026-09-05，用户拍板：社区只能有用户自己发的信息）。
+# 本脚本把小红书 JSON 直接 INSERT 进 experience_posts（status=approved 绕审核，
+# 作者取 "SELECT id FROM users LIMIT 1" 冒充真实用户），属于假身份注入源头，
+# 禁止再执行。
+raise SystemExit("已注销：绕审核假身份注入器，禁止执行（社区只允许用户生成内容）")
+
 import json
 import sys
 from pathlib import Path

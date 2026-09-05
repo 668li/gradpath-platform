@@ -12,10 +12,8 @@ import {
   Plus,
   Flame,
   Clock,
-  TrendingUp,
   Search,
   HelpCircle,
-  ExternalLink,
 } from "lucide-react";
 import { Button, Input, Badge } from "@/components/ui/form-controls";
 import { LoadingState, EmptyState } from "@/components/ui/empty";
@@ -24,37 +22,10 @@ import { kaoyanCommunityApi } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { ExperiencePostResponse, QAResponse } from "@/types";
 import { QualityBadge } from "@/components/ui/quality-badge";
-import { ExternalExperienceCard } from "./ExternalExperienceCard";
 
 const tabs = [
   { key: "experience", label: "经验贴", icon: BookOpen },
   { key: "qa", label: "问答互助", icon: MessageSquare },
-  { key: "external", label: "外部经验精选", icon: ExternalLink },
-];
-
-const externalCategories = [
-  { value: "", label: "全部分类" },
-  { value: "考研灵感", label: "💡 Trae论坛灵感" },
-  { value: "择校", label: "择校" },
-  { value: "备考", label: "备考" },
-  { value: "复试", label: "复试" },
-  { value: "调剂", label: "调剂" },
-  { value: "复习", label: "复习" },
-  // Phase H：信息差高频维度（transformer 分类细化后落库的新分类）
-  { value: "心态", label: "心态" },
-  { value: "避坑", label: "避坑" },
-];
-
-function isExternalPost(post: ExperiencePostResponse): boolean {
-  return Boolean(post.source_platform) && post.source_platform !== "user";
-}
-
-const hotTopics = [
-  "计算机考研 408 复习路线",
-  "双非逆袭 985 经验分享",
-  "导师选择避坑指南",
-  "复试英语口语怎么准备",
-  "调剂系统填报技巧",
 ];
 
 const PAGE_SIZE = 10;
@@ -63,18 +34,11 @@ function CommunityPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const toast = useToast();
-  const initialTab =
-    searchParams.get("tab") === "qa"
-      ? "qa"
-      : searchParams.get("tab") === "external"
-        ? "external"
-        : "experience";
-  const [activeTab, setActiveTab] = useState<"experience" | "qa" | "external">(initialTab);
+  const initialTab = searchParams.get("tab") === "qa" ? "qa" : "experience";
+  const [activeTab, setActiveTab] = useState<"experience" | "qa">(initialTab);
   const [search, setSearch] = useState("");
   const [posts, setPosts] = useState<ExperiencePostResponse[]>([]);
   const [questions, setQuestions] = useState<QAResponse[]>([]);
-  const [externalPosts, setExternalPosts] = useState<ExperiencePostResponse[]>([]);
-  const [externalCategory, setExternalCategory] = useState("");
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -114,25 +78,6 @@ function CommunityPageContent() {
     }
   }, [page, search, toast]);
 
-  const loadExternalPosts = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await kaoyanCommunityApi.experiencePosts.list({
-        page: 1,
-        page_size: 100,
-        category: externalCategory || undefined,
-        search: search || undefined,
-        source_platform: "external",
-      });
-      setExternalPosts(res.items);
-      setTotal(res.total);
-    } catch {
-      toast.push("加载外部经验失败", "error");
-    } finally {
-      setLoading(false);
-    }
-  }, [externalCategory, search, toast]);
-
   useEffect(() => {
     setPage(1);
   }, [activeTab, search]);
@@ -142,10 +87,8 @@ function CommunityPageContent() {
       loadPosts();
     } else if (activeTab === "qa") {
       loadQuestions();
-    } else {
-      loadExternalPosts();
     }
-  }, [activeTab, loadPosts, loadQuestions, loadExternalPosts]);
+  }, [activeTab, loadPosts, loadQuestions]);
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
@@ -354,51 +297,8 @@ function CommunityPageContent() {
               </div>
             )}
 
-            {/* External Experience */}
-            {activeTab === "external" && (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <select
-                    value={externalCategory}
-                    onChange={(e) => setExternalCategory(e.target.value)}
-                    className="rounded-lg border border-paper-300 bg-white px-3 py-2 text-sm text-ink-800 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
-                  >
-                    {externalCategories.map((c) => (
-                      <option key={c.value} value={c.value}>
-                        {c.label}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="text-xs text-ink-400">
-                    共 {externalPosts.length} 条外部经验
-                  </span>
-                </div>
-
-                {loading ? (
-                  <div className="rounded-xl border border-paper-200 bg-white p-8">
-                    <LoadingState text="加载外部经验精选..." />
-                  </div>
-                ) : externalPosts.length === 0 ? (
-                  <div className="rounded-xl border border-paper-200 bg-white p-8">
-                    <EmptyState
-                      title="暂无外部经验"
-                      description={
-                        search || externalCategory
-                          ? "未找到匹配内容，换个筛选条件试试"
-                          : "暂无来自 B站、知乎、小红书等外部平台的经验精选"
-                      }
-                    />
-                  </div>
-                ) : (
-                  externalPosts.map((post) => (
-                    <ExternalExperienceCard key={post.id} post={post} />
-                  ))
-                )}
-              </div>
-            )}
-
             {/* Pagination */}
-            {!loading && activeTab !== "external" && totalPages > 1 && (
+            {!loading && totalPages > 1 && (
               <div className="flex justify-center gap-2 pt-2">
                 <button
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -423,32 +323,6 @@ function CommunityPageContent() {
 
           {/* Sidebar */}
           <div className="space-y-4">
-            <div className="rounded-xl border border-paper-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-2 mb-3">
-                <TrendingUp className="h-4 w-4 text-brand-600" />
-                <h3 className="text-sm font-semibold text-ink-800">热门话题</h3>
-              </div>
-              <div className="space-y-2">
-                {hotTopics.map((topic, idx) => (
-                  <div
-                    key={topic}
-                    className="flex items-center gap-2 text-sm text-ink-600 hover:text-brand-700 cursor-pointer"
-                    onClick={() => setSearch(topic)}
-                  >
-                    <span
-                      className={cn(
-                        "flex h-5 w-5 items-center justify-center rounded text-xs font-medium",
-                        idx < 3 ? "bg-amber-100 text-amber-700" : "bg-paper-100 text-ink-400",
-                      )}
-                    >
-                      {idx + 1}
-                    </span>
-                    <span className="line-clamp-1">{topic}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             <div className="rounded-xl border border-paper-200 bg-white p-5 shadow-sm">
               <h3 className="text-sm font-semibold text-ink-800 mb-3">社区规范</h3>
               <ul className="space-y-2 text-xs text-ink-500">
