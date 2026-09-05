@@ -25,6 +25,7 @@ sys.path.insert(0, str(BACKEND))
 
 from app.crawlers.research.official_announce_crawler import (  # noqa: E402
     OfficialAnnounceCrawler,
+    _parse_list_entries,
     extract_main_text,
     parse_list_generic,
 )
@@ -76,7 +77,36 @@ CANDIDATE_SCHOOLS: dict[str, dict] = {
     },
 }
 
-# 栏目链接文本特征（首页自动发现用）已在 _discover_sections 内联
+    # 栏目链接文本特征（首页自动发现用）已在 _discover_sections 内联
+
+# ===== Top50 扩展候选（2026-09-05 傍晚批）：URL 为研究生院/研招办官方 edu.cn 站 =====
+# DNS 或路径错误会被抓取判定自然淘汰（verdict=NO_LIST），如实记录不硬凑。
+CANDIDATE_SCHOOLS.update(
+    {
+        "tsinghua": {"name": "清华大学研究生院", "homes": ["https://yjsy.tsinghua.edu.cn/"], "guess": []},
+        "pku": {"name": "北京大学研究生院", "homes": ["https://grs.pku.edu.cn/"], "guess": []},
+        "fudan": {"name": "复旦大学研究生院", "homes": ["https://gs.fudan.edu.cn/"], "guess": []},
+        "sjtu": {"name": "上海交通大学研究生院", "homes": ["https://yss.sjtu.edu.cn/", "https://yzb.sjtu.edu.cn/"], "guess": []},
+        "zju": {"name": "浙江大学研究生院", "homes": ["http://www.grs.zju.edu.cn/"], "guess": []},
+        "tongji": {"name": "同济大学研究生院", "homes": ["https://gs.tongji.edu.cn/"], "guess": []},
+        "buaa": {"name": "北京航空航天大学研究生院", "homes": ["https://gra.buaa.edu.cn/"], "guess": []},
+        "bit": {"name": "北京理工大学研究生院", "homes": ["https://grd.bit.edu.cn/"], "guess": []},
+        "ruc": {"name": "中国人民大学研究生院", "homes": ["https://grs.ruc.edu.cn/"], "guess": []},
+        "bnu": {"name": "北京师范大学研究生院", "homes": ["https://grad.bnu.edu.cn/"], "guess": []},
+        "ecnu": {"name": "华东师范大学研究生院", "homes": ["https://yjsy.ecnu.edu.cn/"], "guess": []},
+        "scut": {"name": "华南理工大学研究生院", "homes": ["https://gs.scut.edu.cn/"], "guess": []},
+        "hnu": {"name": "湖南大学研究生院", "homes": ["http://gra.hnu.edu.cn/"], "guess": []},
+        "lzu": {"name": "兰州大学研究生院", "homes": ["https://ge.lzu.edu.cn/"], "guess": []},
+        "jlu": {"name": "吉林大学研究生院", "homes": ["http://yjsy.jlu.edu.cn/"], "guess": []},
+        "dlut": {"name": "大连理工大学研究生院", "homes": ["http://gs.dlut.edu.cn/"], "guess": []},
+        "uestc": {"name": "电子科技大学研究生院", "homes": ["https://gr.uestc.edu.cn/"], "guess": ["https://gr.uestc.edu.cn/tongzhi/118"]},
+        "zzu": {"name": "郑州大学研究生院", "homes": ["http://yz.zzu.edu.cn/"], "guess": []},
+        "njust": {"name": "南京理工大学研究生院", "homes": ["http://gs.njust.edu.cn/"], "guess": []},
+        "nwpu": {"name": "西北工业大学研究生院", "homes": ["https://gs.nwpu.edu.cn/"], "guess": []},
+        "ecust": {"name": "华东理工大学研究生院", "homes": ["https://yjszs.ecust.edu.cn/"], "guess": []},
+        "ccnu": {"name": "华中师范大学研究生院", "homes": ["https://gs.ccnu.edu.cn/"], "guess": []},
+    }
+)
 
 
 def _discover_sections(crawler: OfficialAnnounceCrawler, home_url: str) -> list[str]:
@@ -114,31 +144,48 @@ def _discover_sections(crawler: OfficialAnnounceCrawler, home_url: str) -> list[
 
 
 def _judge_list(crawler, url: str) -> dict:
-    """抓列表页并用 parse_list_generic 判定。"""
+    """抓列表页并双模板判定：generic 与 boda 择优（取通过线中新鲜条目多者）。
+
+    模板指纹的落点：.cms 字段直接产出 DEFAULT_SECTIONS 需要的适配器选择，
+    每校不再需要人工判断用哪个解析器。
+    """
     try:
         resp = crawler._request(url)
         resp.encoding = "utf-8"
         html = resp.text
     except Exception as e:
         return {"url": url, "ok": False, "reason": f"抓取失败: {e}"}
-    entries = parse_list_generic(html, url)
-    fresh = [e for e in entries if e["date"] >= CUTOFF]
-    same_host = all(
-        (urlparse(e["url"]).hostname or "").lower() == (urlparse(url).hostname or "").lower()
-        for e in entries
-    )
-    ok = len(entries) >= MIN_ENTRIES and fresh and same_host
-    return {
-        "url": url,
-        "ok": ok,
-        "n_entries": len(entries),
-        "n_fresh": len(fresh),
-        "same_host": same_host,
-        "newest": entries[0]["date"] if entries else "",
-        "sample_urls": [e["url"] for e in entries[:3]],
-        "titles": [e["title"][:30] for e in entries[:3]],
-        "html": html,
-    }
+
+    best: dict | None = None
+    for cms in ("generic", "boda"):
+        try:
+            if cms == "boda":
+                entries = _parse_list_entries(html, cms, url)
+            else:
+                entries = parse_list_generic(html, url)
+        except Exception:
+            entries = []
+        fresh = [e for e in entries if e["date"] >= CUTOFF]
+        same_host = all(
+            (urlparse(e["url"]).hostname or "").lower() == (urlparse(url).hostname or "").lower()
+            for e in entries
+        )
+        ok = len(entries) >= MIN_ENTRIES and fresh and same_host
+        cand = {
+            "url": url,
+            "ok": ok,
+            "cms": cms,
+            "n_entries": len(entries),
+            "n_fresh": len(fresh),
+            "same_host": same_host,
+            "newest": entries[0]["date"] if entries else "",
+            "sample_urls": [e["url"] for e in entries[:3]],
+            "titles": [e["title"][:30] for e in entries[:3]],
+            "html": html,
+        }
+        if best is None or (cand["ok"], cand["n_fresh"]) > (best["ok"], best["n_fresh"]):
+            best = cand
+    return best
 
 
 def _judge_details(crawler, urls: list[str]) -> list[dict]:
@@ -178,7 +225,8 @@ def calibrate(key: str, save: bool, force_fetch: bool) -> dict:
         r = _judge_list(crawler, url)
         r.pop("html", None)
         print(
-            f"  [{ 'OK' if r['ok'] else '--' }] {url} | 条数={r.get('n_entries', 0)}"
+            f"  [{ 'OK' if r['ok'] else '--' }] {url} | 模板={r.get('cms', '-')}"
+            f" 条数={r.get('n_entries', 0)}"
             f" 新鲜={r.get('n_fresh', 0)} 最新={r.get('newest', '-')}"
         )
         report["lists"].append(r)
@@ -201,6 +249,15 @@ def calibrate(key: str, save: bool, force_fetch: bool) -> dict:
         report["details"] = details
         if det_ok:
             report["verdict"] = "PASS"
+            sec_name = school["name"]
+            if not sec_name.endswith(("公告", "通知", "动态", "信息")):
+                sec_name += "通知公告"
+            report["section"] = {
+                "name": sec_name,
+                "list_url": best["url"],
+                "cms": best["cms"],
+                "content_cls": "",
+            }
             if save:
                 FIXTURE_DIR.mkdir(parents=True, exist_ok=True)
                 list_path = FIXTURE_DIR / f"{key}_list.html"
@@ -256,6 +313,10 @@ def main():
         print(f"  {k}: {v}")
     passed = [k for k, v in verdicts.items() if v == "PASS"]
     print(f"达标 {len(passed)}/{len(keys)}: {passed}")
+    sections = [v["section"] for v in out.values() if v.get("section")]
+    if sections:
+        print("\n===== PASS 校 DEFAULT_SECTIONS 条目（可直接粘贴） =====")
+        print(json.dumps(sections, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":

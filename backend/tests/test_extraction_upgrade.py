@@ -174,3 +174,34 @@ def test_expansion_tju_detail_extract_main_text():
     """tju 详情页夹具（新扩校 CMS 代表）：trafilatura 抽出 ≥80 字正文。"""
     text = extract_main_text(_read("tju_detail.html"))
     assert len(text) >= 80
+
+
+def test_expansion_batch2_reproduces_calibration():
+    """扩校封印复现测试（*_calibration.json 驱动，覆盖新批 11 校+旧批 9 校）。
+
+    每份封印清单记录标定时真实抓取的 entries 与 list_html_sha256；断言：
+    夹具未被改动（sha256 一致）+ parse_list_generic 逐字复现 url/date
+    （解析退化即红）+ ≥5 条。新校扩批只需落夹具+封印清单即自动纳管。
+    """
+    import hashlib
+    import json
+
+    manifests = sorted(FIXTURE_DIR.glob("*_calibration.json"))
+    assert len(manifests) >= 11, f"封印清单应 ≥11 份，实得 {len(manifests)}"
+    for jf in manifests:
+        data = json.loads(jf.read_text(encoding="utf-8"))
+        key = jf.name.replace("_calibration.json", "")
+        html_path = FIXTURE_DIR / f"{key}_list.html"
+        if not html_path.exists():
+            continue  # 旧封印只有 detail 夹具的记录跳过
+        if data.get("list_html_sha256"):
+            actual = hashlib.sha256(html_path.read_bytes()).hexdigest()
+            assert actual == data["list_html_sha256"], f"{key}: 列表夹具被改动"
+        entries = parse_list_generic(html_path.read_text(encoding="utf-8"), data["list_url"])
+        assert len(entries) >= 5, f"{key}: 解析条数 {len(entries)} < 5"
+        assert [e["url"] for e in entries] == [e["url"] for e in data["entries"]], (
+            f"{key}: 解析退化（URL 序列与封印不符）"
+        )
+        assert [e["date"] for e in entries] == [e["date"] for e in data["entries"]], (
+            f"{key}: 日期解析退化"
+        )
