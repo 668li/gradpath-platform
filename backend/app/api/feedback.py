@@ -6,14 +6,16 @@
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_admin_user, get_current_user
 from app.core.push_notify import notify_async
+from app.core.rate_limit import rate_limits
 from app.database import get_db
+from app.main import limiter
 from app.models.event import Feedback
 from app.models.user import User
 
@@ -45,7 +47,10 @@ class FeedbackItem(BaseModel):
 
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=FeedbackItem)
+@limiter.limit(rate_limits.QUALITY_FEEDBACK_CREATE)  # 复用 5/min 档：反馈不该被刷
 def create_feedback(
+    request: Request,
+    response: Response,
     data: FeedbackCreate,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),

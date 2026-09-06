@@ -77,14 +77,6 @@ export const commands: Command[] = [
     keywords: ["就业", "工作", "employment", "job"],
     icon: "Briefcase",
   },
-  {
-    id: "interview",
-    title: "面试经验",
-    subtitle: "情报",
-    href: "/interview",
-    keywords: ["面试", "interview", "经验"],
-    icon: "MessageSquare",
-  },
 
   // ────────────────────────── 成长 ──────────────────────────
   {
@@ -316,14 +308,6 @@ export const commands: Command[] = [
 
   // ────────────────────────── 考研子 ──────────────────────────
   {
-    id: "kaoyan-schools",
-    title: "院校库",
-    subtitle: "考研",
-    href: "/kaoyan/schools",
-    keywords: ["院校", "学校", "school", "考研"],
-    icon: "GraduationCap",
-  },
-  {
     id: "kaoyan-mentors",
     title: "考研导师",
     subtitle: "考研",
@@ -346,14 +330,6 @@ export const commands: Command[] = [
     href: "/kaoyan/strategy",
     keywords: ["策略", "strategy", "考研", "资讯"],
     icon: "Target",
-  },
-  {
-    id: "kaoyan-study-plans",
-    title: "考研学习计划",
-    subtitle: "考研",
-    href: "/kaoyan/study-plans",
-    keywords: ["学习", "计划", "考研", "study"],
-    icon: "Swords",
   },
   {
     id: "kaoyan-dark-knowledge",

@@ -60,7 +60,7 @@ export { mentorsApi, growthPatternsApi, mentorApi } from "./mentors";
 export { gradIntelApi, gradVisualizationApi, schoolAnalystApi, schoolCompareApi } from "./grad";
 export type { AnalystReportRequest, AnalystReportResponse, CompareRequest, CompareResponse } from "./grad";
 export { kaoyanCommunityApi, kaoyanNewsApi } from "./kaoyan";
-export { studyPlanApi, learningResourceApi } from "./study";
+export { studyPlanApi } from "./study";
 export { aiStudyPlanApi } from "./ai-study-plan";
 export { crawlerApi } from "./crawlers";
 export { researchQueueApi } from "./research-queue";

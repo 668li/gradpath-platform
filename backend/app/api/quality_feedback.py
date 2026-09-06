@@ -94,9 +94,8 @@ def submit_quality_feedback(
 # ----------------------------------------------------------------------
 # 管理端（2026-09-06 反馈通道补全，原 P1 欠账）：质量反馈统计
 # ----------------------------------------------------------------------
-from collections import Counter  # noqa: E402
-
 from pydantic import BaseModel  # noqa: E402
+from sqlalchemy import func  # noqa: E402
 
 from app.core.deps import get_admin_user  # noqa: E402
 from app.core.push_notify import notify_async  # noqa: E402
@@ -117,16 +116,25 @@ def admin_quality_feedback_stats(
     db: Session = Depends(get_db),
     _admin: User = Depends(get_admin_user),
 ):
-    """管理端：质量反馈统计（👍/👎 总量与目标类型分布）。"""
-    rows = db.query(QualityFeedback).all()
-    by_type = Counter(
-        r.target_type.value if hasattr(r.target_type, "value") else str(r.target_type)
-        for r in rows
+    """管理端：质量反馈统计（👍/👎 总量与目标类型分布；SQL 聚合非全表加载）。"""
+    total = db.query(func.count(QualityFeedback.id)).scalar() or 0
+    helpful = (
+        db.query(func.count(QualityFeedback.id))
+        .filter(QualityFeedback.feedback_type == "helpful")
+        .scalar()
+        or 0
     )
-    helpful = sum(1 for r in rows if r.feedback_type == "helpful")
+    by_type_rows = (
+        db.query(QualityFeedback.target_type, func.count(QualityFeedback.id))
+        .group_by(QualityFeedback.target_type)
+        .all()
+    )
+    by_type = {
+        (t.value if hasattr(t, "value") else str(t)): c for t, c in by_type_rows
+    }
     return QualityFeedbackStats(
-        total=len(rows),
+        total=total,
         helpful=helpful,
-        unhelpful=len(rows) - helpful,
-        by_target_type=dict(by_type),
+        unhelpful=total - helpful,
+        by_target_type=by_type,
     )

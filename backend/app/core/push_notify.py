@@ -25,6 +25,10 @@ logger = logging.getLogger(__name__)
 # Server酱官方 API 域白名单（SSRF 边界：协议+域名双重校验）
 _ALLOWED_HOSTS = {"sctapi.ftqq.com", "sc.ftqq.com"}
 
+# 并发闸：通知线程最多同时 3 个（httpx 10s 超时 → 最坏 30s 内饱和丢弃，
+# 防反馈风暴下线程无界增长/Server酱被轰炸）；饱和时丢弃并记日志（通知可丢，业务不可阻）
+_PUSH_SEMAPHORE = threading.Semaphore(3)
+
 
 def _validated_url() -> str | None:
     url = (settings.SERVERCHAN_WEBHOOK_URL or "").strip()
@@ -45,6 +49,9 @@ def send_serverchan(title: str, desp: str = "") -> bool:
     url = _validated_url()
     if url is None:
         return False
+    if not _PUSH_SEMAPHORE.acquire(blocking=False):
+        logger.warning("Server酱推送通道饱和，丢弃: %s", title)
+        return False
     try:
         resp = httpx.post(url, json={"title": title[:32], "desp": desp[:1800]},
                           timeout=10, follow_redirects=False)
@@ -52,6 +59,8 @@ def send_serverchan(title: str, desp: str = "") -> bool:
     except Exception as e:  # noqa: BLE001 — 推送失败永不影响业务
         logger.warning("Server酱推送失败: %s", e)
         return False
+    finally:
+        _PUSH_SEMAPHORE.release()
 
 
 def notify_async(title: str, desp: str = "") -> None:
