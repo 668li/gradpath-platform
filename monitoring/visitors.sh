@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 # 访客日报 — 从 nginx 访问日志统计真实访客（北京时间日窗），可选 Server酱微信推送
 # 用法:
-#   visitors.sh           打印「昨天 + 今日至今」报告
-#   visitors.sh --push    同上，并把昨日日报推微信（cron 每天 08:10 北京时间）
+#   visitors.sh                     打印「昨天 + 今日至今」报告
+#   visitors.sh --push              推微信（默认早报：昨日为主）
+#   visitors.sh --push --evening    晚报（cron 每天 22:00）：今日至今为主+昨日参考
 # 口径: 日志时间为 UTC（+8 换算回北京日窗）；过滤机器人/自检 UA 与静态资源后，
 #       2xx/3xx 算有效浏览，444 算被挡攻击探测；人数=不重复 IP（NAT 出口会低估，仅供参考）。
 set -u
 BASE="$(cd "$(dirname "$0")" && pwd)"
+EVENING=0; for a in "$@"; do [ "$a" = "--evening" ] && EVENING=1; done
 LOGDIR="$BASE/nginx-logs"
 STATE="$BASE/state"; mkdir -p "$STATE"
 CSV="$STATE/visitors.csv"
@@ -75,9 +77,10 @@ EOF
 Y1=${VIS_Y1:-$(TZ=Asia/Shanghai date -d "today 00:00" +%s)}; Y0=${VIS_Y0:-$((Y1-86400))}
 YD=$(TZ=Asia/Shanghai date -d yesterday +%F)
 YD_CN=$(TZ=Asia/Shanghai date -d yesterday +%-m月%-d日)
+TD_CN=$(TZ=Asia/Shanghai date +%-m月%-d日)
 read -r PV UV BLK TOT TOP <<< "$(window_report $Y0 $Y1)"
 read -r PV0 UV0 BLK0 TOT0 _  <<< "$(window_report $((Y0-86400)) $Y0)"
-read -r TPV TUV TBLK TTOT _  <<< "$(window_report $Y1 $(date +%s))"
+read -r TPV TUV TBLK TTOT TTOP <<< "$(window_report $Y1 $(date +%s))"
 
 if [ "${UV0:-0}" -gt 0 ] 2>/dev/null; then
   D=$((UV-UV0)); [ "$D" -ge 0 ] && DELTA="比前天多 ${D} 人" || DELTA="比前天少 $((-D)) 人"
@@ -85,7 +88,24 @@ else
   DELTA="前天无数据"
 fi
 
-REPORT="📊 昨日访客（${YD_CN}，北京时间）
+if [ "${EVENING:-0}" = "1" ]; then
+  # 晚报 22:00：今天基本过完，报「今日至今」为主，昨日全天作对比
+  if [ "${UV0:-0}" -gt 0 ] 2>/dev/null; then
+    DT=$((TUV-UV0)); [ "$DT" -ge 0 ] && TDELTA="比昨天全天多 ${DT} 人" || TDELTA="比昨天全天少 $((-DT)) 人"
+  else
+    TDELTA="昨天无数据"
+  fi
+  REPORT="📊 今日访客（${TD_CN} 0点起，北京时间）
+· 到访约 ${TUV:-0} 人（${TDELTA}）
+· 有效浏览 ${TPV:-0} 个页面
+· 自动挡掉攻击探测 ${TBLK:-0} 次
+· 热门页面：${TTOP:-无}
+
+昨天全天参考：约 ${UV} 人 / ${PV} 页
+——
+人数按不重复 IP 估算（同一 WiFi 出口会算作 1 人），仅供参考"
+else
+  REPORT="📊 昨日访客（${YD_CN}，北京时间）
 · 到访约 ${UV} 人（${DELTA}）
 · 有效浏览 ${PV} 个页面
 · 自动挡掉攻击探测 ${BLK} 次
@@ -94,6 +114,7 @@ REPORT="📊 昨日访客（${YD_CN}，北京时间）
 今日至今：约 ${TUV:-0} 人 / ${TPV:-0} 页
 ——
 人数按不重复 IP 估算（同一 WiFi 出口会算作 1 人），仅供参考"
+fi
 
 echo "$REPORT"
 
@@ -111,8 +132,13 @@ if [ "${1:-}" = "--push" ]; then
     printf '%s [DAILY-SKIPPED] webhook missing\n' "$(date '+%F %T')" >> "$ALERTS"
     exit 0
   fi
+  if [ "${EVENING:-0}" = "1" ]; then
+    TITLE="【日报】今天 ${TUV:-0} 位访客 · 挡掉 ${TBLK:-0} 次攻击"
+  else
+    TITLE="【日报】昨天 ${UV} 位访客 · 挡掉 ${BLK} 次攻击"
+  fi
   RESP=$(curl -s -m 10 \
-    --data-urlencode "title=【日报】昨天 ${UV} 位访客 · 挡掉 ${BLK} 次攻击" \
+    --data-urlencode "title=$TITLE" \
     --data-urlencode "content=$REPORT" \
     "$(cat "$WEBHOOK_FILE")" 2>&1)
   echo $((CNT + 1)) > "$CNT_FILE"
