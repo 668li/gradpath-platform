@@ -96,7 +96,7 @@ classify_stats() {
     ua=""; for(i=12;i<=NF;i++){ if($i ~ /^rt=/) break; ua=ua" "$i }
     l=tolower(ua); gsub(/"/,"",l)
     if (l=="" || l ~ /^[- ]*$/) next
-    if (l ~ bot || l ~ mach || l !~ uaok) { mach[$1]=1; next }
+    if (l ~ bot || l ~ mach || l !~ uaok) { mip[$1]=1; next }
     pair=$1" "p; pc[pair]++; req[$1]++
     if (p !~ /^\/api\//) pagep[pair]++
   }
@@ -108,7 +108,7 @@ classify_stats() {
       if (hv >= 1) { hu++; hpv += hv }
       else if (req[ip] == 1) su++
     }
-    mu=0; for(ip in mach) mu++
+    mu=0; for(ip in mip) mu++
     printf "%d %d %d %d %d\n", hu, hpv, mu, su, hbtot
   }'
 }
