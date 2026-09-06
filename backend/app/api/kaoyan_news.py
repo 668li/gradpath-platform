@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
+from app.core.cache import cache
 from app.database import get_db
 from app.models.kaoyan_news import KaoyanNews
 from app.schemas.kaoyan_news import KaoyanNewsListResponse, KaoyanNewsResponse
@@ -20,6 +21,10 @@ router = APIRouter(prefix="/api/kaoyan-news", tags=["考研资讯"])
 @router.get("/categories")
 def list_news_categories(db: Session = Depends(get_db)):
     """已审核资讯的全部分类（按出现次数降序，供资讯中心分类 tab）。"""
+    # 分类 tab 全站同一份，5 分钟缓存（内容随审核更新，TTL 内可接受）
+    cached = cache.get("kaoyan_news:categories")
+    if cached is not None:
+        return cached
     rows = (
         db.query(KaoyanNews.category, func.count(KaoyanNews.id))
         .filter(
@@ -30,7 +35,9 @@ def list_news_categories(db: Session = Depends(get_db)):
         .order_by(func.count(KaoyanNews.id).desc())
         .all()
     )
-    return {"categories": [r[0] for r in rows]}
+    result = {"categories": [r[0] for r in rows]}
+    cache.set("kaoyan_news:categories", result, ttl=300)
+    return result
 
 
 @router.get("", response_model=KaoyanNewsListResponse)
@@ -47,6 +54,15 @@ def list_kaoyan_news(
     db: Session = Depends(get_db),
 ):
     """获取考研资讯列表（默认只展示已审核内容；支持质量排序与筛选）。"""
+    # 列表页公开且全站同构：按全部筛选参数做 key，5 分钟缓存
+    cache_key = (
+        f"kaoyan_news:list:{page}:{page_size}:{sort}:{category or '-'}:"
+        f"{quality_grade or '-'}:{source_platform or '-'}:{search or '-'}"
+    )
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return KaoyanNewsListResponse.model_validate(cached)
+
     query = db.query(KaoyanNews).filter(KaoyanNews.status == "approved")
 
     if category:
@@ -86,12 +102,14 @@ def list_kaoyan_news(
             .all()
         )
 
-    return KaoyanNewsListResponse(
+    response = KaoyanNewsListResponse(
         items=[KaoyanNewsResponse.model_validate(i) for i in items],
         total=total,
         page=page,
         page_size=page_size,
     )
+    cache.set(cache_key, response.model_dump(), ttl=300)
+    return response
 
 
 @router.get("/{news_id}", response_model=KaoyanNewsResponse)
