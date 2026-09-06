@@ -280,12 +280,13 @@ def run_crawler_endpoint(
 
     优先投递到 Celery 队列；Celery 不可用时降级到 FastAPI BackgroundTasks 兜底。
     """
+    # 合规护栏（B1+对抗审计）：白名单闸放最前——任何非白名单名一律 403，
+    # 不先查注册表（避免 404 泄露注册状态、白名单语义被注册态遮蔽）
+    _assert_allowed_crawler(body.source_name)
+
     cls = get_crawler(body.source_name)
     if not cls:
         raise HTTPException(status_code=404, detail=f"爬虫 '{body.source_name}' 未注册")
-
-    # 合规护栏（B1 堵旁路）：非白名单爬虫一律拒绝触发
-    _assert_allowed_crawler(body.source_name)
 
     task_id = uuid4().hex[:12]
 
@@ -389,12 +390,12 @@ def create_schedule(
     if not scheduler:
         raise HTTPException(status_code=503, detail="APScheduler 未可用")
 
+    # 合规护栏（B1+对抗审计）：白名单闸放最前，任何非白名单名一律 403
+    _assert_allowed_crawler(body.source_name)
+
     cls = get_crawler(body.source_name)
     if not cls:
         raise HTTPException(status_code=404, detail=f"爬虫 '{body.source_name}' 未注册")
-
-    # 合规护栏（B1 堵旁路）：非白名单爬虫一律拒绝创建定时任务
-    _assert_allowed_crawler(body.source_name)
 
     job_id = f"crawler_{body.source_name}"
     cron_parts = body.cron.split()

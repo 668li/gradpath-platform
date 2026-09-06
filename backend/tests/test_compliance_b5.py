@@ -136,7 +136,8 @@ def test_run_endpoint_rejects_registered_non_whitelisted_crawler(client, admin_h
         headers=admin_headers,
         json={"source_name": "mentor"},
     )
-    assert resp.status_code in (403, 404), "非白名单名不得可执行：403(白名单拒)或 404(未注册更早拒)"
+    # 2026-09-06 信任锚书：白名单闸已前置到 get_crawler 之前，未注册名同样 403
+    assert resp.status_code == 403, "白名单闸统一 403，注册状态不再泄露"
 
 
 def test_run_endpoint_allows_whitelisted_crawler(client, admin_headers, monkeypatch):
@@ -173,9 +174,9 @@ def test_schedules_rejects_registered_non_whitelisted_crawler(
         headers=admin_headers,
         json={"source_name": "mentor", "cron": "0 * * * *"},
     )
-    # mentor 已于 2026-09-06 审计批次注销注册：未注册在更早闸即拒（404），
-    # 拒绝语义同 403 不变——详见 test_run_endpoint_rejects... 注释
-    assert resp.status_code in (403, 404), "非白名单名不得可挂调度"
+    # mentor 已于 2026-09-06 审计批次注销注册；信任锚书后白名单闸前置，
+    # 未注册名同样 403——注册状态不再泄露
+    assert resp.status_code == 403, "白名单闸统一 403"
 
 
 def test_whitelist_entries_all_registered():
