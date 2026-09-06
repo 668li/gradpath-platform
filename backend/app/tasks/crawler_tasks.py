@@ -21,6 +21,7 @@ from uuid import uuid4
 from app.celery_app import celery_app
 from app.core.cache import cache
 from app.core.websocket_manager import manager as ws_manager
+from app.crawlers.compliance import is_allowed_crawler
 from app.crawlers.crawler_config import load_config
 from app.crawlers.registry import get_crawler
 from app.database import SessionLocal
@@ -32,9 +33,7 @@ TASK_CACHE_PREFIX = "crawler_task"
 TASK_CACHE_TTL = 24 * 60 * 60
 
 
-def _resolve_run_record(
-    db, source_name: str, category: str, result: dict, crawler
-) -> CrawlerRun:
+def _resolve_run_record(db, source_name: str, category: str, result: dict, crawler) -> CrawlerRun:
     """单行记账：取爬虫 store() 建的行（result.run_id）；未建行时兜底补一行。
 
     行以爬虫内部创建为准（run_id 溯源链在爬虫手上），包装层只更新不另建；
@@ -73,6 +72,19 @@ def run_crawler_task(self, task_id: str, source_name: str, dry_run: bool = False
         source_name: 爬虫源名称
         dry_run: 是否只模拟执行（不写库）
     """
+    # 合规红线（对抗审计 F3 纵深）：白名单原本只在三入口检查，worker 是最后一道关。
+    # 新入口 / beat 配置 / REPL 直投都不得绕过审查——非白名单收到即拒，不实例化爬虫。
+    if not is_allowed_crawler(source_name):
+        _err = f"白名单闸（合规红线）：爬虫 '{source_name}' 不在准入白名单"
+        logger.error("[crawler_tasks] worker 侧拒绝: %s", source_name)
+        cache.set(
+            f"{TASK_CACHE_PREFIX}:{task_id}",
+            {"status": "failed", "error": _err},
+            ttl=TASK_CACHE_TTL,
+        )
+        ws_manager.notify_task_sync(task_id, "failed", {"error": _err})
+        return {"status": "failed", "error": _err}
+
     db = SessionLocal()
     try:
         cache.set(
@@ -161,6 +173,15 @@ def run_scheduled_crawler_task(source_name: str):
     """
     task_id = uuid4().hex[:12]
     logger.info("定时爬虫任务触发: %s, task_id=%s", source_name, task_id)
+
+    # 合规红线（对抗审计 F3 纵深）：定时通道同样在 worker 侧复查白名单——
+    # 防未来误配 beat / 直投任务绕过全部入口审查。非白名单收到即拒。
+    if not is_allowed_crawler(source_name):
+        logger.error("[crawler_tasks] 定时任务被白名单闸拒绝（worker 侧复查）: %s", source_name)
+        return {
+            "status": "failed",
+            "error": f"白名单闸（合规红线）：爬虫 '{source_name}' 不在准入白名单",
+        }
 
     db = SessionLocal()
     try:
