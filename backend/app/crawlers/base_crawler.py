@@ -70,6 +70,10 @@ class BaseCrawler(ABC):
         # 每线程独立 Session 池：thread-id -> requests.Session
         self._thread_sessions: dict = {}
         self._thread_sessions_lock = threading.Lock()
+        # 抓取证据留痕（对抗审计 F1）：仅 _request 成功响应时追加会话级
+        # (url,status,at) —— official_verified 双条件的数据源。除 _request 外
+        # 任何代码不得写入：假管道想拿证据必须真的发 HTTP，手写进不去。
+        self._fetch_log: list[dict] = []
         # 节流锁：按 host 分桶限速——同域请求间隔仍 ≥ _rate_limit，跨域互不拖累
         # （修复原全局串行"一慢全慢"缺陷；锁本身仍全局，保护分桶字典线程安全）
         self._throttle_lock = threading.Lock()
@@ -234,6 +238,13 @@ class BaseCrawler(ABC):
                     self._throttle((urlparse(url).hostname or "").lower())
                     resp = self._get_session().request(method, url, timeout=30, **kwargs)
                 resp.raise_for_status()
+                self._fetch_log.append(
+                    {
+                        "url": url,
+                        "status": resp.status_code,
+                        "at": datetime.now(timezone.utc).isoformat(),
+                    }
+                )
                 return resp
             except requests.RequestException as e:
                 if attempt < max_retries - 1:
@@ -244,6 +255,14 @@ class BaseCrawler(ABC):
                     time.sleep(wait)
                 else:
                     raise
+
+    def fetch_evidence(self) -> list[dict]:
+        """本会话抓取证据快照（对抗审计 F1）：仅 _request 产生的真实 HTTP 记录。
+
+        store() 把它写进每条 external_meta.fetched_evidence，作为
+        official_verified 双条件之一。返回只读拷贝，调用方无法篡改内部日志。
+        """
+        return list(self._fetch_log)
 
     # ===== 可选浏览器渲染抓取（crawl4ai 集成；客户端不可用时降级 HTTP） =====
 

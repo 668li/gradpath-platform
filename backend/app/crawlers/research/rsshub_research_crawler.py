@@ -240,6 +240,7 @@ class RSSHubCrawler(BaseCrawler):
                 items=filtered_items,
                 source_platform="rsshub",
                 run_id=str(run_record.id),
+                fetch_log=self.fetch_evidence(),
             )
 
             self._finalize_run_record(run_record)

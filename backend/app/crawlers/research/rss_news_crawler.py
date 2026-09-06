@@ -189,6 +189,7 @@ class RssNewsCrawler(BaseCrawler):
                 items=filtered_items,
                 source_platform="rss",
                 run_id=str(run_record.id),
+                fetch_log=self.fetch_evidence(),
             )
 
             self._finalize_run_record(run_record)

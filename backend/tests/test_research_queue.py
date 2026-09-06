@@ -521,9 +521,20 @@ class TestCredibilityInference:
         """
         from app.services.research_ingestion import _infer_credibility, store_research_items
 
-        assert _infer_credibility("https://kaoyan.xxx.edu.cn/news/1", "web") == "official_verified"
+        # 2026-09-06 信任锚书（F1）：官方域名 + 真实抓取留痕 双条件——
+        # 无证据的官方域名降级 model_inferred，见 tests/test_fetch_evidence_anchor.py
+        log = [{"url": "https://kaoyan.xxx.edu.cn/news/1", "status": 200, "at": "t"}]
         assert (
-            _infer_credibility("https://www.gov.cn/zhengce/2026.htm", "web") == "official_verified"
+            _infer_credibility("https://kaoyan.xxx.edu.cn/news/1", "web", log)
+            == "official_verified"
+        )
+        assert _infer_credibility("https://kaoyan.xxx.edu.cn/news/1", "web", None) == (
+            "model_inferred"
+        )
+        gov_log = [{"url": "https://www.gov.cn/zhengce/2026.htm", "status": 200, "at": "t"}]
+        assert (
+            _infer_credibility("https://www.gov.cn/zhengce/2026.htm", "web", gov_log)
+            == "official_verified"
         )
 
         result = store_research_items(
@@ -539,6 +550,7 @@ class TestCredibilityInference:
             ],
             source_platform="web",
             run_id="00000000000000000000000000000000",
+            fetch_log=[{"url": "https://yjs.xxx.edu.cn/a/b", "status": 200, "at": "t"}],
         )
         assert result["inserted"] == 1
         ext = (

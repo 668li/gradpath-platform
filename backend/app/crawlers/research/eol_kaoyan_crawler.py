@@ -183,6 +183,7 @@ class EolKaoyanCrawler(BaseCrawler):
                 items=items,
                 source_platform="eol",
                 run_id=str(run_record.id),
+                fetch_log=self.fetch_evidence(),
             )
 
             # 回写 data_freshness（source_channel=eol_kaoyan，契约列见 DataFreshness）

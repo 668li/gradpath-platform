@@ -19,7 +19,6 @@ if __name__ == "__main__":
 from app.crawlers.base_crawler import BaseCrawler
 from app.crawlers.registry import register_crawler
 from app.database import SessionLocal
-from app.models.crawler_run import CrawlerRun
 from app.services.research_ingestion import store_research_items
 
 logger = logging.getLogger(__name__)
@@ -179,6 +178,7 @@ class BilibiliResearchCrawler(BaseCrawler):
                 items=items,
                 source_platform="bilibili",
                 run_id=str(run_record.id),
+                fetch_log=self.fetch_evidence(),
             )
 
             self._finalize_run_record(run_record)

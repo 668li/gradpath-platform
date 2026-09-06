@@ -268,6 +268,7 @@ class ZhihuResearchCrawler(BaseCrawler):
                 items=items,
                 source_platform="zhihu",
                 run_id=str(run_record.id),
+                fetch_log=self.fetch_evidence(),
             )
 
             self._finalize_run_record(run_record)

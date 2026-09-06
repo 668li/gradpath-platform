@@ -169,6 +169,8 @@ class TestRequestGuards:
         called = []
 
         class _Resp:
+            status_code = 200  # 信任锚书：_request 留痕需读真实 Response 同款属性
+
             def raise_for_status(self):
                 pass
 

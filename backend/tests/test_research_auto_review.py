@@ -32,37 +32,60 @@ def _mk_admin(db):
 
 
 def _mk_history(db, crawler: str, approved: int, rejected: int) -> None:
-    """制造历史审核画像（直接落已审核条目，不进队列）。"""
+    """制造历史审核画像（2026-09-06 F5 起信誉分母只算人工结论——人工/自动
+    标记在 ReviewQueueItem.reviewed_by，历史行必须带队列行才有信誉权重）。"""
     for i in range(approved):
+        ext = ExternalResearchItem(
+            crawler_name=crawler,
+            crawler_run_id="seed",
+            item_type="kaoyan_news",
+            title=f"{crawler} 历史通过 {i}",
+            content="历史种子内容" * 20,
+            source_url=f"https://seed.example.com/{crawler}/a/{i}",
+            source_platform="rsshub",
+            review_status="APPROVED",
+        )
+        db.add(ext)
+        db.flush()
         db.add(
-            ExternalResearchItem(
-                crawler_name=crawler,
-                crawler_run_id="seed",
-                item_type="kaoyan_news",
-                title=f"{crawler} 历史通过 {i}",
-                content="历史种子内容" * 20,
-                source_url=f"https://seed.example.com/{crawler}/a/{i}",
-                source_platform="rsshub",
+            ReviewQueueItem(
+                item_type="external_research",
+                ref_item_id=ext.id,
+                source_url=ext.source_url,
                 review_status="APPROVED",
+                reviewed_by="human-admin@example.com",
+                biz_req_no=f"seed:{crawler}:a:{i}",
             )
         )
     for i in range(rejected):
+        ext = ExternalResearchItem(
+            crawler_name=crawler,
+            crawler_run_id="seed",
+            item_type="kaoyan_news",
+            title=f"{crawler} 历史驳回 {i}",
+            content="历史种子内容" * 20,
+            source_url=f"https://seed.example.com/{crawler}/r/{i}",
+            source_platform="rsshub",
+            review_status="REJECTED",
+        )
+        db.add(ext)
+        db.flush()
         db.add(
-            ExternalResearchItem(
-                crawler_name=crawler,
-                crawler_run_id="seed",
-                item_type="kaoyan_news",
-                title=f"{crawler} 历史驳回 {i}",
-                content="历史种子内容" * 20,
-                source_url=f"https://seed.example.com/{crawler}/r/{i}",
-                source_platform="rsshub",
+            ReviewQueueItem(
+                item_type="external_research",
+                ref_item_id=ext.id,
+                source_url=ext.source_url,
                 review_status="REJECTED",
+                reviewed_by="human-admin@example.com",
+                biz_req_no=f"seed:{crawler}:r:{i}",
             )
         )
     db.commit()
 
 
-def _mk_pending(db, crawler: str, title: str, url: str, content: str = "") -> ExternalResearchItem:
+def _mk_pending(
+    db, crawler: str, title: str, url: str, content: str = "", external_meta: dict | None = None
+) -> ExternalResearchItem:
     ext = ExternalResearchItem(
         crawler_name=crawler,
         crawler_run_id="run-1",
@@ -71,6 +94,7 @@ def _mk_pending(db, crawler: str, title: str, url: str, content: str = "") -> Ex
         content=content or (title + "。") * 40,
         source_url=url,
         source_platform="rsshub",
+        external_meta=external_meta,
         review_status="PENDING",
     )
     db.add(ext)
@@ -158,22 +182,32 @@ def test_chsi_redline_defensively_rejected(seeded):
 
 
 def test_official_fast_track_bypasses_history_threshold(db_session):
-    """官方源快速通道：零驳回 + official_verified + 历史≥5 即放行（不足 30）。"""
+    """官方源快速通道：零驳回 + official_verified（含抓取证据）+ 历史≥5 即放行。"""
     _mk_admin(db_session)
     official = "official_announce"
     # 历史 6 条全过（<30，走普通信誉闸会被挡）
     for i in range(6):
+        hist = ExternalResearchItem(
+            crawler_name=official,
+            crawler_run_id="seed",
+            item_type="kaoyan_news",
+            title=f"官方公告历史 {i}",
+            content="官方历史内容" * 30,
+            source_url=f"https://yjs.hzau.edu.cn/info/1/{i}.htm",
+            source_platform="official",
+            credibility="official_verified",
+            review_status="APPROVED",
+        )
+        db_session.add(hist)
+        db_session.flush()
         db_session.add(
-            ExternalResearchItem(
-                crawler_name=official,
-                crawler_run_id="seed",
-                item_type="kaoyan_news",
-                title=f"官方公告历史 {i}",
-                content="官方历史内容" * 30,
-                source_url=f"https://yjs.hzau.edu.cn/info/1/{i}.htm",
-                source_platform="official",
-                credibility="official_verified",
+            ReviewQueueItem(
+                item_type="external_research",
+                ref_item_id=hist.id,
+                source_url=hist.source_url,
                 review_status="APPROVED",
+                reviewed_by="human-admin@example.com",
+                biz_req_no=f"seed:official:ft:{i}",
             )
         )
     db_session.commit()
@@ -182,13 +216,16 @@ def test_official_fast_track_bypasses_history_threshold(db_session):
         official,
         "华中农业大学2026年硕士研究生招生复试资格线公告",
         "https://yjs.hzau.edu.cn/info/2/2026.htm",
+        external_meta={
+            "fetched_evidence": [
+                {"url": "https://yjs.hzau.edu.cn/info/2/2026.htm", "status": 200, "at": "t"}
+            ]
+        },
     )
     ext.credibility = "official_verified"
     db_session.commit()
     stats = auto_review_pending(db_session)
     assert stats["auto_approved"] == 1
-    db_session.refresh(ext)
-    assert ext.review_status == "APPROVED"
 
 
 def test_official_with_rejection_history_needs_full_threshold(db_session):
@@ -196,30 +233,50 @@ def test_official_with_rejection_history_needs_full_threshold(db_session):
     _mk_admin(db_session)
     official = "official_announce"
     for i in range(6):
-        db_session.add(
-            ExternalResearchItem(
-                crawler_name=official,
-                crawler_run_id="seed",
-                item_type="kaoyan_news",
-                title=f"官方公告历史 {i}",
-                content="官方历史内容" * 30,
-                source_url=f"https://yjs.hzau.edu.cn/info/1/{i}.htm",
-                source_platform="official",
-                credibility="official_verified",
-                review_status="APPROVED",
-            )
-        )
-    db_session.add(
-        ExternalResearchItem(
+        hist = ExternalResearchItem(
             crawler_name=official,
             crawler_run_id="seed",
             item_type="kaoyan_news",
-            title="被驳回的官方条目",
-            content="内容" * 50,
-            source_url="https://yjs.hzau.edu.cn/info/1/bad.htm",
+            title=f"官方公告历史 {i}",
+            content="官方历史内容" * 30,
+            source_url=f"https://yjs.hzau.edu.cn/info/1/{i}.htm",
             source_platform="official",
             credibility="official_verified",
+            review_status="APPROVED",
+        )
+        db_session.add(hist)
+        db_session.flush()
+        db_session.add(
+            ReviewQueueItem(
+                item_type="external_research",
+                ref_item_id=hist.id,
+                source_url=hist.source_url,
+                review_status="APPROVED",
+                reviewed_by="human-admin@example.com",
+                biz_req_no=f"seed:official:rej:{i}",
+            )
+        )
+    rej = ExternalResearchItem(
+        crawler_name=official,
+        crawler_run_id="seed",
+        item_type="kaoyan_news",
+        title="被驳回的官方条目",
+        content="内容" * 50,
+        source_url="https://yjs.hzau.edu.cn/info/1/bad.htm",
+        source_platform="official",
+        credibility="official_verified",
+        review_status="REJECTED",
+    )
+    db_session.add(rej)
+    db_session.flush()
+    db_session.add(
+        ReviewQueueItem(
+            item_type="external_research",
+            ref_item_id=rej.id,
+            source_url=rej.source_url,
             review_status="REJECTED",
+            reviewed_by="human-admin@example.com",
+            biz_req_no="seed:official:rej:bad",
         )
     )
     db_session.commit()

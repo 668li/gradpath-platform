@@ -71,13 +71,23 @@ def _score(ext: ExternalResearchItem) -> int:
 
 
 def source_reputation(db: Session) -> dict[str, dict[str, int]]:
-    """各爬虫历史审核画像：{crawler_name: {approved, rejected, pass_rate}}。"""
+    """各爬虫历史审核画像：{crawler_name: {approved, rejected, pass_rate}}。
+
+    对抗审计 F5：分母只统计**人工**审核结论。人工/自动的标记在
+    ReviewQueueItem.reviewed_by（auto_review 与人工放行都会写它；
+    ExternalResearchItem 无此列）——join 队列表并排除 auto_review。
+    自动放行计入自身分母会自我强化（放行越多→通过率越高→更容易自动放行）。
+    """
     rows = (
         db.query(
             ExternalResearchItem.crawler_name,
             ExternalResearchItem.review_status,
         )
+        .join(ReviewQueueItem, ReviewQueueItem.ref_item_id == ExternalResearchItem.id)
         .filter(ExternalResearchItem.review_status.in_(["APPROVED", "REJECTED"]))
+        .filter(ReviewQueueItem.item_type == "external_research")
+        .filter(ReviewQueueItem.reviewed_by.isnot(None))
+        .filter(ReviewQueueItem.reviewed_by != "auto_review")
         .all()
     )
     stats: dict[str, dict[str, int]] = {}
@@ -121,6 +131,7 @@ def auto_review_pending(
         "promoted": 0,
         "gate_reputation": 0,
         "gate_score": 0,
+        "gate_evidence": 0,
         "chsi_rejected": 0,
     }
     now = datetime.now(timezone.utc).replace(tzinfo=None)
@@ -144,14 +155,18 @@ def auto_review_pending(
             {"total": 0, "pass_rate": 0.0, "rejected": 0, "approved": 0},
         )
         rejected = rep.get("rejected", 0)
-        if (
+        evidence = (ext.external_meta or {}).get("fetched_evidence")
+        if (ext.credibility or "") == "official_verified" and not evidence:
+            # F1：官方域名但无真实抓取留痕 → 快速通道不可用（仅计审计数，
+            # 不直接拒——落到常规信誉/分数闸，与「降级不拒收」拍板一致）
+            stats["gate_evidence"] += 1
+        fast_track = (
             rejected == 0
             and (ext.credibility or "") == "official_verified"
             and rep["total"] >= OFFICIAL_MIN_HISTORY
-        ):
-            # 官方源快速通道：历史零驳回 + official_verified + 少量历史即放行
-            pass
-        elif rep["total"] < min_history or rep["pass_rate"] < min_pass_rate:
+            and bool(evidence)
+        )
+        if not fast_track and (rep["total"] < min_history or rep["pass_rate"] < min_pass_rate):
             stats["gate_reputation"] += 1
             continue
         if _score(ext) < min_score:
