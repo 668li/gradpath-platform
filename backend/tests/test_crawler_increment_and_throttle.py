@@ -183,6 +183,20 @@ def test_default_schedule_official_hourly():
 
     assert DEFAULT_DAILY_SCHEDULES["official_announce"] == "0 * * * *"
     assert DEFAULT_DAILY_SCHEDULES["eol_kaoyan"] == "0 2 * * *", "其他源默认频率不受影响"
+    assert DEFAULT_DAILY_SCHEDULES["news_aggregates"] == "0 4 * * *", "资讯聚合每日 04:00"
+
+
+def test_news_aggregate_crawler_registered():
+    """资讯聚合爬虫：注册 + 白名单 + 栏目表就位（量的来源线）。"""
+    from app.crawlers.compliance import ALLOWED_CRAWLER_SOURCES
+    from app.crawlers.registry import get_crawler
+
+    cls = get_crawler("news_aggregates")
+    assert cls is not None, "news_aggregates 应已注册"
+    assert "news_aggregates" in ALLOWED_CRAWLER_SOURCES
+    crawler = cls(config={"fetch_detail": False})
+    assert len(crawler.sections) == 5
+    assert crawler.DEFAULT_SECTIONS_OVERRIDE is not None
 
 
 def test_seed_replaces_stale_cron(monkeypatch):

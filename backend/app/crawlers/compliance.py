@@ -24,6 +24,7 @@ ALLOWED_CRAWLER_SOURCES: frozenset[str] = frozenset(
         "zhihu_research",  # research：知乎公开专栏文章 → PENDING 队列（Phase I）
         "tieba_research",  # research：贴吧考研避坑帖 → PENDING 队列（Phase I）
         "rsshub_research",  # research：自建 RSSHub 研招/教育部公告聚合 → PENDING 队列（杠杆化）
+        "news_aggregates",  # research：eol/offcn 资讯聚合列表 → PENDING 队列（量的来源）
     }
 )
 

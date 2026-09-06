@@ -573,6 +573,9 @@ DEFAULT_DAILY_SCHEDULES: dict[str, str] = {
     "official_announce": "0 * * * *",
     # 每天 02:30 抓自建 RSSHub 研招公告聚合（19 路由）；错峰避开上面两个源
     "rsshub_research": "30 2 * * *",
+    # 每天凌晨 04:00 抓考研资讯聚合站（eol/offcn 列表页；量的来源，
+    # 错峰在 eol 02:00 与 rsshub 02:30 之后）
+    "news_aggregates": "0 4 * * *",
     # 每周一 03:00 抓 B站考研经验视频（bilibili_research.yaml: schedule weekly；
     # 14 关键词 × 2 页 ≈ 280 次搜索请求，串行 + 控频，放在 02 点档之后避免叠加）
     "bilibili_research": "0 3 * * 1",

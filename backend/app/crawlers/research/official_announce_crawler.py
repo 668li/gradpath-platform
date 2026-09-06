@@ -418,10 +418,14 @@ class OfficialAnnounceCrawler(BaseCrawler):
     name = "official_announce"
     category = "research"
     description = "官方公告爬虫（高校研招网/省级考试院，edu.cn/gov.cn）"
+    DEFAULT_SECTIONS_OVERRIDE = None  # 子类可覆写自有栏目表（如资讯聚合）
 
     def __init__(self, config: dict = None):
         super().__init__(config)
-        self.sections = self.config.get("sections", DEFAULT_SECTIONS)
+        # 子类可通过 DEFAULT_SECTIONS_OVERRIDE 换用自己的栏目表（如资讯聚合）
+        self.sections = self.config.get(
+            "sections", self.DEFAULT_SECTIONS_OVERRIDE or DEFAULT_SECTIONS
+        )
         self._rate_limit = self.config.get("rate_limit", 1.5)
         self.fetch_detail = bool(self.config.get("fetch_detail", True))
         self._use_browser = bool(self.config.get("use_browser", False))
@@ -641,6 +645,61 @@ def main():
     crawler = OfficialAnnounceCrawler(config={"fetch_detail": not args.no_detail})
     result = crawler.run()
     print(result)
+
+
+# ===== 考研资讯聚合（2026-09-05）：聚合大站是量的来源，官方公告是信息差来源，两线并行 =====
+# 列表页均已实际抓取验证（parse_list_generic ≥40 条全新鲜）；.com/.cn 域名走
+# model_inferred 信任档（_infer_credibility 按域名判），吃不到官方快速通道。
+NEWS_AGGREGATE_SECTIONS: list[dict[str, Any]] = [
+    {
+        "name": "中国教育在线·考研要闻",
+        "list_url": "https://kaoyan.eol.cn/nnews/",
+        "detail_url_re": r"\.s?html?$",
+        "cms": "generic",
+        "content_cls": "",
+    },
+    {
+        "name": "中国教育在线·报考热门",
+        "list_url": "https://kaoyan.eol.cn/bao_kao/re_men/",
+        "detail_url_re": r"\.s?html?$",
+        "cms": "generic",
+        "content_cls": "",
+    },
+    {
+        "name": "中国教育在线·政策变化",
+        "list_url": "https://kaoyan.eol.cn/bao_kao/zheng_ce_bian_hua/",
+        "detail_url_re": r"\.s?html?$",
+        "cms": "generic",
+        "content_cls": "",
+    },
+    {
+        "name": "中国教育在线·招生简章",
+        "list_url": "https://kaoyan.eol.cn/bao_kao/zhao_sheng_jian_zhang/",
+        "detail_url_re": r"\.s?html?$",
+        "cms": "generic",
+        "content_cls": "",
+    },
+    {
+        "name": "中公考研·资讯",
+        "list_url": "http://www.offcn.com/kaoyan/",
+        "detail_url_re": r"\.s?html?$",
+        "cms": "generic",
+        "content_cls": "",
+    },
+]
+
+
+@register_crawler
+class NewsAggregateCrawler(OfficialAnnounceCrawler):
+    """考研资讯聚合爬虫（eol/offcn 等资讯站列表页）。
+
+    与官方公告完全同一套管线（URL 增量/per-host 限速/单行记账/PENDING 审核队列）。
+    """
+
+    name = "news_aggregates"
+    category = "research"
+    description = "考研资讯聚合（中国教育在线/中公考研资讯列表，PENDING 审核队列）"
+    DEFAULT_SECTIONS_OVERRIDE = NEWS_AGGREGATE_SECTIONS
 
 
 if __name__ == "__main__":
