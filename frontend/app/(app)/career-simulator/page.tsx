@@ -6,7 +6,7 @@ import {
   Compass, Play, Plus, Trash2, Star, TrendingUp, Shield, AlertTriangle,
   ChevronDown, ChevronRight, BarChart3, Trophy, DollarSign, Heart, Zap,
   GraduationCap, Building2, Briefcase, Landmark, ChevronUp, Route, Save, ArrowRight,
-  Calculator, GitBranch, Code, Users, Target, Calendar, CheckCircle2,
+  Calculator, GitBranch, Code, Users, Target, Calendar, CheckCircle2, ArrowLeft,
 } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -650,6 +650,16 @@ export default function CareerSimulatorPage() {
         {/* Results */}
         {!loading && result && (
           <div className="space-y-6">
+            {/* 返回编辑：结果页是组件 state 切换，没有 URL，必须在页内给出返回出口 */}
+            <button
+              onClick={() => {
+                setResult(null);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-ink-500 hover:text-brand-600 transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" /> 返回修改模拟条件
+            </button>
             {/* Recommendation Banner */}
             {result.recommendation && (
               <div className="bg-gradient-to-r from-brand-600 to-purple-600 rounded-xl p-6 text-white">

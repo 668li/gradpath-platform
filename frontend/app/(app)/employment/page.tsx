@@ -22,7 +22,6 @@ import {
   Search,
   Compass,
   Sparkles,
-  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { careerIntelApi } from "@/lib/api/ai";
@@ -68,7 +67,6 @@ const tabs = [
   { id: "interview", label: "面经库", icon: MessageSquare, color: "text-cyan-700", desc: "海量面试经验分享，助你充分准备每一场面试" },
   { id: "bright-outlook", label: "朝阳职业", icon: Sparkles, color: "text-orange-700", desc: "Bright Outlook 朝阳职业：高增长、快速扩张与新兴岗位标记，帮你瞄准正在变热的赛道" },
   { id: "salary-slice", label: "薪资透视", icon: DollarSign, color: "text-emerald-700", desc: "按岗位 × 城市查看薪资四分位分布，校准期望薪资" },
-  { id: "company-reviews", label: "公司口碑", icon: Users, color: "text-indigo-700", desc: "已入职校友匿名评价：优点、缺点与推荐度" },
 ];
 
 // ===== 标签颜色映射 =====
@@ -271,32 +269,6 @@ const SALARY_DATA: Record<string, Record<string, SalarySlice>> = {
   },
 };
 
-// ===== 公司口碑数据（Glassdoor 灵感：匿名评价切片） =====
-type CompanyReview = {
-  rating: number;
-  pros: string[];
-  cons: string[];
-  recommend: string;
-  industry: string;
-};
-const COMPANY_REVIEWS: Record<string, CompanyReview> = {
-  字节跳动: { rating: 3.8, pros: ["技术氛围好", "薪资有竞争力"], cons: ["加班严重", "压力较大"], recommend: "推荐入职", industry: "互联网" },
-  腾讯: { rating: 4.0, pros: ["福利完善", "工作生活平衡较好"], cons: ["晋升慢", "内部竞争激烈"], recommend: "推荐入职", industry: "互联网" },
-  阿里巴巴: { rating: 3.6, pros: ["成长机会多", "平台大"], cons: ["996文化", "考核严格"], recommend: "看团队", industry: "互联网/电商" },
-  美团: { rating: 3.5, pros: ["业务落地快", "技术务实"], cons: ["大小周", "晋升通道窄"], recommend: "看团队", industry: "本地生活" },
-  百度: { rating: 3.4, pros: ["技术沉淀深", "AI方向投入大"], cons: ["业务波动", "薪资一般"], recommend: "推荐入职", industry: "互联网/AI" },
-  华为: { rating: 3.7, pros: ["薪资高", "平台稳", "技术锻炼强"], cons: ["工作强度大", "狼性文化"], recommend: "推荐入职", industry: "通信/终端" },
-  京东: { rating: 3.3, pros: ["供应链扎实", "福利较全"], cons: ["加班多", "管理层变动频繁"], recommend: "看团队", industry: "电商/物流" },
-  拼多多: { rating: 3.2, pros: ["薪资极高", "成长快"], cons: ["硬核加班", "稳定性一般"], recommend: "谨慎评估", industry: "电商" },
-  网易: { rating: 3.9, pros: ["工作氛围好", "产品力强", "性价比高"], cons: ["薪资中等", "杭州偏多"], recommend: "推荐入职", industry: "互联网/游戏" },
-  小米: { rating: 3.6, pros: ["生态完善", "性价比稳"], cons: ["薪资中游", "硬件利润压力"], recommend: "推荐入职", industry: "硬件/IoT" },
-};
-
-const recommendColorClasses: Record<string, string> = {
-  推荐入职: "bg-green-100 text-green-700",
-  看团队: "bg-amber-100 text-amber-700",
-  谨慎评估: "bg-red-100 text-red-700",
-};
 
 // ===== 子组件 =====
 
@@ -512,6 +484,19 @@ function Tab2Salary() {
   );
 }
 
+/** 移动端（<768px）检测：窄屏上 6 列表格挤成竖排不可读，改用卡片列表 */
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  return isMobile;
+}
+
 // ===== 薪资表格虚拟滚动组件 =====
 function SalaryTable({
   salaries,
@@ -520,6 +505,7 @@ function SalaryTable({
   salaries: SalaryBenchmark[];
   totalCount: number;
 }) {
+  const isMobile = useIsMobile();
   const parentRef = useRef<HTMLDivElement>(null);
   const rowVirtualizer = useVirtualizer({
     count: salaries.length,
@@ -532,6 +518,46 @@ function SalaryTable({
     return (
       <div className="bg-white rounded-xl border border-paper-200 p-8 text-center text-sm text-ink-400">
         暂无匹配的薪资数据
+      </div>
+    );
+  }
+
+  // 移动端：卡片列表（表格在 375px 宽度下逐字竖排、表头表体错位）
+  if (isMobile) {
+    const shown = salaries.slice(0, 50);
+    return (
+      <div className="bg-white rounded-xl border border-paper-200 p-4 space-y-3">
+        {salaries.length > 50 && (
+          <p className="text-xs text-ink-400">
+            共 {salaries.length} 条匹配，仅显示前 50 条——试试用上方搜索缩小范围
+          </p>
+        )}
+        {shown.map((s) => {
+          const bo = findBrightOutlook(s.position);
+          return (
+            <div key={s.id} className="rounded-lg border border-paper-200 p-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-ink-800">{s.company}</p>
+                  <p className="mt-0.5 flex items-center gap-1.5 text-xs text-ink-600">
+                    {s.position}
+                    {bo && <BrightOutlookBadge role={bo} compact />}
+                  </p>
+                </div>
+                <p className="shrink-0 text-right text-sm font-semibold text-green-600">
+                  {(s.salary_median / 10000).toFixed(1)}万
+                  <span className="block text-[10px] font-normal text-ink-400">中位数/年</span>
+                </p>
+              </div>
+              <div className="mt-2 flex items-center justify-between text-xs text-ink-500">
+                <span>{[s.city, s.experience_level].filter(Boolean).join(" · ") || "-"}</span>
+                <span>
+                  {(s.salary_min / 10000).toFixed(1)}-{(s.salary_max / 10000).toFixed(1)}万
+                </span>
+              </div>
+            </div>
+          );
+        })}
       </div>
     );
   }
@@ -1211,134 +1237,6 @@ function Tab8SalarySlice() {
   );
 }
 
-// ===== Tab9: 公司口碑 =====
-function StarRating({ rating }: { rating: number }) {
-  return (
-    <div className="flex items-center gap-1">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <Star
-          key={i}
-          className={cn(
-            "h-4 w-4",
-            i <= Math.round(rating) ? "fill-amber-400 text-amber-400" : "text-paper-300",
-          )}
-        />
-      ))}
-      <span className="ml-1 text-sm font-medium text-ink-700">{rating.toFixed(1)}</span>
-    </div>
-  );
-}
-
-function Tab9CompanyReviews() {
-  const [keyword, setKeyword] = useState("");
-  const [showMore, setShowMore] = useState(false);
-  const companies = Object.keys(COMPANY_REVIEWS);
-  const filtered = keyword
-    ? companies.filter(
-        (c) => c.includes(keyword) || COMPANY_REVIEWS[c].industry.includes(keyword),
-      )
-    : companies;
-
-  return (
-    <div className="space-y-6">
-      <div className="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl p-5 border border-blue-200">
-        <div className="flex items-center gap-2 mb-2">
-          <Users className="h-5 w-5 text-blue-600" />
-          <h3 className="font-bold text-blue-900">公司口碑</h3>
-        </div>
-        <p className="text-sm text-blue-800">
-          参考 Glassdoor 匿名评价，聚合已入职校友对目标公司的优缺点与推荐度，帮你跳出招聘话术看真实体验。
-        </p>
-        <p className="mt-2 text-xs leading-relaxed text-blue-700/80">
-          诚实声明：以下为公开评价的<strong>静态聚合摘要</strong>（非实时、无逐条样本量统计），
-          优点与缺点并列呈现——同一公司既有好评价也有坏评价，<strong>分歧本身就是信息</strong>；
-          重大求职决策请结合最新在职者反馈交叉验证。
-        </p>
-      </div>
-
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -tranink-y-1/2 h-4 w-4 text-ink-400" />
-        <input
-          type="text"
-          value={keyword}
-          onChange={(e) => setKeyword(e.target.value)}
-          placeholder="搜索公司或行业..."
-          className="w-full rounded-lg border border-paper-300 bg-white pl-9 pr-3 py-2 text-sm text-ink-800 placeholder:text-ink-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
-        />
-      </div>
-
-      {filtered.length === 0 ? (
-        <EmptyState title="未匹配到公司" description="换个关键词试试" />
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {filtered.map((name) => {
-            const r = COMPANY_REVIEWS[name];
-            return (
-              <div key={name} className="bg-white rounded-xl border border-paper-200 p-5 hover:shadow-md transition-shadow flex flex-col">
-                <div className="flex items-start justify-between mb-3 gap-2">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <Building2 className="h-4 w-4 text-ink-400 shrink-0" />
-                      <h4 className="font-bold text-ink-800">{name}</h4>
-                    </div>
-                    <p className="text-xs text-ink-500 mt-0.5">{r.industry}</p>
-                  </div>
-                  <StarRating rating={r.rating} />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 mb-3">
-                  <div className="rounded-lg bg-green-50 p-2.5">
-                    <p className="text-xs font-medium text-green-700 mb-1">优点</p>
-                    <ul className="space-y-0.5">
-                      {r.pros.map((p) => (
-                        <li key={p} className="text-xs text-green-800 flex items-start gap-1">
-                          <span className="text-green-500 shrink-0">+</span>
-                          <span>{p}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="rounded-lg bg-red-50 p-2.5">
-                    <p className="text-xs font-medium text-red-700 mb-1">缺点</p>
-                    <ul className="space-y-0.5">
-                      {r.cons.map((c) => (
-                        <li key={c} className="text-xs text-red-800 flex items-start gap-1">
-                          <span className="text-red-500 shrink-0">−</span>
-                          <span>{c}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-
-                <div className="mt-auto pt-3 border-t border-paper-100 flex items-center justify-between gap-2">
-                  <span className={cn("text-xs px-2 py-1 rounded-full font-medium", recommendColorClasses[r.recommend] || "bg-ink-100 text-ink-600")}>
-                    {r.recommend}
-                  </span>
-                  <VirtualTrialButton role={name} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      <div className="text-center">
-        <button
-          onClick={() => setShowMore(true)}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-paper-300 rounded-lg text-sm font-medium text-ink-700 hover:bg-paper-50"
-        >
-          查看更多评价
-          <ChevronRight className="h-4 w-4" />
-        </button>
-        {showMore && (
-          <p className="mt-3 text-sm text-ink-400">更多校友评价功能开发中</p>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ===== 主页面 =====
 
 export default function EmploymentPage() {
@@ -1404,7 +1302,6 @@ function EmploymentPageContent() {
         {activeTab === "interview" && <Tab6Interview />}
         {activeTab === "bright-outlook" && <Tab7BrightOutlook />}
         {activeTab === "salary-slice" && <Tab8SalarySlice />}
-        {activeTab === "company-reviews" && <Tab9CompanyReviews />}
       </div>
     </div>
   );

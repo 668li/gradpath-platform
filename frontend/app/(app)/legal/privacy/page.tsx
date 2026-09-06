@@ -95,7 +95,7 @@ export default function PrivacyPage() {
             <li><strong>导出权</strong>：在个人中心发起数据导出，获取你的决策、事件、技能等数据的 JSON / PDF 副本；</li>
             <li><strong>注销权</strong>：注销后账号将停用，敏感数据将在备份保留期（30 天）后清除；</li>
             <li><strong>撤回同意权</strong>：可随时在设置中关闭非必要 Cookie、行为埋点与 AI 训练 opt-in；</li>
-            <li><strong>投诉权</strong>：如对我们的处理不满，可向 legal@gradpath.example.com 投诉，或向有权管辖的个人信息保护机构反映。</li>
+            <li><strong>投诉权</strong>：如对我们的处理不满，可向 2959504583@qq.com 投诉，或向有权管辖的个人信息保护机构反映。</li>
           </ul>
 
           <h2 className="font-display text-xl font-semibold text-ink-900 mt-8">5. 数据共享</h2>
@@ -108,7 +108,7 @@ export default function PrivacyPage() {
 
           <h2 className="font-display text-xl font-semibold text-ink-900 mt-8">6. 未成年人保护</h2>
           <p>
-            GradPath 面向大学生与职场新人，不主动面向 14 周岁以下未成年人提供服务。如你在注册时声明未满 14 周岁，我们将拒绝创建账号。若我们发现未经监护人同意收集了未成年人个人信息，将主动删除相关数据。监护人发现其被监护人未经同意使用本服务的，可联系 legal@gradpath.example.com 申请删除。
+            GradPath 面向大学生与职场新人，不主动面向 14 周岁以下未成年人提供服务。如你在注册时声明未满 14 周岁，我们将拒绝创建账号。若我们发现未经监护人同意收集了未成年人个人信息，将主动删除相关数据。监护人发现其被监护人未经同意使用本服务的，可联系 2959504583@qq.com 申请删除。
           </p>
 
           <h2 className="font-display text-xl font-semibold text-ink-900 mt-8">7. 政策更新</h2>
@@ -118,7 +118,7 @@ export default function PrivacyPage() {
 
           <h2 className="font-display text-xl font-semibold text-ink-900 mt-8">8. 联系我们</h2>
           <p>
-            数据保护负责人邮箱：<span className="font-mono text-brand-700">legal@gradpath.example.com</span>
+            数据保护负责人邮箱：<span className="font-mono text-brand-700">2959504583@qq.com</span>
           </p>
         </section>
       </article>

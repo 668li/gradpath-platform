@@ -6,41 +6,45 @@ import { Bot, KeyRound, Sparkles } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/form-controls";
 import { userLlmConfigApi } from "@/lib/api";
+import { useAuthStore } from "@/stores/auth";
 
 const LS_KEY = "ai-welcome-modal-next-show";
 const RE_SHOW_DAYS = 30;
 
 /**
  * 进站弹窗：AI 模型配置说明。
- * - 每用户 30 天最多自动弹出一次（localStorage 记下次次时间）
+ * - 仅登录用户可见；平台状态获取失败（401/网络）一律不弹，不打扰
+ * - 弹出即写 30 天免打扰标记（用户叉掉网页也算"已看过"，避免每次进站都弹）
  * - 平台已内置免费模型（platform-status enabled）→ 免费体验文案
- * - 未登录 / 未配 Key → 自带 Key 配置引导文案
+ * - 平台未配免费模型 → 自带 Key 配置引导文案
  */
 export function AiWelcomeModal() {
   const [open, setOpen] = useState(false);
   const [platformEnabled, setPlatformEnabled] = useState(false);
   const [platformModel, setPlatformModel] = useState("");
   const [dailyQuota, setDailyQuota] = useState(0);
+  const user = useAuthStore((s) => s.user);
 
   useEffect(() => {
+    if (!user) return;
     const next = Number(localStorage.getItem(LS_KEY) || 0);
     if (Date.now() < next) return;
     // 稍作延迟，等首屏渲染稳定后再弹
     const t = setTimeout(async () => {
-      let enabled = false;
       try {
         const st = await userLlmConfigApi.getPlatformStatus();
-        enabled = st.enabled;
+        setPlatformEnabled(st.enabled);
         setPlatformModel(st.model);
         setDailyQuota(st.daily_quota);
       } catch {
-        // 未登录（401）等场景走引导文案
+        // 状态获取失败：不弹 BYOK 引导，静默跳过
+        return;
       }
-      setPlatformEnabled(enabled);
+      localStorage.setItem(LS_KEY, String(Date.now() + RE_SHOW_DAYS * 86_400_000));
       setOpen(true);
     }, 1200);
     return () => clearTimeout(t);
-  }, []);
+  }, [user]);
 
   const dismiss = () => {
     setOpen(false);

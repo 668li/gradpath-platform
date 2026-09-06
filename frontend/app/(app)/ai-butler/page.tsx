@@ -11,6 +11,23 @@ import { cn } from "@/lib/utils";
 
 type Tab = "scan" | "chat";
 
+/** 当日扫描缓存：/scan 同步等 LLM 最长 20s，避免每次进页都重扫烧配额 */
+const SCAN_CACHE_KEY = "ai-butler-scan-cache";
+
+function readScanCache(): AIButlerScanResponse | null {
+  try {
+    const raw = sessionStorage.getItem(SCAN_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { date: string; data: AIButlerScanResponse };
+    if (parsed.date === new Date().toISOString().slice(0, 10) && parsed.data?.plan) {
+      return parsed.data;
+    }
+  } catch {
+    // 缓存损坏则忽略，走重新扫描
+  }
+  return null;
+}
+
 const PRIORITY_LABEL: Record<string, { label: string; cls: string }> = {
   high: { label: "高优先级", cls: "bg-red-500/15 text-red-700" },
   medium: { label: "中优先级", cls: "bg-amber-500/15 text-amber-700" },
@@ -66,21 +83,56 @@ function ScanPanel() {
   const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<AIButlerScanResponse | null>(null);
+  const [slowHint, setSlowHint] = useState(false);
 
-  const run = useCallback(() => {
+  const run = useCallback((force = false) => {
     setLoading(true);
+    setSlowHint(false);
+    if (!force) {
+      const cached = readScanCache();
+      if (cached) {
+        setData(cached);
+        setLoading(false);
+        return;
+      }
+    }
+    // 8 秒后亮出"AI 生成中"提示，骨架屏不再无声空转
+    const timer = setTimeout(() => setSlowHint(true), 8000);
     aiButlerApi
       .scan()
-      .then(setData)
+      .then((d) => {
+        setData(d);
+        try {
+          sessionStorage.setItem(
+            SCAN_CACHE_KEY,
+            JSON.stringify({ date: new Date().toISOString().slice(0, 10), data: d }),
+          );
+        } catch {
+          // 存不进缓存不影响展示
+        }
+      })
       .catch(() => toast.push("扫描失败，请稍后再试", "error"))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        clearTimeout(timer);
+        setLoading(false);
+      });
   }, [toast]);
 
   useEffect(() => {
     run();
   }, [run]);
 
-  if (loading) return <ListSkeleton count={6} />;
+  if (loading)
+    return (
+      <div className="space-y-3">
+        <ListSkeleton count={6} />
+        {slowHint && (
+          <p className="text-center text-xs text-ink-400">
+            AI 正在结合你的全部数据生成方案（最长约 20 秒），可稍等，或点「重新扫描」稍后再来
+          </p>
+        )}
+      </div>
+    );
   if (!data) return <EmptyState title="暂无数据" description="完成更多职业动作后，管家会给出更精准的方案。" />;
 
   const profile = data.profile || {};
@@ -94,7 +146,7 @@ function ScanPanel() {
           {data.llm_enriched ? "已结合 AI 润色" : "基于你的数据智能生成"} ·{" "}
           {new Date(data.generated_at).toLocaleString("zh-CN")}
         </p>
-        <Button variant="ghost" size="sm" onClick={run}>
+        <Button variant="ghost" size="sm" onClick={() => run(true)}>
           <RefreshCw className="h-4 w-4" /> 重新扫描
         </Button>
       </div>

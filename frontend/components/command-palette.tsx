@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import * as LucideIcons from "lucide-react";
 import { Search, CornerDownLeft, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/stores/auth";
 import { commands, type Command } from "@/lib/commands";
 
 /**
@@ -31,6 +32,7 @@ export function CommandPalette() {
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const router = useRouter();
+  const isAdmin = useAuthStore((s) => !!s.user?.is_admin);
 
   // ── 全局快捷键 ────────────────────────────────────────────
   useEffect(() => {
@@ -81,10 +83,14 @@ export function CommandPalette() {
   }, [open]);
 
   // ── 过滤命令 ──────────────────────────────────────────────
+  const visibleCommands = useMemo(
+    () => commands.filter((cmd) => !cmd.admin || isAdmin),
+    [isAdmin],
+  );
   const filtered = useMemo<Command[]>(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return commands;
-    return commands.filter((cmd) => {
+    if (!q) return visibleCommands;
+    return visibleCommands.filter((cmd) => {
       const hay = [
         cmd.title,
         cmd.subtitle ?? "",
@@ -95,7 +101,7 @@ export function CommandPalette() {
         .toLowerCase();
       return q.split(/\s+/).every((token) => hay.includes(token));
     });
-  }, [query]);
+  }, [query, visibleCommands]);
 
   // 当查询变化时重置 active index
   useEffect(() => {

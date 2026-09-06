@@ -181,8 +181,8 @@ function ProfilePageContent() {
   const handleExportProfile = async () => {
     setExporting("profile");
     try {
-      await exportV2Api.profileReport();
-      toast.push("个人报告导出成功", "success");
+      const msg = await exportV2Api.profileReport();
+      toast.push(msg, "success");
     } catch (err) {
       toast.push(err instanceof Error ? err.message : "导出失败", "error");
     } finally {
@@ -193,8 +193,8 @@ function ProfilePageContent() {
   const handleExportData = async (format: "csv" | "json") => {
     setExporting(format);
     try {
-      await exportV2Api.dataExport(format);
-      toast.push(`${format === "csv" ? "CSV" : "JSON"} 数据导出成功`, "success");
+      const msg = await exportV2Api.dataExport(format);
+      toast.push(msg, "success");
     } catch (err) {
       toast.push(err instanceof Error ? err.message : "导出失败", "error");
     } finally {

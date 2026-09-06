@@ -96,7 +96,7 @@ export default function CookiePage() {
 
           <h2 className="font-display text-xl font-semibold text-ink-900 mt-8">6. 联系方式</h2>
           <p>
-            邮箱：<span className="font-mono text-brand-700">legal@gradpath.example.com</span>
+            邮箱：<span className="font-mono text-brand-700">2959504583@qq.com</span>
           </p>
         </section>
       </article>

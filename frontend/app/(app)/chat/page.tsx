@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
+import * as LucideIcons from "lucide-react";
 import {
   Plus,
   Send,
@@ -24,6 +25,32 @@ import { Markdown } from "@/components/ui/markdown";
 import { LoadingState } from "@/components/ui/empty";
 import { useToast } from "@/components/ui/toast";
 import type { Conversation, Message, ChatSkillInfo } from "@/types";
+
+/** skill.code → 中文名；未收录的 code 回退显示后端原名 */
+const SKILL_LABELS: Record<string, string> = {
+  default: "通用咨询",
+  interview_coach: "面试教练",
+  resume_optimizer: "简历优化",
+  user_referral: "内推助手",
+  salary_benchmark: "薪资基准",
+  career_path_mapper: "路径规划",
+  company_review: "公司评价",
+  life_design: "人生设计",
+  position_advisor: "选岗顾问",
+};
+
+const skillLabel = (s: ChatSkillInfo) => SKILL_LABELS[s.code] ?? s.name;
+
+/** 后端存的是 kebab-case 图标名（如 "message-circle"），映射为 lucide 组件；未知名回退 Sparkles */
+function resolveSkillIcon(name?: string) {
+  if (!name) return Sparkles;
+  const pascal = name
+    .split("-")
+    .map((seg) => seg.charAt(0).toUpperCase() + seg.slice(1))
+    .join("");
+  const icon = (LucideIcons as unknown as Record<string, unknown>)[pascal];
+  return typeof icon === "function" ? (icon as typeof Sparkles) : Sparkles;
+}
 
 /** Agent 来源（对应后端 SourceItem：db=数据库检索 / web=联网检索） */
 interface AgentSource {
@@ -109,6 +136,28 @@ export default function ChatPage() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const skillDropdownRef = useRef<HTMLDivElement>(null);
+
+  // 场景下拉：点击外部 / Esc 关闭（手机上没有点外关闭时用户会觉得"关不掉"）
+  useEffect(() => {
+    if (!showSkillDropdown) return;
+    const onPointerDown = (e: MouseEvent | TouchEvent) => {
+      if (!skillDropdownRef.current?.contains(e.target as Node)) {
+        setShowSkillDropdown(false);
+      }
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowSkillDropdown(false);
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("touchstart", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("touchstart", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [showSkillDropdown]);
 
   // 加载对话列表
   const loadConversations = useCallback(async () => {
@@ -548,13 +597,13 @@ export default function ChatPage() {
                 </div>
               )}
               {/* Skill 选择器 */}
-              <div className="mb-2 flex items-center gap-2">
+              <div className="mb-2 flex items-center gap-2" ref={skillDropdownRef}>
                 <button
                   onClick={() => setShowSkillDropdown(!showSkillDropdown)}
                   className="flex items-center gap-1.5 rounded-full border border-ink-200 bg-ink-50 px-3 py-1 text-xs text-ink-500 transition-colors hover:border-brand-300 hover:text-brand-600"
                 >
                   <Sparkles className="h-3 w-3" />
-                  {currentSkill ? currentSkill.name : "自动匹配 Skill"}
+                  {currentSkill ? skillLabel(currentSkill) : "自动匹配 Skill"}
                   <ChevronDown className="h-3 w-3" />
                 </button>
                 {skillHint && (
@@ -580,26 +629,29 @@ export default function ChatPage() {
                       <Sparkles className="h-3 w-3 text-ink-400" />
                       自动匹配（推荐）
                     </button>
-                    {skills.map((s) => (
-                      <button
-                        key={s.code}
-                        onClick={() => {
-                          setSkillHint(s.code);
-                          setShowSkillDropdown(false);
-                        }}
-                        className="flex w-full items-start gap-2 px-3 py-2 text-left hover:bg-ink-50"
-                      >
-                        <span className="text-sm">{s.icon}</span>
-                        <div>
-                          <p className="text-xs font-medium text-ink-700">
-                            {s.name}
-                          </p>
-                          <p className="text-[10px] text-ink-400">
-                            {s.description}
-                          </p>
-                        </div>
-                      </button>
-                    ))}
+                    {skills.map((s) => {
+                      const SkillIcon = resolveSkillIcon(s.icon);
+                      return (
+                        <button
+                          key={s.code}
+                          onClick={() => {
+                            setSkillHint(s.code);
+                            setShowSkillDropdown(false);
+                          }}
+                          className="flex w-full items-start gap-2 px-3 py-2 text-left hover:bg-ink-50"
+                        >
+                          <SkillIcon className="mt-0.5 h-4 w-4 shrink-0 text-ink-400" />
+                          <div>
+                            <p className="text-xs font-medium text-ink-700">
+                              {skillLabel(s)}
+                            </p>
+                            <p className="text-[10px] text-ink-400">
+                              {s.description}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -712,8 +764,11 @@ function MessageBubble({
       >
         {skill && (
           <div className="mb-1.5 flex items-center gap-1 text-[10px] font-medium text-brand-500">
-            <span>{skill.icon}</span>
-            <span>{skill.name}</span>
+            {(() => {
+              const SkillIcon = resolveSkillIcon(skill.icon);
+              return <SkillIcon className="h-3 w-3" />;
+            })()}
+            <span>{skillLabel(skill)}</span>
           </div>
         )}
         {isUser ? (

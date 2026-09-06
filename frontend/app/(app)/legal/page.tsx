@@ -52,7 +52,7 @@ export default function LegalPage() {
         <div className="mt-12 rounded-xl border border-paper-300 bg-paper-100/60 p-6 text-sm text-ink-600 leading-relaxed">
           <p className="font-medium text-ink-800">联系方式</p>
           <p className="mt-2">
-            如对本文档有任何疑问、行使用户权利或投诉，请发送邮件至：<span className="font-mono text-brand-700">legal@gradpath.example.com</span>
+            如对本文档有任何疑问、行使用户权利或投诉，请发送邮件至：<span className="font-mono text-brand-700">2959504583@qq.com</span>
           </p>
           <p className="mt-2">我们将在 15 个工作日内回复。</p>
         </div>

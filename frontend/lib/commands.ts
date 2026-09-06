@@ -15,6 +15,8 @@ export interface Command {
   keywords?: string[];
   /** lucide-react 图标名 (PascalCase),例如 "LayoutDashboard" */
   icon?: string;
+  /** 管理类命令,仅管理员可见 */
+  admin?: boolean;
 }
 
 /**
@@ -113,14 +115,6 @@ export const commands: Command[] = [
     subtitle: "情报",
     href: "/interview",
     keywords: ["面试", "interview", "经验"],
-    icon: "MessageSquare",
-  },
-  {
-    id: "interview-result",
-    title: "面试结果",
-    subtitle: "情报",
-    href: "/interview/result",
-    keywords: ["面试", "结果", "interview", "result"],
     icon: "MessageSquare",
   },
 
@@ -292,14 +286,6 @@ export const commands: Command[] = [
     icon: "Users",
   },
   {
-    id: "community-result",
-    title: "社区搜索结果",
-    subtitle: "社区",
-    href: "/community/result",
-    keywords: ["社区", "结果", "搜索"],
-    icon: "Users",
-  },
-  {
     id: "outcome-report",
     title: "成果汇报",
     subtitle: "社区",
@@ -321,14 +307,6 @@ export const commands: Command[] = [
     subtitle: "社区",
     href: "/explore",
     keywords: ["探索", "发现", "explore"],
-    icon: "Compass",
-  },
-  {
-    id: "explore-result",
-    title: "探索结果",
-    subtitle: "社区",
-    href: "/explore/result",
-    keywords: ["探索", "结果", "explore"],
     icon: "Compass",
   },
 
@@ -519,6 +497,7 @@ export const commands: Command[] = [
     id: "admin-home",
     title: "后台管理",
     subtitle: "管理",
+    admin: true,
     href: "/admin",
     keywords: ["后台", "管理", "admin", "首页"],
     icon: "LayoutDashboard",
@@ -527,6 +506,7 @@ export const commands: Command[] = [
     id: "admin-reports",
     title: "举报管理",
     subtitle: "管理",
+    admin: true,
     href: "/admin/reports",
     keywords: ["举报", "report", "管理", "admin"],
     icon: "Flag",
@@ -535,6 +515,7 @@ export const commands: Command[] = [
     id: "admin-users",
     title: "用户管理",
     subtitle: "管理",
+    admin: true,
     href: "/admin/users",
     keywords: ["用户", "封禁", "解封", "users", "admin"],
     icon: "Users",
@@ -543,6 +524,7 @@ export const commands: Command[] = [
     id: "admin-crawlers",
     title: "爬虫管理",
     subtitle: "管理",
+    admin: true,
     href: "/admin/crawlers",
     keywords: ["爬虫", "管理", "crawler", "admin"],
     icon: "Bug",
@@ -551,6 +533,7 @@ export const commands: Command[] = [
     id: "admin-moderation",
     title: "内容审核",
     subtitle: "管理",
+    admin: true,
     href: "/admin/moderation",
     keywords: ["审核", "moderation", "管理", "admin"],
     icon: "Shield",
@@ -559,6 +542,7 @@ export const commands: Command[] = [
     id: "admin-research-queue",
     title: "调研数据审核",
     subtitle: "管理",
+    admin: true,
     href: "/admin/research-queue",
     keywords: ["调研", "采集", "审核", "队列", "queue", "research", "admin"],
     icon: "Inbox",
@@ -567,6 +551,7 @@ export const commands: Command[] = [
     id: "admin-skills",
     title: "技能管理",
     subtitle: "管理",
+    admin: true,
     href: "/admin/skills",
     keywords: ["技能", "管理", "admin", "skills"],
     icon: "Network",
@@ -575,6 +560,7 @@ export const commands: Command[] = [
     id: "pipeline",
     title: "数据管道",
     subtitle: "管理",
+    admin: true,
     href: "/pipeline",
     keywords: ["管道", "pipeline", "数据"],
     icon: "GitBranch",
@@ -583,6 +569,7 @@ export const commands: Command[] = [
     id: "pipeline-ingest",
     title: "数据导入",
     subtitle: "管理",
+    admin: true,
     href: "/pipeline/ingest",
     keywords: ["导入", "ingest", "pipeline", "数据"],
     icon: "Download",
@@ -591,6 +578,7 @@ export const commands: Command[] = [
     id: "pipeline-sources",
     title: "数据源",
     subtitle: "管理",
+    admin: true,
     href: "/pipeline/sources",
     keywords: ["数据源", "source", "pipeline"],
     icon: "Database",

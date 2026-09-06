@@ -33,13 +33,23 @@ import { cn } from "@/lib/utils";
 import type { PositioningResponse, PositioningCreateRequest, AssessmentResponse, KaoyanNewsResponse } from "@/types";
 import { KaoyanNewsCard } from "./KaoyanNewsCard";
 
-const strategyCards = [
+const strategyCards: {
+  icon: typeof Target;
+  title: string;
+  desc: string;
+  action: string;
+  /** 工作台内 tab 切换目标（三张卡） */
+  tab?: "match" | "plan" | "diagnosis";
+  /** 站内路由目标（工作台外功能） */
+  href?: string;
+  color: string;
+}[] = [
   {
     icon: Target,
     title: "智能选校匹配",
     desc: "基于你的背景、目标和风险偏好，推荐冲/稳/保三档院校",
     action: "开始匹配",
-    href: "#match",
+    tab: "match",
     color: "bg-blue-500",
   },
   {
@@ -47,15 +57,15 @@ const strategyCards = [
     title: "备考时间规划",
     desc: "距离考试还有多少天？我们帮你拆解到每周的复习任务",
     action: "生成计划",
-    href: "#plan",
+    tab: "plan",
     color: "bg-green-500",
   },
   {
     icon: Brain,
     title: "薄弱科目诊断",
-    desc: "分析历年真题分布，定位你的高频失分点",
+    desc: "结合目标院校难度与模考情况，定位你的高频失分点",
     action: "诊断分析",
-    href: "#weakness",
+    tab: "diagnosis",
     color: "bg-purple-500",
   },
   {
@@ -63,7 +73,7 @@ const strategyCards = [
     title: "学习资源推荐",
     desc: "针对目标院校专业课的教材、真题、笔记推荐",
     action: "查看资源",
-    href: "#resources",
+    href: "/learning-resources",
     color: "bg-orange-500",
   },
 ];
@@ -282,8 +292,12 @@ export default function StrategyPage() {
                   variant="secondary"
                   className="w-full"
                   onClick={() => {
-                    const el = document.querySelector(card.href);
-                    el?.scrollIntoView({ behavior: "smooth" });
+                    if (card.tab) {
+                      setActiveTab(card.tab);
+                      document.querySelector("#match")?.scrollIntoView({ behavior: "smooth" });
+                    } else if (card.href) {
+                      router.push(card.href);
+                    }
                   }}
                 >
                   {card.action}
@@ -751,7 +765,6 @@ export default function StrategyPage() {
               <div className="space-y-1">
                 {[
                   { label: "院校对比表", href: "/kaoyan/schools" },
-                  { label: "调剂信息追踪", href: "/kaoyan/schools" },
                   { label: "复试经验库", href: "/kaoyan/community" },
                 ].map((tool) => (
                   <div

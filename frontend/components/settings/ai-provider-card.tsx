@@ -23,14 +23,17 @@ import type {
 import { cn } from "@/lib/utils";
 
 /** OpenAI 兼容供应商标识与默认端点 */
-const PROVIDERS: { value: string; label: string; baseUrl: string; model: string }[] = [
-  { value: "zhipu", label: "智谱 GLM", baseUrl: "https://open.bigmodel.cn/api/paas/v4/", model: "glm-4.7-flash" },
-  { value: "deepseek", label: "DeepSeek", baseUrl: "https://api.deepseek.com/v1", model: "deepseek-chat" },
-  { value: "moonshot", label: "月之暗面 Kimi", baseUrl: "https://api.moonshot.cn/v1", model: "moonshot-v1-8k" },
-  { value: "qwen", label: "阿里通义千问", baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1", model: "qwen-plus" },
-  { value: "openai", label: "OpenAI", baseUrl: "https://api.openai.com/v1", model: "gpt-4o-mini" },
+const PROVIDERS: { value: string; label: string; baseUrl: string; model: string; keyUrl?: string }[] = [
+  { value: "zhipu", label: "智谱 GLM", baseUrl: "https://open.bigmodel.cn/api/paas/v4/", model: "glm-4.7-flash", keyUrl: "https://open.bigmodel.cn/usercenter/apikeys" },
+  { value: "deepseek", label: "DeepSeek", baseUrl: "https://api.deepseek.com/v1", model: "deepseek-chat", keyUrl: "https://platform.deepseek.com/api_keys" },
+  { value: "moonshot", label: "月之暗面 Kimi", baseUrl: "https://api.moonshot.cn/v1", model: "moonshot-v1-8k", keyUrl: "https://platform.moonshot.cn/console/api-keys" },
+  { value: "qwen", label: "阿里通义千问", baseUrl: "https://dashscope.aliyuncs.com/compatible-mode/v1", model: "qwen-plus", keyUrl: "https://bailian.console.aliyun.com/?apiKey=1#/api-key" },
+  { value: "openai", label: "OpenAI", baseUrl: "https://api.openai.com/v1", model: "gpt-4o-mini", keyUrl: "https://platform.openai.com/api-keys" },
   { value: "custom", label: "自定义（OpenAI 兼容）", baseUrl: "", model: "" },
 ];
+
+/** 平台免费模型同款供应商作为自带 Key 的默认预选 */
+const DEFAULT_PROVIDER = PROVIDERS.find((p) => p.value === "qwen") ?? PROVIDERS[0];
 
 export function AiProviderCard() {
   const toast = useToast();
@@ -41,9 +44,9 @@ export function AiProviderCard() {
 
   const [saved, setSaved] = useState<UserLlmConfigResponse | null>(null);
   const [platform, setPlatform] = useState<PlatformLlmStatus | null>(null);
-  const [provider, setProvider] = useState("zhipu");
-  const [baseUrl, setBaseUrl] = useState(PROVIDERS[0].baseUrl);
-  const [model, setModel] = useState(PROVIDERS[0].model);
+  const [provider, setProvider] = useState(DEFAULT_PROVIDER.value);
+  const [baseUrl, setBaseUrl] = useState(DEFAULT_PROVIDER.baseUrl);
+  const [model, setModel] = useState(DEFAULT_PROVIDER.model);
   const [apiKey, setApiKey] = useState("");
   const [verifyResult, setVerifyResult] = useState<{ ok: boolean; message: string } | null>(null);
 
@@ -174,7 +177,7 @@ export function AiProviderCard() {
           <Sparkles className="mt-0.5 h-4 w-4 shrink-0" />
           <span>
             免费体验中：平台默认模型 <strong>{platform.model}</strong>
-            （智谱免费款，无需任何配置）。使用平台免费模型时，对话内容由平台接入的大模型服务处理；自带
+            （平台内置免费款，无需任何配置）。使用平台免费模型时，对话内容由平台接入的大模型服务处理；自带
             Key 后则由你自己的供应商处理。
           </span>
         </div>
@@ -199,7 +202,7 @@ export function AiProviderCard() {
         <Input
           value={baseUrl}
           onChange={(e) => setBaseUrl(e.target.value)}
-          placeholder="https://open.bigmodel.cn/api/paas/v4/"
+          placeholder={DEFAULT_PROVIDER.baseUrl}
           maxLength={500}
         />
       </Field>
@@ -247,14 +250,18 @@ export function AiProviderCard() {
       <p className="flex items-center gap-1 text-xs text-ink-400">
         <Bot className="h-3.5 w-3.5" />
         需要 OpenAI 兼容接口（绝大多数国内外供应商都支持）。
-        <a
-          href="https://open.bigmodel.cn/usercenter/apikeys"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-0.5 text-brand-500 hover:underline"
-        >
-          智谱 Key 获取 <ExternalLink className="h-3 w-3" />
-        </a>
+        {PROVIDERS.find((p) => p.value === provider)?.keyUrl ? (
+          <a
+            href={PROVIDERS.find((p) => p.value === provider)!.keyUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-0.5 text-brand-500 hover:underline"
+          >
+            {PROVIDERS.find((p) => p.value === provider)!.label} Key 获取 <ExternalLink className="h-3 w-3" />
+          </a>
+        ) : (
+          <span>选中供应商后此处显示其 Key 获取入口</span>
+        )}
       </p>
     </section>
   );

@@ -46,6 +46,7 @@ import {
   Landmark,
   Newspaper,
   Telescope,
+  ArrowLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth";
@@ -154,6 +155,7 @@ function getNavSections(): NavSection[] {
       section: "更多",
       children: [
         { href: "/ai-butler", label: "AI 职业管家", icon: Bot },
+        { href: "/chat", label: "AI 对话", icon: MessageSquare },
         { href: "/mentors", label: "AI 导师团", icon: Brain },
       ],
     },
@@ -477,6 +479,31 @@ function NavSectionItem({
   );
 }
 
+/**
+ * 手机端全局返回键。微信 webview 顶栏是"关闭"不是返回，应用内必须自己给出口：
+ * 站内有历史→router.back()；直接深链进站（history 只有 1）→回看板。
+ */
+function MobileBackButton() {
+  const router = useRouter();
+  const pathname = usePathname();
+  if (pathname === "/dashboard" || pathname === "/") return null;
+  return (
+    <button
+      onClick={() => {
+        if (typeof window !== "undefined" && window.history.length > 1) {
+          router.back();
+        } else {
+          router.push("/dashboard");
+        }
+      }}
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-ink-500 hover:bg-paper-200 hover:text-ink-800 transition-colors"
+      aria-label="返回上一页"
+    >
+      <ArrowLeft className="h-5 w-5" strokeWidth={1.8} />
+    </button>
+  );
+}
+
 export function AppNav() {
   const [open, setOpen] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -532,6 +559,7 @@ export function AppNav() {
 
       <div className="md:hidden sticky top-0 z-30 flex items-center justify-between border-b border-paper-300 bg-paper-50 px-4 py-3 backdrop-blur-sm">
         <div className="flex items-center gap-2.5">
+          <MobileBackButton />
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500 text-white shadow-brand-sm">
             <GraduationCap className="h-5 w-5" strokeWidth={2.2} />
           </div>
