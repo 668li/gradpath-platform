@@ -145,3 +145,9 @@
 - T2 ✅ 两个 Celery task 开头加 is_allowed_crawler 复查，tests/test_celery_whitelist_guard.py 5 条。**过程教训**：首版测试断言串与外层 catch-all 报错串撞词造成「假绿」，反向验证拆守卫时当场暴露（红不出=测试无牙），改精确匹配守卫专属报错串+REGISTRY-REACHED 越界探针后双侧红→绿齐。
 - T3 ✅ zhihu/tieba 出白名单+注销+yaml false；15+salary_expand（补账，见 BLOCKED#4）共 16 处 @register 注释带 @RETIRED；新增 test_crawler_registry_invariant.py 3 条（registry==whitelist==10 冻结+退役防复活）；反向验证：注册幽灵爬虫→不变量精确点名 ghost_crawler 红→删→绿。b5 按 BLOCKED#1 改 5 处（前置翻转/403→403∪404×2/dict+键×2）。
 - 中途并行会话提交 f063b37（P2 前端），本工作基于其上；commit 一律显式路径，排除他人改动的 docs/承诺台账.md。
+
+## 信任锚改革第二份书（执行中 · 2026-09-06 · worktree trust-anchor@cdfcac51）
+- 理解目标：official_verified 改双条件（官方域名+真 HTTP 留痕 external_meta.fetched_evidence）、自动放行快速通道必须见证据、/run 与 /schedules 白名单闸前置统一 403、信誉分母只算人工结论、质量门槛全类型、yz_programs 150 行标签诚实化。
+- 顺序：任务0 收敛+基线（1845+1skip 0failed 实测，registry==7 不变量绿）→ T1 证据锚 → T2 端点 → T4/T5 → T6 提交部署冒烟 → T3 SQL 生产执行。
+- 最大风险：并行部署风暴（动工至今服务器线已换 3 次）+ 全局环境 jose 消失前科；每次 rebase 后全量重跑。
+- 零迁移拍板：证据走 external_meta；dk/dataset 挂台账不动。
