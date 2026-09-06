@@ -151,3 +151,4 @@
 - 顺序：任务0 收敛+基线（1845+1skip 0failed 实测，registry==7 不变量绿）→ T1 证据锚 → T2 端点 → T4/T5 → T6 提交部署冒烟 → T3 SQL 生产执行。
 - 最大风险：并行部署风暴（动工至今服务器线已换 3 次）+ 全局环境 jose 消失前科；每次 rebase 后全量重跑。
 - 零迁移拍板：证据走 external_meta；dk/dataset 挂台账不动。
+- T6 ✅ 部署与冒烟（交付账）：两度被并行部署风暴推迟（flock 闸按设计排队），服务器线三次换道；并行会话先行推进了 trust 四 commit 并归还被 force-reset 丢弃的两个 traffic 迁移（aa1be03），与之对齐后生产=trust 代码+迁移归位。alembic 中断步按 skill 恢复配方补跑，current=c8d4e6f2a9b1=head（no-op 链闭合）。冒烟 PROD-TRUST-OK 四断言（双条件 A1/A2、端点前置 A3、fetch_evidence A4）、日志 0 traceback、T3 SQL：curated=150/旧标签=0/行数不变。BLOCKED.md=无阻塞。教训：commit 后勿紧接着 reset --hard 对齐（本次自丢一个 docs commit，重写成本 1 分钟，若非 docs 即事故）。
