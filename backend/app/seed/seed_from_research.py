@@ -106,6 +106,9 @@ def _import_experience_posts(db: Session, payloads: list[dict], approve: bool = 
     count = 0
     for payload in payloads:
         source_url = payload.get("source_url", "")
+        if not source_url:
+            # 真实性门禁（ck_source_gate_experience_posts）：无溯源内容不入库
+            continue
         if _experience_post_exists(db, source_url):
             continue
         payload["status"] = target_status
@@ -123,6 +126,9 @@ def _import_kaoyan_news(db: Session, payloads: list[dict], approve: bool = False
     count = 0
     for payload in payloads:
         source_url = payload.get("source_url", "")
+        if not source_url:
+            # 真实性门禁同规则：无溯源内容不入库
+            continue
         if _kaoyan_news_exists(db, source_url):
             continue
         payload["status"] = target_status
