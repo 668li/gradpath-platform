@@ -13,7 +13,8 @@
   社区只允许用户自己发布的内容，禁止任何脚本灌入非用户内容（用户拍板）。
 - 考公岗位情报种子（seed_civil_service_intel，43 条手编竞争比/进面分/薪资）
   已于 2026-09-05 移除并生产清零（用户拍板"可"）：编造统计数据与 581 假进面线
-  同性质。考公暗知识种子（编辑性内容）保留。
+  同性质。考公暗知识种子已于 2026-09-06 删除（用户拍板"除了A全部删了"：
+  全部内容须可溯源，无源经验断言一并清退，生产 9 行已清）。
   真实数据一律走导入管道 + 人工确认入库。
 """
 
@@ -21,7 +22,6 @@ from uuid import UUID
 
 from app.database import SessionLocal
 from app.models.user import User
-from app.seed.seed_civil_service import seed_civil_service_dark_knowledge
 from app.seed.seed_companies import seed_companies
 from app.seed.seed_knowledge import seed_knowledge
 from app.seed.seed_market_data import seed_market_data
@@ -63,13 +63,8 @@ def run_all_seeds():
         n = seed_schools(db)
         print(f"   ✓ 新增 {n} 所院校")
 
-        # 考公暗知识
-        print("\n2. 注入考公暗知识...")
-        n = seed_civil_service_dark_knowledge(db)
-        print(f"   ✓ 新增 {n} 条暗知识")
-
         # 公司数据
-        print("\n3. 注入公司数据...")
+        print("\n2. 注入公司数据...")
         n = seed_companies(db)
         print(f"   ✓ 新增 {n} 家公司")
 

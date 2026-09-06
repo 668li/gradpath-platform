@@ -29,19 +29,11 @@ from app.services.civil_service_intel_service import (
     get_user_post_intel_list,
     query_post_intel,
     save_post_intel,
-    seed_civil_service_dark_knowledge,
 )
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/civil-service", tags=["考公作战室"])
-
-
-def _ensure_seeded(db: Session) -> None:
-    stages = get_civil_service_dark_knowledge_stages(db)
-    total = sum(s["count"] for s in stages)
-    if total == 0:
-        seed_civil_service_dark_knowledge(db)
 
 
 # ============ 岗位情报 ============
@@ -163,20 +155,12 @@ def get_positioning_history_endpoint(
     return get_civil_service_positioning_history(db, user.id)
 
 
-# ============ 考公暗知识 ============
-
-
-@router.post("/dark-knowledge/seed")
-def seed_dark_knowledge_endpoint(db: Session = Depends(get_db)) -> Any:
-    """（初始化用）填充考公暗知识种子数据。"""
-    count = seed_civil_service_dark_knowledge(db)
-    return {"success": True, "count": count}
+# ============ 考公暗知识（只读；种子已于 2026-09-06 删除，禁止预填充无溯源内容） ============
 
 
 @router.get("/dark-knowledge/stages", response_model=list[DarkKnowledgeStageInfo])
 def get_dark_knowledge_stages_endpoint(db: Session = Depends(get_db)) -> Any:
     """获取暗知识阶段列表（含各阶段数量）。"""
-    _ensure_seeded(db)
     return get_civil_service_dark_knowledge_stages(db)
 
 
@@ -186,5 +170,4 @@ def get_dark_knowledge_endpoint(
     db: Session = Depends(get_db),
 ) -> Any:
     """按阶段获取考公暗知识。stage 为空则返回全部。"""
-    _ensure_seeded(db)
     return get_civil_service_dark_knowledge_by_stage(db, stage)

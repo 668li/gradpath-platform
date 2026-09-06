@@ -7,7 +7,6 @@ run.py / admin API 只 import registry 空表，get_crawler() 恒返回 None，
 """
 
 from app.crawlers import career  # noqa: F401
-from app.crawlers import civil  # noqa: F401
 from app.crawlers import grad  # noqa: F401
 from app.crawlers import real_data  # noqa: F401
 from app.crawlers import reports  # noqa: F401
