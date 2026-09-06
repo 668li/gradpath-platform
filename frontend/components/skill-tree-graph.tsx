@@ -198,6 +198,12 @@ export function SkillTreeGraph({ skills, onNodeClick }: SkillTreeGraphProps) {
 
     const behavior = zoom<SVGSVGElement, unknown>()
       .scaleExtent([0.2, 3])
+      // 手机端：单指=滚页面，双指=平移/捏合缩放。
+      // 旧版 touch-none 会吞掉单指滚动，图占满屏又滚不出去，用户感知"技能树太大"
+      .filter((event: WheelEvent | MouseEvent | TouchEvent) => {
+        if ("touches" in event) return event.touches.length >= 2;
+        return !(event as MouseEvent).button;
+      })
       .on("zoom", (event) => {
         gSel.attr("transform", event.transform.toString());
       });
@@ -205,9 +211,12 @@ export function SkillTreeGraph({ skills, onNodeClick }: SkillTreeGraphProps) {
     const fit = () => {
       const svgWidth = svgEl.clientWidth || 800;
       const svgHeight = svgEl.clientHeight || layout.height;
-      const { contentW, minNodeY, minNodeX, maxNodeX } = layout.bounds;
-      // 水平方向适配视口宽度
-      const s = Math.min(1, Math.max(0.3, (svgWidth - 80) / contentW));
+      const { contentW, contentH, minNodeY, minNodeX, maxNodeX } = layout.bounds;
+      // 宽高双向适配视口（旧版只看宽度，高度随内容撑爆小屏）
+      const s = Math.max(
+        0.25,
+        Math.min(1, (svgWidth - 60) / contentW, (svgHeight - 36) / contentH),
+      );
       // 让最左节点左边缘距视口左边 40px
       const tx = 40 - (minNodeY - NODE_WIDTH / 2) * s;
       // 垂直方向居中
@@ -222,9 +231,14 @@ export function SkillTreeGraph({ skills, onNodeClick }: SkillTreeGraphProps) {
     svgSel.call(behavior);
     fit();
 
+    // 视口变化（手机地址栏收缩/转屏/窗口缩放）时重新适配
+    const ro = new ResizeObserver(() => fit());
+    ro.observe(svgEl);
+
     zoomRef.current = { behavior, fit };
 
     return () => {
+      ro.disconnect();
       svgSel.on(".zoom", null);
     };
   }, [layout]);
@@ -305,8 +319,8 @@ export function SkillTreeGraph({ skills, onNodeClick }: SkillTreeGraphProps) {
         ref={svgRef}
         width="100%"
         height={height}
-        className="block touch-none select-none rounded-xl border border-ink-200 bg-ink-50/40"
-        style={{ minHeight: MIN_HEIGHT }}
+        className="block touch-pan-y select-none rounded-xl border border-ink-200 bg-ink-50/40"
+        style={{ height: `min(${height}px, 68dvh)`, minHeight: 320 }}
       >
         {/* 透明背景层，确保空白区域也可拖拽平移 */}
         <rect
@@ -379,7 +393,7 @@ export function SkillTreeGraph({ skills, onNodeClick }: SkillTreeGraphProps) {
         </g>
       </svg>
       <p className="mt-2 text-xs text-ink-400">
-        拖拽平移 · 滚轮缩放 · 点击节点编辑
+        手机端：单指滚页 · 双指平移/捏合缩放；电脑端：拖拽平移 · 滚轮缩放 · 点击节点编辑
       </p>
     </div>
   );
