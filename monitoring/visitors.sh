@@ -144,4 +144,4 @@ if [ "${1:-}" = "--push" ]; then
   echo $((CNT + 1)) > "$CNT_FILE"
   printf '%s [DAILY] -> %s\n' "$(date '+%F %T')" "$(printf '%s' "$RESP" | tr -d '\n' | cut -c1-160)" >> "$ALERTS"
 fi
-exit 0
+# 注意：本文件会被 traffic_pipeline.sh source 复用，末尾绝不能有 exit（会把调用方 shell 一起退出）
