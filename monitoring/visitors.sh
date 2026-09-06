@@ -21,6 +21,10 @@ BOT_RE='bot|spider|crawl|curl|wget|python|go-http|okhttp|java|headless|uptime|he
 ST_RE='\\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|otf|map|xml|webp|json|txt)$'
 # 轮询心跳类接口：浏览器挂着就反复刷，不计入有效浏览（2026-09-06 实测 unread-count 占 14%）
 POLL_RE='^/api/notifications/unread-count'
+# 伪装扫描器特征（无 bot 字样的扫描/爬虫 UA）+ 转义残缺 UA（09-06 UA 普查实证漏网类）
+MACHINE_RE='zgrab|censys|zmap|bytespider|facebookexternal|telegram|crawlerd|scout|visionheight|x5c'
+# 真人 UA 底线：真实浏览器必有 AppleWebKit 或 Firefox，裸 Mozilla 壳=脚本
+UA_OK_RE='applewebkit|firefox'
 
 # 时区自校准：mktime 按本机时区解释 wall clock，它对 1970-01-01 00:00 的返回值=-(本机UTC偏移)。
 # 真纪元 = mktime(wall) - M，与 shell date 是否响应 TZ 无关（Git Bash date 无视 TZ 前缀的坑）。
@@ -74,53 +78,79 @@ EOF
 }
 
 # 北京「今天 00:00」真纪元；VIS_Y0/VIS_Y1 仅测试注入用（Git Bash date 无视 TZ，本地测试时手动给值）
+# classify_stats S E → "human_uv human_pv machine_uv single_uv hb_reqs"
+# 真人口径（09-06 用户拍板"要实际真的"）：UA 真实浏览器 + 当天打开过 ≥1 个页面才计真人；
+# 同一 IP+路径 >100 次/天=挂机心跳，从真人页面剔除；单次来源无法判定单独计，绝不混入。
+classify_stats() {
+  cat_logs | awk -v s="$1" -v e="$2" -v off="$OFF" -v bot="$BOT_RE" -v st="$ST_RE" -v mach="$MACHINE_RE" -v uaok="$UA_OK_RE" '
+  BEGIN{ split("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec",MN," "); for(i=1;i<=12;i++) m[MN[i]]=i }
+  {
+    if ($4 !~ /^\[/) next
+    t=$4; gsub(/^\[/,"",t); gsub(/[:\/]/," ",t); split(t,a," ")
+    tr=mktime(a[3]" "m[a[2]]" "a[1]" "a[4]" "a[5]" "a[6])+off
+    if (tr < s || tr >= e) next
+    status=$9+0
+    if (status==444 || status<200 || status>=400) next
+    p=$7; sub(/\?.*/,"",p)
+    if (p ~ st) next
+    ua=""; for(i=12;i<=NF;i++){ if($i ~ /^rt=/) break; ua=ua" "$i }
+    l=tolower(ua); gsub(/"/,"",l)
+    if (l=="" || l ~ /^[- ]*$/) next
+    if (l ~ bot || l ~ mach || l !~ uaok) { mach[$1]=1; next }
+    pair=$1" "p; pc[pair]++; req[$1]++
+    if (p !~ /^\/api\//) pagep[pair]++
+  }
+  END{
+    for (pair in pc) if (pc[pair] > 100) { hb[pair]=1; hbtot += pc[pair] }
+    for (ip in req) {
+      hv=0
+      for (pair in pagep) { split(pair,x," "); if (x[1]==ip && !(pair in hb)) hv += pagep[pair] }
+      if (hv >= 1) { hu++; hpv += hv }
+      else if (req[ip] == 1) su++
+    }
+    mu=0; for(ip in mach) mu++
+    printf "%d %d %d %d %d\n", hu, hpv, mu, su, hbtot
+  }'
+}
+
 Y1=${VIS_Y1:-$(TZ=Asia/Shanghai date -d "today 00:00" +%s)}; Y0=${VIS_Y0:-$((Y1-86400))}
 YD=$(TZ=Asia/Shanghai date -d yesterday +%F)
 YD_CN=$(TZ=Asia/Shanghai date -d yesterday +%-m月%-d日)
 TD_CN=$(TZ=Asia/Shanghai date +%-m月%-d日)
 read -r PV UV BLK TOT TOP <<< "$(window_report $Y0 $Y1)"
-read -r PV0 UV0 BLK0 TOT0 _  <<< "$(window_report $((Y0-86400)) $Y0)"
 read -r TPV TUV TBLK TTOT TTOP <<< "$(window_report $Y1 $(date +%s))"
-
-if [ "${UV0:-0}" -gt 0 ] 2>/dev/null; then
-  D=$((UV-UV0)); [ "$D" -ge 0 ] && DELTA="比前天多 ${D} 人" || DELTA="比前天少 $((-D)) 人"
-else
-  DELTA="前天无数据"
-fi
+# 真人口径（剔除伪装脚本/心跳，单次来源单列）
+read -r HUV HPV MUV SUV HB <<< "$(classify_stats $Y0 $Y1)"
+read -r THUV THPV TMUV TSUV THB <<< "$(classify_stats $Y1 $(date +%s))"
 
 if [ "${EVENING:-0}" = "1" ]; then
   # 晚报 22:00：今天基本过完，报「今日至今」为主，昨日全天作对比
-  if [ "${UV0:-0}" -gt 0 ] 2>/dev/null; then
-    DT=$((TUV-UV0)); [ "$DT" -ge 0 ] && TDELTA="比昨天全天多 ${DT} 人" || TDELTA="比昨天全天少 $((-DT)) 人"
-  else
-    TDELTA="昨天无数据"
-  fi
-  REPORT="📊 今日访客（${TD_CN} 0点起，北京时间）
-· 到访约 ${TUV:-0} 人（${TDELTA}）
-· 有效浏览 ${TPV:-0} 个页面
+  REPORT="📊 今日真实访客（${TD_CN} 0点起，北京时间）
+· 真人约 ${THUV:-0} 人 · 真人打开页面 ${THPV:-0} 次
+· 剔除脚本/扫描 ${TMUV:-0} 个来源 · 单次来源 ${TSUV:-0} 个（无法判定，未计入）
 · 自动挡掉攻击探测 ${TBLK:-0} 次
 · 热门页面：${TTOP:-无}
 
-昨天全天参考：约 ${UV} 人 / ${PV} 页
+昨天参考：真人 ${HUV:-0} 人 / 页面 ${HPV:-0} 次
 ——
-人数按不重复 IP 估算（同一 WiFi 出口会算作 1 人），仅供参考"
+口径：真实浏览器且打开过页面才算真人；同 WiFi 多人算 1 个"
 else
-  REPORT="📊 昨日访客（${YD_CN}，北京时间）
-· 到访约 ${UV} 人（${DELTA}）
-· 有效浏览 ${PV} 个页面
+  REPORT="📊 昨日真实访客（${YD_CN}，北京时间）
+· 真人约 ${HUV:-0} 人 · 真人打开页面 ${HPV:-0} 次
+· 剔除脚本/扫描 ${MUV:-0} 个来源 · 单次来源 ${SUV:-0} 个（无法判定，未计入）
 · 自动挡掉攻击探测 ${BLK} 次
 · 热门页面：${TOP:-无}
 
-今日至今：约 ${TUV:-0} 人 / ${TPV:-0} 页
+今日至今：真人 ${THUV:-0} 人 / 页面 ${THPV:-0} 次
 ——
-人数按不重复 IP 估算（同一 WiFi 出口会算作 1 人），仅供参考"
+口径：真实浏览器且打开过页面才算真人；同 WiFi 多人算 1 个"
 fi
 
 echo "$REPORT"
 
 if [ "${1:-}" = "--push" ]; then
-  # 记历史（一行一天，供以后做趋势）
-  grep -q "^${YD}," "$CSV" 2>/dev/null || echo "${YD},${PV},${UV},${BLK}" >> "$CSV"
+  # 记历史（一行一天，供以后做趋势；后两列为真人口径）
+  grep -q "^${YD}," "$CSV" 2>/dev/null || echo "${YD},${PV},${UV},${BLK},${HUV:-0},${HPV:-0}" >> "$CSV"
   # 共享每日推送配额（与 sec_watcher 同一计数器；日报非提示级，上限 5）
   CNT_FILE="$STATE/push-$(date +%Y%m%d).count"
   CNT=$(cat "$CNT_FILE" 2>/dev/null || echo 0)
@@ -133,9 +163,9 @@ if [ "${1:-}" = "--push" ]; then
     exit 0
   fi
   if [ "${EVENING:-0}" = "1" ]; then
-    TITLE="【日报】今天 ${TUV:-0} 位访客 · 挡掉 ${TBLK:-0} 次攻击"
+    TITLE="【日报】今天真人约 ${THUV:-0} 人 · 挡掉 ${TBLK:-0} 次攻击"
   else
-    TITLE="【日报】昨天 ${UV} 位访客 · 挡掉 ${BLK} 次攻击"
+    TITLE="【日报】昨天真人约 ${HUV:-0} 人 · 挡掉 ${BLK} 次攻击"
   fi
   RESP=$(curl -s -m 10 \
     --data-urlencode "title=$TITLE" \

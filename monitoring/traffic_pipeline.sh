@@ -20,12 +20,16 @@ for i in $(seq 0 $((N - 1))); do
   E=$((S + 86400))
   OUT=$(window_stats "$S" "$E")
   read -r PV UV BLK _TOT <<< "$(printf '%s\n' "$OUT" | head -1)"
+  read -r HUV HPV MUV SUV _HB <<< "$(classify_stats "$S" "$E")"
   REG=$($PSQL -tAc "SELECT count(*) FROM users WHERE (created_at AT TIME ZONE 'Asia/Shanghai')::date = DATE '$DAY'")
-  $PSQL -c "INSERT INTO t_traffic_daily (date, pv, uv, blocked, registrations, created_at, updated_at)
-            VALUES ('$DAY', $PV, $UV, $BLK, $REG, now(), now())
+  $PSQL -c "INSERT INTO t_traffic_daily (date, pv, uv, blocked, registrations, human_uv, human_pv, machine_uv, single_uv, created_at, updated_at)
+            VALUES ('$DAY', $PV, $UV, $BLK, $REG, ${HUV:-0}, ${HPV:-0}, ${MUV:-0}, ${SUV:-0}, now(), now())
             ON CONFLICT (date) DO UPDATE SET
               pv=EXCLUDED.pv, uv=EXCLUDED.uv, blocked=EXCLUDED.blocked,
-              registrations=EXCLUDED.registrations, updated_at=now()" >/dev/null
-  echo "$DAY pv=$PV uv=$UV blocked=$BLK reg=$REG"
+              registrations=EXCLUDED.registrations,
+              human_uv=EXCLUDED.human_uv, human_pv=EXCLUDED.human_pv,
+              machine_uv=EXCLUDED.machine_uv, single_uv=EXCLUDED.single_uv,
+              updated_at=now()" >/dev/null
+  echo "$DAY pv=$PV uv=$UV blocked=$BLK reg=$REG | 真人 uv=$HUV pv=$HPV 脚本=$MUV 单次=$SUV"
 done
 echo "=== traffic_pipeline done $(date '+%F %T') ==="

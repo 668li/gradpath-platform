@@ -10,12 +10,20 @@ export interface TrafficDay {
   uv: number;
   blocked: number;
   registrations: number;
+  human_uv: number; // 真人来源（真实浏览器+打开过页面）
+  human_pv: number; // 真人页面浏览
+  machine_uv: number; // 剔除的脚本/扫描来源
+  single_uv: number; // 单次来源（无法判定）
   conversion_rate: number; // registrations / uv
 }
 
 export interface TrafficSummary {
   total_uv: number;
   total_pv: number;
+  total_human_uv: number;
+  total_human_pv: number;
+  total_machine_uv: number;
+  total_single_uv: number;
   total_blocked: number;
   total_registrations: number;
   conversion_rate: number;

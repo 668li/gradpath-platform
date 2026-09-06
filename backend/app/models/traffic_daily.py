@@ -26,3 +26,10 @@ class TrafficDaily(TimestampMixin, Base):
     uv: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     blocked: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     registrations: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    # 真人口径（09-06 用户拍板"要实际真的"）：
+    # human_uv/human_pv = UA 真实浏览器且打开过页面的来源/页面；
+    # machine_uv = 伪装扫描器剔除数；single_uv = 单次来源(无法判定)。
+    human_uv: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    human_pv: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    machine_uv: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    single_uv: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

@@ -32,9 +32,39 @@ def admin_headers(client, db_session):
 @pytest.fixture
 def seed_days(db_session):
     rows = [
-        TrafficDaily(date=datetime.date(2026, 9, 4), pv=100, uv=10, blocked=5, registrations=1),
-        TrafficDaily(date=datetime.date(2026, 9, 5), pv=200, uv=0, blocked=8, registrations=0),
-        TrafficDaily(date=datetime.date(2026, 9, 6), pv=50, uv=5, blocked=2, registrations=2),
+        TrafficDaily(
+            date=datetime.date(2026, 9, 4),
+            pv=100,
+            uv=10,
+            blocked=5,
+            registrations=1,
+            human_uv=8,
+            human_pv=60,
+            machine_uv=1,
+            single_uv=1,
+        ),
+        TrafficDaily(
+            date=datetime.date(2026, 9, 5),
+            pv=200,
+            uv=0,
+            blocked=8,
+            registrations=0,
+            human_uv=0,
+            human_pv=0,
+            machine_uv=0,
+            single_uv=0,
+        ),
+        TrafficDaily(
+            date=datetime.date(2026, 9, 6),
+            pv=50,
+            uv=5,
+            blocked=2,
+            registrations=2,
+            human_uv=4,
+            human_pv=30,
+            machine_uv=1,
+            single_uv=0,
+        ),
     ]
     db_session.add_all(rows)
     db_session.commit()
@@ -57,6 +87,9 @@ class TestTrafficDaily:
         assert abs(by_date["2026-09-06"]["conversion_rate"] - 0.4) < 1e-9
         assert data["summary"]["total_uv"] == 15
         assert data["summary"]["total_registrations"] == 3
+        assert data["summary"]["total_human_uv"] == 12
+        assert data["summary"]["total_human_pv"] == 90
+        assert by_date["2026-09-04"]["machine_uv"] == 1
 
     def test_days_param_caps_window(self, client, admin_headers, seed_days):
         resp = client.get("/api/traffic/daily?days=2", headers=admin_headers)

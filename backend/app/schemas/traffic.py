@@ -9,6 +9,10 @@ class TrafficDayVO(BaseModel):
     uv: int
     blocked: int
     registrations: int
+    human_uv: int  # 真人来源（UA 真实浏览器+打开过页面）
+    human_pv: int  # 真人页面浏览
+    machine_uv: int  # 剔除的脚本/扫描来源
+    single_uv: int  # 单次来源（无法判定真人/脚本）
     conversion_rate: float  # registrations / uv，uv=0 时为 0.0
 
 

@@ -30,6 +30,10 @@ def daily(
             uv=r.uv,
             blocked=r.blocked,
             registrations=r.registrations,
+            human_uv=r.human_uv,
+            human_pv=r.human_pv,
+            machine_uv=r.machine_uv,
+            single_uv=r.single_uv,
             conversion_rate=(r.registrations / r.uv) if r.uv else 0.0,
         )
         for r in items
@@ -41,6 +45,10 @@ def daily(
         summary={
             "total_uv": total_uv,
             "total_pv": sum(d.pv for d in day_vos),
+            "total_human_uv": sum(d.human_uv for d in day_vos),
+            "total_human_pv": sum(d.human_pv for d in day_vos),
+            "total_machine_uv": sum(d.machine_uv for d in day_vos),
+            "total_single_uv": sum(d.single_uv for d in day_vos),
             "total_blocked": sum(d.blocked for d in day_vos),
             "total_registrations": total_reg,
             "conversion_rate": (total_reg / total_uv) if total_uv else 0.0,
