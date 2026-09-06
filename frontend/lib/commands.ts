@@ -52,36 +52,12 @@ export const commands: Command[] = [
 
   // ────────────────────────── 决策 ──────────────────────────
   {
-    id: "decision-lab",
-    title: "决策实验室",
-    subtitle: "决策",
-    href: "/decision-lab",
-    keywords: ["决策", "实验", "lab", "decision"],
-    icon: "BeakerIcon",
-  },
-  {
-    id: "decisions",
-    title: "去向决策",
-    subtitle: "决策",
-    href: "/decisions",
-    keywords: ["去向", "决策", "decisions", "career path"],
-    icon: "GitBranch",
-  },
-  {
     id: "career-simulator",
     title: "职业路径模拟器",
     subtitle: "决策",
     href: "/career-simulator",
     keywords: ["职业", "模拟", "simulator", "路径"],
     icon: "Route",
-  },
-  {
-    id: "war-room",
-    title: "作战室",
-    subtitle: "决策",
-    href: "/war-room",
-    keywords: ["作战", "war", "room", "策略"],
-    icon: "Swords",
   },
 
   // ────────────────────────── 情报 ──────────────────────────
@@ -144,14 +120,6 @@ export const commands: Command[] = [
     icon: "Network",
   },
   {
-    id: "life-wheel",
-    title: "人生平衡轮",
-    subtitle: "成长",
-    href: "/life-wheel",
-    keywords: ["人生", "平衡", "轮", "life", "wheel"],
-    icon: "Compass",
-  },
-  {
     id: "retrospectives",
     title: "阶段复盘",
     subtitle: "成长",
@@ -166,14 +134,6 @@ export const commands: Command[] = [
     href: "/retrospectives/weekly",
     keywords: ["周", "复盘", "weekly", "retrospective"],
     icon: "Calendar",
-  },
-  {
-    id: "insights",
-    title: "成长洞察",
-    subtitle: "成长",
-    href: "/insights",
-    keywords: ["洞察", "insight", "成长"],
-    icon: "Lightbulb",
   },
   {
     id: "growth-patterns",
@@ -193,22 +153,6 @@ export const commands: Command[] = [
   },
 
   // ────────────────────────── 规划 ──────────────────────────
-  {
-    id: "career",
-    title: "职业规划",
-    subtitle: "规划",
-    href: "/career",
-    keywords: ["职业", "规划", "career", "plan"],
-    icon: "Map",
-  },
-  {
-    id: "plans",
-    title: "计划列表",
-    subtitle: "规划",
-    href: "/plans",
-    keywords: ["计划", "列表", "plans"],
-    icon: "ClipboardList",
-  },
   {
     id: "study-plans",
     title: "学习计划",

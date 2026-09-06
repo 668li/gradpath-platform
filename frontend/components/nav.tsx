@@ -17,9 +17,7 @@ import {
   Target,
   TrendingUp,
   ChevronDown,
-  BeakerIcon,
   Route,
-  GitCompareArrows,
   BookOpen,
   Building2,
   Briefcase,
@@ -28,11 +26,9 @@ import {
   Brain,
   Network,
   Compass,
-  Map,
   Swords,
   Calendar,
   Sparkles,
-  Lightbulb,
   Trophy,
   Footprints,
   HeartCrack,
@@ -84,7 +80,6 @@ function getNavSections(): NavSection[] {
       children: [
         { href: "/self-discovery", label: "人生设计访谈", icon: Sparkles },
         { href: "/assessment", label: "职业测评", icon: Target },
-        { href: "/life-wheel", label: "人生平衡轮", icon: Compass },
         { href: "/skills", label: "技能树", icon: Network },
       ],
     },
@@ -111,8 +106,6 @@ function getNavSections(): NavSection[] {
       section: "旅程",
       children: [
         { href: "/decision-center", label: "决策中心", icon: Target },
-        { href: "/decision-engine", label: "三路决策引擎", icon: GitCompareArrows },
-        { href: "/decision-lab", label: "决策实验室", icon: BeakerIcon },
         { href: "/career-simulator", label: "路径模拟器", icon: Route },
         { href: "/micro-actions", label: "7天微行动", icon: Footprints },
       ],
@@ -124,7 +117,6 @@ function getNavSections(): NavSection[] {
       section: "旅程",
       children: [
         { href: "/actions", label: "行动任务中心", icon: ListChecks },
-        { href: "/career", label: "职业规划", icon: Map },
         { href: "/study-plans", label: "学习计划", icon: Swords },
         { href: "/life-design", label: "90 天冲刺", icon: Sparkles },
         { href: "/timeline", label: "时间线", icon: Calendar },
@@ -138,8 +130,7 @@ function getNavSections(): NavSection[] {
       children: [
         { href: "/growth/archive", label: "成长档案", icon: TrendingUp },
         { href: "/retrospectives", label: "阶段复盘", icon: Calendar },
-        { href: "/insights", label: "成长洞察", icon: Lightbulb },
-        { href: "/achievements", label: "成就墙", icon: Trophy },
+        { href: "/achievements", label: "成长回顾", icon: Trophy },
       ],
     },
     {

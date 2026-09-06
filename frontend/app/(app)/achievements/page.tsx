@@ -8,11 +8,15 @@ import { LoadingState } from "@/components/ui/empty";
 import { LevelProgress } from "@/components/gamification/level-progress";
 import { BadgeWall } from "@/components/gamification/badge-wall";
 import { ExportButton } from "@/components/export-button";
-import type { GamificationProfile, UserSetting } from "@/types";
+import { GrowthInsight } from "@/components/growth-insight";
+import { NewBadgeToast } from "@/components/gamification/new-badge-toast";
+import type { GamificationProfile, UserSetting, Badge } from "@/types";
 
 export default function AchievementsPage() {
   const toast = useToast();
   const invalidate = useInvalidate();
+  // 新徽章提示（原 /insights 页内容已并入本页，P2 任务3）
+  const [newBadges, setNewBadges] = useState<Badge[]>([]);
 
   // SWR 替代原 useCallback+Promise.all：自动去重/缓存/重试
   const { data: profile, error: profileError, isLoading: loading } = useApi<GamificationProfile>(
@@ -28,6 +32,11 @@ export default function AchievementsPage() {
   useEffect(() => {
     if (settingsError) toast.push(settingsError.message || "加载设置失败", "error");
   }, [settingsError, toast]);
+  useEffect(() => {
+    if (profile?.newly_awarded?.length && newBadges.length === 0) {
+      setNewBadges(profile.newly_awarded);
+    }
+  }, [profile, newBadges.length]);
 
   // 分享设置
   const [toggling, setToggling] = useState(false);
@@ -147,6 +156,9 @@ export default function AchievementsPage() {
             </div>
           </div>
 
+          {/* AI 成长洞察（自 /insights 并入） */}
+          <GrowthInsight />
+
           {/* 徽章墙 */}
           <div className="card">
             <div className="mb-4 flex items-center gap-2">
@@ -242,6 +254,9 @@ export default function AchievementsPage() {
           </div>
         </>
       ) : null}
+
+      {/* 新徽章提示（自 /insights 并入） */}
+      <NewBadgeToast badges={newBadges} onDismiss={() => setNewBadges([])} />
     </div>
   );
 }

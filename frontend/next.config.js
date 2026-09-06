@@ -1,6 +1,20 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // P2 功能合并：被折叠功能的旧路由 302 到新家（拍板见 docs/P2功能合并任务书-2026-09-06.md）
+  // 链接不 404 是硬要求；permanent:false 保持 302，将来恢复入口无需浏览器缓存清理
+  async redirects() {
+    return [
+      { source: "/career", destination: "/dashboard", permanent: false },
+      { source: "/life-wheel", destination: "/self-discovery", permanent: false },
+      { source: "/insights", destination: "/achievements", permanent: false },
+      { source: "/decision-lab", destination: "/decision-center", permanent: false },
+      { source: "/decision-engine", destination: "/decision-center", permanent: false },
+      { source: "/war-room", destination: "/decision-center", permanent: false },
+      { source: "/decisions", destination: "/decision-center", permanent: false },
+      { source: "/plans", destination: "/study-plans", permanent: false },
+    ];
+  },
   // 服务器构建提速：lint 已由 CI(github actions) 与本地 npm run lint 覆盖，
   // 2 核云服务器构建时重复跑全量 ESLint 只拖慢发布，不做质量兜底
   eslint: { ignoreDuringBuilds: true },
