@@ -10,6 +10,7 @@ import {
   Network,
   Database,
   ArrowRight,
+  BarChart3,
 } from "lucide-react";
 
 const ADMIN_CARDS = [
@@ -61,6 +62,13 @@ const ADMIN_CARDS = [
     desc: "维护技能树节点与分类",
     icon: Network,
     color: "text-amber-600 bg-amber-50",
+  },
+  {
+    href: "/admin/traffic",
+    title: "流量看板",
+    desc: "访客/浏览/注册转化率/攻击拦截趋势（与微信日报同口径）",
+    icon: BarChart3,
+    color: "text-indigo-600 bg-indigo-50",
   },
 ];
 

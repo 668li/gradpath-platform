@@ -11,6 +11,7 @@ import {
   Bug,
   Inbox,
   Network,
+  BarChart3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth";
@@ -24,6 +25,7 @@ const ADMIN_TABS = [
   { href: "/admin/crawlers", label: "爬虫管理", icon: Bug },
   { href: "/admin/research-queue", label: "调研数据", icon: Inbox },
   { href: "/admin/skills", label: "技能管理", icon: Network },
+  { href: "/admin/traffic", label: "流量看板", icon: BarChart3 },
 ];
 
 export default function AdminLayout({
