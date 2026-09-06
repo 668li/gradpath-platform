@@ -16,7 +16,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.crawlers.base_crawler import BaseCrawler
-from app.crawlers.registry import register_crawler
 from app.models.dataset_info import DatasetInfo
 
 SYSTEM_USER_ID = UUID("00000000-0000-0000-0000-000000000000")
@@ -273,7 +272,7 @@ def download_dataset(url: str, dest: str) -> bool:
     return False
 
 
-@register_crawler
+# @register_crawler  # @RETIRED 2026-09-06 对抗审计第一批：random.seed(42) 编造数据集元信息的合成器（reports/ 漏网），需要时走 GitHub Search API 实时查；文件保留不删
 class GithubDatasetCrawler(BaseCrawler):
     """GitHub 开源数据集接入器 — 5 领域 × 10 数据集 = 50 条元信息。"""
 

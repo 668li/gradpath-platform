@@ -22,7 +22,6 @@ if __name__ == "__main__":
     sys.path.insert(0, str(backend_dir))
 
 from app.crawlers.base_crawler import BaseCrawler
-from app.crawlers.registry import register_crawler
 from app.database import SessionLocal
 from app.services.research_ingestion import store_research_items
 
@@ -54,7 +53,7 @@ def _strip_tags(fragment: str) -> str:
     return "\n".join(ln for ln in lines if ln).strip()
 
 
-@register_crawler
+# @register_crawler  # @RETIRED 2026-09-06 对抗审计第一批（F9）：WAF 实测 0 条死源，白名单+调度同批下架；红线不绕 WAF；文件保留不删
 class TiebaResearchCrawler(BaseCrawler):
     """百度贴吧考研避坑帖调研爬虫。"""
 

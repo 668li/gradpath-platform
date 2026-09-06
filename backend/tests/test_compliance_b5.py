@@ -89,7 +89,8 @@ def test_store_research_items_all_pending_and_idempotent(db_session):
         run_id=run_id,
     )
     r1 = store_research_items(db_session, **kw)
-    assert r1 == {"inserted": len(items), "duplicated": 0}
+    # redline_rejected 键为 2026-09-06 审计第一批入库红线计数（T1 授权新增）
+    assert r1 == {"inserted": len(items), "duplicated": 0, "redline_rejected": 0}
 
     for it in items:
         url = it["source_url"]
@@ -106,19 +107,28 @@ def test_store_research_items_all_pending_and_idempotent(db_session):
 
     # 幂等：同 URL 重复导入 → 0 新增，全部按重复跳过
     r2 = store_research_items(db_session, **kw)
-    assert r2 == {"inserted": 0, "duplicated": len(items)}, "重复导入必须幂等"
+    assert r2 == {
+        "inserted": 0,
+        "duplicated": len(items),
+        "redline_rejected": 0,
+    }, "重复导入必须幂等"
 
 
 # ---------------------------------------------------------------- 旁路收口
 
 
 def test_run_endpoint_rejects_registered_non_whitelisted_crawler(client, admin_headers):
-    """已注册但不在白名单的爬虫（mentor 直写业务表）→ /run 必须 403。
+    """非白名单爬虫（mentor）→ /run 必须拒绝触发。
 
     注意：scoreline / scoreline_real / admission_ratio 三个假数据生成器
-    已于 2026-09-02 注销注册，改用 mentor 作为非白注册爬虫代表。
+    已于 2026-09-02 注销注册；2026-09-06 对抗审计第一批 mentor 亦已注销
+    （@RETIRED）。端点实现为「先查注册(404)后查白名单(403)」，注销后
+    mentor 在更早的 404 闸即被拒——拒绝语义不变（爬虫不可执行）。
+    403 白名单闸本身由已注册非白名单名验证，而不变量测试已保证该类
+    名字不可能存在（注册表==白名单），worker 侧复查见
+    tests/test_celery_whitelist_guard.py。
     """
-    assert get_crawler("mentor") is not None, "前置：mentor 已注册"
+    assert get_crawler("mentor") is None, "前置：mentor 已随 2026-09-06 审计批次注销注册"
     assert "mentor" not in ALLOWED_CRAWLER_SOURCES
 
     resp = client.post(
@@ -126,8 +136,7 @@ def test_run_endpoint_rejects_registered_non_whitelisted_crawler(client, admin_h
         headers=admin_headers,
         json={"source_name": "mentor"},
     )
-    assert resp.status_code == 403
-    assert "白名单" in resp.json()["detail"] or "合规" in resp.json()["detail"]
+    assert resp.status_code in (403, 404), "非白名单名不得可执行：403(白名单拒)或 404(未注册更早拒)"
 
 
 def test_run_endpoint_allows_whitelisted_crawler(client, admin_headers, monkeypatch):
@@ -164,8 +173,9 @@ def test_schedules_rejects_registered_non_whitelisted_crawler(
         headers=admin_headers,
         json={"source_name": "mentor", "cron": "0 * * * *"},
     )
-    assert resp.status_code == 403
-    assert "白名单" in resp.json()["detail"] or "合规" in resp.json()["detail"]
+    # mentor 已于 2026-09-06 审计批次注销注册：未注册在更早闸即拒（404），
+    # 拒绝语义同 403 不变——详见 test_run_endpoint_rejects... 注释
+    assert resp.status_code in (403, 404), "非白名单名不得可挂调度"
 
 
 def test_whitelist_entries_all_registered():

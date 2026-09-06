@@ -23,7 +23,6 @@ if __name__ == "__main__":
     sys.path.insert(0, str(backend_dir))
 
 from app.crawlers.base_crawler import BaseCrawler
-from app.crawlers.registry import register_crawler
 from app.database import SessionLocal
 from app.services.research_ingestion import store_research_items
 
@@ -99,7 +98,7 @@ class _ZhuanlanTextExtractor(html.parser.HTMLParser):
             self.parts.append(data)
 
 
-@register_crawler
+# @register_crawler  # @RETIRED 2026-09-06 对抗审计第一批（F9）：WAF 实测 3 拒/0 条死源，白名单+调度同批下架；知乎内容走 RSSHub 日报桥；红线不绕 WAF；文件保留不删
 class ZhihuResearchCrawler(BaseCrawler):
     """知乎公开专栏考研经验文章调研爬虫。"""
 

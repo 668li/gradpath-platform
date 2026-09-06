@@ -24,7 +24,6 @@ if __name__ == "__main__":
     sys.path.insert(0, str(Path(__file__).resolve().parents[3]))
 
 from app.crawlers.base_crawler import BaseCrawler
-from app.crawlers.registry import register_crawler
 from app.database import SessionLocal
 from app.models.knowledge_article import KnowledgeArticle
 
@@ -43,7 +42,7 @@ DEFAULT_KEYWORDS = [
 ]
 
 
-@register_crawler
+# @register_crawler  # @RETIRED 2026-09-06 对抗审计第一批：真 API 但决策价值低（审计 P3），不占注册位；需要 RAG 补源时重评审恢复；文件保留不删
 class GitHubKaoyanCrawler(BaseCrawler):
     """通过 GitHub Search API 搜索考研/考公/求职相关仓库。"""
 

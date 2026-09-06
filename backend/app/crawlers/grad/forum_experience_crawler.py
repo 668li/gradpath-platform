@@ -7,7 +7,6 @@
 from sqlalchemy.orm import Session
 
 from app.crawlers.base_crawler import BaseCrawler
-from app.crawlers.registry import register_crawler
 
 # 预置经验贴数据 — 字段顺序：
 # (title, author, content, tags, category, view_count, like_count, source_url, source_platform)
@@ -327,7 +326,7 @@ _FORUM_EXPERIENCE_DATA: list[tuple] = [
 ]
 
 
-@register_crawler
+# @register_crawler  # @RETIRED 2026-09-06 对抗审计第一批：预置/遗留论坛经验源，真人经验内容已由社区真人供给唯一化承接；文件保留不删
 class ForumExperienceCrawler(BaseCrawler):
     """考研论坛经验贴爬虫 — 从考研帮、知乎等平台爬取经验贴。"""
 

@@ -8,7 +8,6 @@ push_ratio、insider_notes 字段，更新到 grad_school_intel 表。
 from sqlalchemy.orm import Session
 
 from app.crawlers.base_crawler import BaseCrawler
-from app.crawlers.registry import register_crawler
 
 # 预置论坛报录比数据 — 字段顺序：
 # (school, major, admission_ratio, push_ratio, post_content)
@@ -545,7 +544,7 @@ def _generate_extra_forum_data() -> list[list]:
     return extra
 
 
-@register_crawler
+# @register_crawler  # @RETIRED 2026-09-06 对抗审计第一批：预置/遗留论坛源（grad_forum），零真人内容供给；文件保留不删
 class ForumCrawler(BaseCrawler):
     """考研论坛报录比爬虫 — 模拟小木虫/考研论坛经验帖数据。"""
 

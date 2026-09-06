@@ -15,7 +15,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.crawlers.base_crawler import BaseCrawler
-from app.crawlers.registry import register_crawler
 from app.models.employment_data import Degree, EmploymentData
 
 SYSTEM_USER_ID = UUID("00000000-0000-0000-0000-000000000000")
@@ -122,7 +121,7 @@ def parse_pdf_content(content: bytes) -> dict:
     return {}
 
 
-@register_crawler
+# @register_crawler  # @RETIRED 2026-09-06 对抗审计第一批：名为 PDF 解析实为 random.seed(42) 编造 80 条就业率的合成器（reports/ 漏网），真就业年报 PDF 下载器另行立项；文件保留不删
 class PdfReportCrawler(BaseCrawler):
     """高校就业质量报告 PDF 解析器 — 预置 40 校 × 2 年 = 80 条数据。"""
 

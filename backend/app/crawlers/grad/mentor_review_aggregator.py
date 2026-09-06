@@ -9,7 +9,6 @@ from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from app.crawlers.base_crawler import BaseCrawler
-from app.crawlers.registry import register_crawler
 
 # 预置导师评价数据 — 字段顺序：
 # (mentor_name, university, department, reviewer_identity, is_anonymous,
@@ -6079,7 +6078,7 @@ _MENTOR_REVIEW_DATA: list[tuple] = [
 SYSTEM_USER_ID = "00000000-0000-0000-0000-000000000001"
 
 
-@register_crawler
+# @register_crawler  # @RETIRED 2026-09-06 对抗审计第一批：6082 行预置聚合器，导师评价本质是 UGC 应走用户回传；文件保留不删
 class MentorReviewAggregator(BaseCrawler):
     """导师评价聚合器 — 聚合其他平台公开的导师评价数据。"""
 

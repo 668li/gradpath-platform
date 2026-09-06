@@ -7,7 +7,6 @@
 from sqlalchemy.orm import Session
 
 from app.crawlers.base_crawler import BaseCrawler
-from app.crawlers.registry import register_crawler
 
 # 预置复试经验数据 — 字段顺序：
 # (title, university, major, degree_type, retest_format,
@@ -495,7 +494,7 @@ _RETEST_EXPERIENCE_DATA: list[tuple] = [
 ]
 
 
-@register_crawler
+# @register_crawler  # @RETIRED 2026-09-06 对抗审计第一批：预置/遗留复试经验源，经验内容走真人社区供给；文件保留不删
 class RetestExperienceCrawler(BaseCrawler):
     """考研复试经验爬虫 — 预置复试经验数据。"""
 

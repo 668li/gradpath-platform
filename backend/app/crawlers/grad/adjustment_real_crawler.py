@@ -7,7 +7,6 @@
 from sqlalchemy.orm import Session
 
 from app.crawlers.base_crawler import BaseCrawler
-from app.crawlers.registry import register_crawler
 
 # 预置调剂信息数据 — 字段顺序：
 # (university_name, department, major_name, degree_type, original_major_scope,
@@ -1216,7 +1215,7 @@ _ADJUSTMENT_DATA: list[tuple] = [
 ]
 
 
-@register_crawler
+# @register_crawler  # @RETIRED 2026-09-06 对抗审计第一批：真爬版但非白名单源，领导拍板全员注销；调剂季启用需重注册+白名单评审双批准；文件保留不删
 class AdjustmentRealCrawler(BaseCrawler):
     """考研调剂信息爬虫 — 预置真实调剂数据。"""
 

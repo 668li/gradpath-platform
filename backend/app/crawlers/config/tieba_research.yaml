@@ -2,7 +2,7 @@
 name: tieba_research
 category: research
 description: 百度贴吧考研避坑帖调研爬虫（公开列表页 + robots + 控频，写入 PENDING 审核队列）
-enabled: true
+enabled: false  # 2026-09-06 对抗审计 F9：WAF 实测 0 条，死源停调（注册同步注销，复活需重过合规评审）
 schedule: weekly  # 每周更新（公开帖免登录，控频 1-3s 随机间隔）
 max_retries: 3
 timeout_seconds: 30

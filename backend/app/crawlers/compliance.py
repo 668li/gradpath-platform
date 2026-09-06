@@ -21,8 +21,9 @@ ALLOWED_CRAWLER_SOURCES: frozenset[str] = frozenset(
         "rss_news_research",  # research：RSS 新闻 → PENDING 队列（注册名，勿写模块文件名）
         "eol_kaoyan",  # research：中国教育在线考研频道 → PENDING 队列
         "official_announce",  # research：高校研究生院官方公告 → PENDING 队列
-        "zhihu_research",  # research：知乎公开专栏文章 → PENDING 队列（Phase I）
-        "tieba_research",  # research：贴吧考研避坑帖 → PENDING 队列（Phase I）
+        # zhihu_research / tieba_research 已于 2026-09-06 移出（对抗审计 F9）：
+        # WAF 实测知乎 3 拒/0 条、贴吧 0 条，死源不占白名单与调度认知位；
+        # 知乎内容改走 RSSHub 日报桥。复活需重过合规评审。
         "rsshub_research",  # research：自建 RSSHub 研招/教育部公告聚合 → PENDING 队列（杠杆化）
         "news_aggregates",  # research：eol/offcn 资讯聚合列表 → PENDING 队列（量的来源）
     }

@@ -8,7 +8,6 @@ store() 将导师信息存入 mentors 表。
 from sqlalchemy.orm import Session
 
 from app.crawlers.base_crawler import BaseCrawler
-from app.crawlers.registry import register_crawler
 
 # 预置导师信息数据 — 字段顺序：
 # (mentor_name, university, department, title, research_directions,
@@ -4952,7 +4951,7 @@ _MENTOR_DATA: list[tuple] = [
 ]
 
 
-@register_crawler
+# @register_crawler  # @RETIRED 2026-09-06 对抗审计第一批：4955 行预置元组（mentors 1730 条挂账待裁决，88% 华科失真前科）；导师数据改按需爬主页+UGC；文件保留不删
 class MentorCrawler(BaseCrawler):
     """导师信息爬虫 — 预置导师基础信息、学术信息、招生信息等数据。"""
 

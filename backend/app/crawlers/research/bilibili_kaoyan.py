@@ -13,13 +13,12 @@ if __name__ == "__main__":
     sys.path.insert(0, str(backend_dir))
 
 from app.crawlers.base_crawler import BaseCrawler
-from app.crawlers.registry import register_crawler
 from app.models.knowledge_article import KnowledgeArticle
 
 logger = logging.getLogger(__name__)
 
 
-@register_crawler
+# @register_crawler  # @RETIRED 2026-09-06 对抗审计第一批：与在产 bilibili_research 命名易混、无调度，注销消除误触发位；文件保留不删
 class BilibiliKaoyanCrawler(BaseCrawler):
     """通过B站搜索API抓取考研视频，写入 knowledge_articles。"""
 

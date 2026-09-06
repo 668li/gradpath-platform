@@ -19,7 +19,6 @@ from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
 
 from app.crawlers.base_crawler import BaseCrawler
-from app.crawlers.registry import register_crawler
 from app.models.salary_benchmark import ExperienceLevel, SalaryBenchmark
 
 logger = logging.getLogger(__name__)
@@ -180,7 +179,7 @@ def map_experience(text: str) -> ExperienceLevel:
     return ExperienceLevel.junior
 
 
-@register_crawler
+# @register_crawler  # @RETIRED 2026-09-06 对抗审计第一批（C 表 P1）：职友集/看准真爬有反爬与条款风险，降级为一次性调研脚本手动跑；注：模块未被包导入，本注册此前不在实载 registry（书 13 名清单外的补账）；文件保留不删
 class SalaryExpandCrawler(BaseCrawler):
     """薪资数据扩展爬虫 — 从公开数据源爬取真实薪资数据。"""
 

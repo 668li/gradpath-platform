@@ -15,7 +15,6 @@
 from sqlalchemy.orm import Session
 
 from app.crawlers.base_crawler import BaseCrawler
-from app.crawlers.registry import register_crawler
 
 # 预置暗知识数据 — 字段顺序：
 # (stage, category, title, content, importance, common_misconception,
@@ -29569,7 +29568,7 @@ _DARK_KNOWLEDGE_DATA: list[tuple] = [
 ]
 
 
-@register_crawler
+# @register_crawler  # @RETIRED 2026-09-06 对抗审计第一批：2.9 万行纯字面量零 HTTP 请求的预置源，暗知识改由用户回传/经验沉淀；文件保留不删（红线）
 class DarkKnowledgeCrawler(BaseCrawler):
     """考研暗知识爬虫 — 从多个来源爬取考研全流程盲区知识。"""
 

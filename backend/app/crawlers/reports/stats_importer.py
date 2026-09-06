@@ -13,7 +13,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.crawlers.base_crawler import BaseCrawler
-from app.crawlers.registry import register_crawler
 from app.models.market_data import MarketData
 
 SYSTEM_USER_ID = UUID("00000000-0000-0000-0000-000000000000")
@@ -253,7 +252,7 @@ _STATS_DATA: list[tuple] = [
 ]
 
 
-@register_crawler
+# @register_crawler  # @RETIRED 2026-09-06 对抗审计第一批：fetch 返回预置数据（注释自述"未来可扩展"未兑现），真宏观数据已由 stats_gongbao_scraper 真抓承担；文件保留不删
 class StatsImporter(BaseCrawler):
     """教育部 / 国家统计局统计数据导入器 — 6 维度 × 10 条 = 60 条预置数据。"""
 
