@@ -38,6 +38,12 @@ fi
 # 执行备份
 if ! pg_dump -Fc ${DB_SOURCE} -f "${BACKUP_FILE}"; then
   log "ERROR: pg_dump 失败"
+  # 备份失败必须触达（此前每日失败最长 7 天无人知晓）
+  if [[ -n "${ALERT_WEBHOOK:-}" ]]; then
+    curl -s -m 10 -X POST "${ALERT_WEBHOOK}" \
+      -H "Content-Type: application/json" \
+      -d "{\"title\":\"❌ 数据库每日备份失败\",\"desp\":\"pg_dump 失败，见 ${LOG_FILE}\"}" >/dev/null || true
+  fi
   exit 1
 fi
 
@@ -48,6 +54,11 @@ log "备份完成: ${BACKUP_FILE} (${FILE_SIZE})"
 # 验证备份文件可被读取（完整性检查）
 if ! pg_restore -l "${BACKUP_FILE}" >/dev/null 2>&1; then
   log "ERROR: 备份文件完整性校验失败"
+  if [[ -n "${ALERT_WEBHOOK:-}" ]]; then
+    curl -s -m 10 -X POST "${ALERT_WEBHOOK}" \
+      -H "Content-Type: application/json" \
+      -d "{\"title\":\"❌ 数据库每日备份失败\",\"desp\":\"pg_restore -l 校验未通过: ${BACKUP_FILE}\"}" >/dev/null || true
+  fi
   exit 1
 fi
 log "备份文件完整性校验通过"

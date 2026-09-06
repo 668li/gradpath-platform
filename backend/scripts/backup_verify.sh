@@ -80,9 +80,10 @@ log "=== 验证完成: ${total_checks} 项检查, ${failures} 项失败 ==="
 
 if [[ ${failures} -gt 0 ]]; then
   # 触发 webhook 告警（可选）
+  # Server酱只认 title/desp 字段（此前发 event JSON 到不了微信）
   if [[ -n "${ALERT_WEBHOOK}" ]]; then
     curl -fsS -m 10 -X POST -H 'Content-Type: application/json' \
-      -d "{\"event\":\"backup_verify_failed\",\"failures\":${failures},\"total\":${total_checks},\"timestamp\":\"$(date -Iseconds)\"}" \
+      -d "{\"title\":\"❌ 备份周检失败 ${failures}/${total_checks}\",\"desp\":\"backup_verify ${failures}/${total_checks} 项失败，详见 /var/log/backup_verify.log\",\"timestamp\":\"$(date -Iseconds)\"}" \
       "${ALERT_WEBHOOK}" >/dev/null 2>&1 || true
     log "已触发告警 webhook"
   fi

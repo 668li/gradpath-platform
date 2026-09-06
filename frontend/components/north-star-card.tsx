@@ -6,7 +6,7 @@
  * 非管理员请求返回 403 → 本组件静默不渲染（前端无需感知角色）。
  */
 
-import useSWR from "swr";
+import { useApi } from "@/lib/api/swr-config";
 
 interface NorthStarSummary {
   condition_completion: { met: number; total: number; ratio: number | null };
@@ -29,10 +29,8 @@ const pct = (r: number | null | undefined) =>
   r === null || r === undefined ? "—" : `${(r * 100).toFixed(1)}%`;
 
 export function NorthStarCard() {
-  const { data, error } = useSWR<NorthStarSummary>("/api/north-star/summary", {
-    refreshInterval: 0,
-    revalidateOnFocus: false,
-  });
+  // useApi 走项目统一 fetcher（带鉴权头与错误规范化）；非管理员 403 → error 置位 → 不渲染
+  const { data, error } = useApi<NorthStarSummary>("/api/north-star/summary");
 
   if (error || !data) return null; // 非管理员 / 加载前不渲染
 

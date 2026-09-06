@@ -45,18 +45,25 @@ def _weekly_series(db: Session) -> list[dict]:
     since = datetime.now(timezone.utc) - timedelta(weeks=_WEEKS)
 
     rows = (
-        db.query(PathComparison.created_at, PathComparison.reviewed_at)
-        .filter(PathComparison.created_at >= since)
-        .all()
+        db.query(PathComparison.created_at).filter(PathComparison.created_at >= since).all()
     )
     created_by_week: dict[str, int] = {}
-    responded_by_week: dict[str, int] = {}
-    for created, reviewed in rows:
+    for (created,) in rows:
         wk = _week_start(created)
         created_by_week[wk] = created_by_week.get(wk, 0) + 1
-        if reviewed is not None:
-            rwk = _week_start(reviewed)
-            responded_by_week[rwk] = responded_by_week.get(rwk, 0) + 1
+
+    # 回传桶按 reviewed_at 独立取窗：老决策（8 周前创建）上周回传也要计入，
+    # 否则产品越久跑、周趋势的 responded 越低于真实回传活动（对抗审查 P1-2）
+    review_rows = (
+        db.query(PathComparison.reviewed_at)
+        .filter(PathComparison.reviewed_at.isnot(None))
+        .filter(PathComparison.reviewed_at >= since)
+        .all()
+    )
+    responded_by_week: dict[str, int] = {}
+    for (reviewed,) in review_rows:
+        rwk = _week_start(reviewed)
+        responded_by_week[rwk] = responded_by_week.get(rwk, 0) + 1
 
     cond_rows = (
         db.query(UserConditionStatus.created_at, UserConditionStatus.status)
