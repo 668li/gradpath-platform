@@ -34,7 +34,13 @@ def _review_url(item: dict) -> str:
     dept = item.get("department") or ""
     major = item.get("major_name") or ""
     key = "|".join(part for part in (dept, major) if part) or school
-    return f"https://yz.chsi.com.cn#yanzhao:{school}:{key}"
+    # 合规红线（对抗审计 F2 修法④）：禁止伪造研招网域名 URL——伪官方域名
+    # 等于自证信任标签。优先挂学校官方研招页（可溯源），映射不到用
+    # curated:// 内部 scheme（诚实标注人工策展来源，credibility 落 model_inferred）。
+    homepage = _SCHOOL_SOURCE_URLS.get(school)
+    if homepage:
+        return f"{homepage}#yanzhao:{school}:{key}"
+    return f"curated://yanzhao/{school}/{key}"
 
 
 def _to_queue_item(item: dict) -> dict:

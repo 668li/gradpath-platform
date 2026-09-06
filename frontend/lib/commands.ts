@@ -41,14 +41,6 @@ export const commands: Command[] = [
     keywords: ["决策", "中心", "decision", "center"],
     icon: "Target",
   },
-  {
-    id: "intel",
-    title: "情报中心",
-    subtitle: "核心",
-    href: "/intel",
-    keywords: ["情报", "intel", "信息"],
-    icon: "Search",
-  },
 
   // ────────────────────────── 决策 ──────────────────────────
   {
@@ -279,14 +271,6 @@ export const commands: Command[] = [
     keywords: ["学习", "方法", "learning", "method"],
     icon: "BookOpen",
   },
-  {
-    id: "learning-resources",
-    title: "学习资源",
-    subtitle: "知识",
-    href: "/learning-resources",
-    keywords: ["学习", "资源", "resource"],
-    icon: "BookOpen",
-  },
 
   // ────────────────────────── 个人 ──────────────────────────
   {
@@ -354,14 +338,6 @@ export const commands: Command[] = [
     href: "/kaoyan/compare",
     keywords: ["对比", "院校", "compare", "比较"],
     icon: "GitCompare",
-  },
-  {
-    id: "kaoyan-predict",
-    title: "考研预测",
-    subtitle: "考研",
-    href: "/kaoyan/predict",
-    keywords: ["预测", "predict", "考研", "分数线"],
-    icon: "TrendingUp",
   },
   {
     id: "kaoyan-strategy",

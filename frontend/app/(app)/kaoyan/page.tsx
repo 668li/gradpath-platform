@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { Suspense } from "react";
 import {
   Network,
-  Target,
   UserCheck,
   BookOpen,
   Calendar,
@@ -24,7 +23,6 @@ import { LoadingState } from "@/components/ui/empty";
 const tabs = [
   { id: "schools", label: "院校情报", href: "/kaoyan/schools", icon: School },
   { id: "compare", label: "院校对比", href: "/kaoyan/compare", icon: Network },
-  { id: "predict", label: "录取预测", href: "/kaoyan/predict", icon: Target },
   { id: "mentors", label: "导师情报", href: "/kaoyan/mentors", icon: UserCheck },
   { id: "dark-knowledge", label: "暗知识", href: "/kaoyan/dark-knowledge", icon: Lightbulb },
   { id: "strategy", label: "备考策略", href: "/kaoyan/strategy", icon: BookOpen },
@@ -138,7 +136,6 @@ function getTabDescription(tabId: string): string {
   const descriptions: Record<string, string> = {
     schools: "206所院校数据，分数线、招生计划、录取率一目了然",
     compare: "多维度对比院校，选出最适合你的学校",
-    predict: "基于历年数据，智能预测录取概率",
     mentors: "289位导师信息，选对导师少走弯路",
     "dark-knowledge": "1000+条考研暗知识，那些没人告诉你的真相",
     strategy: "个性化推荐，高效备考策略",

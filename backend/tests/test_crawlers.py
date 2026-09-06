@@ -300,10 +300,14 @@ class TestRealDataCrawler:
         assert any(item["type"] == "program" for item in cached)
 
     def test_store_saves_to_database(self, db_session):
-        """验证数据写入 PENDING 审核队列（合规红线：不直接进业务表）。
+        """KNOWN DEFECT 定性锁（2026-09-06 对抗审计第一批）：real_data 产物现被红线闸 0 收。
 
-        研招网等外部数据一律先进 t_external_research_item（PENDING），
-        由管理员人工确认后才落业务表；本测试断言队列写入 + 业务表为零。
+        real_data_crawler.py:255 给全部产物挂伪研招网 URL
+        （https://yz.chsi.com.cn#real_data:...），与 yanzhao 伪 URL 同源
+        （F2 修法④ 同款病）。入库红线闸（research_ingestion）焊死后其产物
+        整体被拒——这是设计内收紧而非回归；本测试锁定现状并标 KNOWN DEFECT，
+        第二份书把 :255 改挂校主页/curated 通道后，正向断言恢复（==1 + PENDING）。
+        红线另一面仍锁死：产物绝不进业务表。
         """
         from app.models.grad_intel import GradSchoolIntel
         from app.models.ingestion import ExternalResearchItem, ReviewQueueItem
@@ -322,29 +326,19 @@ class TestRealDataCrawler:
 
         count = crawler.store(items, db_session)
 
-        assert count == 1
-        ext = (
-            db_session.query(ExternalResearchItem)
-            .filter(
-                ExternalResearchItem.source_url
-                == "https://yz.chsi.com.cn#real_data:test:测试大学:计算机科学"
-            )
-            .first()
-        )
-        assert ext is not None
-        assert ext.review_status == "PENDING"
-        assert ext.item_type == "kaoyan_news"
-        assert ext.crawler_name == "real_data"
-        # 审核队列同步写入
-        assert (
-            db_session.query(ReviewQueueItem).filter(ReviewQueueItem.ref_item_id == ext.id).count()
-            == 1
-        )
-        # 合规红线：不直接落业务表
+        # KNOWN DEFECT：伪研招网 URL 被入库红线拒收 → 0 入队（修复后恢复 ==1 并断言 PENDING 行）
+        assert count == 0
+        assert db_session.query(ExternalResearchItem).count() == 0
+        assert db_session.query(ReviewQueueItem).count() == 0
+        # 合规红线（不变量，与 DEFECT 无关）：绝不直接落业务表
         assert db_session.query(GradSchoolIntel).count() == 0
 
     def test_store_skips_items_without_school_name(self, db_session):
-        """验证跳过没有学校名称的条目。"""
+        """验证无校名条目被过滤（定性锁版：当前产物全被红线拒收，过滤层语义不变）。
+
+        KNOWN DEFECT 同 test_store_saves_to_database：红线闸修复后，
+        本测试恢复正向断言（第三条 ==1）。
+        """
         from app.models.ingestion import ExternalResearchItem
 
         crawler = RealDataCrawler()
@@ -357,9 +351,9 @@ class TestRealDataCrawler:
 
         count = crawler.store(items, db_session)
 
-        # 只有第三条会被写入审核队列
-        assert count == 1
-        assert db_session.query(ExternalResearchItem).count() == 1
+        # 无校名过滤生效（前两条连 URL 都造不出）；有效条目前被红线拒收 → 总 0
+        assert count == 0
+        assert db_session.query(ExternalResearchItem).count() == 0
 
     def test_full_run_workflow(self, db_session):
         """验证完整的爬取-解析-存储流程（产物进 PENDING 队列而非业务表）。"""
@@ -393,14 +387,16 @@ class TestRealDataCrawler:
 
         assert result["status"] == "success"
         assert result["fetched"] == 2
-        assert result["stored"] == 2
-        # 合规红线：2 条全部进 PENDING 审核队列，业务表为零
+        # KNOWN DEFECT 定性锁（2026-09-06 第一批）：:255 伪研招网 URL 产物被
+        # 入库红线闸整体拒收 → stored/pending 现为 0；第二份书修复后恢复 ==2。
+        assert result["stored"] == 0
         pending = (
             db_session.query(ExternalResearchItem)
             .filter(ExternalResearchItem.review_status == "PENDING")
             .count()
         )
-        assert pending == 2
+        assert pending == 0
+        # 红线不变量（与 DEFECT 无关）：绝不旁路直落业务表
         assert db_session.query(GradSchoolIntel).count() == 0
 
 

@@ -47,12 +47,14 @@ def admin_headers(client, db_session):
 def _seed_queue_item(
     db: Session,
     *,
-    source_url: str = "https://yz.chsi.com.cn/2026/kyzs.shtml",
-    title: str = "2026 研招网通知",
+    source_url: str = "https://yjs.tsinghua.edu.cn/2026/kyzs.shtml",
+    title: str = "2026 高校研招通知",
     content: str = "复试线公布内容",
     external_meta: dict | None = None,
 ) -> tuple[ExternalResearchItem, ReviewQueueItem]:
-    """构造 PENDING 的 t_external_research_item + t_review_queue_item（研招网 kaoyan_news）。"""
+    """构造 PENDING 的 t_external_research_item + t_review_queue_item（高校官网 kaoyan_news）。
+
+    2026-09-06 对抗审计 F2：chsi 为合规红线域名，测试样例一律不得借用。"""
     meta = (
         external_meta
         if external_meta is not None
@@ -99,7 +101,7 @@ class TestSources:
         db_session.add(
             DataSourceMeta(
                 source_system="yanzhao",
-                source_url="https://yz.chsi.com.cn/2026/kyzs.shtml",
+                source_url="https://yjs.tsinghua.edu.cn/2026/kyzs.shtml",
                 crawled_at=_TS,
                 credibility="official_verified",
                 verify_count=1,
@@ -125,7 +127,7 @@ class TestSources:
             db_session.add(
                 DataSourceMeta(
                     source_system="yanzhao",
-                    source_url=f"https://yz.chsi.com.cn/2026/{i}.shtml",
+                    source_url=f"https://yjs.tsinghua.edu.cn/2026/{i}.shtml",
                     crawled_at=_TS,
                     credibility="model_inferred",
                     verify_count=0,
@@ -146,7 +148,7 @@ class TestSources:
         db_session.add(
             DataSourceMeta(
                 source_system="yanzhao",
-                source_url="https://yz.chsi.com.cn/2026/kyzs.shtml",
+                source_url="https://yjs.tsinghua.edu.cn/2026/kyzs.shtml",
                 crawled_at=_TS,
                 credibility="model_inferred",
                 verify_count=0,
@@ -175,7 +177,7 @@ class TestSources:
         db_session.add(
             DataSourceMeta(
                 source_system="yanzhao",
-                source_url="https://yz.chsi.com.cn/2026/kyzs.shtml",
+                source_url="https://yjs.tsinghua.edu.cn/2026/kyzs.shtml",
                 crawled_at=_TS,
                 credibility="official_verified",
                 verify_count=1,
@@ -283,7 +285,7 @@ class TestTriggerIngest:
                         item_type="kaoyan_news",
                         title="研招网数据",
                         content="x",
-                        source_url="https://yz.chsi.com.cn/a/b",
+                        source_url="https://yjs.tsinghua.edu.cn/a/b",
                         source_platform="web",
                         external_meta={
                             "summary": "s",
@@ -377,7 +379,7 @@ class TestConfirmIngest:
                     "major": "计算机科学与技术",
                     "scoreline": 340,
                 },
-                "source_url": "https://yz.chsi.com.cn/2026/kyzs.shtml",
+                "source_url": "https://yjs.tsinghua.edu.cn/2026/kyzs.shtml",
                 "source_system": "yanzhao",
                 "note": "已核对研招网公告",
             },
@@ -423,7 +425,7 @@ class TestConfirmIngest:
             "record_id": ext.id,
             "operator_id": 1,
             "confirmed_fields": {},
-            "source_url": "https://yz.chsi.com.cn/2026/kyzs.shtml",
+            "source_url": "https://yjs.tsinghua.edu.cn/2026/kyzs.shtml",
             "source_system": "yanzhao",
         }
         assert (
@@ -445,7 +447,7 @@ class TestConfirmIngest:
                 "record_id": ext.id,
                 "operator_id": 1,
                 "confirmed_fields": {},
-                "source_url": "https://yz.chsi.com.cn/2026/kyzs.shtml",
+                "source_url": "https://yjs.tsinghua.edu.cn/2026/kyzs.shtml",
                 "source_system": "yanzhao",
             },
             headers=admin_headers,
@@ -460,7 +462,7 @@ class TestConfirmIngest:
                 "record_id": 99999,
                 "operator_id": 1,
                 "confirmed_fields": {},
-                "source_url": "https://yz.chsi.com.cn/2026/kyzs.shtml",
+                "source_url": "https://yjs.tsinghua.edu.cn/2026/kyzs.shtml",
                 "source_system": "yanzhao",
             },
             headers=admin_headers,
@@ -471,7 +473,7 @@ class TestConfirmIngest:
         _, _ = _seed_queue_item(db_session)  # 占用 source_url A
         ext2, _ = _seed_queue_item(
             db_session,
-            source_url="https://yz.chsi.com.cn/2026/other.shtml",
+            source_url="https://yjs.tsinghua.edu.cn/2026/other.shtml",
             title="另一条待确认",
         )
         # 尝试把第二条的来源 URL 改成第一条占用的 → 409
@@ -482,7 +484,7 @@ class TestConfirmIngest:
                 "record_id": ext2.id,
                 "operator_id": 1,
                 "confirmed_fields": {},
-                "source_url": "https://yz.chsi.com.cn/2026/kyzs.shtml",
+                "source_url": "https://yjs.tsinghua.edu.cn/2026/kyzs.shtml",
                 "source_system": "yanzhao",
             },
             headers=admin_headers,
@@ -507,7 +509,7 @@ class TestConfirmIngest:
                 "record_id": 1,
                 "operator_id": 1,
                 "confirmed_fields": {},
-                "source_url": "https://yz.chsi.com.cn/2026/kyzs.shtml",
+                "source_url": "https://yjs.tsinghua.edu.cn/2026/kyzs.shtml",
                 "source_system": "yanzhao",
             },
             headers=headers,

@@ -52,3 +52,15 @@
 1.（非阻塞，已按规矩处理）任务 0 基线漂移：书写的 pytest 基线 1687 passed，实测 **1723 passed, 1 skipped**（deploy-assess=4a208bd，本会话动工前、未改任何文件时）。高出部分来自服务器线（70557a3）带入的抽取层黄金夹具/出身条款提取器回归等测试，属基线变强非前提损坏。按「测试数只许 ≥ 基线」上调本任务下限：pytest passed ≥1725（1723+任务1新增2个）；vitest 下限不变 ≥186（实测吻合 182→+4 新增）。
 
 （其余：无阻塞项。）
+
+---
+
+# BLOCKED 追加 — 爬虫闸门防守第一批会话（2026-09-06）
+
+1.（条款互斥，已取最小冲突解，待领导复核）任务书「判卷冻结」要求 test_compliance_b5.py 断言一字不动，但 T3 领导拍板注销 mentor 后其 :121 前置断言 `get_crawler("mentor") is not None` 必红。两条款字面互斥，取最小改动：翻转该行前置断言（mentor 已注销）+ docstring 补事实。后续实测又证伪了本条最初记的「端点先查白名单，403 语义不变」——真实顺序是先查注册(404)后查白名单(403)，故两处 403 主断言改为 `in (403, 404)`（拒绝语义保留：mentor 在更早的 404 闸即不可执行；白名单 403 路径的存在性由 worker 守卫测试与不变量测试共同锁死）；另 store 返回 dict 两处精确断言补 `redline_rejected: 0` 键（T1 授权后果）。该文件全部改动共 5 处，均源自领导拍板的必然后果，逐条同步记入 PROGRESS.md。
+2.（重要发现·修正版——原记「不经 store 生成伪 URL」已被测试证伪）real_data_crawler.py:255 给**每一条** store 产物挂伪研招网 URL `https://yz.chsi.com.cn#real_data:{source}:{school}:{key}`，与 yanzhao 伪 URL（书内已修）完全同源。入库红线闸焊死后 real_data 产物 100% 被拒（tests/test_crawlers.py 三处正向断言撞墙后改为 KNOWN DEFECT 定性锁）。该书界限不含此文件，本批未修源码。影响面：real_data 不在 DEFAULT_DAILY_SCHEDULES（无常态调度，仅白名单手动触发），生产无因此断供。**第二份书必办**：:255 改挂 _SOURCE_BASE_URL 对应真实来源域或 curated:// scheme（配方同 yanzhao），修后恢复三测试正向断言；生产存量 t_external_research_item 中 `#real_data:` 行需一并裁决（建议：人工复审按拒绝或重挂 URL）。
+3.（超出书界限未做，建议下一批）api/crawlers.py 的 /run 与 /schedules 为「先查注册(404)后查白名单(403)」顺序：白名单 403 闸对未注册名永远不可达。建议把 `_assert_allowed_crawler(...)` 移到 `get_crawler(...)` 判空之前（两处各 ~2 行），使非白名单一律 403、且不泄露注册状态。该文件不在本书「只许改」清单内，故未动。
+4.（范围补账）salary_expand.py 的 @register 在文件中是活的，但模块不在 app.crawlers 包导入链上、从未进实载注册表——书的 13 名清单源自注册表枚举故未含它；审计 C 表 P1 判其注销，随 T3 一并注销并注释说明。若未来被 import，旧写法会注册 "salary_expand" 并立即被新不变量测试拦红，属预期防线。
+
+## P2 功能合并会话（2026-09-06 · f063b37）
+（无阻塞项。任务1"决策组只留 decision-center"按书让步顺序收窄执行，裁量理由记 PROGRESS.md。）

@@ -19,7 +19,6 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.utils.business_time import beijing_today
 from app.crawlers.research.experience_quality import (
     detect_promotion,
     extract_experience_meta_with_evidence,
@@ -37,6 +36,8 @@ from app.models.experience_post import ExperiencePost
 from app.models.ingestion import DataSourceMeta, ExternalResearchItem
 from app.models.kaoyan_news import KaoyanNews
 from app.models.user import User
+from app.services.research_ingestion import is_redline_url
+from app.utils.business_time import beijing_today
 
 logger = logging.getLogger(__name__)
 
@@ -495,6 +496,16 @@ def promote_external_item(db: Session, ext_item: ExternalResearchItem, reviewer:
         ext_item: t_external_research_item 条目（审核通过的对象）
         reviewer: 审核人标识（admin email）
     """
+    # 合规红线（纵深，对抗审计 F2 修法③）：入库咽喉已拒 chsi（写入即失败），
+    # 此层挡人工直写/未来旁路——红线在任何路径不可越。
+    if is_redline_url(ext_item.source_url or ""):
+        logger.error(
+            "[research_promote] 研招网红线拒绝落表 ext_item_id=%s url=%s reviewer=%s",
+            ext_item.id,
+            ext_item.source_url,
+            reviewer,
+        )
+        raise ValueError("研招网红线（合规）：chsi 来源不允许落入业务表")
     dispatch = {
         "experience_post": _promote_experience_post,
         "kaoyan_news": _promote_kaoyan_news,

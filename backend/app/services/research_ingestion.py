@@ -27,15 +27,25 @@ _CORE_FIELDS = {"title", "content", "source_url", "source_platform"}
 QUALITY_MIN_SCORE = 35
 
 # credibility 分级规则（P2）：官方域名 → official_verified；社区平台 → user_reported；其余 → model_inferred
-_OFFICIAL_DOMAINS = ("edu.cn", "yz.chsi.com.cn", "gov.cn")
+# 合规红线（2026-09-06 对抗审计 F2）：yz.chsi.com.cn 是禁入站，绝不允许出现在信任域名表。
+_OFFICIAL_DOMAINS = ("edu.cn", "gov.cn")
 _COMMUNITY_PLATFORMS = {"bilibili", "v2ex", "github", "zhihu", "tieba"}
+
+# 研招网红线：不入库、不分发（入库唯一咽喉写入即拒，可审计计数；promote 层复用做纵深）。
+_REDLINE_HOSTS = ("yz.chsi.com.cn",)
+
+
+def is_redline_url(source_url: str) -> bool:
+    """URL 主机是否落在红线域名（含子域）。入库咽喉 + promote 纵深共用。"""
+    hostname = (urlparse(source_url).hostname or "").lower()
+    return any(hostname == h or hostname.endswith("." + h) for h in _REDLINE_HOSTS)
 
 
 def _infer_credibility(source_url: str, source_platform: str) -> str:
     """按来源规则分级可信度，替代硬编码 model_inferred。
 
     规则（合规红线：外部数据须来源标注）：
-    - 官方域名（edu.cn / yz.chsi.com.cn / gov.cn，含子域）→ official_verified
+    - 官方域名（edu.cn / gov.cn，含子域）→ official_verified
     - 社区平台（bilibili / v2ex / github / zhihu / tieba，平台名或 URL 域名命中）→ user_reported
     - 其余 → model_inferred（默认，需人工/模型核验后才可信任）
     """
@@ -141,10 +151,11 @@ def store_research_items(
         run_id: CrawlerRun.id（UUID 字符串）
 
     Returns:
-        {"inserted": int, "duplicated": int}
+        {"inserted": int, "duplicated": int, "redline_rejected": int}
     """
     inserted = 0
     duplicated = 0
+    redline_rejected = 0
     try:
         # 提纯基线：仅 kaoyan_news 启用（库内已收录条目的 simhash + 归一化 URL，批次内增量比对）
         kaoyan_hashes: list[int] = []
@@ -160,6 +171,16 @@ def store_research_items(
             if len(source_url) > 500:
                 source_url = source_url[:500]
                 logger.warning("[research_ingestion] source_url 超长已截断: %s...", source_url[:50])
+
+            # 合规红线：研招网(chsi)禁入，入库唯一咽喉即拒（对抗审计 F2 修法②）
+            if is_redline_url(source_url):
+                redline_rejected += 1
+                logger.warning(
+                    "[research_ingestion] 研招网红线拒收（不落库）: %s (crawler=%s)",
+                    source_url[:80],
+                    crawler_name,
+                )
+                continue
 
             # 幂等去重：source_url 已存在 → duplicated+1 跳过
             existing = (
@@ -240,7 +261,11 @@ def store_research_items(
             inserted += 1
 
         db.commit()
-        return {"inserted": inserted, "duplicated": duplicated}
+        return {
+            "inserted": inserted,
+            "duplicated": duplicated,
+            "redline_rejected": redline_rejected,
+        }
     except Exception:
         db.rollback()
         logger.exception("[research_ingestion] 入库失败，已回滚")

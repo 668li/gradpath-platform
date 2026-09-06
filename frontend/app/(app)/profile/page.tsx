@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { UserCircle, GraduationCap, Target, Star, Save, Download, FileText, FileSpreadsheet, ClipboardList, Library, Award, Bell, Search } from "lucide-react";
+import { UserCircle, GraduationCap, Target, Star, Save, Download, FileText, FileSpreadsheet, ClipboardList, Award, Bell, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { careerProfileApi, exportV2Api, assessmentApi, useApi, useInvalidate } from "@/lib/api";
 import { LoadingState, EmptyState } from "@/components/ui/empty";
@@ -37,12 +37,11 @@ const SKILL_LABELS: { key: keyof Pick<CareerProfile, "technical_skill" | "commun
   { key: "creativity_skill", label: "创造力" },
 ];
 
-type ProfileTab = "profile" | "decisions" | "learning-resources" | "achievements" | "notifications" | "search";
+type ProfileTab = "profile" | "decisions" | "achievements" | "notifications" | "search";
 
 const profileTabs: { id: ProfileTab; label: string; icon: typeof UserCircle; href: string; color: string }[] = [
   { id: "profile", label: "职业画像", icon: UserCircle, href: "/profile", color: "text-brand-600" },
   { id: "decisions", label: "决策记录", icon: ClipboardList, href: "/decisions", color: "text-blue-700" },
-  { id: "learning-resources", label: "学习资源", icon: Library, href: "/learning-resources", color: "text-green-700" },
   { id: "achievements", label: "成就徽章", icon: Award, href: "/achievements", color: "text-amber-700" },
   { id: "notifications", label: "通知", icon: Bell, href: "/notifications", color: "text-red-700" },
   { id: "search", label: "搜索", icon: Search, href: "/search", color: "text-purple-700" },

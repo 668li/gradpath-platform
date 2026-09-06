@@ -514,13 +514,13 @@ class TestCredibilityInference:
     """P2：credibility 分级规则 — 官方域名/社区平台/其余三级。"""
 
     def test_official_domain(self, db_session):
-        """官方域名（含子域）→ official_verified。"""
+        """官方域名（edu.cn / gov.cn，含子域）→ official_verified。
+
+        2026-09-06 对抗审计 F2：yz.chsi.com.cn 已从信任域名表除名并升为红线，
+        chsi 相关断言由 tests/test_chsi_redline_gate.py 锁死，此处样例改用高校域。
+        """
         from app.services.research_ingestion import _infer_credibility, store_research_items
 
-        assert (
-            _infer_credibility("https://yz.chsi.com.cn/2026/kyzc.shtml", "web")
-            == "official_verified"
-        )
         assert _infer_credibility("https://kaoyan.xxx.edu.cn/news/1", "web") == "official_verified"
         assert (
             _infer_credibility("https://www.gov.cn/zhengce/2026.htm", "web") == "official_verified"
@@ -531,7 +531,11 @@ class TestCredibilityInference:
             crawler_name="web_article_research",
             item_type="kaoyan_news",
             items=[
-                {"title": "研招网通知", "content": "x", "source_url": "https://yz.chsi.com.cn/a/b"}
+                {
+                    "title": "高校研究生院通知",
+                    "content": "x",
+                    "source_url": "https://yjs.xxx.edu.cn/a/b",
+                }
             ],
             source_platform="web",
             run_id="00000000000000000000000000000000",
@@ -539,7 +543,7 @@ class TestCredibilityInference:
         assert result["inserted"] == 1
         ext = (
             db_session.query(ExternalResearchItem)
-            .filter(ExternalResearchItem.source_url == "https://yz.chsi.com.cn/a/b")
+            .filter(ExternalResearchItem.source_url == "https://yjs.xxx.edu.cn/a/b")
             .one()
         )
         assert ext.credibility == "official_verified"
