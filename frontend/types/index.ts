@@ -676,6 +676,9 @@ export interface Message {
   content: string;
   skill_used: string | null;
   context_snapshot: Record<string, unknown>;
+  /** 站内数据搜索层带回的真实数据来源（发送响应直带/历史从 context_snapshot.data_sources 恢复） */
+  agent_sources?: AgentSourceItem[];
+  agent_confidence?: number;
   created_at: string;
 }
 
@@ -688,6 +691,19 @@ export interface SendMessageResponse {
   content: string;
   skill_used: string;
   career_plan: string | null;
+  /** 学习计划师落库的 7 天微行动计划 ID（micro-actions 闭环入口） */
+  micro_action_plan?: string | null;
+  /** 站内数据搜索层带回的真实数据来源（前端气泡「参考来源」标签） */
+  agent_sources?: AgentSourceItem[] | null;
+  agent_confidence?: number | null;
+}
+
+/** 站内数据来源条目（对应后端 SendMessageResponse.agent_sources） */
+export interface AgentSourceItem {
+  type: "db" | "web";
+  title: string;
+  content?: string;
+  url?: string;
 }
 
 // 修复: 此处原为 `interface SkillInfo`, 与 L1805 处 "Skill 管理" 模块的 SkillInfo 同名,
@@ -744,7 +760,7 @@ export interface ReminderItem {
 
 // ===== 职业测评 =====
 // 测评类型
-export type AssessmentType = "holland" | "mbti" | "big_five" | "disc";
+export type AssessmentType = "holland" | "mbti" | "big_five" | "big_five_short" | "disc";
 
 // 测评选项
 export interface QuestionOption {
@@ -786,12 +802,13 @@ export interface AssessmentInterpretInterpretation {
 export interface AssessmentInterpretResponse {
   has_assessment: boolean;
   message?: string;
+  /** 2026-09-05 倒置后：无测评时为 null，但响应仍含 paths/recommendation 等完整结构 */
   assessment?: {
     type: string;
     result_code: string | null;
     scores: Record<string, number>;
     result_summary: string | null;
-  };
+  } | null;
   profile: Record<string, unknown> | null;
   interpretation?: AssessmentInterpretInterpretation;
   /** 三路决策指标（与决策引擎同构，可直接渲染 PathResultCard） */

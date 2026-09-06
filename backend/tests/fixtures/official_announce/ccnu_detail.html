@@ -1,0 +1,856 @@
+﻿<!DOCTYPE html>
+<HTML lang="en"><HEAD><TITLE>关于做好2026年下半年学位论文送审与学位授予相关工作的通知-华中师范大学研究生院（专业学位管理中心）</TITLE><meta name="pageType" content="3">
+<meta name="pageTitle" content="关于做好2026年下半年学位论文送审与学位授予相关工作的通知">
+<META Name="keywords" Content="华中师范大学研究生院（专业学位管理中心）,学位授予工作,学位论文,送审,学位授予" />
+<META Name="description" Content="根据学校整体工作的安排，现将我校2026年下半年研究生学位论文送审和学位授予等相关工作安排通知如下" />
+
+
+
+
+
+<META charset="UTF-8">
+<META content="IE=edge" http-equiv="X-UA-Compatible">
+<META name="viewport" content="width=device-width, initial-scale=1.0"><LINK rel="stylesheet" href="../../style/public.css"><LINK rel="stylesheet" href="../../style/ny.css"><script src="../../js/jquery.js"></script><script src="../../js/public.js"></script>
+<!--Announced by Visual SiteBuilder 9-->
+<script language="javascript" src="../../_sitegray/_sitegray.js"></script>
+<!-- CustomerNO:7765626265723230747f475c50575742000400034456 -->
+<link rel="stylesheet" type="text/css" href="../../content.vsb.css" />
+<script type="text/javascript" src="/system/resource/js/counter.js"></script>
+<script type="text/javascript">_jsq_(1054,'/content.jsp',6923,1925099496)</script>
+</HEAD>
+<BODY>
+  <DIV id="main-top">
+<DIV class="header">
+<DIV class="head px1400">
+<DIV class="head-l"><A href="">
+<!-- 网站logo图片地址请在本组件"内容配置-网站logo"处填写 -->
+<a href="../../index.htm" title="研究生院新站"><img src="../../images/newlogo.png" width="444" height="76" border="0" alt="研究生院新站" title="研究生院新站"></a></A></DIV>
+<DIV class="head-r">
+<DIV class="link"><script language="javascript" src="/system/resource/js/dynclicks.js"></script><script language="javascript" src="/system/resource/js/openlink.js"></script>
+ <a href="http://www.ccnu.edu.cn/">学校主站</a>
+ 
+
+
+</DIV>
+
+
+
+
+<DIV class="search">
+
+
+<script language="javascript" src="/system/resource/js/base64.js"></script><script language="javascript" src="/system/resource/js/jquery/jquery-latest.min.js"></script><script language="javascript" src="/system/resource/vue/vue.js"></script><script language="javascript" src="/system/resource/vue/bluebird.min.js"></script><script language="javascript" src="/system/resource/vue/axios.js"></script><script language="javascript" src="/system/resource/vue/polyfill.js"></script><script language="javascript" src="/system/resource/vue/token.js"></script><LINK href="/system/resource/vue/static/element/index.css" type="text/css" rel="stylesheet"><script language="javascript" src="/system/resource/vue/static/element/index.js"></script><script language="javascript" src="/system/resource/vue/static/public.js"></script><style>
+    #appu2 .qwss{
+        height: 31px;
+        font-size: 12px;
+        min-width: 190px;
+        max-width: 600px;
+        width: 60%;
+        margin-top: -15px;
+        outline: none;
+        padding-left: 10px;
+        border-radius: 2px;
+        border: 1px solid #e4e7ed;}
+    #appu2 .tj{
+        padding-left: 6px;
+        letter-spacing: 5px;
+        color: white;
+        min-width: 53px;
+        max-width: 150px;
+        height: 32px;
+        border: 0;
+        border-radius: 2px;
+        background-color: #1890FF;
+        position: relative;
+        top: 1px;
+        width: 20%;
+        margin-top: -15px;}
+</style>
+<div id="divu2"></div>
+<script type="text/html" id="htmlu2">
+    <div id="appu2">
+        <div v-if="!isError">
+        <input type="text" placeholder="请输入关键词…" autocomplete=off v-model=query.keyWord @keyup.enter="onSubmit">
+                        <input type="image" src="../../images/search.png" v-on:click="onSubmit()">
+         
+        </div>
+        <div v-if="isError" style="color: #b30216; font-size:18px;text-align: center;padding:20px;">
+            应用维护中！
+        </div>
+    </div>
+</script>
+<script>
+    $("#divu2").html($("#htmlu2").text());
+</script>
+<script>
+    var appOwner = "1925099496";
+    var token = gettoken(10);
+    var urlPrefix = "/aop_component/";
+
+    jQuery.support.cors = true;
+    $.ajaxSetup({
+        beforeSend: function (request, settings) {
+            request.setRequestHeader("Authorization", token);
+            request.setRequestHeader("owner", appOwner);
+        }
+    });
+
+    new Vue({
+        el: "#appu2",
+        data: function () {
+            return {
+                query: {
+                    keyWord: "",//搜索关键词
+                    owner: appOwner,
+                    token: token,
+                    urlPrefix: urlPrefix,
+                    lang:"i18n_zh_CN"
+                },
+                isError: false
+            }
+        },
+        mounted: function () {
+            var _this = this;
+            // _this.init();
+        },
+        methods: {
+            init: function(){
+                $.ajax({
+                    url: "/aop_component//webber/search/test",
+                    type: "get",
+                    success: function (response) {
+                        if (response.code == "0000") {
+                        } else if (response.code == "220") {
+                            _this.isError = true;
+                            console.log(response);
+                        } else if (!response.code) {
+                            _this.isError = true;
+                            console.log(response);
+                        }
+                    },
+                    error: function (response) {
+                        _this.isError = true;
+                    }
+                });
+            },
+            onSubmit: function (e) {
+                var url = "/aop_views/search/modules/resultpc/soso.html";
+                if ("10" == "1" || "10" == "2") {
+                    url = "" + url;
+                }
+                var _this = this;
+                var query = _this.query;
+                if (url.indexOf("?") > -1) {
+                    url = url.split("?")[0];
+                }
+                if (query.keyWord) {
+                    var query = new Base64().encode(JSON.stringify(query));
+                    window.open(url + "?query=" + query);
+                } else {
+                    alert("请填写搜索内容")
+                }
+            },
+        }
+    })
+</script>
+</DIV></DIV></DIV></DIV>
+<DIV id="nav">
+<DIV class="nav px1400">
+<UL>                   
+<li><a href="../../index.htm">网站首页</a>
+                    </li>
+                    
+<li><a href="../../jgjj/xwyyjsjygk.htm">机构简介</a>
+                        <ul>
+
+                            <li><a href="../../jgjj/xwyyjsjygk.htm">学位与研究生教育概况</a></li>
+                            
+
+                            <li><a href="../../jgjj/bszn.htm">办事指南</a></li>
+                            
+
+                            <li><a href="../../jgjj/ndxl.htm">年度校历</a></li>
+                            
+
+                            <li><a href="../../jgjj/zlxzzx/pygz.htm">资料下载中心</a></li>
+                            
+                        </ul>
+                    </li>
+                    
+<li><a href="../../djgz/zbgk.htm">党建工作</a>
+                        <ul>
+
+                            <li><a href="../../djgz/zbgk.htm">支部概况</a></li>
+                            
+
+                            <li><a href="../../djgz/zbdt.htm">支部动态</a></li>
+                            
+
+                            <li><a href="../../djgz/xxzl.htm">学习资料</a></li>
+                            
+
+                            <li><a href="../../djgz/ztjyzl.htm">主题教育专栏</a></li>
+                            
+                        </ul>
+                    </li>
+                    
+<li><a href="../../zsgz/ssyjs.htm">招生工作</a>
+                        <ul>
+
+                            <li><a href="../../zsgz/ssyjs.htm">硕士研究生</a></li>
+                            
+
+                            <li><a href="../../zsgz/bsyjs.htm">博士研究生</a></li>
+                            
+
+                            <li><a href="../../zsgz/gatyjs.htm">港澳台研究生</a></li>
+                            
+
+                            <li><a href="../../zsgz/gsszzgdjyss.htm">公师生在职攻读教育硕士</a></li>
+                            
+
+                            <li><a href="../../zsgz/zszc.htm">招生政策</a></li>
+                            
+
+                            <li><a href="../../zsgz/zsxc.htm">招生宣传</a></li>
+                            
+                        </ul>
+                    </li>
+                    
+<li><a href="../../pygz/xsxwjxgl.htm">培养工作</a>
+                        <ul>
+
+                            <li><a href="../../pygz/xsxwjxgl.htm">学术学位教学管理</a></li>
+                            
+
+                            <li><a href="../../pygz/zyxwjxgl.htm">专业学位教学管理</a></li>
+                            
+
+                            <li><a href="../../pygz/gfsfsjyssjxgl.htm">公费师范生教育硕士教学管理</a></li>
+                            
+
+                            <li><a href="../../pygz/yjspy.htm">研究生培养</a></li>
+                            
+
+                            <li><a href="../../pygz/cxjh.htm">创新计划</a></li>
+                            
+
+                            <li><a href="../../pygz/gjjl.htm">国际交流</a></li>
+                            
+
+                            <li><a href="../../pygz/sjjx.htm">实践教学</a></li>
+                            
+
+                            <li><a href="../../pygz/jzwgz.htm">教指委工作</a></li>
+                            
+
+                            <li><a href="../../pygz/gltl.htm">管理条例</a></li>
+                            
+                        </ul>
+                    </li>
+                    
+<li><a href="../../xjgl/zxsxjgl.htm">学籍管理</a>
+                        <ul>
+
+                            <li><a href="../../xjgl/zxsxjgl.htm">在校生学籍管理</a></li>
+                            
+
+                            <li><a href="../../xjgl/bysxjgl.htm">毕业生学籍管理</a></li>
+                            
+
+                            <li><a href="../../xjgl/xjyd.htm">学籍异动</a></li>
+                            
+
+                            <li><a href="../../xjgl/qjgl.htm">请假管理</a></li>
+                            
+
+                            <li><a href="../../xjgl/bytxcj.htm">毕业图像采集</a></li>
+                            
+
+                            <li><a href="../../xjgl/gltl.htm">管理条例</a></li>
+                            
+
+                            <li><a href="../../xjgl/dagl.htm">档案管理</a></li>
+                            
+                        </ul>
+                    </li>
+                    
+<li><a href="../../xwgz/xwpdwyh.htm">学位工作</a>
+                        <ul>
+
+                            <li><a href="../../xwgz/xwpdwyh.htm">学位评定委员会</a></li>
+                            
+
+                            <li><a href="../../xwgz/xwsygz.htm">学位授予工作</a></li>
+                            
+
+                            <li><a href="../../xwgz/tdxl.htm">同等学力</a></li>
+                            
+
+                            <li><a href="../../xwgz/yxxwlw.htm">优秀学位论文</a></li>
+                            
+
+                            <li><a href="../../xwgz/gltl.htm">管理条例</a></li>
+                            
+
+                            <li><a href="../../xwgz/ybfc.htm">优博风采</a></li>
+                            
+                        </ul>
+                    </li>
+                    
+<li><a href="../../dsxy/gzzd1/gjwj.htm">导师学院</a>
+                        <ul>
+
+                            <li><a href="../../dsxy/gzzd1/gjwj.htm">规章制度</a></li>
+                            
+
+                            <li><a href="../../dsxy/dslx.htm">导师遴选</a></li>
+                            
+
+                            <li><a href="../../dsxy/dspxkh.htm">导师培训考核</a></li>
+                            
+
+                            <li><a href="../../dsxy/dspx1.htm">导师评选</a></li>
+                            
+
+                            <li><a href="../../dsxy/dsfc.htm">导师风采</a></li>
+                            
+                        </ul>
+                    </li>
+                    
+<li><a href="../../zlgl/xwsqdgl.htm">质量管理</a>
+                        <ul>
+
+                            <li><a href="../../zlgl/xwsqdgl.htm">学位授权点管理</a></li>
+                            
+
+                            <li><a href="../../zlgl/yjsjyddgz.htm">研究生教育督导工作</a></li>
+                            
+
+                            <li><a href="../../zlgl/bs_ssxwlwcj.htm">博士、硕士学位论文抽检</a></li>
+                            
+
+                            <li><a href="../../zlgl/bsxwlwzlfxbg.htm">博士学位论文质量分析报告</a></li>
+                            
+
+                            <li><a href="../../zlgl/kxddyxfjs.htm">科学道德与学风建设</a></li>
+                            
+
+                            <li><a href="../../zlgl/gltl.htm">管理条例</a></li>
+                            
+                        </ul>
+                    </li>
+                    
+<li><a href="../../zygcsxy.htm">卓越工程师学院</a>
+                        <ul>
+
+                            <li><a href="../../zygcsxy/zzjg.htm">组织架构</a></li>
+                            
+
+                            <li><a href="../../zygcsxy/gztz.htm">工作通知</a></li>
+                            
+
+                            <li><a href="../../zygcsxy/zcwj.htm">政策文件</a></li>
+                            
+
+                            <li><a href="../../zygcsxy/hddt.htm">活动动态</a></li>
+                            
+
+                            <li><a href="../../zygcsxy/zlxz.htm">资料下载</a></li>
+                            
+                        </ul>
+                    </li>
+                    
+<div class="clear"></div></UL></DIV></DIV></DIV>
+<DIV class="banner">
+
+     <div>
+            <a href="#"><img src="../../images/banner.jpg" alt="">
+
+            </a>
+        </div>
+
+
+
+
+
+</DIV><!-- 移动端头部 -->
+<DIV class="top">
+<DIV class="wap wap-menu"><IMG class="menu" alt="" src="../../images/menu.png"> <IMG class="close-menu" alt="" src="../../images/close.png"> </DIV></DIV>
+<DIV class="wap m-head">
+<DIV class="m-logo"><A href="../../index.htm"><IMG alt="" src="../../images/logo.png"></A> </DIV>
+<DIV class="m-nav">
+<DIV class="m-tlink">
+ <a href="http://www.ccnu.edu.cn/">学校主站</a>
+ 
+
+
+</DIV>
+<DIV class="m-search">
+
+
+<style>
+    #appu6 .qwss{
+        height: 31px;
+        font-size: 12px;
+        min-width: 190px;
+        max-width: 600px;
+        width: 60%;
+        margin-top: -15px;
+        outline: none;
+        padding-left: 10px;
+        border-radius: 2px;
+        border: 1px solid #e4e7ed;}
+    #appu6 .tj{
+        padding-left: 6px;
+        letter-spacing: 5px;
+        color: white;
+        min-width: 53px;
+        max-width: 150px;
+        height: 32px;
+        border: 0;
+        border-radius: 2px;
+        background-color: #1890FF;
+        position: relative;
+        top: 1px;
+        width: 20%;
+        margin-top: -15px;}
+</style>
+<div id="divu6"></div>
+<script type="text/html" id="htmlu6">
+    <div id="appu6">
+        <div v-if="!isError" class="m-search">
+        
+<input type="text" autocomplete=off v-model=query.keyWord @keyup.enter="onSubmit" placeholder="请输入内容">
+ <input type="image" src="../../images/search.png" align="absmiddle" style="cursor: hand" v-on:click="onSubmit()">
+ 
+        
+        </div>
+        <div v-if="isError" style="color: #b30216; font-size:18px;text-align: center;padding:20px;">
+            应用维护中！
+        </div>
+    </div>
+</script>
+<script>
+    $("#divu6").html($("#htmlu6").text());
+</script>
+<script>
+    var appOwner = "1925099496";
+    var token = gettoken(10);
+    var urlPrefix = "/aop_component/";
+
+    jQuery.support.cors = true;
+    $.ajaxSetup({
+        beforeSend: function (request, settings) {
+            request.setRequestHeader("Authorization", token);
+            request.setRequestHeader("owner", appOwner);
+        }
+    });
+
+    new Vue({
+        el: "#appu6",
+        data: function () {
+            return {
+                query: {
+                    keyWord: "",//搜索关键词
+                    owner: appOwner,
+                    token: token,
+                    urlPrefix: urlPrefix,
+                    lang:"i18n_zh_CN"
+                },
+                isError: false
+            }
+        },
+        mounted: function () {
+            var _this = this;
+            // _this.init();
+        },
+        methods: {
+            init: function(){
+                $.ajax({
+                    url: "/aop_component//webber/search/test",
+                    type: "get",
+                    success: function (response) {
+                        if (response.code == "0000") {
+                        } else if (response.code == "220") {
+                            _this.isError = true;
+                            console.log(response);
+                        } else if (!response.code) {
+                            _this.isError = true;
+                            console.log(response);
+                        }
+                    },
+                    error: function (response) {
+                        _this.isError = true;
+                    }
+                });
+            },
+            onSubmit: function (e) {
+                var url = "/aop_views/search/modules/resultpc/soso.html";
+                if ("10" == "1" || "10" == "2") {
+                    url = "" + url;
+                }
+                var _this = this;
+                var query = _this.query;
+                if (url.indexOf("?") > -1) {
+                    url = url.split("?")[0];
+                }
+                if (query.keyWord) {
+                    var query = new Base64().encode(JSON.stringify(query));
+                    window.open(url + "?query=" + query);
+                } else {
+                    alert("请填写搜索内容")
+                }
+            },
+        }
+    })
+</script>
+
+
+ </DIV>
+<UL>
+
+
+ <li> <a href="../../index.htm" title="网站首页">网站首页</a>
+                </li>
+
+<DIV class="clear"></DIV>
+
+
+
+ <li> <a href="../../jgjj/xwyyjsjygk.htm" title="机构简介">机构简介</a>
+<span></span>
+                    <ul>
+
+ <li> <a href="../../jgjj/xwyyjsjygk.htm" title="学位与研究生教育概况">学位与研究生教育概况</a></li>
+ <li> <a href="../../jgjj/bszn.htm" title="办事指南">办事指南</a></li>
+ <li> <a href="../../jgjj/ndxl.htm" title="年度校历">年度校历</a></li>
+ <li> <a href="../../jgjj/zlxzzx/pygz.htm" title="资料下载中心">资料下载中心</a></li>
+                    </ul>
+                </li>
+
+<DIV class="clear"></DIV>
+
+
+
+ <li> <a href="../../djgz/zbgk.htm" title="党建工作">党建工作</a>
+<span></span>
+                    <ul>
+
+ <li> <a href="../../djgz/zbgk.htm" title="支部概况">支部概况</a></li>
+ <li> <a href="../../djgz/zbdt.htm" title="支部动态">支部动态</a></li>
+ <li> <a href="../../djgz/xxzl.htm" title="学习资料">学习资料</a></li>
+ <li> <a href="../../djgz/ztjyzl.htm" title="主题教育专栏">主题教育专栏</a></li>
+                    </ul>
+                </li>
+
+<DIV class="clear"></DIV>
+
+
+
+ <li> <a href="../../zsgz/ssyjs.htm" title="招生工作">招生工作</a>
+<span></span>
+                    <ul>
+
+ <li> <a href="../../zsgz/ssyjs.htm" title="硕士研究生">硕士研究生</a></li>
+ <li> <a href="../../zsgz/bsyjs.htm" title="博士研究生">博士研究生</a></li>
+ <li> <a href="../../zsgz/gatyjs.htm" title="港澳台研究生">港澳台研究生</a></li>
+ <li> <a href="../../zsgz/gsszzgdjyss.htm" title="公师生在职攻读教育硕士">公师生在职攻读教育硕士</a></li>
+ <li> <a href="../../zsgz/zszc.htm" title="招生政策">招生政策</a></li>
+ <li> <a href="../../zsgz/zsxc.htm" title="招生宣传">招生宣传</a></li>
+                    </ul>
+                </li>
+
+<DIV class="clear"></DIV>
+
+
+
+ <li> <a href="../../pygz/xsxwjxgl.htm" title="培养工作">培养工作</a>
+<span></span>
+                    <ul>
+
+ <li> <a href="../../pygz/xsxwjxgl.htm" title="学术学位教学管理">学术学位教学管理</a></li>
+ <li> <a href="../../pygz/zyxwjxgl.htm" title="专业学位教学管理">专业学位教学管理</a></li>
+ <li> <a href="../../pygz/gfsfsjyssjxgl.htm" title="公费师范生教育硕士教学管理">公费师范生教育硕士教学管理</a></li>
+ <li> <a href="../../pygz/yjspy.htm" title="研究生培养">研究生培养</a></li>
+ <li> <a href="../../pygz/cxjh.htm" title="创新计划">创新计划</a></li>
+ <li> <a href="../../pygz/gjjl.htm" title="国际交流">国际交流</a></li>
+ <li> <a href="../../pygz/sjjx.htm" title="实践教学">实践教学</a></li>
+ <li> <a href="../../pygz/jzwgz.htm" title="教指委工作">教指委工作</a></li>
+ <li> <a href="../../pygz/gltl.htm" title="管理条例">管理条例</a></li>
+                    </ul>
+                </li>
+
+<DIV class="clear"></DIV>
+
+
+
+ <li> <a href="../../xjgl/zxsxjgl.htm" title="学籍管理">学籍管理</a>
+<span></span>
+                    <ul>
+
+ <li> <a href="../../xjgl/zxsxjgl.htm" title="在校生学籍管理">在校生学籍管理</a></li>
+ <li> <a href="../../xjgl/bysxjgl.htm" title="毕业生学籍管理">毕业生学籍管理</a></li>
+ <li> <a href="../../xjgl/xjyd.htm" title="学籍异动">学籍异动</a></li>
+ <li> <a href="../../xjgl/qjgl.htm" title="请假管理">请假管理</a></li>
+ <li> <a href="../../xjgl/bytxcj.htm" title="毕业图像采集">毕业图像采集</a></li>
+ <li> <a href="../../xjgl/gltl.htm" title="管理条例">管理条例</a></li>
+ <li> <a href="../../xjgl/dagl.htm" title="档案管理">档案管理</a></li>
+                    </ul>
+                </li>
+
+<DIV class="clear"></DIV>
+
+
+
+ <li class="active"> <a href="../../xwgz/xwpdwyh.htm" title="学位工作">学位工作</a>
+<span></span>
+                    <ul>
+
+ <li> <a href="../../xwgz/xwpdwyh.htm" title="学位评定委员会">学位评定委员会</a></li>
+ <li> <a href="../../xwgz/xwsygz.htm" title="学位授予工作">学位授予工作</a></li>
+ <li> <a href="../../xwgz/tdxl.htm" title="同等学力">同等学力</a></li>
+ <li> <a href="../../xwgz/yxxwlw.htm" title="优秀学位论文">优秀学位论文</a></li>
+ <li> <a href="../../xwgz/gltl.htm" title="管理条例">管理条例</a></li>
+ <li> <a href="../../xwgz/ybfc.htm" title="优博风采">优博风采</a></li>
+                    </ul>
+                </li>
+
+<DIV class="clear"></DIV>
+
+
+
+ <li> <a href="../../dsxy/gzzd1/gjwj.htm" title="导师学院">导师学院</a>
+<span></span>
+                    <ul>
+
+ <li> <a href="../../dsxy/gzzd1/gjwj.htm" title="规章制度">规章制度</a></li>
+ <li> <a href="../../dsxy/dslx.htm" title="导师遴选">导师遴选</a></li>
+ <li> <a href="../../dsxy/dspxkh.htm" title="导师培训考核">导师培训考核</a></li>
+ <li> <a href="../../dsxy/dspx1.htm" title="导师评选">导师评选</a></li>
+ <li> <a href="../../dsxy/dsfc.htm" title="导师风采">导师风采</a></li>
+                    </ul>
+                </li>
+
+<DIV class="clear"></DIV>
+
+
+
+ <li> <a href="../../zlgl/xwsqdgl.htm" title="质量管理">质量管理</a>
+<span></span>
+                    <ul>
+
+ <li> <a href="../../zlgl/xwsqdgl.htm" title="学位授权点管理">学位授权点管理</a></li>
+ <li> <a href="../../zlgl/yjsjyddgz.htm" title="研究生教育督导工作">研究生教育督导工作</a></li>
+ <li> <a href="../../zlgl/bs_ssxwlwcj.htm" title="博士、硕士学位论文抽检">博士、硕士学位论文抽检</a></li>
+ <li> <a href="../../zlgl/bsxwlwzlfxbg.htm" title="博士学位论文质量分析报告">博士学位论文质量分析报告</a></li>
+ <li> <a href="../../zlgl/kxddyxfjs.htm" title="科学道德与学风建设">科学道德与学风建设</a></li>
+ <li> <a href="../../zlgl/gltl.htm" title="管理条例">管理条例</a></li>
+                    </ul>
+                </li>
+
+<DIV class="clear"></DIV>
+
+
+
+ <li> <a href="../../zygcsxy.htm" title="卓越工程师学院">卓越工程师学院</a>
+<span></span>
+                    <ul>
+
+ <li> <a href="../../zygcsxy/zzjg.htm" title="组织架构">组织架构</a></li>
+ <li> <a href="../../zygcsxy/gztz.htm" title="工作通知">工作通知</a></li>
+ <li> <a href="../../zygcsxy/zcwj.htm" title="政策文件">政策文件</a></li>
+ <li> <a href="../../zygcsxy/hddt.htm" title="活动动态">活动动态</a></li>
+ <li> <a href="../../zygcsxy/zlxz.htm" title="资料下载">资料下载</a></li>
+                    </ul>
+                </li>
+
+<DIV class="clear"></DIV>
+
+
+</UL></DIV></DIV>
+<DIV class="main">
+
+
+    <!-- 中间 -->
+    <div class="nymain px1400">
+        <div class="channl-menu leftNav">
+            <p class="wow fadeInUp">
+学位工作 <span></span></p>
+            <ul>                <li class="wow fadeInUp">
+                    <a href="../../xwgz/xwpdwyh.htm">学位评定委员会</a>
+                    
+                </li>
+                
+                <li class="active wow fadeInUp" class="wow fadeInUp">
+                    <a href="../../xwgz/xwsygz.htm">学位授予工作</a>
+                    
+                </li>
+                
+                <li class="wow fadeInUp">
+                    <a href="../../xwgz/tdxl.htm">同等学力</a>
+                    
+                </li>
+                
+                <li class="wow fadeInUp">
+                    <a href="../../xwgz/yxxwlw.htm">优秀学位论文</a>
+                    
+                </li>
+                
+                <li class="wow fadeInUp">
+                    <a href="../../xwgz/gltl.htm">管理条例</a>
+                    
+                </li>
+                
+                <li class="wow fadeInUp">
+                    <a href="../../xwgz/ybfc.htm">优博风采</a>
+                    
+                </li>
+                
+</ul>
+        </div>
+        <div class="ny-right">
+            <div class="ny-title">
+                <h3>
+学位授予工作</h3>
+                <div class="position wow fadeInUp">
+                        <span>当前位置: </span>
+                        <a href="../../index.htm">网站首页</a>
+              <span>  -></span>
+                <a href="../../xwgz/xwpdwyh.htm">学位工作</a>
+              <span>  -></span>
+                <a href="../../xwgz/xwsygz.htm">学位授予工作</a>
+              <span>  -></span>
+            <span>    正文</span>
+
+                </div>
+            </div>
+
+
+
+<DIV class="art-main">
+
+<script language="javascript" src="../../_dwr/interface/NewsvoteDWR.js"></script><script language="javascript" src="../../_dwr/engine.js"></script><script language="javascript" src="/system/resource/js/news/newscontent.js"></script><script language="javascript" src="/system/resource/js/news/zepto.min.js"></script><script language="javascript" src="/system/resource/js/ajax.js"></script><LINK href="/system/resource/js/photoswipe/photoswipe.css" type="text/css" rel="stylesheet"><LINK href="/system/resource/js/photoswipe/default-skin.css" type="text/css" rel="stylesheet"><script language="javascript" src="/system/resource/js/photoswipe/photoswipe.min.js"></script><script language="javascript" src="/system/resource/js/photoswipe/photoswipe-ui-default.min.js"></script><script language="javascript" src="/system/resource/contentImgPreview/js/preview.js"></script>
+<script>window.addEventListener('load', function(){getImages('#vsb_content')})</script>
+<form name="_newscontent_fromname">
+<div class="art-tit cont-tit wow fadeInUp">
+<h3>关于做好2026年下半年学位论文送审与学位授予相关工作的通知</h3>
+<p><span>作者：</span><span>来源：
+    阅读次数：<script>_showDynClicks("wbnews", 1925099496, 6923)</script>次 </span><span>日期：2026年09月04日</span> </p></div>
+    
+    
+<div class="art-body wow fadeInUp">
+    <div id="vsb_content"><div class="v_news_content">
+<p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:39px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">校内各研究生培养单位：</span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:39px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px"><span style="font-family:宋体">根据学校整体工作的安排，现将我校</span><span style="font-family:宋体">202</span></span><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">6</span><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">年</span><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">下</span><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px"><span style="font-family:宋体">半年研究生学位论文送审和学位授予等相关工作安排通知如下（工作周期表见附件</span><span style="font-family:宋体">1）：</span></span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:39px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">一、博士、硕士学位论文盲评送审工作</span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:39px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px"><span style="font-family:宋体">学位论文盲评送审工作依据《华中师范大学博士硕士学位论文盲评工作实施办法》（华师行字〔</span><span style="font-family:宋体">2025〕6号）（以下简称《办法》）</span></span><a href="https://gs.ccnu.edu.cn/info/1058/4073.htm"><span style="font-family: 宋体;color: rgb(0, 0, 255);letter-spacing: 0;font-size: 16px">https://gs.ccnu.edu.cn/info/1058/4073.htm</span></a><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">开展。博士学位论文盲评工作由研究生院组织开展，硕士学位论文盲评工作由各研究生培养单位组织开展。</span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:39px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">秋</span><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">季学期开学后，研究生院即可接收博士学位论文盲评材料，注意事项如下：</span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:39px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">1、为规范盲评材料，提高送审效率，各培养单位需通过学校研究生教育综合平台（以下简称“平台”）提交所有博盲材料，如因技术等问题需在平台外补充提交材料的，根据研究生院通知或由培养单位报告协商落实。</span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:39px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">2、培养单位需加强平台系统性流程审核，通知导师及时根据学位申请人的申请做好审核工作，原则上</span><strong><span style="font-family: 宋体;color: rgb(255, 0, 0);letter-spacing: 0;font-size: 16px">每周三前</span></strong><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px"><span style="font-family:宋体">由各培养单位相对集中审核通过后，研究生院学位办从平台导出博盲所需材料进行校级审核。盲评材料的具体要求见《办法》附件</span><span style="font-family:宋体">2及平台要求，相关流程和表格等由各培养单位提供咨询和指导。</span></span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:39px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">3、研究生院对博士学位论文盲评材料接收的截止时间为</span><span style="color: rgb(255, 0, 0);"><strong><span style="color: rgb(255, 0, 0); font-family: 宋体; letter-spacing: 0px; font-size: 16px;">10月15日</span></strong></span><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">，请各培养单位尽早错峰提交博盲材料。接收盲评材料时间截止后送审的学位论文，不能保证在答辩截止日前反馈盲评结果。</span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:39px;background:rgb(255,255,255)"><strong><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">特别强调：</span></strong><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">需预留合理时间段供盲评工作周期运转，研究生院学位办</span><span style="text-decoration:underline;"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">接收到博盲材料后</span></span><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">，博士学位论文一次性盲审工作周期一般为</span><strong><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">30个工作日</span></strong><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">，增评另计。</span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:39px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">4、研究生院学位办原则上根据博盲送审的先后顺序及结果回齐情况，就博盲结果对培养单位进行分批次反馈。</span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:39px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">5、硕士学位论文盲评具体工作由各培养单位根据学校学位授予工作安排，结合单位实际情况落实。</span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:39px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">各培养单位应于</span><strong><span style="font-family: 宋体;color: rgb(255, 0, 0);letter-spacing: 0;font-size: 16px">9</span></strong><strong><span style="font-family: 宋体;color: rgb(255, 0, 0);letter-spacing: 0;font-size: 16px">月</span></strong><strong><span style="font-family: 宋体;color: rgb(255, 0, 0);letter-spacing: 0;font-size: 16px">10</span></strong><strong><span style="font-family: 宋体;color: rgb(255, 0, 0);letter-spacing: 0;font-size: 16px">日（周四）前</span></strong><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">发布本学期学位相关工作通知；硕士学位论文一次性盲审工作周期一般为</span><strong><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">20个工作日</span></strong><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">，增评另计。</span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:39px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">6、学位论文盲评结果处理及学术复核等相关工作的开展以《办法》为准，请各培养单位加强学习，对研究生和导师做好宣传和指导工作。</span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:39px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">7、如有以实践成果申请专业学位的，由培养单位报告研究生院后开展具体工作。</span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:39px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">8、涉密论文按《华中师范大学涉密研究生与涉密学位论文管理办法》进行管理，培养单位须在学位论文开题前与学校保密办、研究生院做好报备和沟通工作。</span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:39px;background:rgb(255,255,255)"><br></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:39px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">二、学位论文答辩工作</span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:37px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">根据学位法和国家进一步严格规范学位与研究生教育质量管理文件精神，以及学校进一步严格规范学位论文答辩及学位授予工作的要求，各培养单位应加强预答辩、答辩等过程管理，需重点注意如下事项：</span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:37px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">1、各培养单位应当按照学科专业组织硕士、博士学位答辩委员会。硕士学位答辩委员会组成人员应当不少于三人，原则上其中</span><strong><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">校外同行专家至少一人</span></strong><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">；博士学位答辩委员会组成人员应当不少于五人，</span><strong><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">其中校外同行专家应当不少于二人</span></strong><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">。</span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:37px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">2、学位论文或者实践成果应当在答辩前送答辩委员会组成人员审阅，答辩委员会组成人员应当独立负责地履行职责。</span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-autospace:ideograph-numeric;text-justify:inter-ideograph;line-height:35px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">3、盲评结果及《办法》附件3“盲评后修改简述表”和附件4“盲评结果学术复核申请表”（若有）的相关内容应在答辩时予以呈现，并以一定形式进行说明。</span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-autospace:ideograph-numeric;text-justify:inter-ideograph;line-height:35px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">4、</span><strong><span style="font-family: 宋体;color: rgb(255, 0, 0);letter-spacing: 0;font-size: 16px">10月</span></strong><strong><span style="font-family: 宋体;color: rgb(255, 0, 0);letter-spacing: 0;font-size: 16px">2</span></strong><strong><span style="font-family: 宋体;color: rgb(255, 0, 0);letter-spacing: 0;font-size: 16px">6</span></strong><strong><span style="font-family: 宋体;color: rgb(255, 0, 0);letter-spacing: 0;font-size: 16px">日（周一）前</span></strong><strong><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">，</span></strong><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">各培养单位须公布答辩工作安排，并报研究生院学位办备案。</span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:39px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">三、学位授予工作</span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-autospace:ideograph-numeric;text-justify:inter-ideograph;line-height:35px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">202</span><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">6</span><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">年</span><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">下</span><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">半年校学位评定委员会全体会议拟于</span><strong><span style="font-family: 宋体;color: rgb(255, 0, 0);letter-spacing: 0;font-size: 16px">12</span></strong><strong><span style="font-family: 宋体;color: rgb(255, 0, 0);letter-spacing: 0;font-size: 16px">月</span></strong><strong><span style="font-family: 宋体;color: rgb(255, 0, 0);letter-spacing: 0;font-size: 16px">下</span></strong><strong><span style="font-family: 宋体;color: rgb(255, 0, 0);letter-spacing: 0;font-size: 16px">旬</span></strong><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">召开。</span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-autospace:ideograph-numeric;text-justify:inter-ideograph;line-height:35px;background:rgb(255,255,255)"><strong><span style="font-family: 宋体;color: rgb(255, 0, 0);letter-spacing: 0;font-size: 16px">12</span></strong><strong><span style="font-family: 宋体;color: rgb(255, 0, 0);letter-spacing: 0;font-size: 16px">月</span></strong><strong><span style="font-family: 宋体;color: rgb(255, 0, 0);letter-spacing: 0;font-size: 16px">1</span></strong><strong><span style="font-family: 宋体;color: rgb(255, 0, 0);letter-spacing: 0;font-size: 16px">日（周二）</span></strong><strong><span style="font-family: 宋体;color: rgb(255, 0, 0);letter-spacing: 0;font-size: 16px">前</span></strong><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">，各学位评定分委员会须将分会会务准备情况报告研究生院学位办备案。</span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-autospace:ideograph-numeric;text-justify:inter-ideograph;line-height:35px;background:rgb(255,255,255)"><strong><span style="font-family: 宋体;color: rgb(255, 0, 0);letter-spacing: 0;font-size: 16px">12</span></strong><strong><span style="font-family: 宋体;color: rgb(255, 0, 0);letter-spacing: 0;font-size: 16px">月</span></strong><strong><span style="font-family: 宋体;color: rgb(255, 0, 0);letter-spacing: 0;font-size: 16px">11</span></strong><strong><span style="font-family: 宋体;color: rgb(255, 0, 0);letter-spacing: 0;font-size: 16px">日（周五）前</span></strong><strong><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">，</span></strong><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">各学位评定分委员会、各培养单位学位评定委员会须完成学位授予各项工作，并于</span><strong><span style="font-family: 宋体;color: rgb(255, 0, 0);letter-spacing: 0;font-size: 16px">12</span></strong><strong><span style="font-family: 宋体;color: rgb(255, 0, 0);letter-spacing: 0;font-size: 16px">月</span></strong><strong><span style="font-family: 宋体;color: rgb(255, 0, 0);letter-spacing: 0;font-size: 16px">14</span></strong><strong><span style="font-family: 宋体;color: rgb(255, 0, 0);letter-spacing: 0;font-size: 16px">日（周一）</span></strong><strong><span style="font-family: 宋体;color: rgb(255, 0, 0);letter-spacing: 0;font-size: 16px">前</span></strong><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px"><span style="font-family:宋体">将表决票、建议授予名册、决议、论文评阅及检测工作的开展情况等材料按要求报送研究生院学位办。学位论文定稿报送要求见附件</span><span style="font-family:宋体">2。</span></span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:57px;background:rgb(255,255,255)"><br></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:39px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">各培养单位根据以上工作要求制定本单位学位论文送审和学位授予相关工作方案，并尽早通知到导师和研究生，及时做好各项工作。</span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:39px;background:rgb(255,255,255)"><br></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:39px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">附件：</span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:39px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">1.202</span><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">6</span><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">年</span><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">下</span><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">半年论文送审与学位授予工作周期表</span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:39px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">2.学位论文定稿报送要求</span></p><p style="text-align:right;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;line-height:39px;background:rgb(255,255,255)"><strong><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px"><span style="font-family:宋体">研究生院</span><span style="font-family:宋体">(专业学位管理中心)</span></span></strong></p><p style="text-align:right;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;line-height:39px;background:rgb(255,255,255)"><strong><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">202</span></strong><strong><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">6</span></strong><strong><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">年</span></strong><strong><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">9</span></strong><strong><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">月3</span></strong><strong><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">日</span></strong></p><p style="text-align:right;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;line-height:39px;background:rgb(255,255,255)"><strong> </strong></p><p style="text-indent: 28px;padding: 0;line-height: 32px;background: rgb(255, 255, 255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px"><span style="font-family:宋体">附件</span><span style="font-family:宋体">1：</span></span></p><p style="text-indent: 28px;padding: 0;line-height: 32px;background: rgb(255, 255, 255)"><br></p><div align="center"><div class="tableContainer" style="width:100%;overflow-x:auto"><table border="1" cellspacing="0" width="633" style="border-collapse: collapse; border: none;"><tbody><tr class="firstRow"><td width="633" valign="center" colspan="3" style="border-width: 1px; border-style: solid; border-color: rgb(0, 0, 0);"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;text-autospace:ideograph-numeric;"><span style="font-family: 方正公文小标宋;letter-spacing: 0;font-size: 21px">202</span><span style="font-family: 方正公文小标宋;letter-spacing: 0;font-size: 21px">6下</span><span style="font-family: 方正公文小标宋;letter-spacing: 0;font-size: 21px">半年论文送审与学位授予工作周期表</span></p></td></tr><tr><td width="85" valign="center" style="border-left: 1px solid rgb(0, 0, 0); border-right: 1px solid rgb(0, 0, 0); border-top: none; border-bottom: 1px solid rgb(0, 0, 0);"><p style="text-align:center;text-autospace:ideograph-numeric;"><span style="font-family: 黑体;font-size: 20px">工作</span></p><p style="text-align:center;text-autospace:ideograph-numeric;"><span style="font-family: 黑体;font-size: 20px">事项</span></p></td><td width="119" valign="center" style="border-left: none; border-right: 1px solid rgb(0, 0, 0); border-top: 1px solid rgb(0, 0, 0); border-bottom: 1px solid rgb(0, 0, 0);"><p style="text-align:center;text-autospace:ideograph-numeric;"><span style="font-family: 黑体;font-size: 20px">时间</span></p></td><td width="429" valign="center" style="border-left: none; border-right: 1px solid rgb(0, 0, 0); border-top: 1px solid rgb(0, 0, 0); border-bottom: 1px solid rgb(0, 0, 0);"><p style="text-align:center;text-autospace:ideograph-numeric;"><span style="font-family: 黑体;font-size: 20px">工作要求</span></p></td></tr><tr style="height:34px"><td width="85" valign="center" style="border-left: 1px solid rgb(0, 0, 0); border-right: 1px solid rgb(0, 0, 0); border-top: none; border-bottom: 1px solid rgb(0, 0, 0);"><p style="text-align:center;text-autospace:ideograph-numeric;"><span style="font-family: 仿宋_gb2312;font-size: 19px">预答辩</span></p></td><td width="119" valign="center" style="border-left: none; border-right: 1px solid rgb(0, 0, 0); border-top: none; border-bottom: 1px solid rgb(0, 0, 0);"><p style="text-align:center;text-autospace:ideograph-numeric;"><span style="font-family: 仿宋_gb2312;font-size: 19px">盲评前</span></p></td><td width="429" valign="center" style="border-left: none; border-right: 1px solid rgb(0, 0, 0); border-top: none; border-bottom: 1px solid rgb(0, 0, 0);"><p style="text-align:center;text-autospace:ideograph-numeric;"><span style="font-family: 仿宋_gb2312;font-size: 19px">按要求录入校研究生教育综合平台，无需另行报送</span></p></td></tr><tr><td width="85" valign="center" style="border-left: 1px solid rgb(0, 0, 0); border-right: 1px solid rgb(0, 0, 0); border-top: none; border-bottom: 1px solid rgb(0, 0, 0);"><p style="text-align:center;text-autospace:ideograph-numeric;"><span style="font-family: 仿宋_gb2312;font-size: 19px">博盲</span></p></td><td width="119" valign="center" style="border-left: none; border-right: 1px solid rgb(0, 0, 0); border-top: none; border-bottom: 1px solid rgb(0, 0, 0);"><p style="text-align:center;text-autospace:ideograph-numeric;"><span style="font-family: 仿宋_gb2312;font-size: 19px">10</span><span style="font-family: 仿宋_gb2312;font-size: 19px"><span style="font-family:仿宋_GB2312">月</span><span style="font-family:仿宋_GB2312">15日前</span></span></p></td><td width="429" valign="center" style="border-left: none; border-right: 1px solid rgb(0, 0, 0); border-top: none; border-bottom: 1px solid rgb(0, 0, 0);"><p style="text-align:center;text-autospace:ideograph-numeric;"><span style="font-family: 仿宋_gb2312;font-size: 19px"><span style="font-family:仿宋_GB2312">研究生管理系统平台报送，预留送审工作周期（一般为</span><span style="font-family:仿宋_GB2312">30个工作日，增评另计）</span></span></p></td></tr><tr><td width="85" valign="center" style="border-left: 1px solid rgb(0, 0, 0); border-right: 1px solid rgb(0, 0, 0); border-top: none; border-bottom: 1px solid rgb(0, 0, 0);"><p style="text-align:center;text-autospace:ideograph-numeric;"><span style="font-family: 仿宋_gb2312;font-size: 19px">硕盲</span></p></td><td width="119" valign="center" style="border-left: none; border-right: 1px solid rgb(0, 0, 0); border-top: none; border-bottom: 1px solid rgb(0, 0, 0);"><p style="text-align:center;text-autospace:ideograph-numeric;"><span style="font-family: 仿宋_gb2312;font-size: 19px">答辩前</span></p></td><td width="429" valign="center" style="border-left: none; border-right: 1px solid rgb(0, 0, 0); border-top: none; border-bottom: 1px solid rgb(0, 0, 0);"><p style="text-align:center;text-autospace:ideograph-numeric;"><span style="font-family: 仿宋_gb2312;font-size: 19px">各培养单位具体落实，</span><span style="font-family: 仿宋_gb2312;font-size: 19px">9</span><span style="font-family: 仿宋_gb2312;font-size: 19px">月</span><span style="font-family: 仿宋_gb2312;font-size: 19px">10</span><span style="font-family: 仿宋_gb2312;font-size: 19px"><span style="font-family:仿宋_GB2312">日前发布通知，预留盲评工作周期（一般为</span><span style="font-family:仿宋_GB2312">20个工作日，增评另计）</span></span></p></td></tr><tr style="height:34px"><td width="85" valign="center" style="border-left: 1px solid rgb(0, 0, 0); border-right: 1px solid rgb(0, 0, 0); border-top: none; border-bottom: 1px solid rgb(0, 0, 0);"><p style="text-align:center;text-autospace:ideograph-numeric;"><span style="font-family: 仿宋_gb2312;font-size: 19px">答辩</span></p></td><td width="119" valign="center" style="border-left: none; border-right: 1px solid rgb(0, 0, 0); border-top: none; border-bottom: 1px solid rgb(0, 0, 0);"><p style="text-align:center;text-autospace:ideograph-numeric;"><span style="font-family: 仿宋_gb2312;font-size: 19px">12</span><span style="font-family: 仿宋_gb2312;font-size: 19px">月</span><span style="font-family: 仿宋_gb2312;font-size: 19px">9</span><span style="font-family: 仿宋_gb2312;font-size: 19px">日前</span></p></td><td width="429" valign="center" style="border-left: none; border-right: 1px solid rgb(0, 0, 0); border-top: none; border-bottom: 1px solid rgb(0, 0, 0);"><p style="text-align:center;text-autospace:ideograph-numeric;"><span style="font-family: 仿宋_gb2312;font-size: 19px">10</span><span style="font-family: 仿宋_gb2312;font-size: 19px"><span style="font-family:仿宋_GB2312">月</span><span style="font-family:仿宋_GB2312">2</span></span><span style="font-family: 仿宋_gb2312;font-size: 19px">6</span><span style="font-family: 仿宋_gb2312;font-size: 19px">日前，各培养单位公布报备答辩安排</span></p></td></tr><tr style="height:43px"><td width="85" valign="center" style="border-left: 1px solid rgb(0, 0, 0); border-right: 1px solid rgb(0, 0, 0); border-top: none; border-bottom: 1px solid rgb(0, 0, 0);"><p style="text-align:center;text-autospace:ideograph-numeric;"><span style="font-family: 仿宋_gb2312;font-size: 19px">院会</span></p></td><td width="119" valign="center" style="border-left: none; border-right: 1px solid rgb(0, 0, 0); border-top: none; border-bottom: 1px solid rgb(0, 0, 0);"><p style="text-align:center;text-autospace:ideograph-numeric;"><span style="font-family: 仿宋_gb2312;font-size: 19px">12</span><span style="font-family: 仿宋_gb2312;font-size: 19px">月</span><span style="font-family: 仿宋_gb2312;font-size: 19px">10</span><span style="font-family: 仿宋_gb2312;font-size: 19px">日前</span></p></td><td width="429" valign="center" style="border-left: none; border-right: 1px solid rgb(0, 0, 0); border-top: none; border-bottom: 1px solid rgb(0, 0, 0);"><p style="text-align:center;text-autospace:ideograph-numeric;"><span style="font-family: 仿宋_gb2312;font-size: 19px">各培养单位落实，报相关分会统筹</span></p></td></tr><tr><td width="85" valign="center" style="border-left: 1px solid rgb(0, 0, 0); border-right: 1px solid rgb(0, 0, 0); border-top: none; border-bottom: 1px solid rgb(0, 0, 0);"><p style="text-align:center;text-autospace:ideograph-numeric;"><span style="font-family: 仿宋_gb2312;font-size: 19px">分会</span></p></td><td width="119" valign="center" style="border-left: none; border-right: 1px solid rgb(0, 0, 0); border-top: none; border-bottom: 1px solid rgb(0, 0, 0);"><p style="text-align:center;text-autospace:ideograph-numeric;"><span style="font-family: 仿宋_gb2312;font-size: 19px">12</span><span style="font-family: 仿宋_gb2312;font-size: 19px">月</span><span style="font-family: 仿宋_gb2312;font-size: 19px">11</span><span style="font-family: 仿宋_gb2312;font-size: 19px">日前</span></p></td><td width="429" valign="center" style="border-left: none; border-right: 1px solid rgb(0, 0, 0); border-top: none; border-bottom: 1px solid rgb(0, 0, 0);"><p style="text-align:center;text-autospace:ideograph-numeric;"><span style="font-family: 仿宋_gb2312;font-size: 19px">各分会落实，</span><span style="font-family: 仿宋_gb2312;font-size: 19px">12</span><span style="font-family: 仿宋_gb2312;font-size: 19px">月</span><span style="font-family: 仿宋_gb2312;font-size: 19px">1</span><span style="font-family: 仿宋_gb2312;font-size: 19px">日前报备会务安排、</span><span style="font-family: 仿宋_gb2312;font-size: 19px">12</span><span style="font-family: 仿宋_gb2312;font-size: 19px">月</span><span style="font-family: 仿宋_gb2312;font-size: 19px">14</span><span style="font-family: 仿宋_gb2312;font-size: 19px">日前报送</span><span style="font-family: 仿宋_gb2312;font-size: 19px">“审核意见”</span><span style="font-family: 仿宋_gb2312;font-size: 19px">等材料到校学位办</span></p></td></tr><tr style="height:36px"><td width="85" valign="center" style="border-left: 1px solid rgb(0, 0, 0); border-right: 1px solid rgb(0, 0, 0); border-top: none; border-bottom: 1px solid rgb(0, 0, 0);"><p style="text-align:center;text-autospace:ideograph-numeric;"><span style="font-family: 仿宋_gb2312;font-size: 19px">校会</span></p></td><td width="119" valign="center" style="border-left: none; border-right: 1px solid rgb(0, 0, 0); border-top: none; border-bottom: 1px solid rgb(0, 0, 0);"><p style="text-align:center;text-autospace:ideograph-numeric;"><span style="font-family: 仿宋_gb2312;font-size: 19px">12</span><span style="font-family: 仿宋_gb2312;font-size: 19px">月</span><span style="font-family: 仿宋_gb2312;font-size: 19px">下</span><span style="font-family: 仿宋_gb2312;font-size: 19px">旬</span></p></td><td width="429" valign="center" style="border-left: none; border-right: 1px solid rgb(0, 0, 0); border-top: none; border-bottom: 1px solid rgb(0, 0, 0);"><p style="text-align:center;text-autospace:ideograph-numeric;"><span style="font-family: 仿宋_gb2312;font-size: 19px">校学位办落实</span></p></td></tr></tbody></table></div></div><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:28px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:32px"><br></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:28px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:32px"><br></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:28px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:32px"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px"><span style="font-family:宋体">附件</span><span style="font-family:宋体">2：</span></span></p><h3 align="center" style="margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;padding:0 0 0 0 ;text-align:center;line-height:37px"><span style="font-family: 宋体;letter-spacing: 0;font-weight: normal;font-size: 21px">学位论文定稿报送要求</span></h3><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:32px;background:rgb(255,255,255)"><br></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:32px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">根据学位法第三十条、三十一条及上级部门有关通知文件要求，学校应当保存学位申请人的学位论文、实践成果等资料，建立本单位质量保障制度，加强质量管理，公开相关信息，接受社会监督。</span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:32px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">我校博士学位论文须同时交存国家图书馆和有关专业图书馆，博士、硕士学位论文须在一定的社会范围内公开，接受监督。</span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:32px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">有关学位论文定稿报送的要求如下：</span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:37px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">1、</span><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">学位论文定稿须经作者、指导教师签字授权后，由培养单位督促确认，提交纸质版和电子版，各版本定稿必须保证完全一致</span><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">。严禁私自更改华中师范大学学位论文原创性声明和使用授权说明页的模板内容。</span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:37px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">2、</span><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">学位论文作者需签署《研究生学位论文使用人工智能工具声明》，进行相关说明，做出学术诚信承诺。</span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:37px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">3、“电子版”学位论文定稿须按要求</span><strong><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">于本学期校学位评定委员会召开前</span></strong><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px"><span style="font-family:宋体">上传至校研究生教育综合平台，</span><span style="font-family:宋体">“纸质版”学位论文定稿根据国家图书馆等单位的通知要求由研究生院统筹提交报送。</span></span><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">研究生学位论文抽检工作将通过校研究生教育综合平台下载盲评版学位论文定稿并进行审核。</span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:37px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">4、我校博士、硕士学位论文在“中国知网”和“万方数据”公开，论文作者须及时登陆两平台了解论文发布、版权与稿酬支付等相关情况。</span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:32px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px">学位论文如需延期公开，作者应在学位论文的版权使用授权书上选择相关年限（严禁修改模板内容）；除涉密论文外，如不宜公开，经作者申请、导师和学院审核同意后报研究生院审核备案。</span></p><p style="text-align:justify;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:40px;padding:0 0 0 0 ;text-justify:inter-ideograph;line-height:32px;background:rgb(255,255,255)"><span style="font-family: 宋体;letter-spacing: 0;font-size: 16px"><span style="font-family:宋体">具体博士、硕士学位论文报送要求见下表（</span><span style="font-family:宋体">“Z”为纸质版，“D”为电子版）：</span></span></p><div align="center"><div class="tableContainer" style="width:100%;overflow-x:auto"><table border="0" cellspacing="0" width="556" style="border-collapse: collapse; border: none;"><tbody><tr class="firstRow"><td valign="center" rowspan="2" style="border-left:1px solid windowtext;border-right:1px solid windowtext;border-top:1px solid windowtext;border-bottom:1px solid windowtext"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><strong><span style="font-family: 宋体;font-size: 16px">送达单位</span></strong></p></td><td valign="center" colspan="2" style="border-left:none;border-right:1px solid windowtext;border-top:1px solid windowtext;border-bottom:1px solid windowtext"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><strong><span style="font-family: 宋体;font-size: 16px">硕士学位论文</span></strong></p></td><td valign="center" colspan="2" style="border-left:none;border-right:1px solid windowtext;border-top:1px solid windowtext;border-bottom:1px solid windowtext"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><strong><span style="font-family: 宋体;font-size: 16px">博士学位论文</span></strong></p></td><td width="147" valign="center" rowspan="2" style="border-left: none; border-right: 1px solid windowtext; border-top: 1px solid windowtext; border-bottom: 1px solid windowtext;"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><strong><span style="font-family: 宋体;font-size: 16px">说明</span></strong></p></td></tr><tr><td valign="center" style="border-left:none;border-right:1px solid windowtext;border-top:none;border-bottom:1px solid windowtext"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><strong><span style="font-family: 宋体;font-size: 16px">人文社科</span></strong></p></td><td valign="center" style="border-left:none;border-right:1px solid windowtext;border-top:none;border-bottom:1px solid windowtext"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><strong><span style="font-family: 宋体;font-size: 16px">理工农科</span></strong></p></td><td valign="center" style="border-left:none;border-right:1px solid windowtext;border-top:none;border-bottom:1px solid windowtext"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><strong><span style="font-family: 宋体;font-size: 16px">人文社科</span></strong></p></td><td valign="center" style="border-left:none;border-right:1px solid windowtext;border-top:none;border-bottom:1px solid windowtext"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><strong><span style="font-family: 宋体;font-size: 16px">理工农科</span></strong></p></td></tr><tr><td valign="center" style="border-left:1px solid windowtext;border-right:1px solid windowtext;border-top:none;border-bottom:1px solid windowtext"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><span style="font-family: 宋体;font-size: 16px">国家图书馆</span></p></td><td valign="center" style="border-left:none;border-right:1px solid windowtext;border-top:none;border-bottom:1px solid windowtext"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><span style="font-family: 宋体;font-size: 16px">/</span></p></td><td valign="center" style="border-left:none;border-right:1px solid windowtext;border-top:none;border-bottom:1px solid windowtext"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><span style="font-family: 宋体;font-size: 16px">/</span></p></td><td valign="center" style="border-left:none;border-right:1px solid windowtext;border-top:none;border-bottom:1px solid windowtext"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><span style="font-family: 宋体;font-size: 16px">Z</span></p></td><td valign="center" style="border-left:none;border-right:1px solid windowtext;border-top:none;border-bottom:1px solid windowtext"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><span style="font-family: 宋体;font-size: 16px">Z</span></p></td><td width="147" valign="center" rowspan="4" style="border-left: none; border-right: 1px solid windowtext; border-top: none; border-bottom: none;"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><span style="font-family: 宋体;font-size: 16px">由研究生院统筹报送</span></p></td></tr><tr><td valign="center" style="border-left:1px solid windowtext;border-right:1px solid windowtext;border-top:none;border-bottom:1px solid windowtext"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><span style="font-family: 宋体;font-size: 16px">中国社会科学院</span></p><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><span style="font-family: 宋体;font-size: 16px">图书馆</span></p></td><td valign="center" style="border-left:none;border-right:1px solid windowtext;border-top:none;border-bottom:1px solid windowtext"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><span style="font-family: 宋体;font-size: 16px">D</span></p></td><td valign="center" style="border-left:none;border-right:1px solid windowtext;border-top:none;border-bottom:1px solid windowtext"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><span style="font-family: 宋体;font-size: 16px">/</span></p></td><td valign="center" style="border-left:none;border-right:1px solid windowtext;border-top:none;border-bottom:1px solid windowtext"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><span style="font-family: 宋体;font-size: 16px">D</span></p></td><td valign="center" style="border-left:none;border-right:1px solid windowtext;border-top:none;border-bottom:1px solid windowtext"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><span style="font-family: 宋体;font-size: 16px">/</span></p></td></tr><tr><td valign="center" style="border-left:1px solid windowtext;border-right:1px solid windowtext;border-top:none;border-bottom:1px solid windowtext"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><span style="font-family: 宋体;font-size: 16px">中国科学技术信息</span><span style="font-family: 宋体;font-size: 16px"><br></span><span style="font-family: 宋体;font-size: 16px">研究所（万方数据）</span></p></td><td valign="center" style="border-left:none;border-right:1px solid windowtext;border-top:none;border-bottom:1px solid windowtext"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><span style="font-family: 宋体;font-size: 16px">D</span></p></td><td valign="center" style="border-left:none;border-right:1px solid windowtext;border-top:none;border-bottom:1px solid windowtext"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><span style="font-family: 宋体;font-size: 16px">D</span></p></td><td valign="center" style="border-left:none;border-right:1px solid windowtext;border-top:none;border-bottom:1px solid windowtext"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><span style="font-family: 宋体;font-size: 16px">D</span></p></td><td valign="center" style="border-left:none;border-right:1px solid windowtext;border-top:none;border-bottom:1px solid windowtext"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><span style="font-family: 宋体;font-size: 16px">D</span></p></td></tr><tr><td valign="center" style="border-left:1px solid windowtext;border-right:1px solid windowtext;border-top:none;border-bottom:1px solid windowtext"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><span style="font-family: 宋体;font-size: 16px">中国知网</span></p></td><td valign="center" style="border-left:none;border-right:1px solid windowtext;border-top:none;border-bottom:1px solid windowtext"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><span style="font-family: 宋体;font-size: 16px">D</span></p></td><td valign="center" style="border-left:none;border-right:1px solid windowtext;border-top:none;border-bottom:1px solid windowtext"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><span style="font-family: 宋体;font-size: 16px">D</span></p></td><td valign="center" style="border-left:none;border-right:1px solid windowtext;border-top:none;border-bottom:1px solid windowtext"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><span style="font-family: 宋体;font-size: 16px">D</span></p></td><td valign="center" style="border-left:none;border-right:1px solid windowtext;border-top:none;border-bottom:1px solid windowtext"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><span style="font-family: 宋体;font-size: 16px">D</span></p></td></tr><tr><td valign="center" style="border-left:1px solid windowtext;border-right:1px solid windowtext;border-top:none;border-bottom:1px solid windowtext"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><span style="font-family: 宋体;font-size: 16px">校档案馆</span></p></td><td valign="center" style="border-left:none;border-right:1px solid windowtext;border-top:none;border-bottom:1px solid windowtext"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><span style="font-family: 宋体;font-size: 16px">/</span></p></td><td valign="center" style="border-left:none;border-right:1px solid windowtext;border-top:none;border-bottom:1px solid windowtext"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><span style="font-family: 宋体;font-size: 16px">/</span></p></td><td valign="center" style="border-left:none;border-right:1px solid windowtext;border-top:none;border-bottom:1px solid windowtext"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><span style="font-family: 宋体;font-size: 16px">Z</span></p></td><td valign="center" style="border-left:none;border-right:1px solid windowtext;border-top:none;border-bottom:1px solid windowtext"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><span style="font-family: 宋体;font-size: 16px">Z</span></p></td><td width="147" valign="center" style="border-left: none; border-right: 1px solid windowtext; border-top: none; border-bottom: 1px solid windowtext;"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><span style="font-family: 宋体;font-size: 16px">直接放入档案袋</span></p></td></tr><tr><td width="146" valign="center" style="border-left: 1px solid windowtext; border-right: 1px solid windowtext; border-top: none; border-bottom: 1px solid windowtext;"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><span style="font-family: 宋体;font-size: 16px">校图书馆</span></p></td><td width="409" valign="center" colspan="5" style="border-left: none; border-right: 1px solid windowtext; border-top: none; border-bottom: 1px solid windowtext;"><p style="text-align:center;margin-top:0;margin-right:0;margin-bottom:0;margin-left:0;text-indent:0;"><span style="font-family: 宋体;font-size: 16px">以校图书馆通知为准</span></p></td></tr></tbody></table></div></div><p><br></p>
+</div></div>
+
+
+<div id="div_vote_id">
+
+
+
+</div>
+        
+</div>
+</form>
+
+
+
+<style>
+    .art-body img.px50 {
+        vertical-align: middle !important;
+        display: inline !important;
+        margin:0;margin-right: 10px;}
+</style>
+<script>
+    $(function () {
+        //  内容页小图标居左
+        var img_len = $(".art-body img")
+        img_len.each(function (i, item) {
+            if ($(item).innerWidth() < 50) {
+                $(item).addClass("px50")
+            }
+        })
+        // 手机版内容页图片偏右
+        $(".art-body img").parents("p").css("text-indent", "0")
+    })
+</script>
+
+</DIV></DIV>
+<DIV class="clear"></DIV></DIV>
+<DIV class="footer">
+<DIV class="foot px1400">
+<DIV class="foot-l"><p><a href="mailto:yjspy@ccnu.edu.cn" style="color:#fff">研究生院培养办 yjspy@ccnu.edu.cn</a></p>
+                
+<p><a href="mailto:yjszb@ccnu.edu.cn" style="color:#fff">研究生院招办 yjszb@ccnu.edu.cn</a></p>
+                
+<p><a href="mailto:xwb@ccnu.edu.cn" style="color:#fff">研究生院学位办 xwb@ccnu.edu.cn</a></p>
+                
+</DIV>
+<DIV class="foot-m">                    <div class="social">
+                                    <div class="grp">
+                        <a class="ico tel"></a>
+                        <div class="drop">
+                            <img src="../../images/ewm.jpg" class="tp" alt="微博" style="display:none">
+                        </div>
+                    </div>
+                    <div class="grp">
+                        <em class="ico wx"></em>
+                        <div class="drop">
+                            <img src="../../images/ewm.jpg" class="tp" alt="微信" style="display:none">
+                        </div>
+                    </div>
+                    
+                </div>
+            
+
+</DIV>
+<DIV class="foot-r">
+<P><!-- 版权内容请在本组件"内容配置-版权"处填写 -->
+<p>版权所有：华中师范大学研究生院（专业学位管理中心） 2012 All Rights Reserved.</p></P>
+<P>今日访问: <script language="javascript" src="../../_dwr/util.js"></script><script language="javascript" src="../../_dwr/interface/PageCounterDWR.js"></script><span id="a1061904" name="a1061904"></span>   
+
+<script>
+function getvisittimea1061904()
+{       
+    PageCounterDWR.getVisittime('1925099496','1054','DATE_COUNTER','200','10',callbackdataa1061904)
+}
+function callbackdataa1061904(data)
+{
+    document.getElementById("a1061904").innerHTML = data; 
+}
+getvisittimea1061904();
+</script>累计访问:<span id="a1061911" name="a1061911"></span>   
+
+<script>
+function getvisittimea1061911()
+{       
+    PageCounterDWR.getVisittime('1925099496','1054','TOTAL_COUNTER','1000','10',callbackdataa1061911)
+}
+function callbackdataa1061911(data)
+{
+    document.getElementById("a1061911").innerHTML = data; 
+}
+getvisittimea1061911();
+</script></P></DIV>
+<DIV class="clear"></DIV></DIV></DIV>
+
+</BODY></HTML>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

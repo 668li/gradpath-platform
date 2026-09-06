@@ -40,14 +40,33 @@ from sqlalchemy.orm import Session
 
 from app.crawlers.base_crawler import BaseCrawler
 from app.crawlers.registry import register_crawler
+from app.crawlers.research.dedup import normalize_url
 from app.crawlers.research.transformer import ResearchTransformer
 from app.database import SessionLocal
-from app.models.crawler_run import CrawlerRun
-from app.services.research_ingestion import store_research_items
+from app.services.research_ingestion import _load_kaoyan_dedup_baseline, store_research_items
 
 logger = logging.getLogger(__name__)
 
 SOURCE_CHANNEL = "official_announce"
+
+
+def _load_known_urls() -> set[str]:
+    """库内已收录条目的归一化 URL 集合（URL 级增量抓取的过滤基线）。
+
+    复用 research_ingestion 的去重基线（approved KaoyanNews + 全部 kaoyan_news
+    类型 ExternalResearchItem 的 source_url）。加载失败返回空集——退化为全量
+    抓取，绝不因增量层故障丢数据。
+    """
+    try:
+        db = SessionLocal()
+        try:
+            _, norm_urls = _load_kaoyan_dedup_baseline(db)
+            return norm_urls
+        finally:
+            db.close()
+    except Exception as e:  # noqa: BLE001 — 增量层故障不阻断采集
+        logger.warning(f"[{SOURCE_CHANNEL}] 已知 URL 集合加载失败，退化为全量抓取: {e}")
+        return set()
 
 # 默认官方栏目：已实测验证（2026-08 抓取确认结构稳定）。
 # 高校研招网公告是考研信息差核心权威源（调剂/复试线/考点公告）。
@@ -67,6 +86,147 @@ DEFAULT_SECTIONS: list[dict[str, Any]] = [
         "detail_url_re": r"/page\.htm$",
         "content_cls": "post-content",
         "cms": "news_list",
+    },
+    # ===== 2026-09-05 扩校 9 所（真实抓取标定达标，scripts/calibrate_official_announce.py） =====
+    # 验收线：列表页 parse_list_generic ≥5 条（detail_url_re 过滤后）且含 ≤18 个月内日期、
+    # 详情页 extract_main_text ≥80 字；夹具与黄金测试见 tests/test_extraction_upgrade.py。
+    # cms="generic"（bs4 + 祖先链日期证据 + 同域护栏）；content_cls 留空走自动探测
+    # （trafilatura 优先，未命中降级容器候选探测）。
+    {
+        "name": "西安交通大学研究生院招生通知",
+        "list_url": "https://gs.xjtu.edu.cn/tzgg/zsgz.htm",
+        "detail_url_re": r"/info/\d+/\d+\.htm",
+        "cms": "generic",
+    },
+    {
+        "name": "武汉大学研究生院通知公告",
+        "list_url": "https://gs.whu.edu.cn/",
+        "detail_url_re": r"/info/\d+/\d+\.htm",
+        "cms": "generic",
+    },
+    {
+        "name": "华中科技大学研究生院通知公告",
+        "list_url": "https://gs.hust.edu.cn/",
+        "detail_url_re": r"/info/\d+/\d+\.htm",
+        "cms": "generic",
+    },
+    {
+        "name": "东南大学研究生院通知公告",
+        "list_url": "https://seugs.seu.edu.cn/",
+        "detail_url_re": r"/page\.htm$",
+        "cms": "generic",
+    },
+    {
+        # yz.scu.edu.cn 为川大研究生院/研招办运营的校级官方招生网
+        # （gs.scu.edu.cn 主站 WAF 412 全拦，弃用，见 PROGRESS.md）
+        "name": "四川大学研究生招生通知公告",
+        "list_url": "https://yz.scu.edu.cn/",
+        "detail_url_re": r"/zsxx/Details/[0-9a-f-]{36}",
+        "cms": "generic",
+    },
+    {
+        # yz.sdu.edu.cn 为山大研招办官网（yjsy.sdu.edu.cn 域名不存在）
+        "name": "山东大学研究生招生通知公告",
+        "list_url": "https://yz.sdu.edu.cn/",
+        "detail_url_re": r"/info/\d+/\d+\.htm",
+        "cms": "generic",
+    },
+    {
+        "name": "天津大学研究生院通知公告",
+        "list_url": "https://gs.tju.edu.cn/",
+        "detail_url_re": r"/info/\d+/\d+\.htm",
+        "cms": "generic",
+    },
+    {
+        "name": "厦门大学研究生院通知公告",
+        "list_url": "https://gs.xmu.edu.cn/",
+        "detail_url_re": r"/info/\d+/\d+\.htm",
+        "cms": "generic",
+    },
+    {
+        # yz.cqu.edu.cn 为重大研招办官网（yjs.cqu.edu.cn robots.txt 禁止抓取）
+        "name": "重庆大学研究生招生通知公告",
+        "list_url": "https://yz.cqu.edu.cn/",
+        "detail_url_re": r"/news/\d{4}-\d{2}/\d+\.html",
+        "cms": "generic",
+    },
+    # ===== 2026-09-05 晚 Top50 扩展批（双模板指纹标定，夹具+_calibration.json 封印） =====
+    {
+        "name": "复旦大学研究生院通知公告",
+        "list_url": "https://gsao.fudan.edu.cn/",
+        "detail_url_re": r"\.html?$",
+        "cms": "generic",
+        "content_cls": "",
+    },
+    {
+        "name": "电子科技大学研究生院通知公告",
+        "list_url": "https://gr.uestc.edu.cn/",
+        "detail_url_re": r"/\d{4,}[^/]*$",
+        "cms": "generic",
+        "content_cls": "",
+    },
+    {
+        "name": "北京理工大学研究生院通知公告",
+        "list_url": "https://grd.bit.edu.cn/zsgz/zsxx/index.htm",
+        "detail_url_re": r"\.html?$",
+        "cms": "generic",
+        "content_cls": "",
+    },
+    {
+        "name": "中国人民大学研究生院通知公告",
+        "list_url": "http://pgs.ruc.edu.cn/",
+        "detail_url_re": r"\.html?$",
+        "cms": "generic",
+        "content_cls": "",
+    },
+    {
+        "name": "华东师范大学研究生院通知公告",
+        "list_url": "https://yjsy.ecnu.edu.cn/",
+        "detail_url_re": r"\.html?$",
+        "cms": "generic",
+        "content_cls": "",
+    },
+    {
+        "name": "湖南大学研究生院通知公告",
+        "list_url": "http://gra.hnu.edu.cn/",
+        "detail_url_re": r"\.html?$",
+        "cms": "generic",
+        "content_cls": "",
+    },
+    {
+        "name": "兰州大学研究生院通知公告",
+        "list_url": "https://ge.lzu.edu.cn/",
+        "detail_url_re": r"\.html?$",
+        "cms": "generic",
+        "content_cls": "",
+    },
+    {
+        "name": "吉林大学研究生院通知公告",
+        "list_url": "http://yjsy.jlu.edu.cn/",
+        "detail_url_re": r"/info/\d+/\d+\.htm",
+        "cms": "generic",
+        "content_cls": "",
+    },
+    {
+        "name": "郑州大学研究生院通知公告",
+        "list_url": "http://yz.zzu.edu.cn/",
+        "detail_url_re": r"\.html?$",
+        "cms": "generic",
+        "content_cls": "",
+    },
+    {
+        "name": "西北工业大学研究生院通知公告",
+        "list_url": "http://yzb.nwpu.edu.cn/",
+        "detail_url_re": r"\.html?$",
+        "cms": "generic",
+        "content_cls": "",
+    },
+    {
+        "name": "华中师范大学研究生院通知公告",
+        "list_url": "https://gs.ccnu.edu.cn/",
+        "detail_url_re": r"\.html?$",
+        "cms": "generic",
+        "content_cls": "",
     },
 ]
 
@@ -258,30 +418,37 @@ class OfficialAnnounceCrawler(BaseCrawler):
     name = "official_announce"
     category = "research"
     description = "官方公告爬虫（高校研招网/省级考试院，edu.cn/gov.cn）"
+    DEFAULT_SECTIONS_OVERRIDE = None  # 子类可覆写自有栏目表（如资讯聚合）
 
     def __init__(self, config: dict = None):
         super().__init__(config)
-        self.sections = self.config.get("sections", DEFAULT_SECTIONS)
+        # 子类可通过 DEFAULT_SECTIONS_OVERRIDE 换用自己的栏目表（如资讯聚合）
+        self.sections = self.config.get(
+            "sections", self.DEFAULT_SECTIONS_OVERRIDE or DEFAULT_SECTIONS
+        )
         self._rate_limit = self.config.get("rate_limit", 1.5)
         self.fetch_detail = bool(self.config.get("fetch_detail", True))
         self._use_browser = bool(self.config.get("use_browser", False))
-        # 并发窗口：config 显式设置并发时启用（默认 1 保持串行）。
-        # 由 BaseCrawler 提供每线程独立 Session 与全局节流，网络限速不失效。
-        self._concurrency = int(self.config.get("concurrency", 1))
+        # 并发窗口：跨域并行（默认 4；同域仍按 per-host 节流串行，礼貌性不变）。
+        # 由 BaseCrawler 提供每线程独立 Session 与 per-host 节流，网络限速不失效。
+        self._concurrency = int(self.config.get("concurrency", 4))
 
     # ===== fetch：逐栏目抓列表 + 逐条详情（可选并发） =====
 
     def fetch(self) -> list[dict]:
         """遍历栏目：列表页条目 (title, url, date) → 详情页正文。
 
-        并发>1 时对栏目做线程池并行（每个栏目内部仍串行抓列表+详情，
-        避免对单一站点并发轰炸）；并发绝不触碰 robots 护栏（_request 保留
-        SSRF/robots/重试/限速）。结果顺序不保证，调用方不依赖次序。
+        URL 级增量：列表解析出的条目若已收录（归一化 URL 命中库内基线）则
+        跳过详情抓取——高频轮询下 90%+ 条目是重复，跳过它们是吞吐的关键。
+        并发>1 时对栏目做线程池并行（跨域并行、同域仍 per-host 节流串行）；
+        并发绝不触碰 robots 护栏（_request 保留 SSRF/robots/重试/限速）。
+        结果顺序不保证，调用方不依赖次序。
         """
+        known_urls = _load_known_urls()
         if self._concurrency <= 1 or len(self.sections) <= 1:
             raw_items: list[dict] = []
             for section in self.sections:
-                raw_items.extend(self._fetch_section(section))
+                raw_items.extend(self._fetch_section(section, known_urls))
             return raw_items
 
         from concurrent.futures import ThreadPoolExecutor
@@ -289,7 +456,7 @@ class OfficialAnnounceCrawler(BaseCrawler):
         raw_items: list[dict] = []
         max_workers = min(self._concurrency, len(self.sections))
         with ThreadPoolExecutor(max_workers=max_workers) as ex:
-            futures = [ex.submit(self._fetch_section, s) for s in self.sections]
+            futures = [ex.submit(self._fetch_section, s, known_urls) for s in self.sections]
             for fut in futures:
                 try:
                     raw_items.extend(fut.result())
@@ -298,9 +465,11 @@ class OfficialAnnounceCrawler(BaseCrawler):
                     logger.error(f"[{self.name}] 并发栏目抓取异常: {e}")
         return raw_items
 
-    def _fetch_section(self, section: dict) -> list[dict]:
-        """抓取单个栏目：列表页 → 逐条详情，返回条目数组（不抛未捕获异常）。"""
+    def _fetch_section(self, section: dict, known_urls: set[str] | None = None) -> list[dict]:
+        """抓取单个栏目：列表页 → 逐条详情；已收录 URL 跳过详情（URL 级增量）。"""
         collected: list[dict] = []
+        known = known_urls or set()
+        known_skipped = 0
         list_url = section.get("list_url", "")
         if not list_url:
             return collected
@@ -321,6 +490,10 @@ class OfficialAnnounceCrawler(BaseCrawler):
                 title = re.sub(r"\s+", " ", html_lib.unescape(title)).strip()
                 if not title or not url:
                     continue
+                if known and normalize_url(url) in known:
+                    known_skipped += 1
+                    self._bump_stats("known_skipped")
+                    continue
                 detail_text = ""
                 detail_title = title
                 if self.fetch_detail:
@@ -337,7 +510,10 @@ class OfficialAnnounceCrawler(BaseCrawler):
                     }
                 )
                 section_items += 1
-            logger.info(f"[{self.name}] 栏目 {section.get('name')} 解析 {section_items} 条")
+            logger.info(
+                f"[{self.name}] school={section.get('name')} parsed={section_items} "
+                f"known_skipped={known_skipped}"
+            )
         except Exception as e:
             self._bump_stats("errors")
             logger.error(f"[{self.name}] 栏目 {list_url} 抓取失败: {e}")
@@ -412,14 +588,11 @@ class OfficialAnnounceCrawler(BaseCrawler):
             db = SessionLocal()
             own_db = True
         try:
-            run_record = CrawlerRun(
-                source_name=self.name,
-                category=self.category,
-                status="running",
-            )
+            run_record = self._new_run_record()
             db.add(run_record)
             db.commit()
             db.refresh(run_record)
+            self.run_record_id = str(run_record.id)
 
             result = store_research_items(
                 db,
@@ -430,7 +603,7 @@ class OfficialAnnounceCrawler(BaseCrawler):
                 run_id=str(run_record.id),
             )
 
-            run_record.status = "success"
+            self._finalize_run_record(run_record)
             run_record.items_fetched = self.stats.get("fetched", 0)
             run_record.items_stored = result["inserted"]
             run_record.items_duplicates = result["duplicated"]
@@ -472,6 +645,61 @@ def main():
     crawler = OfficialAnnounceCrawler(config={"fetch_detail": not args.no_detail})
     result = crawler.run()
     print(result)
+
+
+# ===== 考研资讯聚合（2026-09-05）：聚合大站是量的来源，官方公告是信息差来源，两线并行 =====
+# 列表页均已实际抓取验证（parse_list_generic ≥40 条全新鲜）；.com/.cn 域名走
+# model_inferred 信任档（_infer_credibility 按域名判），吃不到官方快速通道。
+NEWS_AGGREGATE_SECTIONS: list[dict[str, Any]] = [
+    {
+        "name": "中国教育在线·考研要闻",
+        "list_url": "https://kaoyan.eol.cn/nnews/",
+        "detail_url_re": r"\.s?html?$",
+        "cms": "generic",
+        "content_cls": "",
+    },
+    {
+        "name": "中国教育在线·报考热门",
+        "list_url": "https://kaoyan.eol.cn/bao_kao/re_men/",
+        "detail_url_re": r"\.s?html?$",
+        "cms": "generic",
+        "content_cls": "",
+    },
+    {
+        "name": "中国教育在线·政策变化",
+        "list_url": "https://kaoyan.eol.cn/bao_kao/zheng_ce_bian_hua/",
+        "detail_url_re": r"\.s?html?$",
+        "cms": "generic",
+        "content_cls": "",
+    },
+    {
+        "name": "中国教育在线·招生简章",
+        "list_url": "https://kaoyan.eol.cn/bao_kao/zhao_sheng_jian_zhang/",
+        "detail_url_re": r"\.s?html?$",
+        "cms": "generic",
+        "content_cls": "",
+    },
+    {
+        "name": "中公考研·资讯",
+        "list_url": "http://www.offcn.com/kaoyan/",
+        "detail_url_re": r"\.s?html?$",
+        "cms": "generic",
+        "content_cls": "",
+    },
+]
+
+
+@register_crawler
+class NewsAggregateCrawler(OfficialAnnounceCrawler):
+    """考研资讯聚合爬虫（eol/offcn 等资讯站列表页）。
+
+    与官方公告完全同一套管线（URL 增量/per-host 限速/单行记账/PENDING 审核队列）。
+    """
+
+    name = "news_aggregates"
+    category = "research"
+    description = "考研资讯聚合（中国教育在线/中公考研资讯列表，PENDING 审核队列）"
+    DEFAULT_SECTIONS_OVERRIDE = NEWS_AGGREGATE_SECTIONS
 
 
 if __name__ == "__main__":

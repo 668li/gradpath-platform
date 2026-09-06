@@ -1,12 +1,12 @@
 """人生平衡轮服务层 — 8 维度生活满意度评估与 AI 分析。"""
 
-from datetime import date
 from uuid import UUID
 
 from sqlalchemy.orm import Session
 
 from app.models.life_wheel import LifeWheelSnapshot
 from app.services.ai_orchestrator import AIOrchestrator
+from app.utils.business_time import beijing_today
 
 # 8 个生活维度定义
 LIFE_DIMENSIONS = [
@@ -40,7 +40,7 @@ def submit_scores(db: Session, user_id: UUID, scores: dict, notes: str | None) -
 
     snapshot = LifeWheelSnapshot(
         user_id=user_id,
-        snapshot_date=date.today(),
+        snapshot_date=beijing_today(),
         scores=scores,
         overall_score=overall,
         notes=notes,

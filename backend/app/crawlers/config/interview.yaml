@@ -1,8 +1,9 @@
+# 2026-09-04 注销：从未被调度（crawler_runs 零记录）；文件保留待拍板
 # 面试经验爬虫配置
 name: interview
 category: career
 description: 面试经验爬虫
-enabled: true
+enabled: false
 schedule: weekly  # 每周更新面试经验
 rate_limit: 1.0
 rate_limit_ms: 1000

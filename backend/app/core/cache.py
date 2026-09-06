@@ -17,6 +17,17 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 
+def _json_default(o: Any) -> Any:
+    """json.dumps 的 default 钩子：pydantic 模型必须 dump 成 dict 再存。
+
+    绝不能落到 str(o)——那会把整个模型存成字符串，get 出来后
+    response_model 校验直接 500（生产 Redis 命中路径的真实事故）。
+    """
+    if hasattr(o, "model_dump"):
+        return o.model_dump(mode="json")
+    return str(o)
+
+
 class SimpleCache:
     """简单的内存缓存，支持 TTL（过期时间）和 LRU 淘汰。"""
 
@@ -114,7 +125,7 @@ class RedisCache:
 
         if self._redis:
             try:
-                serialized = json.dumps(value, ensure_ascii=False, default=str)
+                serialized = json.dumps(value, ensure_ascii=False, default=_json_default)
                 self._redis.setex(full_key, ttl, serialized)
             except Exception as e:
                 logger.debug("Redis SET 失败: %s", e)

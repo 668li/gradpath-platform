@@ -1,0 +1,1446 @@
+﻿<!DOCTYPE html><HTML lang="en"><HEAD><TITLE>华中师范大学研究生院（专业学位管理中心）</TITLE><meta name="pageType" content="1">
+<meta name="pageTitle" content="华中师范大学研究生院（专业学位管理中心）">
+<META Name="keywords" Content="华中师范大学研究生院（专业学位管理中心）" />
+
+
+
+
+
+<META charset="UTF-8">
+<META content="IE=edge" http-equiv="X-UA-Compatible">
+<META name="viewport" content="width=device-width, initial-scale=1.0"><LINK rel="stylesheet" href="style/slick-theme.css"><LINK rel="stylesheet" href="style/slick.css"><LINK rel="stylesheet" href="style/public.css"><LINK rel="stylesheet" href="style/index.css">
+
+<!--Announced by Visual SiteBuilder 9-->
+<script language="javascript" src="_sitegray/_sitegray.js"></script>
+<!-- CustomerNO:7765626265723230747f475c50575742000400034456 -->
+<link rel="stylesheet" type="text/css" href="index.vsb.css" />
+<script type="text/javascript" src="/system/resource/js/counter.js"></script>
+<script type="text/javascript">_jsq_(1001,'/index.jsp',-1,1925099496)</script>
+</HEAD>
+<BODY>
+<DIV id="main-top">
+<DIV class="header">
+<DIV class="head px1400">
+<DIV class="head-l"><A href="">
+<!-- 网站logo图片地址请在本组件"内容配置-网站logo"处填写 -->
+<a href="index.htm" title="研究生院新站"><img src="images/newlogo.png" width="444" height="76" border="0" alt="研究生院新站" title="研究生院新站"></a></A></DIV>
+<DIV class="head-r">
+<DIV class="link"><script language="javascript" src="/system/resource/js/dynclicks.js"></script><script language="javascript" src="/system/resource/js/openlink.js"></script>
+ <a href="http://www.ccnu.edu.cn/">学校主站</a>
+ 
+
+
+</DIV>
+<DIV class="search">
+
+
+<script language="javascript" src="/system/resource/js/base64.js"></script><script language="javascript" src="/system/resource/js/jquery/jquery-latest.min.js"></script><script language="javascript" src="/system/resource/vue/vue.js"></script><script language="javascript" src="/system/resource/vue/bluebird.min.js"></script><script language="javascript" src="/system/resource/vue/axios.js"></script><script language="javascript" src="/system/resource/vue/polyfill.js"></script><script language="javascript" src="/system/resource/vue/token.js"></script><LINK href="/system/resource/vue/static/element/index.css" type="text/css" rel="stylesheet"><script language="javascript" src="/system/resource/vue/static/element/index.js"></script><script language="javascript" src="/system/resource/vue/static/public.js"></script><style>
+    #appu2 .qwss{
+        height: 31px;
+        font-size: 12px;
+        min-width: 190px;
+        max-width: 600px;
+        width: 60%;
+        margin-top: -15px;
+        outline: none;
+        padding-left: 10px;
+        border-radius: 2px;
+        border: 1px solid #e4e7ed;}
+    #appu2 .tj{
+        padding-left: 6px;
+        letter-spacing: 5px;
+        color: white;
+        min-width: 53px;
+        max-width: 150px;
+        height: 32px;
+        border: 0;
+        border-radius: 2px;
+        background-color: #1890FF;
+        position: relative;
+        top: 1px;
+        width: 20%;
+        margin-top: -15px;}
+</style>
+<div id="divu2"></div>
+<script type="text/html" id="htmlu2">
+    <div id="appu2">
+        <div v-if="!isError">
+        <input type="text" placeholder="请输入关键词…" autocomplete=off v-model=query.keyWord @keyup.enter="onSubmit">
+                        <input type="image" src="images/search.png" v-on:click="onSubmit()">
+         
+        </div>
+        <div v-if="isError" style="color: #b30216; font-size:18px;text-align: center;padding:20px;">
+            应用维护中！
+        </div>
+    </div>
+</script>
+<script>
+    $("#divu2").html($("#htmlu2").text());
+</script>
+<script>
+    var appOwner = "1925099496";
+    var token = gettoken(10);
+    var urlPrefix = "/aop_component/";
+
+    jQuery.support.cors = true;
+    $.ajaxSetup({
+        beforeSend: function (request, settings) {
+            request.setRequestHeader("Authorization", token);
+            request.setRequestHeader("owner", appOwner);
+        }
+    });
+
+    new Vue({
+        el: "#appu2",
+        data: function () {
+            return {
+                query: {
+                    keyWord: "",//搜索关键词
+                    owner: appOwner,
+                    token: token,
+                    urlPrefix: urlPrefix,
+                    lang:"i18n_zh_CN"
+                },
+                isError: false
+            }
+        },
+        mounted: function () {
+            var _this = this;
+            // _this.init();
+        },
+        methods: {
+            init: function(){
+                $.ajax({
+                    url: "/aop_component//webber/search/test",
+                    type: "get",
+                    success: function (response) {
+                        if (response.code == "0000") {
+                        } else if (response.code == "220") {
+                            _this.isError = true;
+                            console.log(response);
+                        } else if (!response.code) {
+                            _this.isError = true;
+                            console.log(response);
+                        }
+                    },
+                    error: function (response) {
+                        _this.isError = true;
+                    }
+                });
+            },
+            onSubmit: function (e) {
+                var url = "/aop_views/search/modules/resultpc/soso.html";
+                if ("10" == "1" || "10" == "2") {
+                    url = "" + url;
+                }
+                var _this = this;
+                var query = _this.query;
+                if (url.indexOf("?") > -1) {
+                    url = url.split("?")[0];
+                }
+                if (query.keyWord) {
+                    var query = new Base64().encode(JSON.stringify(query));
+                    window.open(url + "?query=" + query);
+                } else {
+                    alert("请填写搜索内容")
+                }
+            },
+        }
+    })
+</script>
+</DIV></DIV></DIV></DIV>
+<DIV id="nav">
+<DIV class="nav px1400">
+<UL>                   
+<li><a href="index.htm">网站首页</a>
+                    </li>
+                    
+<li><a href="jgjj/xwyyjsjygk.htm">机构简介</a>
+                        <ul>
+
+                            <li><a href="jgjj/xwyyjsjygk.htm">学位与研究生教育概况</a></li>
+                            
+
+                            <li><a href="jgjj/bszn.htm">办事指南</a></li>
+                            
+
+                            <li><a href="jgjj/ndxl.htm">年度校历</a></li>
+                            
+
+                            <li><a href="jgjj/zlxzzx/pygz.htm">资料下载中心</a></li>
+                            
+                        </ul>
+                    </li>
+                    
+<li><a href="djgz/zbgk.htm">党建工作</a>
+                        <ul>
+
+                            <li><a href="djgz/zbgk.htm">支部概况</a></li>
+                            
+
+                            <li><a href="djgz/zbdt.htm">支部动态</a></li>
+                            
+
+                            <li><a href="djgz/xxzl.htm">学习资料</a></li>
+                            
+
+                            <li><a href="djgz/ztjyzl.htm">主题教育专栏</a></li>
+                            
+                        </ul>
+                    </li>
+                    
+<li><a href="zsgz/ssyjs.htm">招生工作</a>
+                        <ul>
+
+                            <li><a href="zsgz/ssyjs.htm">硕士研究生</a></li>
+                            
+
+                            <li><a href="zsgz/bsyjs.htm">博士研究生</a></li>
+                            
+
+                            <li><a href="zsgz/gatyjs.htm">港澳台研究生</a></li>
+                            
+
+                            <li><a href="zsgz/gsszzgdjyss.htm">公师生在职攻读教育硕士</a></li>
+                            
+
+                            <li><a href="zsgz/zszc.htm">招生政策</a></li>
+                            
+
+                            <li><a href="zsgz/zsxc.htm">招生宣传</a></li>
+                            
+                        </ul>
+                    </li>
+                    
+<li><a href="pygz/xsxwjxgl.htm">培养工作</a>
+                        <ul>
+
+                            <li><a href="pygz/xsxwjxgl.htm">学术学位教学管理</a></li>
+                            
+
+                            <li><a href="pygz/zyxwjxgl.htm">专业学位教学管理</a></li>
+                            
+
+                            <li><a href="pygz/gfsfsjyssjxgl.htm">公费师范生教育硕士教学管理</a></li>
+                            
+
+                            <li><a href="pygz/yjspy.htm">研究生培养</a></li>
+                            
+
+                            <li><a href="pygz/cxjh.htm">创新计划</a></li>
+                            
+
+                            <li><a href="pygz/gjjl.htm">国际交流</a></li>
+                            
+
+                            <li><a href="pygz/sjjx.htm">实践教学</a></li>
+                            
+
+                            <li><a href="pygz/jzwgz.htm">教指委工作</a></li>
+                            
+
+                            <li><a href="pygz/gltl.htm">管理条例</a></li>
+                            
+                        </ul>
+                    </li>
+                    
+<li><a href="xjgl/zxsxjgl.htm">学籍管理</a>
+                        <ul>
+
+                            <li><a href="xjgl/zxsxjgl.htm">在校生学籍管理</a></li>
+                            
+
+                            <li><a href="xjgl/bysxjgl.htm">毕业生学籍管理</a></li>
+                            
+
+                            <li><a href="xjgl/xjyd.htm">学籍异动</a></li>
+                            
+
+                            <li><a href="xjgl/qjgl.htm">请假管理</a></li>
+                            
+
+                            <li><a href="xjgl/bytxcj.htm">毕业图像采集</a></li>
+                            
+
+                            <li><a href="xjgl/gltl.htm">管理条例</a></li>
+                            
+
+                            <li><a href="xjgl/dagl.htm">档案管理</a></li>
+                            
+                        </ul>
+                    </li>
+                    
+<li><a href="xwgz/xwpdwyh.htm">学位工作</a>
+                        <ul>
+
+                            <li><a href="xwgz/xwpdwyh.htm">学位评定委员会</a></li>
+                            
+
+                            <li><a href="xwgz/xwsygz.htm">学位授予工作</a></li>
+                            
+
+                            <li><a href="xwgz/tdxl.htm">同等学力</a></li>
+                            
+
+                            <li><a href="xwgz/yxxwlw.htm">优秀学位论文</a></li>
+                            
+
+                            <li><a href="xwgz/gltl.htm">管理条例</a></li>
+                            
+
+                            <li><a href="xwgz/ybfc.htm">优博风采</a></li>
+                            
+                        </ul>
+                    </li>
+                    
+<li><a href="dsxy/gzzd1/gjwj.htm">导师学院</a>
+                        <ul>
+
+                            <li><a href="dsxy/gzzd1/gjwj.htm">规章制度</a></li>
+                            
+
+                            <li><a href="dsxy/dslx.htm">导师遴选</a></li>
+                            
+
+                            <li><a href="dsxy/dspxkh.htm">导师培训考核</a></li>
+                            
+
+                            <li><a href="dsxy/dspx1.htm">导师评选</a></li>
+                            
+
+                            <li><a href="dsxy/dsfc.htm">导师风采</a></li>
+                            
+                        </ul>
+                    </li>
+                    
+<li><a href="zlgl/xwsqdgl.htm">质量管理</a>
+                        <ul>
+
+                            <li><a href="zlgl/xwsqdgl.htm">学位授权点管理</a></li>
+                            
+
+                            <li><a href="zlgl/yjsjyddgz.htm">研究生教育督导工作</a></li>
+                            
+
+                            <li><a href="zlgl/bs_ssxwlwcj.htm">博士、硕士学位论文抽检</a></li>
+                            
+
+                            <li><a href="zlgl/bsxwlwzlfxbg.htm">博士学位论文质量分析报告</a></li>
+                            
+
+                            <li><a href="zlgl/kxddyxfjs.htm">科学道德与学风建设</a></li>
+                            
+
+                            <li><a href="zlgl/gltl.htm">管理条例</a></li>
+                            
+                        </ul>
+                    </li>
+                    
+<li><a href="zygcsxy.htm">卓越工程师学院</a>
+                        <ul>
+
+                            <li><a href="zygcsxy/zzjg.htm">组织架构</a></li>
+                            
+
+                            <li><a href="zygcsxy/gztz.htm">工作通知</a></li>
+                            
+
+                            <li><a href="zygcsxy/zcwj.htm">政策文件</a></li>
+                            
+
+                            <li><a href="zygcsxy/hddt.htm">活动动态</a></li>
+                            
+
+                            <li><a href="zygcsxy/zlxz.htm">资料下载</a></li>
+                            
+                        </ul>
+                    </li>
+                    
+<div class="clear"></div></UL></DIV></DIV></DIV>
+<DIV class="banner">            <div>
+            <a href="" onclick="_addDynClicks(&#34;wbimage&#34;, 1925099496, 1024682)"><img src="images/banner.jpg" alt="">
+
+            </a>
+        </div>
+        
+        <div>
+            <a href="" onclick="_addDynClicks(&#34;wbimage&#34;, 1925099496, 1024680)"><img src="banner55.png" alt="">
+
+            </a>
+        </div>
+        
+        <div>
+            <a href="" onclick="_addDynClicks(&#34;wbimage&#34;, 1925099496, 1024681)"><img src="images/banner56.png" alt="">
+
+            </a>
+        </div>
+        
+</DIV><!-- 移动端头部 -->
+<DIV class="top">
+<DIV class="wap wap-menu"><IMG class="menu" alt="" src="images/menu.png"> <IMG class="close-menu" alt="" src="images/close.png"> </DIV></DIV>
+<DIV class="wap m-head">
+<DIV class="m-logo"><A href="index.htm"><IMG alt="" src="images/logo.png"></A> </DIV>
+<DIV class="m-nav">
+<DIV class="m-tlink">
+ <a href="http://www.ccnu.edu.cn/">学校主站</a>
+ 
+
+
+</DIV>
+
+
+<style>
+    #appu6 .qwss{
+        height: 31px;
+        font-size: 12px;
+        min-width: 190px;
+        max-width: 600px;
+        width: 60%;
+        margin-top: -15px;
+        outline: none;
+        padding-left: 10px;
+        border-radius: 2px;
+        border: 1px solid #e4e7ed;}
+    #appu6 .tj{
+        padding-left: 6px;
+        letter-spacing: 5px;
+        color: white;
+        min-width: 53px;
+        max-width: 150px;
+        height: 32px;
+        border: 0;
+        border-radius: 2px;
+        background-color: #1890FF;
+        position: relative;
+        top: 1px;
+        width: 20%;
+        margin-top: -15px;}
+</style>
+<div id="divu6"></div>
+<script type="text/html" id="htmlu6">
+    <div id="appu6">
+        <div v-if="!isError" class="m-search">
+        
+<input type="text" autocomplete=off v-model=query.keyWord @keyup.enter="onSubmit" placeholder="请输入内容">
+ <input type="image" src="images/search.png" align="absmiddle" style="cursor: hand" v-on:click="onSubmit()">
+ 
+        
+        </div>
+        <div v-if="isError" style="color: #b30216; font-size:18px;text-align: center;padding:20px;">
+            应用维护中！
+        </div>
+    </div>
+</script>
+<script>
+    $("#divu6").html($("#htmlu6").text());
+</script>
+<script>
+    var appOwner = "1925099496";
+    var token = gettoken(10);
+    var urlPrefix = "/aop_component/";
+
+    jQuery.support.cors = true;
+    $.ajaxSetup({
+        beforeSend: function (request, settings) {
+            request.setRequestHeader("Authorization", token);
+            request.setRequestHeader("owner", appOwner);
+        }
+    });
+
+    new Vue({
+        el: "#appu6",
+        data: function () {
+            return {
+                query: {
+                    keyWord: "",//搜索关键词
+                    owner: appOwner,
+                    token: token,
+                    urlPrefix: urlPrefix,
+                    lang:"i18n_zh_CN"
+                },
+                isError: false
+            }
+        },
+        mounted: function () {
+            var _this = this;
+            // _this.init();
+        },
+        methods: {
+            init: function(){
+                $.ajax({
+                    url: "/aop_component//webber/search/test",
+                    type: "get",
+                    success: function (response) {
+                        if (response.code == "0000") {
+                        } else if (response.code == "220") {
+                            _this.isError = true;
+                            console.log(response);
+                        } else if (!response.code) {
+                            _this.isError = true;
+                            console.log(response);
+                        }
+                    },
+                    error: function (response) {
+                        _this.isError = true;
+                    }
+                });
+            },
+            onSubmit: function (e) {
+                var url = "/aop_views/search/modules/resultpc/soso.html";
+                if ("10" == "1" || "10" == "2") {
+                    url = "" + url;
+                }
+                var _this = this;
+                var query = _this.query;
+                if (url.indexOf("?") > -1) {
+                    url = url.split("?")[0];
+                }
+                if (query.keyWord) {
+                    var query = new Base64().encode(JSON.stringify(query));
+                    window.open(url + "?query=" + query);
+                } else {
+                    alert("请填写搜索内容")
+                }
+            },
+        }
+    })
+</script>
+
+<UL>
+
+
+ <li class="active"> <a href="index.htm" title="网站首页">网站首页</a>
+                </li>
+
+<DIV class="clear"></DIV>
+
+
+
+ <li> <a href="jgjj/xwyyjsjygk.htm" title="机构简介">机构简介</a>
+<span></span>
+                    <ul>
+
+ <li> <a href="jgjj/xwyyjsjygk.htm" title="学位与研究生教育概况">学位与研究生教育概况</a></li>
+ <li> <a href="jgjj/bszn.htm" title="办事指南">办事指南</a></li>
+ <li> <a href="jgjj/ndxl.htm" title="年度校历">年度校历</a></li>
+ <li> <a href="jgjj/zlxzzx/pygz.htm" title="资料下载中心">资料下载中心</a></li>
+                    </ul>
+                </li>
+
+<DIV class="clear"></DIV>
+
+
+
+ <li> <a href="djgz/zbgk.htm" title="党建工作">党建工作</a>
+<span></span>
+                    <ul>
+
+ <li> <a href="djgz/zbgk.htm" title="支部概况">支部概况</a></li>
+ <li> <a href="djgz/zbdt.htm" title="支部动态">支部动态</a></li>
+ <li> <a href="djgz/xxzl.htm" title="学习资料">学习资料</a></li>
+ <li> <a href="djgz/ztjyzl.htm" title="主题教育专栏">主题教育专栏</a></li>
+                    </ul>
+                </li>
+
+<DIV class="clear"></DIV>
+
+
+
+ <li> <a href="zsgz/ssyjs.htm" title="招生工作">招生工作</a>
+<span></span>
+                    <ul>
+
+ <li> <a href="zsgz/ssyjs.htm" title="硕士研究生">硕士研究生</a></li>
+ <li> <a href="zsgz/bsyjs.htm" title="博士研究生">博士研究生</a></li>
+ <li> <a href="zsgz/gatyjs.htm" title="港澳台研究生">港澳台研究生</a></li>
+ <li> <a href="zsgz/gsszzgdjyss.htm" title="公师生在职攻读教育硕士">公师生在职攻读教育硕士</a></li>
+ <li> <a href="zsgz/zszc.htm" title="招生政策">招生政策</a></li>
+ <li> <a href="zsgz/zsxc.htm" title="招生宣传">招生宣传</a></li>
+                    </ul>
+                </li>
+
+<DIV class="clear"></DIV>
+
+
+
+ <li> <a href="pygz/xsxwjxgl.htm" title="培养工作">培养工作</a>
+<span></span>
+                    <ul>
+
+ <li> <a href="pygz/xsxwjxgl.htm" title="学术学位教学管理">学术学位教学管理</a></li>
+ <li> <a href="pygz/zyxwjxgl.htm" title="专业学位教学管理">专业学位教学管理</a></li>
+ <li> <a href="pygz/gfsfsjyssjxgl.htm" title="公费师范生教育硕士教学管理">公费师范生教育硕士教学管理</a></li>
+ <li> <a href="pygz/yjspy.htm" title="研究生培养">研究生培养</a></li>
+ <li> <a href="pygz/cxjh.htm" title="创新计划">创新计划</a></li>
+ <li> <a href="pygz/gjjl.htm" title="国际交流">国际交流</a></li>
+ <li> <a href="pygz/sjjx.htm" title="实践教学">实践教学</a></li>
+ <li> <a href="pygz/jzwgz.htm" title="教指委工作">教指委工作</a></li>
+ <li> <a href="pygz/gltl.htm" title="管理条例">管理条例</a></li>
+                    </ul>
+                </li>
+
+<DIV class="clear"></DIV>
+
+
+
+ <li> <a href="xjgl/zxsxjgl.htm" title="学籍管理">学籍管理</a>
+<span></span>
+                    <ul>
+
+ <li> <a href="xjgl/zxsxjgl.htm" title="在校生学籍管理">在校生学籍管理</a></li>
+ <li> <a href="xjgl/bysxjgl.htm" title="毕业生学籍管理">毕业生学籍管理</a></li>
+ <li> <a href="xjgl/xjyd.htm" title="学籍异动">学籍异动</a></li>
+ <li> <a href="xjgl/qjgl.htm" title="请假管理">请假管理</a></li>
+ <li> <a href="xjgl/bytxcj.htm" title="毕业图像采集">毕业图像采集</a></li>
+ <li> <a href="xjgl/gltl.htm" title="管理条例">管理条例</a></li>
+ <li> <a href="xjgl/dagl.htm" title="档案管理">档案管理</a></li>
+                    </ul>
+                </li>
+
+<DIV class="clear"></DIV>
+
+
+
+ <li> <a href="xwgz/xwpdwyh.htm" title="学位工作">学位工作</a>
+<span></span>
+                    <ul>
+
+ <li> <a href="xwgz/xwpdwyh.htm" title="学位评定委员会">学位评定委员会</a></li>
+ <li> <a href="xwgz/xwsygz.htm" title="学位授予工作">学位授予工作</a></li>
+ <li> <a href="xwgz/tdxl.htm" title="同等学力">同等学力</a></li>
+ <li> <a href="xwgz/yxxwlw.htm" title="优秀学位论文">优秀学位论文</a></li>
+ <li> <a href="xwgz/gltl.htm" title="管理条例">管理条例</a></li>
+ <li> <a href="xwgz/ybfc.htm" title="优博风采">优博风采</a></li>
+                    </ul>
+                </li>
+
+<DIV class="clear"></DIV>
+
+
+
+ <li> <a href="dsxy/gzzd1/gjwj.htm" title="导师学院">导师学院</a>
+<span></span>
+                    <ul>
+
+ <li> <a href="dsxy/gzzd1/gjwj.htm" title="规章制度">规章制度</a></li>
+ <li> <a href="dsxy/dslx.htm" title="导师遴选">导师遴选</a></li>
+ <li> <a href="dsxy/dspxkh.htm" title="导师培训考核">导师培训考核</a></li>
+ <li> <a href="dsxy/dspx1.htm" title="导师评选">导师评选</a></li>
+ <li> <a href="dsxy/dsfc.htm" title="导师风采">导师风采</a></li>
+                    </ul>
+                </li>
+
+<DIV class="clear"></DIV>
+
+
+
+ <li> <a href="zlgl/xwsqdgl.htm" title="质量管理">质量管理</a>
+<span></span>
+                    <ul>
+
+ <li> <a href="zlgl/xwsqdgl.htm" title="学位授权点管理">学位授权点管理</a></li>
+ <li> <a href="zlgl/yjsjyddgz.htm" title="研究生教育督导工作">研究生教育督导工作</a></li>
+ <li> <a href="zlgl/bs_ssxwlwcj.htm" title="博士、硕士学位论文抽检">博士、硕士学位论文抽检</a></li>
+ <li> <a href="zlgl/bsxwlwzlfxbg.htm" title="博士学位论文质量分析报告">博士学位论文质量分析报告</a></li>
+ <li> <a href="zlgl/kxddyxfjs.htm" title="科学道德与学风建设">科学道德与学风建设</a></li>
+ <li> <a href="zlgl/gltl.htm" title="管理条例">管理条例</a></li>
+                    </ul>
+                </li>
+
+<DIV class="clear"></DIV>
+
+
+
+ <li> <a href="zygcsxy.htm" title="卓越工程师学院">卓越工程师学院</a>
+<span></span>
+                    <ul>
+
+ <li> <a href="zygcsxy/zzjg.htm" title="组织架构">组织架构</a></li>
+ <li> <a href="zygcsxy/gztz.htm" title="工作通知">工作通知</a></li>
+ <li> <a href="zygcsxy/zcwj.htm" title="政策文件">政策文件</a></li>
+ <li> <a href="zygcsxy/hddt.htm" title="活动动态">活动动态</a></li>
+ <li> <a href="zygcsxy/zlxz.htm" title="资料下载">资料下载</a></li>
+                    </ul>
+                </li>
+
+<DIV class="clear"></DIV>
+
+
+</UL></DIV></DIV>
+<DIV class="main">
+<DIV class="section1">
+<DIV class="sect1 px1400">
+<DIV class="sect1-l">
+<DIV class="title">
+<H2><IMG alt="" src="images/tit-icon1.png"><SPAN>通知公告</SPAN></H2>
+</DIV>
+<DIV class="s1-l-bt"><SPAN class="on">全部公告</SPAN><SPAN>招生工作</SPAN><SPAN>培养工作</SPAN><SPAN>学位工作</SPAN><SPAN>学籍工作</SPAN><SPAN>导师学院</SPAN><SPAN>质量管理</SPAN></DIV>
+<DIV class="more1"><a href="qbgg.htm" class="on">更多+</a>
+
+<a href="zsgz/ssyjs.htm">更多+</a>
+<a href="pygz/xsxwjxgl.htm">更多+</a>
+<a href="xwgz/xwpdwyh.htm">更多+</a>
+<a href="xjgl/zxsxjgl.htm">更多+</a>
+<a href="dsxy/dslx.htm">更多+</a>
+<a href="zlgl/xwsqdgl.htm">更多+</a></DIV>
+<DIV class="s1-l-qh">
+
+<script language="javascript" src="/system/resource/js/centerCutImg.js"></script><script language="javascript" src="/system/resource/js/ajax.js"></script><ul class="list on">
+  <li><a href="info/1054/6923.htm">关于做好2026年下半年学位论文送审与学位授予相关工作的通知</a><span>2026-09-04</span></li>
+  <li><a href="info/1062/6913.htm">关于开展华中师范大学2027年研究生导师上岗审核工作的通知</a><span>2026-09-02</span></li>
+  <li><a href="info/1028/6893.htm">华中师范大学2027年接收优秀应届本科毕业生免试攻读研究生预报名通知</a><span>2026-08-26</span></li>
+  <li><a href="info/1177/6883.htm">学院风采合集：研数探微，善统知行丨华中师范大学数学与统计学学院研究生招生宣传册</a><span>2026-08-20</span></li>
+  <li><a href="info/1177/6873.htm">学院风采合集：崇德尚美，乐教精艺丨华中师范大学音乐学院研究生招生宣传册</a><span>2026-08-14</span></li>
+  <li><a href="info/1177/6863.htm">学院风采合集：慎思明辨，法行天下丨华中师范大学法学院研究生招生宣传册</a><span>2026-08-06</span></li>
+  <li><a href="info/1177/6803.htm">学院风采合集：群学致用，美美与共丨华中师范大学社会学院研究生招生宣传册</a><span>2026-07-25</span></li>
+  <li><a href="info/1177/6783.htm">学院风采合集：大成政国，公行天下丨华中师范大学政治与国际关系学院研究生招生宣传册</a><span>2026-07-21</span></li>
+  <li><a href="info/1028/6773.htm">关于调整华中师范大学2027年硕士研究生招生考试有关事项的通知</a><span>2026-07-17</span></li>
+  <li><a href="info/1177/6733.htm">学院风采合集：多彩化院，同心向前丨华中师范大学化学学院-绿色农药全国重点实验室研究生招生宣传册</a><span>2026-07-10</span></li>
+  <li><a href="info/1039/6723.htm">关于公布2026年度优秀研究生教育创新资助项目立项名单的通知</a><span>2026-07-09</span></li>
+</ul>
+                        
+<script>_showDynClickBatch(['dynclicks_u8_6923','dynclicks_u8_6913','dynclicks_u8_6893','dynclicks_u8_6883','dynclicks_u8_6873','dynclicks_u8_6863','dynclicks_u8_6803','dynclicks_u8_6783','dynclicks_u8_6773','dynclicks_u8_6733','dynclicks_u8_6723'],[6923,6913,6893,6883,6873,6863,6803,6783,6773,6733,6723],"wbnews", 1925099496)</script>
+
+
+<ul class="list">
+  <li><a href="info/1028/6893.htm">华中师范大学2027年接收优秀应届本科毕业生免试攻读研究生预报名通知</a><span>2026-08-26</span></li>
+  <li><a href="info/1028/6773.htm">关于调整华中师范大学2027年硕士研究生招生考试有关事项的通知</a><span>2026-07-17</span></li>
+  <li><a href="info/1028/6673.htm">华中师范大学2026级研究生新生入学须知</a><span>2026-07-02</span></li>
+  <li><a href="info/1029/6613.htm">关于2026年博士研究生拟录取手续办理和录取通知书邮寄信息确认工作的通知</a><span>2026-06-18</span></li>
+  <li><a href="info/1029/6593.htm">华中师范大学2026年博士研究生拟录取名单公示</a><span>2026-06-17</span></li>
+  <li><a href="info/1029/6433.htm">华中师范大学2026年面向港澳台地区招收研究生拟录取名单公示</a><span>2026-05-27</span></li>
+  <li><a href="info/1029/6383.htm">华中师范大学关于2026年高校思想政治工作骨干在职攻读博士学位研究生专项计划招生有关事项的说明（二）</a><span>2026-05-16</span></li>
+  <li><a href="info/1029/6313.htm">华中师范大学部分专业 2026 年招收博士研究生报名公告</a><span>2026-05-08</span></li>
+  <li><a href="info/1029/6303.htm">华中师范大学2026年“师范教育协同提质计划” 博士研究生招生简章</a><span>2026-05-08</span></li>
+  <li><a href="info/1028/6273.htm">关于2026年硕士研究生拟录取手续办理和录取通知书邮寄信息确认工作的通知</a><span>2026-05-06</span></li>
+  <li><a href="info/1028/6263.htm">华中师范大学2026年硕士研究生拟录取名单公示</a><span>2026-05-06</span></li>
+</ul>
+                        
+<script>_showDynClickBatch(['dynclicks_u9_6893','dynclicks_u9_6773','dynclicks_u9_6673','dynclicks_u9_6613','dynclicks_u9_6593','dynclicks_u9_6433','dynclicks_u9_6383','dynclicks_u9_6313','dynclicks_u9_6303','dynclicks_u9_6273','dynclicks_u9_6263'],[6893,6773,6673,6613,6593,6433,6383,6313,6303,6273,6263],"wbnews", 1925099496)</script>
+
+
+<ul class="list">
+  <li><a href="info/1039/6723.htm">关于公布2026年度优秀研究生教育创新资助项目立项名单的通知</a><span>2026-07-09</span></li>
+  <li><a href="info/1038/6703.htm">关于做好华中师范大学2026年研究生教育教学改革研究项目申报立项工作的通知</a><span>2026-07-08</span></li>
+  <li><a href="info/1035/6693.htm">关于2026级研究生申请公共外语免修的通知</a><span>2026-07-07</span></li>
+  <li><a href="info/1039/6683.htm">华中师范大学2026年度优秀研究生教育创新资助项目拟立项项目公示</a><span>2026-07-03</span></li>
+  <li><a href="info/1036/6663.htm">2026-2027学年度第一学期全日制研究生公共课安排</a><span>2026-07-01</span></li>
+  <li><a href="info/1041/6643.htm">关于举办第五届中国研究生网络安全创新大赛校赛的通知</a><span>2026-06-25</span></li>
+  <li><a href="info/1039/6563.htm">关于开展华中师范大学2026年度优秀研究生教育创新资助项目申报工作的通知</a><span>2026-06-12</span></li>
+  <li><a href="info/1037/6523.htm">关于公布2026级非全日制公费师范生教育硕士2026年暑期课程安排的通知</a><span>2026-06-09</span></li>
+  <li><a href="info/1037/6493.htm">关于做好本学期公费师范生教育硕士课程结业工作的通知</a><span>2026-06-03</span></li>
+  <li><a href="info/1039/6473.htm">关于公布2025年华中师范大学教育博士实践创新项目立项编号的通知</a><span>2026-06-01</span></li>
+  <li><a href="info/1036/6393.htm">关于做好本学期研究生期末考试的通知</a><span>2026-05-19</span></li>
+</ul><script>_showDynClickBatch(['dynclicks_u10_6723','dynclicks_u10_6703','dynclicks_u10_6693','dynclicks_u10_6683','dynclicks_u10_6663','dynclicks_u10_6643','dynclicks_u10_6563','dynclicks_u10_6523','dynclicks_u10_6493','dynclicks_u10_6473','dynclicks_u10_6393'],[6723,6703,6693,6683,6663,6643,6563,6523,6493,6473,6393],"wbnews", 1925099496)</script>
+
+
+<ul class="list">
+  <li><a href="info/1054/6923.htm">关于做好2026年下半年学位论文送审与学位授予相关工作的通知</a><span>2026-09-04</span></li>
+  <li><a href="info/1054/6543.htm">2026年6月11日授予博士学位公示</a><span>2026-06-11</span></li>
+  <li><a href="info/1054/5923.htm" style="font-weight:bold;">关于做好2026年上半年学位论文送审与学位授予相关工作的通知</a><span>2026-03-09</span></li>
+  <li><a href="info/1054/5103.htm">关于做好2025年下半年学位论文送审与学位授予相关工作的通知</a><span>2025-09-08</span></li>
+  <li><a href="info/1056/4273.htm">关于我校2025年同等学力人员申请硕士学位外国语水平和学科综合水平全国统一考试工作的提示</a><span>2025-03-11</span></li>
+  <li><a href="info/1054/4183.htm">关于做好2025年上半年学位论文送审与学位授予相关工作的通知</a><span>2025-02-25</span></li>
+  <li><a href="info/1054/3734.htm">关于做好2024年下半年研究生学位论文送审与学位授予相关工作的通知</a><span>2024-09-11</span></li>
+  <li><a href="info/1053/3638.htm">学习学位法，推进研究生教育分类发展——华中师范大学第七届学位评定委员会第十八次会议顺利召开</a><span>2024-06-16</span></li>
+  <li><a href="info/1056/3492.htm">关于我校2024年同等学力人员申请硕士学位外国语水平和学科综合水平全国统一考试工作的提示</a><span>2024-03-20</span></li>
+  <li><a href="info/1054/3433.htm">关于做好2024上半年论文送审与学位授予相关工作的通知</a><span>2024-03-04</span></li>
+  <li><a href="info/1054/3318.htm">关于组织2023届秋季学期毕业研究生进行学位授予信息核对的通知</a><span>2023-12-04</span></li>
+</ul><script>_showDynClickBatch(['dynclicks_u11_6923','dynclicks_u11_6543','dynclicks_u11_5923','dynclicks_u11_5103','dynclicks_u11_4273','dynclicks_u11_4183','dynclicks_u11_3734','dynclicks_u11_3638','dynclicks_u11_3492','dynclicks_u11_3433','dynclicks_u11_3318'],[6923,6543,5923,5103,4273,4183,3734,3638,3492,3433,3318],"wbnews", 1925099496)</script>
+
+
+<ul class="list">
+  <li><a href="info/1047/3743.htm">华中师范大学研究生学籍信息更正（变更姓名）所需材料目录</a><span>2024-09-12</span></li>
+  <li><a href="info/1047/1670.htm">华中师范大学延期毕业申请表（2022版）</a><span>2022-06-08</span></li>
+  <li><a href="info/1051/1723.htm">关于做好2022届毕业研究生档案整理寄送工作的通知</a><span>2022-06-01</span></li>
+  <li><a href="info/1049/1683.htm">关于开展2022年秋季和2023年春季毕业研究生图像采集工作的通知</a><span>2022-04-12</span></li>
+  <li><a href="info/1045/1580.htm">关于开展我校2022年春季预计毕业研究生学籍信息核对工作的通知</a><span>2022-03-07</span></li>
+  <li><a href="info/1046/1741.htm">关于开展我校2021年秋季预计毕业研究生学籍信息核对工作的通知</a><span>2021-11-26</span></li>
+  <li><a href="info/1049/1684.htm">关于开展2021年秋季和2022年春季毕业研究生图像采集工作的通知</a><span>2021-09-06</span></li>
+  <li><a href="info/1051/1724.htm">关于做好2021届毕业研究生档案整理寄送工作的通知</a><span>2021-06-08</span></li>
+  <li><a href="info/1046/1742.htm">关于开展我校2021年春季毕业研究生学籍信息核对工作的通知</a><span>2021-04-06</span></li>
+  <li><a href="info/1049/1686.htm">关于2021年春季毕业生图像信息补拍的通知</a><span>2021-03-16</span></li>
+  <li><a href="info/1049/1685.htm">关于2021年春季毕业生图像信息补拍的通知</a><span>2021-03-16</span></li>
+</ul><script>_showDynClickBatch(['dynclicks_u12_3743','dynclicks_u12_1670','dynclicks_u12_1723','dynclicks_u12_1683','dynclicks_u12_1580','dynclicks_u12_1741','dynclicks_u12_1684','dynclicks_u12_1724','dynclicks_u12_1742','dynclicks_u12_1686','dynclicks_u12_1685'],[3743,1670,1723,1683,1580,1741,1684,1724,1742,1686,1685],"wbnews", 1925099496)</script>
+
+
+<ul class="list">
+  <li><a href="info/1062/6913.htm">关于开展华中师范大学2027年研究生导师上岗审核工作的通知</a><span>2026-09-02</span></li>
+  <li><a href="info/1063/6423.htm">关于开展华中师范大学2026年新晋研究生导师培训的通知</a><span>2026-05-25</span></li>
+  <li><a href="info/1063/6093.htm">关于举办2026年研究生导师网络培训的通知</a><span>2026-03-31</span></li>
+  <li><a href="info/1062/5123.htm">关于开展华中师范大学2026年研究生导师上岗审核工作的通知</a><span>2025-09-08</span></li>
+  <li><a href="info/1063/4623.htm">关于开展华中师范大学2025年新晋研究生导师培训的通知</a><span>2025-05-26</span></li>
+  <li><a href="info/1064/4393.htm">关于开展2025年“我心目中的好导师”和 “好导师团队”评选活动的通知</a><span>2025-04-08</span></li>
+  <li><a href="info/1063/4213.htm">关于举办2025年研究生导师网络培训的通知</a><span>2025-03-04</span></li>
+  <li><a href="info/1062/3721.htm">关于开展华中师范大学2025年研究生导师上岗审核工作的通知</a><span>2024-09-05</span></li>
+  <li><a href="info/1063/3664.htm">加强研究生导师队伍建设，华中师范大学开展2024年新晋研究生导师培训</a><span>2024-07-01</span></li>
+  <li><a href="info/1063/3612.htm">关于开展华中师范大学2024年新晋研究生导师培训的通知</a><span>2024-05-28</span></li>
+  <li><a href="info/1063/3602.htm">我校教师代表参加教育硕士现代教育技术领域研究生指导教师研修会</a><span>2024-05-20</span></li>
+</ul><script>_showDynClickBatch(['dynclicks_u13_6913','dynclicks_u13_6423','dynclicks_u13_6093','dynclicks_u13_5123','dynclicks_u13_4623','dynclicks_u13_4393','dynclicks_u13_4213','dynclicks_u13_3721','dynclicks_u13_3664','dynclicks_u13_3612','dynclicks_u13_3602'],[6913,6423,6093,5123,4623,4393,4213,3721,3664,3612,3602],"wbnews", 1925099496)</script>
+
+
+<ul class="list">
+  <li><a href="info/1071/6843.htm">关于组织收看2025年湖北省科学道德和学风建设宣讲教育报告会的通知</a><span>2025-09-12</span></li>
+  <li><a href="info/1067/4363.htm">学位授权点建设年度报告（2020-2025年学位授权点周期性合格评估）</a><span>2025-04-01</span></li>
+  <li><a href="info/1067/4333.htm">研究生教育发展质量年度报告（2020-2025年学位授权点周期性合格评估）</a><span>2025-03-31</span></li>
+  <li><a href="info/1071/6853.htm">关于组织收看2024年湖北省科学道德和学风建设宣讲教育报告会的通知</a><span>2024-09-23</span></li>
+  <li><a href="info/1071/6833.htm">关于设置学位论文相关学术不端行为举报方式的公告</a><span>2024-06-21</span></li>
+  <li><a href="info/1071/6823.htm">教育部关于加强高等学校科研诚信建设和学术不端治理的指导意见</a><span>2024-06-20</span></li>
+  <li><a href="info/1067/3392.htm">关于报送2023年度《研究生教育发展质量年度报告》和《学位授权点建设年度报告》的通知</a><span>2024-01-17</span></li>
+  <li><a href="info/1071/3202.htm">关于组织收看2023年湖北省科学道德和学风建设宣讲教育报告会的通知</a><span>2023-10-30</span></li>
+  <li><a href="info/1067/3066.htm">华中师范大学2022年学位授权点建设年度报告</a><span>2023-09-06</span></li>
+  <li><a href="info/1067/3062.htm">华中师范大学2022年研究生教育发展质量年度报告</a><span>2023-09-06</span></li>
+  <li><a href="info/1068/2835.htm">关于开展2023年春季学期研究生学位论文答辩专项督导工作的通知</a><span>2023-05-06</span></li>
+</ul><script>_showDynClickBatch(['dynclicks_u14_6843','dynclicks_u14_4363','dynclicks_u14_4333','dynclicks_u14_6853','dynclicks_u14_6833','dynclicks_u14_6823','dynclicks_u14_3392','dynclicks_u14_3202','dynclicks_u14_3066','dynclicks_u14_3062','dynclicks_u14_2835'],[6843,4363,4333,6853,6833,6823,3392,3202,3066,3062,2835],"wbnews", 1925099496)</script>
+</DIV></DIV>
+<DIV class="sect1-r">
+<DIV class="title tit-other">
+<DIV class="bt-tit">
+<H2 class="on"><IMG alt="" src="images/tit-icon2.png"><IMG class="tit-icon" alt="" src="images/tit-icon2-other.png"><SPAN>研院新闻</SPAN></H2>
+<H2><IMG alt="" src="images/tit-icon3.png"><IMG class="tit-icon" alt="" src="images/tit-icon3-other.png"><SPAN>培养单位动态</SPAN></H2></DIV>
+<DIV class="more"><A class="on" href="yyxw.htm">更多+</A><A href="pydwdt.htm">更多+</A></DIV></DIV>
+<DIV class="sect1-r-qh">
+
+                        
+
+<div class="qh-box on">
+
+                              <div class="sr-top">
+                                <a href="info/1080/6903.htm">
+                                    <div class="pic"><img src="virtual_attach_file.vsb?afc=5U46C7UN7DU474MQNCsM7VfUmGbUNMqRL4r7ozWfnmWVL4-0gihFp2hmCIa0Mkh7n1h2UShRLl-snzrVLRLaU4WVUlVVL7-8nm7ZMm62UmQFMNCZLm7soRVFLzNiUNlJv2bjo4OeosT/vsTFptrsgDTJQty0gzL0gzLJqdpnx&oid=1925099496&e=.png" alt="研究生院（专业学位管理中心）召开新学期全院工作部署大会"></div>
+                                    <p>研究生院（专业学位管理中心）召开新学期全院工作部署大会</p>
+                                </a>
+                            </div>
+
+       
+                            <div class="sr-down">
+                                <ul class="list" style="margin-top:0">
+
+                                  
+                                  
+                   
+                                     <li><a href="info/1080/6793.htm">研究生院召开2026年暑期公费师范生教育硕士学生代表午餐会</a><span>07-22</span></li>
+
+
+                             
+                                   
+
+                                </ul>
+                            </div>
+       
+                            <div class="sr-down">
+                                <ul class="list" style="margin-top:0">
+
+                                  
+                                  
+                   
+                                     <li><a href="info/1080/6763.htm">转发：【最美援疆人】华中师范大学杨万文</a><span>07-17</span></li>
+
+
+                             
+                                   
+
+                                </ul>
+                            </div>
+       
+                            <div class="sr-down">
+                                <ul class="list" style="margin-top:0">
+
+                                  
+                                  
+                   
+                                     <li><a href="info/1080/6753.htm">聚焦研究生导师队伍发展，华中师范大学开展2026年新晋研究生导师培训</a><span>07-11</span></li>
+
+
+                             
+                                   
+
+                                </ul>
+                            </div>
+       
+                            <div class="sr-down">
+                                <ul class="list" style="margin-top:0">
+
+                                  
+                                  
+                   
+                                     <li><a href="info/1080/6583.htm">华中师范大学湖北省卓越工程师学院揭牌成立</a><span>06-15</span></li>
+
+
+                             
+                                   
+
+                                </ul>
+                            </div>
+       
+                            <div class="sr-down">
+                                <ul class="list" style="margin-top:0">
+
+                                  
+                                  
+                   
+                                     <li><a href="info/1080/6513.htm">校地融合再谱新篇 华中师范大学与黄陂区携手共建两大基地</a><span>06-08</span></li>
+
+
+                             
+                                   
+
+                                </ul>
+                            </div>
+       
+
+                        </div>
+
+
+
+
+
+<script>_showDynClickBatch(['dynclicks_u15_6903','dynclicks_u15_6793','dynclicks_u15_6763','dynclicks_u15_6753','dynclicks_u15_6583','dynclicks_u15_6513'],[6903,6793,6763,6753,6583,6513],"wbnews", 1925099496)</script>
+
+
+                        
+
+<div class="qh-box">
+
+                              <div class="sr-top">
+                                <a href="info/1081/2184.htm">
+                                    <div class="pic"><img src="virtual_attach_file.vsb?afc=5LmCCZMR7iLNLsnQlliMmT7UlVRL4vqaUNVVMRlbMmLbMNC0gihFp2hmCIa0oSyDUYh2n1yanRAknRL4MmUanRf2nm6fL8QfMmNYolUaMzAFoz7sMmn2UmMFLzr2L4-Jv2bjo4OeosT/vsTFptrsgDTJQty0gzL0gzLJqdpnx&oid=1925099496&e=.png" alt="外国语学院举办第二届公费师范生教育硕士培养导师交流会"></div>
+                                    <p>外国语学院举办第二届公费师范生教育硕士培养导师交流会</p>
+                                </a>
+                            </div>
+
+       
+                            <div class="sr-down">
+                                <ul class="list" style="margin-top:0">
+
+                                  
+                                  
+                   
+                                     <li><a href="info/1081/2830.htm">公共管理学院在第七届中国研究生公共管理案例大赛中再获佳绩</a><span>04-28</span></li>
+
+
+                             
+                                   
+
+                                </ul>
+                            </div>
+       
+                            <div class="sr-down">
+                                <ul class="list" style="margin-top:0">
+
+                                  
+                                  
+                   
+                                     <li><a href="info/1081/2178.htm">打造产教融合协同育人样板 ——《湖北日报》访华中师范大学外国语学院副院长王佳宇教授</a><span>03-20</span></li>
+
+
+                             
+                                   
+
+                                </ul>
+                            </div>
+       
+                            <div class="sr-down">
+                                <ul class="list" style="margin-top:0">
+
+                                  
+                                  
+                   
+                                     <li><a href="info/1081/2179.htm">坚定法治信仰，增强法治素养，培育时代新人：我校第二届法治文化节开幕</a><span>11-22</span></li>
+
+
+                             
+                                   
+
+                                </ul>
+                            </div>
+       
+                            <div class="sr-down">
+                                <ul class="list" style="margin-top:0">
+
+                                  
+                                  
+                   
+                                     <li><a href="info/1081/2180.htm">公共管理学院连续三年在中国研究生公共管理案例大赛中斩获佳绩</a><span>08-30</span></li>
+
+
+                             
+                                   
+
+                                </ul>
+                            </div>
+       
+                            <div class="sr-down">
+                                <ul class="list" style="margin-top:0">
+
+                                  
+                                  
+                   
+                                     <li><a href="info/1081/2181.htm">物理学院第二届“汲物载梦·携理启航”研究生教学创新大赛顺利举行</a><span>05-09</span></li>
+
+
+                             
+                                   
+
+                                </ul>
+                            </div>
+       
+
+                        </div>
+
+
+
+
+
+<script>_showDynClickBatch(['dynclicks_u16_2184','dynclicks_u16_2830','dynclicks_u16_2178','dynclicks_u16_2179','dynclicks_u16_2180','dynclicks_u16_2181'],[2184,2830,2178,2179,2180,2181],"wbnews", 1925099496)</script>
+</DIV></DIV>
+<DIV class="clear"></DIV></DIV></DIV>
+<DIV class="section2">
+<DIV class="sect2 px1400">
+<DIV class="sect2-l">
+<DIV class="sect2-l-top">
+<DIV class="sect2-ll-l">
+<DIV class="title tit-other">
+<DIV class="bt-tit">
+<H2 class="on"><IMG alt="" src="images/tit-icon2.png"><IMG class="tit-icon" alt="" src="images/tit-icon2-other.png"><SPAN>导师风采</SPAN></H2>
+<H2><IMG alt="" src="images/tit-icon3.png"><IMG class="tit-icon" alt="" src="images/tit-icon3-other.png"><SPAN>优博风采</SPAN></H2></DIV>
+<DIV class="more"><A class="on" href="dsxy/dsfc.htm">更多+</A><A href="xwgz/ybfc.htm">更多+</A></DIV></DIV>
+<DIV class="s2-l-qh">
+
+<div class="s2-qh-box on">
+                                    
+<div>
+                                        <a href="info/1065/5553.htm">
+                                            <div class="pic"><img src="virtual_attach_file.vsb?afc=5U4QCkL8lPL8lDMQ7lbL8-YMmf7L4LqanlUbLl7sLz7YU8-0gihFp2hmCIa0UYhVnSyiLkh2Uz74LzlZLmQVnNUaMRnkn7-DU4-8L4MVLRWFoRv4Um7inzAFM7-iLmNJv2bjo4OeosT/vsTFptrsgDTJQty0gzL0gzLJqdpnx&oid=1925099496&e=.png" alt="2025年“好导师团队”——基础教育均衡创新团队（负责人：左明章）">
+                                                <div class="date" style="display:none">2025年11月17日</div>
+                                            </div>
+                                            <div class="text">
+                                                <h2>2025年“好导师团队”——基础教育均衡创新团队（负责人：左明章）</h2>
+                                                <p>  好导师团队</p>
+                                            </div>
+                                        </a></div>
+                                    
+
+
+<div>
+                                        <a href="info/1065/5543.htm">
+                                            <div class="pic"><img src="virtual_attach_file.vsb?afc=5L7QCkoRV2nzl8LQNCiMzQ7LzrkM4WqRL7lPUzCDMzfkUmC0gihFp2hmCIa0nky8LYhkokyPMN7PU4-8Mm9sLzLsLNLiLmMfU8WVoRvanRnFMm94Ll7ZUNWFL4NanzvJv2bjo4OeosT/vsTFptrsgDTJQty0gzL0gzLJqdpnx&oid=1925099496&e=.png" alt="2025年“好导师团队”——体育产业创新研究团队（负责人：陈元欣）">
+                                                <div class="date" style="display:none">2025年11月17日</div>
+                                            </div>
+                                            <div class="text">
+                                                <h2>2025年“好导师团队”——体育产业创新研究团队（负责人：陈元欣）</h2>
+                                                <p> 好导师团队</p>
+                                            </div>
+                                        </a></div>
+                                    
+
+
+<div>
+                                        <a href="info/1065/5533.htm">
+                                            <div class="pic"><img src="virtual_attach_file.vsb?afc=5LNVCkU8LZo7-PMQ8CPMm-iLmMfM4LqYoRWfUmLPU8-ioz90gihFp2hmCIa0LShfL1yYMYhVoR94oRf7UmCYMNlPLzGPUNr7LzCbUm9DU8MFMllbMm9DMlWFo7W7nNCJv2bjo4OeosT/vsTFptrsgDTJQty0gzL0gzLJqdpnx&oid=1925099496&e=.png" alt="2025年“好导师团队”——偏微分方程导师团队（负责人：郭玉劲）">
+                                                <div class="date" style="display:none">2025年11月17日</div>
+                                            </div>
+                                            <div class="text">
+                                                <h2>2025年“好导师团队”——偏微分方程导师团队（负责人：郭玉劲）</h2>
+                                                <p>好导师团队</p>
+                                            </div>
+                                        </a></div>
+                                    
+
+
+<div>
+                                        <a href="info/1065/5523.htm">
+                                            <div class="pic"><img src="virtual_attach_file.vsb?afc=5n7nCVMN-ZMR9ZUQmVfLmT2nN-sLRLqZnRLbL7LDMRCsMl-0gihFp2hmCIa0L1h2U1yPUYhRU4Q2MRfVnzWRU4lPMz9DLNliMzvaLRvDM8nFU8UsU467L4VFMRUiMNUJv2bjo4OeosT/vsTFptrsgDTJQty0gzL0gzLJqdpnx&oid=1925099496&e=.png" alt="2025年“好导师团队”——明清史硕导团队（负责人：吴琦）">
+                                                <div class="date" style="display:none">2025年11月17日</div>
+                                            </div>
+                                            <div class="text">
+                                                <h2>2025年“好导师团队”——明清史硕导团队（负责人：吴琦）</h2>
+                                                <p>  好导师团队</p>
+                                            </div>
+                                        </a></div>
+                                    
+
+
+<div>
+                                        <a href="info/1065/5503.htm">
+                                            <div class="pic"><img src="virtual_attach_file.vsb?afc=5UzQCfol-soRLZUQNL8LmCZn7lDUNWqkMNrfM8Lbnz-sLz-0gihFp2hmCIa0n1yDnkybU1ysLzvsozV2LRUPozGPozLPUzA2M4l4nzQfU4nFnNn7L7-PM8rFM4CaUz9Jv2bjo4OeosT/vsTFptrsgDTJQty0gzL0gzLJqdpnx&oid=1925099496&e=.png" alt="2025年“好导师团队”——教育经济与管理团队（负责人：雷万鹏）">
+                                                <div class="date" style="display:none">2025年11月17日</div>
+                                            </div>
+                                            <div class="text">
+                                                <h2>2025年“好导师团队”——教育经济与管理团队（负责人：雷万鹏）</h2>
+                                                <p>  好导师团队</p>
+                                            </div>
+                                        </a></div>
+                                    
+
+
+<div>
+                                        <a href="info/1065/5513.htm" style="font-weight:bold;">
+                                            <div class="pic"><img src="virtual_attach_file.vsb?afc=5nlWCfLNUsM7-boQzNDn7-4U8-anR-qiMRM2LlnkUNCDoRU0gihFp2hmCIa0okh2L1hkLSy4oRMRM4AfnlM2MzWfMzGYn7lDU8LaM8UbozfFozlYUmUPMz6FnlUZM4CJv2bjo4OeosT/vsTFptrsgDTJQty0gzL0gzLJqdpnx&oid=1925099496&e=.png" alt="2025年“我心目中的好导师”——马于涛">
+                                                <div class="date" style="display:none">2025年11月17日</div>
+                                            </div>
+                                            <div class="text">
+                                                <h2>2025年“我心目中的好导师”——马于涛</h2>
+                                                <p>  好导师</p>
+                                            </div>
+                                        </a></div>
+                                    
+
+
+<div>
+                                        <a href="info/1065/5423.htm" style="font-weight:bold;">
+                                            <div class="pic"><img src="virtual_attach_file.vsb?afc=5ollCZMlUaMlCbnQzMfMmAVLm67Uz9qbUm9soRVVMRCDM8l0gihFp2hmCIa0nkyiMky4USy4ollsMzU8U8Cao7WknzlsUz7ZnRvanR7aLNQFL4r2nz9YMRMFnm7aM4UJv2bjo4OeosT/vsTFptrsgDTJQty0gzL0gzLJqdpnx&oid=1925099496&e=.png" alt="2025年“我心目中的好导师”——易明">
+                                                <div class="date" style="display:none">2025年11月17日</div>
+                                            </div>
+                                            <div class="text">
+                                                <h2>2025年“我心目中的好导师”——易明</h2>
+                                                <p>    好导师</p>
+                                            </div>
+                                        </a></div>
+                                    
+
+
+<div>
+                                        <a href="info/1065/5433.htm" style="font-weight:bold;">
+                                            <div class="pic"><img src="virtual_attach_file.vsb?afc=5Lm7Cin77DM4LiUQmGsn7CaolLPnmnq7UlMRnRvsL46fUl70gihFp2hmCIa0UYh2MkyiL1yiU4MfMNLYUlLDL8-aozCZnlQRU8MfL4TfLmnFUzf2UllbM8VFnN-sM8CJv2bjo4OeosT/vsTFptrsgDTJQty0gzL0gzLJqdpnx&oid=1925099496&e=.png" alt="2025年“我心目中的好导师”——罗金红">
+                                                <div class="date" style="display:none">2025年11月17日</div>
+                                            </div>
+                                            <div class="text">
+                                                <h2>2025年“我心目中的好导师”——罗金红</h2>
+                                                <p> 好导师</p>
+                                            </div>
+                                        </a></div>
+                                    
+
+
+<div>
+                                        <a href="info/1065/5443.htm" style="font-weight:bold;">
+                                            <div class="pic"><img src="virtual_attach_file.vsb?afc=5nmrCRoRUsnlCsoQzN8UNLsozL4LN7qaLzTVMNL8oR-DnRv0gihFp2hmCIa0UYybUYhVUYyDnRQknmNbMmCaoRLPUmV7Um9PUzNaM8laUlWFM4G8nNL8M4MFLz-snNCDgjfJQ4Oeo4xbqjMb5DbT6YhXptQ0gY84gY84gtA8pUpcc&oid=1925099496&e=.png" alt="2025年“我心目中的好导师”——朱成周">
+                                                <div class="date" style="display:none">2025年11月17日</div>
+                                            </div>
+                                            <div class="text">
+                                                <h2>2025年“我心目中的好导师”——朱成周</h2>
+                                                <p>  好导师</p>
+                                            </div>
+                                        </a></div>
+                                    
+
+
+<div>
+                                        <a href="info/1065/5493.htm" style="font-weight:bold;">
+                                            <div class="pic"><img src="virtual_attach_file.vsb?afc=5L47CDMN7iolnVUQ8UaUl-ZoRLDMmUq4nlM2LNn2L8UDLRN0gihFp2hmCIa0okyYU1yboSyiLNrfMmNboRMRnz-YUNUaL4-8nzn7oRN4L4QFoR67L4TVLzMFLzLsLz-bgjfJQ4Oeo4xbqjMb5DbT6YhXptQ0gY84gY84gtA8pUpcc&oid=1925099496&e=.png" alt="2025年“我心目中的好导师”——赵蕴杰">
+                                                <div class="date" style="display:none">2025年11月17日</div>
+                                            </div>
+                                            <div class="text">
+                                                <h2>2025年“我心目中的好导师”——赵蕴杰</h2>
+                                                <p>  好导师</p>
+                                            </div>
+                                        </a></div>
+                                    
+
+
+<div>
+                                        <a href="info/1065/5483.htm" style="font-weight:bold;">
+                                            <div class="pic"><img src="virtual_attach_file.vsb?afc=5UmCCinm7sUmGsMQRf7M4MVUN-4MlUqZMRN8LRU8MllZL4L0gihFp2hmCIa0LkhVL1ybM1hkL47ZLmUbn7n7MmWfoRW2nl7bUlUZUmU8U4fFMRl8nN-4L8nFnzL8n7CJv2bjo4OeosT/vsTFptrsgDTJQty0gzL0gzLJqdpnx&oid=1925099496&e=.png" alt="2025年“我心目中的好导师”——王泽龙">
+                                                <div class="date" style="display:none">2025年11月17日</div>
+                                            </div>
+                                            <div class="text">
+                                                <h2>2025年“我心目中的好导师”——王泽龙</h2>
+                                                <p>  好导师</p>
+                                            </div>
+                                        </a></div>
+                                    
+
+
+<div>
+                                        <a href="info/1065/5473.htm" style="font-weight:bold;">
+                                            <div class="pic"><img src="virtual_attach_file.vsb?afc=5nRACkL8C8MmvinQzWRU8-YMzQfM8Cq4LzN4U8Lbnmrkoll0gihFp2hmCIa0nkybLkhfLSybU8Q7LNCbL8rRLzLYLNlPLzl4nRrfnzMRUlnFM4T7LR9DUzrFLz7iLzLZgjfJQ4Oeo4xbqjMb5DbT6YhXptQ0gY84gY84gtA8pUpcc&oid=1925099496&e=.png" alt="2025年“我心目中的好导师”——龚少英">
+                                                <div class="date" style="display:none">2025年11月17日</div>
+                                            </div>
+                                            <div class="text">
+                                                <h2>2025年“我心目中的好导师”——龚少英</h2>
+                                                <p>  好导师</p>
+                                            </div>
+                                        </a></div>
+                                    
+
+
+<div>
+                                        <a href="info/1065/5463.htm" style="font-weight:bold;">
+                                            <div class="pic"><img src="virtual_attach_file.vsb?afc=5LlVC7L4VRMRL4LQmVRoRfkLNL8U4Wq2LmrfUmA2UmGPL8U0gihFp2hmCIa0nShRMkysM1hRUlnknRVVnNVfL4CYnmGPLlMVolnfM8LYMlnFnRWRUz6fMzVFUmCsoRGJv2bjo4OeosT/vsTFptrsgDTJQty0gzL0gzLJqdpnx&oid=1925099496&e=.png" alt="2025年“我心目中的好导师”——张祚">
+                                                <div class="date" style="display:none">2025年11月17日</div>
+                                            </div>
+                                            <div class="text">
+                                                <h2>2025年“我心目中的好导师”——张祚</h2>
+                                                <p>  好导师</p>
+                                            </div>
+                                        </a></div>
+                                    
+
+
+<div>
+                                        <a href="info/1065/5453.htm" style="font-weight:bold;">
+                                            <div class="pic"><img src="virtual_attach_file.vsb?afc=5MNlCan7CZnRN4LQlUsL4CZUl-8nNrq7MRlPnmNsMmQkLR90gihFp2hmCIa0nkhVn1yYnkyaMm-sUzQVLmCYo7UYnRTfU8n7nm9anmlsUznFUml8LNWfnRWFn77aU4GJv2bjo4OeosT/vsTFptrsgDTJQty0gzL0gzLJqdpnx&oid=1925099496&e=.png" alt="2025年“我心目中的好导师”——张必春">
+                                                <div class="date" style="display:none">2025年11月17日</div>
+                                            </div>
+                                            <div class="text">
+                                                <h2>2025年“我心目中的好导师”——张必春</h2>
+                                                <p>好导师</p>
+                                            </div>
+                                        </a></div>
+                                    
+
+
+<div>
+                                        <a href="info/1065/5413.htm" style="font-weight:bold;">
+                                            <div class="pic"><img src="virtual_attach_file.vsb?afc=5L4UCZL7LPMRvZMQl-PM4VRMR7sL4GqbL4r7M87bLzAfU4-0gihFp2hmCIa0LYyZMShRnShkMRC4nNMVn7MkM4A2Lz74olMVLRffU8rRLRrFLNQVMNl4UlMFnR7Po7lJv2bjo4OeosT/vsTFptrsgDTJQty0gzL0gzLJqdpnx&oid=1925099496&e=.png" alt="2025年“我心目中的好导师“——王治">
+                                                <div class="date" style="display:none">2025年11月17日</div>
+                                            </div>
+                                            <div class="text">
+                                                <h2>2025年“我心目中的好导师“——王治</h2>
+                                                <p>好导师</p>
+                                            </div>
+                                        </a></div>
+                                    
+
+                                    
+                                    
+                                    
+                                </div>
+                                
+<script>_showDynClickBatch(['dynclicks_u17_5553','dynclicks_u17_5543','dynclicks_u17_5533','dynclicks_u17_5523','dynclicks_u17_5503','dynclicks_u17_5513','dynclicks_u17_5423','dynclicks_u17_5433','dynclicks_u17_5443','dynclicks_u17_5493','dynclicks_u17_5483','dynclicks_u17_5473','dynclicks_u17_5463','dynclicks_u17_5453','dynclicks_u17_5413'],[5553,5543,5533,5523,5503,5513,5423,5433,5443,5493,5483,5473,5463,5453,5413],"wbnews", 1925099496)</script>
+
+
+<div class="s2-qh-box">
+                                                                        
+                                    
+                                    
+                                </div>
+                                
+
+</DIV></DIV>
+<DIV class="sect2-ll-r">
+<DIV class="title">
+<H2><IMG alt="" src="images/tit-icon6.png"><SPAN>讲座论坛</SPAN></H2>
+<DIV class="more"><A href="jzlt.htm">更多+</A></DIV></DIV>
+
+<UL>
+                                 <li>
+                                    <a href="info/1083/5633.htm">关于举办第二百一十七期“华大论坛”的通知</a>
+                                    <p><img src="images/time.png" alt="">时间：2025年12月12日（星期五）下午16:30</p>
+                                    <p><img src="images/dz.png" alt="">地点：南湖综合楼1楼报告厅</p>
+                                    <p><img src="images/zjr.png" alt="">主讲人：Efim Zelmanov</p>
+                                   
+                                </li>
+                                
+                                 <li>
+                                    <a href="info/1083/5383.htm">关于举办第二百一十六期“华大论坛”的通知</a>
+                                    <p><img src="images/time.png" alt="">时间：2025年11月7日（星期五） 下午15:30</p>
+                                    <p><img src="images/dz.png" alt="">地点：城市与环境科学学院116报告厅</p>
+                                    <p><img src="images/zjr.png" alt="">主讲人：贺灿飞</p>
+                                   
+                                </li>
+                                
+                                 <li>
+                                    <a href="info/1083/3862.htm">关于举办第二百一十五期“华大论坛”的通知</a>
+                                    <p><img src="images/time.png" alt="">时间：2024年11月4日（星期一）上午10:00</p>
+                                    <p><img src="images/dz.png" alt="">地点：城市与环境科学学院116报告厅</p>
+                                    <p><img src="images/zjr.png" alt="">主讲人：邵明安</p>
+                                   
+                                </li>
+                                
+</UL><script>_showDynClickBatch(['dynclicks_u19_5633','dynclicks_u19_5383','dynclicks_u19_3862'],[5633,5383,3862],"wbnews", 1925099496)</script>
+</DIV></DIV>
+<DIV class="sect2-l-down">    <ul>
+                            
+                            <li>
+                                <a href="http://www.ccnu.edu.cn/jgsz/xbxy_s_zx_.htm" onclick="_addDynClicks(&#34;wbimage&#34;, 1925099496, 69814)">
+                                    <div class="pic"><img src="images/s3-l-pic1.jpg" alt="研究生培养单位"></div>
+                                </a>
+                            </li>
+                            
+                            <li>
+                                <a href="yxyjsms.htm" onclick="_addDynClicks(&#34;wbimage&#34;, 1925099496, 69815)">
+                                    <div class="pic"><img src="images/s3-l-pic2.jpg" alt="院系研究生教学秘书联系方式"></div>
+                                </a>
+                            </li>
+                            
+                            <li>
+                                <a href="https://hsdpingtai.mh.chaoxing.com/" onclick="_addDynClicks(&#34;wbimage&#34;, 1925099496, 69816)">
+                                    <div class="pic"><img src="images/s3-l-pic3.jpg" alt="学术与职业素养公共课程"></div>
+                                </a>
+                            </li>
+                            
+</ul></DIV></DIV>
+<DIV class="sect2-r">
+<DIV class="title">
+<H2><IMG alt="" src="images/tit-icon7.png"><SPAN>研究生网上事务大厅</SPAN></H2></DIV>
+<UL><li>
+<a href="http://grd.ccnu.edu.cn/yjsxt/qblogin"><i><img src="images/dt-icon1.png" alt="" class="dt"><img src="images/dt-icon1-other.png" alt="" class="dt-other"></i><span>研究生教育综合平台</span></a>
+</li>
+                        
+<li>
+<a href="https://grd.ccnu.edu.cn/yjsxt/xtgl/login_slogin.html;jsessionid=8B920599F3F59C660656D43F18F1825A"><i><img src="images/dt-icon2.png" alt="" class="dt"><img src="images/dt-icon2-other.png" alt="" class="dt-other"></i><span>培养成绩录入（教师端）</span></a>
+</li>
+                        
+<li>
+<a href="https://grd.ccnu.edu.cn/yjsxt/kbcx/jskbcx_cxJskbcxIndex.html?gnmkdm=N2150&amp;layout=default"><i><img src="images/dt-icon3.png" alt="" class="dt"><img src="images/dt-icon3-other.png" alt="" class="dt-other"></i><span>课表查询（教师端）</span></a>
+</li>
+                        
+<li>
+<a href="https://grd.ccnu.edu.cn/yjsxt/xtgl/login_slogin.html"><i><img src="images/dt-icon4.png" alt="" class="dt"><img src="images/dt-icon4-other.png" alt="" class="dt-other"></i><span>成绩查询（学生端）</span></a>
+</li>
+                        
+<li>
+<a href="https://grd.ccnu.edu.cn/yjsxt/xtgl/login_slogin.html"><i><img src="images/dt-icon5.png" alt="" class="dt"><img src="images/dt-icon5-other.png" alt="" class="dt-other"></i><span>课表查询（学生端）</span></a>
+</li>
+                        
+<li>
+<a href="https://grd.ccnu.edu.cn/student/"><i><img src="images/dt-icon6.png" alt="" class="dt"><img src="images/dt-icon6-other.png" alt="" class="dt-other"></i><span>推免生预报名系统</span></a>
+</li>
+                        
+<li>
+<a href="https://grd.ccnu.edu.cn/yjsxt/zsjcsj/lnblbwh_cxLnblbIndex.html"><i><img src="images/dt-icon7.png" alt="" class="dt"><img src="images/dt-icon7-other.png" alt="" class="dt-other"></i><span>硕士招生报录比查询</span></a>
+</li>
+                        
+<li>
+<a href="https://grd.ccnu.edu.cn/student/bslogin"><i><img src="images/dt-icon8.png" alt="" class="dt"><img src="images/dt-icon8-other.png" alt="" class="dt-other"></i><span>博士报名系统</span></a>
+</li>
+                        
+<li>
+<a href="jgjj/zlxzzx/pygz.htm"><i><img src="images/dt-icon9.png" alt="" class="dt"><img src="images/dt-icon9-other.png" alt="" class="dt-other"></i><span>资料下载中心</span></a>
+</li>
+                        
+</UL></DIV>
+<DIV class="clear"></DIV></DIV></DIV>
+<DIV class="section3">
+<DIV class="sect3 px1400">
+<DIV class="title">
+<H2><IMG alt="" src="images/tit-icon8.png"><SPAN>热门站点</SPAN></H2>
+<DIV class="more"><A href="rmzd.htm">更多+</A></DIV></DIV>
+<UL><li class="zd1">
+                        <a href="http://www.ccnu.edu.cn/">
+                            <p>华中师范大学</p>
+                        </a>
+                    </li>
+                    
+<li class="zd1">
+                        <a href="http://xgb.ccnu.edu.cn/">
+                            <p>党委学生工作部（团委、人民武装部）</p>
+                        </a>
+                    </li>
+                    
+<li class="zd1">
+                        <a href="https://jyt.hubei.gov.cn/">
+                            <p>湖北省教育厅</p>
+                        </a>
+                    </li>
+                    
+<li class="zd1">
+                        <a href="https://www.cdgdc.edu.cn/">
+                            <p>教育部学位与研究生教育发展中心</p>
+                        </a>
+                    </li>
+                    
+<li class="zd1">
+                        <a href="https://www.chsi.com.cn/">
+                            <p>中国高等教育学生信息网（学信网）</p>
+                        </a>
+                    </li>
+                    
+<li class="zd1">
+                        <a href="https://yz.chsi.com.cn/">
+                            <p>中国研究生招生信息网</p>
+                        </a>
+                    </li>
+                    
+<li class="zd1">
+                        <a href="https://www.cscse.edu.cn/">
+                            <p>中国留学网</p>
+                        </a>
+                    </li>
+                    
+<li class="zd1">
+                        <a href="https://xwrz.chsi.com.cn/gateway">
+                            <p>中国学位与教育文凭认证</p>
+                        </a>
+                    </li>
+                    
+<div class="clear"></div></UL></DIV></DIV></DIV>
+<DIV class="footer">
+<DIV class="foot px1400">
+<DIV class="foot-l"><p><a href="mailto:yjspy@ccnu.edu.cn" style="color:#fff">研究生院培养办 yjspy@ccnu.edu.cn</a></p>
+                
+<p><a href="mailto:yjszb@ccnu.edu.cn" style="color:#fff">研究生院招办 yjszb@ccnu.edu.cn</a></p>
+                
+<p><a href="mailto:xwb@ccnu.edu.cn" style="color:#fff">研究生院学位办 xwb@ccnu.edu.cn</a></p>
+                
+</DIV>
+<DIV class="foot-m">                    <div class="social">
+                                    <div class="grp">
+                        <a class="ico tel"></a>
+                        <div class="drop">
+                            <img src="images/ewm.jpg" class="tp" alt="微博" style="display:none">
+                        </div>
+                    </div>
+                    <div class="grp">
+                        <em class="ico wx"></em>
+                        <div class="drop">
+                            <img src="images/ewm.jpg" class="tp" alt="微信" style="display:none">
+                        </div>
+                    </div>
+                    
+                </div>
+            
+
+</DIV>
+<DIV class="foot-r">
+<P><!-- 版权内容请在本组件"内容配置-版权"处填写 -->
+<p>版权所有：华中师范大学研究生院（专业学位管理中心） 2012 All Rights Reserved.</p></P>
+<P>今日访问: <script language="javascript" src="_dwr/engine.js"></script><script language="javascript" src="_dwr/util.js"></script><script language="javascript" src="_dwr/interface/PageCounterDWR.js"></script><span id="a1061904" name="a1061904"></span>   
+
+<script>
+function getvisittimea1061904()
+{       
+    PageCounterDWR.getVisittime('1925099496','1001','DATE_COUNTER','200','10',callbackdataa1061904)
+}
+function callbackdataa1061904(data)
+{
+    document.getElementById("a1061904").innerHTML = data; 
+}
+getvisittimea1061904();
+</script>累计访问:<span id="a1061911" name="a1061911"></span>   
+
+<script>
+function getvisittimea1061911()
+{       
+    PageCounterDWR.getVisittime('1925099496','1001','TOTAL_COUNTER','1000','10',callbackdataa1061911)
+}
+function callbackdataa1061911(data)
+{
+    document.getElementById("a1061911").innerHTML = data; 
+}
+getvisittimea1061911();
+</script></P></DIV>
+<DIV class="clear"></DIV></DIV></DIV>
+
+</BODY>
+<script src="js/jquery.js"></script><script src="js/slick.js"></script><script src="js/public.js"></script><script src="js/index.js"></script>
+</HTML>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

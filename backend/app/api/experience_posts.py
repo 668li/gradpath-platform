@@ -90,9 +90,9 @@ def list_experience_posts(
         f"exp_posts:list:{page}:{page_size}:{category}:{tag}:{status}:{search}:{source_platform}"
     )
 
-    # 尝试从缓存获取
+    # 尝试从缓存获取（只信 dict；历史脏数据/异常序列化结果一律当作未命中重建）
     cached_result = cache.get(cache_key)
-    if cached_result is not None:
+    if isinstance(cached_result, dict):
         return cached_result
 
     if cursor:
@@ -181,8 +181,9 @@ def list_experience_posts(
             page_size=page_size,
         )
 
-    # 缓存结果（2分钟）
-    cache.set(cache_key, result, ttl=120)
+    # 缓存结果（2分钟）。必须存 dict：Redis 路径 json.dumps 无法序列化 pydantic
+    # 模型，历史 default=str 会把整个模型存成字符串，缓存命中即 500。
+    cache.set(cache_key, result.model_dump(mode="json"), ttl=120)
     return result
 
 

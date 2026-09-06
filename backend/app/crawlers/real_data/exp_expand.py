@@ -7,6 +7,11 @@ Usage (inside Docker):
     docker exec gradpath-backend-1 python /app/app/crawlers/real_data/exp_expand.py
 """
 
+# 已注销（2026-09-05，用户拍板：社区只能有用户自己发的信息）。
+# 本脚本批量生成假经验帖（随机浏览/点赞/评论数）并直接写 experience_posts，
+# 属于合成假数据源头，禁止再执行。
+raise SystemExit("已注销：合成假数据生成器，禁止执行（社区只允许用户生成内容）")
+
 import os
 import random
 import sys

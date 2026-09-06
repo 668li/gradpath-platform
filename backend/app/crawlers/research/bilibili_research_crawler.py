@@ -166,14 +166,11 @@ class BilibiliResearchCrawler(BaseCrawler):
             db = SessionLocal()
             own_db = True
         try:
-            run_record = CrawlerRun(
-                source_name=self.name,
-                category=self.category,
-                status="running",
-            )
+            run_record = self._new_run_record()
             db.add(run_record)
             db.commit()
             db.refresh(run_record)
+            self.run_record_id = str(run_record.id)
 
             result = store_research_items(
                 db,
@@ -184,7 +181,7 @@ class BilibiliResearchCrawler(BaseCrawler):
                 run_id=str(run_record.id),
             )
 
-            run_record.status = "success"
+            self._finalize_run_record(run_record)
             run_record.items_fetched = self.stats.get("fetched", 0)
             run_record.items_stored = result["inserted"]
             run_record.items_duplicates = result["duplicated"]

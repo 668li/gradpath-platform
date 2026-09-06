@@ -1,6 +1,5 @@
 """决策日志与回溯 API — 记录决策预测，追踪实际结果。"""
 
-from datetime import date
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -14,6 +13,7 @@ from app.models.user import User
 from app.schemas.decision import DecisionResponse
 from app.schemas.decision_journal import DecisionReviewSubmit
 from app.services import decision_journal_service
+from app.utils.business_time import beijing_today
 
 router = APIRouter(prefix="/api/decision-journal", tags=["决策日志与回溯"])
 
@@ -92,7 +92,7 @@ def seal_time_capsule(
     details = dict(decision.details or {})
     details["time_capsule"] = {
         "letter": body.letter.strip(),
-        "sealed_at": date.today().isoformat(),
+        "sealed_at": beijing_today().isoformat(),
         "opened": False,
     }
     decision.details = details
@@ -114,7 +114,7 @@ def open_time_capsule(
         return {"has_capsule": False, "can_open": False, "letter": None}
 
     # 回溯日期已到 或 已完成回溯，才允许拆封
-    today = date.today()
+    today = beijing_today()
     reached_review = decision.review_completed or (
         decision.review_date is not None and decision.review_date <= today
     )

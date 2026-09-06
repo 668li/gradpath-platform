@@ -24,6 +24,12 @@ from app.models.user_memory import UserMemoryFact
 
 logger = logging.getLogger(__name__)
 
+# 完整版测评（主画像槽候选）与短版（学习风格信号槽）的契约划分。
+# 新增测评类型时必须归入其一，并与前端 AssessmentType 联合类型对账
+# （对账闸见 tests/test_assessment_contract.py）。
+MAIN_ASSESSMENT_TYPES = ("holland", "mbti", "big_five", "disc")
+LEARNING_STYLE_ASSESSMENT_TYPE = "big_five_short"
+
 
 def get_user_context(db: Session, user_id: UUID) -> dict[str, Any]:
     """聚合用户上下文 — 用于 AI 个性化。
@@ -75,9 +81,24 @@ def get_user_context(db: Session, user_id: UUID) -> dict[str, Any]:
             .all()
         )
 
+        # 主画像槽只认完整版测评；短版（big_five_short，低分辨率）单独成槽作
+        # 学习风格信号——否则用户先做霍兰德再做短版，短版会把主画像顶掉
+        # （2026-09-05 对抗审查 Spec 轴实锤）。
         latest_assessment = (
             db.query(Assessment)
-            .filter(Assessment.user_id == user_id)
+            .filter(
+                Assessment.user_id == user_id,
+                Assessment.assessment_type.in_(MAIN_ASSESSMENT_TYPES),
+            )
+            .order_by(Assessment.created_at.desc())
+            .first()
+        )
+        learning_style_assessment = (
+            db.query(Assessment)
+            .filter(
+                Assessment.user_id == user_id,
+                Assessment.assessment_type == LEARNING_STYLE_ASSESSMENT_TYPE,
+            )
             .order_by(Assessment.created_at.desc())
             .first()
         )
@@ -93,6 +114,11 @@ def get_user_context(db: Session, user_id: UUID) -> dict[str, Any]:
             "latest_assessment": (
                 _serialize_assessment(latest_assessment) if latest_assessment else None
             ),
+            "learning_style_assessment": (
+                _serialize_assessment(learning_style_assessment)
+                if learning_style_assessment
+                else None
+            ),
             "stats": stats,
         }
     except Exception as e:
@@ -104,6 +130,7 @@ def get_user_context(db: Session, user_id: UUID) -> dict[str, Any]:
             "recent_decisions": [],
             "recent_outcome_reports": [],
             "latest_assessment": None,
+            "learning_style_assessment": None,
             "stats": {},
             "error": "context_unavailable",
         }
@@ -284,6 +311,13 @@ def build_context_prompt(db: Session, user_id: UUID) -> str:
         if a.get("recommended_directions"):
             lines.append(f"推荐方向：{'、'.join(a['recommended_directions'])}")
         parts.append("；".join(lines))
+
+    if ctx.get("learning_style_assessment"):
+        ls = ctx["learning_style_assessment"]
+        parts.append(
+            f"【学习风格信号】大五短版 {ls.get('result_code') or ''}"
+            "（每维 2 题，低分辨率参考，用于调整建议的节奏与方式，不作能力判断）"
+        )
 
     if ctx["memory_facts"]:
         facts_str = "; ".join(

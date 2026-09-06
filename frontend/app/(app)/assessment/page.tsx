@@ -26,6 +26,7 @@ import {
   Target,
   Lightbulb,
   Eye,
+  Timer,
 } from "lucide-react";
 import { assessmentApi } from "@/lib/api";
 import { cn, formatDate } from "@/lib/utils";
@@ -34,6 +35,8 @@ import { Button } from "@/components/ui/form-controls";
 import { useToast } from "@/components/ui/toast";
 import { InterpretCard } from "@/components/assessment/interpret-card";
 import { topRoles } from "@/components/assessment/role-match";
+import { extractWarnings } from "@/components/assessment/warning-utils";
+import { WarningCallout } from "@/components/assessment/warning-callout";
 import type {
   AssessmentType,
   Question,
@@ -49,6 +52,8 @@ interface AssessmentMeta {
   icon: typeof Briefcase;
   questionCount: string;
   description: string;
+  /** true = 折叠进"更多测评"（导航收敛：主位只留霍兰德 + 大五短版） */
+  more?: boolean;
   theme: {
     gradient: string;
     iconBg: string;
@@ -80,11 +85,29 @@ const ASSESSMENTS: AssessmentMeta[] = [
     },
   },
   {
+    type: "big_five_short",
+    name: "大五短版 · 学习风格",
+    icon: Timer,
+    questionCount: "10题",
+    description: "60 秒摸清学习节奏：5 维度各 2 题，低分辨率参考",
+    theme: {
+      gradient: "from-teal-50 to-teal-100",
+      iconBg: "bg-teal-100",
+      iconText: "text-teal-600",
+      hoverBorder: "hover:border-teal-400",
+      accent: "text-teal-700",
+      bar: "bg-teal-500",
+      barBg: "bg-teal-100",
+      chip: "bg-teal-50 text-teal-700 border-teal-200",
+    },
+  },
+  {
     type: "mbti",
     name: "MBTI 人格类型",
     icon: Users,
     questionCount: "40题",
     description: "16型人格测试",
+    more: true,
     theme: {
       gradient: "from-purple-50 to-purple-100",
       iconBg: "bg-purple-100",
@@ -102,6 +125,7 @@ const ASSESSMENTS: AssessmentMeta[] = [
     icon: Brain,
     questionCount: "50题",
     description: "5维度科学人格测评",
+    more: true,
     theme: {
       gradient: "from-emerald-50 to-emerald-100",
       iconBg: "bg-emerald-100",
@@ -119,6 +143,7 @@ const ASSESSMENTS: AssessmentMeta[] = [
     icon: Activity,
     questionCount: "24题",
     description: "行为风格4维度测评",
+    more: true,
     theme: {
       gradient: "from-orange-50 to-orange-100",
       iconBg: "bg-orange-100",
@@ -140,8 +165,61 @@ const TYPE_NAMES: Record<AssessmentType, string> = {
   holland: "霍兰德",
   mbti: "MBTI",
   big_five: "大五OCEAN",
+  big_five_short: "大五短版",
   disc: "DISC",
 };
+
+/** 测评选择卡（主位与"更多测评"折叠区共用） */
+function AssessmentCard({
+  meta,
+  disabled,
+  onStart,
+}: {
+  meta: AssessmentMeta;
+  disabled: boolean;
+  onStart: () => void;
+}) {
+  const Icon = meta.icon;
+  return (
+    <button
+      onClick={onStart}
+      disabled={disabled}
+      className={cn(
+        "group text-left rounded-xl border border-paper-300 bg-white p-5 transition-all hover:shadow-md disabled:opacity-60",
+        meta.theme.hoverBorder,
+      )}
+    >
+      <div className="flex items-start gap-4">
+        <div
+          className={cn(
+            "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl",
+            meta.theme.iconBg,
+          )}
+        >
+          <Icon className={cn("h-6 w-6", meta.theme.iconText)} strokeWidth={1.8} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="font-display font-semibold text-ink-800">{meta.name}</h3>
+            <ChevronRight className="h-4 w-4 text-ink-300 group-hover:text-ink-500 transition-colors" />
+          </div>
+          <p className="text-sm text-ink-500 mt-1">{meta.description}</p>
+          <div className="mt-3">
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium",
+                meta.theme.chip,
+              )}
+            >
+              <ClipboardList className="h-3 w-3" />
+              {meta.questionCount}
+            </span>
+          </div>
+        </div>
+      </div>
+    </button>
+  );
+}
 
 // ===== 霍兰德 → 岗位匹配矩阵（灵感：职向"所以呢"转化）=====
 interface HollandRole {
@@ -455,50 +533,40 @@ export default function AssessmentPage() {
         </div>
       </div>
 
+      {/* 主位：霍兰德 + 大五短版（导航收敛——旧三套折叠进"更多测评"） */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {ASSESSMENTS.map((a) => {
-          const Icon = a.icon;
-          return (
-            <button
-              key={a.type}
-              onClick={() => startAssessment(a.type)}
-              className={cn(
-                "group text-left rounded-xl border border-paper-300 bg-white p-5 transition-all hover:shadow-md",
-                a.theme.hoverBorder,
-              )}
-            >
-              <div className="flex items-start gap-4">
-                <div
-                  className={cn(
-                    "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl",
-                    a.theme.iconBg,
-                  )}
-                >
-                  <Icon className={cn("h-6 w-6", a.theme.iconText)} strokeWidth={1.8} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <h3 className="font-display font-semibold text-ink-800">{a.name}</h3>
-                    <ChevronRight className="h-4 w-4 text-ink-300 group-hover:text-ink-500 transition-colors" />
-                  </div>
-                  <p className="text-sm text-ink-500 mt-1">{a.description}</p>
-                  <div className="mt-3">
-                    <span
-                      className={cn(
-                        "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium",
-                        a.theme.chip,
-                      )}
-                    >
-                      <ClipboardList className="h-3 w-3" />
-                      {a.questionCount}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </button>
-          );
-        })}
+        {ASSESSMENTS.filter((a) => !a.more).map((a) => (
+          <AssessmentCard
+            key={a.type}
+            meta={a}
+            disabled={loading}
+            onStart={() => startAssessment(a.type)}
+          />
+        ))}
       </div>
+
+      <details className="group rounded-xl border border-paper-300 bg-white/60">
+        <summary className="flex cursor-pointer select-none items-center justify-between px-5 py-3.5 text-sm font-medium text-ink-600 hover:text-ink-800">
+          <span>
+            更多测评（
+            {ASSESSMENTS.filter((a) => a.more)
+              .map((a) => TYPE_NAMES[a.type])
+              .join(" / ")}
+            ）
+          </span>
+          <ChevronRight className="h-4 w-4 transition-transform group-open:rotate-90" />
+        </summary>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 px-5 pb-5">
+          {ASSESSMENTS.filter((a) => a.more).map((a) => (
+            <AssessmentCard
+              key={a.type}
+              meta={a}
+              disabled={loading}
+              onStart={() => startAssessment(a.type)}
+            />
+          ))}
+        </div>
+      </details>
 
       {/* 历史记录入口 */}
       {history.length > 0 && (
@@ -539,7 +607,7 @@ function QuizView({
   const answeredCount = questions.filter((q) => answers[q.id]).length;
   const progress = questions.length ? (answeredCount / questions.length) * 100 : 0;
   // 大五采用 Likert 5 级量表，横向排列
-  const isLikert = type === "big_five";
+  const isLikert = type === "big_five" || type === "big_five_short";
 
   const currentQuestion = questions[currentIdx];
   const isLast = currentIdx === questions.length - 1;
@@ -814,6 +882,9 @@ function ResultView({
       )
     : [];
 
+  // 信度/完整性警示：后端把【作答提示】折在 result_summary 末尾，这里拆出来亮成警示卡
+  const { cleanSummary, warnings: answerWarnings } = extractWarnings(result.result_summary);
+
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
       {/* 结果头部 - 渐变背景 */}
@@ -836,9 +907,11 @@ function ResultView({
           {result.result_code}
         </h1>
         <p className="text-sm text-ink-600 max-w-xl mx-auto leading-relaxed whitespace-pre-line">
-          {result.result_summary}
+          {cleanSummary}
         </p>
       </div>
+
+      <WarningCallout warnings={answerWarnings} />
 
       {/* 维度得分（柱状图） */}
       <div className="card space-y-3">
@@ -1094,7 +1167,7 @@ function HistoryView({
     {} as Record<AssessmentType, AssessmentResponse[]>,
   );
 
-  const typeOrder: AssessmentType[] = ["holland", "mbti", "big_five", "disc"];
+  const typeOrder: AssessmentType[] = ["holland", "big_five_short", "mbti", "big_five", "disc"];
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
@@ -1157,7 +1230,7 @@ function HistoryView({
                             </span>
                           </div>
                           <p className="text-xs text-ink-400 mt-1 line-clamp-1">
-                            {item.result_summary}
+                            {extractWarnings(item.result_summary).cleanSummary}
                           </p>
                         </div>
                         <span className="text-xs text-ink-400 shrink-0">

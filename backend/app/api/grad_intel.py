@@ -270,7 +270,7 @@ def list_yanzhao_programs(
     cache_key = f"yanzhao_programs:{university_name}:{major_name}:{department}:{degree_type}:{year}:{limit}:{offset}"
 
     cached_result = cache.get(cache_key)
-    if cached_result is not None:
+    if isinstance(cached_result, list):
         response.headers["Cache-Control"] = "public, max-age=600"
         return cached_result
 
@@ -287,7 +287,13 @@ def list_yanzhao_programs(
 
     items = result[0] if isinstance(result, tuple) else result
 
-    cache.set(cache_key, items, ttl=600)
+    # 必须缓存 dict 列表：ORM 对象经 json.dumps(default=str) 会存成垃圾字符串，
+    # Redis 命中即 500（09-05 对抗审查实证，/scorelines 的手转 dict 是正确范式）
+    cache.set(
+        cache_key,
+        [GradYanzhaoProgramResponse.model_validate(item).model_dump(mode="json") for item in items],
+        ttl=600,
+    )
     response.headers["Cache-Control"] = "public, max-age=600"
     return items
 
@@ -380,7 +386,7 @@ def list_adjustments(
     """查询调剂信息（公开接口，5分钟缓存）。"""
     cache_key = f"adjustments:{university_name}:{major_name}:{status}:{year}:{limit}:{offset}"
     cached_result = cache.get(cache_key)
-    if cached_result is not None:
+    if isinstance(cached_result, list):
         return cached_result
     result = grad_intel_service.list_adjustment_info(
         db,
@@ -391,7 +397,13 @@ def list_adjustments(
         limit=limit,
         offset=offset,
     )
-    cache.set(cache_key, result, ttl=300)
+    # 必须缓存 dict 列表：ORM 对象经 json.dumps(default=str) 会存成垃圾字符串，
+    # Redis 命中即 500（09-05 对抗审查实证）
+    cache.set(
+        cache_key,
+        [GradAdjustmentInfoResponse.model_validate(item).model_dump(mode="json") for item in result],
+        ttl=300,
+    )
     return result
 
 

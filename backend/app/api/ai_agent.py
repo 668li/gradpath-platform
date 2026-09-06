@@ -6,7 +6,6 @@ Endpoints:
 """
 
 import logging
-import re
 from typing import Literal
 
 import httpx
@@ -24,6 +23,7 @@ from app.services.ai_circuit_breaker import AICircuitBreakerOpenError
 from app.services.ai_orchestrator import AIOrchestrator
 from app.services.ai_quota_service import AILLMQuotaExceeded, check_llm_quota, incr_llm_quota
 from app.services.ai_service import AIServiceRetryExhausted
+from app.services.text_safety import sanitize_prompt_input as _sanitize_prompt_input
 from app.services.user_context_service import build_context_prompt
 from app.services.web_search import WebSearchService
 
@@ -33,35 +33,8 @@ router = APIRouter(prefix="/api/ai/agent", tags=["AI Agent"])
 
 
 # ---------------------------------------------------------------------------
-# Prompt 注入防御 — FASTAPI-INJECT-001 精神：用户输入必须与系统指令隔离
+# Prompt 注入防御 — 实现已下沉至 app/services/text_safety.py（FASTAPI-INJECT-001）
 # ---------------------------------------------------------------------------
-
-# 常见 prompt injection 模式（中英）
-_PROMPT_INJECTION_PATTERNS = [
-    re.compile(r"(?i)ignore\s+(?:previous|prior|above|all)\s+(?:instructions?|prompts?|rules?)"),
-    re.compile(r"(?i)disregard\s+(?:previous|prior|above|all)\s+(?:instructions?|prompts?|rules?)"),
-    re.compile(r"(?i)forget\s+(?:your|previous|prior)\s+(?:instructions?|rules?|prompts?)"),
-    re.compile(r"(?i)you\s+are\s+(?:now|actually)\s+(?:a|an)\s+"),
-    re.compile(r"(?i)^(?:system|assistant|developer)\s*:"),
-    re.compile(r"(?:忽略|跳过|无视|忽略掉)(?:上述|之前|前面|以上|所有)(?:指令|提示|规则|约束)"),
-    re.compile(r"(?:从现在起|从这一刻起)(?:你|请)(?:是|成为|扮演)"),
-    re.compile(r"(?i)jailbreak"),
-    re.compile(r"(?i)DAN\s+mode"),
-]
-
-
-def _sanitize_prompt_input(text: str) -> str:
-    """清洗用户输入，移除常见 prompt injection 模式。
-
-    引用 FASTAPI-INJECT-001：用户输入必须与系统指令隔离，
-    防止恶意输入劫持 system prompt 改变 LLM 行为。
-    """
-    if not text:
-        return text
-    cleaned = text
-    for pattern in _PROMPT_INJECTION_PATTERNS:
-        cleaned = pattern.sub("[FILTERED]", cleaned)
-    return cleaned
 
 
 # ---------------------------------------------------------------------------

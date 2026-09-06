@@ -24,6 +24,7 @@ from app.models.career_plan import CareerPlan
 from app.models.destination_decision import DestinationDecision
 from app.models.proactive_insight import ProactiveInsight
 from app.models.skill_node import SkillNode
+from app.utils.business_time import beijing_today
 from app.services.ai_orchestrator import AIOrchestrator
 
 SYSTEM_PROMPT = """你是一位敏锐的职业成长观察者。基于用户的数据，请发现 2-3 个非显而易见的洞察。
@@ -48,8 +49,9 @@ SYSTEM_PROMPT = """你是一位敏锐的职业成长观察者。基于用户的�
 不要输出 JSON 以外的内容。"""
 
 
-def _build_context(db: Session, user_id: UUID) -> str:
-    """组装用户全量数据用于模式分析。"""
+def _build_context(db: Session, user_id: UUID, today: date | None = None) -> str:
+    """组装用户全量数据用于模式分析。today 可注入供测试。"""
+    today = today or beijing_today()
     lines = ["【用户数据概览】"]
 
     # 技能趋势
@@ -127,7 +129,6 @@ def _build_context(db: Session, user_id: UUID) -> str:
         )
 
     # 待回溯决策
-    today = date.today()
     pending_reviews = (
         db.query(DestinationDecision)
         .filter(
@@ -184,10 +185,10 @@ async def generate_insights(db: Session, user_id: UUID) -> list[ProactiveInsight
     return saved
 
 
-def _generate_rule_insights(db: Session, user_id: UUID) -> list[dict]:
-    """基于规则即时生成洞察（不依赖 LLM）。"""
+def _generate_rule_insights(db: Session, user_id: UUID, today: date | None = None) -> list[dict]:
+    """基于规则即时生成洞察（不依赖 LLM）。today 可注入供测试。"""
     insights = []
-    today = date.today()
+    today = today or beijing_today()
 
     # 1. 待回溯决策提醒
     pending_reviews = (

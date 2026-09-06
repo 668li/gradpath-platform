@@ -1062,8 +1062,13 @@ POST_INTEL = [
 
 
 def seed_civil_service_intel(db: Session) -> int:
-    """插入考公岗位情报种子数据（幂等：已存在则跳过）。"""
-    inserted = 0
+    """已注销（2026-09-05，用户拍板"可"）：手编竞争比/进面分/薪资的假情报
+    与 581 假进面线同性质，生产 43 条已清零。同文件的暗知识种子（编辑性
+    内容）不受影响，仍由 API 引导与 run_all_seeds 正常调用。"""
+    raise SystemExit(
+        "已注销：seed_civil_service_intel 是编造统计数据的假情报源，禁止再执行"
+    )
+    inserted = 0  # pragma: no cover — 以下为历史实现，永不可达
     for data in POST_INTEL:
         (
             region,

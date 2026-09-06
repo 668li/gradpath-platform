@@ -9,22 +9,24 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from app.utils.business_time import beijing_today
+
 from app.models.career_plan import CareerPlan
 from app.models.streak import StreakRecord
 
 
 def _week_range(today: date = None):
-    """返回本周一和下周一（左闭右开）。"""
-    d = today or date.today()
+    """返回本周一和下周一（左闭右开）。周界按北京日历。"""
+    d = today or beijing_today()
     monday = d - timedelta(days=d.weekday())
     week_start = datetime.combine(monday, datetime.min.time())
     next_monday = datetime.combine(monday + timedelta(days=7), datetime.min.time())
     return week_start, next_monday, monday
 
 
-def generate_weekly_draft(db: Session, user_id: UUID) -> dict:
-    """基于本周行为数据生成4层周报草稿。"""
-    today = date.today()
+def generate_weekly_draft(db: Session, user_id: UUID, today: date | None = None) -> dict:
+    """基于本周行为数据生成4层周报草稿。today 可注入供测试。"""
+    today = today or beijing_today()
     week_start, next_monday, monday = _week_range(today)
     week_end = monday + timedelta(days=6)
 

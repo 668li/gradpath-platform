@@ -12,6 +12,11 @@ Or locally:
     python -m app.crawlers.real_data.qa_expand
 """
 
+# 已注销（2026-09-05，用户拍板：社区只能有用户自己发的信息）。
+# 本脚本批量生成模板假问答并直接写入 qas/qa_answers，属于合成假数据源头，
+# 禁止再执行。真实问答只能来自真实用户发帖（默认 pending 待审核）。
+raise SystemExit("已注销：合成假数据生成器，禁止执行（社区只允许用户生成内容）")
+
 import os
 import random
 import sys

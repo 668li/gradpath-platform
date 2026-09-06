@@ -174,12 +174,28 @@ def build_user_context(db: Session, user_id: UUID) -> str:
         if profile.self_introduction:
             lines.append(f"- 自我介绍：{profile.self_introduction}")
 
-    # 最新职业测评结果（霍兰德）
+    # 职业测评（主画像槽只认完整版；短版作学习风格信号附加，防止顶掉主画像）
     from app.models.assessment import Assessment
+    from app.services.user_context_service import (
+        LEARNING_STYLE_ASSESSMENT_TYPE,
+        MAIN_ASSESSMENT_TYPES,
+    )
 
     latest_assessment = (
         db.query(Assessment)
-        .filter(Assessment.user_id == user_id)
+        .filter(
+            Assessment.user_id == user_id,
+            Assessment.assessment_type.in_(MAIN_ASSESSMENT_TYPES),
+        )
+        .order_by(Assessment.created_at.desc())
+        .first()
+    )
+    latest_short = (
+        db.query(Assessment)
+        .filter(
+            Assessment.user_id == user_id,
+            Assessment.assessment_type == LEARNING_STYLE_ASSESSMENT_TYPE,
+        )
         .order_by(Assessment.created_at.desc())
         .first()
     )
@@ -190,6 +206,12 @@ def build_user_context(db: Session, user_id: UUID) -> str:
         lines.append(f"- 结果摘要：{latest_assessment.result_summary}")
         if latest_assessment.recommended_directions:
             lines.append(f"- 推荐方向：{', '.join(latest_assessment.recommended_directions)}")
+    elif latest_short:
+        lines.append("【学习风格信号】")
+        lines.append(f"- 大五短版编码：{latest_short.result_code}（每维 2 题，低分辨率参考）")
+        lines.append(f"- 结果摘要：{latest_short.result_summary}")
+    if latest_short and latest_assessment:
+        lines.append(f"- 学习风格信号（大五短版）：{latest_short.result_code}，低分辨率参考")
 
     # 当前职业规划（active 状态，最多 3 条）
     active_plans = (
@@ -403,6 +425,26 @@ async def send_message(
     injected_data = skill.inject_data(db, user_id, content)
     if injected_data:
         system_prompt = f"{system_prompt}\n\n【专有数据】\n{injected_data}"
+
+    # 7.5 站内数据搜索层 — 代码级意图路由（零额外 LLM 调用）。
+    # 数据型 skill 声明 covered_data_domains 的域由上面 inject_data 自己负责，此处去重跳过。
+    from app.services.data_search_service import run_data_search
+
+    data_block, data_sources, data_has_hits = run_data_search(
+        db, content, skip_domains=getattr(skill, "covered_data_domains", frozenset())
+    )
+    if data_block:
+        system_prompt = f"{system_prompt}\n\n{data_block}"
+
+    # 数据型 skill 覆盖了搜索域时，通用层无 sources——向 skill 索取注入数据的来源
+    if not data_sources and getattr(skill, "covered_data_domains", frozenset()):
+        try:
+            skill_sources = skill.collect_sources(db, user_id, content)
+            if skill_sources:
+                data_sources = skill_sources
+                data_has_hits = True
+        except Exception as e:
+            logger.debug("skill collect_sources 失败（来源标签降级为空）: %s", e)
     # 将对话历史拼入用户 prompt
     history_block = ""
     if len(history) > 1:
@@ -458,12 +500,33 @@ async def send_message(
         except Exception as e:
             logger.debug("user_context cache invalidate after plan save failed: %s", e)
 
+    # 10.5 学习计划师的 7 天微行动计划落库（行为设计闭环：连击/D2 提醒）
+    saved_micro_plan_id = None
+    micro_plan_data = parsed.get("micro_action_plan")
+    if micro_plan_data and micro_plan_data.get("tasks"):
+        try:
+            from app.services.micro_action_service import create_plan_from_tasks
+
+            micro_plan = create_plan_from_tasks(
+                db,
+                user_id,
+                micro_plan_data["target_path"],
+                micro_plan_data.get("target_role"),
+                micro_plan_data["tasks"],
+            )
+            saved_micro_plan_id = str(micro_plan.id)
+        except Exception as e:
+            # 落库失败降级为纯对话回复，不阻塞消息返回
+            logger.warning("微行动计划落库失败（降级为仅对话回复）: %s", e)
+
     # 11. 保存 AI 消息（含 skill_used 与 context_snapshot）
     context_snapshot = {
         "knowledge_count": len(knowledge),
         "knowledge_titles": [k["title"] for k in knowledge],
         "has_career_plan": career_plan_data is not None,
     }
+    if data_sources:
+        context_snapshot["data_sources"] = data_sources
     ai_msg = Message(
         conversation_id=conversation_id,
         role="assistant",
@@ -476,8 +539,13 @@ async def send_message(
     db.refresh(ai_msg)
 
     # 12. 返回结果
-    return {
+    result = {
         "content": reply_content,
         "skill_used": skill.code,
         "career_plan": saved_plan_id,
+        "micro_action_plan": saved_micro_plan_id,
     }
+    if data_sources:
+        result["agent_sources"] = data_sources
+        result["agent_confidence"] = 0.7 if data_has_hits else 0.3
+    return result

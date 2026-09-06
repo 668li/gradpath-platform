@@ -399,3 +399,72 @@ class TestBuildUserContext:
         # 无画像时不应出现职业画像区块，但其他区块仍正常
         assert "【用户画像】" in context
         assert "【职业画像】" not in context
+
+
+class TestAssessmentContextSlot:
+    """对抗审查 Spec 轴实锤修复：短版不得顶掉主画像（单槽挤占）。
+
+    用户先做霍兰德、后做大五短版 → AI 上下文的主画像槽必须仍是霍兰德，
+    短版降级为独立的【学习风格信号】附加行；只做过短版时主画像槽为空、
+    短版以诚实标注的姿态出现。"""
+
+    @staticmethod
+    def _mk_assessment(db_session, user_id, assessment_type, created_at):
+        from app.models.assessment import Assessment
+
+        a = Assessment(
+            user_id=user_id,
+            assessment_type=assessment_type,
+            answers={"x1": "1"},
+            result_code="O4C2E3A4N2" if "big_five" in assessment_type else "RIA",
+            result_summary="测试摘要",
+            created_at=created_at,
+        )
+        db_session.add(a)
+        return a
+
+    def test_short_does_not_displace_main_assessment(self, auth_headers, client, db_session):
+        from datetime import datetime, timezone
+
+        from app.models.user import User
+        from app.services.chat_service import build_user_context
+
+        user = db_session.query(User).filter_by(email="test@example.com").first()
+        assert user is not None
+
+        self._mk_assessment(
+            db_session, user.id, "holland", datetime(2025, 1, 1, tzinfo=timezone.utc)
+        )
+        self._mk_assessment(
+            db_session,
+            user.id,
+            "big_five_short",
+            datetime(2025, 6, 1, tzinfo=timezone.utc),  # 更晚，但不得顶掉霍兰德
+        )
+        db_session.commit()
+
+        context = build_user_context(db_session, user.id)
+        assert "测评类型：holland" in context
+        assert "学习风格信号（大五短版）" in context
+
+    def test_only_short_still_rendered_honestly(self, auth_headers, client, db_session):
+        from datetime import datetime, timezone
+
+        from app.models.user import User
+        from app.services.chat_service import build_user_context
+
+        user = db_session.query(User).filter_by(email="test@example.com").first()
+        assert user is not None
+
+        self._mk_assessment(
+            db_session,
+            user.id,
+            "big_five_short",
+            datetime(2025, 6, 1, tzinfo=timezone.utc),
+        )
+        db_session.commit()
+
+        context = build_user_context(db_session, user.id)
+        assert "【职业测评】" not in context  # 无主画像不冒充
+        assert "【学习风格信号】" in context
+        assert "低分辨率" in context

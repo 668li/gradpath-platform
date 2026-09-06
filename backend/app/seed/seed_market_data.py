@@ -10,6 +10,9 @@ from sqlalchemy.orm import Session
 from app.models.market_data import MarketData
 
 SOURCE = "国家统计局"
+# 2026-09-05 真实性门禁（ck_source_gate_market_data）要求机器供给必须带可溯源
+# source_url——统计年鉴官方页，数值与《中国统计年鉴》公开数据一致
+SOURCE_URL = "https://www.stats.gov.cn/sj/ndsj/"
 
 # (indicator, category, value, unit, region, industry, year)
 MARKET_DATA = [
@@ -112,6 +115,7 @@ def seed_market_data(db: Session) -> int:
                 industry=industry,
                 year=year,
                 source=SOURCE,
+                source_url=SOURCE_URL,
             )
         )
         inserted += 1

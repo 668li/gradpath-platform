@@ -1,8 +1,9 @@
+# 2026-09-04 注销：从未被调度（crawler_runs 零记录）；文件保留待拍板
 # 院校复试分数线爬虫配置
 name: scoreline
 category: grad
 description: 院校复试分数线数据爬虫（预置院校官网分数线数据）
-enabled: true
+enabled: false
 schedule: yearly  # 每年招生季更新
 rate_limit: 1.0
 rate_limit_ms: 1000

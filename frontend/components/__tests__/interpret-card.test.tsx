@@ -49,12 +49,38 @@ describe("InterpretCard", () => {
   it("无测评时显示引导 message", () => {
     render(
       <InterpretCard
-        data={{ has_assessment: false, message: "完成一次职业测评后解锁" }}
+        data={{ has_assessment: false, message: "完成一次职业测评后解锁", profile: null, paths: [] }}
         loading={false}
         error={null}
       />,
     );
     expect(screen.getByText("完成一次职业测评后解锁")).toBeDefined();
+  });
+
+  it("倒置：无测评但 profile 出了路径 → 渲染完整卡 + 测评入口，不伪造偏好", () => {
+    const profileOnly: AssessmentInterpretResponse = {
+      has_assessment: false,
+      assessment: null,
+      profile: { major: "计算机科学与技术" },
+      interpretation: {
+        primary_lean: null,
+        lean_scores: null,
+        reason: "暂无测评信号：下方路径由你的专业与身份直接生成；完成 60 秒职业测评可让方向偏好更稳。",
+      },
+      paths: [metric],
+      recommendation: "建议主攻考研",
+      position_analysis: null,
+      school_analysis: null,
+      peer_destinations: { has_data: false, peer_count: 0, distribution: [] },
+      major_prospect: {},
+      data_notes: [],
+    };
+    render(<InterpretCard data={profileOnly} loading={false} error={null} />);
+    expect(screen.getByText("学术深造")).toBeDefined(); // PathResultCard 真实渲染
+    const cta = screen.getByText("完成 60 秒职业测评，兴趣信号更准 →");
+    expect(cta.closest("a")?.getAttribute("href")).toBe("/assessment");
+    expect(screen.queryByText(/^偏好：/)).toBeNull(); // 无测评不伪造 lean 标签
+    expect(screen.queryByText("测评只提供方向偏好，不作报考结论")).toBeNull();
   });
 
   it("接口失败时不编造，显示降级说明", () => {
@@ -80,6 +106,21 @@ describe("InterpretCard", () => {
     expect(screen.getByText(/专业未在个人档案填写/)).toBeDefined();
     expect(screen.getByText("前往个人档案补全 →")).toBeDefined();
     expect(screen.queryByText("学术深造")).toBeNull();
+  });
+
+  it("paths 非空时提供通往完整三路报告的入口，空态不出现", () => {
+    const { unmount } = render(<InterpretCard data={fullData} loading={false} error={null} />);
+    const cta = screen.getByText("查看完整三路报告 →");
+    expect(cta.closest("a")?.getAttribute("href")).toBe("/decision-engine");
+    unmount();
+
+    const noPaths: AssessmentInterpretResponse = {
+      ...fullData,
+      paths: [],
+      recommendation: "专业未在个人档案填写，暂时无法生成具体岗位/院校/进面线分析。",
+    };
+    render(<InterpretCard data={noPaths} loading={false} error={null} />);
+    expect(screen.queryByText("查看完整三路报告 →")).toBeNull();
   });
 
   it("同分人群无样本时诚实占位", () => {

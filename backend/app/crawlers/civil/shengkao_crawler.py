@@ -178,7 +178,9 @@ def _competition_level(ratio: int) -> str:
     return "none"
 
 
-@register_crawler
+# 2026-09-05 注销注册：random.seed(42) 合成数据生成器（L190"生成 200 条省考职位原始数据"）。
+# 真实省考职位走 xlsx 官方导入管道（广东 9344 行已入库对账一致）。文件保留，不删。
+# @register_crawler
 class ShengkaoCrawler(BaseCrawler):
     """省考职位表爬虫 — 生成 200 条省考职位模拟数据。"""
 

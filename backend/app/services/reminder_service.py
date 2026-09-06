@@ -1,8 +1,9 @@
 """中断次日提醒服务（P1）— 让中断用户第二天被轻轻拉回。
 
 目标：
-- 每天 21:00（服务器本地时区）给「昨天完成了微行动任务、今天还没开始」的用户
-  发一条站内 reminder 通知（NotificationType.reminder）。
+- 每天 21:00（北京时间，Asia/Shanghai——容器时区是 UTC，必须显式指定，否则
+  cron 会按 UTC 21:00 触发=北京时间凌晨 5 点）给「昨天完成了微行动任务、
+  今天还没开始」的用户发一条站内 reminder 通知（NotificationType.reminder）。
 - 文案克制：禁止倒计时/仅剩/最后机会等紧迫话术；同一用户同一天最多 1 条。
 - 默认关闭：MICRO_ACTION_REMINDER_D2 = False，需显式开启。
 - 测试环境（ENVIRONMENT == "test"）不注册真实 scheduler job。
@@ -20,10 +21,14 @@ from app.config import settings
 from app.models.micro_action import MicroActionPlan, MicroActionTask
 from app.models.notification import Notification
 from app.models.streak import StreakRecord
+from app.utils.business_time import BEIJING_TZ as REMINDER_TZ
 
 logger = logging.getLogger(__name__)
 
 REMINDER_JOB_ID = "micro_action_reminder_d2"
+
+# 业务时间基准=用户所在时区（北京时间）。容器 UTC≠宿主机 CST，不许用系统本地时区。
+# REMINDER_TZ 现为 app.utils.business_time.BEIJING_TZ 的别名（对外名字不变）。
 
 # 同一用户同一天最多 1 条提醒，且只提醒「中断次日」场景
 REMINDER_TITLE = "昨天的探索还留着尾巴"
@@ -34,8 +39,8 @@ REMINDER_CONTENT = (
 
 
 def _local_today() -> date:
-    """服务器本地时区的今天（21:00 job 按本地时区触发）。"""
-    return datetime.now().astimezone().date()
+    """北京时间的今天（21:00 job 与"昨天/今天"边界都按此基准）。"""
+    return datetime.now(REMINDER_TZ).date()
 
 
 def find_d2_reminder_users(db: Session, today: date | None = None) -> list[UUID]:
@@ -49,8 +54,8 @@ def find_d2_reminder_users(db: Session, today: date | None = None) -> list[UUID]
     """
     day = today or _local_today()
     yesterday = day - timedelta(days=1)
-    day_start = datetime.combine(yesterday, time.min).astimezone()
-    day_end = datetime.combine(day, time.min).astimezone()
+    day_start = datetime.combine(yesterday, time.min, tzinfo=REMINDER_TZ)
+    day_end = datetime.combine(day, time.min, tzinfo=REMINDER_TZ)
 
     # 昨天完成过任务的用户（按 plan 归属）
     rows = (
@@ -89,10 +94,10 @@ def find_d2_reminder_users(db: Session, today: date | None = None) -> list[UUID]
             .filter(
                 Notification.user_id == user_id,
                 Notification.type == "reminder",
-                Notification.created_at >= datetime.combine(day, time.min).astimezone(),
+                Notification.created_at >= datetime.combine(day, time.min, tzinfo=REMINDER_TZ),
                 Notification.created_at < datetime.combine(
-                    day + timedelta(days=1), time.min
-                ).astimezone(),
+                    day + timedelta(days=1), time.min, tzinfo=REMINDER_TZ
+                ),
             )
             .first()
         )
@@ -124,6 +129,7 @@ async def send_d2_reminders(db: Session | None = None) -> int:
                     type="reminder",
                     title=REMINDER_TITLE,
                     content=REMINDER_CONTENT,
+                    link="/micro-actions",
                 )
                 sent += 1
             except Exception:
@@ -137,7 +143,7 @@ async def send_d2_reminders(db: Session | None = None) -> int:
 
 
 def register_d2_reminder_job() -> None:
-    """startup 注册每日 21:00（服务器本地时区）提醒 job。
+    """startup 注册每日 21:00（北京时间，显式 timezone）提醒 job。
 
     幂等范式与 seed_default_schedules 一致：已存在的 job 跳过。
     - 开关 MICRO_ACTION_REMINDER_D2 默认 False，关闭时不注册；
@@ -167,8 +173,9 @@ def register_d2_reminder_job() -> None:
         replace_existing=True,
         hour=21,
         minute=0,
+        timezone=REMINDER_TZ,
     )
-    logger.info("已注册中断次日提醒 job: 每日 21:00（服务器本地时区）")
+    logger.info("已注册中断次日提醒 job: 每日 21:00（Asia/Shanghai）")
 
 
 async def _run_d2_reminder_job() -> None:
@@ -181,6 +188,7 @@ async def _run_d2_reminder_job() -> None:
 
 __all__ = [
     "REMINDER_JOB_ID",
+    "REMINDER_TZ",
     "find_d2_reminder_users",
     "send_d2_reminders",
     "register_d2_reminder_job",

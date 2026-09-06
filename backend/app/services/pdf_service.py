@@ -5,13 +5,14 @@
 """
 
 import io
-from datetime import date
 
 from reportlab.lib import colors
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 from sqlalchemy.orm import Session
+
+from app.utils.business_time import beijing_today
 
 
 def _iso(d) -> str | None:
@@ -110,7 +111,7 @@ def _add_footer(story: list, styles: dict, title: str):
     story.append(Spacer(1, 20))
     story.append(
         Paragraph(
-            f"{title} · 由 GradPath 自动生成 · {_iso(date.today())}",
+            f"{title} · 由 GradPath 自动生成 · {_iso(beijing_today())}",
             styles["small"],
         )
     )
@@ -172,7 +173,7 @@ def generate_school_report_pdf(
     story.append(Paragraph("院校报告", styles["title"]))
     story.append(
         Paragraph(
-            f"{school.name} | 生成日期：{_iso(date.today())}",
+            f"{school.name} | 生成日期：{_iso(beijing_today())}",
             styles["subtitle"],
         )
     )
@@ -353,7 +354,7 @@ def generate_career_report_pdf(
     user_name = user.name if user else "未知用户"
     story.append(
         Paragraph(
-            f"{user_name} | 生成日期：{_iso(date.today())}",
+            f"{user_name} | 生成日期：{_iso(beijing_today())}",
             styles["subtitle"],
         )
     )
@@ -536,7 +537,7 @@ def generate_profile_report_pdf(
     user_name = user.name if user else "未知用户"
     story.append(
         Paragraph(
-            f"{user_name} | 生成日期：{_iso(date.today())}",
+            f"{user_name} | 生成日期：{_iso(beijing_today())}",
             styles["subtitle"],
         )
     )

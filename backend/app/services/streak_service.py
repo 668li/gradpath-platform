@@ -14,6 +14,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.models.streak import StreakRecord
+from app.utils.business_time import beijing_today
 
 # 里程碑定义
 STREAK_MILESTONES = [
@@ -27,8 +28,8 @@ STREAK_MILESTONES = [
 
 
 # 每周休息日起始（周一）
-def _week_start(today: date = None) -> date:
-    d = today or date.today()
+def _week_start(today: date | None = None) -> date:
+    d = today or beijing_today()
     return d - timedelta(days=d.weekday())
 
 
@@ -40,12 +41,14 @@ def record_activity(
     action_detail: str = "",
     is_rest_day: bool = False,
     is_redeem: bool = False,
+    today: date | None = None,
 ) -> StreakRecord:
     """记录用户当日活跃行为，自动计算连续打卡天数。
 
     如果当日已有记录，追加行为类型；否则创建新记录并计算 streak。
+    today 可注入固定日期供测试用，默认取北京日历的今天。
     """
-    today = date.today()
+    today = today or beijing_today()
 
     # 查找当日记录
     record = (
@@ -120,7 +123,7 @@ def checkin(db: Session, user_id: UUID, action_type: str = "main", action_detail
     action_type: "main" | "micro"
     完成主行动得10XP，微行动得3XP。
     """
-    today = date.today()
+    today = beijing_today()
     existing = (
         db.query(StreakRecord)
         .filter(
@@ -150,7 +153,7 @@ def checkin(db: Session, user_id: UUID, action_type: str = "main", action_detail
 
 def rest_day(db: Session, user_id: UUID) -> dict:
     """每周1次主动标记"今天休息"，不扣streak。"""
-    today = date.today()
+    today = beijing_today()
     ws = _week_start(today)
 
     # 检查本周是否已使用休息日
@@ -206,7 +209,7 @@ def redeem_streak(db: Session, user_id: UUID) -> dict:
 
     条件：昨天断签（昨天无记录），今天完成了主行动+微行动。
     """
-    today = date.today()
+    today = beijing_today()
     yesterday = today - timedelta(days=1)
 
     # 昨天必须有记录才不算断签
@@ -279,7 +282,7 @@ def redeem_streak(db: Session, user_id: UUID) -> dict:
 
 def get_streak_stats(db: Session, user_id: UUID) -> dict:
     """获取用户连续打卡统计（扩展版：含里程碑、休息日、回赎状态）。"""
-    today = date.today()
+    today = beijing_today()
     records = (
         db.query(StreakRecord)
         .filter(StreakRecord.user_id == user_id)

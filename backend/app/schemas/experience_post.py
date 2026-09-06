@@ -15,7 +15,6 @@ class ExperiencePostBase(BaseModel):
     tags: list[str] = Field(default_factory=list, description="标签")
     category: str = Field(default="general", max_length=50, description="分类")
     is_anonymous: bool = Field(default=False, description="是否匿名")
-    source_platform: str = Field(default="user", max_length=50, description="来源平台")
     source_url: str | None = Field(None, max_length=2000, description="来源链接")
 
 
@@ -40,6 +39,8 @@ class ExperiencePostUpdate(BaseModel):
 class ExperiencePostResponse(ExperiencePostBase):
     """经验贴响应"""
 
+    # 来源归属是服务端事实（用户创建强制 "user"），不在创建契约中暴露
+    source_platform: str = Field(default="user", max_length=50, description="来源平台")
     id: UUID
     user_id: UUID
     view_count: int = Field(..., description="浏览数")

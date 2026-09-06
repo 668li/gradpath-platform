@@ -158,6 +158,77 @@ class TestAssessmentScoresSemantics:
         assert sum(data["scores"].values()) == 48
 
 
+class TestAssessmentBigFiveShort:
+    """Book 2：大五 10 题短版（big_five_short）——与 50 题版口径一致，摘要如实标注分辨率。"""
+
+    def test_short_flat_answers_are_dimension_means(self, auth_headers, client):
+        answers = _full_answers("bfs", ["3"], count=10)  # 全 3 分，每维均分应为 3.0
+        resp = client.post(
+            "/api/assessment/submit",
+            headers=auth_headers,
+            json={"answers": answers, "assessment_type": "big_five_short"},
+        )
+        assert resp.status_code == 201
+        data = resp.json()
+        assert set(data["scores"].keys()) == {"O", "C", "E", "A", "N"}
+        for dim in ("O", "C", "E", "A", "N"):
+            assert data["scores"][dim] == 3.0
+        assert data["result_code"] == "O3C3E3A3N3"
+        assert "短版" in data["result_summary"]  # 低分辨率如实标注
+
+    def test_short_mixed_scores_and_directions(self, auth_headers, client):
+        answers = {**_full_answers("bfs", ["5"], count=2)}  # O: 5,5
+        answers.update({f"bfs_q{i}": "1" for i in (3, 4)})  # C: 1,1
+        answers.update({f"bfs_q{i}": "3" for i in (5, 6)})  # E: 3,3
+        answers.update({f"bfs_q{i}": "4" for i in (7, 8)})  # A: 4,4
+        answers.update({f"bfs_q{i}": "2" for i in (9, 10)})  # N: 2,2
+        resp = client.post(
+            "/api/assessment/submit",
+            headers=auth_headers,
+            json={"answers": answers, "assessment_type": "big_five_short"},
+        )
+        assert resp.status_code == 201
+        data = resp.json()
+        assert data["scores"] == {"O": 5.0, "C": 1.0, "E": 3.0, "A": 4.0, "N": 2.0}
+        assert data["result_code"] == "O5C1E3A4N2"
+        assert data["recommended_directions"]  # top2 维度（O/A）有推荐方向
+
+    def test_short_incomplete_appends_missing_warning(self, auth_headers, client):
+        answers = _full_answers("bfs", ["3"], count=9)  # 少交 1 题
+        resp = client.post(
+            "/api/assessment/submit",
+            headers=auth_headers,
+            json={"answers": answers, "assessment_type": "big_five_short"},
+        )
+        assert resp.status_code == 201
+        assert "缺失" in resp.json()["result_summary"]
+
+    def test_short_single_option_warns(self, auth_headers, client):
+        answers = _full_answers("bfs", ["4"], count=10)
+        resp = client.post(
+            "/api/assessment/submit",
+            headers=auth_headers,
+            json={"answers": answers, "assessment_type": "big_five_short"},
+        )
+        assert resp.status_code == 201
+        assert "同一选项" in resp.json()["result_summary"]
+
+    def test_short_low_variance_warns(self, auth_headers, client):
+        """方差过低检查对短版生效：9×3 + 1×4 → 方差 0.09 < 0.3，但 unique=2
+        不触发"同一选项"，只触发"区分度低"。"""
+        answers = _full_answers("bfs", ["3"], count=10)
+        answers["bfs_q5"] = "4"
+        resp = client.post(
+            "/api/assessment/submit",
+            headers=auth_headers,
+            json={"answers": answers, "assessment_type": "big_five_short"},
+        )
+        assert resp.status_code == 201
+        summary = resp.json()["result_summary"]
+        assert "区分度低" in summary
+        assert "同一选项" not in summary
+
+
 class TestAssessmentValidation:
     """B3：后端答案完整性 + 作答可信度校验。"""
 
@@ -224,13 +295,18 @@ class TestAssessmentInterpret:
 
     _post = "/api/assessment/interpret"
 
-    def test_no_assessment_steers_user(self, auth_headers, client):
-        """未完成测评 → has_assessment=False，引导补全而不是抛错。"""
+    def test_no_assessment_still_returns_paths_structure(self, auth_headers, client):
+        """未完成测评（2026-09-05 倒置后行为翻转）→ has_assessment=False 且仍返回
+        完整路径结构，assessment=None；recommendation/interpretation 诚实引导补全，
+        不再是短 message 响应（原 test_no_assessment_steers_user 锁定的旧行为已废）。"""
         resp = client.post(self._post, headers=auth_headers)
         assert resp.status_code == 200
         data = resp.json()
         assert data["has_assessment"] is False
-        assert "测评" in data["message"]
+        assert data["assessment"] is None
+        assert isinstance(data["paths"], list)
+        assert "测评" in data["interpretation"]["reason"]
+        assert "个人档案" in data["recommendation"]
 
     def test_holland_interpret_honest_empty_paths(self, auth_headers, client):
         """有霍兰德测评、无画像 → 给出方向偏好，专有数据诚实为空（不造假数字）。"""

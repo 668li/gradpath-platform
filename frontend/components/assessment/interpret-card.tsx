@@ -54,7 +54,11 @@ export function InterpretCard({ data, loading, error }: InterpretCardProps) {
   }
   if (!data) return null;
 
-  if (!data.has_assessment) {
+  // 倒置（2026-09-05）：无测评也可出路径（profile 驱动）。只有当响应里什么可展示的
+  // 内容都没有时（旧后端兼容），才退回 message 引导。
+  const hasContent =
+    (data.paths?.length ?? 0) > 0 || !!data.recommendation || !!data.assessment || !!data.interpretation?.reason;
+  if (!data.has_assessment && !hasContent) {
     return (
       <div className="card space-y-1">
         <h2 className="font-display font-semibold text-ink-800">你的专属路径（基于真实数据）</h2>
@@ -77,7 +81,7 @@ export function InterpretCard({ data, loading, error }: InterpretCardProps) {
         </h2>
       </div>
 
-      {/* 测评 lean + 理由 */}
+      {/* 测评 lean + 理由（无测评时给测评入口，不伪造信号） */}
       {interp && (
         <div className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">
@@ -86,7 +90,16 @@ export function InterpretCard({ data, loading, error }: InterpretCardProps) {
                 偏好：{LEAN_LABELS[interp.primary_lean] ?? interp.primary_lean}
               </span>
             )}
-            <span className="text-[10px] text-ink-400">测评只提供方向偏好，不作报考结论</span>
+            {data.has_assessment ? (
+              <span className="text-[10px] text-ink-400">测评只提供方向偏好，不作报考结论</span>
+            ) : (
+              <Link
+                href="/assessment"
+                className="text-[11px] font-medium text-brand-600 hover:underline"
+              >
+                完成 60 秒职业测评，兴趣信号更准 →
+              </Link>
+            )}
           </div>
           {interp.reason && (
             <p className="text-sm text-ink-600 leading-relaxed">{interp.reason}</p>
@@ -100,6 +113,12 @@ export function InterpretCard({ data, loading, error }: InterpretCardProps) {
           {paths.map((m) => (
             <PathResultCard key={m.path_type} metric={m} />
           ))}
+          <Link
+            href="/decision-engine"
+            className="inline-block text-xs font-medium text-brand-600 hover:underline"
+          >
+            查看完整三路报告 →
+          </Link>
         </div>
       ) : (
         data.recommendation && (

@@ -29,3 +29,26 @@
 1. push_notification（app/api/notifications.py:282）无 link 参数，通知不能携带跳转地址。若希望 reminder 通知点击直达 /micro-actions，需要给 push_notification/Notification 加 link 字段（涉及 models + API，超出白名单，未做）。前端续学卡用固定跳转 /micro-actions 代替。
 2. streak_service.record_activity 与 checkin 功能重叠（checkin 内部即调 record_activity），可合并精简；本次只加写穿调用点，未重构（界限点名不许顺手重构）。
 3. 上文「基线偏差」记录的 3 条失败，实为本会话任务 1-3 的在途红状态（先写测试后修复的 TDD 流程），本会话已修复：test_complete_empty_response_rejected 改名为 test_complete_empty_response_allowed（任务 3 翻转该行为），两条写穿测试已绿。非数据或环境问题。
+
+---
+
+# BLOCKED 追加 — 供给增援三件套会话（2026-09-05）
+
+执行无硬阻塞（扩校 9/12 达标，超 ≥6 合格线）。以下为标定过程中被挡/不达标的学校，如实记录（详见 PROGRESS.md 扩校证据表）：
+
+1. 四川大学 gs.scu.edu.cn（研究生院主站）：所有请求被 WAF 拦截，HTTP 412 Precondition Failed（首页与栏目页一致，重试 3 次仍 412）。弃用主站；经该校研招办官网 yz.scu.edu.cn 达标收下（13 条/7 条详情匹配/最新 2026-09-05）。
+2. 哈尔滨工业大学 hitgs.hit.edu.cn：首页可抓但 parse_list_generic 得 0 条（公告列表为 JS 渲染，静态 HTML 无日期证据），无达标栏目，未收。
+3. 南京大学 yzb.nju.edu.cn（yjsy.nju.edu.cn 被 WAF 483 拦）：列表页达标（/47831/list.htm 14 条），但详情页 extract_main_text 0/2 出正文（0 字，疑似正文容器非静态/需渲染），不满足「详情 ≥80 字」验收线，未收。
+4. 中南大学 gra.csu.edu.cn：列表页达标（15 条全部新鲜），详情页 extract_main_text 0/2 出正文（0 字），同上未收。
+5. 域名勘误（DNS 不存在，fail-safe 拒发）：武大 yjsy.whu.edu.cn、山大 yjsy.sdu.edu.cn、中南 yjsy.csu.edu.cn、哈工大 yjsy.hit.edu.cn、天大 yjsy.tju.edu.cn；robots.txt 明确禁止抓取：hust yjs.hust.edu.cn、xmu yjsy.xmu.edu.cn、cqu yjs.cqu.edu.cn（均改用该校可达的 gs.*/yz.* 官方域）。
+6. 红线遵守：全程未触碰 chsi 任何域名；所有请求经 BaseCrawler 护栏（robots fail-safe + SSRF 校验 + ≥1.5s 限速，标定用 2s）。
+
+另：PROGRESS.md 为共享文件（含并行会话未提交笔记），按上会话先例只追加、未纳入本 commit；backend/app/services/reminder_service.py 与 backend/tests/test_reminder_d2.py 为并行会话在途改动，未纳入本 commit。
+
+---
+
+# BLOCKED 追加 — 测评结果页三处信任修复会话（2026-09-05）
+
+1.（非阻塞，已按规矩处理）任务 0 基线漂移：书写的 pytest 基线 1687 passed，实测 **1723 passed, 1 skipped**（deploy-assess=4a208bd，本会话动工前、未改任何文件时）。高出部分来自服务器线（70557a3）带入的抽取层黄金夹具/出身条款提取器回归等测试，属基线变强非前提损坏。按「测试数只许 ≥ 基线」上调本任务下限：pytest passed ≥1725（1723+任务1新增2个）；vitest 下限不变 ≥186（实测吻合 182→+4 新增）。
+
+（其余：无阻塞项。）

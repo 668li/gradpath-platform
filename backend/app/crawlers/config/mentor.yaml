@@ -1,8 +1,9 @@
+# 2026-09-04 注销：从未被调度（crawler_runs 零记录）；文件保留待拍板
 # 导师信息爬虫配置
 name: mentor
 category: grad
 description: 导师信息数据爬虫（预置导师基础信息、学术信息、招生信息）
-enabled: true
+enabled: false
 schedule: monthly  # 每月更新导师信息
 rate_limit: 1.0
 rate_limit_ms: 1000

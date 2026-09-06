@@ -18,6 +18,7 @@ from app.models.user import User
 from app.services import reminder_service
 from app.services.reminder_service import (
     REMINDER_JOB_ID,
+    REMINDER_TZ,
     find_d2_reminder_users,
     register_d2_reminder_job,
 )
@@ -37,12 +38,16 @@ def _make_plan_with_task(
     *,
     completed_yesterday: bool,
     task_status: str = "completed",
+    completed_at: datetime | None = None,
 ):
     plan = MicroActionPlan(user_id=user.id, target_path="employment", status="active")
     db_session.add(plan)
     db_session.flush()
 
-    yesterday = datetime.now().astimezone() - timedelta(days=1)
+    if completed_at is None:
+        completed_at = (
+            datetime.now(REMINDER_TZ) - timedelta(days=1) if completed_yesterday else None
+        )
     task = MicroActionTask(
         plan_id=plan.id,
         day_number=1,
@@ -51,7 +56,7 @@ def _make_plan_with_task(
         description="描述",
         estimated_minutes=20,
         status=task_status,
-        completed_at=yesterday if completed_yesterday else None,
+        completed_at=completed_at,
     )
     db_session.add(task)
     db_session.commit()
@@ -79,7 +84,7 @@ def test_d2_user_already_active_today_excluded(db_session):
     db_session.add(
         StreakRecord(
             user_id=user.id,
-            activity_date=datetime.now().astimezone().date(),
+            activity_date=datetime.now(REMINDER_TZ).date(),
             activity_types=["main"],
             streak_count=3,
         )
@@ -134,7 +139,7 @@ def test_d2_user_without_active_plan_excluded(db_session):
             description="描述",
             estimated_minutes=20,
             status="completed",
-            completed_at=datetime.now().astimezone() - timedelta(days=1),
+            completed_at=datetime.now(REMINDER_TZ) - timedelta(days=1),
         )
     )
     db_session.commit()
@@ -194,6 +199,46 @@ def test_register_job_registers_21h_when_enabled(monkeypatch):
     assert captured["trigger"] == "cron"
     assert captured["hour"] == 21
     assert captured["minute"] == 0
+    # 死规矩：容器是 UTC，不显式给 timezone 就会变成北京时间凌晨 5 点发提醒
+    assert captured["timezone"] == REMINDER_TZ
+
+
+def test_boundary_beijing_day_not_utc(db_session):
+    """北京时间昨天 23:50 完成算"昨天"（UTC 15:50）——窗口跟北京日历走，不跟容器 UTC 走。"""
+    user = _make_user(db_session, "d2-tz-boundary@example.com")
+    beijing_yesterday_2350 = (
+        datetime.now(REMINDER_TZ).date() - timedelta(days=1)
+    )
+    completed_at = datetime(
+        beijing_yesterday_2350.year,
+        beijing_yesterday_2350.month,
+        beijing_yesterday_2350.day,
+        23,
+        50,
+        tzinfo=REMINDER_TZ,
+    )
+    _make_plan_with_task(db_session, user, completed_yesterday=True, completed_at=completed_at)
+
+    result = find_d2_reminder_users(db_session)
+    assert user.id in result
+
+
+def test_early_morning_today_completion_excluded(db_session):
+    """北京时间今天凌晨 00:30 完成≠"昨天完成"，不该进筛选（北京日历边界）。"""
+    user = _make_user(db_session, "d2-early-morning@example.com")
+    beijing_today = datetime.now(REMINDER_TZ).date()
+    completed_at = datetime(
+        beijing_today.year,
+        beijing_today.month,
+        beijing_today.day,
+        0,
+        30,
+        tzinfo=REMINDER_TZ,
+    )
+    _make_plan_with_task(db_session, user, completed_yesterday=True, completed_at=completed_at)
+
+    result = find_d2_reminder_users(db_session)
+    assert user.id not in result
 
 
 def test_register_job_noop_in_test_env(monkeypatch):
@@ -212,3 +257,25 @@ def test_register_job_noop_in_test_env(monkeypatch):
     monkeypatch.setattr(crawlers, "get_scheduler", lambda: _FakeScheduler())
     register_d2_reminder_job()
     assert called["scheduler"] is False
+
+
+# ----------------------------------------------------------------------
+# 深链（漏斗修复）
+# ----------------------------------------------------------------------
+
+
+async def test_d2_reminder_notification_has_deep_link(db_session):
+    """发提醒后落库的 Notification.link 必须是 /micro-actions（可跳转回面板）。"""
+    user = _make_user(db_session, "d2-link@example.com")
+    _make_plan_with_task(db_session, user, completed_yesterday=True)
+
+    sent = await reminder_service.send_d2_reminders(db_session)
+    assert sent == 1
+
+    notification = (
+        db_session.query(Notification)
+        .filter(Notification.user_id == user.id, Notification.type == "reminder")
+        .first()
+    )
+    assert notification is not None
+    assert notification.link == "/micro-actions"

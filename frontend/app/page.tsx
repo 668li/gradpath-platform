@@ -74,6 +74,7 @@ export default function HomePage() {
           <p className="mx-auto mt-2 max-w-xl text-sm text-ink-500">
             注册后把目标职位做成「条件账本」，逐条勾选硬门槛与备考项，
             完成率就是你和上岸的距离；决策引擎再对比三路给出个人化建议，最后把结果回传给你。
+            补全专业后无需先做测评，你的专属报考路径（可报岗位/进面线/薪资/同分去向）立即生成。
           </p>
           <div className="mt-4 flex items-center justify-center gap-3">
             <Link

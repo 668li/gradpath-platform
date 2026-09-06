@@ -7,7 +7,8 @@
 - 测评类型 -> 路径偏好 lean（软信号，透明规则，不编造因果）
 - 用 generate_decision 拉取真实三路数据（考研/考公/就业），每条带溯源
 - 用 get_prospect 拉取专业薪资前景与升学路径（真实口径，含 data_notes）
-- 用 build_peer_destinations 拉取「和你分数相近的人最后去哪」的合计去向（无估分则诚实为空）
+- 用 build_peer_destinations 拉取「和你分数相近的人最后去哪」的合计去向
+  （参照分 = 用户自己最近一条真实回传分；从未回传分数则诚实为空）
 - 每条结论都带来源；数据不足时诚实降级，绝不造假（沿用 581 溯源闸门纪律）
 
 设计边界：
@@ -25,7 +26,9 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.models.assessment import Assessment
+from app.utils.business_time import beijing_today
 from app.models.career_profile import CareerProfile
+from app.models.outcome_report import OutcomeReport
 from app.services.major_prospect_service import get_prospect
 from app.services.path_comparison_service import build_peer_destinations
 from app.services.path_decision_engine import generate_decision
@@ -37,6 +40,10 @@ _PATH_LABELS = {
     "civil_service": "考公",
     "employment": "就业",
 }
+
+# profile.education_level 存枚举值（前端 EDUCATION_LEVELS），决策引擎按中文档位匹配。
+# "other" 不映射：用户未给出可比对档位，置 None 让引擎跳过学历过滤（data_notes 已声明放宽）。
+_EDU_ENUM_ZH = {"high_school": "高中", "bachelor": "本科", "master": "硕士", "phd": "博士"}
 
 # 霍兰德 RIASEC -> 侧重路径（数值越大越偏向；行业通识映射，透明可读）
 _HOLLAND_LEAN = {
@@ -136,14 +143,15 @@ def _serialize_profile(profile) -> dict | None:
     return {f: getattr(profile, f, None) for f in _PROFILE_FIELDS}
 
 
-def _fresh_from_profile(profile) -> str | None:
+def _fresh_from_profile(profile, today: date | None = None) -> str | None:
     """应届近似判断：毕业年份不早于本年度 => 应届；否则 非应届。
 
     返回值与 path_decision_engine 约定的取值一致（"应届"/"非应届"）。
-    空 graduate_year 则不参与过滤（返回 None）。"""
+    空 graduate_year 则不参与过滤（返回 None）。年度基准按北京日历（today 可注入供测试）。"""
     if profile is None or profile.graduation_year is None:
         return None
-    return "应届" if profile.graduation_year >= date.today().year else "非应届"
+    today = today or beijing_today()
+    return "应届" if profile.graduation_year >= today.year else "非应届"
 
 
 def build_interpretation(db: Session, user_id: UUID) -> dict:
@@ -158,20 +166,11 @@ def build_interpretation(db: Session, user_id: UUID) -> dict:
     profile = db.query(CareerProfile).filter(CareerProfile.user_id == user_id).first()
 
     profile_ser = _serialize_profile(profile)
-    if assessment is None:
-        return {
-            "has_assessment": False,
-            "message": (
-                "尚未完成任何测评。先完成一份职业测评，"
-                "即可得到结合你专业/学校层次/应届身份的真实报考路径解读。"
-            ),
-            "profile": profile_ser,
-        }
-
-    score_map = _resolve_scores(assessment.scores)
     major_hint = (profile.major if profile else None) or ""
     school_tier = profile.school_tier if profile else None
-    education = profile.education_level if profile else None
+    education = (
+        _EDU_ENUM_ZH.get(profile.education_level or "") if profile else None
+    )
     graduation_year = profile.graduation_year if profile else None
     target_direction = profile.target_direction if profile else None
 
@@ -186,20 +185,46 @@ def build_interpretation(db: Session, user_id: UUID) -> dict:
     else:
         lean_path = None
 
-    # 测评解读层（透明规则）
-    if assessment.assessment_type == "holland":
-        interp = _interpret_holland(score_map, assessment.result_code or "", major_hint)
+    if assessment is not None:
+        # 测评解读层（透明规则）
+        score_map = _resolve_scores(assessment.scores)
+        if assessment.assessment_type == "holland":
+            interp = _interpret_holland(score_map, assessment.result_code or "", major_hint)
+        else:
+            interp = _interpret_other(
+                assessment.assessment_type, assessment.result_code or "", major_hint
+            )
+        # 用户已明确选向时，测评 lean 降级为辅（人填的目标方向优先）
+        if lean_path is not None:
+            interp = dict(interp)
+            interp["primary_lean"] = lean_path
+            interp["reason"] = (
+                f"你已在个人档案指定目标方向「{target_direction}」，覆盖测评偏好。" + interp["reason"]
+            )
+        assessment_block = {
+            "type": assessment.assessment_type,
+            "result_code": assessment.result_code,
+            "scores": score_map,
+            "result_summary": assessment.result_summary,
+        }
+        has_assessment = True
     else:
-        interp = _interpret_other(
-            assessment.assessment_type, assessment.result_code or "", major_hint
-        )
-    # 用户已明确选向时，测评 lean 降级为辅（人填的目标方向优先）
-    if lean_path is not None:
-        interp = dict(interp)
-        interp["primary_lean"] = lean_path
-        interp["reason"] = (
-            f"你已在个人档案指定目标方向「{target_direction}」，覆盖测评偏好。" + interp["reason"]
-        )
+        # 倒置（2026-09-05）：测评不再是专属路径的必经入口——profile 有专业即可出路径，
+        # 测评降级为可选的兴趣信号补充。无测评时如实标注，绝不伪造类型。
+        score_map = {}
+        interp = {
+            "primary_lean": lean_path,
+            "lean_scores": None,
+            "reason": (
+                f"你已在个人档案指定目标方向「{target_direction}」，专属路径按此生成；"
+                "完成 60 秒职业测评可补齐兴趣维度，让方向偏好更稳。"
+                if lean_path
+                else "暂无测评信号：下方路径由你的专业与身份直接生成；"
+                "完成 60 秒职业测评可让方向偏好更稳。"
+            ),
+        }
+        assessment_block = None
+        has_assessment = False
 
     # 2. 拉取真实三路数据（major 为空时如实标注，不生成空串聚合的假数据）
     decision = None
@@ -219,8 +244,18 @@ def build_interpretation(db: Session, user_id: UUID) -> dict:
             education=education,
         )
 
-    # 3. 同分人群去向（无考研估分时 build_peer_destinations 诚实降级为空）
-    peer = build_peer_destinations(db, None)
+    # 3. 同分人群去向：参照分 = 用户自己最近一条真实回传分（outcome_reports.score_total，
+    #    估分是瞬时值不入库；从未回传过分数 → 诚实降级为空，不编造参照分）
+    own_score_row = (
+        db.query(OutcomeReport.score_total)
+        .filter(
+            OutcomeReport.user_id == user_id,
+            OutcomeReport.score_total.isnot(None),
+        )
+        .order_by(OutcomeReport.created_at.desc())
+        .first()
+    )
+    peer = build_peer_destinations(db, own_score_row[0] if own_score_row else None)
 
     # 4. 专业薪资前景（真实口径，含 data_notes）
     prospect = {}
@@ -233,13 +268,8 @@ def build_interpretation(db: Session, user_id: UUID) -> dict:
             )
 
     return {
-        "has_assessment": True,
-        "assessment": {
-            "type": assessment.assessment_type,
-            "result_code": assessment.result_code,
-            "scores": score_map,
-            "result_summary": assessment.result_summary,
-        },
+        "has_assessment": has_assessment,
+        "assessment": assessment_block,
         "profile": profile_ser,
         "interpretation": interp,
         "paths": decision.get("metrics", []) if decision else [],

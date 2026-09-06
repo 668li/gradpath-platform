@@ -73,7 +73,10 @@ def _competition_level(ratio: int) -> str:
     return "none"
 
 
-@register_crawler
+# 2026-09-05 注销注册：random.seed(42) 合成数据生成器（L85"生成 100 条报录比原始数据"，
+# 报名/录用/报录比全为随机编造，与 581 假进面线同性质）。从未入调度白名单；
+# 真报录比供给需自建（见记忆 data-leverage-research）。同三假爬虫先例：文件保留，不删。
+# @register_crawler
 class RatioCrawler(BaseCrawler):
     """考公报录比爬虫 — 生成 100 条热门职位历史报录比数据。"""
 

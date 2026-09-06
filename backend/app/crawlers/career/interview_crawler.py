@@ -100,7 +100,9 @@ def _random_recent_date(rng: random.Random, today: date) -> date:
     return today - timedelta(days=days_ago)
 
 
-@register_crawler
+# 2026-09-05 注销注册：_COMPANIES 写死名单合成数据生成器（L24/L116，"生成 120 条面试经验"），
+# 从未被调度运行过；真供给源选型另行立项。同三假爬虫先例：文件保留，不删。
+# @register_crawler
 class InterviewCrawler(BaseCrawler):
     """面试经验爬虫 — 生成 120 条面试经验（20 公司 × 6 条）。"""
 

@@ -1,8 +1,9 @@
+# 2026-09-04 注销：从未被调度（crawler_runs 零记录）；文件保留待拍板
 # 薪资数据爬虫配置
 name: salary_data
 category: career
 description: 薪资数据爬虫
-enabled: true
+enabled: false
 schedule: weekly  # 每周更新薪资数据
 rate_limit: 1.0
 rate_limit_ms: 1000

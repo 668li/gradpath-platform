@@ -41,7 +41,9 @@ def create_experience_post(
         tags=data.get("tags") or [],
         category=data.get("category", "general"),
         is_anonymous=data.get("is_anonymous", False),
-        source_platform=data.get("source_platform", "user"),
+        # 来源归属是服务端事实，不由客户端声明（对抗审查 B：schema 里
+        # source_platform 客户端可控，可伪造 external/verified 供应链）
+        source_platform="user",
         source_url=data.get("source_url"),
         status="pending",
     )

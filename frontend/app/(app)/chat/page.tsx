@@ -16,6 +16,7 @@ import {
   X,
   Target,
   KeyRound,
+  CalendarCheck,
 } from "lucide-react";
 import { chatApi } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -70,14 +71,14 @@ const QUICK_START_CARDS = [
     sceneIcon: "📍",
     title: "我能报什么岗",
     text: "我本科毕业、专业是计算机，帮我看看国考有哪些岗位我能报、进面线多少？",
-    skill: "",
+    skill: "position_advisor",
   },
   {
     scene: "查线",
     sceneIcon: "📈",
     title: "分数线稳不稳",
     text: "我想考这个学校，进面线大概多少分？我够不够得着？",
-    skill: "",
+    skill: "grad_school_planning",
   },
   {
     scene: "志愿",
@@ -103,6 +104,7 @@ export default function ChatPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [lastPlanId, setLastPlanId] = useState<string | null>(null);
+  const [lastMicroPlanId, setLastMicroPlanId] = useState<string | null>(null);
   const [showByokHint, setShowByokHint] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -143,7 +145,17 @@ export default function ChatPage() {
     setLoadingMsgs(true);
     chatApi
       .getMessages(currentId)
-      .then((msgs) => setMessages(msgs))
+      .then((msgs) =>
+        // 历史消息：从 context_snapshot 恢复站内数据来源标签
+        setMessages(
+          msgs.map((m) => ({
+            ...m,
+            agent_sources:
+              (m.context_snapshot?.data_sources as MessageWithMeta["agent_sources"]) ??
+              m.agent_sources,
+          })),
+        ),
+      )
       .catch(() => toast.push("加载消息失败", "error"))
       .finally(() => setLoadingMsgs(false));
   }, [currentId, toast]);
@@ -168,6 +180,7 @@ export default function ChatPage() {
       setCurrentId(conv.id);
       setMessages([]);
       setLastPlanId(null);
+      setLastMicroPlanId(null);
     } catch {
       toast.push("创建对话失败", "error");
     }
@@ -214,6 +227,7 @@ export default function ChatPage() {
     setInput("");
     setSending(true);
     setLastPlanId(null);
+    setLastMicroPlanId(null);
 
     try {
       // 使用持久化端点：消息保存到会话 + 多轮记忆 + Skill 匹配 + 职业规划生成
@@ -229,6 +243,8 @@ export default function ChatPage() {
         content: res.content || "（AI 未返回内容，请重试）",
         skill_used: res.skill_used || null,
         context_snapshot: {},
+        agent_sources: res.agent_sources?.length ? res.agent_sources : undefined,
+        agent_confidence: res.agent_confidence ?? undefined,
         created_at: new Date().toISOString(),
       };
       setMessages((prev) => [...prev, aiMsg]);
@@ -236,6 +252,11 @@ export default function ChatPage() {
       // 如果 AI 生成了职业规划方案，显示入口
       if (res.career_plan) {
         setLastPlanId(res.career_plan);
+      }
+
+      // 如果 AI 生成了 7 天微行动计划（学习计划师落库），显示入口
+      if (res.micro_action_plan) {
+        setLastMicroPlanId(res.micro_action_plan);
       }
 
       // 如果是首次对话，刷新标题（后端可能已更新）
@@ -337,6 +358,7 @@ export default function ChatPage() {
                 onClick={() => {
                   setCurrentId(conv.id);
                   setLastPlanId(null);
+                  setLastMicroPlanId(null);
                 }}
               >
                 <MessageSquare className="h-4 w-4 shrink-0 opacity-60" />
@@ -475,6 +497,23 @@ export default function ChatPage() {
                         </p>
                       </div>
                       <ChevronDown className="h-4 w-4 -rotate-90 text-brand-400" />
+                    </Link>
+                  )}
+                  {lastMicroPlanId && (
+                    <Link
+                      href="/micro-actions"
+                      className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50/50 px-4 py-3 transition-colors hover:bg-green-50"
+                    >
+                      <CalendarCheck className="h-5 w-5 text-green-600" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-green-700">
+                          已生成 7 天行动计划
+                        </p>
+                        <p className="text-xs text-green-600">
+                          每天一个小行动，完成可累积连击
+                        </p>
+                      </div>
+                      <ChevronDown className="h-4 w-4 -rotate-90 text-green-400" />
                     </Link>
                   )}
                   <div ref={messagesEndRef} />

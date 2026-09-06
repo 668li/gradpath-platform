@@ -21,6 +21,10 @@ class BaseSkill(ABC):
     description: str = ""
     icon: str = ""
 
+    # 数据型 skill 声明自己负责注入的数据域（data_search_service 的 domain 名），
+    # chat 通用数据搜索层据此去重，避免同一数据双注入。
+    covered_data_domains: frozenset[str] = frozenset()
+
     @abstractmethod
     def should_activate(self, message: str, context: dict) -> bool:
         """判断是否应该激活此 Skill。"""
@@ -48,6 +52,15 @@ class BaseSkill(ABC):
             注入的数据文本（可直接追加到 system prompt），无需数据时返回空字符串。
         """
         return ""
+
+    def collect_sources(self, db, user_id, content: str) -> list[dict]:
+        """回传注入数据的前端来源条目（可选覆写）。
+
+        数据型 skill 覆写 inject_data 时应同步覆写本方法，返回与注入内容
+        对应的 [{type: "db", title, content, url}]——chat_service 在该 skill
+        覆盖 data_search 域（无通用 sources）时调用它，点亮气泡「参考来源」。
+        """
+        return []
 
     def parse_response(self, llm_output: str) -> dict:
         """解析 LLM 输出。默认返回原始文本。

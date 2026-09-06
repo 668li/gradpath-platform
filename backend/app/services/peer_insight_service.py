@@ -23,6 +23,7 @@ from app.models.destination_decision import DecisionStatus, DestinationDecision
 from app.models.grad_intel import DarkKnowledge
 from app.models.outcome_report import OutcomeReport
 from app.models.user import User
+from app.utils.business_time import beijing_today
 
 logger = logging.getLogger(__name__)
 
@@ -151,18 +152,19 @@ def get_peer_mirror(db: Session, user_id: UUID) -> dict:
     return result
 
 
-def get_procrastination_cost(db: Session, user_id: UUID) -> dict:
+def get_procrastination_cost(db: Session, user_id: UUID, today: date | None = None) -> dict:
     """决策拖延成本：量化用户停留在 'planned' 状态决策的真实代价。
 
     从第一性原理：拖延的本质是"用未来的准备时间换取当下的舒适"。
     每多犹豫一天，可用于执行的准备时间就少一天，成功率随之下降。
+    today 可注入供测试。
     """
     cache_key = f"procrastination_cost:{user_id}"
     cached = cache.get(cache_key)
     if cached is not None:
         return cached
 
-    today = date.today()
+    today = today or beijing_today()
     pending = (
         db.query(DestinationDecision)
         .filter(
