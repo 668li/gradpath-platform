@@ -17,6 +17,8 @@ ALERTS="$BASE/alerts.log"
 BOT_RE='bot|spider|crawl|curl|wget|python|go-http|okhttp|java|headless|uptime|health|monitor|preview|feishu|dingtalk|wxwork|semrush|ahrefs|mojeek'
 # 静态资源后缀（先剥 query 再匹配行尾；双反斜杠让 awk 字符串层保留 \. 给正则）
 ST_RE='\\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|otf|map|xml|webp|json|txt)$'
+# 轮询心跳类接口：浏览器挂着就反复刷，不计入有效浏览（2026-09-06 实测 unread-count 占 14%）
+POLL_RE='^/api/notifications/unread-count'
 
 # 时区自校准：mktime 按本机时区解释 wall clock，它对 1970-01-01 00:00 的返回值=-(本机UTC偏移)。
 # 真纪元 = mktime(wall) - M，与 shell date 是否响应 TZ 无关（Git Bash date 无视 TZ 前缀的坑）。
@@ -31,7 +33,7 @@ cat_logs() {
 
 # window_stats S E → 首行 "pv uv blocked total"，其后每行 "path count"（热门页面 Top3）
 window_stats() {
-  cat_logs | awk -v s="$1" -v e="$2" -v off="$OFF" -v bot="$BOT_RE" -v st="$ST_RE" '
+  cat_logs | awk -v s="$1" -v e="$2" -v off="$OFF" -v bot="$BOT_RE" -v st="$ST_RE" -v poll="$POLL_RE" '
   BEGIN{ split("Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec",MN," "); for(i=1;i<=12;i++) m[MN[i]]=i }
   {
     if ($4 !~ /^\[/) next
@@ -43,6 +45,7 @@ window_stats() {
     if (status==444) { blocked++; next }
     p=$7; sub(/\?.*/,"",p)
     if (p ~ st) next
+    if (p ~ poll) next
     ua=""; for(i=12;i<=NF;i++){ if($i ~ /^rt=/) break; ua=ua" "$i }
     ua=tolower(ua); gsub(/"/,"",ua)
     if (ua=="" || ua ~ /^[- ]*$/ || ua ~ bot) next
