@@ -31,7 +31,6 @@ import {
   Sparkles,
   Trophy,
   Footprints,
-  HeartCrack,
   ListChecks,
   Command as CommandIcon,
   ShieldCheck,
@@ -39,8 +38,6 @@ import {
   Bug,
   Inbox,
   Settings,
-  Landmark,
-  Newspaper,
   Telescope,
   ArrowLeft,
 } from "lucide-react";
@@ -90,13 +87,9 @@ function getNavSections(): NavSection[] {
       section: "旅程",
       children: [
         { href: "/kaoyan", label: "考研情报", icon: BookOpen },
-        { href: "/kaoyan/news", label: "资讯中心", icon: Newspaper },
         { href: "/civil-service", label: "考公情报", icon: Building2 },
-        { href: "/civil-service/positions", label: "国考职位", icon: Landmark },
         { href: "/employment", label: "就业情报", icon: Briefcase },
         { href: "/major-prospects", label: "专业前景", icon: Telescope },
-        { href: "/interview", label: "面试经验", icon: MessageSquare },
-        { href: "/failure-cases", label: "失败案例库", icon: HeartCrack },
       ],
     },
     {
@@ -119,7 +112,6 @@ function getNavSections(): NavSection[] {
         { href: "/actions", label: "行动任务中心", icon: ListChecks },
         { href: "/study-plans", label: "学习计划", icon: Swords },
         { href: "/life-design", label: "90 天冲刺", icon: Sparkles },
-        { href: "/timeline", label: "时间线", icon: Calendar },
       ],
     },
     {
@@ -132,6 +124,12 @@ function getNavSections(): NavSection[] {
         { href: "/retrospectives", label: "阶段复盘", icon: Calendar },
         { href: "/achievements", label: "成长回顾", icon: Trophy },
       ],
+    },
+    {
+      href: "/timeline",
+      label: "时间线",
+      icon: Calendar,
+      section: "旅程",
     },
     {
       href: "/community",
@@ -579,7 +577,7 @@ export function AppNav() {
             role="dialog"
             aria-modal="true"
             aria-label="导航菜单"
-            className="absolute left-0 top-0 h-full w-72 bg-ink-800 shadow-2xl"
+            className="absolute left-0 top-0 h-full w-64 max-w-[85vw] bg-ink-800 shadow-2xl"
           >
             <button
               onClick={() => setOpen(false)}

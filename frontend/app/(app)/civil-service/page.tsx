@@ -4,33 +4,26 @@ import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
-  Building2,
-  MapPin,
   Target,
   BookOpen,
   Wrench,
   AlertTriangle,
   ChevronRight,
-  TrendingUp,
   Star,
   Clock,
   Sparkles,
-  Loader2,
   Landmark,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { civilServiceIntelApi } from "@/lib/api/ai";
 import { EmptyState, LoadingState } from "@/components/ui/empty";
-import { Skeleton } from "@/components/ui/skeleton";
 import type {
-  PostIntelResponse,
   CivilServicePositioningResponse,
   CivilServiceDarkKnowledgeResponse,
   CivilServiceDarkKnowledgeStage,
 } from "@/types";
 
 const tabs = [
-  { id: "post-intel", label: "岗位情报", icon: Building2, color: "text-blue-500" },
   { id: "positioning", label: "考公定位", icon: Target, color: "text-purple-500" },
   { id: "dark-knowledge", label: "暗知识", icon: BookOpen, color: "text-amber-500" },
   { id: "tools", label: "备考工具", icon: Wrench, color: "text-green-500" },
@@ -43,66 +36,7 @@ const importanceMap: Record<string, { label: string; color: string }> = {
   low: { label: "了解", color: "bg-ink-100 text-ink-600" },
 };
 
-function PostIntelSkeleton() {
-  return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={`skel-${i}`} className="rounded-xl border border-paper-200 bg-white p-5 space-y-3">
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-5 w-5 rounded" />
-            <Skeleton className="h-4 w-24" />
-          </div>
-          <Skeleton className="h-5 w-2/3" />
-          <Skeleton className="h-3 w-1/2" />
-          <div className="flex gap-2">
-            <Skeleton className="h-6 w-16 rounded-full" />
-            <Skeleton className="h-6 w-16 rounded-full" />
-          </div>
-          <Skeleton className="h-3 w-full" />
-          <Skeleton className="h-3 w-4/5" />
-        </div>
-      ))}
-    </div>
-  );
-}
 
-function PostIntelCard({ post }: { post: PostIntelResponse }) {
-  return (
-    <div className="rounded-xl border border-paper-200 bg-white p-5 hover:shadow-md transition-shadow">
-      <div className="flex items-center gap-2 mb-2">
-        <Building2 className="h-4 w-4 text-blue-500" />
-        <span className="text-xs font-medium text-ink-400">{post.department_tier || "部门"}</span>
-      </div>
-      <h3 className="font-display font-bold text-ink-800 mb-1">{post.post_name}</h3>
-      <div className="flex items-center gap-3 text-sm text-ink-500 mb-3">
-        <span className="flex items-center gap-1">
-          <MapPin className="h-3.5 w-3.5" />
-          {post.region}
-        </span>
-        <span>{post.department}</span>
-      </div>
-      <div className="flex flex-wrap gap-2 mb-3">
-        <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-medium text-blue-700">
-          {post.real_competition}
-        </span>
-        <span className="inline-flex items-center rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">
-          {post.treatment_level}
-        </span>
-        {post.salary_estimate && (
-          <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700">
-            {post.salary_estimate}
-          </span>
-        )}
-      </div>
-      {post.admission_ratio && (
-        <p className="text-sm text-ink-500 mb-1">报录比：{post.admission_ratio}</p>
-      )}
-      {post.ai_summary && (
-        <p className="text-sm text-ink-400 line-clamp-2">{post.ai_summary}</p>
-      )}
-    </div>
-  );
-}
 
 function PositioningContent({ data }: { data: CivilServicePositioningResponse | null }) {
   if (!data) {
@@ -347,13 +281,7 @@ export default function CivilServicePage() {
 function CivilServicePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const activeTab = searchParams.get("tab") || "post-intel";
-
-  // Tab1: 岗位情报
-  const [posts, setPosts] = useState<PostIntelResponse[]>([]);
-  const [postsLoading, setPostsLoading] = useState(true);
-  const [regionFilter, setRegionFilter] = useState("");
-  const [tierFilter, setTierFilter] = useState("");
+  const activeTab = searchParams.get("tab") || "positioning";
 
   // Tab2: 考公定位
   const [positioning, setPositioning] = useState<CivilServicePositioningResponse | null>(null);
@@ -370,20 +298,6 @@ function CivilServicePageContent() {
     router.push(`/civil-service?tab=${id}`);
   };
 
-  // 加载 Tab1 数据
-  useEffect(() => {
-    if (activeTab !== "post-intel") return;
-    setPostsLoading(true);
-    civilServiceIntelApi
-      .listPublicPostIntel({
-        limit: 50,
-        region: regionFilter || undefined,
-        department_tier: tierFilter || undefined,
-      })
-      .then((data) => setPosts(data))
-      .catch(() => setPosts([]))
-      .finally(() => setPostsLoading(false));
-  }, [activeTab, regionFilter, tierFilter]);
 
   // 加载 Tab2 数据
   useEffect(() => {
@@ -487,62 +401,6 @@ function CivilServicePageContent() {
       </div>
 
       {/* Tab 内容 */}
-      {activeTab === "post-intel" && (
-        <div>
-          {/* 筛选栏 */}
-          <div className="mb-4 flex flex-wrap gap-3">
-            <select
-              value={regionFilter}
-              onChange={(e) => setRegionFilter(e.target.value)}
-              className="rounded-lg border border-paper-300 bg-white px-3 py-2 text-sm text-ink-700 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
-            >
-              <option value="">全部地区</option>
-              <option value="北京">北京</option>
-              <option value="上海">上海</option>
-              <option value="广东">广东</option>
-              <option value="浙江">浙江</option>
-              <option value="江苏">江苏</option>
-              <option value="四川">四川</option>
-              <option value="山东">山东</option>
-              <option value="湖北">湖北</option>
-            </select>
-            <select
-              value={tierFilter}
-              onChange={(e) => setTierFilter(e.target.value)}
-              className="rounded-lg border border-paper-300 bg-white px-3 py-2 text-sm text-ink-700 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
-            >
-              <option value="">全部层级</option>
-              <option value="中央直属">中央直属</option>
-              <option value="中央部委">中央部委</option>
-              <option value="省级机关">省级机关</option>
-              <option value="市级机关">市级机关</option>
-              <option value="县区级">县区级</option>
-            </select>
-            {(regionFilter || tierFilter) && (
-              <button
-                onClick={() => { setRegionFilter(""); setTierFilter(""); }}
-                className="text-sm text-ink-400 hover:text-brand-600 underline underline-offset-2"
-              >
-                清除筛选
-              </button>
-            )}
-          </div>
-          {postsLoading ? (
-            <PostIntelSkeleton />
-          ) : posts.length === 0 ? (
-            <EmptyState
-              title="暂无匹配的岗位情报"
-              description={regionFilter || tierFilter ? "试试放宽筛选条件，或清除筛选查看全部岗位" : "还没有公开的岗位情报数据"}
-            />
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {posts.map((post) => (
-                <PostIntelCard key={post.id} post={post} />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
       {activeTab === "positioning" && (
         <div>

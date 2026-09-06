@@ -68,14 +68,7 @@ const strategyCards: {
     tab: "diagnosis",
     color: "bg-purple-500",
   },
-  {
-    icon: BarChart3,
-    title: "学习资源推荐",
-    desc: "针对目标院校专业课的教材、真题、笔记推荐",
-    action: "查看资源",
-    href: "/learning-resources",
-    color: "bg-orange-500",
-  },
+
 ];
 
 export default function StrategyPage() {

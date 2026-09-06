@@ -14,6 +14,10 @@ const nextConfig = {
       { source: "/decisions", destination: "/decision-center", permanent: false },
       { source: "/plans", destination: "/study-plans", permanent: false },
       { source: "/kaoyan/predict", destination: "/kaoyan", permanent: false },
+      { source: "/kaoyan/news", destination: "/kaoyan", permanent: false },
+      { source: "/learning-resources", destination: "/study-plans", permanent: false },
+      { source: "/civil-service/positions", destination: "/civil-service", permanent: false },
+      { source: "/failure-cases", destination: "/employment?tab=interview", permanent: false },
     ];
   },
   // 服务器构建提速：lint 已由 CI(github actions) 与本地 npm run lint 覆盖，
