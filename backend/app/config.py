@@ -36,6 +36,13 @@ class Settings(BaseSettings):
     # compose 注入 http://rsshub:1200。爬虫按此 URL 推导放行主机名。
     RSSHUB_BASE_URL: str = "http://127.0.0.1:1200"
 
+    # 慢查询追踪阈值（毫秒）：超过 SLOW 记日志+指标，超过 CRITICAL 微信告警
+    SLOW_QUERY_MS: float = 500.0
+    CRITICAL_QUERY_MS: float = 2000.0
+
+    # Server酱微信推送（运维告警/新反馈通知）；空=不发
+    SERVERCHAN_WEBHOOK_URL: str = ""
+
     # RAG 向量化模型。库内向量与查询向量必须同模型生成。
     # 默认 bge-small-zh-v1.5（512 维）：2核4G 轻量服务器 CPU 可负担；
     # 换模型必须同时重跑 scripts/vectorize_data.py 全量重建 document_embeddings。

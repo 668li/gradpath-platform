@@ -191,7 +191,7 @@ def test_refresh_token_expired(client):
     from datetime import datetime, timedelta, timezone
     from uuid import uuid4
 
-    from jose import jwt
+    import jwt
 
     from app.config import settings
 

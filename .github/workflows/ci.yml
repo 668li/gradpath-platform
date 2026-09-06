@@ -134,6 +134,10 @@ jobs:
 
       - name: Run safety dependency check
         run: safety check --full-report
+      - name: pip-audit dependency check
+        run: |
+          pip install pip-audit
+          pip-audit -l --desc || true
         continue-on-error: true
 
   # ===== 前端 Lint & 类型检查 =====

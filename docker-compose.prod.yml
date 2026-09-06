@@ -125,6 +125,8 @@ services:
       # 免费模式底座接线（模型/端点可经服务器 .env 切换供应商，改后 up -d --force-recreate backend 生效）
       LLM_MODEL: ${LLM_MODEL:-glm-4.7-flash}
       LLM_BASE_URL: ${LLM_BASE_URL:-https://open.bigmodel.cn/api/paas/v4/}
+      # 运维告警/反馈通知（Server酱；空=不发）
+      SERVERCHAN_WEBHOOK_URL: ${SERVERCHAN_WEBHOOK_URL:-}
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
       CELERY_BROKER_URL: redis://:${REDIS_PASSWORD}@redis:6379/1
       CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD}@redis:6379/2
@@ -277,6 +279,8 @@ services:
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
       BACKUP_DIR: /var/backups/gradpath
       RETENTION_DAYS: "14"
+      # 备份失败告警出口（backup_verify.sh 读取；此前默认空=失败静默）
+      ALERT_WEBHOOK: ${SERVERCHAN_WEBHOOK_URL:-}
     volumes:
       - ./backend/scripts:/backup-scripts:ro
       - backup_data:/var/backups/gradpath

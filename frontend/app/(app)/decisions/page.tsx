@@ -26,6 +26,7 @@ import {
   DESTINATION_TYPE_LABEL,
 } from "@/lib/constants";
 import { Modal } from "@/components/ui/modal";
+import { NorthStarCard } from "@/components/north-star-card";
 import { EmptyState, LoadingState } from "@/components/ui/empty";
 import { Badge, Button, Field, Textarea } from "@/components/ui/form-controls";
 import { ListSkeleton } from "@/components/ui/skeleton";
@@ -491,6 +492,9 @@ export default function DecisionsPage() {
       </div>
 
       <AIAdvicePanel />
+
+      {/* 北极星度量（仅管理员：非管理员接口 403，卡片自动不渲染） */}
+      <NorthStarCard />
 
       {/* 待回溯决策 */}
       <section className="space-y-3">

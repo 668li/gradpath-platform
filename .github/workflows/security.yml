@@ -43,6 +43,11 @@ jobs:
       - name: Safety dependency check
         run: safety check --output json > safety-report.json 2>&1 || true
 
+      - name: pip-audit dependency check
+        run: |
+          pip install pip-audit
+          pip-audit -l --desc || true
+
       - name: Upload security reports
         if: always()
         uses: actions/upload-artifact@v4
