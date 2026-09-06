@@ -233,9 +233,7 @@ class MCPAuthMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(self, request: Request, call_next):
-        from jose.exceptions import JWTError
-
-        from app.core.security import decode_token
+        from app.core.security import JWTError, decode_token
 
         # 优先从 Authorization 头解析 Bearer token
         auth_header = request.headers.get("authorization") or ""

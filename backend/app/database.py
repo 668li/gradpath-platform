@@ -20,6 +20,11 @@ else:
 engine = create_engine(settings.DATABASE_URL, connect_args=connect_args, **engine_kwargs)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+# 慢查询追踪（2026-09-06）：引擎级事件，Prometheus 指标 + 慢日志 + 严重告警
+from app.core.db_monitor import register_db_monitor  # noqa: E402
+
+register_db_monitor(engine)
+
 
 class Base(DeclarativeBase):
     pass

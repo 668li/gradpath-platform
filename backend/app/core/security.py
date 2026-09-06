@@ -2,10 +2,13 @@ from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 import bcrypt
-from jose import jwt
-from jose.exceptions import JWTError
+import jwt
 
 from app.config import settings
+
+# 兼容别名：调用方（main.py MCP 中间件）原来从 jose 导入 JWTError；
+# 换装 PyJWT 后统一从本模块拿，异常基类语义等价（任何 JWT 问题都是它的子类）。
+JWTError = jwt.PyJWTError
 
 # 密码重置令牌有效期（分钟）
 PASSWORD_RESET_TOKEN_EXPIRE_MINUTES = 30

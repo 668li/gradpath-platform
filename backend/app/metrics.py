@@ -142,6 +142,17 @@ if _PROMETHEUS_AVAILABLE:
         "Number of active WebSocket connections",
     )
 
+    # 慢查询追踪（2026-09-06）：SQLAlchemy 引擎级计时
+    DB_QUERY_LATENCY = Histogram(
+        "gradpath_db_query_duration_seconds",
+        "Database query latency in seconds (cursor execute)",
+        buckets=(0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 2.0, 5.0),
+    )
+    DB_SLOW_QUERY_TOTAL = Counter(
+        "gradpath_db_slow_queries_total",
+        f"Queries exceeding slow threshold (see app.core.db_monitor)",
+    )
+
     # C9 Web Vitals 指标 — 每个指标取最新值（Gauge），按 page + rating 标签维度
     WEB_VITALS_LCP = Gauge(
         "gradpath_web_vitals_lcp",
@@ -180,6 +191,8 @@ else:
     LLM_CALL_COUNT = None  # type: ignore
     LLM_CALL_LATENCY = None  # type: ignore
     ACTIVE_WEBSOCKETS = None  # type: ignore
+    DB_QUERY_LATENCY = None  # type: ignore
+    DB_SLOW_QUERY_TOTAL = None  # type: ignore
     WEB_VITALS_LCP = None  # type: ignore
     WEB_VITALS_CLS = None  # type: ignore
     WEB_VITALS_INP = None  # type: ignore

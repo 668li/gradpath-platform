@@ -11,7 +11,9 @@ dependencies = [
     "psycopg2-binary>=2.9.9",
     "pydantic>=2.7.0",
     "pydantic-settings>=2.14.2",
-    "python-jose[cryptography]>=3.3.0",
+    # PyJWT 替换 python-jose（2026-09-06）：jose 依赖链的 ecdsa 上游无修复版，
+    # 全仓 JWT 收敛于 core/security.py 单文件，换装影响面仅该文件
+    "PyJWT>=2.9.0",
     "bcrypt>=4.1.0",
     "python-multipart>=0.0.9",
     "email-validator>=2.1.0",
@@ -68,8 +70,6 @@ dev = [
     "black>=24.4.0",
     "mypy>=1.10.0",
     "pre-commit>=3.7.0",
-    "types-python-jose>=3.3.4",
-    "types-passlib>=1.7.7",
 ]
 
 [tool.pytest.ini_options]
