@@ -17,6 +17,11 @@ const nextConfig = {
       { source: "/kaoyan/news", destination: "/kaoyan", permanent: false },
       { source: "/learning-resources", destination: "/study-plans", permanent: false },
       { source: "/civil-service/positions", destination: "/civil-service", permanent: false },
+      // 09-12 战略转向：职位检索与免费可报性预览整体下架（计划书红线 1/2），页面薄壳只是兜底，
+      // 公开页 /preview 会被静态预渲染吃掉页面级 redirect()，路由层 302 才是权威拦截
+      { source: "/civil-service/province-positions", destination: "/civil-service", permanent: false },
+      { source: "/civil-service/positions/compare", destination: "/civil-service", permanent: false },
+      { source: "/preview", destination: "/", permanent: false },
       { source: "/failure-cases", destination: "/employment?tab=interview", permanent: false },
     ];
   },
