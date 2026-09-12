@@ -133,6 +133,8 @@ services:
       RSSHUB_BASE_URL: http://rsshub:1200
       # 中断次日提醒开关（P1）：值放服务器 .env，改 .env 后 `up -d backend` 即生效，无需重建镜像
       MICRO_ACTION_REMINDER_D2: ${MICRO_ACTION_REMINDER_D2:-false}
+      # 站点对外根 URL（speckit 003）：Server酱提醒文案内对话页深链前缀；空=深链行省略
+      SITE_BASE_URL: ${SITE_BASE_URL:-}
     depends_on:
       db:
         condition: service_healthy
