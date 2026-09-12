@@ -347,6 +347,17 @@ async def _register_d2_reminder_job():
         logger.warning("注册中断次日提醒 job 失败（不影响启动）: %s", e)
 
 
+@app.on_event("startup")
+async def _register_timeline_reminder_job():
+    """注册考公时间线节点提醒 job（speckit 001，TIMELINE_REMINDER_ENABLED 默认开）。"""
+    try:
+        from app.services.timeline_reminder import register_timeline_jobs
+
+        register_timeline_jobs()
+    except Exception as e:
+        logger.warning("注册时间线提醒 job 失败（不影响启动）: %s", e)
+
+
 # ----------------------------------------------------------------------
 # 全局异常处理器（C2 改造）— 把 BusinessError 转为统一 JSON 响应
 # {code, message, details, detail}，并对未捕获 Exception 返回 500。

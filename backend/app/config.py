@@ -52,6 +52,10 @@ class Settings(BaseSettings):
     # 给「昨天完成微行动任务、今天还没开始」的用户发一条站内 reminder。
     MICRO_ACTION_REMINDER_D2: bool = False
 
+    # 考公时间线节点提醒（speckit 001）：默认开启，每日 07:30 扫描。
+    # 断言式文案只对 OFFICIAL 节点生成（宪法 4），PREDICTED 只出试探句。
+    TIMELINE_REMINDER_ENABLED: bool = True
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
     @model_validator(mode="after")
