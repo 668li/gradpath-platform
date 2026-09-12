@@ -36,7 +36,7 @@ const SKILL_LABELS: Record<string, string> = {
   career_path_mapper: "路径规划",
   company_review: "公司评价",
   life_design: "人生设计",
-  position_advisor: "选岗顾问",
+  announcement_interpreter: "公告解读",
 };
 
 const skillLabel = (s: ChatSkillInfo) => SKILL_LABELS[s.code] ?? s.name;
@@ -83,7 +83,7 @@ const QUICK_START_CARDS = [
     scene: "考公",
     sceneIcon: "🏛️",
     title: "考公方向",
-    text: "我想考公务员，专业是汉语言文学，帮我分析能不能报、怎么准备？",
+    text: "我想考公务员，专业是汉语言文学，帮我把报名到录用的环节和准备节奏理一遍？",
     skill: "career_planning",
   },
   {
@@ -94,25 +94,11 @@ const QUICK_START_CARDS = [
     skill: "career_planning",
   },
   {
-    scene: "选岗",
-    sceneIcon: "📍",
-    title: "我能报什么岗",
-    text: "我本科毕业、专业是计算机，帮我看看国考有哪些岗位我能报、进面线多少？",
-    skill: "position_advisor",
-  },
-  {
-    scene: "查线",
-    sceneIcon: "📈",
-    title: "分数线稳不稳",
-    text: "我想考这个学校，进面线大概多少分？我够不够得着？",
-    skill: "grad_school_planning",
-  },
-  {
-    scene: "志愿",
-    sceneIcon: "🪧",
-    title: "冲稳保怎么填",
-    text: "我预估能考 380 分，帮我按冲、稳、保三档列一下能报的院校和专业？",
-    skill: "grad_school_planning",
+    scene: "公告",
+    sceneIcon: "📣",
+    title: "公告动了什么",
+    text: "最近有哪些官方公告新发布或变更？对我有什么影响、这周要做什么？",
+    skill: "announcement_interpreter",
   },
 ];
 
@@ -687,7 +673,7 @@ export default function ChatPage() {
             <h2 className="text-xl font-bold text-ink-800">AI 职业规划管家</h2>
             <p className="mt-2 max-w-md text-center text-sm text-ink-500">
               结合你的职业数据、知识库和智能 Skill 系统，为你提供个性化的职业规划指导。
-              支持选岗、查线、考研考公、就业方向等场景。
+              支持公告解读、考研考公、就业方向等场景。
             </p>
             <div className="mt-6 grid w-full max-w-lg grid-cols-1 gap-3 sm:grid-cols-2">
               {QUICK_START_CARDS.map((p) => (

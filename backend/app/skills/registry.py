@@ -421,18 +421,6 @@ _SKILLS: list[SkillInfo] = [
         icon="megaphone",
     ),
     SkillInfo(
-        code="position_advisor",
-        name="position_advisor",
-        display_name="选岗参谋",
-        description="按你的学历/专业/意向地区筛选真实公务员岗位，附进面分与来源。",
-        trigger_words=["选岗", "报岗", "职位", "岗位", "国考", "省考", "公务员", "招录", "招考", "岗位表"],
-        use_cases=["考公选岗，想知道自己能报哪些岗位", "对比岗位竞争度与进面分", "按条件筛选职位表"],
-        capabilities=["按学历/地区/系统/专业筛选真实职位", "附去年进面最低分", "条件不足时选项化澄清"],
-        limitations=["只覆盖站内已收录年份的职位表", "不做录取概率承诺"],
-        category="advisor",
-        icon="target",
-    ),
-    SkillInfo(
         code="default",
         name="default",
         display_name="默认职业咨询",
@@ -700,7 +688,6 @@ def _load_skill_classes():
     from app.skills.learning_plan_generator import LearningPlanGeneratorSkill
     from app.skills.life_design import LifeDesignSkill
     from app.skills.announcement_interpreter import AnnouncementInterpreterSkill
-    from app.skills.position_advisor import PositionAdvisorSkill
     from app.skills.resume_diagnosis import ResumeDiagnosisSkill
     from app.skills.resume_optimizer import ResumeOptimizerSkill
     from app.skills.salary_benchmark import SalaryBenchmarkSkill
@@ -724,7 +711,6 @@ def _load_skill_classes():
         CompanyReviewSkill,
         UserReferralSkill,
         LifeDesignSkill,
-        PositionAdvisorSkill,
         AnnouncementInterpreterSkill,
     ]:
         _SKILL_CLASSES[cls.code] = cls

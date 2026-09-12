@@ -2,7 +2,8 @@
 """P1 skill 通道测试 — 学习计划师落库 micro-actions + 公告解读器。
 
 覆盖：create_plan_from_tasks（守卫/校验）、learning_plan 微行动计划校验、
-chat 全链路落库（mock LLM）、公告解读器 inject_data 诚实降级、announcements 搜索器。
+chat 全链路落库（mock LLM）、公告解读器 inject_data/collect_sources/诚实降级、
+09-12 策略转向后的下线回归（position_advisor 不复存在）。
 """
 
 from __future__ import annotations
@@ -94,11 +95,6 @@ class TestCreatePlanFromTasks:
 
 
 class TestValidateMicroActionPlan:
-    def _skill(self):
-        from app.skills.learning_plan_generator import LearningPlanGeneratorSkill
-
-        return LearningPlanGeneratorSkill()
-
     def test_valid_plan_normalizes(self):
         import json
 
@@ -161,7 +157,7 @@ MOCK_LEARNING_PLAN_REPLY = """{
     "target_path": "kaoyan",
     "target_role": "三个月完成基础轮",
     "tasks": [
-      {"day_number": 1, "task_type": "research", "title": "查目标院校近三年复试线", "description": "在研招网查 3 所院校并记录", "estimated_minutes": 40},
+      {"day_number": 1, "task_type": "research", "title": "查目标院校专业课考试范围", "description": "在研招网查 3 所院校并记录", "estimated_minutes": 40},
       {"day_number": 2, "task_type": "practice", "title": "数学基础 30 题", "description": "高数第一章 30 题，正确率≥70%", "estimated_minutes": 60},
       {"day_number": 3, "task_type": "reflect", "title": "复盘本周错题", "description": "整理错题本并归类错误原因", "estimated_minutes": 30}
     ]
@@ -278,6 +274,16 @@ class TestAnnouncementInterpreter:
         assert "gs.test.edu.cn" in out
         assert "408" in out
 
+    def test_collect_sources(self, db_session, seed_announcement):
+        from app.skills.announcement_interpreter import AnnouncementInterpreterSkill
+
+        out = AnnouncementInterpreterSkill().collect_sources(
+            db_session, "u1", "测试大学的简章有什么要注意的"
+        )
+        assert len(out) == 1
+        assert out[0]["type"] == "db"
+        assert out[0]["url"] == "https://gs.test.edu.cn/zhaosheng"
+
     def test_empty_honest_degradation(self, db_session):
         from app.skills.announcement_interpreter import AnnouncementInterpreterSkill
 
@@ -294,66 +300,67 @@ class TestAnnouncementInterpreter:
         assert "行动项" in prompt or "今天" in prompt
 
 
-class TestAnnouncementSearcher:
+class TestAnnouncementIntent:
     def test_intent_detected(self):
         intents = detect_data_intents("最新的招生简章出了吗")
         assert any(i.domain == "announcements" for i in intents)
 
-    def test_search_hits_kaoyan_news(self, db_session, seed_announcement):
+    def test_searcher_hits(self, db_session, seed_announcement):
         hits = search_announcements(db_session, "测试大学")
         assert len(hits) == 1
-        assert hits[0].url == "https://gs.test.edu.cn/zhaosheng"
-        assert hits[0].year == 2026
-
-    def test_search_no_keyword_returns_latest(self, db_session, seed_announcement):
-        assert len(search_announcements(db_session, None)) == 1
-
-    def test_search_empty_db_returns_empty(self, db_session):
-        assert search_announcements(db_session, "不存在") == []
 
 
 # ======================================================================
-# skill 来源回传通道（collect_sources）
+# 09-12 策略转向下线回归
 # ======================================================================
 
 
-class TestCollectSources:
-    def test_announcement_skill_returns_sources(self, db_session, seed_announcement):
-        from app.skills.announcement_interpreter import AnnouncementInterpreterSkill
+class TestStrategyPivotRemovals:
+    def test_position_advisor_fully_removed(self):
+        """选岗参谋已随「不做职位库」拍板删除，注册/类/文件三处无残留。"""
+        from app.skills import registry
 
-        out = AnnouncementInterpreterSkill().collect_sources(
-            db_session, "u1", "测试大学的简章有什么要注意的"
-        )
-        assert len(out) == 1
-        assert out[0]["type"] == "db"
-        assert out[0]["url"] == "https://gs.test.edu.cn/zhaosheng"
+        assert registry.get_skill("position_advisor") is None
+        assert registry.get_skill_instance("position_advisor") is None
+        import importlib.util
 
-    def test_grad_planning_skill_returns_sources(self, db_session, seed_announcement):
+        assert importlib.util.find_spec("app.skills.position_advisor") is None
+
+    def test_data_search_has_no_position_or_scoreline_searchers(self):
+        """职位/考研面搜索器已从数据搜索层移除（防再长出引用）。"""
+        import app.services.data_search_service as dss
+
+        for gone in ("search_positions", "search_score_lines", "search_school_intel"):
+            assert not hasattr(dss, gone), gone
+
+    def test_grad_planning_no_data_channel(self):
+        """考研规划回到通用教练：无数据注入面，但保留禁编纪律。"""
         from app.skills.grad_school_planning import GradSchoolPlanningSkill
 
-        assert GradSchoolPlanningSkill().collect_sources(db_session, "u1", "帮我做考研规划") == []
+        skill = GradSchoolPlanningSkill()
+        assert skill.covered_data_domains == frozenset()
+        assert skill.inject_data(None, "u1", "清华大学复试线") == ""
+        prompt = skill.build_system_prompt("用户：计算机", [])
+        assert "不要凭空给数字" in prompt or "绝不编造" in prompt
 
-    def test_position_skill_requires_params(self, db_session, svc_user):
-        from app.skills.position_advisor import PositionAdvisorSkill
+    def test_chat_skills_endpoint_shape(self, db_session):
+        """GET /api/chat/skills：公告解读在列、选岗参谋与 dev skill 不在列。"""
+        from fastapi.testclient import TestClient
 
-        assert PositionAdvisorSkill().collect_sources(db_session, svc_user.id, "你好") == []
+        from app.core.deps import get_current_user
+        from app.database import get_db
+        from app.main import app
 
-    def test_position_skill_returns_sources(self, db_session, svc_user):
-        from app.models.gwy_position import GwyPosition
-        from app.skills.position_advisor import PositionAdvisorSkill
-
-        db_session.add(
-            GwyPosition(
-                id="px1", year=2026, exam_type="国考", position_code="0701263001",
-                dept_name="国家税务总局北京市税务局", position_name="基层岗",
-                education_req="仅限本科", major_req="计算机类", recruit_count=2,
-                work_location="北京",
-            )
-        )
-        db_session.commit()
-        svc_user.major = "计算机"
-        svc_user.education = "本科"
-        db_session.commit()
-        out = PositionAdvisorSkill().collect_sources(db_session, svc_user.id, "能报什么岗位")
-        assert len(out) == 1
-        assert "税务" in out[0]["title"] or "税务" in out[0]["content"]
+        app.dependency_overrides[get_db] = lambda: db_session
+        app.dependency_overrides[get_current_user] = lambda: None
+        try:
+            client = TestClient(app)
+            res = client.get("/api/chat/skills")
+            assert res.status_code == 200
+            codes = [s["code"] for s in res.json()]
+            assert "announcement_interpreter" in codes
+            assert "position_advisor" not in codes
+            assert "api-endpoint-builder" not in codes
+        finally:
+            app.dependency_overrides.pop(get_db, None)
+            app.dependency_overrides.pop(get_current_user, None)

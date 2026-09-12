@@ -1,5 +1,9 @@
 # backend/app/skills/grad_school_planning.py
-"""考研规划 Skill — 生成结构化考研备考规划。"""
+"""考研规划 Skill — 生成结构化考研备考规划。
+
+09-12 策略转向：考研复试线/院校情报站内库已被 R3 清假归零、考研线不投入，
+本 skill 回到通用规划教练形态；数字诚实纪律保留（不编分数线，指向官方源）。
+"""
 
 from __future__ import annotations
 
@@ -38,10 +42,8 @@ class GradSchoolPlanningSkill(BaseSkill):
 
     code = "grad_school_planning"
     name = "考研规划"
-    description = "考研院校选择、专业方向、备考时间线规划（基于站内真实分数线与院校情报）"
+    description = "考研院校选择、专业方向、备考时间线规划"
     icon = "🎓"
-    # score_lines / school_intel 两域由本 skill 的 inject_data 负责，chat 通用搜索层跳过
-    covered_data_domains = frozenset({"score_lines", "school_intel"})
 
     def should_activate(self, message: str, context: dict) -> bool:
         msg_lower = message.lower()
@@ -63,15 +65,12 @@ class GradSchoolPlanningSkill(BaseSkill):
             "你的任务：基于用户的个人数据与知识库参考，生成结构化的考研规划，聚焦：\n"
             "1. 院校梯队分析（冲稳保策略，结合本科背景与目标方向）\n"
             "2. 考试科目与参考书目（统考科目与自命题科目）\n"
-            "3. 分数线分析——只引用【专有数据检索结果】中的真实复试线/报录比；"
-            "站内没有的院校专业明确标注「站内暂无数据，请以院校研究生院官网为准」\n"
-            "4. 备考时间线与阶段策略（基础/强化/冲刺/模拟）\n\n"
+            "3. 备考时间线与阶段策略（基础/强化/冲刺/模拟）\n"
+            "4. 复试准备要点（占比、形式、常见考察方向）\n\n"
             f"{OUTPUT_FORMAT}\n\n"
             "数据诚实纪律（最高优先级）：\n"
-            "- 分数线、报录比、录取人数等数字只能来自【专有数据检索结果】，站内没有就写「暂无数据」，绝不编造\n"
-            "- 每个推荐院校标注数据置信度（高/中/低，按站内数据是否覆盖该院校）\n"
-            "- 风险审计：对推荐院校逐项检查 爆热/缩招/推免挤压/复试线虚低/改考 风险并明示\n"
-            "- 用户未提供本科院校档位或目标专业时，先用最多 2 个问题澄清再分析\n\n"
+            "- 具体分数线、报录比、录取人数一律不要凭空给数字——引导用户以研招网与目标院校研究生院官网公布为准\n"
+            "- 无法确认的院校信息标注「请以官方公布为准」，绝不编造\n\n"
             "注意事项：\n"
             "- target_schools 至少给 2 所院校，按梯队划分\n"
             "- exam_subjects 列出全部统考与自命题科目\n"
@@ -84,64 +83,6 @@ class GradSchoolPlanningSkill(BaseSkill):
 
     def build_user_prompt(self, message: str) -> str:
         return f"【用户考研规划请求】\n{message}\n\n请基于以上信息生成结构化的考研规划（严格按 JSON 格式输出）。"
-
-    def inject_data(self, db, user_id, content: str) -> str:
-        """注入目标院校真实进面线与院校情报（三段式：规则抽参 → 确定性查库 → 带来源）。"""
-        from app.services.data_search_service import (
-            extract_major,
-            extract_schools,
-            search_school_intel,
-            search_score_lines,
-        )
-
-        schools = extract_schools(content)
-        if not schools:
-            # 未提具体院校 → 不盲目查库，交由 system prompt 的澄清话术引导补参数
-            return ""
-        major = extract_major(content)
-        try:
-            line_hits = search_score_lines(db, schools[0], major)
-            intel_hits = search_school_intel(db, schools[0])
-        except Exception:
-            return ""
-
-        blocks: list[str] = []
-        for h in line_hits:
-            src = f"（来源: {h.url}）" if h.url else ""
-            blocks.append(f"- {h.content} [真实复试线·{h.year}年]{src}")
-        for h in intel_hits:
-            blocks.append(f"- {h.content} [院校情报·grad_school_intel]")
-        if not blocks:
-            return (
-                f"【专有数据检索结果】站内数据库暂无 {schools[0]}"
-                + (f" {major}" if major else "")
-                + " 相关的分数线/院校情报记录。请如实告知用户站内暂无该数据，"
-                "建议其核对目标院校研究生院官网与研招网，禁止编造任何分数线或报录比。"
-            )
-        return "\n".join(blocks)
-
-    def collect_sources(self, db, user_id, content: str) -> list[dict]:
-        """回传注入的分数线/院校情报来源条目。"""
-        from app.services.data_search_service import (
-            extract_major,
-            extract_schools,
-            search_school_intel,
-            search_score_lines,
-        )
-
-        schools = extract_schools(content)
-        if not schools:
-            return []
-        try:
-            hits = search_score_lines(db, schools[0], extract_major(content)) + search_school_intel(
-                db, schools[0]
-            )
-        except Exception:
-            return []
-        return [
-            {"type": "db", "title": h.title[:40], "content": h.content[:120], "url": h.url}
-            for h in hits[:8]
-        ]
 
     def parse_response(self, llm_output: str) -> dict:
         """解析 LLM 输出，提取考研规划数据。
