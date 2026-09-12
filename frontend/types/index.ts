@@ -696,6 +696,15 @@ export interface SendMessageResponse {
   /** 站内数据搜索层带回的真实数据来源（前端气泡「参考来源」标签） */
   agent_sources?: AgentSourceItem[] | null;
   agent_confidence?: number | null;
+  /** 行动钩子（speckit 003）：服务端模板+真实库判定；null/缺省=无钩子 */
+  action_hooks?: ActionHook[] | null;
+}
+
+/** 行动钩子条目（对应后端 schemas/chat.py ActionHook） */
+export interface ActionHook {
+  type: "subscribe_timeline" | "feedback_node" | "micro_checkin" | "explore" | string;
+  text: string;
+  link?: string | null;
 }
 
 /** 站内数据来源条目（对应后端 SendMessageResponse.agent_sources） */

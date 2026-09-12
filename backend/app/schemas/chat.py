@@ -47,6 +47,18 @@ class SendMessageRequest(BaseModel):
     skill_hint: str | None = Field(None, max_length=50)
 
 
+class ActionHook(BaseModel):
+    """回答尾部行动钩子（speckit 003）：服务端模板+真实库判定，非 LLM 文本。
+
+    语义约束见 specs/003-ai-chat-stickiness/contracts/chat-api.md：
+    每轮 ≤2 个；"已做过"不重复推销；服务异常时整段为 None（降级负例）。
+    """
+
+    type: str  # subscribe_timeline / feedback_node / micro_checkin / explore
+    text: str
+    link: str | None = None
+
+
 class SendMessageResponse(BaseModel):
     content: str
     skill_used: str
@@ -55,6 +67,8 @@ class SendMessageResponse(BaseModel):
     # 站内数据搜索层带回的真实数据来源（前端气泡「参考来源」标签+置信度条）
     agent_sources: list[dict] | None = None
     agent_confidence: float | None = None
+    # 行动钩子（speckit 003 FR2/FR7）：可执行动作入口；None=无钩子/降级
+    action_hooks: list[ActionHook] | None = None
 
 
 class SkillInfo(BaseModel):

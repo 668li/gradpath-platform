@@ -56,6 +56,10 @@ class Settings(BaseSettings):
     # 断言式文案只对 OFFICIAL 节点生成（宪法 4），PREDICTED 只出试探句。
     TIMELINE_REMINDER_ENABLED: bool = True
 
+    # 站点对外根 URL（speckit 003）：Server酱推送文案内对话页深链的绝对前缀。
+    # 空 = 深链行自动省略（本地开发）；生产 .env 必配 https://quxianglab.cn。
+    SITE_BASE_URL: str = ""
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
     @model_validator(mode="after")

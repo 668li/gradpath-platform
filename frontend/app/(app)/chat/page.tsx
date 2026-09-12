@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { Suspense, useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import * as LucideIcons from "lucide-react";
 import {
   Plus,
@@ -20,11 +21,12 @@ import {
   CalendarCheck,
 } from "lucide-react";
 import { chatApi } from "@/lib/api";
+import { readChatDeepLink } from "@/lib/chat-deeplink";
 import { cn } from "@/lib/utils";
 import { Markdown } from "@/components/ui/markdown";
 import { LoadingState } from "@/components/ui/empty";
 import { useToast } from "@/components/ui/toast";
-import type { Conversation, Message, ChatSkillInfo } from "@/types";
+import type { ActionHook, Conversation, Message, ChatSkillInfo } from "@/types";
 
 /** skill.code → 中文名；未收录的 code 回退显示后端原名 */
 const SKILL_LABELS: Record<string, string> = {
@@ -61,10 +63,11 @@ interface AgentSource {
   url?: string;
 }
 
-/** 扩展消息类型，支持 Agent 来源和置信度 */
+/** 扩展消息类型，支持 Agent 来源、置信度与行动钩子 */
 interface MessageWithMeta extends Message {
   agent_sources?: AgentSource[];
   agent_confidence?: number;
+  action_hooks?: ActionHook[];
 }
 
 /**
@@ -110,8 +113,9 @@ const QUICK_START_CARDS = [
   },
 ];
 
-export default function ChatPage() {
+function ChatPageInner() {
   const toast = useToast();
+  const searchParams = useSearchParams();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentId, setCurrentId] = useState<string | null>(null);
   const [messages, setMessages] = useState<MessageWithMeta[]>([]);
@@ -127,6 +131,16 @@ export default function ChatPage() {
   const [lastPlanId, setLastPlanId] = useState<string | null>(null);
   const [lastMicroPlanId, setLastMicroPlanId] = useState<string | null>(null);
   const [showByokHint, setShowByokHint] = useState(false);
+
+  // 003 深链预填（FR5）：提醒推送带 prefill 落进来 ⇒ 填输入框 + 预选 skill；
+  // 只预填不自动发送（spec A4）——用户点发送才走既有管道
+  useEffect(() => {
+    const deeplink = readChatDeepLink(searchParams.toString());
+    if (deeplink) {
+      setInput(deeplink.prefill);
+      if (deeplink.skill) setSkillHint(deeplink.skill);
+    }
+  }, [searchParams]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -288,9 +302,14 @@ export default function ChatPage() {
         context_snapshot: {},
         agent_sources: res.agent_sources?.length ? res.agent_sources : undefined,
         agent_confidence: res.agent_confidence ?? undefined,
+        action_hooks: res.action_hooks?.length ? res.action_hooks : undefined,
         created_at: new Date().toISOString(),
       };
-      setMessages((prev) => [...prev, aiMsg]);
+      // 钩子只挂在最新一条回答上（历史气泡保留钩子会因"已做过"而变谎）
+      setMessages((prev) => [
+        ...prev.map((m) => (m.action_hooks ? { ...m, action_hooks: undefined } : m)),
+        aiMsg,
+      ]);
 
       // 如果 AI 生成了职业规划方案，显示入口
       if (res.career_plan) {
@@ -824,7 +843,47 @@ function MessageBubble({
             <span>{Math.round(confidence * 100)}%</span>
           </div>
         )}
+        {/* 行动钩子（003 FR2）：服务端模板生成的真实动作入口，点击即达 */}
+        {!isUser && message.action_hooks && message.action_hooks.length > 0 && (
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
+            {message.action_hooks.map((hook, i) => (
+              <ActionHookButton key={`${hook.type}-${i}`} hook={hook} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
+  );
+}
+
+/** 行动钩子胶囊按钮（003）：点击跳真实动作入口；无 link 时降级为纯文案 */
+function ActionHookButton({ hook }: { hook: ActionHook }) {
+  if (!hook.link) {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2.5 py-1 text-xs text-brand-500">
+        {hook.text}
+      </span>
+    );
+  }
+  return (
+    <Link
+      href={hook.link}
+      className="inline-flex items-center gap-1 rounded-full bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-600 transition-colors hover:bg-brand-100"
+    >
+      <span aria-hidden>→</span>
+      <span>{hook.text}</span>
+    </Link>
+  );
+}
+
+/**
+ * Suspense 边界（Next 14）：useSearchParams 在静态预渲染时必需，
+ * 否则 `next build` 直接失败——包一层再导出。
+ */
+export default function ChatPage() {
+  return (
+    <Suspense fallback={<LoadingState />}>
+      <ChatPageInner />
+    </Suspense>
   );
 }

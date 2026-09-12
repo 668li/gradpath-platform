@@ -28,8 +28,10 @@ from app.models.destination_decision import DestinationDecision
 from app.models.retrospective import Retrospective
 from app.models.skill_node import SkillNode
 from app.models.user import User
+from app.services.action_hook_service import build_action_hooks
 from app.services.ai_orchestrator import AIOrchestrator
 from app.services.knowledge_service import search_articles
+from app.services.sedimentation_service import build_sedimentation_block
 from app.services.user_llm_service import LLMOverride
 from app.skills.registry import find_skill_instance, get_skill_instance
 
@@ -45,6 +47,26 @@ KNOWLEDGE_LIMIT = 3
 
 # build_user_context 缓存 TTL（秒）—— 上下文由 7+ 张表组装，TTL 略长于 user 缓存
 USER_CONTEXT_CACHE_TTL = 300
+
+# 记忆感纪律（speckit 003 FR1）——沉淀块空/非空两态的 prompt 纪律行。
+# LLM 是否守纪律是软约束（research R2 诚实边界）：确定性测试只能锁这里的
+# 组装逻辑，LLM 行为靠 quickstart 冒烟人工抽测。
+MEMORY_DISCIPLINE = (
+    "【记忆感纪律】上面的【用户沉淀】是这位用户在本站的真实记录。回答时："
+    "至多自然引用其中 1 条，措辞必须与原文一致，不得夸大或改写；"
+    '严禁编造任何未出现在【用户沉淀】里的"你曾/你上次/你订阅过"式表述。'
+)
+NO_SEDIMENT_DISCIPLINE = (
+    "【沉淀状态】该用户在本站暂无订阅/节点回传/微行动/连击记录；"
+    '严禁虚构任何"你曾订阅/你上次做过"式表述。'
+)
+
+
+def apply_sedimentation(user_context: str, sedimentation: str) -> str:
+    """把沉淀块（含两态纪律行）拼进用户上下文——纯函数，负例可测。"""
+    if sedimentation:
+        return f"{user_context}\n\n{sedimentation}\n\n{MEMORY_DISCIPLINE}"
+    return f"{user_context}\n\n{NO_SEDIMENT_DISCIPLINE}"
 
 
 def create_conversation(db: Session, user_id: UUID, title: str = "新对话") -> Conversation:
@@ -376,8 +398,10 @@ async def send_message(
     db.commit()
     db.refresh(user_msg)
 
-    # 3. 构建用户上下文
+    # 3. 构建用户上下文 + 用户沉淀（003 记忆感：实时组块不进缓存，
+    #    "刚回传就被引用"的新鲜度优先，见 research R1）
     user_context = build_user_context(db, user_id)
+    user_context = apply_sedimentation(user_context, build_sedimentation_block(db, user_id))
 
     # 4. 获取对话历史（最近 20 条，含本次用户消息）
     history = (
@@ -527,6 +551,15 @@ async def send_message(
     }
     if data_sources:
         context_snapshot["data_sources"] = data_sources
+
+    # 11.5 行动钩子（003 FR2/FR3/FR7）：服务端模板+真实库判定，异常降级空表；
+    # 曝光口径记入 context_snapshot（FR8），点击口径走对话页 PV 的 src 参数
+    action_hooks = build_action_hooks(
+        db, user_id, content, getattr(skill, "covered_data_domains", frozenset())
+    )
+    if action_hooks:
+        context_snapshot["action_hooks"] = action_hooks
+
     ai_msg = Message(
         conversation_id=conversation_id,
         role="assistant",
@@ -548,4 +581,6 @@ async def send_message(
     if data_sources:
         result["agent_sources"] = data_sources
         result["agent_confidence"] = 0.7 if data_has_hits else 0.3
+    if action_hooks:
+        result["action_hooks"] = action_hooks
     return result

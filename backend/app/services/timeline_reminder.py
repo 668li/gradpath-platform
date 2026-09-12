@@ -33,6 +33,7 @@ from app.models.exam_timeline import (
     ReminderTone,
     TimelineReminderLog,
 )
+from app.services.chat_deep_link import build_chat_deep_link, with_chat_link
 from app.utils.business_time import BEIJING_TZ, beijing_today
 
 logger = logging.getLogger(__name__)
@@ -52,7 +53,11 @@ _NO_ENTRY = "（本场考试暂无可核验来源，官方公告后自动点亮�
 
 @dataclass(frozen=True)
 class ReminderDraft:
-    """pick_template 产物——文案已定稿，落库/推送层不得改写（单点闸保证）。"""
+    """pick_template 产物——文案已定稿，落库/推送层不得改写（单点闸保证）。
+
+    唯一例外（003）：推送层可经 chat_deep_link.with_chat_link 在 Server酱
+    desp 尾部追加纯 URL 深链行——不触碰语义文案，tone 合规性不因此改变。
+    """
 
     tone: ReminderTone
     title: str
@@ -136,7 +141,10 @@ def pick_template(node: ExamNode, exam: Exam, kind: ReminderKind) -> ReminderDra
     )
 
     entry = node.official_entry_url or exam.official_home_url or ""
-    link = f"/civil-service?tab=timeline&node={node.id}"
+    # 003 深链：提醒落点改为对话页（推一次、拉一次闭环），prefill 文案的
+    # tone 分级在 chat_deep_link 单点保证；/civil-service 时间线 tab 仍由
+    # 回传钩子与其他入口承接，不废弃
+    link = build_chat_deep_link(node, exam, kind, tone)
     d = node.planned_date
     end = node.planned_end_date
     ds = d.isoformat() if d else ""
@@ -232,7 +240,9 @@ async def _send_one(
     log.notification_id = str(n.id)
 
     if channel == "both":
-        ok = send_serverchan(draft.title, draft.content)
+        # 003：Server酱文案尾部追加对话页深链行（SITE_BASE_URL 未配置则原样）；
+        # 这是推送层对 draft.content 唯一允许的追加（纯 URL 行，不碰语义文案）
+        ok = send_serverchan(draft.title, with_chat_link(draft.content, draft.link))
         if not ok:
             logger.warning("Server酱推送失败（不阻塞）user=%s node=%s", user_id, node.id)
     db.commit()
