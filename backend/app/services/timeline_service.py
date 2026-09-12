@@ -24,21 +24,28 @@ import ipaddress
 import logging
 import re
 import socket
+import uuid
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
+from typing import Any
 from urllib.parse import urlparse
 
 from sqlalchemy.orm import Session
 
+from app.models.civil_service_intel import CivilServiceDarkKnowledge
 from app.models.exam_timeline import (
     DateStatus,
     EvidenceChannel,
     Exam,
     ExamNode,
+    ExamSubscription,
+    NodeFeedback,
+    NodeFeedbackStatus,
     NodeStage,
     TimelineEvidence,
 )
+from app.utils.business_time import beijing_today
 
 logger = logging.getLogger(__name__)
 
@@ -542,10 +549,269 @@ def upsert_skeleton(db: Session, exam: Exam) -> int:
     return created
 
 
+# ----------------------------------------------------------------------
+# M2：查询 / 订阅 / 回传（router 只做参数与状态码，业务在此）
+# ----------------------------------------------------------------------
+
+
+class AlreadySubscribed(Exception):
+    """router 映射 409。"""
+
+
+class ExamNotFound(Exception):
+    """code/node 不存在或跨考写回——router 统一映射 404。"""
+
+
+# 暗知识 stage（中文）→ 节点 stage_key 映射（D6；生产该表现 0 行，命中才渲染）
+_DK_STAGE_ALIAS: dict[NodeStage, tuple[str, ...]] = {
+    NodeStage.announce: ("公告", "公告发布"),
+    NodeStage.registration: ("报名", "选岗报名"),
+    NodeStage.payment: ("缴费", "报名确认"),
+    NodeStage.admission_ticket: ("准考证", "打印准考证"),
+    NodeStage.written: ("笔试",),
+    NodeStage.score: ("成绩", "成绩查询"),
+    NodeStage.adjustment: ("调剂",),
+    NodeStage.interview: ("面试",),
+    NodeStage.medical: ("体检",),
+    NodeStage.political: ("政审", "考察"),
+    NodeStage.publicity: ("公示",),
+    NodeStage.hire: ("录用", "备案"),
+}
+
+
+def _dark_knowledge_briefs(
+    db: Session, stage_key: NodeStage, limit: int = 5
+) -> list[dict[str, str]]:
+    aliases = _DK_STAGE_ALIAS.get(stage_key, ())
+    if not aliases:
+        return []
+    rows = (
+        db.query(CivilServiceDarkKnowledge)
+        .filter(CivilServiceDarkKnowledge.stage.in_(aliases))
+        .order_by(CivilServiceDarkKnowledge.sort_order)
+        .limit(limit)
+        .all()
+    )
+    return [{"id": str(r.id), "title": r.title, "confidence": r.importance} for r in rows]
+
+
+def _node_payload(db: Session, node: ExamNode) -> dict[str, Any]:
+    return {
+        "id": str(node.id),
+        "stage_key": node.stage_key,
+        "title": node.title,
+        "seq": node.node_seq,
+        "date_status": node.date_status,
+        "planned_date": node.planned_date,
+        "planned_end_date": node.planned_end_date,
+        "predict_basis": node.predict_basis,
+        "official_entry_url": node.official_entry_url,
+        "source_url": node.source_url,
+        "collected_at": node.collected_at,
+        # GUID 列读回是 uuid.UUID——VO 契约统一 str
+        "evidence_id": str(node.evidence_id) if node.evidence_id else None,
+        "materials": node.materials or [],
+        "action_guide": node.action_guide,
+        "verifiable": node.date_status != DateStatus.UNKNOWN,
+        "dark_knowledge": _dark_knowledge_briefs(db, node.stage_key),
+    }
+
+
+def _next_node(exam: Exam, today: date | None = None) -> dict[str, Any] | None:
+    """下一节点：首个 planned_date>=今天 的节点；无日期可算则取流程上第一个未完成节点。"""
+    day = today or beijing_today()
+    ordered = sorted(exam.nodes, key=lambda n: n.node_seq)
+    for n in ordered:
+        if n.planned_date and n.planned_date >= day:
+            return {
+                "stage_key": n.stage_key,
+                "planned_date": n.planned_date,
+                "date_status": n.date_status,
+                "is_predictive": n.date_status == DateStatus.PREDICTED,
+            }
+    for n in ordered:
+        if n.planned_date is None and (not n.planned_end_date or n.planned_end_date >= day):
+            return {
+                "stage_key": n.stage_key,
+                "planned_date": None,
+                "date_status": n.date_status,
+                "is_predictive": False,
+            }
+    return None
+
+
+def _exam_brief(db: Session, exam: Exam, today: date | None = None) -> dict[str, Any]:
+    return {
+        "id": str(exam.id),
+        "code": exam.code,
+        "name": exam.name,
+        "track": exam.track,
+        "year": exam.year,
+        "status": exam.status,
+        "official_home_url": exam.official_home_url,
+        "next_node": _next_node(exam, today),
+    }
+
+
+def list_exams(db: Session, *, track: str | None = None) -> list[dict[str, Any]]:
+    q = db.query(Exam)
+    if track:
+        q = q.filter(Exam.track == track)
+    return [_exam_brief(db, e) for e in q.order_by(Exam.year.desc(), Exam.code).all()]
+
+
+def get_exam_detail(db: Session, code: str) -> dict[str, Any]:
+    exam = db.query(Exam).filter(Exam.code == code).first()
+    if exam is None:
+        raise ExamNotFound(code)
+    brief = _exam_brief(db, exam)
+    brief["nodes"] = [_node_payload(db, n) for n in sorted(exam.nodes, key=lambda x: x.node_seq)]
+    return brief
+
+
+def get_node_payload(db: Session, node_id: str) -> dict[str, Any]:
+    node = db.get(ExamNode, _as_uuid(node_id))
+    if node is None:
+        raise ExamNotFound(node_id)
+    return _node_payload(db, node)
+
+
+def _as_uuid(value: str | uuid.UUID) -> uuid.UUID:
+    try:
+        return value if isinstance(value, uuid.UUID) else uuid.UUID(str(value))
+    except (ValueError, AttributeError) as e:  # 非法 id 走 404 语义，不外泄 500
+        raise ExamNotFound(str(value)) from e
+
+
+def subscribe(db: Session, user_id: uuid.UUID, exam_code: str) -> ExamSubscription:
+    exam = db.query(Exam).filter(Exam.code == exam_code).first()
+    if exam is None:
+        raise ExamNotFound(exam_code)
+    existing = (
+        db.query(ExamSubscription)
+        .filter(ExamSubscription.user_id == str(user_id), ExamSubscription.exam_id == exam.id)
+        .first()
+    )
+    if existing is not None:
+        if existing.notify_channels:  # 有效订阅中 → 409
+            raise AlreadySubscribed(exam_code)
+        existing.notify_channels = ["inapp", "serverchan"]  # 退订后重订=恢复，不新建
+        db.commit()
+        return existing
+    sub = ExamSubscription(user_id=str(user_id), exam_id=exam.id)
+    db.add(sub)
+    db.commit()
+    db.refresh(sub)
+    return sub
+
+
+def unsubscribe(db: Session, user_id: uuid.UUID, exam_code: str) -> bool:
+    """软退订：notify_channels 置空，保留订阅与回传史（退订≠删除）。"""
+    exam = db.query(Exam).filter(Exam.code == exam_code).first()
+    if exam is None:
+        raise ExamNotFound(exam_code)
+    sub = (
+        db.query(ExamSubscription)
+        .filter(ExamSubscription.user_id == str(user_id), ExamSubscription.exam_id == exam.id)
+        .first()
+    )
+    if sub is None or not sub.notify_channels:
+        return False
+    sub.notify_channels = []
+    db.commit()
+    return True
+
+
+def set_feedback(
+    db: Session, user_id: uuid.UUID, node_id: str, status: NodeFeedbackStatus
+) -> NodeFeedback:
+    """回写节点反馈。未订阅/节点不属于订阅考 → 拒（契约：404，跨考写回禁止）。"""
+    node = db.get(ExamNode, _as_uuid(node_id))
+    if node is None:
+        raise ExamNotFound(node_id)
+    sub = (
+        db.query(ExamSubscription)
+        .filter(
+            ExamSubscription.user_id == str(user_id),
+            ExamSubscription.exam_id == node.exam_id,
+        )
+        .first()
+    )
+    if sub is None:
+        raise ExamNotFound(node_id)  # 防探测，统一 404
+    fb = (
+        db.query(NodeFeedback)
+        .filter(NodeFeedback.subscription_id == sub.id, NodeFeedback.node_id == node.id)
+        .first()
+    )
+    if fb is None:
+        fb = NodeFeedback(subscription_id=sub.id, node_id=node.id)
+        db.add(fb)
+    fb.status = status
+    fb.feedback_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(fb)
+    return fb
+
+
+def get_my_exams(db: Session, user_id: uuid.UUID) -> list[dict[str, Any]]:
+    """我的订阅 + 进度（北极星）+ 下一节点。"""
+    subs = (
+        db.query(ExamSubscription)
+        .filter(ExamSubscription.user_id == str(user_id))
+        .order_by(ExamSubscription.created_at)
+        .all()
+    )
+    today = beijing_today()
+    out = []
+    for sub in subs:
+        exam = sub.exam
+        reached = [
+            n
+            for n in exam.nodes
+            if n.planned_date is not None and n.planned_date - timedelta(days=7) <= today
+        ]
+        done = [n for n in reached if _feedback_status(db, sub, n) == NodeFeedbackStatus.done]
+        responded = sum(1 for n in reached if _has_feedback(db, sub, n))
+        rate = round(len(done) / len(reached), 4) if reached else None
+        fr = round(responded / len(reached), 4) if reached else None
+        out.append(
+            {
+                "exam": _exam_brief(db, exam, today),
+                "subscribed": bool(sub.notify_channels),
+                "progress": {
+                    "reached": len(reached),
+                    "done": len(done),
+                    "feedback_rate": fr,
+                },
+                "completion_rate": rate,
+                "next_node": _next_node(exam, today),
+            }
+        )
+    return out
+
+
+def _feedback_status(
+    db: Session, sub: ExamSubscription, node: ExamNode
+) -> NodeFeedbackStatus | None:
+    fb = (
+        db.query(NodeFeedback)
+        .filter(NodeFeedback.subscription_id == sub.id, NodeFeedback.node_id == node.id)
+        .first()
+    )
+    return fb.status if fb else None
+
+
+def _has_feedback(db: Session, sub: ExamSubscription, node: ExamNode) -> bool:
+    return _feedback_status(db, sub, node) is not None
+
+
 __all__ = [
     "SKELETON_12",
     "StageSpec",
     "EvidenceRejected",
+    "ExamNotFound",
+    "AlreadySubscribed",
     "require_evidence_fetch",
     "record_manual_paste",
     "validate_honesty",
@@ -554,4 +820,11 @@ __all__ = [
     "upsert_skeleton",
     "contains_date",
     "html_to_text",
+    "list_exams",
+    "get_exam_detail",
+    "get_node_payload",
+    "subscribe",
+    "unsubscribe",
+    "set_feedback",
+    "get_my_exams",
 ]
