@@ -11,10 +11,12 @@ import {
   Star,
   Clock,
   Sparkles,
+  CalendarRange,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { civilServiceIntelApi } from "@/lib/api/ai";
 import { EmptyState, LoadingState } from "@/components/ui/empty";
+import { ExamTimelineTab } from "@/components/civil-service/exam-timeline";
 import type {
   CivilServicePositioningResponse,
   CivilServiceDarkKnowledgeResponse,
@@ -25,6 +27,7 @@ const tabs = [
   { id: "positioning", label: "考公定位", icon: Target, color: "text-purple-500" },
   { id: "dark-knowledge", label: "暗知识", icon: BookOpen, color: "text-amber-500" },
   { id: "tools", label: "备考工具", icon: Wrench, color: "text-green-500" },
+  { id: "timeline", label: "考试流程", icon: CalendarRange, color: "text-blue-500" },
 ];
 
 const importanceMap: Record<string, { label: string; color: string }> = {
@@ -297,9 +300,12 @@ function CivilServicePageContent() {
   };
 
 
-  // 加载 Tab2 数据
+  // 加载 Tab2 数据（备考工具 tab 复用此数据，故一并加载）
   useEffect(() => {
-    if (activeTab !== "positioning") return;
+    if (activeTab !== "positioning" && activeTab !== "tools") {
+      setPosLoading(false);
+      return;
+    }
     setPosLoading(true);
     civilServiceIntelApi
       .getLatestPositioning()
@@ -339,7 +345,7 @@ function CivilServicePageContent() {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-ink-800 mb-2">考公中心</h1>
-        <p className="text-ink-500">定位评估、暗知识与备考工具 · 职位检索由公考雷达等专门工具承担</p>
+        <p className="text-ink-500">定位评估、暗知识、备考工具与考试流程时间线 · 职位检索由公考雷达等专门工具承担</p>
       </div>
 
       {/* Tab 切换 */}
@@ -403,6 +409,8 @@ function CivilServicePageContent() {
           )}
         </div>
       )}
+
+      {activeTab === "timeline" && <ExamTimelineTab />}
     </div>
   );
 }
