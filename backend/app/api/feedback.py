@@ -143,14 +143,10 @@ def admin_feedback_stats(
 ):
     """管理端：反馈统计（类目计数 + 近 7 天新增）。"""
     by_category = dict(
-        db.query(Feedback.category, func.count(Feedback.id))
-        .group_by(Feedback.category)
-        .all()
+        db.query(Feedback.category, func.count(Feedback.id)).group_by(Feedback.category).all()
     )
     from datetime import datetime, timedelta, timezone
 
     week_ago = datetime.now(timezone.utc) - timedelta(days=7)
-    recent = (
-        db.query(func.count(Feedback.id)).filter(Feedback.created_at >= week_ago).scalar() or 0
-    )
+    recent = db.query(func.count(Feedback.id)).filter(Feedback.created_at >= week_ago).scalar() or 0
     return {"total": sum(by_category.values()), "by_category": by_category, "last_7d": recent}

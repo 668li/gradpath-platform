@@ -4,6 +4,7 @@
 语义映射（2026-09-02 用户拍板）：拒绝→severe；有条件→moderate；标准措辞→none；
 高职满年限→none；复试加试（教育部统一规定）不算该校态度；调剂硬/软→severe/moderate。
 """
+
 import sys
 from pathlib import Path
 
@@ -66,7 +67,7 @@ class TestEqvHigherVoc:
         assert r and r["tier"] == "none" and r["source"] == "eqv_higher_voc"
 
     def test_zhuanke_two_years_arabic_numeral(self):
-        """"专科毕业满2年"（阿拉伯数字）须命中——回测发现的正则缺口。"""
+        """ "专科毕业满2年"（阿拉伯数字）须命中——回测发现的正则缺口。"""
         r = extract_eqv("专科毕业满2年者可报考。")
         assert r and r["tier"] == "none"
 

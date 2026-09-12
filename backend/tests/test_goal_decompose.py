@@ -7,7 +7,6 @@ from types import SimpleNamespace
 import pytest
 
 from app.api import goal_decompose as gd
-from app.main import app
 
 CANNED = {
     "steps": [

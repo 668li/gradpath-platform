@@ -81,18 +81,14 @@ class TestClassifyTopicRelevance:
 
     def test_anime_mentality_offtopic(self):
         """『火影』如何保持良好心态：动漫话题 → 离题。09-02 增补锚点。"""
-        off, reason, _ = classify_topic_relevance(
-            "火影如何保持良好心态，关于心理战的教学", "", []
-        )
+        off, reason, _ = classify_topic_relevance("火影如何保持良好心态，关于心理战的教学", "", [])
         assert off is True
         assert "火影" in reason
 
     def test_softsubtitle_not_offtopic(self):
         """『外挂英文字幕』= 软字幕，是英语学习用法，不得误判为游戏外挂。
         09-02 修正：把『外挂』当作单独词会误伤外语学习内容。"""
-        off, _, _ = classify_topic_relevance(
-            "从零开始学英语，增加词汇量（外挂英文字幕）", "", []
-        )
+        off, _, _ = classify_topic_relevance("从零开始学英语，增加词汇量（外挂英文字幕）", "", [])
         assert off is not True
 
     def test_kaoyan(self):

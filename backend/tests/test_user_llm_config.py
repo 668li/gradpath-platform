@@ -387,9 +387,7 @@ class TestPlatformLLMStatus:
         from app.config import settings
 
         with patch.object(settings, "LLM_API_KEY", ""):
-            resp = client.get(
-                "/api/user-llm-config/platform-status", headers=auth_headers
-            )
+            resp = client.get("/api/user-llm-config/platform-status", headers=auth_headers)
         assert resp.status_code == 200
         data = resp.json()
         assert data["enabled"] is False
@@ -402,9 +400,7 @@ class TestPlatformLLMStatus:
 
         platform_key = "".join(("sk-platform", "-test-", "zzzz"))
         with patch.object(settings, "LLM_API_KEY", platform_key):
-            resp = client.get(
-                "/api/user-llm-config/platform-status", headers=auth_headers
-            )
+            resp = client.get("/api/user-llm-config/platform-status", headers=auth_headers)
         assert resp.status_code == 200
         data = resp.json()
         assert data["enabled"] is True

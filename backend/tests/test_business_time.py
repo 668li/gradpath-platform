@@ -6,7 +6,6 @@
 
 from datetime import date, datetime
 from uuid import uuid4
-from zoneinfo import ZoneInfo
 
 from app.models.user import User
 from app.services.streak_service import _week_start, record_activity
@@ -44,9 +43,9 @@ def test_record_activity_uses_injected_date_not_utc_date(db_session):
 
     record = record_activity(db_session, user.id, "main", xp=10, today=beijing_date)
 
-    assert record.activity_date == beijing_date, (
-        "北京时间 00:30 的行动必须记到北京日期（UTC 日期基准缺陷回归测试）"
-    )
+    assert (
+        record.activity_date == beijing_date
+    ), "北京时间 00:30 的行动必须记到北京日期（UTC 日期基准缺陷回归测试）"
     wrong = (
         db_session.query(type(record))
         .filter(

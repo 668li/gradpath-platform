@@ -5,8 +5,7 @@
 - P0-3: 完成微行动任务允许不填 user_response
 """
 
-from datetime import date, datetime, timedelta, timezone
-from uuid import uuid4
+from datetime import date, datetime, timezone
 
 from app.models.action_center import DailyAction
 from app.models.streak import StreakRecord
@@ -33,9 +32,7 @@ def test_dashboard_overview_does_not_create_streak_record(auth_headers, client, 
     resp2 = client.get("/api/dashboard/overview", headers=auth_headers)
     assert resp2.status_code == 200
 
-    records = (
-        db_session.query(StreakRecord).filter(StreakRecord.user_id == user.id).all()
-    )
+    records = db_session.query(StreakRecord).filter(StreakRecord.user_id == user.id).all()
     assert records == [], "打开 dashboard 不应产生任何连击记录"
 
 

@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.crawlers.real_data.stats_gongbao_scraper import (
+from app.crawlers.reports.stats_gongbao_scraper import (
     extract_gongbao_metrics,
     strip_to_text,
     validate_gongbao_url,

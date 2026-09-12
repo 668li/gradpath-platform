@@ -35,9 +35,7 @@ class ResearchQueueItemVO(BaseModel):
     risk_grade: str | None = Field(
         None, description="风险档位 high/medium/low；仅 review_status=PENDING 时计算"
     )
-    risk_score: int | None = Field(
-        None, description="风险分 0-100，同档内细分排序用"
-    )
+    risk_score: int | None = Field(None, description="风险分 0-100，同档内细分排序用")
     risk_reasons: list[str] = Field(
         default_factory=list, description="风险理由（离题/软广/低质/来源），供管理员快速判读"
     )

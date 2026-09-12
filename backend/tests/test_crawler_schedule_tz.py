@@ -29,9 +29,9 @@ def test_seed_default_schedules_registers_beijing_timezone(monkeypatch):
 
     assert len(fake.captured) == len(DEFAULT_DAILY_SCHEDULES)
     for kwargs in fake.captured:
-        assert kwargs["timezone"] == BEIJING_TZ, (
-            "爬虫定时 job 未显式指定北京时区（UTC 容器会错位 8 小时）"
-        )
+        assert (
+            kwargs["timezone"] == BEIJING_TZ
+        ), "爬虫定时 job 未显式指定北京时区（UTC 容器会错位 8 小时）"
         assert kwargs["trigger"] == "cron"
 
 

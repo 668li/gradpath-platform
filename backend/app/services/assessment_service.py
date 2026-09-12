@@ -201,9 +201,7 @@ def calculate_big_five_result(answers: dict) -> dict:
         {"result_code", "result_summary", "recommended_directions", "scores"}
     """
     avg_scores, result_code = _big_five_core(answers, BIG_FIVE_ITEM_DIMENSIONS)
-    directions, summary = _big_five_directions_and_summary(
-        avg_scores, result_code, short=False
-    )
+    directions, summary = _big_five_directions_and_summary(avg_scores, result_code, short=False)
 
     return {
         "result_code": result_code,
@@ -220,9 +218,7 @@ def calculate_big_five_short_result(answers: dict) -> dict:
     摘要如实标注低分辨率，推荐方向逻辑相同。
     """
     avg_scores, result_code = _big_five_core(answers, BFS_ITEM_DIMENSIONS)
-    directions, summary = _big_five_directions_and_summary(
-        avg_scores, result_code, short=True
-    )
+    directions, summary = _big_five_directions_and_summary(avg_scores, result_code, short=True)
 
     return {
         "result_code": result_code,

@@ -6,7 +6,8 @@ import uuid
 BLUEPRINT_CONTENT = (
     "# 个人人生设计蓝图\n\n"
     "## 你在这里\n健康 6 分、工作 3 分……\n\n"
-    "## 真问题\n" + ("重新定义：不是「考不上怎么办」，而是「如何在三个月内验证备考节奏是否可持续」。 " * 8)
+    "## 真问题\n"
+    + ("重新定义：不是「考不上怎么办」，而是「如何在三个月内验证备考节奏是否可持续」。 " * 8)
 )
 
 
@@ -20,9 +21,7 @@ def _create(client, auth_headers, **overrides):
         ],
     }
     payload.update(overrides)
-    return client.post(
-        "/api/life-design/blueprints", headers=auth_headers, json=payload
-    )
+    return client.post("/api/life-design/blueprints", headers=auth_headers, json=payload)
 
 
 def test_create_blueprint_defaults(client, auth_headers):
@@ -44,9 +43,7 @@ def test_version_increments(client, auth_headers):
     assert r2.json()["version"] == 2
     assert r2.json()["title"] == "第二版"
 
-    listed = client.get(
-        "/api/life-design/blueprints", headers=auth_headers
-    ).json()
+    listed = client.get("/api/life-design/blueprints", headers=auth_headers).json()
     assert [b["version"] for b in listed] == [2, 1]
     # 列表项不含全文（8000+ 字蓝图不整段下发）
     assert "content" not in listed[0]
@@ -57,14 +54,10 @@ def test_latest_and_get_by_id(client, auth_headers):
     _create(client, auth_headers)
     created = _create(client, auth_headers).json()
 
-    latest = client.get(
-        "/api/life-design/blueprints/latest", headers=auth_headers
-    ).json()
+    latest = client.get("/api/life-design/blueprints/latest", headers=auth_headers).json()
     assert latest["version"] == 2
 
-    one = client.get(
-        f"/api/life-design/blueprints/{created['id']}", headers=auth_headers
-    )
+    one = client.get(f"/api/life-design/blueprints/{created['id']}", headers=auth_headers)
     assert one.status_code == 200
     assert one.json()["content"] == BLUEPRINT_CONTENT
 
@@ -85,9 +78,7 @@ def test_user_isolation_and_validation(client, auth_headers):
 
     # 越权（伪造随机 id，属于他人或不存在的蓝图都应 404）
     assert (
-        client.get(
-            f"/api/life-design/blueprints/{uuid.uuid4()}", headers=auth_headers
-        ).status_code
+        client.get(f"/api/life-design/blueprints/{uuid.uuid4()}", headers=auth_headers).status_code
         == 404
     )
     assert created["id"]  # sanity：自己能读到的 id 存在

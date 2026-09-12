@@ -24,11 +24,7 @@ from app.core.deps import get_current_user
 from app.database import get_db
 from app.models.user import User
 from app.services.ai_orchestrator import AIOrchestrator
-from app.services.ai_quota_service import (
-    AILLMQuotaExceeded,
-    check_llm_quota,
-    incr_llm_quota,
-)
+from app.services.ai_quota_service import AILLMQuotaExceeded, check_llm_quota, incr_llm_quota
 from app.services.micro_action_service import create_plan_from_tasks
 
 router = APIRouter(prefix="/api/goal-decompose", tags=["行动任务中心-目标拆解"])
@@ -135,16 +131,16 @@ async def preview_decompose(
     req: GoalDecomposeRequest, user: User = Depends(get_current_user)
 ) -> dict[str, Any]:
     if req.path_type not in VALID_TARGET_PATHS:
-        raise HTTPException(status_code=422, detail="path_type 需为 kaoyan/employment/civil_service")
+        raise HTTPException(
+            status_code=422, detail="path_type 需为 kaoyan/employment/civil_service"
+        )
     try:
         await check_llm_quota(user.id)
     except AILLMQuotaExceeded as e:
         raise HTTPException(status_code=429, detail=str(e)) from e
 
     try:
-        raw = await AIOrchestrator().chat(
-            _SYSTEM_PROMPT, _user_prompt(req), timeout=45
-        )
+        raw = await AIOrchestrator().chat(_SYSTEM_PROMPT, _user_prompt(req), timeout=45)
     except Exception as e:  # 编排器异常（超时/网络/上游 429）如实降级
         raise HTTPException(status_code=502, detail=f"AI 拆解暂时不可用：{e}") from e
 
@@ -172,7 +168,9 @@ async def commit_decompose(
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     if req.path_type not in VALID_TARGET_PATHS:
-        raise HTTPException(status_code=422, detail="path_type 需为 kaoyan/employment/civil_service")
+        raise HTTPException(
+            status_code=422, detail="path_type 需为 kaoyan/employment/civil_service"
+        )
     steps = _validate_steps(req.steps)
     if len(steps) < 3:
         raise HTTPException(status_code=422, detail="有效步骤不足 3 个，无法创建微行动计划")
@@ -187,9 +185,7 @@ async def commit_decompose(
         for s in steps
     ]
     try:
-        plan = create_plan_from_tasks(
-            db, user.id, req.path_type, req.goal[:100], tasks
-        )
+        plan = create_plan_from_tasks(db, user.id, req.path_type, req.goal[:100], tasks)
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e)) from e
     return {

@@ -129,9 +129,7 @@ def admin_quality_feedback_stats(
         .group_by(QualityFeedback.target_type)
         .all()
     )
-    by_type = {
-        (t.value if hasattr(t, "value") else str(t)): c for t, c in by_type_rows
-    }
+    by_type = {(t.value if hasattr(t, "value") else str(t)): c for t, c in by_type_rows}
     return QualityFeedbackStats(
         total=total,
         helpful=helpful,

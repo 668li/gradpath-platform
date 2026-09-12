@@ -26,12 +26,12 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.models.assessment import Assessment
-from app.utils.business_time import beijing_today
 from app.models.career_profile import CareerProfile
 from app.models.outcome_report import OutcomeReport
 from app.services.major_prospect_service import get_prospect
 from app.services.path_comparison_service import build_peer_destinations
 from app.services.path_decision_engine import generate_decision
+from app.utils.business_time import beijing_today
 
 logger = logging.getLogger("gradpath.assessment_interpret")
 
@@ -168,9 +168,7 @@ def build_interpretation(db: Session, user_id: UUID) -> dict:
     profile_ser = _serialize_profile(profile)
     major_hint = (profile.major if profile else None) or ""
     school_tier = profile.school_tier if profile else None
-    education = (
-        _EDU_ENUM_ZH.get(profile.education_level or "") if profile else None
-    )
+    education = _EDU_ENUM_ZH.get(profile.education_level or "") if profile else None
     graduation_year = profile.graduation_year if profile else None
     target_direction = profile.target_direction if profile else None
 
@@ -199,7 +197,8 @@ def build_interpretation(db: Session, user_id: UUID) -> dict:
             interp = dict(interp)
             interp["primary_lean"] = lean_path
             interp["reason"] = (
-                f"你已在个人档案指定目标方向「{target_direction}」，覆盖测评偏好。" + interp["reason"]
+                f"你已在个人档案指定目标方向「{target_direction}」，覆盖测评偏好。"
+                + interp["reason"]
             )
         assessment_block = {
             "type": assessment.assessment_type,

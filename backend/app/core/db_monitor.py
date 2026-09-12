@@ -72,9 +72,7 @@ def register_db_monitor(engine) -> None:
             pass
         if duration_ms >= SLOW_QUERY_MS:
             preview = " ".join(statement.split())[:200]
-            logger.warning(
-                "慢查询 %.0fms: %s", duration_ms, preview
-            )
+            logger.warning("慢查询 %.0fms: %s", duration_ms, preview)
             try:
                 DB_SLOW_QUERY_TOTAL.inc()
             except Exception:  # noqa: BLE001

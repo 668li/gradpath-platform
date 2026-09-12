@@ -17,11 +17,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "backend"))
 
 import pytest
 
-from app.services.data_search_service import (
-    detect_data_intents,
-    search_announcements,
-)
-
+from app.services.data_search_service import detect_data_intents, search_announcements
 
 # ======================================================================
 # create_plan_from_tasks
@@ -52,19 +48,13 @@ _VALID_TASKS = [
 
 class TestCreatePlanFromTasks:
     def test_creates_plan_and_tasks(self, db_session, svc_user):
-        from app.models.micro_action import MicroActionPlan, MicroActionTask
+        from app.models.micro_action import MicroActionTask
         from app.services.micro_action_service import create_plan_from_tasks
 
-        plan = create_plan_from_tasks(
-            db_session, svc_user.id, "kaoyan", "考研基础轮", _VALID_TASKS
-        )
+        plan = create_plan_from_tasks(db_session, svc_user.id, "kaoyan", "考研基础轮", _VALID_TASKS)
         assert plan.status == "active"
         assert plan.target_path == "kaoyan"
-        tasks = (
-            db_session.query(MicroActionTask)
-            .filter(MicroActionTask.plan_id == plan.id)
-            .all()
-        )
+        tasks = db_session.query(MicroActionTask).filter(MicroActionTask.plan_id == plan.id).all()
         assert len(tasks) == 4
         assert {t.day_number for t in tasks} == {1, 2, 3, 4}
 
@@ -75,15 +65,10 @@ class TestCreatePlanFromTasks:
             create_plan_from_tasks(db_session, svc_user.id, "kaoyan", None, [])
 
     def test_abandons_previous_active_plan(self, db_session, svc_user):
-        from app.services.micro_action_service import (
-            create_plan,
-            create_plan_from_tasks,
-        )
+        from app.services.micro_action_service import create_plan, create_plan_from_tasks
 
         old = create_plan(db_session, svc_user.id, "employment")
-        new = create_plan_from_tasks(
-            db_session, svc_user.id, "kaoyan", None, _VALID_TASKS
-        )
+        new = create_plan_from_tasks(db_session, svc_user.id, "kaoyan", None, _VALID_TASKS)
         db_session.refresh(old)
         assert old.status == "abandoned"
         assert new.status == "active"
@@ -107,16 +92,25 @@ class TestValidateMicroActionPlan:
                 "target_role": "x" * 300,
                 "tasks": [
                     {"day_number": 1, "task_type": "研究", "title": "a", "description": "b"},
-                    {"day_number": 99, "task_type": "practice", "title": "c", "description": "d", "estimated_minutes": 999},
+                    {
+                        "day_number": 99,
+                        "task_type": "practice",
+                        "title": "c",
+                        "description": "d",
+                        "estimated_minutes": 999,
+                    },
                     {"day_number": 3, "task_type": "reflect", "title": "e", "description": "f"},
-                    {"day_number": 3, "task_type": "reflect", "title": "重复日", "description": "g"},
+                    {
+                        "day_number": 3,
+                        "task_type": "reflect",
+                        "title": "重复日",
+                        "description": "g",
+                    },
                     {"day_number": 4, "title": "缺描述"},
                 ],
             },
         }
-        result = LearningPlanGeneratorSkill().parse_response(
-            json.dumps(data, ensure_ascii=False)
-        )
+        result = LearningPlanGeneratorSkill().parse_response(json.dumps(data, ensure_ascii=False))
         plan = result["micro_action_plan"]
         assert plan is not None
         assert plan["target_path"] == "employment"
@@ -132,7 +126,9 @@ class TestValidateMicroActionPlan:
         data = {
             "micro_action_plan": {
                 "target_path": "kaoyan",
-                "tasks": [{"day_number": 1, "task_type": "practice", "title": "a", "description": "b"}],
+                "tasks": [
+                    {"day_number": 1, "task_type": "practice", "title": "a", "description": "b"}
+                ],
             }
         }
         assert _validate_micro_action_plan(data) is None
@@ -168,9 +164,7 @@ MOCK_LEARNING_PLAN_REPLY = """{
 @pytest.fixture
 def chat_client(client, auth_headers):
     """建好对话并返回 (client, headers, conversation_id)。"""
-    resp = client.post(
-        "/api/chat/conversations", json={"title": "计划冒烟"}, headers=auth_headers
-    )
+    resp = client.post("/api/chat/conversations", json={"title": "计划冒烟"}, headers=auth_headers)
     assert resp.status_code in (200, 201), resp.text
     return client, auth_headers, resp.json()["id"]
 
@@ -287,9 +281,7 @@ class TestAnnouncementInterpreter:
     def test_empty_honest_degradation(self, db_session):
         from app.skills.announcement_interpreter import AnnouncementInterpreterSkill
 
-        out = AnnouncementInterpreterSkill().inject_data(
-            db_session, "u1", "unknown 大学的简章"
-        )
+        out = AnnouncementInterpreterSkill().inject_data(db_session, "u1", "unknown 大学的简章")
         assert "暂无" in out and "禁止编造" in out
 
     def test_prompt_discipline(self):

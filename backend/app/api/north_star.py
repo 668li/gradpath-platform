@@ -44,9 +44,7 @@ def _weekly_series(db: Session) -> list[dict]:
     """近 8 周聚合：每周新建决策数 / 回传数 / 条件记录数 / met 数。"""
     since = datetime.now(timezone.utc) - timedelta(weeks=_WEEKS)
 
-    rows = (
-        db.query(PathComparison.created_at).filter(PathComparison.created_at >= since).all()
-    )
+    rows = db.query(PathComparison.created_at).filter(PathComparison.created_at >= since).all()
     created_by_week: dict[str, int] = {}
     for (created,) in rows:
         wk = _week_start(created)
@@ -80,7 +78,7 @@ def _weekly_series(db: Session) -> list[dict]:
 
     series = []
     for i in range(_WEEKS):
-        day = (datetime.now(timezone.utc) - timedelta(weeks=_WEEKS - 1 - i))
+        day = datetime.now(timezone.utc) - timedelta(weeks=_WEEKS - 1 - i)
         wk = _week_start(day)
         series.append(
             {
@@ -124,9 +122,7 @@ def north_star_summary(
         .scalar()
         or 0
     )
-    avg_satisfaction = (
-        db.query(func.avg(PathComparison.satisfaction)).scalar()
-    )
+    avg_satisfaction = db.query(func.avg(PathComparison.satisfaction)).scalar()
 
     result = {
         "condition_completion": {

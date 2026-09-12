@@ -130,7 +130,9 @@ def _validate_answers(assessment_type: str, answers: dict) -> list[str]:
 
 
 @router.get("/questions", response_model=list[Question])
-def get_questions(type: str = Query("holland", description="测评类型：holland|mbti|big_five|big_five_short|disc")):
+def get_questions(
+    type: str = Query("holland", description="测评类型：holland|mbti|big_five|big_five_short|disc")
+):
     """获取指定类型的测评题目列表（无需认证）。
 
     不传 type 时默认返回霍兰德题目，保持向后兼容。

@@ -440,9 +440,7 @@ class TestCompleteTaskIdempotency:
         assert resp2.status_code == 200, resp2.text
 
         user = db_session.query(User).filter(User.email == "test@example.com").first()
-        records = (
-            db_session.query(StreakRecord).filter(StreakRecord.user_id == user.id).all()
-        )
+        records = db_session.query(StreakRecord).filter(StreakRecord.user_id == user.id).all()
         assert len(records) == 1, "重复 complete 不得再记一条连击"
         assert records[0].xp_earned == 3, "重复 complete 不得重复加经验（micro=3XP）"
 

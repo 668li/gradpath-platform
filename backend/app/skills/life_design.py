@@ -34,7 +34,8 @@ def parse_stage_and_content(raw: str) -> tuple[str | None, str]:
     m = _STAGE_RE.match(raw)
     if not m:
         return None, raw
-    return m.group(1).upper(), raw[m.end():]
+    return m.group(1).upper(), raw[m.end() :]
+
 
 # 激活关键词（人生方向 / 自我认知 / 长期规划）
 ACTIVATE_KEYWORDS = [

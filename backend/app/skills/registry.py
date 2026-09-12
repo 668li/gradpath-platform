@@ -413,9 +413,27 @@ _SKILLS: list[SkillInfo] = [
         name="timeline_companion",
         display_name="流程伴随官",
         description="考公流程伴随：现在到哪一步、接下来做什么、官方入口在哪、要备什么材料。",
-        trigger_words=["时间线", "考试流程", "到哪一步", "下一步该", "报名截止", "报名时间", "准考证", "笔试时间", "查分时间", "国考时间", "省考时间", "考试安排"],
+        trigger_words=[
+            "时间线",
+            "考试流程",
+            "到哪一步",
+            "下一步该",
+            "报名截止",
+            "报名时间",
+            "准考证",
+            "笔试时间",
+            "查分时间",
+            "国考时间",
+            "省考时间",
+            "考试安排",
+        ],
         use_cases=["2027 国考现在到哪一步了", "报名什么时候截止", "笔试前该准备什么材料"],
-        capabilities=["12 环节三态诚实口径", "下一节点锚点", "官方入口与材料清单", "PREDICTED 试探句纪律"],
+        capabilities=[
+            "12 环节三态诚实口径",
+            "下一节点锚点",
+            "官方入口与材料清单",
+            "PREDICTED 试探句纪律",
+        ],
         limitations=["不代办任何动作（报名等在官方页面完成）", "预测日期不作承诺"],
         category="advisor",
         icon="route",
@@ -688,6 +706,7 @@ def _load_skill_classes():
     if _SKILL_CLASSES:
         return
 
+    from app.skills.announcement_interpreter import AnnouncementInterpreterSkill
     from app.skills.career_path_mapper import CareerPathMapperSkill
     from app.skills.career_planning import CareerPlanningSkill
     from app.skills.career_transition import CareerTransitionSkill
@@ -699,12 +718,11 @@ def _load_skill_classes():
     from app.skills.interview_simulation import InterviewSimulationSkill
     from app.skills.learning_plan_generator import LearningPlanGeneratorSkill
     from app.skills.life_design import LifeDesignSkill
-    from app.skills.announcement_interpreter import AnnouncementInterpreterSkill
-    from app.skills.timeline_companion import TimelineCompanionSkill
     from app.skills.resume_diagnosis import ResumeDiagnosisSkill
     from app.skills.resume_optimizer import ResumeOptimizerSkill
     from app.skills.salary_benchmark import SalaryBenchmarkSkill
     from app.skills.salary_negotiation import SalaryNegotiationSkill
+    from app.skills.timeline_companion import TimelineCompanionSkill
     from app.skills.user_referral import UserReferralSkill
 
     for cls in [

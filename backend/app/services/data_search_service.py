@@ -31,17 +31,58 @@ _MAJOR_SUFFIX_RE = re.compile(r"([\u4e00-\u9fa5]{2,10})专业")
 
 # 常见报考专业词表（公告标题/market/salary 的 LIKE 关键词）
 _MAJOR_WHITELIST = [
-    "计算机", "软件工程", "法学", "会计", "金融", "经济", "汉语言", "英语",
-    "新闻", "土木", "电气", "机械", "临床", "护理", "行政管理", "工商管理",
-    "统计学", "审计", "财政", "税务", "数学", "物理", "化学", "自动化",
-    "电子信息", "通信", "法学类", "中国语言文学", "马克思主义",
+    "计算机",
+    "软件工程",
+    "法学",
+    "会计",
+    "金融",
+    "经济",
+    "汉语言",
+    "英语",
+    "新闻",
+    "土木",
+    "电气",
+    "机械",
+    "临床",
+    "护理",
+    "行政管理",
+    "工商管理",
+    "统计学",
+    "审计",
+    "财政",
+    "税务",
+    "数学",
+    "物理",
+    "化学",
+    "自动化",
+    "电子信息",
+    "通信",
+    "法学类",
+    "中国语言文学",
+    "马克思主义",
 ]
 
 # 国考热门部门词表（公告 content LIKE 关键词）
 _DEPT_WHITELIST = [
-    "税务", "海关", "公安", "法院", "检察院", "审计", "统计", "气象",
-    "铁路", "邮政", "金融监管", "证监", "银保监", "财政", "边检", "移民",
-    "海事", "粮食", "烟草",
+    "税务",
+    "海关",
+    "公安",
+    "法院",
+    "检察院",
+    "审计",
+    "统计",
+    "气象",
+    "铁路",
+    "邮政",
+    "金融监管",
+    "证监",
+    "银保监",
+    "财政",
+    "边检",
+    "移民",
+    "海事",
+    "粮食",
+    "烟草",
 ]
 
 # 校名前缀常见动词/虚词（匹配后从左剥离，防"我想考清华大学"整段被吞）
@@ -49,8 +90,16 @@ _SCHOOL_PREFIX_STOP = set("我想你要考报去读上冲问帮看看比和与�
 
 # 专业候选里常见的学历/届别前缀（贪婪后缀正则会连着吞进来，"本科计算机"→"计算机"）
 _MAJOR_PREFIXES = (
-    "博士研究生", "硕士研究生", "研究生", "博士", "硕士",
-    "本科", "专科", "大专", "应届", "往届",
+    "博士研究生",
+    "硕士研究生",
+    "研究生",
+    "博士",
+    "硕士",
+    "本科",
+    "专科",
+    "大专",
+    "应届",
+    "往届",
 )
 
 
@@ -81,7 +130,7 @@ def extract_major(text: str) -> str | None:
             changed = False
             for p in _MAJOR_PREFIXES:
                 if cand.startswith(p):
-                    cand = cand[len(p):]
+                    cand = cand[len(p) :]
                     changed = True
                     break
             if cand and cand[0] in _SCHOOL_PREFIX_STOP:
@@ -141,7 +190,10 @@ def search_salary(db: Session, keyword: str | None, limit: int = 5) -> list[Data
         return []
     rows = (
         db.query(SalaryBenchmark)
-        .filter(SalaryBenchmark.position.like(f"%{keyword}%") | SalaryBenchmark.company.like(f"%{keyword}%"))
+        .filter(
+            SalaryBenchmark.position.like(f"%{keyword}%")
+            | SalaryBenchmark.company.like(f"%{keyword}%")
+        )
         .limit(limit)
         .all()
     )
@@ -149,7 +201,7 @@ def search_salary(db: Session, keyword: str | None, limit: int = 5) -> list[Data
         DataHit(
             title=f"{r.company} {r.position} 薪资",
             content=f"{r.company} {r.position}（{r.city or ''}，{getattr(r.experience_level, 'value', r.experience_level)}）："
-                    f"中位数 {r.salary_median}（{r.salary_min}~{r.salary_max}），来源 {r.source} {r.year}",
+            f"中位数 {r.salary_median}（{r.salary_min}~{r.salary_max}），来源 {r.source} {r.year}",
             source_table="salary_benchmarks",
             year=r.year,
         )
@@ -165,7 +217,9 @@ def search_market(db: Session, keyword: str | None, limit: int = 5) -> list[Data
         return []
     rows = (
         db.query(MarketData)
-        .filter(MarketData.indicator.like(f"%{keyword}%") | MarketData.industry.like(f"%{keyword}%"))
+        .filter(
+            MarketData.indicator.like(f"%{keyword}%") | MarketData.industry.like(f"%{keyword}%")
+        )
         .order_by(MarketData.year.desc())
         .limit(limit)
         .all()
@@ -237,9 +291,7 @@ def search_announcements(db: Session, keyword: str | None = None, limit: int = 3
                 ExternalResearchItem.title.like(f"%{keyword}%")
                 | ExternalResearchItem.content.like(f"%{keyword}%")
             )
-        rows2 = (
-            q2.order_by(ExternalResearchItem.created_at.desc().nullslast()).limit(limit).all()
-        )
+        rows2 = q2.order_by(ExternalResearchItem.created_at.desc().nullslast()).limit(limit).all()
         for r in rows2:
             body = (r.content or "")[:220]
             hits.append(
@@ -260,10 +312,18 @@ def search_announcements(db: Session, keyword: str | None = None, limit: int = 3
 # ---------------------------------------------------------------------------
 
 STAGE_KEY_WORDS = (
-    ("公告", "announce"), ("报名", "registration"), ("缴费", "payment"),
-    ("准考证", "admission_ticket"), ("笔试", "written"), ("查分", "score"),
-    ("出分", "score"), ("调剂", "adjustment"), ("面试", "interview"),
-    ("体检", "medical"), ("政审", "political"), ("公示", "publicity"),
+    ("公告", "announce"),
+    ("报名", "registration"),
+    ("缴费", "payment"),
+    ("准考证", "admission_ticket"),
+    ("笔试", "written"),
+    ("查分", "score"),
+    ("出分", "score"),
+    ("调剂", "adjustment"),
+    ("面试", "interview"),
+    ("体检", "medical"),
+    ("政审", "political"),
+    ("公示", "publicity"),
     ("录用", "hire"),
 )
 
@@ -277,7 +337,11 @@ def _timeline_date_label(node: dict) -> str:
     if status == "OFFICIAL" and planned:
         return f"官方：{planned.isoformat()}" + (f"~{end.isoformat()}" if end else "")
     if status == "PREDICTED" and planned:
-        return f"预计 {planned.isoformat()}" + (f"~{end.isoformat()}" if end else "") + "（公告后自动更新）"
+        return (
+            f"预计 {planned.isoformat()}"
+            + (f"~{end.isoformat()}" if end else "")
+            + "（公告后自动更新）"
+        )
     return "日期待定（暂无可核验来源）"
 
 
@@ -345,8 +409,18 @@ _MARKET_WORDS = ("就业前景", "就业面", "行业趋势", "市场行情")
 _ANNOUNCE_WORDS = ("公告", "简章", "招生信息", "招考通知")
 # 时间线意图用短语级词表，避免"面试/体检"这类单词误劫持其他 skill 的对话
 _TIMELINE_WORDS = (
-    "时间线", "考试流程", "到哪一步", "报名截止", "报名时间", "准考证",
-    "笔试时间", "查分时间", "国考时间", "省考时间", "考试安排", "流程是什么",
+    "时间线",
+    "考试流程",
+    "到哪一步",
+    "报名截止",
+    "报名时间",
+    "准考证",
+    "笔试时间",
+    "查分时间",
+    "国考时间",
+    "省考时间",
+    "考试安排",
+    "流程是什么",
 )
 
 
@@ -432,13 +506,19 @@ def run_data_search(
         )
         return block, [], False
 
-    lines = ["【站内数据检索结果】以下是 GradPath 数据库真实记录，回答必须基于这些数据；", "数据库没有的信息如实说「暂无数据」，禁止编造。每条末尾为来源。", ""]
+    lines = [
+        "【站内数据检索结果】以下是 GradPath 数据库真实记录，回答必须基于这些数据；",
+        "数据库没有的信息如实说「暂无数据」，禁止编造。每条末尾为来源。",
+        "",
+    ]
     sources: list[dict] = []
     for i, h in enumerate(hits[:8], 1):
         label = f"{h.source_table}" + (f"·{h.year}年" if h.year else "")
         src_tag = f"（来源: {h.url}）" if h.url else f"（来源: 站内数据库 {label}）"
         lines.append(f"{i}. {h.content[:_HIT_CONTENT_MAX]} [{label}]{src_tag}")
-        sources.append({"type": "db", "title": h.title[:40], "content": h.content[:120], "url": h.url})
+        sources.append(
+            {"type": "db", "title": h.title[:40], "content": h.content[:120], "url": h.url}
+        )
     lines.append("")
     lines.append("（以上按数据库最新收录年份倒序；若与用户问题不完全对口，请说明数据边界。）")
 

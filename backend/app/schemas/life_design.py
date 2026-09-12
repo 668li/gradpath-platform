@@ -90,6 +90,7 @@ class AuditGenerateRequest(BaseModel):
 # 人生设计蓝图（认识自己 V1：访谈 ⟨DONE⟩ 轮产出）
 # ======================================================================
 
+
 class BlueprintTranscriptItem(BaseModel):
     """访谈问答记录条目。"""
 

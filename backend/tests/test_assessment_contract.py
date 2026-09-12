@@ -12,14 +12,8 @@ import re
 from pathlib import Path
 
 from app.api.assessment import _ASSESSMENT_ANSWER_VALUES
-from app.services.assessment_service import (
-    ASSESSMENT_CALCULATORS,
-    ASSESSMENT_QUESTIONS,
-)
-from app.services.user_context_service import (
-    LEARNING_STYLE_ASSESSMENT_TYPE,
-    MAIN_ASSESSMENT_TYPES,
-)
+from app.services.assessment_service import ASSESSMENT_CALCULATORS, ASSESSMENT_QUESTIONS
+from app.services.user_context_service import LEARNING_STYLE_ASSESSMENT_TYPE, MAIN_ASSESSMENT_TYPES
 
 FRONTEND_TYPES_PATH = Path(__file__).resolve().parents[2] / "frontend" / "types" / "index.ts"
 
@@ -54,6 +48,6 @@ def test_frontend_union_matches_backend_registry():
 def test_every_type_classified_into_context_slot():
     """每个测评类型必须归入上下文槽位（主画像 或 学习风格信号），不许裸奔。"""
     all_types = set(ASSESSMENT_QUESTIONS.keys())
-    assert all_types == set(MAIN_ASSESSMENT_TYPES) | {LEARNING_STYLE_ASSESSMENT_TYPE}, (
-        f"未分类的类型：{all_types - set(MAIN_ASSESSMENT_TYPES) - {LEARNING_STYLE_ASSESSMENT_TYPE}}"
-    )
+    assert all_types == set(MAIN_ASSESSMENT_TYPES) | {
+        LEARNING_STYLE_ASSESSMENT_TYPE
+    }, f"未分类的类型：{all_types - set(MAIN_ASSESSMENT_TYPES) - {LEARNING_STYLE_ASSESSMENT_TYPE}}"

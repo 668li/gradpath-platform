@@ -59,9 +59,7 @@ class TestComputeReviewRisk:
         assert any("无领域信号" in r for r in reasons)
 
     def test_normal_domain_post_is_low(self):
-        ext = _make_ext(
-            title="考研复试经验分享", content="复试流程与注意事项，祝大家考研上岸"
-        )
+        ext = _make_ext(title="考研复试经验分享", content="复试流程与注意事项，祝大家考研上岸")
         grade, score, reasons = compute_review_risk(ext)
         assert grade == "low"
         assert score == 0
@@ -158,8 +156,9 @@ class TestPendingListRiskSort:
 
         from app.models.ingestion import ReviewQueueItem
 
-        ext = _make_ext(title="正常考研复试经验", content="复试内容",
-                        source_url="https://example.com/done")
+        ext = _make_ext(
+            title="正常考研复试经验", content="复试内容", source_url="https://example.com/done"
+        )
         db_session.add(ext)
         db_session.flush()
         db_session.add(

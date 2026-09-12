@@ -150,7 +150,7 @@ if _PROMETHEUS_AVAILABLE:
     )
     DB_SLOW_QUERY_TOTAL = Counter(
         "gradpath_db_slow_queries_total",
-        f"Queries exceeding slow threshold (see app.core.db_monitor)",
+        "Queries exceeding slow threshold (see app.core.db_monitor)",
     )
 
     # C9 Web Vitals 指标 — 每个指标取最新值（Gauge），按 page + rating 标签维度

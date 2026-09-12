@@ -11,7 +11,12 @@ from __future__ import annotations
 from app.skills.base import BaseSkill
 
 ACTIVATE_KEYWORDS = [
-    "公告", "简章", "招生简章", "调剂公告", "招考通知", "招生信息",
+    "公告",
+    "简章",
+    "招生简章",
+    "调剂公告",
+    "招考通知",
+    "招生信息",
 ]
 
 

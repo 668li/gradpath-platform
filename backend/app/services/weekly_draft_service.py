@@ -9,10 +9,9 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.utils.business_time import beijing_today
-
 from app.models.career_plan import CareerPlan
 from app.models.streak import StreakRecord
+from app.utils.business_time import beijing_today
 
 
 def _week_range(today: date = None):

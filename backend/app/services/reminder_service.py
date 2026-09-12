@@ -12,7 +12,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import date, datetime, time, timedelta
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -95,9 +95,8 @@ def find_d2_reminder_users(db: Session, today: date | None = None) -> list[UUID]
                 Notification.user_id == user_id,
                 Notification.type == "reminder",
                 Notification.created_at >= datetime.combine(day, time.min, tzinfo=REMINDER_TZ),
-                Notification.created_at < datetime.combine(
-                    day + timedelta(days=1), time.min, tzinfo=REMINDER_TZ
-                ),
+                Notification.created_at
+                < datetime.combine(day + timedelta(days=1), time.min, tzinfo=REMINDER_TZ),
             )
             .first()
         )

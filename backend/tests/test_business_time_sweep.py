@@ -7,18 +7,13 @@ from datetime import date
 from types import SimpleNamespace
 from uuid import uuid4
 
-from app.models.destination_decision import (
-    DecisionStatus,
-    DestinationDecision,
-    DestinationType,
-)
+from app.models.destination_decision import DecisionStatus, DestinationDecision, DestinationType
 from app.models.user import User
 from app.services.ai_quota_service import AIQuotaService
 from app.services.assessment_interpret_service import _fresh_from_profile
 from app.services.decision_journal_service import get_pending_reviews
 from app.services.research_promote import _resolve_year
 from app.services.weekly_draft_service import _week_range
-
 
 # ----------------------------------------------------------------------
 # AI 配额：日 key 跟随注入日期（北京日历）

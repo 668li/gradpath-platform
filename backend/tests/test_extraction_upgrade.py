@@ -165,9 +165,9 @@ def test_expansion_school_list(key):
     for e in entries:
         parsed = urlparse(e["url"])
         assert parsed.scheme in ("http", "https"), f"{key}: 非绝对 URL {e['url']}"
-        assert (parsed.hostname or "").lower().removeprefix("www.") == host, (
-            f"{key}: 跨域条目 {e['url']}"
-        )
+        assert (parsed.hostname or "").lower().removeprefix(
+            "www."
+        ) == host, f"{key}: 跨域条目 {e['url']}"
 
 
 def test_expansion_tju_detail_extract_main_text():
@@ -183,7 +183,6 @@ def test_expansion_batch2_reproduces_calibration():
     夹具未被改动（sha256 一致）+ parse_list_generic 逐字复现 url/date
     （解析退化即红）+ ≥5 条。新校扩批只需落夹具+封印清单即自动纳管。
     """
-    import hashlib
     import json
 
     manifests = sorted(FIXTURE_DIR.glob("*_calibration.json"))
@@ -199,9 +198,9 @@ def test_expansion_batch2_reproduces_calibration():
             assert actual == data["list_html_sha256"], f"{key}: 列表夹具被改动"
         entries = parse_list_generic(html_path.read_text(encoding="utf-8"), data["list_url"])
         assert len(entries) >= 5, f"{key}: 解析条数 {len(entries)} < 5"
-        assert [e["url"] for e in entries] == [e["url"] for e in data["entries"]], (
-            f"{key}: 解析退化（URL 序列与封印不符）"
-        )
-        assert [e["date"] for e in entries] == [e["date"] for e in data["entries"]], (
-            f"{key}: 日期解析退化"
-        )
+        assert [e["url"] for e in entries] == [
+            e["url"] for e in data["entries"]
+        ], f"{key}: 解析退化（URL 序列与封印不符）"
+        assert [e["date"] for e in entries] == [
+            e["date"] for e in data["entries"]
+        ], f"{key}: 日期解析退化"

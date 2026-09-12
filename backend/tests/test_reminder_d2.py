@@ -5,10 +5,8 @@
 - 开关 MICRO_ACTION_REMINDER_D2 默认 False；测试环境不注册真实 job
 """
 
-from datetime import datetime, timedelta, timezone
-from uuid import UUID, uuid4
+from datetime import datetime, timedelta
 
-import pytest
 
 from app.config import settings
 from app.models.micro_action import MicroActionPlan, MicroActionTask
@@ -98,9 +96,7 @@ def test_d2_user_already_active_today_excluded(db_session):
 def test_d2_user_no_task_yesterday_excluded(db_session):
     """昨天没完成任务（任务 pending）→ 不提醒。"""
     user = _make_user(db_session, "d2-no-task@example.com")
-    _make_plan_with_task(
-        db_session, user, completed_yesterday=False, task_status="pending"
-    )
+    _make_plan_with_task(db_session, user, completed_yesterday=False, task_status="pending")
 
     result = find_d2_reminder_users(db_session)
     assert user.id not in result
@@ -206,9 +202,7 @@ def test_register_job_registers_21h_when_enabled(monkeypatch):
 def test_boundary_beijing_day_not_utc(db_session):
     """北京时间昨天 23:50 完成算"昨天"（UTC 15:50）——窗口跟北京日历走，不跟容器 UTC 走。"""
     user = _make_user(db_session, "d2-tz-boundary@example.com")
-    beijing_yesterday_2350 = (
-        datetime.now(REMINDER_TZ).date() - timedelta(days=1)
-    )
+    beijing_yesterday_2350 = datetime.now(REMINDER_TZ).date() - timedelta(days=1)
     completed_at = datetime(
         beijing_yesterday_2350.year,
         beijing_yesterday_2350.month,

@@ -40,21 +40,34 @@ def _seed_mixed_posts(db: Session, user_id) -> None:
     """三种状态 × 离题标记的组合，验证默认列表的可见性边界。"""
     posts = [
         ExperiencePost(
-            user_id=user_id, title="approved正常帖", content="考研复试经验",
-            status="approved", source_platform="user",
+            user_id=user_id,
+            title="approved正常帖",
+            content="考研复试经验",
+            status="approved",
+            source_platform="user",
         ),
         ExperiencePost(
-            user_id=user_id, title="approved但离题帖", content="这是游戏视频",
-            status="approved", is_off_topic=True, topic_reason="命中离题词「三角洲」",
+            user_id=user_id,
+            title="approved但离题帖",
+            content="这是游戏视频",
+            status="approved",
+            is_off_topic=True,
+            topic_reason="命中离题词「三角洲」",
             source_platform="bilibili",
         ),
         ExperiencePost(
-            user_id=user_id, title="pending待审帖", content="待审核内容",
-            status="pending", source_platform="user",
+            user_id=user_id,
+            title="pending待审帖",
+            content="待审核内容",
+            status="pending",
+            source_platform="user",
         ),
         ExperiencePost(
-            user_id=user_id, title="rejected被驳帖", content="被驳回内容",
-            status="rejected", source_platform="user",
+            user_id=user_id,
+            title="rejected被驳帖",
+            content="被驳回内容",
+            status="rejected",
+            source_platform="user",
         ),
     ]
     db.add_all(posts)
@@ -102,9 +115,7 @@ class TestExperiencePostsStatusGate:
         titles = [item["title"] for item in resp.json()["items"]]
         assert "pending待审帖" in titles
 
-    def test_default_list_hides_unapproved_and_off_topic(
-        self, client, db_session, any_user
-    ):
+    def test_default_list_hides_unapproved_and_off_topic(self, client, db_session, any_user):
         _seed_mixed_posts(db_session, any_user.id)
         resp = client.get("/api/kaoyan/experience-posts")
         assert resp.status_code == 200

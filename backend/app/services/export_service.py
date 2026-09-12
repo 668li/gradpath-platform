@@ -11,8 +11,6 @@ from reportlab.lib.units import cm
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 from sqlalchemy.orm import Session
 
-from app.utils.business_time import beijing_today
-
 from app.models.career_event import CareerEvent
 from app.models.community_report import CommunityReport
 from app.models.destination_decision import DestinationDecision
@@ -22,6 +20,7 @@ from app.models.skill_node import SkillNode
 from app.models.user import User
 from app.models.user_setting import UserSetting
 from app.services.gamification_service import calculate_xp, get_level
+from app.utils.business_time import beijing_today
 
 # ======================================================================
 # 工具函数

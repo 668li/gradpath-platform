@@ -53,8 +53,9 @@ def send_serverchan(title: str, desp: str = "") -> bool:
         logger.warning("Server酱推送通道饱和，丢弃: %s", title)
         return False
     try:
-        resp = httpx.post(url, json={"title": title[:32], "desp": desp[:1800]},
-                          timeout=10, follow_redirects=False)
+        resp = httpx.post(
+            url, json={"title": title[:32], "desp": desp[:1800]}, timeout=10, follow_redirects=False
+        )
         return resp.status_code == 200
     except Exception as e:  # noqa: BLE001 — 推送失败永不影响业务
         logger.warning("Server酱推送失败: %s", e)

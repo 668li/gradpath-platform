@@ -15,8 +15,18 @@ from __future__ import annotations
 from app.skills.base import BaseSkill
 
 ACTIVATE_KEYWORDS = [
-    "时间线", "考试流程", "到哪一步", "下一步该", "报名截止", "报名时间",
-    "准考证", "笔试时间", "查分时间", "国考时间", "省考时间", "考试安排",
+    "时间线",
+    "考试流程",
+    "到哪一步",
+    "下一步该",
+    "报名截止",
+    "报名时间",
+    "准考证",
+    "笔试时间",
+    "查分时间",
+    "国考时间",
+    "省考时间",
+    "考试安排",
     "流程是什么",
 ]
 
@@ -113,7 +123,9 @@ class TimelineCompanionSkill(BaseSkill):
         lines.append("")
         for n in detail.get("nodes") or []:
             date_part = _timeline_date_label(n)
-            entry = f" 官方入口：{n.get('official_entry_url')}" if n.get("official_entry_url") else ""
+            entry = (
+                f" 官方入口：{n.get('official_entry_url')}" if n.get("official_entry_url") else ""
+            )
             lines.append(f"- {n.get('title')}（{date_part}）{entry}")
         lines.append("")
         lines.append("（以上为站内时间线三态口径；非官方日期不要断言，动作引导去官方页面。）")

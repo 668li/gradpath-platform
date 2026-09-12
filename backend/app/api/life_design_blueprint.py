@@ -17,11 +17,7 @@ from app.core.deps import get_current_user
 from app.database import get_db
 from app.models.life_design import LifeDesignBlueprint
 from app.models.user import User
-from app.schemas.life_design import (
-    BlueprintCreate,
-    BlueprintResponse,
-    BlueprintSummary,
-)
+from app.schemas.life_design import BlueprintCreate, BlueprintResponse, BlueprintSummary
 
 router = APIRouter(prefix="/api/life-design/blueprints", tags=["人生设计蓝图"])
 

@@ -401,7 +401,10 @@ def list_adjustments(
     # Redis 命中即 500（09-05 对抗审查实证）
     cache.set(
         cache_key,
-        [GradAdjustmentInfoResponse.model_validate(item).model_dump(mode="json") for item in result],
+        [
+            GradAdjustmentInfoResponse.model_validate(item).model_dump(mode="json")
+            for item in result
+        ],
         ttl=300,
     )
     return result

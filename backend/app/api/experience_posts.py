@@ -2,15 +2,8 @@
 
 from uuid import UUID
 
-from fastapi import (
-    APIRouter,
-    Depends,
-    HTTPException,
-    Query,
-    Request,
-    Response,
-    status,
-)
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
+from fastapi import status
 from fastapi import status as http_status
 from sqlalchemy.orm import Session
 

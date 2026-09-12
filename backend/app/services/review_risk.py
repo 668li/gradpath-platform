@@ -16,7 +16,10 @@ risk_score 仅用于同档内细分排序：high 信号 +40 / medium +18 / low +
 
 import logging
 
-from app.crawlers.research.experience_quality import detect_promotion, score_experience_item_detailed
+from app.crawlers.research.experience_quality import (
+    detect_promotion,
+    score_experience_item_detailed,
+)
 from app.crawlers.research.quality import score_item_detailed
 from app.crawlers.research.transformer import classify_topic_relevance
 from app.models.ingestion import ExternalResearchItem
@@ -42,7 +45,9 @@ def _quality_score(ext: ExternalResearchItem) -> int:
     meta = ext.external_meta or {}
     if ext.item_type == "experience_post":
         tags = [t for t in (meta.get("tags") or []) if isinstance(t, str)]
-        is_promotion, _conf, promo_reason = detect_promotion(ext.title or "", ext.content or "", tags)
+        is_promotion, _conf, promo_reason = detect_promotion(
+            ext.title or "", ext.content or "", tags
+        )
         detail = score_experience_item_detailed(
             title=ext.title or "",
             content=ext.content or "",
