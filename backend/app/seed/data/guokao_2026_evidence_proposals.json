@@ -1,0 +1,47 @@
+[
+  {
+    "exam": "guokao-2026",
+    "stage_key": "announce",
+    "date": "2025-10-15",
+    "url": "https://www.beijing.gov.cn/fuwu/bmfw/sy/jrts/tzxx/202510/t20251015_4224742.html",
+    "note": "公告全文转载页，页面标注日期 2025-10-15（原公告由国家公务员局发布；以本源可证日期为准，不写无源落款日）"
+  },
+  {
+    "exam": "guokao-2026",
+    "stage_key": "registration",
+    "date": "2025-10-15",
+    "end_date": "2025-10-24",
+    "url": "https://www.beijing.gov.cn/fuwu/bmfw/sy/jrts/tzxx/202510/t20251015_4224742.html",
+    "note": "公告正文：报考者可于2025年10月15日8:00至10月24日18:00期间登录专题网站报名"
+  },
+  {
+    "exam": "guokao-2026",
+    "stage_key": "payment",
+    "date": "2025-11-01",
+    "end_date": "2025-11-06",
+    "url": "https://www.beijing.gov.cn/fuwu/bmfw/sy/jrts/tzxx/202510/t20251015_4224742.html",
+    "note": "公告正文：可于2025年11月1日0:00至11月6日24:00进行网上报名确认并缴费"
+  },
+  {
+    "exam": "guokao-2026",
+    "stage_key": "admission_ticket",
+    "date": "2025-11-24",
+    "end_date": "2025-11-30",
+    "url": "https://www.beijing.gov.cn/fuwu/bmfw/sy/jrts/tzxx/202510/t20251015_4224742.html",
+    "note": "公告正文：请于2025年11月24日0:00至11月30日15:00期间打印准考证"
+  },
+  {
+    "exam": "guokao-2026",
+    "stage_key": "written",
+    "date": "2025-11-30",
+    "url": "https://www.beijing.gov.cn/fuwu/bmfw/sy/jrts/tzxx/202510/t20251015_4224742.html",
+    "note": "公告正文：公共科目笔试时间为2025年11月30日（非通用语/专业科目 11月29日下午，节点记主笔试日）"
+  },
+  {
+    "exam": "guokao-2026",
+    "stage_key": "score",
+    "date": null,
+    "url": "https://www.beijing.gov.cn/fuwu/bmfw/sy/jrts/tzxx/202510/t20251015_4224742.html",
+    "note": "公告仅写'2026年1月查询成绩，具体时间另行通知'——无完整日期，诚实保持 UNKNOWN，不硬造日"
+  }
+]

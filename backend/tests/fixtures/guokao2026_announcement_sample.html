@@ -1,0 +1,137 @@
+<!DOCTYPE html><html><head><title>中央机关及其直属机构2026年度考试录用公务员公告_通知消息-便民_首都之窗_北京市人民政府门户网站</title></head><body><span>日期：2025-10-15 10:27</span>&nbsp;&nbsp;&nbsp;&nbsp;<span>来源：国家公务员局</span></p>
+      <div id="proclaim" class="fr"> <font style="float: left; line-height: 14px; font-size: 14px; width: 50px;">分享：</font>
+        <!--分享代码s-->
+<style>
+/*分享*/
+    .m-share{float: left;margin-top:-5px;}
+    .share{zoom: 1;}
+    .share:after{content: "";display: block;clear: both;}
+    .share a{float: left;width: 26px;height: 26px;border-radius: 50%;margin-left: 13px;background: #c9c9c9;cursor: pointer;display: block;}
+    .share a i{display: block;width: 26px;height: 26px;-webkit-transition: .4s all;-moz-transition: .4s all;-ms-transition: .4s all;transition: .4s all;}
+    .share a:hover i{-webkit-transform: rotate(360deg);-moz-transform: rotate(360deg);-ms-transform: rotate(360deg);transform: rotate(360deg);}
+    .share #share-icon{width: 26px;height: 26px;float: left;display: none;}
+    .share #share-icon img{width: 100%;height: 100%;}
+    .share .share-qqzone i{background: url("/images/cont_ico_share_20200422.png") 4px center no-repeat;}
+    .share .share-qqzone:hover{background-color: #fc7354;}
+    .share .share-wechat{position: relative;}
+    .share .share-wechat i{background: url("/images/cont_ico_share_20200422.png") -30px center no-repeat;}
+    .share .share-wechat:hover{background-color: #1fbc7d;}
+    .share .share-weibo i{background: url("/images/cont_ico_share_20200422.png") -65px center no-repeat;}
+    .share .share-qq:hover{background-color: #27a8f2;}
+    .share .share-qq i{background: url("/images/cont_ico_share_20200422.png") -96px center no-repeat;}
+    .share .share-weibo:hover{background-color: #e96157;}
+    .share .bg-code{left: -36px;z-index: 10;}
+    .share .qrcode{position: absolute;top: 36px;border: 1px solid #ccc;padding: 5px;background: #fff;display: none;width: 100px;height: 100px;left: -98%;z-index: 11;}
+    .share .close-btn{position: absolute;background: #fff;color: #000;font-size: 12px;z-index: 12;width: 12px;height: 12px;line-height: 12px;text-align: center;right: -39px;top: 50px;display: none;cursor: pointer;}
+</style>
+<div class="m-share">
+                        <div class="share" id="share">
+                            <a class="share-wechat" href="javascript:;"><i></i><div class="bg-code"></div><div class="qrcode"></div><span class="close-btn">X</span></a>
+                            <a class="share-weibo"><i></i></a>
+                            <a class="share-qqzone"><i></i></a>
+                        </div>
+                    </div>
+    <script type="text/javascript" src="/images/jquery.min.js"></script>
+    <script type="text/javascript" src="/ywdt/images/jquery.qrcode.min.js"></script>
+    <script type="text/javascript">
+$(function(){
+    //分享
+    var title = "【" + $.trim(document.title) + "】";
+    var description = $.trim($('meta[name="description"]').attr('content'));
+    var portalUrl = window.location.href;
+    //生成二维码
+    function generateQRCode(rendermethod, picwidth, picheight, url) {
+        $(".qrcode").qrcode({
+            render: rendermethod, // 渲染方式有table方式（IE兼容）和canvas方式
+            width: picwidth, //宽度
+            height: picheight, //高度
+            text: utf16to8(portalUrl), //内容
+            typeNumber: -1, //计算模式
+            correctLevel: 2, //二维码纠错级别
+            background: "#ffffff", //背景颜色
+            foreground: "#000000" //二维码颜色
+
+        });
+    }
+    canvas_table = !!document.createElement('canvas').getContext ? 'canvas' : 'table';
+
+    function init() {
+        generateQRCode(canvas_table, 100, 100, window.location.href);
+    }
+    //中文编码格式转换
+    function utf16to8(str) {
+        var out, i, len, c;
+        out = "";
+        len = str.length;
+        for(i = 0; i < len; i++) {
+            c = str.charCodeAt(i);
+            if((c >= 0x0001) && (c <= 0x007F)) {
+                out += str.charAt(i);
+            } else if(c > 0x07FF) {
+                out += String.fromCharCode(0xE0 | ((c >> 12) & 0x0F));
+                out += String.fromCharCode(0x80 | ((c >> 6) & 0x3F));
+                out += String.fromCharCode(0x80 | ((c >> 0) & 0x3F));
+            } else {
+                out += String.fromCharCode(0xC0 | ((c >> 6) & 0x1F));
+                out += String.fromCharCode(0x80 | ((c >> 0) & 0x3F));
+            }
+        }
+        return out;
+    }
+    init();
+
+    $(".share-wechat").on("click", function() {
+        $(".bg-code,.qrcode").toggle();
+    });
+    //清空二维码
+    $(".close-btn").on("click", function(event) {
+        $(".bg-code,.qrcode,.close-btn").hide();
+        event.stopPropagation();
+    });
+
+    function showToQzone() {
+         var _desc = description;
+         var _title = title;
+         var _url = portalUrl;
+         var _shareUrl = 'http://sns.qzone.qq.com/cgi-bin/qzshare/cgi_qzshare_onekey?';
+         _shareUrl += 'url=' + encodeURIComponent(_url);   //参数url设置分享的内容链接|默认当前页location
+         _shareUrl += '&title=' + encodeURIComponent(_title);    //参数title设置分享标题，可选参数
+         window.open(_shareUrl,'','width=700,height=680,top=0,left=0,toolbar=no,menubar=no,scrollbars=no,resizable=1,location=yes,status=0');
+    }
+
+    function showToSina(title, portalUrl, desc) {
+        var _desc = desc;
+        var _t = title + " " + _desc;
+        var _url = portalUrl;
+        var _appkey = "2806082167"; //你从微薄获得的appkey
+        var _site = ''; //你的网站地址
+        var _ralateUid = "";
+        var _u = 'http://service.weibo.com/share/share.php?url=' + _url + '&appkey=' + _appkey + '&title=' + _t + '&ralateUid=' + _ralateUid + '&searchPic=false';
+        window.open(_u, '', 'width=700, height=680, top=0, left=0, toolbar=no, menubar=no, scrollbars=no, location=yes, resizable=no, status=no');
+    }
+
+    $('.share-qqzone').on('click', function() {
+        showToQzone(title, portalUrl, description);
+    });
+    $('.share-weibo').on('click', function() {
+        showToSina(title, portalUrl, description);
+    });
+});
+    </script>
+    <!--分享代码e-->
+      </div>
+      <dl class="fr" id="fontSize">
+        <script language='JavaScript' type="text/javascript">
+        function changeSize(size) {document.getElementById('mainText').style.fontSize=size+'px';}
+        </script>
+        字号：&nbsp;&nbsp; <a href='javascript:changeSize(18)' >大</a>&nbsp;&nbsp; <a href='javascript:changeSize(16)' class="on">中</a>&nbsp;&nbsp; <a href='javascript:changeSize(14)' >小</a>
+      </dl>
+    </div>
+    <div class="repeatX"></div>
+  </div>
+</div>
+<!--标题结束-->
+<!--正文开始-->
+<div class="mainTextBox">
+  <div id="mainText">
+    <div class="view TRS_UEDITOR trs_paper_default trs_web"><p style="margin-top: 0px;text-wrap-mode: wrap">　　根据公务员法和《公务员录用规定》等法律法规，国家公务员局将组织实施中央机关及其直属机构2026年度考试录用一级主任科员及以下和其他相当职级层次公务员工作。现将有关事项公告如下：</p><p style="text-wrap-mode: wrap"><strong>　　一、报考条件</strong></p><p style="text-wrap-mode: wrap">　　报考者应当具备下列资格条件：</p><p style="text-wrap-mode: wrap">　　（一）具有中华人民共和国国籍；</p><p style="text-wrap-mode: wrap">　　（二）年龄一般为18周岁以上、38周岁以下（1986年10月至2007年10月期间出生），对于2026年应届硕士、博士研究生，放宽到43周岁以下（1981年10月以后出生）；</p><p style="text-wrap-mode: wrap">　　（三）拥护中华人民共和国宪法，拥护中国共产党领导和社会主义制度；</p><p style="text-wrap-mode: wrap">　　（四）具有良好的政治素质和道德品行；</p><p style="text-wrap-mode: wrap">　　（五）具有正常履行职责的身体条件和心理素质；</p><p style="text-wrap-mode: wrap">　　（六）具有符合职位要求的工作能力；</p><p style="text-wrap-mode: wrap">　　（七）具有大学专科及以上文化程度；</p><p style="text-wrap-mode: wrap">　　（八）具备中央公务员主管部门规定的拟任职位所要求的其他资格条件。</p><p style="text-wrap-mode: wrap">　　中央机关及其省级直属机构除部分特殊职位和专业性较强的职位外，主要招录具有2年以上基层工作经历的人员。市（地）级及以下直属机构主要招录应届高校毕业生。基层工作经历，是指在县（市、区、旗）、乡（镇、街道）党政机关，村（社区）党组织或者村（居）委会，以及各类企业、事业单位工作过（参照公务员法管理的事业单位不在此列）。在军队团和相当团以下单位工作的经历，退役士兵在军队服现役的经历，离校未就业高校毕业生到高校毕业生实习见习基地（该基地为基层单位）参加见习或者到企事业单位参与项目研究的经历，可视为基层工作经历。报考中央机关的，曾在市（地、州、盟）直属机关工作的经历，也可视为基层工作经历。直辖市区（县）机关工作经历视同为基层工作经历。基层工作经历计算截止时间为2025年10月。</p><p style="text-wrap-mode: wrap">　　地处艰苦边远地区的县（区）级及以下直属机构，根据《关于做好艰苦边远地区基层公务员考试录用工作的意见》，可以采取调整学历、专业、工作年限和经历条件以及单独划定笔试合格分数线等措施，适当降低进入门槛。对于通过降低进入门槛等倾斜政策录用的人员，应当在所报考市（地、州、盟）辖区内的艰苦边远县乡机关最低服务5年（含试用期）；未满5年的，不得交流（含公开遴选）到本市（地、州、盟）内的上级机关和非艰苦边远地区的机关，也不得交流（含公开遴选）到本省（自治区、直辖市）内其他市（地、州、盟）和其他省（自治区、直辖市）的机关（包括其中艰苦边远地区的机关）。</p><p style="text-wrap-mode: wrap">　　现役军人、在读的非应届高校毕业生、在职公务员和参照公务员法管理的机关（单位）工作人员，不能报考。</p><p style="text-wrap-mode: wrap">　　因犯罪受过刑事处罚的人员、被开除中国共产党党籍的人员、被开除公职的人员、被依法列为失信联合惩戒对象的人员，在各级公务员招考中被认定有舞弊等严重违反录用纪律行为的人员，公务员和参照公务员法管理的机关（单位）工作人员被辞退未满5年的，以及法律法规规定不得录用为公务员的其他情形的人员，不得报考。</p><p style="text-wrap-mode: wrap">　　报考者不得报考录用后即构成公务员法第七十四条第一款所列情形的职位，也不得报考与本人有夫妻关系、直系血亲关系、三代以内旁系血亲关系以及近姻亲关系的人员担任领导成员的用人单位的职位。</p><p style="text-wrap-mode: wrap"><strong>　　二、报考程序</strong></p><p style="text-wrap-mode: wrap">　　（一）职位查询</p><p style="text-wrap-mode: wrap">　　各招录机关的招考人数、具体职位、考试类别、资格条件、咨询电话等详见《中央机关及其直属机构2026年度考试录用公务员招考简章》（以下简称《招考简章》），有关报考政策规定、报名网络技术和考场考务安排等事宜详见《中央机关及其直属机构2026年度考试录用公务员报考指南》（以下简称《报考指南》）。《招考简章》、《报考指南》通过中央机关及其直属机构2026年度考试录用公务员专题网站（以下简称“专题网站”，http://bm.scs.gov.cn/kl2026）公布。</p><p style="text-wrap-mode: wrap">　　报考者对《招考简章》中有关职位的专业、学历、学位、工作经历等资格条件有疑问需要咨询时，可直接与招录机关联系。</p><p style="text-wrap-mode: wrap">　　（二）网上报名</p><p style="text-wrap-mode: wrap">　　本次招考主要采取网上报名方式，按照以下程序进行：</p><p style="text-wrap-mode: wrap">　　1.提交报考申请。报考者可于2025年10月15日8:00至10月24日18:00期间登录专题网站进行报名并提交报考申请，每次只能选报1个职位。报名时，应当仔细阅读诚信承诺书，提交的报考申请材料应当真实、准确、完整。报考者提供虚假报考申请材料的，一经查实，将取消报考资格，涉及伪造、变造有关证件、材料、信息骗取考试资格的，将按有关规定严肃处理。</p><p style="text-wrap-mode: wrap">　　2.查询资格审查结果。招录机关于2025年10月15日8:00至10月26日18:00期间对报考申请进行审查，确认报考者是否具有报考资格。报考者可登录专题网站查询资格审查结果。通过资格审查的，不能再报考其他职位。2025年10月15日8:00至10月24日18:00期间，报考申请未审查或者未通过资格审查的，可以改报其他职位。2025年10月24日18:00以后，报考申请未审查或者未通过资格审查的，不能再改报其他职位。</p><p style="text-wrap-mode: wrap">　　对报考资格的审查贯穿录用全过程。在各环节发现报考者不符合报考资格条件的，均可取消其报考资格或者录用资格。</p><p style="text-wrap-mode: wrap">　　3.查询报名序号。通过资格审查的报考者，可于2025年10月28日8:00后登录专题网站查询报名序号，报名确认和下载打印准考证时需提供该序号，请务必牢记。</p><p style="text-wrap-mode: wrap">　　（三）报名确认</p><p style="text-wrap-mode: wrap">　　通过资格审查的报考者，可于2025年11月1日0:00至11月6日24:00登录专题网站进行网上报名确认并缴费。逾期未完成网上报名确认并缴费的，视为自动放弃报考资格。</p><p style="text-wrap-mode: wrap">　　最低生活保障家庭人员可以直接与当地考试机构联系办理报名确认和减免费用手续。各省（自治区、直辖市）考试机构的咨询电话将于2025年10月31日以后通过专题网站公布。</p><p style="text-wrap-mode: wrap">　　（四）网上打印准考证</p><p style="text-wrap-mode: wrap">　　报名确认成功的报考者，请于2025年11月24日0:00至11月30日15:00期间登录专题网站打印准考证。如遇问题，请与当地考试机构联系解决。</p><p style="text-wrap-mode: wrap"><strong>　　三、考试内容、时间和地点</strong></p><p style="text-wrap-mode: wrap">　　（一）笔试</p><p style="text-wrap-mode: wrap">　　1.内容。笔试包括公共科目和专业科目。</p><p style="text-wrap-mode: wrap">　　公共科目包括行政职业能力测验和申论两科。其中，行政职业能力测验为客观性试题，申论为主观性试题，满分均为100分，详见《中央机关及其直属机构2026年度考试录用公务员公共科目笔试考试大纲》。公共科目笔试试卷分为3类，分别适用于中央机关及其省级直属机构综合管理类职位、市（地）级及以下直属机构综合管理类职位和行政执法类职位。所有报考者均需参加公共科目笔试。</p><p style="text-wrap-mode: wrap">　　中共中央对外联络部、中共中央党史和文献研究院、中国作协、全国友协、中国贸促会、外交部、教育部、科学技术部、公安部、商务部、文化和旅游部日语、法语、俄语、西班牙语、阿拉伯语、德语、朝鲜语（韩语）、葡萄牙语等8个非通用语职位的报考者，还需参加统一组织的外语水平测试，考试大纲可在专题网站和外交部网站查询。</p><p style="text-wrap-mode: wrap">　　金融监管总局及其派出机构职位、中国证监会及其派出机构职位，以及公安机关人民警察职位的报考者，还需参加统一组织的专业科目笔试，考试大纲可在专题网站和金融监管总局、中国证监会、公安部网站查询。</p><p style="text-wrap-mode: wrap">　　2.时间地点。公共科目笔试时间为：</p><p style="text-wrap-mode: wrap">　　2025年11月30日上午9:00—11:00 行政职业能力测验</p><p style="text-wrap-mode: wrap">　　2025年11月30日下午14:00—17:00 申论</p><p style="text-wrap-mode: wrap">　　8个非通用语职位外语水平测试，金融监管总局及其派出机构职位、中国证监会及其派出机构职位以及公安机关人民警察职位专业科目笔试时间为：</p><p style="text-wrap-mode: wrap">　　2025年11月29日下午14:00—16:00</p><p style="text-wrap-mode: wrap">　　笔试在全国各直辖市、省会城市、自治区首府和部分城市设置考点。报考者按照准考证上确定的时间和地点，携带准考证和报名时使用的身份证件等参加考试。金融监管总局及其派出机构职位、中国证监会及其派出机构职位、公安机关人民警察职位以及8个非通用语职位的报考者在网上报名时，务必将考点选择为直辖市、省会城市或者自治区首府。</p><p style="text-wrap-mode: wrap">　　3.成绩查询。笔试阅卷结束后，由中央公务员主管部门确定各类职位笔试合格分数线，对西部地区和艰苦边远地区职位、基层职位和特殊专业职位等，将予以适当倾斜。</p><p style="text-wrap-mode: wrap">　　报考者可于2026年1月登录专题网站查询笔试成绩和合格分数线，具体时间另行通知。其中，8个非通用语职位，笔试成绩按照行政职业能力测验、申论、外语水平测试成绩（考试成绩均按百分制折算，下同）分别占25%、25%、50%的比例合成；金融监管总局及其派出机构职位和中国证监会及其派出机构职位，笔试成绩按照行政职业能力测验、申论、专业科目笔试成绩分别占25%、25%、50%的比例合成；公安机关人民警察职位，笔试成绩按照行政职业能力测验、申论、专业科目笔试成绩分别占40%、30%、30%的比例合成；其他职位，笔试成绩按照行政职业能力测验、申论成绩各占50%的比例合成。</p><p style="text-wrap-mode: wrap">　　（二）面试</p><p style="text-wrap-mode: wrap">　　中央公务员主管部门根据《招考简章》中规定的面试人数与计划录用人数的比例，按照笔试成绩从高到低的顺序确定各职位进入面试的人选，并在专题网站上公布。达到笔试合格分数线的人数与计划录用人数比例低于规定面试比例的职位，将面向社会进行调剂。调剂在公共科目考试内容相同（即指报考者应答的是同一类试卷）的职位之间进行，调剂公告、职位等通过专题网站发布。</p><p style="text-wrap-mode: wrap">　　招录机关负责面试实施，时间、地点等事项详见招录机关在本部门网站和专题网站上发布的面试公告。面试时，报考者须提供本人身份证件（本人有效居民身份证、学生证、工作证等）原件、所在学校或者单位盖章的报名推荐表、报名登记表等材料。凡有关材料主要信息不实，影响资格审查结果的，招录机关有权取消报考者参加面试的资格。报名推荐表、报名登记表等材料可从专题网站下载、打印。</p><p style="text-wrap-mode: wrap">　　部分招录机关在面试阶段组织专业能力测试，专业能力测试设置情况和测试内容、分值比重等见《招考简章》或者招录机关发布的面试公告。</p><p style="text-wrap-mode: wrap">　　面试结束后，招录机关通过专题网站发布报考者的面试成绩以及综合成绩。其中，未组织专业能力测试的，综合成绩按照笔试、面试成绩各占50%的比例合成；组织专业能力测试的，综合成绩按照笔试成绩占50%、面试成绩和专业能力测试成绩共占50%的比例合成。</p><p style="text-wrap-mode: wrap"><strong>　　四、体检和考察</strong></p><p style="text-wrap-mode: wrap">　　招录机关按照综合成绩从高到低的顺序，确定进入体检和考察的人选。个别参加面试人数与计划录用人数比例低于3:1的职位，报考者面试成绩应当达到其所在面试考官小组使用同一套面试题本面试的所有人员的平均分或者招录机关在面试公告中确定的面试合格分数线，方可进入体检和考察。</p><p style="text-wrap-mode: wrap">　　招录机关负责体检和考察实施。体检项目和标准按照《公务员录用体检通用标准（试行）》及操作手册执行。对身体条件有特殊要求的职位，有关体检项目和标准按照《公务员录用体检特殊标准（试行）》执行。涉及个别职位调整体检有关项目标准的，详见《招考简章》或者招录机关发布的面试公告。</p><p style="text-wrap-mode: wrap">　　考察工作按照《公务员录用考察办法（试行）》有关规定进行。招录机关将采取实地走访、个别谈话、审核人事档案（学籍档案）、查询社会信用记录、同本人面谈等方法，了解考察人选政治素质、道德品质、能力素质、心理素质、学习和工作表现、遵纪守法、廉洁自律情况，以及是否具有应当回避的情形，身心健康状况，与招考职位的匹配度等情况。部分中央一级招录机关实行差额考察，在面试公告中载明差额比例。</p><p style="text-wrap-mode: wrap">　　根据职位需要，部分招录机关将对报考者有关心理素质进行测评，测评结果作为择优确定拟录用人员的重要参考。公安机关人民警察职位，将对报考者有关体能情况进行测评，体能测评不合格的，不得确定为拟录用人员。</p><p style="text-wrap-mode: wrap"><strong>　　五、公示</strong></p><p style="text-wrap-mode: wrap">　　体检和考察结束后，招录机关根据综合成绩、体检结果和考察情况等择优确定拟录用人员，并在本部门网站和专题网站上公示。公示内容包括招录机关名称、拟录用职位、拟录用人员姓名、性别、准考证号、毕业院校、工作单位等，同时公布举报电话，接受社会监督。公示期为5个工作日。</p><p style="text-wrap-mode: wrap"><strong>　　六、备案</strong></p><p style="text-wrap-mode: wrap">　　公示期满，对没有问题或者反映的问题不影响录用的人员，办理备案手续；对公示期间反映有影响录用的问题并查实的，不予录用；对反映的问题一时难以查实的，暂缓录用，待查清后再决定是否录用。</p></body></html>
