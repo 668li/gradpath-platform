@@ -256,12 +256,98 @@ def search_announcements(db: Session, keyword: str | None = None, limit: int = 3
 
 
 # ---------------------------------------------------------------------------
+# 考试流程时间线（Phase1 Exam/ExamNode）— 诚实三态口径与前端 dateLabel 同源
+# ---------------------------------------------------------------------------
+
+STAGE_KEY_WORDS = (
+    ("公告", "announce"), ("报名", "registration"), ("缴费", "payment"),
+    ("准考证", "admission_ticket"), ("笔试", "written"), ("查分", "score"),
+    ("出分", "score"), ("调剂", "adjustment"), ("面试", "interview"),
+    ("体检", "medical"), ("政审", "political"), ("公示", "publicity"),
+    ("录用", "hire"),
+)
+
+
+def _timeline_date_label(node: dict) -> str:
+    """与前端 dateLabel（exam-timeline.tsx）同口径：绝不出现编造日期。入参为节点 payload 字典。"""
+    status = node.get("date_status")
+    status = status.value if hasattr(status, "value") else status
+    planned = node.get("planned_date")
+    end = node.get("planned_end_date")
+    if status == "OFFICIAL" and planned:
+        return f"官方：{planned.isoformat()}" + (f"~{end.isoformat()}" if end else "")
+    if status == "PREDICTED" and planned:
+        return f"预计 {planned.isoformat()}" + (f"~{end.isoformat()}" if end else "") + "（公告后自动更新）"
+    return "日期待定（暂无可核验来源）"
+
+
+def _pick_timeline_exam(db, track: str | None):
+    """选考次：upcoming 优先（有未来动作），否则列表第一个。list_exams 返回字典列表。"""
+    from app.services import timeline_service as tl
+
+    exams = tl.list_exams(db, track=track)
+    if not exams:
+        return None
+    upcoming = [e for e in exams if e.get("status") == "upcoming"]
+    return (upcoming or exams)[0]
+
+
+def _enum_val(v):
+    return v.value if hasattr(v, "value") else v
+
+
+def search_timeline(
+    db: Session, stage_key: str | None = None, track: str | None = None, limit: int = 12
+) -> list[DataHit]:
+    """考试流程时间线节点（诚实三态：OFFICIAL 带源/PREDICTED 标预计/UNKNOWN 待定）。"""
+    from app.services import timeline_service as tl
+
+    exam = _pick_timeline_exam(db, track)
+    if exam is None:
+        return []
+    try:
+        detail = tl.get_exam_detail(db, exam["code"])
+    except Exception as e:
+        logger.warning("时间线详情读取失败: %s", e)
+        return []
+
+    nodes = list(detail.get("nodes") or [])
+    if stage_key:
+        nodes = [n for n in nodes if _enum_val(n.get("stage_key")) == stage_key]
+
+    hits: list[DataHit] = []
+    for n in nodes:
+        date_part = _timeline_date_label(n)
+        entry = f"；官方入口：{n.get('official_entry_url')}" if n.get("official_entry_url") else ""
+        materials = ""
+        if n.get("materials"):
+            names = "、".join(
+                str(m.get("name")) for m in n["materials"] if isinstance(m, dict) and m.get("name")
+            )
+            materials = f"；需备材料：{names}" if names else ""
+        hits.append(
+            DataHit(
+                title=f"{detail.get('name')}·{n.get('title')}",
+                content=f"{n.get('title')}（{date_part}）{entry}{materials}",
+                source_table="t_exam_node",
+                url=n.get("official_entry_url") or n.get("source_url") or "",
+            )
+        )
+    return hits[:limit]
+
+
+# ---------------------------------------------------------------------------
 # 代码级意图路由 — 零 LLM 调用，置信不足不查库
 # ---------------------------------------------------------------------------
 
 _SALARY_WORDS = ("薪资", "工资", "待遇", "年薪", "月薪", "薪酬", "挣多少", "赚多少")
 _MARKET_WORDS = ("就业前景", "就业面", "行业趋势", "市场行情")
 _ANNOUNCE_WORDS = ("公告", "简章", "招生信息", "招考通知")
+# 时间线意图用短语级词表，避免"面试/体检"这类单词误劫持其他 skill 的对话
+_TIMELINE_WORDS = (
+    "时间线", "考试流程", "到哪一步", "报名截止", "报名时间", "准考证",
+    "笔试时间", "查分时间", "国考时间", "省考时间", "考试安排", "流程是什么",
+)
 
 
 def detect_data_intents(content: str) -> list[DataIntent]:
@@ -277,6 +363,10 @@ def detect_data_intents(content: str) -> list[DataIntent]:
     if any(w in text for w in _ANNOUNCE_WORDS):
         # 公告查询无关键词也能查（返回最新几条），不需要置信门槛
         intents.append(DataIntent("announcements", {"keyword": schools[0] if schools else major}))
+    if any(w in text for w in _TIMELINE_WORDS):
+        track = "shengkao" if "省考" in text else ("guokao" if "国考" in text else None)
+        stage = next((k for w, k in STAGE_KEY_WORDS if w in text), None)
+        intents.append(DataIntent("timeline", {"stage_key": stage, "track": track}))
     if any(w in text for w in _SALARY_WORDS):
         intents.append(DataIntent("salary", {"keyword": major}))
     if any(w in text for w in _MARKET_WORDS):
@@ -315,6 +405,12 @@ def run_data_search(
         try:
             if intent.domain == "announcements":
                 found = search_announcements(db, intent.params.get("keyword"))
+            elif intent.domain == "timeline":
+                found = search_timeline(
+                    db,
+                    stage_key=intent.params.get("stage_key"),
+                    track=intent.params.get("track"),
+                )
             elif intent.domain == "salary":
                 found = search_salary(db, intent.params.get("keyword"))
             elif intent.domain == "market":

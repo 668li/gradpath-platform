@@ -37,6 +37,7 @@ const SKILL_LABELS: Record<string, string> = {
   company_review: "公司评价",
   life_design: "人生设计",
   announcement_interpreter: "公告解读",
+  timeline_companion: "流程伴随官",
 };
 
 const skillLabel = (s: ChatSkillInfo) => SKILL_LABELS[s.code] ?? s.name;
@@ -99,6 +100,13 @@ const QUICK_START_CARDS = [
     title: "公告动了什么",
     text: "最近有哪些官方公告新发布或变更？对我有什么影响、这周要做什么？",
     skill: "announcement_interpreter",
+  },
+  {
+    scene: "考公",
+    sceneIcon: "🧭",
+    title: "现在到哪一步",
+    text: "2027 国考现在进行到哪一步了？接下来我该准备什么、什么时候报名？",
+    skill: "timeline_companion",
   },
 ];
 
