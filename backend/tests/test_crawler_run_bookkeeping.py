@@ -19,9 +19,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.api import crawlers as api_crawlers  # noqa: E402
-from app.crawlers.research.official_announce_crawler import (  # noqa: E402
-    OfficialAnnounceCrawler,
-)
+from app.crawlers.research.official_announce_crawler import OfficialAnnounceCrawler  # noqa: E402
 from app.models.crawler_run import CrawlerRun  # noqa: E402
 from app.tasks import crawler_tasks  # noqa: E402
 
@@ -54,9 +52,20 @@ class _FakeResponse:
     def __init__(self, text: str):
         self.text = text
         self.status_code = 200
+        self.content = text.encode("utf-8")
+        self.headers = {}
 
     def raise_for_status(self) -> None:
         return None
+
+
+# 地基⑤（spec 002）：mock _request 绕过了基类的证据记账，这里模拟之——
+# 真实 _request 每次成功外发都会往 fetch_evidence_log 追加一条
+_FAKE_EVIDENCE = {"http_status": 200, "fetched_at": "2026-09-12T00:00:00+00:00", "sha256": "f" * 64}
+
+
+def _record_mock_evidence(crawler, url: str) -> None:
+    crawler.fetch_evidence_log.append(dict(_FAKE_EVIDENCE, url=url))
 
 
 def _fake_body_for(url: str) -> str:
@@ -72,6 +81,7 @@ def _patched_crawler_cls(base=OfficialAnnounceCrawler, sections=None):
 
     class _Patched(base):
         def _request(self, url, method="GET", **kwargs):
+            _record_mock_evidence(self, url)
             return _FakeResponse(_fake_body_for(url))
 
     return _Patched
@@ -87,7 +97,12 @@ def _make_config(sections=None) -> dict:
 def test_official_announce_run_single_row(db_session, monkeypatch):
     """本地跑 1 个爬虫（mock 网络）：CrawlerRun 恰 1 行且观测字段齐全。"""
     crawler = OfficialAnnounceCrawler(config=_make_config())
-    monkeypatch.setattr(crawler, "_request", lambda url, method="GET", **kw: _FakeResponse(_fake_body_for(url)))
+
+    def _fake_request(url, method="GET", **kw):
+        _record_mock_evidence(crawler, url)
+        return _FakeResponse(_fake_body_for(url))
+
+    monkeypatch.setattr(crawler, "_request", _fake_request)
 
     result = crawler.run(db=db_session)
 
@@ -112,7 +127,12 @@ def test_official_announce_run_single_row(db_session, monkeypatch):
 def test_run_twice_creates_one_row_per_run(db_session, monkeypatch):
     """跑两次 = 恰两行（每行对应一次爬取），而非一次爬取内部分裂成两行。"""
     crawler = OfficialAnnounceCrawler(config=_make_config())
-    monkeypatch.setattr(crawler, "_request", lambda url, method="GET", **kw: _FakeResponse(_fake_body_for(url)))
+
+    def _fake_request(url, method="GET", **kw):
+        _record_mock_evidence(crawler, url)
+        return _FakeResponse(_fake_body_for(url))
+
+    monkeypatch.setattr(crawler, "_request", _fake_request)
 
     crawler.run(db=db_session)
     crawler.run(db=db_session)

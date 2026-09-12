@@ -59,7 +59,13 @@ def _to_queue_item(item: dict) -> dict:
 
 
 def _store_to_review_queue(crawler: BaseCrawler, items: list[dict], db: Session) -> int:
-    """统一写审核队列：创建运行记录 → store_research_items（PENDING）→ 回写统计。"""
+    """统一写审核队列：创建运行记录 → store_research_items（PENDING）→ 回写统计。
+
+    地基⑤三态闸（spec 002 FR4）：本爬虫当前产出为预置目录数据（模型合成，
+    非真实抓取、非人工策展），显式声明 data_origin="legacy" —— 入库咽喉按
+    "legacy 新写入禁用"拒收，即预置合成数据从此构造上无法入库（零造假红线）。
+    grad_catalog 真线（真实抓取 + 抓取证据）就位后改传 "fetched"。
+    """
     from app.models.crawler_run import CrawlerRun
     from app.services.research_ingestion import store_research_items
 
@@ -84,6 +90,7 @@ def _store_to_review_queue(crawler: BaseCrawler, items: list[dict], db: Session)
         items=queue_items,
         source_platform="web",
         run_id=str(run_record.id),
+        data_origin="legacy",
     )
 
     run_record.status = "success"

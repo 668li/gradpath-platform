@@ -68,6 +68,7 @@ def _load_known_urls() -> set[str]:
         logger.warning(f"[{SOURCE_CHANNEL}] 已知 URL 集合加载失败，退化为全量抓取: {e}")
         return set()
 
+
 # 默认官方栏目：已实测验证（2026-08 抓取确认结构稳定）。
 # 高校研招网公告是考研信息差核心权威源（调剂/复试线/考点公告）。
 DEFAULT_SECTIONS: list[dict[str, Any]] = [

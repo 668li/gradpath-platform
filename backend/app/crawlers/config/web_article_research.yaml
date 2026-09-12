@@ -1,0 +1,13 @@
+# 线契约（地基③，spec 002）：网页文章线（手动线，admin 触发；Jina Reader 桥）
+name: web_article_research
+category: research
+description: 网页文章调研爬虫（r.jina.ai 文本桥，正文提取，PENDING 审核队列）
+enabled: true
+schedule: null  # 手动线：不在默认调度，admin /run 触发
+sla_hours: 168
+entry: "https://r.jina.ai/"  # 桥接前缀，目标 URL 由触发配置提供
+rate_limit: 1.0
+max_retries: 2
+timeout_seconds: 30
+notes: |
+  合规：只桥接公开页文本化（Jina Reader 免登录桥），robots 检查对目标 URL 生效。

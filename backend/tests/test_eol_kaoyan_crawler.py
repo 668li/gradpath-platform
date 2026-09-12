@@ -16,6 +16,16 @@ from app.crawlers.research.eol_kaoyan_crawler import (
 )
 from app.models.ingestion import ExternalResearchItem, ReviewQueueItem
 
+# 地基⑤（spec 002）：store 直调需模拟 run() 统一盖章后的产物形态
+_EVIDENCE = {"http_status": 200, "fetched_at": "2026-09-12T00:00:00+00:00", "sha256": "0" * 64}
+
+
+def _stamp_evidence(items):
+    for it in items:
+        it.setdefault("fetch_evidence", dict(_EVIDENCE))
+    return items
+
+
 LIST_PAGE = """
 <html><body>
 <div class="fline"><a href="news/20260815/1.shtml">2026考研报名时间公布</a></div>
@@ -167,7 +177,7 @@ class TestStore:
             }
         ]
 
-        inserted = crawler.store(items, db=db_session)
+        inserted = crawler.store(_stamp_evidence(items), db=db_session)
         assert inserted == 1
 
         ext = (
@@ -209,7 +219,7 @@ class TestStore:
             }
         ]
 
-        assert crawler.store(items, db=db_session) == 1
+        assert crawler.store(_stamp_evidence(items), db=db_session) == 1
         ext = (
             db_session.query(ExternalResearchItem)
             .filter(ExternalResearchItem.source_url == items[0]["source_url"])
@@ -234,6 +244,6 @@ class TestStore:
             "tags": [],
             "source_platform": "eol",
         }
-        assert crawler.store([item], db=db_session) == 1
+        assert crawler.store(_stamp_evidence([item]), db=db_session) == 1
         # 二次入库：URL 唯一约束 → 去重
-        assert crawler.store([item], db=db_session) == 0
+        assert crawler.store(_stamp_evidence([item]), db=db_session) == 0

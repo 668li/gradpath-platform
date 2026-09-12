@@ -183,6 +183,23 @@ def run_scheduled_crawler_task(source_name: str):
             "error": f"白名单闸（合规红线）：爬虫 '{source_name}' 不在准入白名单",
         }
 
+    # 地基⑥（spec 002 FR5）worker 侧纵深：隔离线收到即拒（与白名单复查同语义）。
+    # fail-open：状态表不存在/查询失败时按未隔离处理（投递闸已兜底，不阻断主流程）。
+    try:
+        from app.services.crawler_state_service import is_isolated
+
+        _iso_db = SessionLocal()
+        try:
+            if is_isolated(_iso_db, source_name):
+                logger.error(
+                    "[crawler_tasks] 定时任务被隔离闸拒绝（worker 侧复查）: %s", source_name
+                )
+                return {"status": "failed", "error": f"爬虫 '{source_name}' 处于隔离态（地基⑥）"}
+        finally:
+            _iso_db.close()
+    except Exception as e:  # noqa: BLE001
+        logger.warning("worker 侧隔离检查失败，按未隔离处理: %s", e)
+
     db = SessionLocal()
     try:
         cls = get_crawler(source_name)

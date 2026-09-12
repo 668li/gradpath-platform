@@ -1,0 +1,12 @@
+# 线契约（地基③，spec 002）：eol/offcn 考研资讯聚合（量的来源线）
+name: news_aggregates
+category: research
+description: 考研资讯聚合爬虫（eol/offcn 列表页，5 栏目，PENDING 审核队列）
+enabled: true
+schedule: "0 4 * * *"  # 每天凌晨 04:00，错峰在 eol 02:00 与 rsshub 02:30 之后
+sla_hours: 24
+entry: "https://kaoyan.eol.cn/"  # 栏目清单在代码 DEFAULT_SECTIONS_OVERRIDE
+rate_limit: 1.0
+max_retries: 2
+timeout_seconds: 30
+fetch_detail: false

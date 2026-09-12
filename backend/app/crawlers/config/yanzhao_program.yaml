@@ -1,0 +1,14 @@
+# 线契约（地基③，spec 002）：专业目录线（预置冻结，同 yanzhao 家族）
+name: yanzhao_program
+category: grad
+description: 招生专业目录爬虫（预置数据；地基⑤ legacy 语义，新写入被拒收）
+enabled: false
+schedule: null  # 手动线且停用：预置（模型合成）数据冻结，grad_catalog 真线就位前不产数
+sla_hours: 720
+entry: ""
+rate_limit: 1.0
+max_retries: 2
+timeout_seconds: 30
+notes: |
+  2026-09-12 地基⑤三态闸：本线产物显式 data_origin=legacy——预置合成数据
+  构造上无法入库。grad_catalog（各校研招办招生目录真实抓取）就位后替换。

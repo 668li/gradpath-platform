@@ -1,19 +1,23 @@
-"""真实数据爬虫 — 从研招网、高校官网、学位网抓取真实考研数据。
+"""真实数据爬虫 — 从高校官网、学位网抓取真实考研数据（spec 002 收敛版）。
 
-本爬虫使用 httpx 从以下公开数据源抓取真实数据：
-1. 研招网 (yz.chsi.com.cn) - 研究生招生信息
-2. 各高校研究生院官网 - 招生简章、专业目录
-3. 中国学位与研究生教育信息网 (cdgdc.edu.cn) - 学科评级
+数据源（全部 edu.cn 域，公开页）：
+1. 各高校研究生院/研招办官网 — 招生信息页探测
+2. 中国学位与研究生教育信息网 (cdgdc.edu.cn) — 学科评级
 
-当真实抓取失败时，回退到预置的缓存数据。
+2026-09-12 地基收敛（spec 002）：
+- **研招网分支整体根除**——yz.chsi.com.cn 是红线域（宪法+对抗审计 F2），
+  本爬虫历史上抓它、产物被入库闸拒收，纯属浪费配额的红线试探；传输层
+  现已直接拒绝该域外发。
+- **预置缓存补位根除**——旧版"真实抓取失败回退预置缓存"违反零造假红线
+  （R6 宁缺毋假）：抓不到就如实空手而归并记账，绝不拿编造的 quota/学费
+  数字补位。_SCHOOL_CACHE 降级为纯抓取目标清单（配置，非数据）。
+- 网络往返统一走 BaseCrawler._request（transport 统一传输层，带证据采集）。
 """
 
 import json
 import logging
 import random
-import time
 
-import httpx
 from bs4 import BeautifulSoup
 from sqlalchemy.orm import Session
 
@@ -23,30 +27,25 @@ from app.database import SessionLocal
 
 logger = logging.getLogger(__name__)
 
-# User-Agent 轮换池
+# User-Agent 轮换池（仅请求头轮换，与数据真假无关）
 _USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:126.0) Gecko/20100101 Firefox/126.0",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
 ]
 
-# 真实数据源 URL 映射
+# 真实数据源 URL 映射（红线域 yz.chsi.com.cn 不得出现在这里）
 _REAL_DATA_SOURCES = {
-    "研招网": {
-        "base_url": "https://yz.chsi.com.cn",
-        "search_url": "https://yz.chsi.com.cn/zsml/queryAction.do",
-        "detail_url": "https://yz.chsi.com.cn/zsml/queryAction.do",
-    },
     "学位网": {
         "base_url": "https://www.cdgdc.edu.cn",
         "rank_url": "https://www.cdgdc.edu.cn/xwyyjsjyxx/xkpg/",
     },
 }
 
-# 预置的院校数据缓存 — 作为真实抓取失败时的回退数据
+# 抓取目标清单（配置语义：要抓谁；不是数据，不入库）
 _SCHOOL_CACHE: dict[str, dict] = {
     "清华大学": {
         "name": "清华大学",
@@ -95,60 +94,6 @@ _SCHOOL_CACHE: dict[str, dict] = {
     },
 }
 
-# 预置的专业目录数据缓存
-_PROGRAM_CACHE: list[dict] = [
-    {
-        "university": "清华大学",
-        "department": "计算机科学与技术系",
-        "major": "计算机科学与技术",
-        "degree_type": "学硕",
-        "quota": 25,
-        "subjects": "思想政治理论、英语一、数学一、计算机学科专业基础",
-        "duration": "3年",
-        "tuition": "8000元/年",
-    },
-    {
-        "university": "清华大学",
-        "department": "电子工程系",
-        "major": "电子信息",
-        "degree_type": "专硕",
-        "quota": 35,
-        "subjects": "思想政治理论、英语一、数学一、电子信息科学基础",
-        "duration": "3年",
-        "tuition": "12000元/年",
-    },
-    {
-        "university": "北京大学",
-        "department": "信息科学技术学院",
-        "major": "计算机科学与技术",
-        "degree_type": "学硕",
-        "quota": 22,
-        "subjects": "思想政治理论、英语一、数学一、计算机学科专业基础",
-        "duration": "3年",
-        "tuition": "8000元/年",
-    },
-    {
-        "university": "北京大学",
-        "department": "经济学院",
-        "major": "金融学",
-        "degree_type": "专硕",
-        "quota": 30,
-        "subjects": "思想政治理论、英语一、数学三、金融学综合",
-        "duration": "2年",
-        "tuition": "30000元/年",
-    },
-    {
-        "university": "复旦大学",
-        "department": "计算机科学技术学院",
-        "major": "计算机科学与技术",
-        "degree_type": "学硕",
-        "quota": 28,
-        "subjects": "思想政治理论、英语一、数学一、计算机学科专业基础",
-        "duration": "3年",
-        "tuition": "8000元/年",
-    },
-]
-
 
 def _get_random_headers() -> dict[str, str]:
     """返回随机 User-Agent 的请求头。"""
@@ -156,59 +101,7 @@ def _get_random_headers() -> dict[str, str]:
         "User-Agent": random.choice(_USER_AGENTS),
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-        "Accept-Encoding": "gzip, deflate",
-        "Connection": "keep-alive",
     }
-
-
-def _fetch_with_retry(
-    client: httpx.Client,
-    url: str,
-    max_retries: int = 3,
-    base_delay: float = 2.0,
-) -> httpx.Response | None:
-    """带指数退避重试的 HTTP 请求。"""
-    for attempt in range(max_retries):
-        try:
-            resp = client.get(url, timeout=30.0)
-            if resp.status_code == 200:
-                return resp
-            if resp.status_code == 429:
-                delay = base_delay * (2**attempt) + random.uniform(0, 1)
-                logger.warning(f"Rate limited (429), waiting {delay:.1f}s before retry...")
-                time.sleep(delay)
-                continue
-            logger.warning(f"HTTP {resp.status_code} for {url}")
-            return resp
-        except (httpx.TimeoutException, httpx.ConnectError) as e:
-            delay = base_delay * (2**attempt) + random.uniform(0, 1)
-            logger.warning(
-                f"Request failed ({attempt+1}/{max_retries}): {e}, retrying in {delay:.1f}s"
-            )
-            time.sleep(delay)
-    return None
-
-
-def _parse_yanzhao_search(html: str) -> list[dict]:
-    """解析研招网搜索结果页面。"""
-    results = []
-    try:
-        soup = BeautifulSoup(html, "html.parser")
-        rows = soup.select("table.vT-srch-result-list-bid tr")
-        for row in rows:
-            cols = row.find_all("td")
-            if len(cols) >= 4:
-                results.append(
-                    {
-                        "university": cols[0].get_text(strip=True),
-                        "major": cols[1].get_text(strip=True),
-                        "degree_type": cols[2].get_text(strip=True),
-                        "year": cols[3].get_text(strip=True) if len(cols) > 3 else "",
-                    }
-                )
-    except Exception as e:
-        logger.error(f"Failed to parse yanzhao search results: {e}")
-    return results
 
 
 def _parse_cdgdc_rank(html: str) -> list[dict]:
@@ -234,7 +127,6 @@ def _parse_cdgdc_rank(html: str) -> list[dict]:
 
 # 审核条目的来源回退站点（仅有缓存/无真实 URL 时用于构造稳定的幂等 URL）
 _SOURCE_BASE_URL = {
-    "研招网": "https://yz.chsi.com.cn/zsml/queryAction.do",
     "学位网": "https://www.cdgdc.edu.cn/xwyyjsjyxx/xkpg/",
 }
 
@@ -242,14 +134,14 @@ _SOURCE_BASE_URL = {
 def _review_url(item: dict) -> str:
     """生成审核条目的 source_url。
 
-    优先使用真实来源 URL（高校官网）；缓存回退数据用"来源站点 + 锚点"
+    优先使用真实来源 URL（高校官网）；无 website 的条目用"来源站点 + 锚点"
     构造稳定幂等的 URL，锚点携带来源与条目标识，保证重复抓取不产生重复条目。
     """
     website = (item.get("website") or "").strip()
     if website:
         return website[:500]
     source = (item.get("data_sources") or ["unknown"])[0]
-    base = _SOURCE_BASE_URL.get(source, "https://yz.chsi.com.cn")
+    base = _SOURCE_BASE_URL.get(source, "https://www.cdgdc.edu.cn")
     school = item.get("school_name", "")
     key = item.get("major_name") or item.get("discipline") or school
     return f"{base}#real_data:{source}:{school}:{key}"
@@ -265,115 +157,72 @@ def _to_queue_item(item: dict) -> dict:
     school = item.get("school_name", "")
     if item.get("discipline"):
         title = f"学科评级：{school} {item.get('discipline', '')}"
-    elif item.get("major_name"):
-        title = f"专业目录：{school} {item.get('major_name', '')}"
     else:
         title = f"院校信息：{school}"
     return {
         "title": title[:300],
         "content": json.dumps(item, ensure_ascii=False),
         "source_url": _review_url(item),
+        # 地基⑤：透传 run() 统一盖的抓取证据章——fetched 态入库闸要求三齐全
+        "fetch_evidence": item.get("fetch_evidence"),
     }
 
 
 @register_crawler
 class RealDataCrawler(BaseCrawler):
-    """真实数据爬虫 — 从研招网、高校官网、学位网抓取真实考研数据。
+    """真实数据爬虫 — 从高校官网、学位网抓取真实考研数据。
 
-    当真实抓取失败时，自动回退到预置的缓存数据。
+    宁缺毋假（R6）：真实抓取失败时如实空手而归并记账，不回退任何预置数据。
     """
 
     name = "real_data"
     category = "grad"
-    description = "真实数据爬虫（研招网、高校官网、学位网）"
-
-    def __init__(self, config: dict = None):
-        super().__init__(config)
-        self._use_cache = config.get("use_cache", False) if config else False
+    description = "真实数据爬虫（高校官网、学位网；研招网红线域已根除）"
 
     def fetch(self) -> list[dict]:
-        """从多个数据源抓取真实数据，失败时回退到缓存。"""
+        """从多个数据源抓取真实数据；失败=空手而归，绝不补位。"""
         all_data = []
 
-        # 数据源1: 研招网
-        yanzhao_data = self._fetch_yanzhao_data()
-        if yanzhao_data:
-            all_data.extend(yanzhao_data)
-
-        # 数据源2: 高校官网
+        # 数据源1: 高校官网
         school_data = self._fetch_school_data()
         if school_data:
             all_data.extend(school_data)
 
-        # 数据源3: 学位网
+        # 数据源2: 学位网
         discipline_data = self._fetch_discipline_data()
         if discipline_data:
             all_data.extend(discipline_data)
 
-        # 如果所有真实抓取都失败，使用缓存数据
-        if not all_data and not self._use_cache:
-            logger.info("Real data fetch failed, falling back to cache")
-            all_data = self._get_cached_data()
-            self._use_cache = True
-
         return all_data
 
-    def _fetch_yanzhao_data(self) -> list[dict]:
-        """从研招网抓取数据。"""
-        results = []
-        try:
-            with httpx.Client(headers=_get_random_headers(), follow_redirects=True) as client:
-                url = _REAL_DATA_SOURCES["研招网"]["search_url"]
-                resp = _fetch_with_retry(client, url)
-                if resp and resp.status_code == 200:
-                    parsed = _parse_yanzhao_search(resp.text)
-                    for item in parsed:
-                        results.append(
-                            {
-                                "source": "研招网",
-                                "type": "program",
-                                "data": item,
-                            }
-                        )
-                    logger.info(f"Fetched {len(results)} programs from 研招网")
-                else:
-                    logger.warning("Failed to fetch from 研招网")
-        except Exception as e:
-            logger.error(f"Error fetching from 研招网: {e}")
-        return results
-
     def _fetch_school_data(self) -> list[dict]:
-        """从各高校研究生院官网抓取数据。"""
+        """从各高校研究生院官网抓取数据（探测可达性，写审核队列）。"""
         results = []
         schools_to_fetch = list(_SCHOOL_CACHE.keys())[:5]  # 限制前5所
 
-        try:
-            with httpx.Client(headers=_get_random_headers(), follow_redirects=True) as client:
-                for school_name in schools_to_fetch:
-                    school_info = _SCHOOL_CACHE.get(school_name, {})
-                    website = school_info.get("website", "")
-                    if not website:
-                        continue
-
-                    resp = _fetch_with_retry(client, website, max_retries=2)
-                    if resp and resp.status_code == 200:
-                        results.append(
-                            {
-                                "source": "高校官网",
-                                "type": "school",
-                                "data": {
-                                    "name": school_name,
-                                    "website": website,
-                                    "html_length": len(resp.text),
-                                    "status": "fetched",
-                                },
-                            }
-                        )
-                        time.sleep(random.uniform(1.0, 2.0))  # 随机延迟
-
+        for school_name in schools_to_fetch:
+            school_info = _SCHOOL_CACHE.get(school_name, {})
+            website = school_info.get("website", "")
+            if not website:
+                continue
+            try:
+                resp = self._request(website, headers=_get_random_headers())
+                if resp.status_code == 200:
+                    results.append(
+                        {
+                            "source": "高校官网",
+                            "type": "school",
+                            "data": {
+                                "name": school_name,
+                                "website": website,
+                                "html_length": len(resp.text),
+                                "status": "fetched",
+                            },
+                        }
+                    )
                     logger.info(f"Fetched data from {school_name} website")
-        except Exception as e:
-            logger.error(f"Error fetching school data: {e}")
+            except Exception as e:
+                logger.warning(f"Fetch failed for {school_name} ({website}): {e}")
 
         return results
 
@@ -381,51 +230,23 @@ class RealDataCrawler(BaseCrawler):
         """从学位网抓取学科评级数据。"""
         results = []
         try:
-            with httpx.Client(headers=_get_random_headers(), follow_redirects=True) as client:
-                url = _REAL_DATA_SOURCES["学位网"]["rank_url"]
-                resp = _fetch_with_retry(client, url)
-                if resp and resp.status_code == 200:
-                    parsed = _parse_cdgdc_rank(resp.text)
-                    for item in parsed:
-                        results.append(
-                            {
-                                "source": "学位网",
-                                "type": "discipline",
-                                "data": item,
-                            }
-                        )
-                    logger.info(f"Fetched {len(results)} discipline ratings from 学位网")
-                else:
-                    logger.warning("Failed to fetch from 学位网")
+            url = _REAL_DATA_SOURCES["学位网"]["rank_url"]
+            resp = self._request(url, headers=_get_random_headers())
+            if resp.status_code == 200:
+                parsed = _parse_cdgdc_rank(resp.text)
+                for item in parsed:
+                    results.append(
+                        {
+                            "source": "学位网",
+                            "type": "discipline",
+                            "data": item,
+                        }
+                    )
+                logger.info(f"Fetched {len(results)} discipline ratings from 学位网")
+            else:
+                logger.warning("Failed to fetch from 学位网")
         except Exception as e:
             logger.error(f"Error fetching from 学位网: {e}")
-        return results
-
-    def _get_cached_data(self) -> list[dict]:
-        """返回预置的缓存数据。"""
-        results = []
-
-        # 学校信息缓存
-        for school_name, school_info in _SCHOOL_CACHE.items():
-            results.append(
-                {
-                    "source": "cache",
-                    "type": "school",
-                    "data": school_info,
-                }
-            )
-
-        # 专业目录缓存
-        for program in _PROGRAM_CACHE:
-            results.append(
-                {
-                    "source": "cache",
-                    "type": "program",
-                    "data": program,
-                }
-            )
-
-        logger.info(f"Using cached data: {len(results)} items")
         return results
 
     def parse(self, raw_items: list[dict]) -> list[dict]:
@@ -439,8 +260,6 @@ class RealDataCrawler(BaseCrawler):
 
             if data_type == "school":
                 parsed.append(self._parse_school_data(data, source))
-            elif data_type == "program":
-                parsed.append(self._parse_program_data(data, source))
             elif data_type == "discipline":
                 parsed.append(self._parse_discipline_data(data, source))
 
@@ -460,21 +279,6 @@ class RealDataCrawler(BaseCrawler):
             "tags": ["学校信息"],
         }
 
-    def _parse_program_data(self, data: dict, source: str) -> dict:
-        """解析专业目录数据。"""
-        return {
-            "school_name": data.get("university", ""),
-            "department": data.get("department", ""),
-            "major_name": data.get("major", ""),
-            "degree_type": data.get("degree_type", ""),
-            "enrollment_quota": data.get("quota", 0),
-            "exam_subjects": data.get("subjects", ""),
-            "duration": data.get("duration", ""),
-            "tuition": data.get("tuition", ""),
-            "data_sources": [source],
-            "tags": ["专业目录"],
-        }
-
     def _parse_discipline_data(self, data: dict, source: str) -> dict:
         """解析学科评级数据。"""
         return {
@@ -488,7 +292,7 @@ class RealDataCrawler(BaseCrawler):
     def store(self, items: list[dict], db: Session = None) -> int:
         """将解析后的数据写入审核队列（PENDING），不直接进业务表。
 
-        合规红线（仅人工确认入库）：研招网/学位网等外部数据一律先写
+        合规红线（仅人工确认入库）：高校官网/学位网等外部数据一律先写
         t_external_research_item + t_review_queue_item（review_status=PENDING），
         由管理员在 admin 端人工确认后才落业务表（research_promote 消费）。
         本方法不调用 batch_upsert / 不写任何业务表。
@@ -527,7 +331,7 @@ class RealDataCrawler(BaseCrawler):
             run_record.stored_count = result["inserted"]
             run_record.duplicate_count = result["duplicated"]
             run_record.source_meta = {
-                "note": "研招网/高校官网/学位网数据：仅人工确认后入库（PENDING 审核队列）",
+                "note": "高校官网/学位网数据：仅人工确认后入库（PENDING 审核队列）",
             }
             db.commit()
 

@@ -116,12 +116,19 @@ class TestWebArticleCrawler:
 
         # 同 test_pipeline_fetcher 先例：robots 检查一并 mock——robots.txt 走真实
         # urllib 网络（r.jina.ai 间歇可达），不 mock 则测试随网络状态抖动
-        with patch.object(
-            crawler.session,
-            "request",
-            return_value=MagicMock(text=jina_text, raise_for_status=MagicMock()),
-        ) as mock_request, patch.object(
-            crawler, "_check_robots_allowed", return_value=True
+        with (
+            patch.object(
+                crawler.session,
+                "request",
+                return_value=MagicMock(
+                    text=jina_text,
+                    status_code=200,
+                    content=b"",
+                    headers={},
+                    raise_for_status=MagicMock(),
+                ),
+            ) as mock_request,
+            patch.object(crawler, "_check_robots_allowed", return_value=True),
         ):
             raw = crawler.fetch()
 
@@ -227,6 +234,14 @@ class TestRssNewsCrawler:
         assert parsed[0]["source_platform"] == "rss"
         assert parsed[0]["category"] == "考研资讯"
         assert "考研" in parsed[0]["tags"]
+
+        # 地基⑤：模拟 run() 统一盖章（本测试 mock 掉 _request，证据需手动注入）
+        for it in parsed:
+            it["fetch_evidence"] = {
+                "http_status": 200,
+                "fetched_at": "2026-09-12T00:00:00+00:00",
+                "sha256": "4" * 64,
+            }
 
         # 第一次 store 应写入 2 条（注入内存库，避免写真实 dev 库）
         stored = crawler.store(parsed, db=db_session)

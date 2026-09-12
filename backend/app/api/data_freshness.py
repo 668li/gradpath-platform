@@ -17,17 +17,20 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/data-freshness", tags=["data"])
 
+# 2026-09-12 地基⑥（spec 002 FR5）：展示键从旧渠道名（offcn/huatu/fenbi 等
+# 假管道时代遗留）切换为合规白名单 10 源——心跳由 BaseCrawler 统一钩子按
+# 爬虫名回写，看板键位与之一一对应。
 SOURCES = {
-    "yanzhao": "Yanzhao",
-    "kaoyan": "Kaoyan",
-    "offcn": "Offcn",
-    "huatu": "Huatu",
-    "sina_edu": "Sina",
-    "eol_kaoyan": "EOL",
-    "fenbi": "Fenbi",
-    "mofangge": "MoFangGe",
-    "51job": "51Job",
-    "gaokao_cn": "Gaokao",
+    "real_data": "高校官网/学位网",
+    "yanzhao": "招生简章（预置已冻结）",
+    "yanzhao_program": "招生专业目录（预置已冻结）",
+    "bilibili_research": "B站经验视频",
+    "web_article_research": "网页文章（Jina Reader）",
+    "rss_news_research": "RSS 资讯",
+    "eol_kaoyan": "中国教育在线考研快讯",
+    "official_announce": "高校研招办官方公告",
+    "rsshub_research": "RSSHub 研招聚合",
+    "news_aggregates": "考研资讯聚合",
 }
 
 
@@ -92,6 +95,18 @@ def _freshness_score(last_crawl):
 def freshness_status(db: Session = Depends(get_db)):
     rows = _query_freshness_rows(db)
     existing = {r[0]: r for r in rows}
+    # 地基⑥：隔离态并入看板（t_crawler_source_state；表未建时降级为空）
+    isolated_map: dict[str, str | None] = {}
+    if _table_exists(db, "t_crawler_source_state"):
+        try:
+            from app.models.crawler_state import CrawlerSourceState
+
+            for row in (
+                db.query(CrawlerSourceState).filter(CrawlerSourceState.isolated.is_(True)).all()
+            ):
+                isolated_map[row.source_name] = row.isolated_reason
+        except Exception as e:  # noqa: BLE001
+            logger.warning("隔离态查询失败，降级: %s", e)
     results = []
     for sn, name in SOURCES.items():
         if sn in existing:
@@ -103,7 +118,8 @@ def freshness_status(db: Session = Depends(get_db)):
                     "score": _freshness_score(r[1]),
                     "records": r[2] or 0,
                     "last_crawl": r[1].isoformat() if r[1] else None,
-                    "status": r[3] or "unknown",
+                    "status": "isolated" if sn in isolated_map else (r[3] or "unknown"),
+                    "isolated_reason": isolated_map.get(sn),
                 }
             )
         else:
@@ -114,7 +130,8 @@ def freshness_status(db: Session = Depends(get_db)):
                     "score": 20,
                     "records": 0,
                     "last_crawl": None,
-                    "status": "unknown",
+                    "status": "isolated" if sn in isolated_map else "unknown",
+                    "isolated_reason": isolated_map.get(sn),
                 }
             )
     results.sort(key=lambda x: x["score"], reverse=True)

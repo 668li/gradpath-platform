@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 from urllib.robotparser import RobotFileParser
 
+import httpx
 import requests
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
@@ -29,6 +30,7 @@ from app.database import SessionLocal
 
 if TYPE_CHECKING:
     from app.crawlers.crawl4ai_client import Crawl4aiResult
+    from app.crawlers.transport import FetchResult
     from app.models.crawler_run import CrawlerRun
 
 logger = logging.getLogger(__name__)
@@ -49,8 +51,9 @@ class BaseCrawler(ABC):
 
     def __init__(self, config: dict = None):
         self.config = config or {}
-        self.session = requests.Session()
-        self.session.headers.update({"User-Agent": self.USER_AGENT})
+        # 2026-09-12 地基收敛：会话骨干 requests → httpx（BLOCKED.md 挂账销账）；
+        # requests 仅保留在异常兼容面（TransportError 继承 RequestException）。
+        self.session = httpx.Client(headers={"User-Agent": self.USER_AGENT}, follow_redirects=True)
         self.stats = {"fetched": 0, "stored": 0, "errors": 0, "duplicates": 0}
         self._rate_limit = self.config.get("rate_limit", 1.0)  # 默认1秒间隔
         # robots.txt 解析缓存（按 host 缓存一次，单次运行内不重复拉取）。
@@ -79,6 +82,8 @@ class BaseCrawler(ABC):
         self.run_record_id = ""
         self._run_started_at = ""
         self._run_start_monotonic = 0.0
+        # 抓取证据日志（地基⑤三态闸数据源）：每次 _request 成功追加一条
+        self.fetch_evidence_log: list[dict] = []
 
     @abstractmethod
     def fetch(self) -> list[dict]:
@@ -94,6 +99,34 @@ class BaseCrawler(ABC):
     def store(self, items: list[dict], db: Session) -> int:
         """存储数据到数据库，返回新增条数。子类必须实现。"""
         ...
+
+    def _export_cursor(self) -> dict | None:
+        """子类可覆盖：导出本线增量游标（etag/最新发布时间等），成功后写状态表。
+
+        缺省 None = 保持状态表现有游标不动（无增量语义的线零负担）。
+        """
+        return None
+
+    def _account_source_state(self, db: Session, ok: bool, error: str | None = None) -> None:
+        """地基④⑥：状态表 + 心跳统一回写（记账失败绝不影响爬取主流程）。
+
+        成功：last_ok_at=now、失败计数清零、游标回写、data_freshness=active；
+        失败：consecutive_fails+1（达阈值自动隔离）、data_freshness=failed。
+        """
+        try:
+            from app.services import crawler_state_service
+
+            crawler_state_service.record_run_result(db, self.name, ok=ok, error=error)
+            crawler_state_service.record_heartbeat(
+                db, self.name, ok=ok, inserted=self.stats.get("stored", 0)
+            )
+            db.commit()
+        except Exception as e:  # noqa: BLE001
+            logger.warning(f"[{self.name}] 状态/心跳回写失败（不影响爬取）: {e}")
+            try:
+                db.rollback()
+            except Exception:  # noqa: BLE001
+                pass
 
     def run(self, db: Session = None) -> dict:
         """执行完整爬取流程：fetch → parse → store。"""
@@ -125,6 +158,15 @@ class BaseCrawler(ABC):
                 parsed = parsed[: self._max_items]
             logger.info(f"[{self.name}] 解析为 {len(parsed)} 条标准数据")
 
+            # 地基⑤：给解析产物盖运行级抓取证据章——入库三态闸（fetched 必带
+            # http_status/fetched_at/sha256）的数据来源。run 级语义：证明本批
+            # 数据产生自本次真实 HTTP 往返；逐条精确溯源由 source_url+fetch 日志补强。
+            if self.fetch_evidence_log and parsed:
+                stamp = dict(self.fetch_evidence_log[-1])
+                for item in parsed:
+                    if isinstance(item, dict):
+                        item.setdefault("fetch_evidence", stamp)
+
             stored = self.store(parsed, db)
             self.stats["stored"] = stored
             logger.info(f"[{self.name}] 入库 {stored} 条新数据")
@@ -132,6 +174,7 @@ class BaseCrawler(ABC):
             result = {"status": "success", **self.stats}
             if self.run_record_id:
                 result["run_id"] = self.run_record_id
+            self._account_source_state(db, ok=True)
             return result
         except Exception as e:
             self.stats["errors"] += 1
@@ -140,6 +183,7 @@ class BaseCrawler(ABC):
             if self.run_record_id:
                 # 行已建但入库中途失败：回传 run_id 让包装层更新该行，不另建
                 result["run_id"] = self.run_record_id
+            self._account_source_state(db, ok=False, error=str(e))
             return result
         finally:
             if own_db:
@@ -191,11 +235,11 @@ class BaseCrawler(ABC):
         with self._stats_lock:
             self.stats[key] = self.stats.get(key, 0) + n
 
-    def _get_session(self) -> requests.Session:
-        """返回当前线程的独立 Session。
+    def _get_session(self) -> httpx.Client:
+        """返回当前线程的独立 Client。
 
-        requests.Session 非线程安全：并发爬虫下每个线程必须用自己
-        的 Session，避免多线程共享连接池产生竞态。串行模式(并发=1)
+        httpx.Client 非线程安全：并发爬虫下每个线程必须用自己的
+        Client，避免多线程共享连接池产生竞态。串行模式(并发=1)
         只有一个线程，退化为共享 self.session，行为与历史一致。
         """
         if self._concurrency <= 1:
@@ -204,46 +248,50 @@ class BaseCrawler(ABC):
         with self._thread_sessions_lock:
             s = self._thread_sessions.get(tid)
             if s is None:
-                s = requests.Session()
-                s.headers.update({"User-Agent": self.USER_AGENT})
+                s = httpx.Client(headers={"User-Agent": self.USER_AGENT}, follow_redirects=True)
                 self._thread_sessions[tid] = s
             return s
 
-    def _request(self, url: str, method: str = "GET", **kwargs) -> requests.Response:
-        """带限速和重试的HTTP请求。
+    def _send_via_session(self, method: str, url: str, headers: dict | None, timeout: float):
+        """sender 注入点：经本爬虫的会话池发送（并发安全 + 测试可打桩）。"""
+        return self._get_session().request(method, url, headers=headers, timeout=timeout)
+
+    def _record_fetch_evidence(self, result: "FetchResult") -> None:
+        """把本次成功请求的证据追加进运行期证据日志（入库三态闸数据源）。"""
+        self.fetch_evidence_log.append(result.evidence())
+
+    def _request(self, url: str, method: str = "GET", **kwargs) -> "FetchResult":
+        """带限速和重试的HTTP请求（统一传输层委托，地基①）。
 
         外发安全护栏（Mimosa 约束）：发请求前校验 host（仅 http/https，
         拒绝 localhost/环回/私有/保留地址，DNS 解析失败 fail-safe 拒绝）；
-        robots.txt 不允许则跳过该 URL 并如实记录。
+        robots.txt 不允许则跳过该 URL 并如实记录。校验在本层执行；
+        限速/错误分级重试/证据采集统一由 transport.fetch 承担（红线域
+        yz.chsi.com.cn 在传输层直接拒绝外发）。
 
         并发安全：窗口内并发 HTTP 请求数受 self._request_sem 限制，且
-        每次网络往返之间至少间隔 _rate_limit（全局串行化，保证限速不失效）。
+        每次网络往返之间至少间隔 _rate_limit（transport per-host 桶兜底）。
         """
+        from app.crawlers.transport import fetch as transport_fetch
+
         ok, reason = self._validate_outbound_url(url)
         if not ok:
             logger.warning(f"[{self.name}] 拒绝外发请求: {url} | {reason}")
             raise requests.RequestException(f"外发 URL 校验失败: {reason}")
         if not self._check_robots_allowed(url):
             raise requests.RequestException(f"robots.txt 不允许抓取: {url}")
-        max_retries = self.config.get("max_retries", 3)
-        for attempt in range(max_retries):
-            try:
-                # 并发窗口信号量：限制同刻在飞的 HTTP 请求数（并发=1 时不阻塞）
-                with self._request_sem:
-                    # per-host 节流：同域间隔 ≥ _rate_limit；跨域并行互不等待
-                    self._throttle((urlparse(url).hostname or "").lower())
-                    resp = self._get_session().request(method, url, timeout=30, **kwargs)
-                resp.raise_for_status()
-                return resp
-            except requests.RequestException as e:
-                if attempt < max_retries - 1:
-                    wait = (attempt + 1) * 2
-                    logger.warning(
-                        f"[{self.name}] 请求失败({attempt+1}/{max_retries}), {wait}秒后重试: {e}"
-                    )
-                    time.sleep(wait)
-                else:
-                    raise
+        result = transport_fetch(
+            url,
+            method=method,
+            headers=kwargs.get("headers"),
+            timeout=float(kwargs.get("timeout", 30.0)),
+            rate_limit=self._rate_limit,
+            max_retries=self.config.get("max_retries", 3),
+            crawler_name=self.name,
+            sender=self._send_via_session,
+        )
+        self._record_fetch_evidence(result)
+        return result
 
     # ===== 可选浏览器渲染抓取（crawl4ai 集成；客户端不可用时降级 HTTP） =====
 

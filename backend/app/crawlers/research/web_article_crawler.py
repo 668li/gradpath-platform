@@ -76,32 +76,16 @@ class WebArticleCrawler(BaseCrawler):
     def _fetch_with_retry(self, url: str) -> tuple[str, str | None]:
         """带超时与重试的 HTTP 请求，返回 (text, error_message)。
 
-        直连 session.request 的唯一例外：同样补外发校验
-        （host 校验 + robots.txt，与基类 _request 一致）。
+        2026-09-12 地基收敛：改走统一传输层（self._request）——SSRF/robots/
+        限速/错误分级/证据采集全部由基类与 transport 承担，不再自行维护
+        重试循环（原直连 session.request 的例外取消）。
         """
-        ok, reason = self._validate_outbound_url(url)
-        if not ok:
-            logger.warning(f"[{self.name}] 拒绝外发请求: {url} | {reason}")
-            return "", f"外发 URL 校验失败: {reason}"
-        if not self._check_robots_allowed(url):
-            return "", f"robots.txt 不允许抓取: {url}"
-        max_retries = self.config.get("max_retries", 2)
-        last_error = ""
-        for attempt in range(max_retries + 1):
-            try:
-                resp = self.session.request("GET", url, timeout=15)
-                resp.raise_for_status()
-                return resp.text, None
-            except Exception as e:
-                last_error = str(e)
-                if attempt < max_retries:
-                    wait = (attempt + 1) * 2
-                    logger.warning(
-                        f"[{self.name}] 请求失败({attempt + 1}/{max_retries + 1}), "
-                        f"{wait}秒后重试: {e}"
-                    )
-                    time.sleep(wait)
-        return "", last_error
+        try:
+            resp = self._request(url, timeout=15)
+            return resp.text, None
+        except Exception as e:
+            logger.warning(f"[{self.name}] 请求失败: {e}")
+            return "", str(e)
 
     def parse(self, raw_items: list[dict]) -> list[dict]:
         """从 Jina Reader 返回的文本中提取 title、content、source_url。"""

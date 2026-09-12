@@ -73,6 +73,10 @@ class ExternalResearchItem(ContractAuditMixin, Base):
     source_url: Mapped[str] = mapped_column(String(500), nullable=False)
     source_platform: Mapped[str] = mapped_column(String(30), nullable=False)
     external_meta: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    # 地基⑤三态（spec 002 FR4）：fetched / curated / ugc；legacy=存量冻结（迁移回填），新写入禁用
+    data_origin: Mapped[str | None] = mapped_column(String(12), nullable=True)
+    # fetched 态必带 {http_status, fetched_at, sha256}（统一传输层证据），缺一拒收
+    fetch_evidence: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     credibility: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
@@ -89,6 +93,7 @@ class ExternalResearchItem(ContractAuditMixin, Base):
         UniqueConstraint("source_url", name="uk_external_research_item_source_url"),
         Index("idx_external_research_item_crawler_run_id", "crawler_run_id"),
         Index("idx_external_research_item_review_status", "review_status"),
+        Index("idx_external_research_item_data_origin", "data_origin"),
     )
 
 

@@ -7,7 +7,7 @@
 
 数据流向：列表页解析 (title, url, date) → 详情页 TRS_Editor 正文 →
 ResearchTransformer.transform_rss（清洗/分类/质量分）→ store_research_items
-（simhash 去重 + quality 过滤 → PENDING 审核队列），成功后回写 data_freshness。
+（simhash 去重 + quality 过滤 → PENDING 审核队列）；心跳由地基⑥统一钩子回写。
 """
 
 import logging
@@ -31,14 +31,12 @@ from app.crawlers.base_crawler import BaseCrawler
 from app.crawlers.registry import register_crawler
 from app.crawlers.research.transformer import ResearchTransformer
 from app.database import SessionLocal
-from app.models.ingestion import DataFreshness
 from app.services.research_ingestion import store_research_items
 
 logger = logging.getLogger(__name__)
 
 # 考研快讯列表页（robots 允许）；相对链接基准为该页目录
 DEFAULT_LIST_URL = "https://kaoyan.eol.cn/nnews/"
-SOURCE_CHANNEL = "eol_kaoyan"  # 对应 data_freshness SOURCES 键
 
 # 列表页条目块：fline 标题 + sline 详情链接 + tline 日期
 _LIST_ITEM_RE = re.compile(
@@ -185,18 +183,8 @@ class EolKaoyanCrawler(BaseCrawler):
                 run_id=str(run_record.id),
             )
 
-            # 回写 data_freshness（source_channel=eol_kaoyan，契约列见 DataFreshness）
-            fresh = (
-                db.query(DataFreshness).filter(DataFreshness.source_name == SOURCE_CHANNEL).first()
-            )
-            now = datetime.now(timezone.utc)
-            if fresh is None:
-                fresh = DataFreshness(source_name=SOURCE_CHANNEL)
-                db.add(fresh)
-            fresh.last_successful_crawl = now
-            fresh.records_count = (fresh.records_count or 0) + result["inserted"]
-            fresh.status = "active"
-            fresh.updated_at = now
+            # data_freshness 心跳改由地基⑥统一钩子回写（BaseCrawler._account_source_state，
+            # spec 002：10 源全覆盖，不再各自手写）
 
             self._finalize_run_record(run_record)
             run_record.items_fetched = self.stats.get("fetched", 0)

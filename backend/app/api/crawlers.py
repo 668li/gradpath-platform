@@ -270,6 +270,30 @@ def _run_crawler_background(
         db.close()
 
 
+@router.post("/unisolate/{source_name}")
+def unisolate_crawler_endpoint(
+    source_name: str,
+    user: User = Depends(get_admin_user),
+):
+    """显式解除某爬虫线的自动隔离（地基⑥：解除是人工动作，写审计日志）。
+
+    隔离由连续失败 ≥2 自动触发；解除后调度器恢复投递。若该线未隔离返回 404。
+    """
+    _assert_allowed_crawler(source_name)
+    from app.database import SessionLocal
+    from app.services.crawler_state_service import unisolate
+
+    db = SessionLocal()
+    try:
+        released = unisolate(db, source_name, by=str(user.id))
+    finally:
+        db.close()
+    if not released:
+        raise HTTPException(status_code=404, detail=f"爬虫 '{source_name}' 不在隔离态")
+    logger.warning("[crawlers] %s 解除隔离（admin=%s）", source_name, user.email)
+    return {"source": source_name, "isolated": False, "released_by": user.email}
+
+
 @router.post("/run")
 def run_crawler_endpoint(
     body: CrawlerRunRequest,
@@ -483,6 +507,35 @@ async def _run_scheduled_crawler(source_name: str):
         logger.warning("定时爬虫 '%s' 不在合规白名单内，已跳过执行", source_name)
         return
 
+    # 地基⑥（spec 002 FR5）：隔离线跳过投递——死线不污染活库，admin 解除后自动恢复
+    try:
+        from app.services.crawler_state_service import is_isolated
+
+        _iso_db = SessionLocal()
+        try:
+            if is_isolated(_iso_db, source_name):
+                logger.error(
+                    "定时爬虫 '%s' 处于隔离态，已跳过投递（admin 端解除隔离后恢复）", source_name
+                )
+                return
+        finally:
+            _iso_db.close()
+    except Exception as e:  # noqa: BLE001 — 隔离检查失败不阻断采集主流程
+        logger.warning("隔离态检查失败，按未隔离处理: %s", e)
+
+    # 地基③线契约：季节窗口线（window）窗口外跳过（如调剂线只在 2-4 月跑）
+    try:
+        from app.crawlers.line_registry import load_lines
+
+        _line = load_lines().get(source_name)
+        if _line and _line.window:
+            _now = datetime.now(BEIJING_TZ)
+            if not _line.in_window(_now.month, _now.day):
+                logger.info("定时爬虫 '%s' 不在季节窗口 %s 内，跳过投递", source_name, _line.window)
+                return
+    except Exception as e:  # noqa: BLE001 — 窗口检查失败不阻断采集主流程
+        logger.warning("季节窗口检查失败，按在窗口内处理: %s", e)
+
     task_id = uuid4().hex[:12]
 
     # 多 uvicorn worker 共享 Redis jobstore 时，同一 cron 会被各 worker 的
@@ -564,22 +617,19 @@ async def _run_scheduled_crawler(source_name: str):
 
 
 # ----------------------------------------------------------------------
-# 默认按日定时任务（新源随启动补齐，管理员可在 /schedules 改期/停用）
+# 默认定时任务（地基③线契约，spec 002 FR2）：由 config/*.yaml 生成，
+# 加一条线 = 放一个 yaml（name/schedule/sla_hours/entry），不动本文件。
+# 白名单硬闸在 line_registry.load_lines：yaml 名越界 = 加载即炸。
 # ----------------------------------------------------------------------
-DEFAULT_DAILY_SCHEDULES: dict[str, str] = {
-    "eol_kaoyan": "0 2 * * *",  # 每天 02:00 抓取中国教育在线考研频道
-    # 每小时整点轮询高校官方公告（URL 级增量：已收录条目跳过详情，列表页
-    # 11 请求/小时成本≈零）；学校发布→可见时差从 ~24h 压到 ~1h
-    "official_announce": "0 * * * *",
-    # 每天 02:30 抓自建 RSSHub 研招公告聚合（19 路由）；错峰避开上面两个源
-    "rsshub_research": "30 2 * * *",
-    # 每天凌晨 04:00 抓考研资讯聚合站（eol/offcn 列表页；量的来源，
-    # 错峰在 eol 02:00 与 rsshub 02:30 之后）
-    "news_aggregates": "0 4 * * *",
-    # 每周一 03:00 抓 B站考研经验视频（bilibili_research.yaml: schedule weekly；
-    # 14 关键词 × 2 页 ≈ 280 次搜索请求，串行 + 控频，放在 02 点档之后避免叠加）
-    "bilibili_research": "0 3 * * 1",
-}
+
+
+def _build_default_schedules() -> dict[str, str]:
+    from app.crawlers.line_registry import default_schedules
+
+    return default_schedules()
+
+
+DEFAULT_DAILY_SCHEDULES: dict[str, str] = _build_default_schedules()
 
 
 def _job_cron_str(job) -> str | None:

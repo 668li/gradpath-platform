@@ -1,10 +1,12 @@
 # 2026-09-04 注销：从未被调度（crawler_runs 零记录）；文件保留待拍板
+# 2026-09-12 地基⑤三态闸：预置（模型合成）数据显式 data_origin=legacy——
+# 新写入被入库咽喉拒收，grad_catalog 真线（真实抓取+证据）就位前本线不产数。
 # 研招网招生简章爬虫配置
 name: yanzhao
 category: grad
 description: 研招网招生简章数据爬虫（预置 985 院校招生信息）
 enabled: false
-schedule: monthly  # 每年招生季更新
+schedule: null  # 手动线（线契约：原装饰性 "monthly" 规范为 null；预置数据已冻结不产数）
 rate_limit: 1.0
 rate_limit_ms: 1000
 max_retries: 3

@@ -1,0 +1,15 @@
+# 线契约（地基③，spec 002）：高校研招办官方公告（信息差伴随层的时间敏感主源）
+name: official_announce
+category: research
+description: 高校研究生院官方公告爬虫（多校栏目，URL 级增量，PENDING 审核队列）
+enabled: true
+schedule: "0 * * * *"  # 每小时整点轮询；URL 级增量：已收录条目跳过详情
+sla_hours: 6  # 学校发布→可见时差从 ~24h 压到 ~1h
+entry: "https://gr.uestc.edu.cn/tongzhi/118"  # 栏目清单在代码 DEFAULT_SECTIONS（多校多栏目）
+rate_limit: 1.0
+max_retries: 2
+timeout_seconds: 30
+fetch_detail: true
+notes: |
+  列表页 11 请求/小时成本≈零；46 个真实录制 fixture 守护解析模板（地基②）。
+  增量基线：库内已收录 URL 集合（_load_known_urls），基线加载失败退化为全量抓取。

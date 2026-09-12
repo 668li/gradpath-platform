@@ -14,6 +14,7 @@ from urllib.parse import urlparse
 from sqlalchemy.orm import Session
 
 from app.crawlers.research.dedup import compute_simhash, find_similar, normalize_url
+from app.crawlers.transport import REDLINE_FETCH_HOSTS
 from app.models.ingestion import ExternalResearchItem, ReviewQueueItem
 from app.models.kaoyan_news import KaoyanNews
 
@@ -21,6 +22,11 @@ logger = logging.getLogger(__name__)
 
 # 直接映射到 ExternalResearchItem 核心列的字段；其余 parse 产物进 external_meta（来源元数据 F11）
 _CORE_FIELDS = {"title", "content", "source_url", "source_platform"}
+# 地基⑤三态键：不进 external_meta，落专列
+_ORIGIN_FIELDS = {"fetch_evidence", "data_origin"}
+
+# 地基⑤三态（spec 002 FR4）：无第四种状态
+_DATA_ORIGINS = {"fetched", "curated", "ugc", "legacy"}
 
 # 质量下限（D 级拒收）：kaoyan_news 入库前质量过滤阈值。
 # transform_rss 已注入 quality_score（规则计算），低于该值直接不占审核队列。
@@ -31,8 +37,9 @@ QUALITY_MIN_SCORE = 35
 _OFFICIAL_DOMAINS = ("edu.cn", "gov.cn")
 _COMMUNITY_PLATFORMS = {"bilibili", "v2ex", "github", "zhihu", "tieba"}
 
-# 研招网红线：不入库、不分发（入库唯一咽喉写入即拒，可审计计数；promote 层复用做纵深）。
-_REDLINE_HOSTS = ("yz.chsi.com.cn",)
+# 研招网红线：不外发（transport 层）、不入库、不分发（本闸+promote 纵深）。
+# 名单单一事实源在 transport.REDLINE_FETCH_HOSTS（spec 002：fetch 闸与 store 闸共用）。
+_REDLINE_HOSTS = REDLINE_FETCH_HOSTS
 
 
 def is_redline_url(source_url: str) -> bool:
@@ -123,6 +130,19 @@ def _load_kaoyan_dedup_baseline(db: Session) -> tuple[list[int], set[str]]:
     return hashes, norm_urls
 
 
+def _valid_evidence(ev: Any) -> bool:
+    """地基⑤：fetched 态证据三齐全判定（http_status / fetched_at / sha256）。"""
+    if not isinstance(ev, dict):
+        return False
+    http_status = ev.get("http_status")
+    return (
+        isinstance(http_status, int)
+        and 200 <= http_status < 400
+        and bool(str(ev.get("fetched_at") or "").strip())
+        and bool(str(ev.get("sha256") or "").strip())
+    )
+
+
 def store_research_items(
     db: Session,
     *,
@@ -131,6 +151,7 @@ def store_research_items(
     items: list[dict],  # 爬虫 parse 产物
     source_platform: str,  # bilibili / web / rss
     run_id: str,  # CrawlerRun.id (UUID hex)
+    data_origin: str | None = None,  # fetched / curated / ugc（缺省逐条解析，最终缺省 fetched）
 ) -> dict:
     """落盘爬虫改入库：写入 t_external_research_item + t_review_queue_item。
 
@@ -142,20 +163,20 @@ def store_research_items(
     - 全程一个事务；异常 rollback 并如实抛出
     - 依赖注入 db（Session），不自行创建 session
 
-    Args:
-        db: 数据库会话（依赖注入，不自行创建）
-        crawler_name: 爬虫名称（对应 crawler_runs.source_name）
-        item_type: 条目类型枚举
-        items: 爬虫 parse 产物列表，至少含 title/content/source_url
-        source_platform: 来源平台
-        run_id: CrawlerRun.id（UUID 字符串）
+    地基⑤三态闸（spec 002 FR4，违者视为假数据）：
+    - data_origin 解析顺序：显式参数 > 逐条 item["data_origin"] > "fetched"；
+    - fetched 必带完整抓取证据（run() 统一盖章 / 传输层 FetchResult.evidence），
+      缺一该条拒收不入库（可审计计数）；
+    - legacy 态新写入禁用（存量冻结语义）——预置/合成数据从此构造上无法入库；
+    - curated / ugc 照实落列，证据可选。
 
     Returns:
-        {"inserted": int, "duplicated": int, "redline_rejected": int}
+        {"inserted": int, "duplicated": int, "redline_rejected": int, "evidence_rejected": int}
     """
     inserted = 0
     duplicated = 0
     redline_rejected = 0
+    evidence_rejected = 0
     try:
         # 提纯基线：仅 kaoyan_news 启用（库内已收录条目的 simhash + 归一化 URL，批次内增量比对）
         kaoyan_hashes: list[int] = []
@@ -177,6 +198,36 @@ def store_research_items(
                 redline_rejected += 1
                 logger.warning(
                     "[research_ingestion] 研招网红线拒收（不落库）: %s (crawler=%s)",
+                    source_url[:80],
+                    crawler_name,
+                )
+                continue
+
+            # 地基⑤三态闸：fetched 缺证据拒收；legacy 新写入禁用
+            origin = (data_origin or item.get("data_origin") or "fetched").strip().lower()
+            if origin not in _DATA_ORIGINS:
+                evidence_rejected += 1
+                logger.warning(
+                    "[research_ingestion] 未知 data_origin=%s 拒收 (crawler=%s): %s",
+                    origin,
+                    crawler_name,
+                    source_url[:80],
+                )
+                continue
+            evidence = item.get("fetch_evidence")
+            if origin == "fetched" and not _valid_evidence(evidence):
+                evidence_rejected += 1
+                logger.warning(
+                    "[research_ingestion] fetched 缺抓取证据拒收（http_status/fetched_at/sha256 "
+                    "三齐全才放行）: %s (crawler=%s)",
+                    source_url[:80],
+                    crawler_name,
+                )
+                continue
+            if origin == "legacy":
+                evidence_rejected += 1
+                logger.warning(
+                    "[research_ingestion] legacy 态禁止新写入（存量冻结）: %s (crawler=%s)",
                     source_url[:80],
                     crawler_name,
                 )
@@ -231,8 +282,11 @@ def store_research_items(
                     kaoyan_hashes.append(compute_simhash(sim_text))
 
             # 除核心列外的 parse 产物全部进 external_meta，保留行级来源元数据（F11）；
-            # datetime 等非 JSON 原生类型先转 isoformat（JSONB 列要求）
-            external_meta = _json_safe({k: v for k, v in item.items() if k not in _CORE_FIELDS})
+            # datetime 等非 JSON 原生类型先转 isoformat（JSONB 列要求）；
+            # 三态键（fetch_evidence/data_origin）落专列，不进 meta
+            external_meta = _json_safe(
+                {k: v for k, v in item.items() if k not in _CORE_FIELDS and k not in _ORIGIN_FIELDS}
+            )
 
             ext_item = ExternalResearchItem(
                 crawler_name=crawler_name,
@@ -243,6 +297,8 @@ def store_research_items(
                 source_url=source_url,
                 source_platform=source_platform,
                 external_meta=external_meta,
+                data_origin=origin,
+                fetch_evidence=_json_safe(evidence) if origin == "fetched" else None,
                 credibility=_infer_credibility(source_url, source_platform),
                 review_status="PENDING",
             )
@@ -265,6 +321,7 @@ def store_research_items(
             "inserted": inserted,
             "duplicated": duplicated,
             "redline_rejected": redline_rejected,
+            "evidence_rejected": evidence_rejected,
         }
     except Exception:
         db.rollback()

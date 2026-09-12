@@ -5,7 +5,9 @@ name: rsshub_research
 category: research
 description: 自建 RSSHub 聚合（25 研招/教育部公告路由 + 知乎资讯流路由，PENDING 审核队列）
 enabled: true
-schedule: daily  # 研招公告时效性强，每日更新一次
+schedule: "30 2 * * *"  # 线契约（地基③）：原装饰性 "daily" 规范为真实 cron，每日 02:30 错峰
+sla_hours: 24
+entry: "http://127.0.0.1:1200"  # 本机 docker RSSHub 实例
 max_retries: 2
 timeout_seconds: 30
 rate_limit: 1.0

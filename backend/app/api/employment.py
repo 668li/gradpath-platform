@@ -58,7 +58,8 @@ def schools_cursor(
         .distinct()
     )
     query = apply_cursor_filter(query, cursor, time_col=School.created_at, id_col=School.id)
-    items = query.order_by(School.created_at.desc()).limit(page_size + 1).all()
+    # id 决胜键：同 created_at 行的页界必须确定（否则游标翻页重复/漏行）
+    items = query.order_by(School.created_at.desc(), School.id.desc()).limit(page_size + 1).all()
     has_more = len(items) > page_size
     if has_more:
         items = items[:page_size]

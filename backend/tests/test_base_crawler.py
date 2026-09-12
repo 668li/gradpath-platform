@@ -169,6 +169,11 @@ class TestRequestGuards:
         called = []
 
         class _Resp:
+            status_code = 200
+            text = ""
+            content = b""
+            headers = {}
+
             def raise_for_status(self):
                 pass
 

@@ -69,7 +69,17 @@ def test_store_admits_non_redline_control(db_session):
         crawler_name="real_data",
         item_type="kaoyan_news",
         items=[
-            {"title": "真公告", "content": "y" * 80, "source_url": "https://news.pku.edu.cn/a1"}
+            {
+                "title": "真公告",
+                "content": "y" * 80,
+                "source_url": "https://news.pku.edu.cn/a1",
+                # 地基⑤：fetched 态须带完整抓取证据（run() 盖章语义）
+                "fetch_evidence": {
+                    "http_status": 200,
+                    "fetched_at": "2026-09-12T12:00:00+00:00",
+                    "sha256": "b" * 64,
+                },
+            }
         ],
         source_platform="web",
         run_id="0" * 32,

@@ -1,0 +1,14 @@
+# 线契约（地基③，spec 002）：高校官网/学位网真实抓取线（手动线）
+name: real_data
+category: grad
+description: 真实数据爬虫（高校官网探测 + 学位网学科评级；研招网红线分支已根除）
+enabled: true
+schedule: null  # 手动线：不在默认调度，admin /run 触发
+sla_hours: 720
+entry: "https://www.cdgdc.edu.cn/xwyyjsjyxx/xkpg/"
+rate_limit: 1.0
+max_retries: 2
+timeout_seconds: 30
+notes: |
+  2026-09-12 地基收敛（spec 002）：研招网抓取分支根除（红线域）；
+  预置缓存补位根除（宁缺毋假）；抓取目标清单只作配置不作数据。

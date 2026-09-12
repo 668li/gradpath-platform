@@ -81,6 +81,11 @@ def test_store_research_items_all_pending_and_idempotent(db_session):
     assert all("source_url" in it for it in items)
 
     run_id = "b5" * 16  # CrawlerRun.id（UUID hex 32 位）
+    # 地基⑤（spec 002）：爬虫 run() 会为 parse 产物统一盖抓取证据章；
+    # 本测试直接从适配器拿条目，等价模拟盖章后再入咽喉。
+    stamp = {"http_status": 200, "fetched_at": "2026-09-12T12:00:00+00:00", "sha256": "c" * 64}
+    for it in items:
+        it["fetch_evidence"] = dict(stamp)
     kw = dict(
         crawler_name="bilibili_research",
         item_type="experience_post",
@@ -89,8 +94,14 @@ def test_store_research_items_all_pending_and_idempotent(db_session):
         run_id=run_id,
     )
     r1 = store_research_items(db_session, **kw)
-    # redline_rejected 键为 2026-09-06 审计第一批入库红线计数（T1 授权新增）
-    assert r1 == {"inserted": len(items), "duplicated": 0, "redline_rejected": 0}
+    # redline_rejected 键为 2026-09-06 审计第一批入库红线计数；evidence_rejected
+    # 为地基⑤三态闸拒收计数（2026-09-12 spec 002 新增）
+    assert r1 == {
+        "inserted": len(items),
+        "duplicated": 0,
+        "redline_rejected": 0,
+        "evidence_rejected": 0,
+    }
 
     for it in items:
         url = it["source_url"]
@@ -111,6 +122,7 @@ def test_store_research_items_all_pending_and_idempotent(db_session):
         "inserted": 0,
         "duplicated": len(items),
         "redline_rejected": 0,
+        "evidence_rejected": 0,
     }, "重复导入必须幂等"
 
 

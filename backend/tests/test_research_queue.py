@@ -535,6 +535,12 @@ class TestCredibilityInference:
                     "title": "高校研究生院通知",
                     "content": "x",
                     "source_url": "https://yjs.xxx.edu.cn/a/b",
+                    # 地基⑤：fetched 态须带抓取证据（run() 盖章语义）
+                    "fetch_evidence": {
+                        "http_status": 200,
+                        "fetched_at": "2026-09-12T00:00:00+00:00",
+                        "sha256": "2" * 64,
+                    },
                 }
             ],
             source_platform="web",
@@ -561,7 +567,19 @@ class TestCredibilityInference:
             db_session,
             crawler_name="bilibili_research",
             item_type="experience_post",
-            items=[{"title": "UP主经验", "content": "x", "source_url": "https://b23.tv/av123"}],
+            items=[
+                {
+                    "title": "UP主经验",
+                    "content": "x",
+                    "source_url": "https://b23.tv/av123",
+                    # 地基⑤：fetched 态须带抓取证据（run() 盖章语义）
+                    "fetch_evidence": {
+                        "http_status": 200,
+                        "fetched_at": "2026-09-12T00:00:00+00:00",
+                        "sha256": "3" * 64,
+                    },
+                }
+            ],
             source_platform="bilibili",
             run_id="00000000000000000000000000000000",
         )

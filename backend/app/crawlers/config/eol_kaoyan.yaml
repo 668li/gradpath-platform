@@ -1,0 +1,16 @@
+# 线契约（地基③，spec 002）：中国教育在线考研快讯
+name: eol_kaoyan
+category: research
+description: 中国教育在线考研频道资讯爬虫（eol.cn 考研快讯列表+详情正文）
+enabled: true
+schedule: "0 2 * * *"  # 每天 02:00 抓取考研频道
+sla_hours: 24
+entry: "https://kaoyan.eol.cn/nnews/"
+rate_limit: 1.2
+max_retries: 3
+timeout_seconds: 30
+fetch_detail: true
+notes: |
+  robots.txt 仅 Disallow /include/ /dbrh/ /dyj/，列表与详情允许抓取。
+  只抓公开列表页第一页（最新约 40 条）+ 逐条详情正文，不翻页不放大请求。
+  parser 纯函数（_LIST_ITEM_RE/_extract_detail_body）带录制 fixture 测试（地基②疫苗）。

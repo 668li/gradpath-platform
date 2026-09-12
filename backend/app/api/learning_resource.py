@@ -60,7 +60,7 @@ def seed_system_resources(
     current_user: User = Depends(get_current_user),
 ):
     """灌入系统推荐学习资源（首次运行生效，重复调用幂等）。"""
-    from app.crawlers.real_data.learning_resource_seed import seed
+    from app.seed.learning_resource_seed import seed
 
     n = seed(str(current_user.id))
     return {"seeded": n, "message": f"已灌入 {n} 条系统资源" if n else "已存在系统资源，跳过"}

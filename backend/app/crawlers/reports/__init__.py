@@ -1,7 +1,7 @@
-"""公开报告导入 — 第三方行业报告、白皮书、统计数据、开源数据集等结构化导入。"""
+"""宏观/报告导入 — 在产：stats_gongbao_scraper（国家统计局年度公报真抓，
+每年 2 月底手工/脚本重跑，纯函数抽取带单测）。
 
-from app.crawlers.reports.github_datasets import GithubDatasetCrawler
-from app.crawlers.reports.pdf_parser import PdfReportCrawler
-from app.crawlers.reports.stats_importer import StatsImporter
-
-__all__ = ["PdfReportCrawler", "StatsImporter", "GithubDatasetCrawler"]
+2026-09-12 爬虫地基收敛（spec 002）：github_datasets / pdf_parser /
+stats_importer（预置假版）三个 @RETIRED 文件已物理删除；stats_gongbao_scraper
+自 real_data/ 迁入本包（它本就是统计报告线，此前住错了目录）。
+"""

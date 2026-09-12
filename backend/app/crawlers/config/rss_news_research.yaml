@@ -1,0 +1,11 @@
+# 线契约（地基③，spec 002）：RSS 新闻线（手动线，admin 触发）
+name: rss_news_research
+category: research
+description: RSS 新闻订阅爬虫（外部 RSS 源，关键词过滤，PENDING 审核队列）
+enabled: true
+schedule: null  # 手动线：不在默认调度，admin /run 触发
+sla_hours: 48
+entry: ""  # feed 列表由触发时配置/代码默认提供
+rate_limit: 1.0
+max_retries: 2
+timeout_seconds: 30

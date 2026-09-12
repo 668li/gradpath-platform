@@ -180,8 +180,10 @@ def list_kaoyan_mentors_cursor(
     query = apply_cursor_filter(
         query, cursor, time_col=MentorModel.created_at, id_col=MentorModel.id
     )
+    # 排序键必须与游标键 (created_at, id) 一致（原按 avg_rating 排序与游标错配，
+    # 同 created_at 行的页界不确定 → 翻页重复/漏行；docstring 亦承诺时间倒序）
     items = (
-        query.order_by(MentorModel.avg_rating.desc(), MentorModel.created_at.desc())
+        query.order_by(MentorModel.created_at.desc(), MentorModel.id.desc())
         .limit(page_size + 1)
         .all()
     )

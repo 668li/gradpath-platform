@@ -19,6 +19,7 @@ from app.models.company import Company, CompanySize
 from app.models.company_review import CompanyReview
 from app.models.conversation import Conversation, Message
 from app.models.crawler_run import CrawlerRun
+from app.models.crawler_state import CrawlerSourceState
 from app.models.dark_knowledge_push import DarkKnowledgePushLog, PushFeedback
 from app.models.data_source import DataSource
 from app.models.dataset_info import DatasetInfo
@@ -127,6 +128,7 @@ __all__ = [
     "InterviewResult",
     "DataSource",
     "CrawlerRun",
+    "CrawlerSourceState",
     "SourceType",
     "ContentType",
     "Post",

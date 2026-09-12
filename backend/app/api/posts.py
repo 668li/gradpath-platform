@@ -64,7 +64,8 @@ def list_public_cursor(
     query = apply_cursor_filter(query, cursor, time_col=Post.created_at, id_col=Post.id)
     items = (
         query.options(selectinload(Post.replies))
-        .order_by(Post.created_at.desc())
+        # id 决胜键：同 created_at 行的页界必须确定（否则游标翻页重复/漏行）
+        .order_by(Post.created_at.desc(), Post.id.desc())
         .limit(page_size + 1)
         .all()
     )

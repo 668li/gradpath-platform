@@ -12,11 +12,9 @@ import threading
 import time
 from pathlib import Path
 
-import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.crawlers.career import boss_crawler, interview_crawler, lagou_crawler  # noqa: E402
 from app.crawlers.research.dedup import normalize_url  # noqa: E402
 from app.crawlers.research.official_announce_crawler import (  # noqa: E402
     OfficialAnnounceCrawler,
@@ -201,8 +199,8 @@ def test_news_aggregate_crawler_registered():
 
 def test_seed_replaces_stale_cron(monkeypatch):
     """存量 02:00 job（seed 体系旧默认）应被一次性迁移到每小时。"""
-    from apscheduler.schedulers.background import BackgroundScheduler
     from apscheduler.jobstores.memory import MemoryJobStore
+    from apscheduler.schedulers.background import BackgroundScheduler
 
     import app.api.crawlers as api_crawlers
 
@@ -233,14 +231,18 @@ def test_seed_replaces_stale_cron(monkeypatch):
         sched.shutdown(wait=False)
 
 
-# ===== 假就业源注销 =====
+# ===== 假就业源根除 =====
 
 
-def test_synthetic_career_crawlers_deregistered():
-    """random.seed/_COMPANIES 合成生成器不得再出现在注册表（防 581 重演）。"""
+def test_synthetic_career_crawlers_eradicated():
+    """random.seed/_COMPANIES 合成生成器不得再出现在注册表（防 581 重演）。
+
+    09-12 起从「文件保留防复活」升级为「文件物理删除」（spec 002 FR7）：
+    career/ 目录已根除，这里连文件存在性一起锁死。
+    """
     from app.crawlers.registry import get_crawler
 
     for name in ("boss", "lagou", "interview", "company_review", "salary_data"):
         assert get_crawler(name) is None, f"{name} 应已注销注册"
-    assert boss_crawler.BossCrawler is not None and lagou_crawler.LagouCrawler is not None
-    assert interview_crawler.InterviewCrawler is not None, "类本身保留（文件不删）"
+    crawlers_dir = Path(__file__).resolve().parents[1] / "app" / "crawlers"
+    assert not (crawlers_dir / "career").exists(), "career/ 目录应已物理删除"
