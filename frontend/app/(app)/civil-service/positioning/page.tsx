@@ -104,7 +104,8 @@ function PositioningFormPage() {
           <h1 className="page-title">考公定位评估</h1>
         </div>
         <p className="mt-1 text-sm text-ink-500">
-          填写你的基本条件，系统按真实职位数据与进面线评估竞争力，生成冲刺/目标/保底三档岗位建议。
+          填写你的基本条件，系统结合报考规则与经验情报进行 AI
+          竞争力评估，生成冲刺/目标/保底三档建议；职位检索请使用公考雷达等专门工具。
         </p>
       </div>
 
