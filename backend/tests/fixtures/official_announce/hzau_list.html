@@ -27,7 +27,7 @@
 <!-- header -->
 <div class="header">
     <div class="w1200">
-
+      
         <div class="hBtm clearfix">
             <a href="" class="logo" target="_blank">
 <!-- 网站logo图片地址请在本组件"内容配置-网站logo"处填写 -->
@@ -41,16 +41,16 @@
 <script type="text/html" id="htmlu1">
     <div id="appu1">
         <div v-if="!isError" class="form">
-
-
-
+        
+        
+        
                                   <input class="itext" type="text" name="SearchValue" id="SearchValue" placeholder="请输入搜索关键词......"   autocomplete=off v-model=query.keyWord @keyup.enter="onSubmit"/>
                                   <input class="isubm" type="button" v-on:click="onSubmit()" />
                                   <input type="hidden" name="SearchSiteID" id="SearchSiteID" value="119" />
-                                  <input type="hidden" name="searchtarget" id="searchtarget" value="doctitle" />
-
-
-
+                                  <input type="hidden" name="searchtarget" id="searchtarget" value="doctitle" />  
+                              
+        
+          
         </div>
         <div v-if="isError" style="color: #b30216; font-size:18px;text-align: center;padding:20px;">
             应用维护中！
@@ -138,11 +138,11 @@
 
    } else {
       $("#divu1").html($("#htmlu1").text());
-      var appOwner = "1563874080";
+      var appOwner = "1563874080";   
       var urlPrefix = "/aop_component/";
       var ifLogin="";
       var token = ifLogin=='true'?gettoken(10, true).trim():'tourist';
-      if (containsHtmlTags(token) || !token) {
+      if (containsHtmlTags(token) || !token) { 
          token = 'tourist';
       }
       jQuery.support.cors = true;
@@ -172,8 +172,8 @@
 
       function onSubmitu1(e) {
         queryInfou1.query.keyWord= $("#appu1  .qwss").val();
-
-        var url = "/aop_views/search/modules/resultpc/soso.html";
+        
+        var url = "/aop_views/search/modules/resultpc/soso.html";      
         if ("10" == "1" || "10" == "2") {
            url = "" + url;
         }
@@ -210,44 +210,44 @@
     <li class="nLi ">
       <h3><a href="../ybgk.htm" target="_blank">院部概况</a></h3>
        <ul class="sub">
-
+                                                
            <li><a href="../ybgk/yjsjygk.htm">研究生教育概况</a></li>
-
-
+                                                      
+                                                
            <li><a href="../ybgk/gzzn.htm">工作职能</a></li>
-
-
+                                                      
+                                                
            <li><a href="../ybgk/bmld.htm">部门领导</a></li>
-
-
+                                                      
+                                                
            <li><a href="../ybgk/gzry.htm">工作人员</a></li>
-
-
+                                                      
+                                                
            <li><a href="../ybgk/gzzd.htm">规章制度</a></li>
-
-
+                                                      
+                                                
            <li><a href="../ybgk/bszn.htm">办事指南</a></li>
-
+                                                      
        </ul>
   </li>
     <li class="nLi on">
       <h3><a href="../zsgz.htm" target="_blank">招生工作</a></h3>
        <ul class="sub">
-
+                                                
            <li><a href="sszs.htm">硕士招生</a></li>
-
-
+                                                      
+                                                
            <li><a href="bszs.htm">博士招生</a></li>
-
-
+                                                      
+                                                
            <li><a href="http://ic.hzau.edu.cn">留学生招生</a></li>
-
-
+                                                      
+                                                
            <li><a href="tmszs.htm">推免生招生</a></li>
-
-
+                                                      
+                                                
            <li><a href="kyzl.htm">考研资料</a></li>
-
+                                                      
        </ul>
   </li>
     <li class="nLi ">
@@ -256,32 +256,32 @@
     <li class="nLi ">
       <h3><a href="../xwgz.htm" target="_blank">学位工作</a></h3>
        <ul class="sub">
-
+                                                
            <li><a href="../xwgz/xwpdwyh.htm">学位评定委员会</a></li>
-
-
+                                                      
+                                                
            <li><a href="../xwgz/xwsy.htm">学位授予</a></li>
-
-
+                                                      
+                                                
            <li><a href="../xwgz/dsdw.htm">导师队伍</a></li>
-
-
+                                                      
+                                                
            <li><a href="../xwgz/xwsqd.htm">学位授权点</a></li>
-
+                                                      
        </ul>
   </li>
     <li class="nLi ">
       <h3><a href="../zlgl.htm" target="_blank">质量管理</a></h3>
        <ul class="sub">
-
+                                                
            <li><a href="../zlgl/zzjg.htm">组织机构</a></li>
-
-
+                                                      
+                                                
            <li><a href="../zlgl/zdbz.htm">制度标准</a></li>
-
-
+                                                      
+                                                
            <li><a href="../zlgl/jxpj.htm">绩效评价</a></li>
-
+                                                      
        </ul>
   </li>
     <li class="nLi ">
@@ -290,15 +290,15 @@
     <li class="nLi ">
       <h3><a href="../szjy.htm" target="_blank">思政教育</a></h3>
        <ul class="sub">
-
+                                                
            <li><a href="../szjy/djlh.htm">党建领航</a></li>
-
-
+                                                      
+                                                
            <li><a href="../szjy/swgl.htm">事务管理</a></li>
-
-
+                                                      
+                                                
            <li><a href="../szjy/qtgz.htm">群团工作</a></li>
-
+                                                      
        </ul>
   </li>
     <li class="nLi ">
@@ -338,50 +338,50 @@
 </div>
         </div>
 
-
+        
 
 
 <script language="javascript" src="/system/resource/js/centerCutImg.js"></script><script language="javascript" src="/system/resource/js/ajax.js"></script><ul class="newsList">
    <li><a href="../info/1025/863968.htm">关于发放2026级硕士研究生录取通知书的通知</a><span>2026-06-29</span></li>
-
+  
    <li><a href="../info/1025/9942.htm">研究生人事档案邮寄地址及组织关系转接信息（更新）</a><span>2026-06-17</span></li>
-
+  
    <li><a href="../2026sssx.pdf">关于办理2026年拟录取硕士研究生（含推免硕士生）相关手续的通知</a><span>2026-05-25</span></li>
-
+  
    <li><a href="../info/1025/862578.htm">2026年硕士研究生少数民族高层次骨干人才计划南疆高校教师专项调剂公告（第二批）</a><span>2026-04-13</span></li>
-
+  
    <li><a href="../info/1025/862538.htm">2026年硕士研究生少数民族高层次骨干人才计划南疆高校教师专项调剂公告</a><span>2026-04-07</span></li>
-
+  
    <li><a href="../info/1025/862398.htm">华中农业大学2026年第一志愿硕士研究生招生复试资格线</a><span>2026-03-25</span></li>
-
+  
    <li><a href="../2026zxjhx.pdf">华中农业大学2026年硕士研究生专项计划招生复试资格线</a><span>2026-03-23</span></li>
-
+  
    <li><a href="../2026ssfsfa.pdf">华中农业大学2026年硕士研究生复试工作方案</a><span>2026-03-23</span></li>
-
+  
    <li><a href="../2026cjfcgg.pdf">华中农业大学关于2026年硕士研究生招生考试初试成绩复查结果的通知</a><span>2026-03-06</span></li>
-
+  
    <li><a href="../2026sscjcx.pdf">华中农业大学关于2026年硕士研究生招生考试初试成绩公布的通知</a><span>2026-02-27</span></li>
-
+  
    <li><a href="../kaochanganpai.pdf">2026年全国硕士研究生招生考试华中农业大学考点考场安排</a><span>2025-12-19</span></li>
-
+  
    <li><a href="../info/1025/851188.htm">2026年全国硕士研究生招生考试华中农业大学考点公告</a><span>2025-12-15</span></li>
-
+  
    <li><a href="../2026wsqrgg.pdf">2026年硕士研究生招生考试华中农业大学报考点网上确认公告</a><span>2025-10-29</span></li>
-
+  
    <li><a href="../2026sswbgg.pdf">华中农业大学2026年全国硕士研究生招生考试网上报名公告</a><span>2025-10-09</span></li>
-
+  
    <li><a href="../2026sszsjz.pdf">华中农业大学2026年硕士研究生招生简章</a><span>2025-10-09</span></li>
-
+  
    <li><a href="../2026sszyml.pdf">华中农业大学2026年硕士研究生招生专业目录</a><span>2025-10-09</span></li>
-
+  
    <li><a href="../2025ssdz.pdf">关于办理2025年拟录取硕士研究生（含推免硕士生） 相关手续的通知</a><span>2025-05-29</span></li>
-
+  
    <li><a href="../2025ssnjgg.pdf">2025年硕士研究生少数民族高层次骨干人才计划南疆高校教师专项调剂公告</a><span>2025-04-22</span></li>
-
+  
    <li><a href="https://yjs.hzau.edu.cn/kaochangwangshanggongshiding2.pdf">2025年全国硕士研究生招生考试华中农业大学考点考场安排索引表</a><span>2024-12-20</span></li>
-
+  
    <li><a href="../info/1025/504938.htm">2025年全国硕士研究生招生考试华中农业大学考点公告</a><span>2024-12-16</span></li>
-
+  
 </ul>
  <!-- 分页 -->
 <div class="page" style="text-align: center !important;">
@@ -403,17 +403,17 @@
 .headStyle1k3tpy00s0 a:hover {font-size: 12px;font-family:宋体;color: black; background: #EFF7FE; border-color: #AFD5F5; text-decoration: none;line-height:14px;}
 .headStyle1k3tpy00s0 a:link {font-size: 12px;font-family:宋体;color: #000000; text-decoration: none;line-height:14px;}
 .headStyle1k3tpy00s0 a:active { font-size: 12px;font-family:宋体;color: black; text-decoration: none; background: #EFF7FE; line-height:14px;}
-</style><script language="javascript" src="/system/resource/js/gotopage.js"></script><script type="text/javascript">function a234822_gopage_fun(){_simple_list_gotopage_fun(2,'a234822GOPAGE',2)}</script><table cellspacing="0" cellpadding="0" border="0"><TR><td colspan="0"><table cellspacing="0" class="headStyle1k3tpy00s0" width="100%" cellpadding="1"><tr valign="middle"><TD nowrap align="left" width="1%" id="fanye234822">共38条&nbsp;&nbsp;1/2&nbsp;</td><td nowrap align="left"><div><span class="PrevDisabled">首页</span><span class="PrevDisabled">上页</span><a href="sszs/1.htm" class="Next">下页</a><a href="sszs/1.htm" class="Next">尾页</a>&nbsp;&nbsp;<input align="absmiddle" type="button" class="defaultButtonStyle" id="gotopagebut" name="a234822Find" value="转到" onclick="javascript:a234822_gopage_fun()"><INPUT size="2" align="absmiddle" class="defaultInputStyle" NAME="a234822GOPAGE" id="a234822GOPAGE" VALUE="" style="margin-left:1px;margin-right:1px">页</div></td></tr></table></table>
+</style><script language="javascript" src="/system/resource/js/gotopage.js"></script><script type="text/javascript">function a234822_gopage_fun(){_simple_list_gotopage_fun(2,'a234822GOPAGE',2)}</script><table cellspacing="0" cellpadding="0" border="0"><TR><td colspan="0"><table cellspacing="0" class="headStyle1k3tpy00s0" width="100%" cellpadding="1"><tr valign="middle"><TD nowrap align="left" width="1%" id="fanye234822">共38条&nbsp;&nbsp;1/2&nbsp;</td><td nowrap align="left"><div><span class="PrevDisabled">首页</span><span class="PrevDisabled">上页</span><a href="sszs/1.htm" class="Next">下页</a><a href="sszs/1.htm" class="Next">尾页</a>&nbsp;&nbsp;<input align="absmiddle" type="button" class="defaultButtonStyle" id="gotopagebut" name="a234822Find" value="转到" onclick="javascript:a234822_gopage_fun()"><INPUT size="2" align="absmiddle" class="defaultInputStyle" NAME="a234822GOPAGE" id="a234822GOPAGE" VALUE="" style="margin-left:1px;margin-right:1px">页</div></td></tr></table></table>  
 </div><script>_showDynClickBatch(['dynclicks_u9_863968','dynclicks_u9_9942','dynclicks_u9_863538','dynclicks_u9_862578','dynclicks_u9_862538','dynclicks_u9_862398','dynclicks_u9_862348','dynclicks_u9_862318','dynclicks_u9_862158','dynclicks_u9_862078','dynclicks_u9_851288','dynclicks_u9_851188','dynclicks_u9_850288','dynclicks_u9_850008','dynclicks_u9_849978','dynclicks_u9_849948','dynclicks_u9_506708','dynclicks_u9_506338','dynclicks_u9_505108','dynclicks_u9_504938'],[863968,9942,863538,862578,862538,862398,862348,862318,862158,862078,851288,851188,850288,850008,849978,849948,506708,506338,505108,504938],"wbnews", 1563874080)</script>
 
         </div>
-
+       
     </div>
 </div>
 
 <div class="footerWrap">
     <div class="w1200 clearfix">
-
+        
         <div class="footer2">
            <dl>
                 <dt>---友情链接--- <span></span></dt>
@@ -422,12 +422,12 @@
   <a href="https://yz.chsi.com.cn/" target="_blank" title="">中国研究生招生信息网</a>
   <a href="http://www.cdgdc.edu.cn/" target="_blank" title="">中国学位与研究生教育信息网</a>
 
-
+                 
                 </dd>
             </dl>
             <p><!-- 版权内容请在本组件"内容配置-版权"处填写 -->
 <p>版权所有：华中农业大学研究生院&nbsp; &nbsp;党委研究生工作部</p><p>地址：湖北省武汉市洪山区狮子山街1号华中农业大学 <br /></p></p>
-
+            
         </div>
         <div class="footer3">
             <ul>
@@ -435,7 +435,7 @@
                       <a href="#"><img src="../images/yjs-ewm.jpg"><span>研究生教育</span></a>
 
               </li>
-            </ul>
+            </ul>   
         </div>
     </div>
 </div>
@@ -443,7 +443,7 @@
 <script src="../dfiles/14200/js/jquery.superslide.js"></script>
 <script src="../dfiles/14200/js/common.js"></script>
 <script id="jsID" type="text/javascript">
-  jQuery("#nav").slide({
+  jQuery("#nav").slide({ 
       type:"menu",// 效果类型，针对菜单/导航而引入的参数（默认slide）
       titCell:".nLi", //鼠标触发对象
       targetCell:".sub", //titCell里面包含的要显示/消失的对象
@@ -489,3 +489,38 @@
 
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

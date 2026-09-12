@@ -1,3 +1,7 @@
 # Shell 脚本必须保持 LF，否则 Git Bash/服务器端 bash 报 "\r: command not found"
 # （core.autocrlf=true 环境下 checkout 会静默转换，前科见 gradpath-truth-protocol）
 tools/*.sh text eol=lf
+
+# 封印夹具字节冻结：sha256 封印测试按原始字节校验（spec 002 疫苗地基），
+# 禁止任何 EOL 转换/尾随空白规范化触碰（2026-09-12 bit_list 封印被格式化钩子改写的教训）
+backend/tests/fixtures/** -text

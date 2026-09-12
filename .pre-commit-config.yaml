@@ -9,9 +9,9 @@ repos:
     rev: v4.6.0
     hooks:
       - id: trailing-whitespace
-        exclude: ^frontend/
+        exclude: ^frontend/|^backend/tests/fixtures/
       - id: end-of-file-fixer
-        exclude: ^frontend/
+        exclude: ^frontend/|^backend/tests/fixtures/
       - id: check-yaml
         files: \.(yaml|yml)$
         # docker-compose.grey.yml 使用 docker compose 专属标签 !override，标准 YAML 解析器不认
