@@ -6,8 +6,8 @@ import { GraduationCap, LogIn, UserPlus } from "lucide-react";
 /**
  * 根页面：公开落地页。
  *
- * 2026-09-12 战略转向：定位 = 信息差供给 + 聚合 + 流程时间线伴随（权威口号待视觉稿定稿，
- * 下方为临时文案）。有 gradpath_token 直接进 dashboard；未登录渲染落地页。
+ * 2026-09-12 战略转向：定位 = 信息差供给 + 聚合 + 流程时间线伴随。
+ * 正式口号已经用户拍板（Q2=B）：「替你盯信息差，准时推你一把」。有 gradpath_token 直接进 dashboard；未登录渲染落地页。
  * 旧「免费可报性预览」漏斗（搜职位/院校→勾身份→出判定）已随职位数据删除下架，
  * 不虚假承诺未上线能力：时间线/公告盯梢标注"上线中"。
  */
@@ -53,10 +53,10 @@ export default function HomePage() {
         {/* Hero */}
         <section className="text-center">
           <h1 className="text-3xl font-bold text-ink-800 sm:text-4xl">
-            GradPath · 考公信息差管家
+            替你盯信息差，准时推你一把
           </h1>
           <p className="mx-auto mt-3 max-w-2xl text-sm text-ink-500 sm:text-base">
-            官方动作在官网、刷题在粉笔、查职位在雷达——我们替你盯散落各处的公告与规则变化，
+            官方动作在官网、刷题在粉笔、查职位在雷达——GradPath 把公告与规则变化这些你本来要自己搜的信息代为搜集，
             按你的身份过滤"与我相关"，每条情报连上官方来源。不代你报名，不编造数据。
           </p>
         </section>
