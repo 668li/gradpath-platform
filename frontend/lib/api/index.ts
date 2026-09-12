@@ -61,6 +61,12 @@ export { gradIntelApi, gradVisualizationApi, schoolAnalystApi, schoolCompareApi 
 export type { AnalystReportRequest, AnalystReportResponse, CompareRequest, CompareResponse } from "./grad";
 export { kaoyanCommunityApi, kaoyanNewsApi } from "./kaoyan";
 export { studyPlanApi } from "./study";
+export { goalDecomposeApi } from "./goal-decompose";
+export type {
+  GoalStep,
+  GoalDecomposePreview,
+  GoalCommitResult,
+} from "./goal-decompose";
 export { aiStudyPlanApi } from "./ai-study-plan";
 export { crawlerApi } from "./crawlers";
 export { researchQueueApi } from "./research-queue";

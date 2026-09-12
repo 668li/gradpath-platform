@@ -16,6 +16,7 @@ import {
   CalendarDays,
 } from "lucide-react";
 import { actionsApi } from "@/lib/api";
+import { GoalDecomposeCard } from "./goal-decompose-card";
 import { cn } from "@/lib/utils";
 import { LoadingState, EmptyState } from "@/components/ui/empty";
 import { Button, Badge, Input, Textarea, Select, Field } from "@/components/ui/form-controls";
@@ -149,6 +150,9 @@ export default function ActionsPage() {
           累计行动 {actions.length} 项 · 已完成 {doneCount} 项
         </p>
       </div>
+
+      {/* 目标拆解（福格微行动） */}
+      <GoalDecomposeCard />
 
       {/* 连击卡片 */}
       <StreakCard streak={streak} />
