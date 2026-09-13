@@ -64,3 +64,21 @@
 
 ## P2 功能合并会话（2026-09-06 · f063b37）
 （无阻塞项。任务1"决策组只留 decision-center"按书让步顺序收窄执行，裁量理由记 PROGRESS.md。）
+
+---
+
+# BLOCKED 追加 — 爬虫地基六块收敛会话（spec 002 · 2026-09-12 · 生产 a485baec）
+
+## 销账（本会话完成）
+1. 首节顺手活「base_crawler requests→httpx：未做」→ ✅ transport.py 统一传输层落地（httpx 骨干 + sender 注入），requests 仅存于异常兼容面。
+2. R3「第二份书必办」real_data :255 伪研招网 URL → ✅ `_review_url` 改挂校主页/学位网真实域，test_crawlers 三处 KNOWN DEFECT 定性锁翻案为正向断言；生产存量 `#real_data:` 行已随三态闸 legacy 冻结（5316 行 data_origin=legacy，覆盖当时 479 行 chsi 存量）——行级删留仍属数据处置拍板项，冻结态下无泄漏面。
+3. R3 遗留「real_data/ 剩余 40+ 真脚本迁 scripts/（F10）」→ ✅ 以整目录删除为终态（90 个一次性脚本含 `import random` 造假生成器物理根除），无需迁移；两个活文件已迁住：learning_resource_seed→app/seed/、stats_gongbao_scraper→crawlers/reports/（引用同步、测试绿）。
+4. 首节「基线偏差 3 failed（并行在途）」→ 已过时：该三条为 09-04 TDD 在途红早已修复；现行基线=收敛树全量 **1941 passed / 1 skipped**。
+
+## 仍然挂账（真实 pending）
+- **本地 deploy-rebased@2cd8f20 与生产权威链 a485baec 分叉**（003 会话本地 compose 提交 2cd8f20 内容等价于线上 f72d14a2，但 SHA 未进收敛线）——下次任何部署前必须 gp-converge 收敛，全域禁 reset。
+- dataset_info 死模型 drop 迁移；yz_programs 150 行 provenance 洗标签；dk 37 行补来源列——均未动，legacy 冻结后不紧急。
+- Mimosa scanner_enobufs 完整安全审计未补跑（当日 4 笔提交按兼容策略放行，未宣称已审计）。
+- 002 验收判据 1「加线 ≤30 分钟」仅测试内演练通过，待下一条真实供给线（Phase 2 官方源）实弹验证。
+- 09-06 会话 4 段完成叙事仍在 PROGRESS.md 工作区未提交（P3 第二批/部署风暴/技能树/目标拆解），其工作均已上产，建议随下次收尾一并入库。
+
