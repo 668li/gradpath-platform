@@ -47,6 +47,9 @@ dependencies = [
     "pillow>=12.3.0",
     "requests>=2.33.0",
     "soupsieve>=2.8.4",
+    # setuptools>=83 修 PYSEC-2026-3447（2026-09-13 Mimosa deep 审计对账：生产镜像实装
+    # 79.0.1；基础镜像自带版本不可控，显式下限钉住）
+    "setuptools>=83.0.0",
 ]
 
 # 显式声明包发现范围：backend/ 下有 app/pipeline/migrations/scripts 等多个顶级目录，
