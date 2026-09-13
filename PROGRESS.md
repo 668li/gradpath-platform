@@ -156,3 +156,16 @@
 - 部署插曲两件：①并行 conv-0906 换线把流量看板(332a442)整个丢弃致生产 alembic stamp 孤儿 b5d9e2a4c7f8、部署链每跑必炸——我 cherry-pick 修复随部署带上（纯新增 10 文件零冲突）；②全局 py-3.13 环境的 python-jose 神秘消失（会话中途 1865 绿时还在）→ 按 pyproject 声明重装，未动他人意图。
 - 新遗留入台账：dataset_info 死模型（第二份书配 drop 迁移）；real_data/ 剩余 40+ 真脚本迁 scripts/（F10）；yz_programs 150 行 provenance 洗 curated 标签（F1 一并）；dk 37 补来源列；本地 deploy-rebased 与生产线分叉待领导定收敛方向。
 - 生产终验（部署后直查 site-packages）：入库红线串命中 1、crawler_tasks is_allowed 命中 3、pdf_parser @RETIRED 命中 1；容器全 healthy、日志零 traceback、alembic 保持 e7f8a9b0c1d2（零迁移兑现）、公开端点 200、生产 chsi 存量 479 行全为已审状态（PENDING=0、#real_data:=0）——第二份书按 BLOCKED#2 处理 real_data 源码时一并裁决 479 行去留。
+- P3 用户亲测第二批(16条)已实施：资讯/学习资源页删+302、面试经验内嵌就业面经库+失败案例并入、就业中心瘦身2tab、考公岗位情报删+定位表单页新建(404修复)、timeline提级、命令盘再删3条、导航抽屉收窄。vitest 169(−14 为被测删功能用例)。待收敛部署 ba4a80c 之上。
+- P3 部署风暴实录(09-06午后)：服务器线被并行会话移动/重置4次(6414c49→a2b342a→bed5c39(force)→0beede7→6490780→aa1be03)；我的16文件批次经3次收敛最终上线(现网news307/positioning健在/169测试基线)；幻影stamp(b5d9+c8d4悬空)以文件归位修复，alembic current==c8d4 head恢复一致；新增 tools/gp-preflight.sh(四闸:ff/磁盘/基础镜像/stamp)+tools/gp-converge.sh(克隆收敛配方)，skill 已写入"第-1步硬性"。教训：磁盘闸被builder prune+DockerHub不可达二次坑；daocloud源可用。
+- 技能树移动端修复(#15真实所指)：SVG 高度=内容总高致手机撑爆+touch-none吞单指滚动。改 touch-pan-y+双指手势filter+宽高双向fit+ResizeObserver+68dvh高度钳制。vitest 169绿 build过。
+- #14 目标拆解 MVP 已实施：后端 /api/goal-decompose preview+commit（福格约束 Prompt+JSON 容错解析+配额治理+create_plan_from_tasks 落库接入 streak 闭环），前端行动任务中心顶部拆解卡（目标→7天微行动→一键存入）。测试：后端全量 1878 绿(含新5)，vitest 169 绿，build 过。待收敛部署。
+
+## 爬虫地基六块收敛（完成 · 2026-09-12 · speckit 002 · 生产 a485baec）
+- 六块落地：①统一传输层 transport.py（httpx 骨干/per-host 限速/4xx 不重试/429 停 20s/5xx 退避/证据 sha256；BaseCrawler._request 委托+sender 注入；yz.chsi.com.cn 外发即拒，红线名单单源在 transport、入库闸复用）②eol 实录样本疫苗+虚构源契约演练测试 ③config/*.yaml 一线一契约（line_registry 白名单硬闸；DEFAULT_DAILY_SCHEDULES 改 yaml 生成，5 条 cron 逐字不变；季节窗口闸在调度投递侧）④t_crawler_source_state（迁移 b8e4f2a6c9d3：游标/连续失败/隔离位）⑤三态证据闸 data_origin+fetch_evidence 专列（fetched 缺证据拒收；存量 5316 行回填 legacy 冻结；yanzhao 预置显式 legacy=构造性无法入库；real_data 伪研招网 URL 翻案为正向）⑥心跳 10 源全覆盖+连续 2 败自动隔离（投递/worker 双 fail-open+admin unisolate 端点）。
+- 信任锚融合判决：唯一留痕=服务器线 _fetch_log（_request 唯一写入，条目超集 +sha256），fetch_evidence_log 旧名已死；三态专列与 external_meta.fetched_evidence 双存储位并存（auto_review 消费后者）；闸接受逐条盖章 OR 会话级 fetch_log 两路证据。
+- 死重根除 ≈11.6 万行：real_data//career//civil//scrapy_grad/ 四目录+grad/research/reports 退役假爬虫 24 文件+退役 yaml 14 个；real_data_crawler 的研招网抓取分支与预置缓存补位（random 造假 quota）同日根除。测试侧 +7 新文件（守卫/证据闸/状态隔离/线契约/疫苗/演练），退役用例随管道精确对账。
+- 收敛与部署：服务器线被 003 会话前移（bf8347a 三笔），gpclone cherry-pick 5 处冲突逐个融合（信任锚×地基、zhihu/tieba modify/delete 保删除、goal_decompose 系 09-06 工作区遗留删除不入收敛线），克隆全量 1941 绿后 bundle 发射；迁移 f1a3b5c7d9e2→b8e4f2a6c9d3 上产，八容器 healthy，HTTPS 冒烟+生产 registry==白名单==10 True。
+- 当日新坑入记忆：pre-commit 尾随空白/EOF 钩子改写 sha256 封印夹具字节（tests/fixtures 已字节冻结：pre-commit 排除+.gitattributes -text）；`git add -u` 卷入他人工作区删除（goal_decompose，003 本地恢复）；update_from_bundle 的 bundle 须 /tmp 绝对路径；Mimosa 五拦模式（mv/cp/sed -i 源码、脚本名+重定向、printf 写 .sh）绕道=Write→scp→nohup。
+- 遗留见 BLOCKED.md 002 追加节（本地线分叉再收敛/dataset_info drop/Mimosa 审计补跑/判据 1 实弹验证）。
+
