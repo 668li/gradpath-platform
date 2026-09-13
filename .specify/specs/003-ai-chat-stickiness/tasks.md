@@ -31,7 +31,7 @@
 
 ## Phase E 部署（宪法 8）
 
-- [ ] E1 提交：显式路径 add 本 feature 文件 → `git diff --cached --name-only` 核对 → commit
-- [ ] E2 `bash tools/gp-preflight.sh <目标>` 四闸；ff 闸预期红（本地 54ab880 与生产 8ade9ca 平行分叉）→ `bash tools/gp-converge.sh <我的提交>` 只摘本提交
-- [ ] E3 bundle→scp→`update_from_bundle.sh`（nohup 后台+轮询）；生产 .env 补 `SITE_BASE_URL=https://quxianglab.cn`
-- [ ] E4 部署后验证：拓扑祖先核对+容器日志+site-packages 实证新模块+HTTPS 冒烟（记忆感/钩子/深链三件）+冒烟账号删除
+- [x] E1 提交：显式路径 add 本 feature 文件 → `git diff --cached --name-only` 核对 → commit
+- [x] E2 `bash tools/gp-preflight.sh <目标>` 四闸；ff 闸预期红（本地 54ab880 与生产 8ade9ca 平行分叉）→ `bash tools/gp-converge.sh <我的提交>` 只摘本提交
+- [x] E3 bundle→scp→`update_from_bundle.sh`（nohup 后台+轮询）；生产 .env 补 `SITE_BASE_URL=https://quxianglab.cn`
+- [x] E4 部署后验证：拓扑祖先核对+容器日志+site-packages 实证新模块+HTTPS 冒烟（记忆感/钩子/深链三件）+冒烟账号删除
