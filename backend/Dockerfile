@@ -25,6 +25,11 @@ FROM python:3.11-slim AS production
 
 RUN groupadd -r gradpath && useradd --no-log-init -r -g gradpath gradpath
 
+# 先清基础镜像自带的 setuptools：否则 /install 升级版与其 79.0.1 双 dist-info
+# 冲突，pip 版本判定被旧版遮蔽（2026-09-13 setuptools 84 部署实证）。凡 deps 层
+# 升级基础镜像自带包都会踩同一坑。
+RUN pip uninstall -y setuptools 2>/dev/null || true
+
 WORKDIR /app
 
 # 依赖 + 项目包一次性并入系统目录（/install/lib→site-packages, /install/bin→bin）
