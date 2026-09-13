@@ -8,8 +8,11 @@ SSRF/robots/限速/错误分级/证据采集才有唯一落点。本测试静态
 豁免（各自有完整护栏或本身即是护栏）：
 - transport.py：统一传输层本体
 - base_crawler.py：robots.txt 拉取（urllib）+ sender 注入会话
-- crawl4ai_client.py / crawl4ai_scraper.py：浏览器渲染层（自有 SSRF 护栏）
+- crawl4ai_client.py：浏览器渲染层（自有 SSRF 护栏）
 - url_safety.py：SSRF 校验器，不发请求
+
+2026-09-13 清场注记：crawl4ai_scraper.py（自declared废弃的 ad-hoc 验证脚本，
+绕 SSRF/绕审核队列）已物理删除并从豁免名单摘除。
 """
 
 import re
@@ -21,7 +24,6 @@ EXEMPT = {
     "transport.py",
     "base_crawler.py",
     "crawl4ai_client.py",
-    "crawl4ai_scraper.py",
     "url_safety.py",
 }
 
