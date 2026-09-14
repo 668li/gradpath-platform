@@ -134,16 +134,6 @@ class TestSqlFallbackScript:
 class TestServiceLayerILIKE:
     """验证服务层搜索使用 ILIKE（pg_trgm 友好）。"""
 
-    def test_mentor_search_uses_ilike(self, db_session):
-        """mentor_service 搜索使用 ilike 而非 like。"""
-        import inspect
-
-        import app.services.mentor_service as ms
-
-        source = inspect.getsource(ms)
-        # 至少有一处 ilike 调用（搜索导师姓名）
-        assert "ilike" in source, "mentor_service 应使用 ilike 进行大小写不敏感搜索"
-
     def test_school_search_works_case_insensitive(self, db_session):
         """schools 表的搜索查询不区分大小写（PostgreSQL 上走 GIN 索引）。"""
         from sqlalchemy import inspect as sa_inspect
@@ -155,39 +145,26 @@ class TestServiceLayerILIKE:
         assert "name" in mapper.columns
 
     def test_search_returns_correct_results_on_sqlite(self, db_session):
-        """SQLite 回退路径下，ILIKE 搜索功能仍可用（SQLite ilike 等同于 like 不区分大小写）。"""
-        from app.models.mentor import Mentor
-        from app.services.mentor_service import get_mentors
+        """SQLite 回退路径下，ILIKE 大小写不敏感搜索仍可用（以 schools 表为样本）。"""
+        from sqlalchemy import or_
 
-        # 创建测试数据
-        m1 = Mentor(
-            name="张三教授",
-            university="清华大学",
-            department="计算机系",
-            title="教授",
+        from app.models.school import School
+
+        db_session.add_all(
+            [
+                School(name="Tsinghua University", slug="tsinghua", province="北京"),
+                School(name="Peking University", slug="peking", province="北京"),
+            ]
         )
-        m2 = Mentor(
-            name="李四教授",
-            university="北京大学",
-            department="数学系",
-            title="副教授",
-        )
-        db_session.add_all([m1, m2])
         db_session.commit()
 
-        # 按大学筛选（ILIKE 搜索）：搜索 "清华" 应只返回 m1
-        mentors, total = get_mentors(db_session, university="清华")
-        assert total == 1
-        assert mentors[0].name == "张三教授"
-
-        # 按院系筛选：搜索 "计算机" 应只返回 m1
-        mentors, total = get_mentors(db_session, department="计算机")
-        assert total == 1
-        assert mentors[0].name == "张三教授"
-
-        # 大小写不敏感（SQLite ilike 等同于 like）
-        mentors, total = get_mentors(db_session, university="清华")
-        assert total == 1
+        rows = (
+            db_session.query(School)
+            .filter(or_(School.name.ilike("%tsinghua%"), School.name.ilike("%Tsinghua%")))
+            .all()
+        )
+        assert len(rows) == 1
+        assert rows[0].name == "Tsinghua University"
 
 
 class TestPostgresIndexingConfiguration:

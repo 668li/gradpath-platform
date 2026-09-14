@@ -172,11 +172,7 @@ class TestModelsRegistered:
     """验证新模型已正确注册到 app.models 命名空间"""
 
     def test_all_models_importable(self):
-        from app.models import (
-            DecisionReviewQueue,
-            UserMemoryFact,
-            UserOnboarding,
-        )
+        from app.models import DecisionReviewQueue, UserMemoryFact, UserOnboarding
 
         assert UserMemoryFact is not None
         assert UserOnboarding is not None
@@ -188,4 +184,3 @@ class TestModelsRegistered:
         assert MemoryFactType is not None
         assert OnboardingStatus is not None
         assert ReviewStatus is not None
-    

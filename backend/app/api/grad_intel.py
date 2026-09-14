@@ -476,4 +476,3 @@ def batch_school_summaries(
         cache.set(cache_key, summary, ttl=300)
         results.append(GradSchoolDataSummaryResponse(**summary))
     return results
-

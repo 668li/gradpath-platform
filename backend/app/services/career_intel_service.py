@@ -12,6 +12,16 @@ from sqlalchemy.orm import Session
 from app.models.career_intel import CareerDarkKnowledge, CareerPositioning, CompanyIntel
 from app.services.ai_orchestrator import AIOrchestrator
 
+# 阶段名称映射
+STAGE_NAMES = {
+    "self_awareness": "自我认知",
+    "application": "简历投递",
+    "interview": "面试阶段",
+    "signing": "签约阶段",
+    "onboarding": "入职阶段",
+}
+
+
 def get_career_dark_knowledge_by_stage(
     db: Session,
     stage: str | None = None,

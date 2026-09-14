@@ -135,5 +135,3 @@ def get_dark_knowledge_stages(
 ):
     """获取求职暗知识各阶段统计。"""
     return career_intel_service.get_career_dark_knowledge_stages(db)
-
-

@@ -19,7 +19,6 @@ from sqlalchemy.orm import Session
 
 from app.core.cache import cache
 from app.models.destination_decision import DecisionStatus, DestinationDecision
-from app.models.grad_intel import DarkKnowledge
 from app.models.outcome_report import OutcomeReport
 from app.models.user import User
 from app.utils.business_time import beijing_today
