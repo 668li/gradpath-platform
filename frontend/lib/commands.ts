@@ -145,14 +145,6 @@ export const commands: Command[] = [
     keywords: ["学习", "计划", "study", "plan"],
     icon: "Swords",
   },
-  {
-    id: "study-plans-ai-generate",
-    title: "AI 生成学习计划",
-    subtitle: "规划",
-    href: "/study-plans/ai-generate",
-    keywords: ["AI", "生成", "学习", "计划", "ai", "generate"],
-    icon: "Sparkles",
-  },
 
   // ────────────────────────── AI ───────────────────────────
   {

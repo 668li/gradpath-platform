@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { studyPlanApi } from "@/lib/api";
 import { StudyPlan, StudyPlanCreate } from "@/types";
 import { toast } from "sonner";
-import { Plus, Trash2, Edit2, Sparkles, FileText } from "lucide-react";
+import { Plus, Trash2, Edit2, FileText } from "lucide-react";
 
 /** 学习计划示例模板（空态引导，点「套用」预填创建表单） */
 const STUDY_PLAN_TEMPLATES: { title: string; subjects: string[]; hint: string }[] = [
@@ -111,13 +110,6 @@ export default function StudyPlansPage() {
           <p className="text-sm text-ink-500 mt-1">规划你的备考进度</p>
         </div>
         <div className="flex gap-3">
-          <Link
-            href="/study-plans/ai-generate"
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all"
-          >
-            <Sparkles className="w-4 h-4" />
-            AI 生成计划
-          </Link>
           <button
             onClick={() => setShowCreateForm(!showCreateForm)}
             className="flex items-center gap-2 px-4 py-2 bg-brand-500 text-white rounded-lg hover:bg-brand-600 transition-colors"

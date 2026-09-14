@@ -67,7 +67,6 @@ export type {
   GoalDecomposePreview,
   GoalCommitResult,
 } from "./goal-decompose";
-export { aiStudyPlanApi } from "./ai-study-plan";
 export { crawlerApi } from "./crawlers";
 export { researchQueueApi } from "./research-queue";
 export { adminApi, reportsApi } from "./admin";

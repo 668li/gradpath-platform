@@ -135,7 +135,7 @@ ignore = [
     "SIM117", # 嵌套 with 合并（1 处存量）
     "C408",   # dict() 字面量改写（4 处存量，含测试）
     "C416",   # 不必要推导式（2 处存量）
-    "N805",   # 方法首参非 self（ai_study_plan 遗留 2 处）
+    "N805",   # 方法首参非 self
     "N811",   # 常量别名导入（UUID as PyUUID 等遗留）
     "N814",   # CamelCase 导入为常量（main.py _NM 遗留）
     "N818",   # 异常类缺 Error 后缀（AIServiceNotConfigured 等，改名波及引用方）
