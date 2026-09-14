@@ -139,7 +139,7 @@ export function StreakActions({ stats, onCheckin }: StreakActionsProps) {
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-ink-700">微行动</p>
             <p className="text-xs text-ink-400">
-              看一条暗知识 / 补一条档案 · 预计5分钟
+              补一条档案 / 看一条经验帖 · 预计5分钟
             </p>
           </div>
           {completedMicro ? (

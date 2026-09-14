@@ -26,7 +26,6 @@ import {
 import {
   proactiveInsightsApi,
   useApi,
-  darkKnowledgePushApi,
   microActionApi,
   findNextPendingTask,
 } from "@/lib/api";
@@ -69,13 +68,11 @@ import {
   CareerGalaxy,
   CareerFitScoreCard,
   calculateCareerFitScore,
-  DarkKnowledgeCard,
   MicroActionCard,
   OnboardingQuest,
   NextStepRecommender,
   CollapsibleSection,
   PeerMirrorCard,
-  DarkKnowledgeGapCard,
 } from "@/components/dashboard";
 import type { UserState } from "@/components/dashboard";
 
@@ -260,9 +257,6 @@ export default function DashboardPage() {
     insightsSummary?.unread_count ??
     insights.filter((i) => !i.is_read).length;
 
-  // 暗知识推送 — 从 pulse 派生未读列表
-  const darkKnowledgeFeed = pulseData?.dark_knowledge_feed ?? [];
-  const unreadDarkKnowledge = darkKnowledgeFeed.find((k) => !k.is_read) ?? null;
 
   // 微行动计划
   const microPlan = microPlanData ?? null;
@@ -295,24 +289,6 @@ export default function DashboardPage() {
       // 静默失败
     } finally {
       setGenerating(false);
-    }
-  };
-
-  // 暗知识"已了解" — 标记已读并刷新 pulse
-  const handleDarkKnowledgeRead = async (pushId: string) => {
-    mutatePulse(
-      (prev) => prev ? {
-        ...prev,
-        dark_knowledge_feed: prev.dark_knowledge_feed.map((k) =>
-          k.push_id === pushId ? { ...k, is_read: true, read_at: new Date().toISOString() } : k,
-        ),
-      } : prev,
-      { revalidate: false },
-    );
-    try {
-      await darkKnowledgePushApi.markRead(pushId);
-    } catch {
-      mutatePulse();
     }
   };
 
@@ -679,16 +655,7 @@ export default function DashboardPage() {
       </CollapsibleSection>
 
       {/* ===== AI 洞察与成长记录（折叠） ===== */}
-      <CollapsibleSection title="AI 洞察与成长记录" subtitle="暗知识、微行动、AI 洞察、时间线">
-      {/* 增强 3：暗知识推送 — AI 洞察区域附近 */}
-      <DarkKnowledgeCard
-        item={unreadDarkKnowledge}
-        onMarkRead={handleDarkKnowledgeRead}
-      />
-
-      {/* 创意功能：暗知识缺口雷达 — 你还没看到但同路人都看的关键信息 */}
-      <DarkKnowledgeGapCard />
-
+      <CollapsibleSection title="AI 洞察与成长记录" subtitle="微行动、AI 洞察、时间线">
       {/* 增强 4：本周成长微行动 */}
       <MicroActionCard
         plan={microPlan}

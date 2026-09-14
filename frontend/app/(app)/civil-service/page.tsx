@@ -4,7 +4,6 @@ import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Target,
-  BookOpen,
   Wrench,
   AlertTriangle,
   ChevronRight,
@@ -19,23 +18,13 @@ import { EmptyState, LoadingState } from "@/components/ui/empty";
 import { ExamTimelineTab } from "@/components/civil-service/exam-timeline";
 import type {
   CivilServicePositioningResponse,
-  CivilServiceDarkKnowledgeResponse,
-  CivilServiceDarkKnowledgeStage,
 } from "@/types";
 
 const tabs = [
   { id: "positioning", label: "考公定位", icon: Target, color: "text-purple-500" },
-  { id: "dark-knowledge", label: "暗知识", icon: BookOpen, color: "text-amber-500" },
   { id: "tools", label: "备考工具", icon: Wrench, color: "text-green-500" },
   { id: "timeline", label: "考试流程", icon: CalendarRange, color: "text-blue-500" },
 ];
-
-const importanceMap: Record<string, { label: string; color: string }> = {
-  critical: { label: "关键", color: "bg-red-100 text-red-700" },
-  high: { label: "重要", color: "bg-orange-100 text-orange-700" },
-  medium: { label: "一般", color: "bg-blue-100 text-blue-700" },
-  low: { label: "了解", color: "bg-ink-100 text-ink-600" },
-};
 
 
 
@@ -116,82 +105,6 @@ function PositioningContent({ data }: { data: CivilServicePositioningResponse | 
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-center gap-3">
           <Sparkles className="h-5 w-5 text-amber-500 shrink-0" />
           <p className="text-sm text-amber-800">你符合选调生报名条件</p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function DarkKnowledgeContent({
-  stages,
-  activeStage,
-  onSelectStage,
-  items,
-  loading,
-}: {
-  stages: CivilServiceDarkKnowledgeStage[];
-  activeStage: string;
-  onSelectStage: (stage: string) => void;
-  items: CivilServiceDarkKnowledgeResponse[];
-  loading: boolean;
-}) {
-  return (
-    <div className="space-y-6">
-      {/* 阶段筛选 */}
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        {stages.map((s) => (
-          <button
-            key={s.stage}
-            onClick={() => onSelectStage(s.stage)}
-            className={cn(
-              "flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all",
-              activeStage === s.stage
-                ? "bg-amber-500 text-white shadow-sm"
-                : "bg-paper-100 text-ink-500 hover:bg-paper-200"
-            )}
-          >
-            {s.stage_name}
-            <span className="text-xs opacity-70">({s.count})</span>
-          </button>
-        ))}
-      </div>
-
-      {/* 暗知识卡片 */}
-      {loading ? (
-        <LoadingState text="加载暗知识…" />
-      ) : items.length === 0 ? (
-        <EmptyState title="该阶段暂无暗知识" description="请尝试选择其他阶段" />
-      ) : (
-        <div className="space-y-4">
-          {items.map((item) => {
-            const imp = importanceMap[item.importance] || importanceMap.medium;
-            return (
-              <div key={item.id} className="rounded-xl border border-paper-200 bg-white p-5">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium", imp.color)}>
-                    {imp.label}
-                  </span>
-                  {item.tags.slice(0, 2).map((tag) => (
-                    <span key={tag} className="text-xs text-ink-400">#{tag}</span>
-                  ))}
-                </div>
-                <h4 className="font-display font-bold text-ink-800 mb-2">{item.title}</h4>
-                <p className="text-sm text-ink-600 leading-relaxed mb-3">{item.content}</p>
-                {item.common_misconception && (
-                  <div className="rounded-lg bg-red-50 border border-red-100 p-3 mb-3">
-                    <p className="text-xs font-medium text-red-600 mb-1">常见误区</p>
-                    <p className="text-sm text-red-700">{item.common_misconception}</p>
-                  </div>
-                )}
-                {item.actionable_advice && (
-                  <div className="rounded-lg bg-green-50 border border-green-100 p-3">
-                    <p className="text-xs font-medium text-green-600 mb-1">行动建议</p>
-                    <p className="text-sm text-green-700">{item.actionable_advice}</p>
-                  </div>
-                )}
-              </div>
-            );
-          })}
         </div>
       )}
     </div>
@@ -288,13 +201,6 @@ function CivilServicePageContent() {
   const [positioning, setPositioning] = useState<CivilServicePositioningResponse | null>(null);
   const [posLoading, setPosLoading] = useState(true);
 
-  // Tab3: 暗知识
-  const [dkStages, setDkStages] = useState<CivilServiceDarkKnowledgeStage[]>([]);
-  const [activeDkStage, setActiveDkStage] = useState("");
-  const [dkItems, setDkItems] = useState<CivilServiceDarkKnowledgeResponse[]>([]);
-  const [dkLoading, setDkLoading] = useState(false);
-  const [stagesLoading, setStagesLoading] = useState(true);
-
   const handleTabChange = (id: string) => {
     router.push(`/civil-service?tab=${id}`);
   };
@@ -314,38 +220,11 @@ function CivilServicePageContent() {
       .finally(() => setPosLoading(false));
   }, [activeTab]);
 
-  // 加载 Tab3 阶段列表
-  useEffect(() => {
-    if (activeTab !== "dark-knowledge") return;
-    setStagesLoading(true);
-    civilServiceIntelApi
-      .getDarkKnowledgeStages()
-      .then((data) => {
-        setDkStages(data);
-        if (data.length > 0 && !activeDkStage) {
-          setActiveDkStage(data[0].stage);
-        }
-      })
-      .catch(() => setDkStages([]))
-      .finally(() => setStagesLoading(false));
-  }, [activeTab]);
-
-  // 加载 Tab3 暗知识内容
-  useEffect(() => {
-    if (activeTab !== "dark-knowledge" || !activeDkStage) return;
-    setDkLoading(true);
-    civilServiceIntelApi
-      .getDarkKnowledge(activeDkStage)
-      .then((data) => setDkItems(data))
-      .catch(() => setDkItems([]))
-      .finally(() => setDkLoading(false));
-  }, [activeTab, activeDkStage]);
-
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-ink-800 mb-2">考公中心</h1>
-        <p className="text-ink-500">定位评估、暗知识、备考工具与考试流程时间线 · 职位检索由公考雷达等专门工具承担</p>
+        <p className="text-ink-500">定位评估、备考工具与考试流程时间线 · 职位检索由公考雷达等专门工具承担</p>
       </div>
 
       {/* Tab 切换 */}
@@ -378,24 +257,6 @@ function CivilServicePageContent() {
             <LoadingState text="加载定位数据…" />
           ) : (
             <PositioningContent data={positioning} />
-          )}
-        </div>
-      )}
-
-      {activeTab === "dark-knowledge" && (
-        <div>
-          {stagesLoading ? (
-            <LoadingState text="加载阶段列表…" />
-          ) : dkStages.length === 0 ? (
-            <EmptyState title="暂无暗知识" description="后端暂无考公暗知识数据" />
-          ) : (
-            <DarkKnowledgeContent
-              stages={dkStages}
-              activeStage={activeDkStage}
-              onSelectStage={setActiveDkStage}
-              items={dkItems}
-              loading={dkLoading}
-            />
           )}
         </div>
       )}

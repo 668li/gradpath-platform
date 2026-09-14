@@ -2,12 +2,6 @@ import { request, buildQuery } from "./client";
 import type {
   AddFactRequest,
   AddFactResponse,
-  DarkKnowledgeFeedbackRequest,
-  DarkKnowledgePush,
-  DarkKnowledgePushListResponse,
-  DarkKnowledgePushRequest,
-  DarkKnowledgePushTriggerResponse,
-  DarkKnowledgeUnreadCount,
   ExtractRequest,
   ExtractResponse,
   MemoryFeedbackRequest,
@@ -17,7 +11,6 @@ import type {
   OnboardingSaveRequest,
   OnboardingStatusResponse,
   PulseActiveDecision,
-  PulseDarkKnowledgeItem,
   PulseFull,
   PulseMemoryFact,
   PulseOverview,
@@ -121,55 +114,11 @@ export const decisionPulseApi = {
       `/api/decision-pulse/review-queue${buildQuery({ limit })}`,
     ),
 
-  /** 暗知识推送流 */
-  getDarkKnowledgeFeed: (limit = 10) =>
-    request<{ items: PulseDarkKnowledgeItem[] }>(
-      `/api/decision-pulse/dark-knowledge-feed${buildQuery({ limit })}`,
-    ),
-
   /** AI 记忆面板 */
   getMemoryFacts: (limit = 20) =>
     request<{ items: PulseMemoryFact[] }>(
       `/api/decision-pulse/memory-facts${buildQuery({ limit })}`,
     ),
-};
-
-// ===== 暗知识推送 API =====
-
-export const darkKnowledgePushApi = {
-  /** 查询推送历史 */
-  list: (params?: { only_unread?: boolean; limit?: number }) => {
-    const query: Record<string, string | number | undefined> = {};
-    if (params?.only_unread) query.only_unread = "true";
-    if (params?.limit !== undefined) query.limit = params.limit;
-    return request<DarkKnowledgePushListResponse>(
-      `/api/dark-knowledge-push${buildQuery(query)}`,
-    );
-  },
-
-  /** 未读推送数 */
-  getUnreadCount: () =>
-    request<DarkKnowledgeUnreadCount>("/api/dark-knowledge-push/unread-count"),
-
-  /** 手动触发推送（用户主动获取新暗知识） */
-  trigger: (data: DarkKnowledgePushRequest) =>
-    request<DarkKnowledgePushTriggerResponse>("/api/dark-knowledge-push/push", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
-
-  /** 标记推送为已读 */
-  markRead: (pushId: string) =>
-    request<DarkKnowledgePush>(`/api/dark-knowledge-push/${pushId}/read`, {
-      method: "POST",
-    }),
-
-  /** 记录推送反馈 */
-  feedback: (pushId: string, data: DarkKnowledgeFeedbackRequest) =>
-    request<DarkKnowledgePush>(`/api/dark-knowledge-push/${pushId}/feedback`, {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
 };
 
 // 兼容类型重导出，方便组件直接从 api 模块引入
@@ -191,15 +140,8 @@ export type {
   PulseOverview,
   PulseActiveDecision,
   PulseReviewItem,
-  PulseDarkKnowledgeItem,
   PulseMemoryFact,
   PulseFull,
-  DarkKnowledgePush,
-  DarkKnowledgePushListResponse,
-  DarkKnowledgeUnreadCount,
-  DarkKnowledgePushRequest,
-  DarkKnowledgePushTriggerResponse,
-  DarkKnowledgeFeedbackRequest,
   PathConflictOption,
   PathConflictAssessmentSummary,
   PathConflictCurrentSituation,

@@ -5,7 +5,6 @@ import {
   GraduationCap,
   RefreshCw,
   ArrowUpDown,
-  BookOpen,
   MapPin,
   Star,
   AlertCircle,
@@ -24,10 +23,9 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import type {
   SchoolRecommendation,
   AdjustmentRecommendation,
-  DarkKnowledgeRecommendation,
 } from "@/types";
 
-type Tab = "schools" | "adjustments" | "dark-knowledge";
+type Tab = "schools" | "adjustments";
 
 const TIER_OPTIONS = [
   { value: "", label: "全部层次" },
@@ -191,47 +189,6 @@ function AdjustmentCard({ item }: { item: AdjustmentRecommendation }) {
               <span>{reason}</span>
             </div>
           ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function DarkKnowledgeCard({ item }: { item: DarkKnowledgeRecommendation }) {
-  return (
-    <div className="rounded-xl border border-paper-200 bg-white p-4 shadow-sm">
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-50">
-            <BookOpen className="h-5 w-5 text-purple-600" />
-          </div>
-          <div>
-            <h4 className="font-medium text-ink-800">{item.title}</h4>
-            <p className="text-sm text-ink-400">{item.category}</p>
-          </div>
-        </div>
-        <ImportanceBadge importance={item.importance} />
-      </div>
-
-      <p className="mt-3 text-sm text-ink-600 leading-relaxed">{item.content}</p>
-
-      {item.common_misconception && (
-        <div className="mt-3 rounded-lg bg-red-50 p-3">
-          <div className="flex items-center gap-1.5 text-sm font-medium text-red-700">
-            <AlertCircle className="h-4 w-4" />
-            常见误区
-          </div>
-          <p className="mt-1 text-sm text-red-600">{item.common_misconception}</p>
-        </div>
-      )}
-
-      {item.actionable_advice && (
-        <div className="mt-3 rounded-lg bg-green-50 p-3">
-          <div className="flex items-center gap-1.5 text-sm font-medium text-green-700">
-            <Shield className="h-4 w-4" />
-            行动建议
-          </div>
-          <p className="mt-1 text-sm text-green-600">{item.actionable_advice}</p>
         </div>
       )}
     </div>
@@ -419,80 +376,12 @@ function AdjustmentTab() {
   );
 }
 
-function DarkKnowledgeTab() {
-  const [stage, setStage] = useState("");
-  const [items, setItems] = useState<DarkKnowledgeRecommendation[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchKnowledge = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await recommendationApi.recommendDarkKnowledge({
-        stage: stage || undefined,
-        top_n: 15,
-      });
-      setItems(res.items);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "请求失败");
-    } finally {
-      setLoading(false);
-    }
-  }, [stage]);
-
-  useEffect(() => {
-    fetchKnowledge();
-  }, []);
-
-  return (
-    <div className="space-y-4">
-      <div className="rounded-xl border border-paper-200 bg-white p-4 shadow-sm">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Field label="备考阶段">
-            <Select value={stage} onChange={(e) => setStage(e.target.value)}>
-              {STAGE_OPTIONS.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
-              ))}
-            </Select>
-          </Field>
-        </div>
-        <div className="mt-3 flex justify-end">
-          <Button onClick={fetchKnowledge} disabled={loading}>
-            <BookOpen className="mr-1.5 h-4 w-4" />
-            {loading ? "加载中…" : "查看推荐"}
-          </Button>
-        </div>
-      </div>
-
-      {error && (
-        <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
-          {error}
-        </div>
-      )}
-
-      {loading ? (
-        <LoadingState text="正在加载暗知识…" />
-      ) : items.length === 0 ? (
-        <EmptyState title="暂无暗知识" description="请尝试其他阶段" />
-      ) : (
-        <div className="space-y-3">
-          {items.map((item) => (
-            <DarkKnowledgeCard key={item.id} item={item} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export function RecommendPanel() {
   const [tab, setTab] = useState<Tab>("schools");
 
   const tabs: { key: Tab; label: string; icon: React.ElementType }[] = [
     { key: "schools", label: "院校推荐", icon: GraduationCap },
     { key: "adjustments", label: "调剂推荐", icon: ArrowUpDown },
-    { key: "dark-knowledge", label: "暗知识", icon: BookOpen },
   ];
 
   return (
@@ -521,7 +410,6 @@ export function RecommendPanel() {
 
         {tab === "schools" && <SchoolTab />}
         {tab === "adjustments" && <AdjustmentTab />}
-        {tab === "dark-knowledge" && <DarkKnowledgeTab />}
       </div>
     </ErrorBoundary>
   );

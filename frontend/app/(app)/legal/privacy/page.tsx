@@ -48,7 +48,7 @@ export default function PrivacyPage() {
 
           <h2 className="font-display text-xl font-semibold text-ink-900 mt-8">2. 数据用途</h2>
           <ul className="list-disc pl-6 space-y-1.5">
-            <li>提供个性化推荐（院校推荐、岗位推荐、暗知识推送等）；</li>
+            <li>提供个性化推荐（院校推荐、岗位推荐、报考条件缺口提示等）；</li>
             <li>
               生成报考决策建议：报考身份信息仅用于可报性判定与三路决策引擎的资格筛选（如岗位的政治面貌 / 基层经历门槛），不用于任何营销或对外披露；
             </li>

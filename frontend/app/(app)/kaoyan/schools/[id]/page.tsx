@@ -211,10 +211,6 @@ export default function SchoolDetailPage() {
             <Button variant="ghost" size="sm" onClick={() => router.push("/kaoyan/compare")}>
               院校对比
             </Button>
-            <span className="text-ink-300">|</span>
-            <Button variant="ghost" size="sm" onClick={() => router.push("/kaoyan/dark-knowledge")}>
-              暗知识
-            </Button>
           </div>
           <div className="flex items-center gap-2.5 mt-3 mb-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-600 text-white shadow-brand-sm">

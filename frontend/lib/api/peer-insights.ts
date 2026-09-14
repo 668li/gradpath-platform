@@ -44,22 +44,6 @@ export interface ProcrastinationResponse {
   items: ProcrastinationItem[];
 }
 
-export interface DarkKnowledgeGapItem {
-  id: string;
-  title: string;
-  content_preview: string;
-  stage: string;
-  category: string;
-  read_by_peers: number;
-  common_misconception: string | null;
-}
-
-export interface DarkKnowledgeGapResponse {
-  has_gap: boolean;
-  gap_count: number;
-  items: DarkKnowledgeGapItem[];
-}
-
 export interface RegretLesson {
   text: string;
   target_school: string | null;
@@ -87,10 +71,6 @@ export const peerInsightsApi = {
   mirror: () => request<PeerMirrorResponse>("/api/peer-insights/mirror"),
   procrastination: () =>
     request<ProcrastinationResponse>("/api/peer-insights/procrastination"),
-  darkKnowledgeGap: (limit = 5) =>
-    request<DarkKnowledgeGapResponse>(
-      `/api/peer-insights/dark-knowledge-gap${buildQuery({ limit })}`,
-    ),
   regretLessons: (limitPerType = 2) =>
     request<RegretLessonsResponse>(
       `/api/peer-insights/regret-lessons${buildQuery({ limit_per_type: limitPerType })}`,

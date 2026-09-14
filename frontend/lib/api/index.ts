@@ -195,7 +195,6 @@ export {
   userMemoryApi,
   onboardingApi,
   decisionPulseApi,
-  darkKnowledgePushApi,
   pathConflictApi,
 } from "./decision-copilot";
 
@@ -204,7 +203,6 @@ export { peerInsightsApi } from "./peer-insights";
 export type {
   PeerMirrorResponse,
   ProcrastinationResponse,
-  DarkKnowledgeGapResponse,
 } from "./peer-insights";
 export type {
   MemoryFactType,
@@ -234,14 +232,9 @@ export type {
   PulseOverview,
   PulseActiveDecision,
   PulseReviewItem,
-  PulseDarkKnowledgeItem,
   PulseMemoryFact,
   PulseFull,
   PulseListResponse,
-  DarkKnowledgePush,
-  DarkKnowledgePushListResponse,
-  DarkKnowledgeUnreadCount,
-  DarkKnowledgePushRequest,
   DarkKnowledgePushTriggerResponse,
   DarkKnowledgeFeedbackRequest,
   PathConflictOption,

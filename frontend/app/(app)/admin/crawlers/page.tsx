@@ -88,7 +88,6 @@ export default function AdminCrawlersPage() {
     store_rate: number;
     total_errors: number;
   } | null>(null);
-  const [seeding, setSeeding] = useState(false);
 
   // ===== 数据加载 =====
 
@@ -186,19 +185,6 @@ export default function AdminCrawlersPage() {
     }
   };
 
-  // 一键预填充暗知识
-  const handleSeedDarkKnowledge = async () => {
-    setSeeding(true);
-    try {
-      const result = await gradIntelApi.seedDarkKnowledge();
-      toast.push(`暗知识预填充完成：新增 ${result.seeded} 条`, "success");
-    } catch (err) {
-      toast.push(err instanceof Error ? err.message : "预填充失败", "error");
-    } finally {
-      setSeeding(false);
-    }
-  };
-
   // 打开运行详情 Modal（同时拉取最新详情以获取完整 log）
   const handleOpenRun = (run: CrawlerRun) => {
     setSelectedRun(run);
@@ -232,14 +218,6 @@ export default function AdminCrawlersPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="secondary"
-            onClick={handleSeedDarkKnowledge}
-            loading={seeding}
-          >
-            <Zap className="h-4 w-4" />
-            预填充暗知识
-          </Button>
           <Button variant="secondary" onClick={refreshAll} loading={loadingCrawlers}>
             <RefreshCw className="h-4 w-4" />
             刷新

@@ -44,15 +44,6 @@ export const PulseOverviewSection = memo(function PulseOverviewSection({ overvie
         alert: overview.due_reviews > 0,
       },
       {
-        label: "未读暗知识",
-        value: overview.unread_pushes,
-        icon: Bell,
-        color: "text-rose-600 bg-rose-50",
-        href: "/kaoyan/dark-knowledge",
-        hint: "主动推送",
-        alert: overview.unread_pushes > 0,
-      },
-      {
         label: "完成回顾",
         value: overview.completed_reviews,
         icon: CheckCircle2,

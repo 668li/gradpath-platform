@@ -6,8 +6,8 @@ import { GraduationCap, Landmark, Briefcase, DollarSign, MessageSquare } from "l
 import { cn } from "@/lib/utils";
 
 const TABS = [
-  { id: "kaoyan", label: "考研", icon: GraduationCap, href: "/kaoyan", desc: "院校情报、录取预测、导师评价、暗知识" },
-  { id: "civil", label: "考公", icon: Landmark, href: "/civil-service", desc: "岗位情报、考公定位、暗知识" },
+  { id: "kaoyan", label: "考研", icon: GraduationCap, href: "/kaoyan", desc: "院校情报、录取预测、招生公告解读" },
+  { id: "civil", label: "考公", icon: Landmark, href: "/civil-service", desc: "岗位情报、考公定位与备考流程" },
   { id: "career", label: "就业", icon: Briefcase, href: "/employment", desc: "公司情报、求职定位、就业数据" },
   { id: "salary", label: "薪资", icon: DollarSign, href: "/employment?tab=salary", desc: "各公司岗位薪资数据查询" },
   { id: "interview", label: "面经", icon: MessageSquare, href: "/interview", desc: "海量面试经验分享" },

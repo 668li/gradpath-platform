@@ -2,7 +2,6 @@ import type {
   RecommendationResponse,
   SchoolRecommendation,
   AdjustmentRecommendation,
-  DarkKnowledgeRecommendation,
   AuditQuestion,
   SprintCreate,
   SprintResponse,
@@ -34,13 +33,6 @@ export const recommendationApi = {
   }) =>
     request<RecommendationResponse<AdjustmentRecommendation>>(
       `/api/recommend/adjustments${buildQuery((params as Record<string, string | number | undefined | null>) || {})}`,
-    ),
-  recommendDarkKnowledge: (params?: {
-    stage?: string;
-    top_n?: number;
-  }) =>
-    request<RecommendationResponse<DarkKnowledgeRecommendation>>(
-      `/api/recommend/dark-knowledge${buildQuery((params as Record<string, string | number | undefined | null>) || {})}`,
     ),
 };
 

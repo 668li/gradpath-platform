@@ -291,14 +291,7 @@ export const commands: Command[] = [
     keywords: ["策略", "strategy", "考研", "资讯"],
     icon: "Target",
   },
-  {
-    id: "kaoyan-dark-knowledge",
-    title: "考研黑知识",
-    subtitle: "考研",
-    href: "/kaoyan/dark-knowledge",
-    keywords: ["黑知识", "考研", "dark", "知识"],
-    icon: "BookOpen",
-  },
+
   {
     id: "kaoyan-community",
     title: "考研社区",

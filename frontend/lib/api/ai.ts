@@ -8,16 +8,12 @@ import type {
   CompanyIntelResponse,
   CareerPositioningCreateRequest,
   CareerPositioningResponse,
-  CareerDarkKnowledgeResponse,
-  CareerDarkKnowledgeStage,
   PostIntelQueryRequest,
   AIPostIntelResult,
   PostIntelSaveRequest,
   PostIntelResponse,
   CivilServicePositioningCreateRequest,
   CivilServicePositioningResponse,
-  CivilServiceDarkKnowledgeStage,
-  CivilServiceDarkKnowledgeResponse,
   ProactiveInsightSummary,
   ProactiveInsight,
 } from "@/types";
@@ -87,17 +83,6 @@ export const careerIntelApi = {
     request<CareerPositioningResponse | null>("/api/career-intel/positioning/latest"),
   getPositioningHistory: () =>
     request<CareerPositioningResponse[]>("/api/career-intel/positioning/history"),
-  // 求职暗知识
-  getDarkKnowledge: (stage?: string) =>
-    request<CareerDarkKnowledgeResponse[]>(
-      `/api/career-intel/dark-knowledge/list${buildQuery({ stage })}`,
-    ),
-  getDarkKnowledgeStages: () =>
-    request<CareerDarkKnowledgeStage[]>("/api/career-intel/dark-knowledge/stages"),
-  seedDarkKnowledge: () =>
-    request<{ seeded: number }>("/api/career-intel/dark-knowledge/seed", {
-      method: "POST",
-    }),
 };
 
 export const civilServiceIntelApi = {
@@ -124,13 +109,6 @@ export const civilServiceIntelApi = {
     request<CivilServicePositioningResponse | null>("/api/civil-service/positioning/latest"),
   getPositioningHistory: () =>
     request<CivilServicePositioningResponse[]>("/api/civil-service/positioning/history"),
-
-  getDarkKnowledgeStages: () =>
-    request<CivilServiceDarkKnowledgeStage[]>("/api/civil-service/dark-knowledge/stages"),
-  getDarkKnowledge: (stage?: string) => {
-    const qs = stage ? `?stage=${encodeURIComponent(stage)}` : "";
-    return request<CivilServiceDarkKnowledgeResponse[]>(`/api/civil-service/dark-knowledge${qs}`);
-  },
   // 公开接口（无需登录）
   listPublicPostIntel: (params?: { region?: string; department?: string; exam_type?: string; department_tier?: string; limit?: number }) =>
     request<PostIntelResponse[]>(

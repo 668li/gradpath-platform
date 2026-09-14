@@ -5,15 +5,12 @@ import type {
   IntelResponse,
   PositioningCreateRequest,
   PositioningResponse,
-  DarkKnowledgeResponse,
-  DarkKnowledgeStage,
   GradYanzhaoProgram,
   GradScorelineRecord,
   GradScorelineTrend,
   GradAdjustmentInfo,
   GradSchoolDataSummary,
   SchoolAnnouncement,
-  PaginatedResponse,
 } from "@/types";
 import { request, buildQuery } from "./client";
 
@@ -47,17 +44,6 @@ export const gradIntelApi = {
     request<PositioningResponse | null>("/api/grad-intel/positioning/latest"),
   getPositioningHistory: () =>
     request<PositioningResponse[]>("/api/grad-intel/positioning/history"),
-  // 暗知识
-  getDarkKnowledge: (params?: { stage?: string; page?: number; page_size?: number }) =>
-    request<PaginatedResponse<DarkKnowledgeResponse>>(
-      `/api/grad-intel/dark-knowledge/list${buildQuery((params as Record<string, string | number | undefined | null>) || {})}`,
-    ),
-  getDarkKnowledgeStages: () =>
-    request<DarkKnowledgeStage[]>("/api/grad-intel/dark-knowledge/stages"),
-  seedDarkKnowledge: () =>
-    request<{ seeded: number }>("/api/grad-intel/dark-knowledge/seed", {
-      method: "POST",
-    }),
   // 公开接口（无需登录）
   listPublicIntel: (params?: { school_name?: string; major_name?: string; school_tier?: string; limit?: number }) =>
     request<IntelResponse[]>(
