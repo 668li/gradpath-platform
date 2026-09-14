@@ -64,16 +64,17 @@ export default function HomePage() {
         {/* 当前已开放的能力 */}
         <section className="mt-8 grid gap-4 text-sm sm:grid-cols-2">
           <div className="rounded-2xl border border-brand-100 bg-white/70 p-5">
-            <p className="font-semibold text-ink-800">真实来源的考公情报</p>
+            <p className="font-semibold text-ink-800">考研 · 考公 · 就业 · 在校，四条线都覆盖</p>
             <p className="mt-1.5 text-ink-500">
-              公告资讯、暗知识、报考规则解读逐条带来源与可信度标注；AI
-              问答基于库内真实数据回答，不编造。
+              招生简章、招考公告、报考规则与就业信息逐条带官方来源与可信度标注；
+              无源数据不下发，AI 问答只基于库内真实数据回答。
             </p>
           </div>
           <div className="rounded-2xl border border-brand-100 bg-white/70 p-5">
-            <p className="font-semibold text-ink-800">考公定位评估</p>
+            <p className="font-semibold text-ink-800">按你的身份过筛，只看与你相关的</p>
             <p className="mt-1.5 text-ink-500">
-              填写基本条件，获得竞争力评估、风险提示与备考建议；职位检索请使用公考雷达等专门工具。
+              学历层次、专业与目标不同，关注的信息也不同；这里按你的身份过滤节点与材料清单，
+              职位检索请使用公考雷达等专门工具。
             </p>
           </div>
         </section>
@@ -84,8 +85,8 @@ export default function HomePage() {
             流程时间线伴随 · 上线中
           </h2>
           <p className="mx-auto mt-2 max-w-xl text-sm text-ink-500">
-            从公告到录用的 12 环节时间线、节点提醒与身份过滤推送正在逐步开放；
-            注册后可先行体验情报与定位功能。
+            从公告到录用的 12 环节流程时间线正在逐步开放：随时打开看你在哪一步、下一步该做什么、
+            要备什么材料；注册后可先行体验。
           </p>
           <div className="mt-4 flex items-center justify-center gap-3">
             <Link

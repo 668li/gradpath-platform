@@ -264,7 +264,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       </nav>
 
       {/* User area */}
-      <div className="border-t border-ink-700/50 px-3 py-3 space-y-1">
+      <div className="border-t border-ink-700/50 px-3 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] space-y-1">
         <Link
           href="/notifications"
           onClick={onNavigate}
@@ -367,39 +367,55 @@ function NavSectionItem({
         </p>
       )}
 
-      {/* Parent item */}
+      {/* Parent item：主区可导航，右侧箭头单独负责展开/收起 */}
       {hasChildren ? (
-        <button
-          onClick={() => setExpanded((v) => !v)}
-          className={cn(
-            "group relative flex min-h-[44px] w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
-            isSelfOrChildActive
-              ? "bg-brand-500/15 text-brand-300"
-              : "text-ink-300 hover:bg-ink-700/40 hover:text-paper-100",
-          )}
-        >
-          {isSelfOrChildActive && (
-            <span className="absolute left-0 top-1/2 h-5 w-[3px] -tranink-y-1/2 rounded-r-full bg-brand-400" />
-          )}
-          <section.icon
+        <div className="flex items-stretch gap-0.5">
+          <Link
+            href={section.href}
+            onClick={onNavigate}
+            data-track-id={`nav:${section.href}`}
             className={cn(
-              "h-[18px] w-[18px] transition-colors",
+              "group relative flex min-h-[44px] flex-1 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
               isSelfOrChildActive
-                ? "text-brand-400"
-                : "text-ink-400 group-hover:text-paper-200",
+                ? "bg-brand-500/15 text-brand-300"
+                : "text-ink-300 hover:bg-ink-700/40 hover:text-paper-100",
             )}
-            strokeWidth={isSelfOrChildActive ? 2.2 : 1.8}
-          />
-          <span className="flex-1 text-left">{section.label}</span>
-          <ChevronDown
+          >
+            {isSelfOrChildActive && (
+              <span className="absolute left-0 top-1/2 h-5 w-[3px] -tranink-y-1/2 rounded-r-full bg-brand-400" />
+            )}
+            <section.icon
+              className={cn(
+                "h-[18px] w-[18px] transition-colors",
+                isSelfOrChildActive
+                  ? "text-brand-400"
+                  : "text-ink-400 group-hover:text-paper-200",
+              )}
+              strokeWidth={isSelfOrChildActive ? 2.2 : 1.8}
+            />
+            <span className="flex-1 text-left">{section.label}</span>
+          </Link>
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            aria-label={expanded ? "收起分组" : "展开分组"}
+            aria-expanded={expanded}
             className={cn(
-              "h-3.5 w-3.5 transition-transform duration-200",
-              expanded ? "rotate-0" : "-rotate-90",
-              isSelfOrChildActive ? "text-brand-400" : "text-ink-500",
+              "flex min-h-[44px] w-9 shrink-0 items-center justify-center rounded-lg transition-all duration-200",
+              isSelfOrChildActive
+                ? "text-brand-400 hover:bg-brand-500/15"
+                : "text-ink-500 hover:bg-ink-700/40 hover:text-paper-100",
             )}
-            strokeWidth={2}
-          />
-        </button>
+          >
+            <ChevronDown
+              className={cn(
+                "h-3.5 w-3.5 transition-transform duration-200",
+                expanded ? "rotate-0" : "-rotate-90",
+              )}
+              strokeWidth={2}
+            />
+          </button>
+        </div>
       ) : (
         <Link
           href={section.href}
@@ -555,13 +571,23 @@ export function AppNav() {
             GradPath
           </span>
         </div>
-        <button
-          onClick={() => setOpen(true)}
-          className="flex h-11 w-11 items-center justify-center rounded-lg text-ink-500 hover:text-ink-800 hover:bg-paper-200 transition-colors"
-          aria-label="打开菜单"
-        >
-          <Menu className="h-6 w-6" strokeWidth={1.8} />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => openCommandPalette()}
+            data-track-id="nav:command-palette-mobile"
+            className="flex h-11 w-11 items-center justify-center rounded-lg text-ink-500 hover:text-ink-800 hover:bg-paper-200 transition-colors"
+            aria-label="打开命令面板"
+          >
+            <CommandIcon className="h-5 w-5" strokeWidth={1.8} />
+          </button>
+          <button
+            onClick={() => setOpen(true)}
+            className="flex h-11 w-11 items-center justify-center rounded-lg text-ink-500 hover:text-ink-800 hover:bg-paper-200 transition-colors"
+            aria-label="打开菜单"
+          >
+            <Menu className="h-6 w-6" strokeWidth={1.8} />
+          </button>
+        </div>
       </div>
 
       {open && (
@@ -576,7 +602,7 @@ export function AppNav() {
             role="dialog"
             aria-modal="true"
             aria-label="导航菜单"
-            className="absolute left-0 top-0 h-full w-64 max-w-[85vw] bg-ink-800 shadow-2xl"
+            className="absolute left-0 top-0 h-[100dvh] w-64 max-w-[85vw] bg-ink-800 shadow-2xl"
           >
             <button
               onClick={() => setOpen(false)}

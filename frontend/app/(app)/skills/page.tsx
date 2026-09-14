@@ -12,7 +12,6 @@ import { Badge, Button } from "@/components/ui/form-controls";
 import { useToast } from "@/components/ui/toast";
 import { SkillRadar } from "@/components/charts";
 import { SkillForm } from "@/components/skill-form";
-import { SkillMapView } from "@/components/skills/skill-map-view";
 import { TargetConditionCard } from "@/components/skills/target-condition-card";
 import type { SkillResponse, SkillStats } from "@/types";
 
@@ -404,8 +403,6 @@ export default function SkillsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<SkillResponse | null>(null);
   const [viewMode, setViewMode] = useState<"tree" | "list">("tree");
-  // 顶层视图：能力地图 | 技能树
-  const [topView, setTopView] = useState<"map" | "tree">("tree");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -488,36 +485,8 @@ export default function SkillsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {/* 顶层视图切换：能力地图 | 技能树 */}
+          {/* 二级切换：树形图 / 列表 */}
           <div className="inline-flex rounded-lg border border-paper-300 bg-white p-0.5">
-            <button
-              type="button"
-              onClick={() => setTopView("map")}
-              className={cn(
-                "inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-                topView === "map"
-                  ? "bg-brand-600 text-white"
-                  : "text-ink-600 hover:bg-paper-100",
-              )}
-            >
-              <Map className="h-3.5 w-3.5" /> 能力地图
-            </button>
-            <button
-              type="button"
-              onClick={() => setTopView("tree")}
-              className={cn(
-                "inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-                topView === "tree"
-                  ? "bg-brand-600 text-white"
-                  : "text-ink-600 hover:bg-paper-100",
-              )}
-            >
-              <Network className="h-3.5 w-3.5" /> 技能树
-            </button>
-          </div>
-          {/* 技能树视图下的二级切换：树形图 / 列表 */}
-          {topView === "tree" && (
-            <div className="inline-flex rounded-lg border border-paper-300 bg-white p-0.5">
               <button
                 type="button"
                 onClick={() => setViewMode("tree")}
@@ -542,21 +511,17 @@ export default function SkillsPage() {
               >
                 <List className="h-3.5 w-3.5" /> 列表
               </button>
-            </div>
-          )}
-          {topView === "tree" && (
-            <Button onClick={openCreate}>
-              <Plus className="h-4 w-4" /> 新建技能
-            </Button>
-          )}
+          </div>
+          <Button onClick={openCreate}>
+            <Plus className="h-4 w-4" /> 新建技能
+          </Button>
         </div>
       </div>
 
-      {/* 能力地图视图 */}
-      {topView === "map" && (
-        <>
-          <SkillMapView />
-          {/* 能力地图底部引导：基于技能画像模拟职业路径 */}
+      {/* 技能画像与技能树 */}
+      <>
+        {/* 基于技能画像模拟职业路径（原能力地图入口，归一此处） */}
+          {/* 基于技能画像模拟职业路径 */}
           <Link
             href="/career-simulator?from=skills"
             className="card flex items-center gap-4 border-brand-200 bg-gradient-to-r from-brand-50/60 to-paper-50 p-4 transition-all hover:shadow-md group"
@@ -569,7 +534,7 @@ export default function SkillsPage() {
                 基于你的技能画像，模拟职业路径
               </p>
               <p className="text-xs text-ink-500 mt-0.5 line-clamp-1">
-                把能力地图代入考研 / 就业 / 考公的真实发展轨迹，看 10 年薪资与满意度对比。
+                把技能画像代入考研 / 就业 / 考公的真实发展轨迹，看 10 年薪资与满意度对比。
               </p>
             </div>
             <span className="shrink-0 inline-flex items-center gap-1 rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white transition-colors group-hover:bg-brand-700">
@@ -577,12 +542,7 @@ export default function SkillsPage() {
               <ArrowRight className="h-3.5 w-3.5" />
             </span>
           </Link>
-        </>
-      )}
 
-      {/* 技能树视图 */}
-      {topView === "tree" && (
-        <>
         {/* 转型核心：目标条件对照 — 完成率即北极星「条件完成率」的职位级视图 */}
         <TargetConditionCard />
 
@@ -659,8 +619,7 @@ export default function SkillsPage() {
             )}
           </div>
         </div>
-        </>
-      )}
+      </>
 
       <Modal
         open={modalOpen}
