@@ -43,10 +43,9 @@ def test_no_raw_outbound_http_outside_transport():
         for m in _RAW_PATTERNS.finditer(src):
             line_no = src.count("\n", 0, m.start()) + 1
             offenders.append(f"{py.relative_to(CRAWLERS_DIR)}:{line_no}: {m.group(0)}")
-    assert not offenders, (
-        "发现裸外发请求（必须走 transport.fetch / BaseCrawler._request）：\n"
-        + "\n".join(offenders)
-    )
+    assert (
+        not offenders
+    ), "发现裸外发请求（必须走 transport.fetch / BaseCrawler._request）：\n" + "\n".join(offenders)
 
 
 def test_redline_host_never_fetched():
