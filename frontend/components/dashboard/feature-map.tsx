@@ -76,7 +76,6 @@ const FEATURE_MAP: FeatureStage[] = [
       { name: "阶段复盘", href: "/retrospectives", desc: "周复盘 + 模板 + AI 辅助", timing: "第 8 步" },
       { name: "成长档案", href: "/growth/archive", desc: "成长轨迹总览", timing: "任何时候" },
       { name: "成就墙", href: "/achievements", desc: "徽章 + 等级 + 导出", timing: "任何时候" },
-      { name: "上岸报告", href: "/outcome-report", desc: "分享你的上岸故事", timing: "上岸后" },
     ],
   },
 ];

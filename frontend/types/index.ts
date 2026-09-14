@@ -1180,37 +1180,6 @@ export interface RedTeamGenerateRequest {
   reasoning?: string | null;
 }
 
-// ===== 护城河功能：AI 导师人格库 =====
-export interface MentorPersona {
-  code: string;
-  name: string;
-  icon: string;
-  tagline: string;
-}
-
-export interface MentorAdviceRequest {
-  persona_code: string;
-  question: string;
-  user_context?: string;
-}
-
-export interface MultiPerspectiveRequest {
-  persona_codes: string[];
-  question: string;
-  user_context?: string;
-}
-
-export interface MentorPerspectiveResult {
-  persona_code: string;
-  persona_name: string;
-  persona_icon: string;
-  advice: string;
-}
-
-export interface MultiPerspectiveResponse {
-  perspectives: MentorPerspectiveResult[];
-}
-
 // ===== 护城河功能：成长模式智能 =====
 export interface GrowthPattern {
   pattern_type: string;
@@ -1869,83 +1838,6 @@ export interface CrawlerRun {
   log: string;
 }
 
-// ===== 考研导师评价系统 =====
-export interface MentorResponse {
-  id: string;
-  name: string;
-  university: string;
-  department: string;
-  title: string;
-  research_directions: string[];
-  paper_count: number;
-  project_count: number;
-  citation_count: number;
-  h_index: number | null;
-  academic_homepage: string | null;
-  google_scholar_url: string | null;
-  cnki_url: string | null;
-  enrollment_status: string;
-  enrollment_directions: string[];
-  contact_email: string | null;
-  contact_phone: string | null;
-  avg_rating: number;
-  review_count: number;
-  rating_academic: number;
-  rating_guidance: number;
-  rating_relationship: number;
-  rating_funding: number;
-  rating_workload: number;
-  rating_career: number;
-  source_url: string | null;
-  source_platform: string;
-  is_verified: boolean;
-  tags: string[];
-  created_at: string;
-  updated_at: string;
-}
-
-export interface MentorListResponse {
-  items: MentorResponse[];
-  total: number;
-  page: number;
-  page_size: number;
-}
-
-export interface MentorReviewResponse {
-  id: string;
-  mentor_id: string;
-  user_id: string;
-  is_anonymous: boolean;
-  anonymous_id: string | null;
-  rating_academic: number;
-  rating_guidance: number;
-  rating_relationship: number;
-  rating_funding: number;
-  rating_workload: number;
-  rating_career: number;
-  overall_rating: number;
-  title: string;
-  content: string;
-  pros: string[];
-  cons: string[];
-  review_status: string;
-  like_count: number;
-  is_helpful: boolean;
-  submitted_at: string;
-  is_verified: boolean;
-  verification_proof: string | null;
-  reviewer_identity: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface MentorReviewListResponse {
-  items: MentorReviewResponse[];
-  total: number;
-  page: number;
-  page_size: number;
-}
-
 // ===== Skill 管理 =====
 export type SkillCategory = "builder" | "advisor" | "generator";
 
@@ -1964,22 +1856,6 @@ export interface SkillInfo {
 export interface SkillListResponse {
   items: SkillInfo[];
   total: number;
-}
-
-export interface MentorReviewCreate {
-  is_anonymous?: boolean;
-  anonymous_id?: string;
-  rating_academic: number;
-  rating_guidance: number;
-  rating_relationship: number;
-  rating_funding: number;
-  rating_workload: number;
-  rating_career: number;
-  title: string;
-  content: string;
-  pros?: string[];
-  cons?: string[];
-  reviewer_identity?: string;
 }
 
 // ===== 考研社区交流系统 =====

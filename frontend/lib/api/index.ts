@@ -56,7 +56,7 @@ export type {
 export { knowledgeApi } from "./knowledge";
 export { careerPlansApi, careerProfileApi, planTemplatesApi } from "./career";
 export { assessmentApi, lifeWheelApi } from "./assessment";
-export { mentorsApi, growthPatternsApi, mentorApi } from "./mentors";
+export { growthPatternsApi } from "./mentors";
 export { gradIntelApi, gradVisualizationApi, schoolAnalystApi, schoolCompareApi } from "./grad";
 export type { AnalystReportRequest, AnalystReportResponse, CompareRequest, CompareResponse } from "./grad";
 export { kaoyanCommunityApi, kaoyanNewsApi } from "./kaoyan";
@@ -83,7 +83,6 @@ export type {
 } from "./admin";
 export { recommendationApi, lifeDesignApi } from "./recommendations";
 export { searchApi } from "./search";
-export { outcomeReportApi } from "./outcome-report";
 export { careerSimulatorApi } from "./career-simulator";
 export type { PathConfig, PathResult, YearResult, SimulateResponse, Preset, CityTier, Industry } from "./career-simulator";
 export { pathComparisonApi } from "./path-comparison";

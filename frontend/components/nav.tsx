@@ -145,7 +145,6 @@ function getNavSections(): NavSection[] {
       children: [
         { href: "/ai-butler", label: "AI 职业管家", icon: Bot },
         { href: "/chat", label: "AI 对话", icon: MessageSquare },
-        { href: "/mentors", label: "AI 导师团", icon: Brain },
       ],
     },
     {

@@ -1,20 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  Send,
   Users,
-  Bot,
   Plus,
   MessageCircle,
   UserPlus,
   UserCheck,
-  Bell,
   Search,
 } from "lucide-react";
-import { postsApi, postRepliesApi, followApi, communityApi, employmentApi } from "@/lib/api";
+import { postsApi, postRepliesApi, followApi } from "@/lib/api";
 import { Button, Input, Textarea } from "@/components/ui/form-controls";
 import { EmptyState } from "@/components/ui/empty";
 import { ListSkeleton } from "@/components/ui/skeleton";
@@ -22,20 +18,12 @@ import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/components/ui/toast";
 import { useAuthStore } from "@/stores/auth";
 import { cn } from "@/lib/utils";
-import type {
-  PostItem,
-  UserResponse,
-  SchoolInfo,
-  CommunityStats,
-  CommunityReport,
-} from "@/types";
+import type { PostItem, UserResponse } from "@/types";
 
-type Tab = "feed" | "report" | "mentors";
-type DirectionTab = "all" | "kaoyan" | "civil-service" | "employment" | "landing-wall";
+type DirectionTab = "all" | "kaoyan" | "civil-service" | "employment";
 
 export default function CommunityPage() {
   const user = useAuthStore((s) => s.user);
-  const [tab, setTab] = useState<Tab>("feed");
   const [directionTab, setDirectionTab] = useState<DirectionTab>("all");
   const router = useRouter();
 
@@ -44,16 +32,11 @@ export default function CommunityPage() {
     { id: "kaoyan", label: "考研专区" },
     { id: "civil-service", label: "考公专区" },
     { id: "employment", label: "就业专区" },
-    { id: "landing-wall", label: "上岸墙" },
   ];
 
   const handleDirectionTabChange = (id: DirectionTab) => {
     if (id === "kaoyan") {
       router.push("/kaoyan/community");
-      return;
-    }
-    if (id === "landing-wall") {
-      router.push("/outcome-report/landing-wall");
       return;
     }
     setDirectionTab(id);
@@ -95,35 +78,7 @@ export default function CommunityPage() {
         </div>
       </header>
 
-      <div className="flex gap-1 rounded-lg bg-paper-200 p-1 w-fit">
-        {([
-          { id: "feed", label: "广场", icon: MessageCircle },
-          { id: "report", label: "上岸报告", icon: Send },
-          { id: "mentors", label: "导师评价", icon: Users },
-        ] as const).map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={cn(
-              "flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all",
-              tab === t.id ? "bg-white text-brand-600 shadow-sm" : "text-ink-500 hover:text-ink-700",
-            )}
-          >
-            <t.icon className="h-4 w-4" />
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {tab === "feed" && <FeedTab currentUser={user} />}
-      {tab === "report" && <ReportTab />}
-      {tab === "mentors" && (
-        <EmptyState
-          title="导师评价"
-          description="前往考研中心 → 导师情报查看学长学姐对导师的评价。"
-          action={<Link href="/kaoyan" className="text-brand-600 underline">去考研中心</Link>}
-        />
-      )}
+      <FeedTab currentUser={user} />
         </>
       )}
 
@@ -400,78 +355,6 @@ function PostCard({
           )}
         </div>
       )}
-    </div>
-  );
-}
-
-function ReportTab() {
-  const toast = useToast();
-  const [schools, setSchools] = useState<SchoolInfo[]>([]);
-  const [stats, setStats] = useState<CommunityStats | null>(null);
-  const [myReports, setMyReports] = useState<CommunityReport[]>([]);
-  const [loading, setLoading] = useState(true);
-  const PAGE_SIZE = 10;
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-
-  const loadMyReports = useCallback(
-    (target = 1) => {
-      communityApi
-        .myReports({ page: target, page_size: PAGE_SIZE })
-        .then((d) => {
-          setMyReports(d.items);
-          setTotal(d.total);
-          setPage(target);
-        })
-        .catch(() => {});
-    },
-    [],
-  );
-
-  useEffect(() => {
-    Promise.all([employmentApi.schools(), communityApi.stats(), communityApi.myReports({ page: 1, page_size: PAGE_SIZE })])
-      .then(([s, st, mine]) => {
-        setSchools(s);
-        setStats(st);
-        setMyReports(mine.items);
-        setTotal(mine.total);
-      })
-      .catch((err) => toast.push(err instanceof Error ? err.message : "加载失败", "error"))
-      .finally(() => setLoading(false));
-  }, [toast]);
-
-  if (loading) return <ListSkeleton count={4} />;
-
-  return (
-    <div className="space-y-4">
-      <div className="rounded-xl border border-paper-300 bg-white p-4">
-        <h2 className="font-semibold text-ink-800">匿名分享你的毕业去向</h2>
-        <p className="mt-1 text-sm text-ink-500">
-          聚合后与官方数据互补，帮助学弟学妹做出更明智的决策。
-        </p>
-        {stats && (
-          <p className="mt-2 text-sm text-ink-600">
-            已收集 {stats.total_reports ?? 0} 份去向报告
-          </p>
-        )}
-      </div>
-      <div>
-        <h3 className="mb-2 text-sm font-medium text-ink-700">我的提交记录</h3>
-        {myReports.length === 0 ? (
-          <EmptyState title="还没有提交记录" description="在上方表单分享你的去向吧。" />
-        ) : (
-          <div className="space-y-2">
-            {myReports.map((r) => (
-              <div key={r.id} className="rounded-lg border border-paper-200 px-3 py-2 text-sm text-ink-600">
-                {r.school_name} · {r.destination_type} · {r.salary_range ?? "薪资未填"}
-              </div>
-            ))}
-          </div>
-        )}
-        {total > PAGE_SIZE && (
-          <Pagination page={page} pageSize={PAGE_SIZE} total={total} onPageChange={loadMyReports} />
-        )}
-      </div>
     </div>
   );
 }

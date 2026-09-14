@@ -3,12 +3,11 @@ import { test, expect } from "@playwright/test";
 /**
  * 端到端完整旅程测试
  *
- * 模拟用户从注册到上岸的完整旅程，串联 5 大核心业务流：
+ * 模拟用户从注册到实战决策的完整旅程，串联 4 大核心业务流：
  *   1. 注册 → onboarding 5 分钟诊断
  *   2. 公司情报查询（war-room career tab）
  *   3. 决策助手（decision-lab）
  *   4. 社区发帖 + 评论
- *   5. 上岸报告生成
  *
  * 使用 test.describe.serial 串行执行，整体耗时约 2-3 分钟。
  * 所有 LLM 依赖步骤通过 page.route() mock。
@@ -26,8 +25,6 @@ test.describe.serial("端到端完整旅程", () => {
   const DECISION_TITLE = "字节 vs 阿里 offer 选择";
   const OPTION_A = "字节跳动";
   const OPTION_B = "阿里巴巴";
-  const TARGET_SCHOOL = "北京大学";
-  const TARGET_MAJOR = "计算机科学";
 
   test.beforeAll(async ({ browser }) => {
     // 验证浏览器可用
@@ -298,68 +295,5 @@ test.describe.serial("端到端完整旅程", () => {
     await page.locator('[data-testid="comment-input"]').fill(COMMENT_CONTENT);
     await page.locator('[data-testid="submit-comment-button"]').click();
     await expect(page.locator("body")).toContainText(COMMENT_CONTENT, { timeout: 10000 });
-  });
-
-  test("Step 5: 上岸报告生成", async ({ page }) => {
-    // ===== Mock 上岸报告接口 =====
-    let savedReport: Record<string, unknown> | null = null;
-    await page.route("**/api/outcome-report/submit", async (route) => {
-      const body = route.request().postDataJSON() as Record<string, unknown>;
-      savedReport = {
-        id: `mock-${Date.now()}`,
-        user_id: "mock",
-        outcome_type: body?.outcome_type ?? "grad_civil_career",
-        target_school: body?.target_school ?? TARGET_SCHOOL,
-        target_major: body?.target_major ?? TARGET_MAJOR,
-        actual_school: body?.actual_school ?? TARGET_SCHOOL,
-        actual_major: body?.actual_major ?? TARGET_MAJOR,
-        year: body?.year ?? 2025,
-        is_public: body?.is_public ?? "private",
-        created_at: new Date().toISOString(),
-      };
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify(savedReport),
-      });
-    });
-
-    await page.route("**/api/outcome-report/mine", async (route) => {
-      await route.fulfill({
-        status: 200,
-        contentType: "application/json",
-        body: JSON.stringify({
-          items: savedReport ? [savedReport] : [],
-          total: savedReport ? 1 : 0,
-        }),
-      });
-    });
-
-    // 登录
-    await page.goto("/login");
-    await page.fill('input[type="email"]', TEST_EMAIL);
-    await page.fill('input[type="password"]', "Test1234!");
-    await page.click('button[type="submit"]');
-    await page.waitForURL("**/dashboard**", { timeout: 15000 });
-
-    // 进入上岸报告页
-    await page.goto("/outcome-report");
-
-    // 填写并提交报告
-    await page.locator('[data-testid="outcome-type-select"]').selectOption("grad_civil_career");
-    await page.locator('[data-testid="target-school-input"]').fill(TARGET_SCHOOL);
-    await page.locator('[data-testid="target-major-input"]').fill(TARGET_MAJOR);
-    await page.locator('[data-testid="actual-school-input"]').fill(TARGET_SCHOOL);
-    await page.locator('[data-testid="actual-major-input"]').fill(TARGET_MAJOR);
-    await page.locator('[data-testid="generate-button"]').click();
-
-    // 验证报告显示
-    await expect(page.locator("body")).toContainText(TARGET_SCHOOL, { timeout: 10000 });
-
-    // 验证分享按钮可点击
-    const shareButton = page.locator('[data-testid="share-button"]').first();
-    await expect(shareButton).toBeVisible();
-    await expect(shareButton).toBeEnabled();
-    await shareButton.click();
   });
 });

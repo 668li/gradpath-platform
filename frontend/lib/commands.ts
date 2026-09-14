@@ -164,14 +164,6 @@ export const commands: Command[] = [
     icon: "Bot",
   },
   {
-    id: "mentors",
-    title: "AI 导师团",
-    subtitle: "AI",
-    href: "/mentors",
-    keywords: ["导师", "AI", "mentor"],
-    icon: "Brain",
-  },
-  {
     id: "life-design",
     title: "人生设计引擎",
     subtitle: "AI",
@@ -212,22 +204,6 @@ export const commands: Command[] = [
     href: "/community",
     keywords: ["社区", "community", "讨论"],
     icon: "Users",
-  },
-  {
-    id: "outcome-report",
-    title: "成果汇报",
-    subtitle: "社区",
-    href: "/outcome-report",
-    keywords: ["成果", "汇报", "outcome", "report"],
-    icon: "Trophy",
-  },
-  {
-    id: "outcome-report-landing-wall",
-    title: "成果展示墙",
-    subtitle: "社区",
-    href: "/outcome-report/landing-wall",
-    keywords: ["成果", "展示", "墙", "landing", "wall"],
-    icon: "Trophy",
   },
   {
     id: "explore",
@@ -307,14 +283,6 @@ export const commands: Command[] = [
   },
 
   // ────────────────────────── 考研子 ──────────────────────────
-  {
-    id: "kaoyan-mentors",
-    title: "考研导师",
-    subtitle: "考研",
-    href: "/kaoyan/mentors",
-    keywords: ["导师", "考研", "mentor"],
-    icon: "Users",
-  },
   {
     id: "kaoyan-compare",
     title: "院校对比",

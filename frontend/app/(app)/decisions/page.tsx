@@ -16,7 +16,6 @@ import {
   History,
   Route,
   RotateCw,
-  ArrowRight,
 } from "lucide-react";
 import { decisionsApi, decisionJournalApi, useApi, useInvalidate } from "@/lib/api";
 import { formatDate, levelStars, cn } from "@/lib/utils";
@@ -641,7 +640,7 @@ export default function DecisionsPage() {
                   </div>
                 </div>
 
-                {/* 已执行决策：引导记录上岸结果与复盘 */}
+                {/* 已执行决策：引导复盘沉淀 */}
                 {d.status === "executed" && (
                   <div className="card flex flex-col sm:flex-row sm:items-center gap-3 border-brand-200 bg-gradient-to-r from-brand-50/60 to-paper-50 py-3">
                     <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
@@ -653,19 +652,11 @@ export default function DecisionsPage() {
                           决策已执行，下一步？
                         </p>
                         <p className="text-xs text-ink-500 mt-0.5">
-                          记录实际结果做对比，或做一次复盘沉淀经验。
+                          做一次复盘，把实际结果与当时的判断对上账。
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <Link
-                        href={`/outcome-report?from=decision&decision_id=${d.id}`}
-                        className="inline-flex items-center gap-1 rounded-lg border border-brand-300 bg-white px-3 py-1.5 text-xs font-medium text-brand-700 transition-colors hover:bg-brand-50"
-                      >
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                        记录上岸结果
-                        <ArrowRight className="h-3 w-3" />
-                      </Link>
                       <Link
                         href={`/retrospectives?from=decision&decision_id=${d.id}`}
                         className="inline-flex items-center gap-1 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-700"

@@ -5,9 +5,7 @@ import { useRouter } from "next/navigation";
 import { Suspense } from "react";
 import {
   Network,
-  UserCheck,
   BookOpen,
-  Trophy,
   Search,
   GraduationCap,
   Users,
@@ -19,11 +17,9 @@ import { LoadingState } from "@/components/ui/empty";
 
 const tabs = [
   { id: "compare", label: "院校对比", href: "/kaoyan/compare", icon: Network },
-  { id: "mentors", label: "导师情报", href: "/kaoyan/mentors", icon: UserCheck },
   { id: "dark-knowledge", label: "暗知识", href: "/kaoyan/dark-knowledge", icon: Lightbulb },
   { id: "strategy", label: "备考策略", href: "/kaoyan/strategy", icon: BookOpen },
   { id: "community", label: "社区交流", href: "/kaoyan/community", icon: Users },
-  { id: "outcome", label: "上岸报告", href: "/outcome-report", icon: Trophy },
 ];
 
 export default function KaoyanHomePage() {
@@ -84,7 +80,6 @@ function KaoyanHomePageContent() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
             {[
               { value: "206", label: "院校数据", color: "text-brand-600" },
-              { value: "289", label: "导师信息", color: "text-brand-700" },
               { value: "1000+", label: "暗知识条目", color: "text-ink-700" },
               { value: "588", label: "经验帖", color: "text-ink-600" },
             ].map((stat) => (
@@ -129,11 +124,9 @@ function KaoyanHomePageContent() {
 function getTabDescription(tabId: string): string {
   const descriptions: Record<string, string> = {
     compare: "多维度对比院校，选出最适合你的学校",
-    mentors: "289位导师信息，选对导师少走弯路",
     "dark-knowledge": "1000+条考研暗知识，那些没人告诉你的真相",
     strategy: "个性化推荐，高效备考策略",
     community: "考研经验帖、问答、学长学姐交流",
-    outcome: "上岸学长学姐的经验分享",
   };
   return descriptions[tabId] || "";
 }
