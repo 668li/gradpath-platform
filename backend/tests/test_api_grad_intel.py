@@ -6,7 +6,6 @@
 - 自我定位（创建、最新、历史、清除缓存）
 - 暗知识（列表、阶段、预填充）
 - 公开浏览接口（院校情报、研招网数据、分数线、调剂、院校汇总）
-- 导师评价（列表、详情、评价列表）
 """
 
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -21,8 +20,6 @@ from app.models.grad_intel import (
     GradScorelineRecord,
     GradYanzhaoProgram,
 )
-from app.models.mentor import Mentor
-from app.models.mentor_review import MentorReview
 
 
 # ======================================================================
@@ -596,109 +593,6 @@ class TestSchoolSummary:
 
 
 # ======================================================================
-# 导师评价
-# ======================================================================
-class TestMentors:
-    def _seed_mentor(self, db_session):
-        mentor = Mentor(
-            name="张教授",
-            university="北京大学",
-            department="计算机科学技术学院",
-            title="教授",
-            research_directions=["机器学习", "自然语言处理"],
-            paper_count=50,
-            project_count=10,
-            citation_count=2000,
-            h_index=30,
-            enrollment_status="accepting",
-            avg_rating=4.5,
-            review_count=12,
-        )
-        db_session.add(mentor)
-        db_session.commit()
-        return mentor
-
-    def _seed_review(self, db_session, mentor_id, user_id):
-        review = MentorReview(
-            mentor_id=mentor_id,
-            user_id=user_id,
-            is_anonymous=True,
-            anonymous_id="2023级硕士",
-            rating_academic=5,
-            rating_guidance=4,
-            rating_relationship=4,
-            rating_funding=3,
-            rating_workload=3,
-            rating_career=5,
-            overall_rating=4.0,
-            title="学术能力强",
-            content="张教授学术水平很高，论文产出稳定。",
-            review_status="approved",
-            submitted_at="2025-01-01T00:00:00",
-        )
-        db_session.add(review)
-        db_session.commit()
-        return review
-
-    def test_list_mentors(self, client: TestClient, db_session):
-        self._seed_mentor(db_session)
-        resp = client.get("/api/grad-intel/mentors")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert "items" in data
-        assert "total" in data
-        assert data["total"] >= 1
-
-    def test_list_mentors_filter_university(self, client: TestClient, db_session):
-        self._seed_mentor(db_session)
-        resp = client.get(
-            "/api/grad-intel/mentors",
-            params={"university": "北京"},
-        )
-        assert resp.status_code == 200
-        assert resp.json()["total"] >= 1
-
-    def test_list_mentors_filter_rating(self, client: TestClient, db_session):
-        self._seed_mentor(db_session)
-        resp = client.get(
-            "/api/grad-intel/mentors",
-            params={"min_rating": 4.0},
-        )
-        assert resp.status_code == 200
-        assert resp.json()["total"] >= 1
-
-    def test_mentor_detail(self, client: TestClient, db_session):
-        mentor = self._seed_mentor(db_session)
-        resp = client.get(f"/api/grad-intel/mentors/{mentor.id}")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["name"] == "张教授"
-        assert data["university"] == "北京大学"
-
-    def test_mentor_detail_not_found(self, client: TestClient):
-        fake_id = str(uuid4())
-        resp = client.get(f"/api/grad-intel/mentors/{fake_id}")
-        assert resp.status_code == 404
-
-    def test_mentor_reviews(self, client: TestClient, db_session, auth_headers):
-        from app.models.user import User
-
-        user = db_session.query(User).filter(User.email == "test@example.com").first()
-        mentor = self._seed_mentor(db_session)
-        self._seed_review(db_session, mentor.id, user.id)
-        resp = client.get(f"/api/grad-intel/mentors/{mentor.id}/reviews")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert "items" in data
-        assert data["total"] >= 1
-
-    def test_mentor_reviews_not_found(self, client: TestClient):
-        fake_id = str(uuid4())
-        resp = client.get(f"/api/grad-intel/mentors/{fake_id}/reviews")
-        assert resp.status_code == 404
-
-
-# ======================================================================
 # 边界情况与错误处理
 # ======================================================================
 class TestEdgeCases:
@@ -742,10 +636,6 @@ class TestEdgeCases:
 
     def test_adjustments_no_auth_required(self, client: TestClient):
         resp = client.get("/api/grad-intel/adjustments")
-        assert resp.status_code == 200
-
-    def test_mentors_no_auth_required(self, client: TestClient):
-        resp = client.get("/api/grad-intel/mentors")
         assert resp.status_code == 200
 
     def test_scoreline_trend_no_auth_required(self, client: TestClient):

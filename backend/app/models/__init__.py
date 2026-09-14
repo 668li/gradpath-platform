@@ -58,8 +58,6 @@ from app.models.knowledge_article import KnowledgeArticle
 from app.models.life_design import LifeDesignSprint, WeeklyReview
 from app.models.life_wheel import LifeWheelSnapshot
 from app.models.market_data import MarketData
-from app.models.mentor import Mentor
-from app.models.mentor_review import MentorReview
 
 # 7天微行动
 from app.models.micro_action import MicroActionPlan, MicroActionTask
@@ -175,9 +173,6 @@ __all__ = [
     "PostIntel",
     "CivilServicePositioning",
     "CivilServiceDarkKnowledge",
-    # 考研导师评价系统
-    "Mentor",
-    "MentorReview",
     # 考研社区交流系统
     "ExperiencePost",
     "QA",

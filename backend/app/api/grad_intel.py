@@ -25,13 +25,7 @@ from app.schemas.grad_intel import (
     PositioningCreateRequest,
     PositioningResponse,
 )
-from app.schemas.mentor import (
-    MentorListResponse,
-    MentorResponse,
-    MentorReviewListResponse,
-    MentorReviewResponse,
-)
-from app.services import grad_intel_service, mentor_service
+from app.services import grad_intel_service
 
 logger = logging.getLogger(__name__)
 
@@ -493,70 +487,3 @@ def batch_school_summaries(
         results.append(GradSchoolDataSummaryResponse(**summary))
     return results
 
-
-# ===== 导师评价 =====
-
-
-@router.get("/mentors", response_model=MentorListResponse)
-def list_mentors(
-    page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
-    university: str | None = None,
-    department: str | None = None,
-    research_direction: str | None = None,
-    min_rating: float | None = None,
-    enrollment_status: str | None = None,
-    search: str | None = None,
-    db: Session = Depends(get_db),
-):
-    """获取导师列表，支持多维度筛选（公开接口）。"""
-    mentors, total = mentor_service.get_mentors(
-        db,
-        page=page,
-        page_size=page_size,
-        university=university,
-        department=department,
-        research_direction=research_direction,
-        min_rating=min_rating,
-        enrollment_status=enrollment_status,
-        search=search,
-    )
-    return MentorListResponse(
-        items=[MentorResponse.model_validate(m) for m in mentors],
-        total=total,
-        page=page,
-        page_size=page_size,
-    )
-
-
-@router.get("/mentors/{mentor_id}", response_model=MentorResponse)
-def get_mentor_detail(
-    mentor_id: UUID,
-    db: Session = Depends(get_db),
-):
-    """获取导师详情（公开接口）。"""
-    mentor = mentor_service.get_mentor(db, mentor_id)
-    if not mentor:
-        raise HTTPException(status_code=404, detail="导师不存在")
-    return MentorResponse.model_validate(mentor)
-
-
-@router.get("/mentors/{mentor_id}/reviews", response_model=MentorReviewListResponse)
-def list_mentor_reviews(
-    mentor_id: UUID,
-    page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
-    status: str | None = None,
-    db: Session = Depends(get_db),
-):
-    """获取导师评价列表（公开接口）。"""
-    mentor = mentor_service.get_mentor(db, mentor_id)
-    if not mentor:
-        raise HTTPException(status_code=404, detail="导师不存在")
-    reviews, total = mentor_service.get_mentor_reviews(db, mentor_id, page, page_size, status)
-    return MentorReviewListResponse(
-        items=[MentorReviewResponse.model_validate(r) for r in reviews],
-        total=total,
-        page=page,
-        page_size=page_size,
-    )

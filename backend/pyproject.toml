@@ -148,7 +148,6 @@ ignore = [
 "app/crawlers/**" = ["E402", "F601", "I001", "E701", "E702"]
 # 环境变量加载后才能 import（settings/代理初始化依赖），import 位置有语义
 "app/main.py" = ["E402"]
-"app/api/mentors.py" = ["E402"]
 "app/api/learning_methods.py" = ["E402"]
 "tests/test_skills.py" = ["E402"]
 

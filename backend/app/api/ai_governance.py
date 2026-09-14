@@ -21,12 +21,11 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["AI服务治理"])
 
-# 纳入治理的 11 个 AI 服务（主线 b/F5 治理清单）
+# 纳入治理的 AI 服务（主线 b/F5 治理清单）
 _GOVERNED_SERVICES: tuple[str, ...] = (
     "decision_analysis_service",
     "decision_journal_service",
     "decision_advice_service",
-    "mentor_persona_service",
     "life_wheel_service",
     "life_design_service",
     "growth_pattern_service",

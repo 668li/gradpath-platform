@@ -7,7 +7,6 @@
    - decode_cursor 对无效输入返回 None
    - apply_cursor_filter 在 descending=True 时生成正确的 WHERE 子句
 2. GET /api/posts/public/cursor — 多页翻页 / topic_type 过滤 / 空结果 / 无效 cursor
-3. GET /api/mentors/kaoyan-mentors/cursor — university 过滤 / min_rating 过滤 / 分页
 4. GET /api/employment/schools/cursor — 仅返回有 published 报告的 school / 排除 pending / 分页
 """
 
@@ -15,7 +14,6 @@ from datetime import timezone
 from uuid import uuid4
 
 from app.core.cursor_pagination import apply_cursor_filter, decode_cursor, encode_cursor
-from app.models.mentor import Mentor
 from app.models.notification import Notification  # noqa: F401 — 确保 ORM 元数据加载
 from app.models.post import Post, PostTopicType
 from app.models.report_record import ParseStatus, ReportRecord
@@ -283,104 +281,6 @@ class TestPostsPublicCursor:
         assert len(data["items"]) == 1
         assert data["items"][0]["content"] == "顶层帖"
         assert data["items"][0]["parent_id"] is None
-
-
-# ======================================================================
-# GET /api/mentors/kaoyan-mentors/cursor
-# ======================================================================
-
-
-class TestMentorsCursor:
-    """考研导师游标分页端点测试。"""
-
-    def _seed_mentors(self, db_session):
-        """创建 3 个导师，不同 university / avg_rating。"""
-        m1 = Mentor(
-            name="张三",
-            university="清华大学",
-            department="计算机系",
-            title="教授",
-            avg_rating=4.5,
-        )
-        m2 = Mentor(
-            name="李四",
-            university="北京大学",
-            department="数学系",
-            title="副教授",
-            avg_rating=4.0,
-        )
-        m3 = Mentor(
-            name="王五",
-            university="清华大学",
-            department="物理系",
-            title="讲师",
-            avg_rating=3.5,
-        )
-        db_session.add_all([m1, m2, m3])
-        db_session.commit()
-        return [m1, m2, m3]
-
-    def test_list_all_mentors(self, client, db_session):
-        """无过滤条件应返回全部 3 个导师。"""
-        self._seed_mentors(db_session)
-        resp = client.get("/api/mentors/kaoyan-mentors/cursor?page_size=10")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert len(data["items"]) == 3
-
-    def test_university_filter(self, client, db_session):
-        """university=清华 应只返回清华大学的 2 个导师。"""
-        self._seed_mentors(db_session)
-        resp = client.get("/api/mentors/kaoyan-mentors/cursor?page_size=10&university=清华")
-        assert resp.status_code == 200
-        items = resp.json()["items"]
-        assert len(items) == 2
-        for it in items:
-            assert "清华" in it["university"]
-
-    def test_min_rating_filter(self, client, db_session):
-        """min_rating=4.0 应只返回 avg_rating >= 4.0 的导师。"""
-        self._seed_mentors(db_session)
-        resp = client.get("/api/mentors/kaoyan-mentors/cursor?page_size=10&min_rating=4.0")
-        assert resp.status_code == 200
-        items = resp.json()["items"]
-        assert len(items) == 2  # 4.5 + 4.0
-        for it in items:
-            assert it["avg_rating"] >= 4.0
-
-    def test_pagination_has_more(self, client, db_session):
-        """page_size=2 + 3 条数据 → 第一页 has_more=True，第二页 has_more=False。"""
-        self._seed_mentors(db_session)
-        page1 = client.get("/api/mentors/kaoyan-mentors/cursor?page_size=2").json()
-        assert len(page1["items"]) == 2
-        assert page1["has_more"] is True
-        assert page1["next_cursor"] is not None
-
-        page2 = client.get(
-            "/api/mentors/kaoyan-mentors/cursor?page_size=2&cursor=" + page1["next_cursor"]
-        ).json()
-        assert len(page2["items"]) == 1
-        assert page2["has_more"] is False
-
-    def test_empty_result(self, client):
-        """无导师时应返回空列表。"""
-        resp = client.get("/api/mentors/kaoyan-mentors/cursor?page_size=10")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["items"] == []
-        assert data["has_more"] is False
-
-    def test_combined_filters(self, client, db_session):
-        """university + min_rating 组合过滤。"""
-        self._seed_mentors(db_session)
-        resp = client.get(
-            "/api/mentors/kaoyan-mentors/cursor?page_size=10" "&university=清华&min_rating=4.0"
-        )
-        assert resp.status_code == 200
-        items = resp.json()["items"]
-        # 只有清华大学的张三（4.5）满足
-        assert len(items) == 1
-        assert items[0]["name"] == "张三"
 
 
 # ======================================================================

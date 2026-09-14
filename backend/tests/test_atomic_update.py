@@ -31,12 +31,6 @@ class TestAtomicUpdateStaticCheck:
 
         assert hasattr(qs, "_atomic_increment")
 
-    def test_mentor_service_has_atomic_increment(self):
-        """mentor_service 定义了 _atomic_increment 辅助函数。"""
-        import app.services.mentor_service as ms
-
-        assert hasattr(ms, "_atomic_increment")
-
     def test_user_memory_service_uses_bulk_atomic_update(self):
         """user_memory_service.mark_used 使用 bulk 原子 UPDATE。"""
         import inspect
@@ -260,45 +254,3 @@ class TestServiceLayerAtomicIntegration:
         db_session.expire_all()
         post2 = db_session.query(ExperiencePost).filter(ExperiencePost.id == post.id).first()
         assert post2.view_count == 11
-
-    def test_like_review_increments_atomically(self, db_session):
-        """mentor_service.like_review 正确增加 like_count。"""
-        from datetime import datetime, timezone
-
-        from app.models.mentor import Mentor
-        from app.models.mentor_review import MentorReview
-        from app.services.mentor_service import like_review
-
-        mentor = Mentor(
-            name="测试导师",
-            university="测试大学",
-            department="测试系",
-            title="教授",
-        )
-        db_session.add(mentor)
-        db_session.commit()
-        db_session.refresh(mentor)
-
-        review = MentorReview(
-            mentor_id=mentor.id,
-            user_id=uuid4(),
-            rating_academic=5,
-            rating_guidance=5,
-            rating_relationship=5,
-            rating_funding=5,
-            rating_workload=5,
-            rating_career=5,
-            overall_rating=5.0,
-            title="好评",
-            content="很好",
-            review_status="approved",
-            like_count=3,
-            submitted_at=datetime.now(timezone.utc).isoformat(),
-        )
-        db_session.add(review)
-        db_session.commit()
-        db_session.refresh(review)
-
-        result = like_review(db_session, review.id)
-        assert result is not None
-        assert result.like_count == 4

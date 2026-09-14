@@ -6,7 +6,6 @@
 2. POST   /api/events/batch          批量获取职业事件（登录 + 用户隔离）
 3. POST   /api/decisions/batch       批量获取决策（登录 + 用户隔离）
 4. POST   /api/skills/batch          批量获取技能（登录 + 用户隔离）
-5. POST   /api/mentors/batch         批量获取导师（公开，无登录，无用户隔离）
 6. DELETE /api/notifications/batch   批量删除通知（登录 + 用户隔离）
 
 每个端点通用校验维度：
@@ -20,7 +19,6 @@
 
 from uuid import uuid4
 
-from app.models.mentor import Mentor
 from app.models.notification import Notification, NotificationType
 from app.models.user import User
 
@@ -452,96 +450,6 @@ class TestSkillsBatch:
             json={"ids": [str(uuid4())]},
         )
         assert resp.status_code == 401
-
-
-# ======================================================================
-# 5. POST /api/mentors/batch — 批量获取导师（公开）
-# ======================================================================
-
-
-class TestMentorsBatch:
-    """导师批量获取端点测试。
-
-    公开端点（无需登录），导师数据对所有用户可见。
-    """
-
-    def _seed_mentors(self, db_session, count=3):
-        mentors = []
-        for i in range(count):
-            m = Mentor(
-                name=f"导师-{i}",
-                university="清华大学",
-                department="计算机系",
-                title="教授",
-                avg_rating=4.0 + i * 0.1,
-            )
-            db_session.add(m)
-            mentors.append(m)
-        db_session.commit()
-        return mentors
-
-    def test_batch_returns_matching_mentors(self, client, db_session):
-        m1, m2, m3 = self._seed_mentors(db_session, 3)
-
-        resp = client.post(
-            "/api/mentors/batch",
-            json={"ids": [str(m1.id), str(m2.id), str(m3.id)]},
-        )
-        assert resp.status_code == 200
-        items = resp.json()
-        assert len(items) == 3
-        ids = {it["id"] for it in items}
-        assert ids == {str(m1.id), str(m2.id), str(m3.id)}
-        # 校验响应字段
-        for it in items:
-            assert "name" in it
-            assert "university" in it
-            assert "avg_rating" in it
-
-    def test_batch_invalid_uuid_skipped(self, client, db_session):
-        m1, *_ = self._seed_mentors(db_session, 1)
-        resp = client.post(
-            "/api/mentors/batch",
-            json={"ids": [str(m1.id), "not-a-uuid"]},
-        )
-        assert resp.status_code == 200
-        assert len(resp.json()) == 1
-
-    def test_batch_all_invalid_uuid_returns_empty(self, client):
-        resp = client.post(
-            "/api/mentors/batch",
-            json={"ids": ["invalid-1", "invalid-2"]},
-        )
-        assert resp.status_code == 200
-        assert resp.json() == []
-
-    def test_batch_empty_ids_returns_422(self, client):
-        resp = client.post("/api/mentors/batch", json={"ids": []})
-        assert resp.status_code == 422
-
-    def test_batch_too_many_ids_returns_422(self, client):
-        ids = [str(uuid4()) for _ in range(101)]
-        resp = client.post("/api/mentors/batch", json={"ids": ids})
-        assert resp.status_code == 422
-
-    def test_batch_no_auth_required(self, client, db_session):
-        """批量获取导师无需登录。"""
-        m1, *_ = self._seed_mentors(db_session, 1)
-        resp = client.post(
-            "/api/mentors/batch",
-            json={"ids": [str(m1.id)]},
-        )
-        assert resp.status_code == 200
-        assert len(resp.json()) == 1
-
-    def test_batch_nonexistent_ids_returns_empty(self, client):
-        """不存在的 UUID 返回空列表。"""
-        resp = client.post(
-            "/api/mentors/batch",
-            json={"ids": [str(uuid4()), str(uuid4())]},
-        )
-        assert resp.status_code == 200
-        assert resp.json() == []
 
 
 # ======================================================================
