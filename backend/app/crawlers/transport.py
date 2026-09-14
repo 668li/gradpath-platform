@@ -119,7 +119,9 @@ def _default_sender(method: str, url: str, headers: dict | None, timeout: float)
     import httpx
 
     send_headers = dict(headers or {})
-    send_headers.setdefault("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) GradPathCrawler/1.0")
+    send_headers.setdefault(
+        "User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) GradPathCrawler/1.0"
+    )
     with httpx.Client(follow_redirects=True, timeout=timeout) as client:
         return client.request(method, url, headers=send_headers)
 

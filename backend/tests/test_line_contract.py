@@ -38,7 +38,13 @@ def test_generated_schedules_frozen():
 
 def test_manual_lines_have_no_schedule():
     lines = load_lines()
-    for name in ("real_data", "yanzhao", "yanzhao_program", "rss_news_research", "web_article_research"):
+    for name in (
+        "real_data",
+        "yanzhao",
+        "yanzhao_program",
+        "rss_news_research",
+        "web_article_research",
+    ):
         assert lines[name].schedule is None, f"{name} 应为手动线（schedule: null）"
 
 
@@ -53,7 +59,7 @@ def test_rogue_yaml_name_rejected(tmp_path):
     """白名单硬闸：越界名字加载即炸（与 registry 不变量同源）。"""
     rogue = tmp_path / "rogue.yaml"
     rogue.write_text(
-        "name: scoreline_real\nschedule: \"0 3 * * *\"\nentry: https://example.com\n",
+        'name: scoreline_real\nschedule: "0 3 * * *"\nentry: https://example.com\n',
         encoding="utf-8",
     )
     with pytest.raises(ValueError, match="不在合规白名单"):

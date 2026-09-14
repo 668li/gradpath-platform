@@ -7,7 +7,6 @@
 
 from datetime import datetime, timedelta
 
-
 from app.config import settings
 from app.models.micro_action import MicroActionPlan, MicroActionTask
 from app.models.notification import Notification

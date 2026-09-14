@@ -7,7 +7,6 @@
 """
 
 import asyncio
-from datetime import datetime, timezone
 
 import pytest
 from sqlalchemy import create_engine
@@ -102,7 +101,9 @@ def test_heartbeat_failure_keeps_last_successful(db):
     db.commit()
     fresh = db.query(DataFreshness).filter_by(source_name="eol_kaoyan").one()
     assert fresh.status == "failed"
-    assert fresh.last_successful_crawl == ok_at, "失败不得推进 last_successful_crawl（老化诚实口径）"
+    assert (
+        fresh.last_successful_crawl == ok_at
+    ), "失败不得推进 last_successful_crawl（老化诚实口径）"
     assert fresh.records_count == 7, "失败不得累加记录数"
 
 
@@ -113,7 +114,9 @@ def test_unisolate_explicit_only(db):
     db.commit()
     assert svc.unisolate(db, "state_probe", by="tester") is True
     state = db.query(CrawlerSourceState).filter_by(source_name="state_probe").one()
-    assert state.isolated is False and state.consecutive_fails == 0 and state.isolated_reason is None
+    assert (
+        state.isolated is False and state.consecutive_fails == 0 and state.isolated_reason is None
+    )
 
 
 def test_cursor_roundtrip(db):

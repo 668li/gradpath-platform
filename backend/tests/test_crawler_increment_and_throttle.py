@@ -12,7 +12,6 @@ import threading
 import time
 from pathlib import Path
 
-
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.crawlers.research.dedup import normalize_url  # noqa: E402

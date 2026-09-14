@@ -69,8 +69,10 @@ def _parse_window(raw_window: dict, name: str) -> tuple[str, str]:
         raise ValueError(f"爬虫线 {name}: window 需为 {{start: MM-DD, end: MM-DD}}")
     for f in _WINDOW_FIELDS:
         parts = str(raw_window[f]).split("-")
-        if len(parts) != 2 or not all(p.isdigit() and 1 <= int(p) <= 99 for p in parts) or not (
-            1 <= int(parts[0]) <= 12 and 1 <= int(parts[1]) <= 31
+        if (
+            len(parts) != 2
+            or not all(p.isdigit() and 1 <= int(p) <= 99 for p in parts)
+            or not (1 <= int(parts[0]) <= 12 and 1 <= int(parts[1]) <= 31)
         ):
             raise ValueError(f"爬虫线 {name}: window.{f} 需为 MM-DD 格式，收到 {raw_window[f]!r}")
     return str(raw_window["start"]), str(raw_window["end"])

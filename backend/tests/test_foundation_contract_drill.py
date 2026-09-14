@@ -10,7 +10,6 @@
 """
 
 import re
-from pathlib import Path
 from urllib.parse import urljoin
 
 import pytest
@@ -106,9 +105,7 @@ def test_step2_line_contract_loads(tmp_path, monkeypatch):
     from app.crawlers.compliance import ALLOWED_CRAWLER_SOURCES
 
     (tmp_path / "demo_source.yaml").write_text(DEMO_YAML, encoding="utf-8")
-    monkeypatch.setattr(
-        lr, "ALLOWED_CRAWLER_SOURCES", ALLOWED_CRAWLER_SOURCES | {"demo_source"}
-    )
+    monkeypatch.setattr(lr, "ALLOWED_CRAWLER_SOURCES", ALLOWED_CRAWLER_SOURCES | {"demo_source"})
     line = load_lines(tmp_path)["demo_source"]
     assert line.schedule == "30 5 * * *"
     assert line.sla_hours == 12
@@ -123,9 +120,7 @@ def test_step3_parse_and_evidence_and_store_full_chain(tmp_path, monkeypatch, db
     from app.crawlers.compliance import ALLOWED_CRAWLER_SOURCES
 
     (tmp_path / "demo_source.yaml").write_text(DEMO_YAML, encoding="utf-8")
-    monkeypatch.setattr(
-        lr, "ALLOWED_CRAWLER_SOURCES", ALLOWED_CRAWLER_SOURCES | {"demo_source"}
-    )
+    monkeypatch.setattr(lr, "ALLOWED_CRAWLER_SOURCES", ALLOWED_CRAWLER_SOURCES | {"demo_source"})
     assert "demo_source" in load_lines(tmp_path)  # 契约加载通过
 
     items = parse_demo_notice(DEMO_LIST_HTML, DEMO_DETAIL_HTML)

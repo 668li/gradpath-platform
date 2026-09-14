@@ -28,7 +28,9 @@ def _now() -> datetime:
 
 
 def get_or_create_state(db: Session, source_name: str) -> CrawlerSourceState:
-    state = db.query(CrawlerSourceState).filter(CrawlerSourceState.source_name == source_name).first()
+    state = (
+        db.query(CrawlerSourceState).filter(CrawlerSourceState.source_name == source_name).first()
+    )
     if state is None:
         state = CrawlerSourceState(source_name=source_name)
         db.add(state)
@@ -40,7 +42,9 @@ def is_isolated(db: Session, source_name: str) -> bool:
     """该线是否处于隔离态（调度器据此跳过）。状态行不存在 = 未隔离。"""
     row = (
         db.query(CrawlerSourceState)
-        .filter(CrawlerSourceState.source_name == source_name, CrawlerSourceState.isolated.is_(True))
+        .filter(
+            CrawlerSourceState.source_name == source_name, CrawlerSourceState.isolated.is_(True)
+        )
         .first()
     )
     return row is not None
@@ -106,10 +110,14 @@ def record_heartbeat(db: Session, source_name: str, *, ok: bool, inserted: int =
 
 def unisolate(db: Session, source_name: str, *, by: str = "admin") -> bool:
     """显式解除隔离（人工动作）：清零失败计数、清理由人。返回是否存在隔离行。"""
-    state = db.query(CrawlerSourceState).filter(CrawlerSourceState.source_name == source_name).first()
+    state = (
+        db.query(CrawlerSourceState).filter(CrawlerSourceState.source_name == source_name).first()
+    )
     if state is None or not state.isolated:
         return False
-    logger.warning("[crawler_state] %s 解除隔离（by=%s，原由：%s）", source_name, by, state.isolated_reason)
+    logger.warning(
+        "[crawler_state] %s 解除隔离（by=%s，原由：%s）", source_name, by, state.isolated_reason
+    )
     state.isolated = False
     state.isolated_reason = None
     state.consecutive_fails = 0
