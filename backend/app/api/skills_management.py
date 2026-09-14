@@ -1,4 +1,4 @@
-"""Skill 管理 API — 查询项目内置的 6 个专用 skill。"""
+"""Skill 管理 API — 查询项目内置 skill 注册表。"""
 
 from fastapi import APIRouter, HTTPException
 
