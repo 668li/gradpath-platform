@@ -6,11 +6,9 @@ from uuid import uuid4
 from sqlalchemy import inspect
 
 from app.models import (
-    DarkKnowledgePushLog,
     DecisionReviewQueue,
     MemoryFactType,
     OnboardingStatus,
-    PushFeedback,
     ReviewStatus,
     UserMemoryFact,
     UserOnboarding,
@@ -170,63 +168,11 @@ class TestDecisionReviewQueueModel:
         assert review.ai_review_result["accuracy_score"] == 90
 
 
-class TestDarkKnowledgePushLogModel:
-    """DarkKnowledgePushLog 模型测试"""
-
-    def test_table_exists(self, db_session):
-        insp = inspect(db_session.bind)
-        assert "dark_knowledge_push_log" in insp.get_table_names()
-
-    def test_create_push_log(self, db_session):
-        """应能正确创建推送日志"""
-        user_id = uuid4()
-        dk_id = uuid4()
-        log = DarkKnowledgePushLog(
-            user_id=user_id,
-            dark_knowledge_id=dk_id,
-            stage="preparation",
-            push_reason={"trigger": "decision_created"},
-        )
-        db_session.add(log)
-        db_session.commit()
-        db_session.refresh(log)
-
-        assert log.id is not None
-        assert log.feedback == PushFeedback.none
-        assert log.pushed_at is not None
-        assert log.read_at is None
-        assert log.push_reason["trigger"] == "decision_created"
-        assert log.stage == "preparation"
-
-    def test_mark_read_with_feedback(self, db_session):
-        """应能正确标记已读并记录反馈"""
-        user_id = uuid4()
-        dk_id = uuid4()
-        log = DarkKnowledgePushLog(
-            user_id=user_id,
-            dark_knowledge_id=dk_id,
-            stage="school_selection",
-        )
-        db_session.add(log)
-        db_session.commit()
-
-        log.read_at = _utcnow()
-        log.feedback = PushFeedback.positive
-        log.rating = 5
-        db_session.commit()
-
-        db_session.refresh(log)
-        assert log.read_at is not None
-        assert log.feedback == PushFeedback.positive
-        assert log.rating == 5
-
-
 class TestModelsRegistered:
-    """验证 4 个新模型已正确注册到 app.models 命名空间"""
+    """验证新模型已正确注册到 app.models 命名空间"""
 
     def test_all_models_importable(self):
         from app.models import (
-            DarkKnowledgePushLog,
             DecisionReviewQueue,
             UserMemoryFact,
             UserOnboarding,
@@ -235,12 +181,11 @@ class TestModelsRegistered:
         assert UserMemoryFact is not None
         assert UserOnboarding is not None
         assert DecisionReviewQueue is not None
-        assert DarkKnowledgePushLog is not None
 
     def test_all_enums_importable(self):
-        from app.models import MemoryFactType, OnboardingStatus, PushFeedback, ReviewStatus
+        from app.models import MemoryFactType, OnboardingStatus, ReviewStatus
 
         assert MemoryFactType is not None
         assert OnboardingStatus is not None
         assert ReviewStatus is not None
-        assert PushFeedback is not None
+    

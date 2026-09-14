@@ -29,9 +29,6 @@ def create_decision(db: Session, user_id: UUID, data: DecisionCreate) -> Destina
     # 决策飞轮护城河：自动创建回顾任务（基于 review_date）
     _schedule_review_task(db, user_id, decision)
 
-    # 暗知识护城河：决策创建时主动推送相关暗知识
-    _trigger_dark_knowledge_push(db, user_id, decision)
-
     _invalidate_user_context_cache(user_id)
     return decision
 
@@ -61,22 +58,6 @@ def _schedule_review_task(db: Session, user_id: UUID, decision: DestinationDecis
         logger.info("已为决策 %s 创建回顾任务 scheduled_at=%s", decision.id, decision.review_date)
     except Exception as e:
         logger.warning("创建回顾任务失败 decision_id=%s: %s", decision.id, e)
-        db.rollback()
-
-
-def _trigger_dark_knowledge_push(db: Session, user_id: UUID, decision: DestinationDecision) -> None:
-    """决策创建时主动推送相关暗知识（暗知识护城河）。"""
-    try:
-        from app.services.dark_knowledge_push_service import push_for_decision
-
-        destination_type = (
-            decision.destination_type.value
-            if hasattr(decision.destination_type, "value")
-            else str(decision.destination_type)
-        )
-        push_for_decision(db, user_id, decision.id, destination_type, limit=3)
-    except Exception as e:
-        logger.warning("触发暗知识推送失败 decision_id=%s: %s", decision.id, e)
         db.rollback()
 
 

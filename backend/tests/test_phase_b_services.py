@@ -11,23 +11,12 @@ from datetime import date, datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
-from app.models.dark_knowledge_push import DarkKnowledgePushLog, PushFeedback
 from app.models.decision_review import DecisionReviewQueue, ReviewStatus
 from app.models.destination_decision import DecisionStatus, DestinationDecision, DestinationType
-from app.models.grad_intel import DarkKnowledge
 from app.models.onboarding import OnboardingStatus, UserOnboarding
 from app.models.user_memory import MemoryFactType, UserMemoryFact
-from app.services.dark_knowledge_push_service import (
-    get_push_history,
-    get_unread_count,
-    mark_read,
-    push_for_decision,
-    push_for_user,
-    record_feedback,
-)
 from app.services.decision_pulse_service import (
     get_active_decisions,
-    get_dark_knowledge_feed,
     get_full_pulse,
     get_pulse_overview,
     get_review_queue,
@@ -446,7 +435,6 @@ class TestDecisionPulseService:
         assert overview["pending_reviews"] == 0
         assert overview["memory_count"] == 0
         assert overview["due_reviews"] == 0
-        assert overview["unread_pushes"] == 0
         assert overview["active_decisions"] == 0
 
     def test_pulse_overview_with_data(self, db_session):
@@ -472,14 +460,6 @@ class TestDecisionPulseService:
                 status=ReviewStatus.pending,
             )
         )
-        # 1 个未读推送
-        db_session.add(
-            DarkKnowledgePushLog(
-                user_id=user_id,
-                dark_knowledge_id=uuid4(),
-                stage="decision",
-            )
-        )
         # 1 条记忆事实
         db_session.add(
             UserMemoryFact(
@@ -495,7 +475,6 @@ class TestDecisionPulseService:
         assert overview["total_decisions"] == 1
         assert overview["active_decisions"] == 1
         assert overview["due_reviews"] == 1
-        assert overview["unread_pushes"] == 1
         assert overview["memory_count"] == 1
 
     def test_get_active_decisions(self, db_session):
@@ -545,200 +524,10 @@ class TestDecisionPulseService:
         assert queue[0]["is_overdue"] is True
         assert queue[0]["days_until_due"] < 0
 
-    def test_get_dark_knowledge_feed(self, db_session):
-        """暗知识推送流"""
-        user_id = uuid4()
-        dk_id = uuid4()
-        db_session.add(
-            DarkKnowledge(
-                stage="decision",
-                category="测试",
-                title="测试暗知识",
-                content="这是测试内容",
-                importance="high",
-            )
-        )
-        db_session.commit()
-        # 需要获取 dk.id
-        dk = db_session.query(DarkKnowledge).filter(DarkKnowledge.title == "测试暗知识").first()
-        db_session.add(
-            DarkKnowledgePushLog(
-                user_id=user_id,
-                dark_knowledge_id=dk.id,
-                stage="decision",
-            )
-        )
-        db_session.commit()
-
-        feed = get_dark_knowledge_feed(db_session, user_id)
-        assert len(feed) == 1
-        assert feed[0]["title"] == "测试暗知识"
-        assert feed[0]["is_read"] is False
-
     def test_get_full_pulse(self, db_session):
         """完整看板数据应包含所有面板"""
         pulse = get_full_pulse(db_session, uuid4())
         assert "overview" in pulse
         assert "active_decisions" in pulse
         assert "review_queue" in pulse
-        assert "dark_knowledge_feed" in pulse
         assert "memory_facts" in pulse
-
-
-# ========== dark_knowledge_push_service 测试 ==========
-
-
-class TestDarkKnowledgePushService:
-    def test_push_for_user_no_candidates(self, db_session):
-        """无候选暗知识时应返回空"""
-        result = push_for_user(db_session, uuid4(), stage="decision", limit=3)
-        assert result == []
-
-    def test_push_for_user_creates_logs(self, db_session):
-        """应创建推送日志"""
-        user_id = uuid4()
-        # 创建 3 条暗知识
-        for i in range(3):
-            db_session.add(
-                DarkKnowledge(
-                    stage="decision",
-                    category=f"分类{i}",
-                    title=f"标题{i}",
-                    content=f"内容{i}",
-                    importance="high",
-                    sort_order=i,
-                )
-            )
-        db_session.commit()
-
-        result = push_for_user(db_session, user_id, stage="decision", limit=2)
-        assert len(result) == 2
-
-    def test_push_for_user_dedup(self, db_session):
-        """同一条暗知识不应重复推送"""
-        user_id = uuid4()
-        dk = DarkKnowledge(
-            stage="decision",
-            category="测试",
-            title="唯一测试",
-            content="内容",
-            importance="high",
-        )
-        db_session.add(dk)
-        db_session.commit()
-
-        # 第一次推送
-        r1 = push_for_user(db_session, user_id, stage="decision", limit=5)
-        assert len(r1) == 1
-
-        # 第二次推送（应该没有新的候选）
-        r2 = push_for_user(db_session, user_id, stage="decision", limit=5)
-        assert len(r2) == 0
-
-    def test_push_for_decision(self, db_session):
-        """决策触发推送"""
-        user_id = uuid4()
-        decision_id = uuid4()
-        db_session.add(
-            DarkKnowledge(
-                stage="decision",
-                category="决策相关",
-                title="决策必知",
-                content="内容",
-                importance="high",
-            )
-        )
-        db_session.commit()
-
-        result = push_for_decision(db_session, user_id, decision_id, "postgrad", limit=2)
-        assert len(result) == 1
-        assert result[0].push_reason["trigger"] == "decision_created"
-        assert result[0].push_reason["decision_id"] == str(decision_id)
-
-    def test_mark_read(self, db_session):
-        """标记已读"""
-        user_id = uuid4()
-        log = DarkKnowledgePushLog(
-            user_id=user_id,
-            dark_knowledge_id=uuid4(),
-            stage="decision",
-        )
-        db_session.add(log)
-        db_session.commit()
-
-        result = mark_read(db_session, user_id, log.id)
-        assert result.read_at is not None
-
-        # 重复标记不应报错
-        result2 = mark_read(db_session, user_id, log.id)
-        assert result2.read_at == result.read_at
-
-    def test_record_feedback(self, db_session):
-        """记录反馈"""
-        user_id = uuid4()
-        log = DarkKnowledgePushLog(
-            user_id=user_id,
-            dark_knowledge_id=uuid4(),
-            stage="decision",
-        )
-        db_session.add(log)
-        db_session.commit()
-
-        result = record_feedback(
-            db_session,
-            user_id,
-            log.id,
-            PushFeedback.positive,
-            rating=5,
-            notes="很有用",
-        )
-        assert result.feedback == PushFeedback.positive
-        assert result.rating == 5
-        assert result.feedback_notes == "很有用"
-        assert result.read_at is not None  # 反馈时自动标记已读
-
-    def test_get_unread_count(self, db_session):
-        """未读数统计"""
-        user_id = uuid4()
-        db_session.add_all(
-            [
-                DarkKnowledgePushLog(
-                    user_id=user_id,
-                    dark_knowledge_id=uuid4(),
-                    stage="decision",
-                ),
-                DarkKnowledgePushLog(
-                    user_id=user_id,
-                    dark_knowledge_id=uuid4(),
-                    stage="preparation",
-                    read_at=datetime.now(timezone.utc),
-                ),
-            ]
-        )
-        db_session.commit()
-
-        assert get_unread_count(db_session, user_id) == 1
-
-    def test_get_push_history_only_unread(self, db_session):
-        """只看未读"""
-        user_id = uuid4()
-        db_session.add_all(
-            [
-                DarkKnowledgePushLog(
-                    user_id=user_id,
-                    dark_knowledge_id=uuid4(),
-                    stage="decision",
-                ),
-                DarkKnowledgePushLog(
-                    user_id=user_id,
-                    dark_knowledge_id=uuid4(),
-                    stage="preparation",
-                    read_at=datetime.now(timezone.utc),
-                ),
-            ]
-        )
-        db_session.commit()
-
-        history = get_push_history(db_session, user_id, only_unread=True)
-        assert len(history) == 1
-        assert history[0].stage == "decision"

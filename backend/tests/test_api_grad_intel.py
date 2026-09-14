@@ -4,7 +4,7 @@
 - 院校情报 CRUD（保存、列表、删除）
 - AI 院校情报查询（mock LLM）
 - 自我定位（创建、最新、历史、清除缓存）
-- 暗知识（列表、阶段、预填充）
+- 暗知识（列表、阶段；预填充端点已随功能下架删除）
 - 公开浏览接口（院校情报、研招网数据、分数线、调剂、院校汇总）
 """
 
@@ -15,6 +15,7 @@ from fastapi.testclient import TestClient
 
 from app.core.cache import cache
 from app.models.grad_intel import (
+    DarkKnowledge,
     GradAdjustmentInfo,
     GradSchoolIntel,
     GradScorelineRecord,
@@ -244,17 +245,23 @@ class TestPositioning:
 # 暗知识
 # ======================================================================
 class TestDarkKnowledge:
-    def _seed_dark_knowledge(self, client, auth_headers=None):
-        """辅助：通过 API 触发暗知识预填充。"""
-        headers = auth_headers or {}
-        resp = client.post("/api/grad-intel/dark-knowledge/seed", headers=headers)
-        assert resp.status_code == 200, f"seed 失败: {resp.text}"
-        return resp.json()
+    def _seed_dark_knowledge(self, db_session):
+        """辅助：直接入库造数（原 seed 端点已随暗知识下架删除）。"""
+        row = DarkKnowledge(
+            stage="decision",
+            category="ROI评估",
+            title="测试条目",
+            content="测试内容",
+            importance="high",
+            sort_order=1,
+        )
+        db_session.add(row)
+        db_session.commit()
+        return row
 
-    def test_list_dark_knowledge(self, client: TestClient, auth_headers):
+    def test_list_dark_knowledge(self, client: TestClient, db_session):
         """list 接口返回分页结构 {items, total, page, limit, pages}。"""
-        # 先 seed 数据（list 接口公开，但 seed 需要登录）
-        self._seed_dark_knowledge(client, auth_headers)
+        self._seed_dark_knowledge(db_session)
         cache.clear()
 
         resp = client.get("/api/grad-intel/dark-knowledge/list")
@@ -271,8 +278,8 @@ class TestDarkKnowledge:
         assert "stage" in first
         assert "content" in first
 
-    def test_list_dark_knowledge_by_stage(self, client: TestClient, auth_headers):
-        self._seed_dark_knowledge(client, auth_headers)
+    def test_list_dark_knowledge_by_stage(self, client: TestClient, db_session):
+        self._seed_dark_knowledge(db_session)
         cache.clear()
 
         resp = client.get("/api/grad-intel/dark-knowledge/list", params={"stage": "decision"})
@@ -282,8 +289,8 @@ class TestDarkKnowledge:
         assert "items" in data
         assert all(item["stage"] == "decision" for item in data["items"])
 
-    def test_dark_knowledge_stages(self, client: TestClient, auth_headers):
-        self._seed_dark_knowledge(client, auth_headers)
+    def test_dark_knowledge_stages(self, client: TestClient, db_session):
+        self._seed_dark_knowledge(db_session)
         cache.clear()
 
         resp = client.get("/api/grad-intel/dark-knowledge/stages")
@@ -294,25 +301,6 @@ class TestDarkKnowledge:
         assert "stage" in data[0]
         assert "name" in data[0]
         assert "count" in data[0]
-
-    def test_seed_dark_knowledge(self, client: TestClient, auth_headers):
-        resp = client.post("/api/grad-intel/dark-knowledge/seed", headers=auth_headers)
-        assert resp.status_code == 200
-        data = resp.json()
-        assert "seeded" in data
-        assert "total" in data
-
-    def test_seed_dark_knowledge_idempotent(self, client: TestClient, auth_headers):
-        resp1 = client.post("/api/grad-intel/dark-knowledge/seed", headers=auth_headers)
-        resp2 = client.post("/api/grad-intel/dark-knowledge/seed", headers=auth_headers)
-        assert resp1.status_code == 200
-        assert resp2.status_code == 200
-        assert resp1.json()["seeded"] > 0
-        assert resp2.json()["seeded"] == 0
-
-    def test_seed_requires_auth(self, client: TestClient):
-        resp = client.post("/api/grad-intel/dark-knowledge/seed")
-        assert resp.status_code == 401
 
 
 # ======================================================================

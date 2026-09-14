@@ -16,7 +16,6 @@ from app.database import get_db
 from app.models.user import User
 from app.services.decision_pulse_service import (
     get_active_decisions,
-    get_dark_knowledge_feed,
     get_full_pulse,
     get_memory_facts_panel,
     get_pulse_overview,
@@ -62,16 +61,6 @@ def review_queue(
 ):
     """待回顾决策队列。"""
     return {"items": get_review_queue(db, user.id, limit=limit)}
-
-
-@router.get("/dark-knowledge-feed")
-def dark_knowledge_feed(
-    limit: int = Query(10, ge=1, le=50),
-    db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
-):
-    """暗知识推送流。"""
-    return {"items": get_dark_knowledge_feed(db, user.id, limit=limit)}
 
 
 @router.get("/memory-facts")

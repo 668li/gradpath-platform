@@ -235,16 +235,6 @@ def list_public_intel(
     return [IntelResponse.model_validate(i) for i in items]
 
 
-@router.post("/dark-knowledge/seed")
-def seed_dark_knowledge(
-    db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
-):
-    """手动触发暗知识预填充（开发用）。"""
-    count = grad_intel_service.seed_dark_knowledge(db)
-    return {"seeded": count, "total": db.query(grad_intel_service.DarkKnowledge).count()}
-
-
 # ===== 研招网真实数据（公开浏览） =====
 
 

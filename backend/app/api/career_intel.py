@@ -134,15 +134,6 @@ def get_dark_knowledge_stages(
     user: User = Depends(get_current_user),
 ):
     """获取求职暗知识各阶段统计。"""
-    career_intel_service.seed_career_dark_knowledge(db)
     return career_intel_service.get_career_dark_knowledge_stages(db)
 
 
-@router.post("/dark-knowledge/seed")
-def seed_dark_knowledge(
-    db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
-):
-    """手动触发求职暗知识播种。"""
-    count = career_intel_service.seed_career_dark_knowledge(db)
-    return {"seeded": count}

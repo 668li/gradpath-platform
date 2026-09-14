@@ -18,7 +18,6 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.cache import cache
-from app.models.dark_knowledge_push import DarkKnowledgePushLog
 from app.models.destination_decision import DecisionStatus, DestinationDecision
 from app.models.grad_intel import DarkKnowledge
 from app.models.outcome_report import OutcomeReport
@@ -223,68 +222,6 @@ def get_procrastination_cost(db: Session, user_id: UUID, today: date | None = No
         "total_stale_days": total_stale_days,
         "total_lost_hours": total_stale_days * 3,
         "items": items[:5],
-    }
-    cache.set(cache_key, result, ttl=60)
-    return result
-
-
-def get_dark_knowledge_gap(db: Session, user_id: UUID, limit: int = 5) -> dict:
-    """暗知识缺口雷达：找出用户尚未看到的高重要性暗知识。
-
-    从第一性原理：信息差的杀伤力在于"你不知道你不知道"。
-    把同路人都在看、但你还没看到的关键暗知识主动浮出水面。
-    """
-    cache_key = f"dk_gap:{user_id}"
-    cached = cache.get(cache_key)
-    if cached is not None:
-        return cached
-
-    # 用户已经看过的暗知识 ID
-    seen_ids_subq = db.query(DarkKnowledgePushLog.dark_knowledge_id).filter(
-        DarkKnowledgePushLog.user_id == user_id
-    )
-
-    # 高重要性且未看过的暗知识
-    unseen = (
-        db.query(DarkKnowledge)
-        .filter(
-            DarkKnowledge.importance == "high",
-            ~DarkKnowledge.id.in_(seen_ids_subq),
-        )
-        .order_by(DarkKnowledge.sort_order.asc())
-        .limit(limit)
-        .all()
-    )
-
-    # 统计同路人（全体用户）已读这些暗知识的人数，制造"别人都看了"的社会证明
-    gap_items = []
-    for dk in unseen:
-        read_count = (
-            db.query(func.count(DarkKnowledgePushLog.id))
-            .filter(
-                DarkKnowledgePushLog.dark_knowledge_id == dk.id,
-                DarkKnowledgePushLog.read_at.isnot(None),
-            )
-            .scalar()
-        ) or 0
-        gap_items.append(
-            {
-                "id": str(dk.id),
-                "title": dk.title,
-                "content_preview": (dk.content or "")[:120],
-                "stage": dk.stage,
-                "category": dk.category,
-                "read_by_peers": int(read_count),
-                "common_misconception": (
-                    dk.common_misconception[:100] if dk.common_misconception else None
-                ),
-            }
-        )
-
-    result = {
-        "has_gap": len(gap_items) > 0,
-        "gap_count": len(gap_items),
-        "items": gap_items,
     }
     cache.set(cache_key, result, ttl=60)
     return result

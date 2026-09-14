@@ -20,7 +20,6 @@ from app.models.company_review import CompanyReview
 from app.models.conversation import Conversation, Message
 from app.models.crawler_run import CrawlerRun
 from app.models.crawler_state import CrawlerSourceState
-from app.models.dark_knowledge_push import DarkKnowledgePushLog, PushFeedback
 from app.models.data_source import DataSource
 from app.models.dataset_info import DatasetInfo
 from app.models.decision_analysis import DecisionAnalysis
@@ -211,8 +210,6 @@ __all__ = [
     "OnboardingStatus",
     "DecisionReviewQueue",
     "ReviewStatus",
-    "DarkKnowledgePushLog",
-    "PushFeedback",
     # 路径冲突调解
     "PathConflictResolution",
     # 多路径 What-If 对比
