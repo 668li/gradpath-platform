@@ -1,8 +1,14 @@
-# 备案前的 IP 灰度启动覆盖（备案通过配置 TLS 后请删除本文件的使用）：
+# 备案通过后的正式端口覆盖（域名 quxianglab.cn，HTTPS 由容器 nginx 终结）
 #   docker compose -f docker-compose.prod.yml -f docker-compose.grey.yml up -d
-# 作用：把 nginx 从 127.0.0.1:80 改绑到公网 0.0.0.0:80，允许 http://<服务器IP> 直接访问。
-# 注意：！override 标签使 ports 列表整体替换而非合并（需 docker compose v2.24+，服务器已预装）。
+# 作用：
+#   - 80 公网（仅 ACME 挑战 + 301 跳 https）
+#   - 443 公网（TLS 主站，证书挂载自宿主机 /etc/letsencrypt）
+#   - 挂载证书与 ACME webroot（续期免停机：certbot renew --webroot）
 services:
   nginx:
     ports: !override
       - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - /home/ubuntu/certbot/www:/var/www/certbot

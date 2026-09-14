@@ -87,7 +87,17 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         {!isOnboarding && (
           <footer className="md:pl-64 border-t border-paper-300 bg-paper-100">
             <div className="mx-auto max-w-6xl px-4 md:px-8 py-6 flex flex-col md:flex-row gap-3 md:items-center md:justify-between text-xs text-ink-500">
-              <p>© {new Date().getFullYear()} GradPath · 职径 · 职业轨迹</p>
+              <p>
+                © {new Date().getFullYear()} GradPath · 职径 · 职业轨迹 ·{" "}
+                <a
+                  href="https://beian.miit.gov.cn/"
+                  target="_blank"
+                  rel="noopener noreferrer nofollow"
+                  className="hover:text-brand-600 hover:underline"
+                >
+                  鲁ICP备2026053142号
+                </a>
+              </p>
               <nav className="flex flex-wrap gap-4">
                 <Link href="/legal/privacy" className="hover:text-brand-600 hover:underline">
                   隐私政策
