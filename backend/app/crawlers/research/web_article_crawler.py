@@ -174,7 +174,7 @@ class WebArticleCrawler(BaseCrawler):
             result = store_research_items(
                 db,
                 crawler_name=self.name,
-                item_type="dark_knowledge",
+                item_type="external_research",
                 items=items,
                 source_platform="web",
                 run_id=str(run_record.id),

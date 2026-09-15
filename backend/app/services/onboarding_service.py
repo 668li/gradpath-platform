@@ -228,7 +228,7 @@ def _rule_based_diagnosis(ob: UserOnboarding) -> tuple[str, dict, list[dict]]:
         },
         {
             "type": "opportunity",
-            "text": f"选择{dir_label}方向，平台已为你准备了院校情报、暗知识、社区经验等工具，善用它们打破信息差。",
+            "text": f"选择{dir_label}方向，平台已为你准备了院校情报、报考条件核对、社区经验等工具，善用它们打破信息差。",
         },
     ]
 

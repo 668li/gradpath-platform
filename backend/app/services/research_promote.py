@@ -3,7 +3,7 @@
 审核链路统一走新队列（t_review_queue_item）后的唯一消费端（P1 修理）：
 - approve → research_promote.promote_external_item() 落业务表
 - 按 item_type 分派：experience_post → ExperiencePost / kaoyan_news → KaoyanNews
-  / dark_knowledge → DarkKnowledge（防御分支，当前无爬虫写入该类型）
+  （dark_knowledge 落表通道已随暗知识功能下架删除；该类型条目仅回填审核状态）
 - status=approved；按 source_url 幂等去重（已存在则跳过）
 - 复用 ResearchTransformer 的清洗/标签/分类逻辑，与旧 import_* 行为等价
 
@@ -456,38 +456,6 @@ def _promote_kaoyan_news(db: Session, ext_item: ExternalResearchItem, reviewer: 
     return {"promoted": 1, "skipped": 0}
 
 
-def _promote_dark_knowledge(db: Session, ext_item: ExternalResearchItem, reviewer: str) -> dict:
-    """落 DarkKnowledge（防御分支）— 当前无爬虫写入该类型，仅按 meta.stage 兜底。"""
-    from app.models.grad_intel import DarkKnowledge
-
-    meta = ext_item.external_meta or {}
-    stage = meta.get("stage")
-    if not stage:
-        logger.warning(
-            "[research_promote] dark_knowledge 缺 stage，跳过落库: %s", ext_item.source_url
-        )
-        return {"promoted": 0, "skipped": 1}
-    exists = db.query(DarkKnowledge.id).filter(DarkKnowledge.title == ext_item.title).first()
-    if exists:
-        return {"promoted": 0, "skipped": 1}
-    db.add(
-        DarkKnowledge(
-            stage=stage,
-            category=(meta.get("category") or "general"),
-            title=ext_item.title,
-            content=ext_item.content,
-            importance=(meta.get("importance") or "high"),
-            common_misconception=meta.get("common_misconception"),
-            actionable_advice=meta.get("actionable_advice"),
-            verification_method=meta.get("verification_method"),
-            tags=[t for t in (meta.get("tags") or []) if isinstance(t, str)],
-            sort_order=int(meta.get("sort_order") or 0),
-        )
-    )
-    _backfill_data_source(db, ext_item, reviewer)
-    return {"promoted": 1, "skipped": 0}
-
-
 def promote_external_item(db: Session, ext_item: ExternalResearchItem, reviewer: str) -> dict:
     """审核通过 → 落业务表（幂等）。返回 {"promoted": int, "skipped": int}。
 
@@ -509,7 +477,6 @@ def promote_external_item(db: Session, ext_item: ExternalResearchItem, reviewer:
     dispatch = {
         "experience_post": _promote_experience_post,
         "kaoyan_news": _promote_kaoyan_news,
-        "dark_knowledge": _promote_dark_knowledge,
     }
     handler = dispatch.get(ext_item.item_type)
     if handler is None:

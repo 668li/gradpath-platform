@@ -123,7 +123,7 @@ def generate_weekly_draft(db: Session, user_id: UUID, today: date | None = None)
         if main_pct > 70:
             insights.append(
                 {
-                    "text": f"行动{main_pct}%集中在主行动，建议留出时间做微行动（暗知识/档案补全）来保持长期动力",
+                    "text": f"行动{main_pct}%集中在主行动，建议留出时间做微行动（看一条经验帖/档案补全）来保持长期动力",
                     "evidence": f"本周{main_actions}个主行动 vs {micro_actions}个微行动",
                     "action_link": "/intel",
                 }
@@ -175,7 +175,7 @@ def generate_weekly_draft(db: Session, user_id: UUID, today: date | None = None)
     if total_actions > 0 and micro_actions == 0 and main_actions > 0:
         action_layer.append(
             {
-                "action": "尝试每天加1个5分钟微行动（看暗知识/补档案）",
+                "action": "尝试每天加1个5分钟微行动（看一条经验帖/补档案）",
                 "why": "微行动降低启动门槛，休息日也能保持streak",
                 "deadline": (week_end + timedelta(days=7)).isoformat(),
                 "source": "insight",
