@@ -14,7 +14,6 @@ import {
   Users,
   TrendingUp,
   AlertTriangle,
-  Lightbulb,
   ChevronRight,
   ArrowRight,
 } from "lucide-react";
@@ -24,9 +23,7 @@ import { useToast } from "@/components/ui/toast";
 import { LoadingState } from "@/components/ui/empty";
 import type {
   IntelResponse,
-  DarkKnowledgeResponse,
   PostIntelResponse,
-  CivilServiceDarkKnowledgeResponse,
   Company,
   SalaryBenchmark,
 } from "@/types";
@@ -105,34 +102,21 @@ function GradWarRoom() {
   const [searchSchool, setSearchSchool] = useState("");
   const [searchMajor, setSearchMajor] = useState("");
   const [filterTier, setFilterTier] = useState("");
-  const [activeStage, setActiveStage] = useState<string>("all");
 
   const intelParentRef = useRef<HTMLDivElement>(null);
-  const darkKnowledgeParentRef = useRef<HTMLDivElement>(null);
 
   // SWR 替代原 useEffect+Promise.all：自动去重/缓存，全局已禁用 focus 重验证
   const { data: intelData, error: intelError, isLoading: intelLoading } = useApi<IntelResponse[]>(
     "/api/grad-intel/intel/public?limit=300",
     { fallbackData: [] },
   );
-  const { data: darkData, error: darkError, isLoading: darkLoading } = useApi<{ items: DarkKnowledgeResponse[] }>(
-    "/api/grad-intel/dark-knowledge/list",
-    { fallbackData: { items: [] as DarkKnowledgeResponse[] } },
-  );
 
   useEffect(() => {
     if (intelError) toast.push(intelError.message || "加载数据失败", "error");
   }, [intelError, toast]);
-  useEffect(() => {
-    if (darkError) toast.push(darkError.message || "加载数据失败", "error");
-  }, [darkError, toast]);
 
   const intelList = intelData ?? [];
-  const darkKnowledge: DarkKnowledgeResponse[] = useMemo(
-    () => (Array.isArray(darkData) ? darkData : darkData?.items ?? []),
-    [darkData],
-  );
-  const loading = intelLoading || darkLoading;
+  const loading = intelLoading;
 
   const filteredIntel = useMemo(() => {
     return intelList.filter((item) => {
@@ -142,30 +126,6 @@ function GradWarRoom() {
       return true;
     });
   }, [intelList, searchSchool, searchMajor, filterTier]);
-
-  const stages = useMemo(() => {
-    const stageMap = new Map<string, number>();
-    darkKnowledge.forEach((dk) => {
-      stageMap.set(dk.stage, (stageMap.get(dk.stage) || 0) + 1);
-    });
-    const stageNames: Record<string, string> = {
-      decision: "决策阶段",
-      school_selection: "择校阶段",
-      preparation: "备考阶段",
-      exam: "初试后",
-      retest: "复试阶段",
-    };
-    return Array.from(stageMap.entries()).map(([stage, count]) => ({
-      stage,
-      name: stageNames[stage] || stage,
-      count,
-    }));
-  }, [darkKnowledge]);
-
-  const filteredDarkKnowledge = useMemo(() => {
-    if (activeStage === "all") return darkKnowledge;
-    return darkKnowledge.filter((dk) => dk.stage === activeStage);
-  }, [darkKnowledge, activeStage]);
 
   // 院校情报两列分组，用于虚拟滚动
   const intelRows = useMemo(() => {
@@ -180,13 +140,6 @@ function GradWarRoom() {
     count: intelRows.length,
     getScrollElement: () => intelParentRef.current,
     estimateSize: () => 220,
-    overscan: 4,
-  });
-
-  const darkKnowledgeRowVirtualizer = useVirtualizer({
-    count: filteredDarkKnowledge.length,
-    getScrollElement: () => darkKnowledgeParentRef.current,
-    estimateSize: () => 140,
     overscan: 4,
   });
 
@@ -211,8 +164,8 @@ function GradWarRoom() {
       {/* 头部统计 */}
       <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-6 border border-blue-200">
         <h2 className="text-2xl font-bold text-blue-900 mb-2">考研作战室</h2>
-        <p className="text-blue-700 mb-4">覆盖 {intelList.length} 条院校专业情报 · {darkKnowledge.length} 条暗知识</p>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <p className="text-blue-700 mb-4">覆盖 {intelList.length} 条院校专业情报</p>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           <div className="bg-white/70 rounded-lg p-3 text-center">
             <p className="text-2xl font-bold text-blue-700">{tierStats["985"] || 0}</p>
             <p className="text-xs text-blue-600">985 情报</p>
@@ -224,10 +177,6 @@ function GradWarRoom() {
           <div className="bg-white/70 rounded-lg p-3 text-center">
             <p className="text-2xl font-bold text-blue-700">{tierStats["双一流"] || 0}</p>
             <p className="text-xs text-blue-600">双一流情报</p>
-          </div>
-          <div className="bg-white/70 rounded-lg p-3 text-center">
-            <p className="text-2xl font-bold text-blue-700">{darkKnowledge.length}</p>
-            <p className="text-xs text-blue-600">暗知识条目</p>
           </div>
         </div>
       </div>
@@ -320,78 +269,6 @@ function GradWarRoom() {
                         <IntelCardMemo key={intel.id} intel={intel} />
                       ))}
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* 暗知识 */}
-      <div>
-        <h3 className="text-lg font-bold text-ink-800 mb-3 flex items-center gap-2">
-          <Lightbulb className="h-5 w-5 text-amber-500" />
-          考研暗知识（{darkKnowledge.length} 条）
-        </h3>
-        <div className="flex gap-2 mb-4 flex-wrap">
-          <button
-            onClick={() => setActiveStage("all")}
-            className={cn(
-              "px-3 py-1.5 rounded-full text-sm transition-colors",
-              activeStage === "all"
-                ? "bg-brand-600 text-white"
-                : "bg-paper-100 text-ink-500 hover:bg-paper-200"
-            )}
-          >
-            全部（{darkKnowledge.length}）
-          </button>
-          {stages.map((s) => (
-            <button
-              key={s.stage}
-              onClick={() => setActiveStage(s.stage)}
-              className={cn(
-                "px-3 py-1.5 rounded-full text-sm transition-colors",
-                activeStage === s.stage
-                  ? "bg-brand-600 text-white"
-                  : "bg-paper-100 text-ink-500 hover:bg-paper-200"
-              )}
-            >
-              {s.name}（{s.count}）
-            </button>
-          ))}
-        </div>
-        {filteredDarkKnowledge.length === 0 ? (
-          <div className="text-center py-10 text-ink-400">
-            <Lightbulb className="h-12 w-12 mx-auto mb-3 opacity-30" />
-            <p>该阶段暂无暗知识</p>
-          </div>
-        ) : (
-          <div
-            ref={darkKnowledgeParentRef}
-            style={{ height: "600px", overflow: "auto" }}
-            className="rounded-lg"
-          >
-            <div
-              style={{
-                height: `${darkKnowledgeRowVirtualizer.getTotalSize()}px`,
-                position: "relative",
-              }}
-            >
-              {darkKnowledgeRowVirtualizer.getVirtualItems().map((virtualRow) => {
-                const dk = filteredDarkKnowledge[virtualRow.index];
-                return (
-                  <div
-                    key={dk.id}
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      width: "100%",
-                      transform: `translateY(${virtualRow.start}px)`,
-                    }}
-                  >
-                    <DarkKnowledgeCardMemo dk={dk} color="blue" />
                   </div>
                 );
               })}
@@ -527,34 +404,21 @@ function CivilWarRoom() {
   const [searchRegion, setSearchRegion] = useState("");
   const [searchDept, setSearchDept] = useState("");
   const [filterTier, setFilterTier] = useState("");
-  const [activeStage, setActiveStage] = useState<string>("all");
 
   const postParentRef = useRef<HTMLDivElement>(null);
-  const darkKnowledgeParentRef = useRef<HTMLDivElement>(null);
 
   // SWR 替代原 useEffect+Promise.all
   const { data: postData, error: postError, isLoading: postLoading } = useApi<PostIntelResponse[]>(
     "/api/civil-service/post-intel/public?limit=200",
     { fallbackData: [] },
   );
-  const { data: darkData, error: darkError, isLoading: darkLoading } = useApi<CivilServiceDarkKnowledgeResponse[]>(
-    "/api/civil-service/dark-knowledge",
-    { fallbackData: [] },
-  );
 
   useEffect(() => {
     if (postError) toast.push(postError.message || "加载数据失败", "error");
   }, [postError, toast]);
-  useEffect(() => {
-    if (darkError) toast.push(darkError.message || "加载数据失败", "error");
-  }, [darkError, toast]);
 
   const postIntel = postData ?? [];
-  const darkKnowledge: CivilServiceDarkKnowledgeResponse[] = useMemo(
-    () => darkData ?? [],
-    [darkData],
-  );
-  const loading = postLoading || darkLoading;
+  const loading = postLoading;
 
   const filteredPosts = useMemo(() => {
     return postIntel.filter((item) => {
@@ -564,31 +428,6 @@ function CivilWarRoom() {
       return true;
     });
   }, [postIntel, searchRegion, searchDept, filterTier]);
-
-  const stages = useMemo(() => {
-    const stageMap = new Map<string, number>();
-    darkKnowledge.forEach((dk) => {
-      stageMap.set(dk.stage, (stageMap.get(dk.stage) || 0) + 1);
-    });
-    const stageNames: Record<string, string> = {
-      decision: "决策阶段",
-      position_selection: "选岗阶段",
-      written_exam: "笔试阶段",
-      interview: "面试阶段",
-      physical: "体检政审",
-      onboarding: "入职适应",
-    };
-    return Array.from(stageMap.entries()).map(([stage, count]) => ({
-      stage,
-      name: stageNames[stage] || stage,
-      count,
-    }));
-  }, [darkKnowledge]);
-
-  const filteredDarkKnowledge = useMemo(() => {
-    if (activeStage === "all") return darkKnowledge;
-    return darkKnowledge.filter((dk) => dk.stage === activeStage);
-  }, [darkKnowledge, activeStage]);
 
   const postRows = useMemo(() => {
     const rows: PostIntelResponse[][] = [];
@@ -602,13 +441,6 @@ function CivilWarRoom() {
     count: postRows.length,
     getScrollElement: () => postParentRef.current,
     estimateSize: () => 240,
-    overscan: 4,
-  });
-
-  const darkKnowledgeRowVirtualizer = useVirtualizer({
-    count: filteredDarkKnowledge.length,
-    getScrollElement: () => darkKnowledgeParentRef.current,
-    estimateSize: () => 140,
     overscan: 4,
   });
 
@@ -634,7 +466,7 @@ function CivilWarRoom() {
       {/* 头部统计 */}
       <div className="bg-gradient-to-r from-red-50 to-red-100 rounded-xl p-6 border border-red-200">
         <h2 className="text-2xl font-bold text-red-900 mb-2">考公作战室</h2>
-        <p className="text-red-700 mb-4">覆盖 {postIntel.length} 条岗位情报 · {darkKnowledge.length} 条暗知识</p>
+        <p className="text-red-700 mb-4">覆盖 {postIntel.length} 条岗位情报</p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="bg-white/70 rounded-lg p-3 text-center">
             <p className="text-2xl font-bold text-red-700">{tierStats["中央部委"] || 0}</p>
@@ -751,78 +583,7 @@ function CivilWarRoom() {
         )}
       </div>
 
-      {/* 暗知识 */}
-      <div>
-        <h3 className="text-lg font-bold text-ink-800 mb-3 flex items-center gap-2">
-          <Lightbulb className="h-5 w-5 text-amber-500" />
-          考公暗知识（{darkKnowledge.length} 条）
-        </h3>
-        <div className="flex gap-2 mb-4 flex-wrap">
-          <button
-            onClick={() => setActiveStage("all")}
-            className={cn(
-              "px-3 py-1.5 rounded-full text-sm transition-colors",
-              activeStage === "all"
-                ? "bg-red-600 text-white"
-                : "bg-paper-100 text-ink-500 hover:bg-paper-200"
-            )}
-          >
-            全部（{darkKnowledge.length}）
-          </button>
-          {stages.map((s) => (
-            <button
-              key={s.stage}
-              onClick={() => setActiveStage(s.stage)}
-              className={cn(
-                "px-3 py-1.5 rounded-full text-sm transition-colors",
-                activeStage === s.stage
-                  ? "bg-red-600 text-white"
-                  : "bg-paper-100 text-ink-500 hover:bg-paper-200"
-              )}
-            >
-              {s.name}（{s.count}）
-            </button>
-          ))}
-        </div>
-        {filteredDarkKnowledge.length === 0 ? (
-          <div className="text-center py-10 text-ink-400">
-            <Lightbulb className="h-12 w-12 mx-auto mb-3 opacity-30" />
-            <p>该阶段暂无暗知识</p>
-          </div>
-        ) : (
-          <div
-            ref={darkKnowledgeParentRef}
-            style={{ height: "600px", overflow: "auto" }}
-            className="rounded-lg"
-          >
-            <div
-              style={{
-                height: `${darkKnowledgeRowVirtualizer.getTotalSize()}px`,
-                position: "relative",
-              }}
-            >
-              {darkKnowledgeRowVirtualizer.getVirtualItems().map((virtualRow) => {
-                const dk = filteredDarkKnowledge[virtualRow.index];
-                return (
-                  <div
-                    key={dk.id}
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      width: "100%",
-                      transform: `translateY(${virtualRow.start}px)`,
-                    }}
-                  >
-                    <CivilDarkKnowledgeCardMemo dk={dk} />
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
       </div>
-    </div>
   );
 }
 
@@ -1303,145 +1064,3 @@ function InterviewSection() {
   );
 }
 
-// ======================================================================
-// 暗知识卡片
-// ======================================================================
-
-function DarkKnowledgeCard({ dk }: { dk: DarkKnowledgeResponse; color: string }) {
-  const [expanded, setExpanded] = useState(false);
-
-  const importanceColor: Record<string, string> = {
-    critical: "bg-red-100 text-red-700",
-    high: "bg-amber-100 text-amber-700",
-    medium: "bg-blue-100 text-blue-700",
-  };
-
-  return (
-    <div className="bg-white rounded-lg p-4 border border-paper-200">
-      <div className="flex items-start justify-between mb-2">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs text-ink-400">{dk.category}</span>
-            <span className={cn(
-              "px-1.5 py-0.5 rounded text-[10px] font-medium",
-              importanceColor[dk.importance] || "bg-paper-100 text-ink-500"
-            )}>
-              {dk.importance === "critical" ? "关键" : dk.importance === "high" ? "重要" : "中等"}
-            </span>
-          </div>
-          <h4 className="font-semibold text-ink-800">{dk.title}</h4>
-        </div>
-      </div>
-
-      <p className="text-sm text-ink-600 leading-relaxed">{dk.content}</p>
-
-      {expanded && (
-        <div className="mt-3 pt-3 border-t border-paper-100 space-y-2 text-sm">
-          {dk.common_misconception && (
-            <div className="bg-red-50 rounded p-2">
-              <p className="font-medium text-red-700 mb-1 flex items-center gap-1">
-                <AlertTriangle className="h-3 w-3" />
-                常见误区
-              </p>
-              <p className="text-red-600">{dk.common_misconception}</p>
-            </div>
-          )}
-          {dk.actionable_advice && (
-            <div className="bg-green-50 rounded p-2">
-              <p className="font-medium text-green-700 mb-1 flex items-center gap-1">
-                <Lightbulb className="h-3 w-3" />
-                行动建议
-              </p>
-              <p className="text-green-600">{dk.actionable_advice}</p>
-            </div>
-          )}
-          {dk.verification_method && (
-            <div className="bg-blue-50 rounded p-2">
-              <p className="font-medium text-blue-700 mb-1">验证方法</p>
-              <p className="text-blue-600">{dk.verification_method}</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="mt-3 text-xs text-brand-600 hover:text-brand-700 flex items-center gap-1"
-      >
-        {expanded ? "收起" : "查看详情"}
-        <ChevronRight className={cn("h-3 w-3 transition-transform", expanded && "rotate-90")} />
-      </button>
-    </div>
-  );
-}
-const DarkKnowledgeCardMemo = memo(DarkKnowledgeCard);
-
-function CivilDarkKnowledgeCard({ dk }: { dk: CivilServiceDarkKnowledgeResponse }) {
-  const [expanded, setExpanded] = useState(false);
-
-  const importanceColor: Record<string, string> = {
-    critical: "bg-red-100 text-red-700",
-    high: "bg-amber-100 text-amber-700",
-    medium: "bg-blue-100 text-blue-700",
-    low: "bg-paper-100 text-ink-500",
-  };
-
-  return (
-    <div className="bg-white rounded-lg p-4 border border-paper-200">
-      <div className="flex items-start justify-between mb-2">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs text-ink-400">{dk.category}</span>
-            <span className={cn(
-              "px-1.5 py-0.5 rounded text-[10px] font-medium",
-              importanceColor[dk.importance] || "bg-paper-100 text-ink-500"
-            )}>
-              {dk.importance === "critical" ? "关键" : dk.importance === "high" ? "重要" : dk.importance === "medium" ? "中等" : "低"}
-            </span>
-          </div>
-          <h4 className="font-semibold text-ink-800">{dk.title}</h4>
-        </div>
-      </div>
-
-      <p className="text-sm text-ink-600 leading-relaxed">{dk.content}</p>
-
-      {expanded && (
-        <div className="mt-3 pt-3 border-t border-paper-100 space-y-2 text-sm">
-          {dk.common_misconception && (
-            <div className="bg-red-50 rounded p-2">
-              <p className="font-medium text-red-700 mb-1 flex items-center gap-1">
-                <AlertTriangle className="h-3 w-3" />
-                常见误区
-              </p>
-              <p className="text-red-600">{dk.common_misconception}</p>
-            </div>
-          )}
-          {dk.actionable_advice && (
-            <div className="bg-green-50 rounded p-2">
-              <p className="font-medium text-green-700 mb-1 flex items-center gap-1">
-                <Lightbulb className="h-3 w-3" />
-                行动建议
-              </p>
-              <p className="text-green-600">{dk.actionable_advice}</p>
-            </div>
-          )}
-          {dk.verification_method && (
-            <div className="bg-blue-50 rounded p-2">
-              <p className="font-medium text-blue-700 mb-1">验证方法</p>
-              <p className="text-blue-600">{dk.verification_method}</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="mt-3 text-xs text-red-600 hover:text-red-700 flex items-center gap-1"
-      >
-        {expanded ? "收起" : "查看详情"}
-        <ChevronRight className={cn("h-3 w-3 transition-transform", expanded && "rotate-90")} />
-      </button>
-    </div>
-  );
-}
-const CivilDarkKnowledgeCardMemo = memo(CivilDarkKnowledgeCard);

@@ -266,15 +266,6 @@ export function ExamTimelineTab() {
                       </ul>
                     </details>
                   )}
-                  {n.dark_knowledge.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {n.dark_knowledge.map((dk) => (
-                        <span key={dk.id} className="rounded bg-amber-50 px-2 py-0.5 text-xs text-amber-700">
-                          暗知识·{dk.title}
-                        </span>
-                      ))}
-                    </div>
-                  )}
                   {subscribed && authed && (
                     <div className="ml-auto flex items-center gap-2">
                       <button

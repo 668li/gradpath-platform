@@ -1326,27 +1326,6 @@ export interface PositioningResponse {
   created_at: string;
 }
 
-// ===== 考研作战室：暗知识 =====
-export interface DarkKnowledgeResponse {
-  id: string;
-  stage: string;
-  category: string;
-  title: string;
-  content: string;
-  importance: "critical" | "high" | "medium";
-  common_misconception: string | null;
-  actionable_advice: string | null;
-  verification_method: string | null;
-  tags: string[];
-  sort_order: number;
-}
-
-export interface DarkKnowledgeStage {
-  stage: string;
-  stage_name: string;
-  count: number;
-}
-
 // ===== 考研作战室：研招网真实数据 =====
 export interface GradYanzhaoProgram {
   id: string;
@@ -1463,18 +1442,6 @@ export interface AdjustmentRecommendation {
   contact_email: string | null;
   contact_phone: string | null;
   source_url: string | null;
-}
-
-export interface DarkKnowledgeRecommendation {
-  id: string;
-  stage: string;
-  category: string;
-  title: string;
-  content: string;
-  importance: string;
-  common_misconception: string | null;
-  actionable_advice: string | null;
-  relevance_score: number;
 }
 
 export interface RecommendationResponse<T> {
@@ -1625,27 +1592,6 @@ export interface CareerPositioningResponse {
   created_at: string;
 }
 
-// ===== 求职作战室：求职暗知识 =====
-export interface CareerDarkKnowledgeResponse {
-  id: string;
-  stage: string;
-  category: string;
-  title: string;
-  content: string;
-  importance: "critical" | "high" | "medium";
-  common_misconception: string | null;
-  actionable_advice: string | null;
-  verification_method: string | null;
-  tags: string[];
-  sort_order: number;
-}
-
-export interface CareerDarkKnowledgeStage {
-  stage: string;
-  stage_name: string;
-  count: number;
-}
-
 // ===== 考公作战室：岗位情报 =====
 export type RealCompetitionLevel = "low" | "medium" | "high" | "extreme" | "unknown";
 export type TreatmentLevel = "low" | "medium" | "high" | "top" | "unknown";
@@ -1785,27 +1731,6 @@ export interface CivilServicePositioningResponse {
   preparation_timeline: string | null;
   risk_warnings: string[];
   created_at: string;
-}
-
-// ===== 考公作战室：考公暗知识 =====
-export interface CivilServiceDarkKnowledgeResponse {
-  id: string;
-  stage: string;
-  category: string;
-  title: string;
-  content: string;
-  importance: "critical" | "high" | "medium" | "low";
-  common_misconception: string | null;
-  actionable_advice: string | null;
-  verification_method: string | null;
-  tags: string[];
-  sort_order: number;
-}
-
-export interface CivilServiceDarkKnowledgeStage {
-  stage: string;
-  stage_name: string;
-  count: number;
 }
 
 // ===== 爬虫管理后台 =====

@@ -56,9 +56,6 @@ python -c "import secrets; print(secrets.token_urlsafe(32))"
 # 进入后端容器
 docker-compose exec backend bash
 
-# 运行暗知识爬虫
-python -m app.crawlers.run --category grad --crawler dark_knowledge
-
 # 运行所有考研爬虫
 python -m app.crawlers.run --category grad
 ```

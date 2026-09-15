@@ -24,7 +24,7 @@ function getResultUrl(type: string, id: string, metadata?: any): string {
 
 interface SearchResult {
   id: string;
-  type: "experience" | "knowledge" | "qa" | "dark";
+  type: "experience" | "knowledge" | "qa";
   title: string;
   content: string;
   highlight?: string;
@@ -46,28 +46,24 @@ const TYPE_FILTERS = [
   { key: "experience", label: "经验帖" },
   { key: "knowledge", label: "知识文章" },
   { key: "qa", label: "问答" },
-  { key: "dark", label: "暗知识" },
 ] as const;
 
 const TYPE_BADGE: Record<string, { label: string; className: string }> = {
   experience: { label: "经验", className: "bg-blue-100 text-blue-700" },
   knowledge: { label: "知识", className: "bg-green-100 text-green-700" },
   qa: { label: "问答", className: "bg-purple-100 text-purple-700" },
-  dark: { label: "暗知识", className: "bg-amber-100 text-amber-700" },
 };
 
 const RAG_SOURCE_LABEL: Record<string, string> = {
   experience: "经验",
   knowledge: "知识",
   qa: "问答",
-  dark: "暗知识",
 };
 
-const RAG_SOURCE_COLOR: Record<string, "blue" | "green" | "purple" | "amber"> = {
+const RAG_SOURCE_COLOR: Record<string, "blue" | "green" | "purple"> = {
   experience: "blue",
   knowledge: "green",
   qa: "purple",
-  dark: "amber",
 };
 
 interface RAGResult {
@@ -225,7 +221,7 @@ export default function SearchPage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="搜索经验帖、知识文章、问答、暗知识..."
+              placeholder="搜索经验帖、知识文章、问答..."
               className="w-full rounded-xl border border-paper-300 bg-white pl-12 pr-4 py-4 text-base text-ink-800 placeholder:text-ink-400 focus:border-brand-400 focus:ring-2 focus:ring-brand-200 focus:outline-none transition-colors shadow-sm"
             />
           </div>
@@ -309,7 +305,7 @@ export default function SearchPage() {
           </div>
           <p className="font-display text-lg font-medium text-ink-700">输入关键词开始搜索</p>
           <p className="mt-1.5 text-sm text-ink-400">
-            支持搜索经验帖、知识文章、问答和暗知识内容
+            支持搜索经验帖、知识文章和问答内容
           </p>
         </div>
       )}

@@ -82,7 +82,6 @@ N8N_BASIC_AUTH_PASSWORD=<secure-password>
    - `grad-crawler-scheduler.json`
    - `data-update-notification.json`
    - `auto-crawl-schedule.json`
-   - `data-quality-monitor.json`
    - `community-digest.json`
 
 ### Via CLI
@@ -107,12 +106,7 @@ done
 
 ### data-quality-monitor.json
 
-**Purpose**: Monitor dark knowledge data quality weekly
-
-**Configuration**:
-- Runs every Sunday at 8:00 AM UTC
-- Alert threshold: 1000 items (configurable in "Count Below 1000?" node)
-- Webhook notification on data quality issues
+**Status**: 已停用/已清空（原暗知识质量检查随功能下线移除）。
 
 ### community-digest.json
 

@@ -134,7 +134,6 @@ export interface AnalystReportResponse {
   major: string;
   six_dimension_radar: SixDimensionRadar;
   scoreline_trend: ScorelineTrendItem[];
-  dark_knowledge_highlights: string[];
   similar_schools: string[];
   recommendation: string;
   summary: string;

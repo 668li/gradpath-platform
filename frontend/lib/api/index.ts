@@ -235,8 +235,6 @@ export type {
   PulseMemoryFact,
   PulseFull,
   PulseListResponse,
-  DarkKnowledgePushTriggerResponse,
-  DarkKnowledgeFeedbackRequest,
   PathConflictOption,
   PathConflictAssessmentSummary,
   PathConflictCurrentSituation,

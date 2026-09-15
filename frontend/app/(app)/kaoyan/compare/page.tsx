@@ -13,7 +13,6 @@ import {
   X,
   Search,
   BarChart3,
-  Lightbulb,
   Target,
   Shield,
   Zap,
@@ -313,26 +312,6 @@ export default function SchoolComparePage() {
                       </tbody>
                     </table>
                   </div>
-                </div>
-              )}
-
-              {/* Dark Knowledge */}
-              {singleReport.dark_knowledge_highlights.length > 0 && (
-                <div className="mb-6">
-                  <h3 className="text-sm font-medium text-ink-600 mb-3 flex items-center gap-1">
-                    <Lightbulb className="h-4 w-4" />
-                    关键洞察
-                  </h3>
-                  <ul className="space-y-2">
-                    {singleReport.dark_knowledge_highlights.map((tip, i) => (
-                      <li
-                        key={`${tip}-${i}`}
-                        className="text-sm text-ink-600 bg-paper-50 rounded-lg px-3 py-2"
-                      >
-                        {tip}
-                      </li>
-                    ))}
-                  </ul>
                 </div>
               )}
 

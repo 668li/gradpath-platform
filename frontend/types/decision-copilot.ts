@@ -238,21 +238,6 @@ export interface PulseReviewItem {
   days_until_due: number | null;
 }
 
-export interface PulseDarkKnowledgeItem {
-  push_id: string;
-  dark_knowledge_id: string;
-  stage: string;
-  pushed_at: string | null;
-  read_at: string | null;
-  is_read: boolean;
-  feedback: PushFeedback;
-  title: string;
-  category: string;
-  content: string;
-  importance: "critical" | "high" | "medium" | "low";
-  actionable_advice: string | null;
-}
-
 export interface PulseMemoryFact {
   id: string;
   fact_type: MemoryFactType;
@@ -269,7 +254,6 @@ export interface PulseFull {
   overview: PulseOverview;
   active_decisions: PulseActiveDecision[];
   review_queue: PulseReviewItem[];
-  dark_knowledge_feed: PulseDarkKnowledgeItem[];
   memory_facts: PulseMemoryFact[];
 }
 
@@ -278,45 +262,6 @@ export interface PulseListResponse<T> {
 }
 
 // ===== 暗知识推送（/api/dark-knowledge-push） =====
-
-export interface DarkKnowledgePush {
-  id: string;
-  user_id: string;
-  dark_knowledge_id: string;
-  stage: string;
-  push_reason: string;
-  pushed_at: string | null;
-  read_at: string | null;
-  is_read: boolean;
-  feedback: PushFeedback;
-  feedback_notes: string | null;
-  rating: number | null;
-}
-
-export interface DarkKnowledgePushListResponse {
-  items: DarkKnowledgePush[];
-  total: number;
-}
-
-export interface DarkKnowledgeUnreadCount {
-  count: number;
-}
-
-export interface DarkKnowledgePushRequest {
-  stage?: string | null;
-  limit?: number;
-}
-
-export interface DarkKnowledgePushTriggerResponse {
-  pushed_count: number;
-  items: DarkKnowledgePush[];
-}
-
-export interface DarkKnowledgeFeedbackRequest {
-  feedback: "positive" | "negative" | "later";
-  rating?: number | null;
-  notes?: string | null;
-}
 
 // ===== 路径冲突调解（/api/path-conflict） =====
 
