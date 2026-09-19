@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Bot, KeyRound, Sparkles } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/form-controls";
@@ -24,9 +25,13 @@ export function AiWelcomeModal() {
   const [platformModel, setPlatformModel] = useState("");
   const [dailyQuota, setDailyQuota] = useState(0);
   const user = useAuthStore((s) => s.user);
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!user) return;
+    // 5 分钟诊断进行中绝不弹营销弹窗（新用户注册后 1.2s 本组件就会触发，
+    // 不挡 onboarding 会把首跑诊断整个盖住——2026-09-19 E2E 全量实测抓到）
+    if (pathname.startsWith("/onboarding")) return;
     const next = Number(localStorage.getItem(LS_KEY) || 0);
     if (Date.now() < next) return;
     // 稍作延迟，等首屏渲染稳定后再弹
@@ -40,11 +45,19 @@ export function AiWelcomeModal() {
         // 状态获取失败：不弹 BYOK 引导，静默跳过
         return;
       }
+      // fetch 期间用户可能已软导航进 onboarding（1.2s 定时器在登录页就开跑），
+      // setOpen 前按实时路径再核一次，否则弹窗会盖住诊断页（2026-09-19 E2E 实测竞态）
+      if (window.location.pathname.startsWith("/onboarding")) return;
       localStorage.setItem(LS_KEY, String(Date.now() + RE_SHOW_DAYS * 86_400_000));
       setOpen(true);
     }, 1200);
     return () => clearTimeout(t);
-  }, [user]);
+  }, [user, pathname]);
+
+  // 弹窗开着时用户进入 onboarding（如点了站内引导）→ 立即让位
+  useEffect(() => {
+    if (pathname.startsWith("/onboarding")) setOpen(false);
+  }, [pathname]);
 
   const dismiss = () => {
     setOpen(false);
