@@ -4,86 +4,21 @@
 写入，服务层不生成任何未经溯源的院校数据。
 """
 
-import hashlib
-import json
 import logging
 import re
 from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.core.cache import cache
 from app.models.grad_intel import (
     DarkKnowledge,
     GradAdjustmentInfo,
     GradSchoolIntel,
     GradScorelineRecord,
     GradYanzhaoProgram,
-    SelfPositioning,
 )
 
 logger = logging.getLogger(__name__)
-
-# ======================================================================
-# AI 结果缓存 — 基于输入哈希，24小时 TTL
-# 优化：使用 RedisCache（自动降级内存缓存），支持多 worker 共享
-# 原进程内 _ai_cache dict 在多 worker 时命中率极低（~1/N）
-# ======================================================================
-CACHE_TTL_SECONDS = 24 * 60 * 60  # 24 hours
-CACHE_PREFIX = "ai_positioning"
-
-
-def _compute_cache_key(data: dict) -> str:
-    """计算输入数据的哈希作为缓存键。"""
-    key_fields = {
-        "undergrad_tier": data.get("undergrad_tier", ""),
-        "undergrad_major": data.get("undergrad_major", ""),
-        "gpa": data.get("gpa"),
-        "gpa_rank": data.get("gpa_rank", ""),
-        "english_level": data.get("english_level", ""),
-        "english_score": data.get("english_score"),
-        "target_major": data.get("target_major", ""),
-        "target_region": data.get("target_region", ""),
-        "target_school": data.get("target_school", ""),
-    }
-    key_str = json.dumps(key_fields, sort_keys=True, ensure_ascii=False)
-    return hashlib.md5(key_str.encode()).hexdigest()
-
-
-def _get_cached_result(cache_key: str) -> dict | None:
-    """获取缓存的 AI 结果（Redis 优先，自动降级内存缓存）。"""
-    full_key = f"{CACHE_PREFIX}:{cache_key}"
-    result = cache.get(full_key)
-    if result is not None:
-        logger.info("AI 结果缓存命中: %s", cache_key[:8])
-    return result
-
-
-def _set_cached_result(cache_key: str, result: dict) -> None:
-    """缓存 AI 结果到 Redis。"""
-    full_key = f"{CACHE_PREFIX}:{cache_key}"
-    cache.set(full_key, result, ttl=CACHE_TTL_SECONDS)
-    logger.info("AI 结果已缓存: %s", cache_key[:8])
-
-
-def clear_positioning_cache() -> int:
-    """清除所有自我定位 AI 结果缓存。
-
-    修复 bug: 原先 API 层调用 grad_intel_service._ai_cache.clear()，
-    但 _ai_cache 属性从未定义（旧实现已重构为 cache 模块），
-    导致 AttributeError → 500 错误。
-
-    Returns:
-        被清除的缓存项数量
-    """
-    deleted = 0
-    # SIM118: cache 是 RedisCache(非 dict,无 __iter__),只能走 keys() 全量扫描
-    for key in cache.keys():  # noqa: SIM118
-        if key.startswith(f"{CACHE_PREFIX}:"):
-            if cache.delete(key):
-                deleted += 1
-    logger.info("已清除 %d 项自我定位 AI 缓存", deleted)
-    return deleted
 
 
 def get_dark_knowledge_by_stage(
@@ -188,100 +123,6 @@ def delete_intel(db: Session, user_id: UUID, intel_id: UUID) -> bool:
     db.delete(intel)
     db.commit()
     return True
-
-
-# ======================================================================
-# 自我定位服务
-# ======================================================================
-
-
-async def create_positioning(
-    db: Session, user_id: UUID, data: dict, bypass_cache: bool = False
-) -> SelfPositioning:
-    """创建自我定位并触发 AI 评估。
-
-    Args:
-        bypass_cache: 是否绕过缓存强制重新生成
-    """
-    # 计算缓存键
-    cache_key = _compute_cache_key(data)
-
-    # 检查缓存（除非绕过）
-    if not bypass_cache:
-        cached_result = _get_cached_result(cache_key)
-        if cached_result:
-            logger.info("使用缓存的 AI 结果")
-            # 创建定位记录但不调用 AI
-            positioning = SelfPositioning(
-                user_id=user_id,
-                undergrad_tier=data["undergrad_tier"],
-                undergrad_major=data.get("undergrad_major"),
-                gpa=data.get("gpa"),
-                gpa_rank=data.get("gpa_rank"),
-                english_level=data.get("english_level"),
-                english_score=data.get("english_score"),
-                research_experience=data.get("research_experience"),
-                competitions=data.get("competitions", []),
-                awards=data.get("awards"),
-                internships=data.get("internships"),
-                target_school=data.get("target_school"),
-                target_major=data.get("target_major"),
-                target_region=data.get("target_region"),
-                other_info=data.get("other_info"),
-                ai_assessment=cached_result.get("ai_assessment"),
-                reach_schools=cached_result.get("reach_schools", []),
-                target_schools=cached_result.get("target_schools", []),
-                safety_schools=cached_result.get("safety_schools", []),
-                success_probability=cached_result.get("success_probability"),
-                risk_warnings=cached_result.get("risk_warnings", []),
-            )
-            db.add(positioning)
-            db.commit()
-            db.refresh(positioning)
-            return positioning
-
-    # 创建定位记录
-    positioning = SelfPositioning(
-        user_id=user_id,
-        undergrad_tier=data["undergrad_tier"],
-        undergrad_major=data.get("undergrad_major"),
-        gpa=data.get("gpa"),
-        gpa_rank=data.get("gpa_rank"),
-        english_level=data.get("english_level"),
-        english_score=data.get("english_score"),
-        research_experience=data.get("research_experience"),
-        competitions=data.get("competitions", []),
-        awards=data.get("awards"),
-        internships=data.get("internships"),
-        target_school=data.get("target_school"),
-        target_major=data.get("target_major"),
-        target_region=data.get("target_region"),
-        other_info=data.get("other_info"),
-    )
-    db.add(positioning)
-    db.commit()
-    db.refresh(positioning)
-    return positioning
-
-
-def get_latest_positioning(db: Session, user_id: UUID) -> SelfPositioning | None:
-    """获取用户最新的自我定位。"""
-    return (
-        db.query(SelfPositioning)
-        .filter(SelfPositioning.user_id == user_id)
-        .order_by(SelfPositioning.created_at.desc())
-        .first()
-    )
-
-
-def get_positioning_history(db: Session, user_id: UUID) -> list[SelfPositioning]:
-    """获取用户自我定位历史。"""
-    return (
-        db.query(SelfPositioning)
-        .filter(SelfPositioning.user_id == user_id)
-        .order_by(SelfPositioning.created_at.desc())
-        .all()
-    )
 
 
 # ======================================================================

@@ -88,65 +88,6 @@ class AIIntelResult(BaseModel):
     ai_summary: str = ""
 
 
-# ===== 自我定位 =====
-class PositioningCreateRequest(BaseModel):
-    """创建自我定位。"""
-
-    undergrad_tier: str = Field(..., description="本科层次: 985/211/一本/二本/三本/专升本")
-    undergrad_major: str | None = None
-    gpa: float | None = None
-    gpa_rank: str | None = None
-    english_level: str | None = None
-    english_score: int | None = None
-    research_experience: str | None = None
-    competitions: list = []
-    awards: str | None = None
-    internships: str | None = None
-    target_school: str | None = None
-    target_major: str | None = None
-    target_region: str | None = None
-    other_info: str | None = None
-
-
-class SchoolRecommendation(BaseModel):
-    """单个院校推荐。"""
-
-    name: str
-    major: str = ""
-    tier: str = ""
-    reason: str = ""
-    probability: int = 0
-
-
-class PositioningResponse(BaseModel):
-    """自我定位响应。"""
-
-    id: UUID
-    undergrad_tier: str
-    undergrad_major: str | None = None
-    gpa: float | None = None
-    gpa_rank: str | None = None
-    english_level: str | None = None
-    english_score: int | None = None
-    research_experience: str | None = None
-    competitions: list = []
-    awards: str | None = None
-    internships: str | None = None
-    target_school: str | None = None
-    target_major: str | None = None
-    target_region: str | None = None
-    other_info: str | None = None
-    ai_assessment: str | None = None
-    reach_schools: list = []
-    target_schools: list = []
-    safety_schools: list = []
-    success_probability: int | None = None
-    risk_warnings: list = []
-    created_at: datetime
-
-    model_config = {"from_attributes": True}
-
-
 # ===== 暗知识 =====
 class DarkKnowledgeResponse(BaseModel):
     """暗知识响应。"""

@@ -4,8 +4,9 @@
 name: rsshub_research
 category: research
 description: 自建 RSSHub 聚合（25 研招/教育部公告路由 + 知乎资讯流路由，PENDING 审核队列）
-enabled: true
-schedule: "30 2 * * *"  # 线契约（地基③）：原装饰性 "daily" 规范为真实 cron，每日 02:30 错峰
+# 009 T1 拍板⑨：kaoyan_news 停喂入——管道代码休眠保留，未来自建管道复用（spec 009 T1）
+enabled: false
+schedule: "30 2 * * *"  # 线契约（地基③）：原装饰性 "daily" 规范为真实 cron，每日 02:30 错峰（已停调度）
 sla_hours: 24
 entry: "http://127.0.0.1:1200"  # 本机 docker RSSHub 实例
 max_retries: 2

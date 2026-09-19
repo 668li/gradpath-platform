@@ -8,7 +8,7 @@
 
 from uuid import UUID
 
-from sqlalchemy import Boolean, Float, ForeignKey, Index, Integer, String, Text
+from sqlalchemy import Boolean, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -72,44 +72,6 @@ class GradSchoolIntel(UUIDMixin, TimestampMixin, Base):
     tags: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     ai_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_ai_generated: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-
-
-class SelfPositioning(UUIDMixin, TimestampMixin, Base):
-    """自我定位 — 用户背景 + AI 三档推荐。
-
-    解决"我能考上什么学校"的自我认知问题。
-    AI 基于背景数据生成冲刺/稳妥/保底三档院校推荐。
-    """
-
-    __tablename__ = "self_positionings"
-
-    user_id: Mapped[UUID] = mapped_column(
-        GUID(), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
-    )
-
-    # === 用户背景 ===
-    undergrad_tier: Mapped[str] = mapped_column(String(50), nullable=False)
-    undergrad_major: Mapped[str | None] = mapped_column(String(200), nullable=True)
-    gpa: Mapped[float | None] = mapped_column(Float, nullable=True)
-    gpa_rank: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    english_level: Mapped[str | None] = mapped_column(String(50), nullable=True)
-    english_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    research_experience: Mapped[str | None] = mapped_column(Text, nullable=True)
-    competitions: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
-    awards: Mapped[str | None] = mapped_column(Text, nullable=True)
-    internships: Mapped[str | None] = mapped_column(Text, nullable=True)
-    target_school: Mapped[str | None] = mapped_column(String(200), nullable=True)
-    target_major: Mapped[str | None] = mapped_column(String(200), nullable=True)
-    target_region: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    other_info: Mapped[str | None] = mapped_column(Text, nullable=True)
-
-    # === AI 评估结果 ===
-    ai_assessment: Mapped[str | None] = mapped_column(Text, nullable=True)
-    reach_schools: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
-    target_schools: Mapped[list] = mapped_column(JSONB, default=list)
-    safety_schools: Mapped[list] = mapped_column(JSONB, default=list)
-    success_probability: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    risk_warnings: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
 
 
 class DarkKnowledge(UUIDMixin, TimestampMixin, Base):

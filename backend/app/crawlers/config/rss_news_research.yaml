@@ -2,8 +2,9 @@
 name: rss_news_research
 category: research
 description: RSS 新闻订阅爬虫（外部 RSS 源，关键词过滤，PENDING 审核队列）
-enabled: true
-schedule: null  # 手动线：不在默认调度，admin /run 触发
+# 009 T1 拍板⑨：kaoyan_news 停喂入——手动线一并停用，管道代码休眠保留（spec 009 T1）
+enabled: false
+schedule: null  # 手动线：不在默认调度，admin /run 触发（已停用）
 sla_hours: 48
 entry: ""  # feed 列表由触发时配置/代码默认提供
 rate_limit: 1.0

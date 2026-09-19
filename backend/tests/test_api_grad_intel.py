@@ -390,3 +390,20 @@ class TestSchoolAnnouncements:
         resp = client.get("/api/grad-intel/schools/中国石油大学（华东）/announcements")
         assert resp.status_code == 200
         assert resp.json() == []
+
+
+# ======================================================================
+# 负例：定位链旧端点已随拍板①删除（009 T1 对账——404 为准）
+# ======================================================================
+class TestPositioningEndpointsRemoved:
+    def test_positioning_endpoints_gone(self, client: TestClient, auth_headers):
+        """定位链页面/API 已删（009 拍板①）：旧端点必须 404，不得复活。"""
+        for path in (
+            "/api/grad-intel/positioning/latest",
+            "/api/grad-intel/positioning/history",
+        ):
+            resp = client.get(path, headers=auth_headers)
+            assert resp.status_code == 404, f"{path} 应已 404，实际 {resp.status_code}"
+
+        resp = client.post("/api/grad-intel/positioning/create", json={}, headers=auth_headers)
+        assert resp.status_code == 404, "positioning/create 应已 404"

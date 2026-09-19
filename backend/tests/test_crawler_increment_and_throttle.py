@@ -179,8 +179,11 @@ def test_default_schedule_official_hourly():
     from app.api.crawlers import DEFAULT_DAILY_SCHEDULES
 
     assert DEFAULT_DAILY_SCHEDULES["official_announce"] == "0 * * * *"
-    assert DEFAULT_DAILY_SCHEDULES["eol_kaoyan"] == "0 2 * * *", "其他源默认频率不受影响"
-    assert DEFAULT_DAILY_SCHEDULES["news_aggregates"] == "0 4 * * *", "资讯聚合每日 04:00"
+    # 009 T1 拍板⑨：kaoyan_news 喂入线全部停调度，默认调度表不再出现
+    assert "eol_kaoyan" not in DEFAULT_DAILY_SCHEDULES, "eol_kaoyan 已停喂入，不得回流调度"
+    assert (
+        "news_aggregates" not in DEFAULT_DAILY_SCHEDULES
+    ), "news_aggregates 已停喂入，不得回流调度"
 
 
 def test_news_aggregate_crawler_registered():
@@ -225,7 +228,9 @@ def test_seed_replaces_stale_cron(monkeypatch):
         assert job is not None
         assert api_crawlers._job_cron_str(job) == "0 * * * *", "旧 cron 存量 job 应被替换为每小时"
         eol = sched.get_job("crawler_eol_kaoyan")
-        assert api_crawlers._job_cron_str(eol) == "0 2 * * *", "其他源照常补齐"
+        assert eol is None, "eol_kaoyan 已停喂入（009 T1），seed 不得补齐其 job"
+        bili = sched.get_job("crawler_bilibili_research")
+        assert api_crawlers._job_cron_str(bili) == "0 3 * * 1", "仍启用的线照常补齐"
     finally:
         sched.shutdown(wait=False)
 

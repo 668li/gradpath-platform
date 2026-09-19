@@ -38,7 +38,6 @@ from app.models.grad_intel import (
     GradSchoolIntel,
     GradScorelineRecord,
     GradYanzhaoProgram,
-    SelfPositioning,
 )
 from app.models.growth_center import GrowthArchive, GrowthTrajectory
 from app.models.growth_insight import GrowthInsight
@@ -159,7 +158,6 @@ __all__ = [
     "DecisionAnalysis",
     # 考研情报
     "GradSchoolIntel",
-    "SelfPositioning",
     "DarkKnowledge",
     "GradYanzhaoProgram",
     "GradScorelineRecord",

@@ -2,8 +2,9 @@
 name: eol_kaoyan
 category: research
 description: 中国教育在线考研频道资讯爬虫（eol.cn 考研快讯列表+详情正文）
-enabled: true
-schedule: "0 2 * * *"  # 每天 02:00 抓取考研频道
+# 009 T1 拍板⑨：kaoyan_news 停喂入——管道代码休眠保留，未来自建管道复用（spec 009 T1）
+enabled: false
+schedule: "0 2 * * *"  # 每天 02:00 抓取考研频道（已停调度，置 enabled false 后不再注册）
 sla_hours: 24
 entry: "https://kaoyan.eol.cn/nnews/"
 rate_limit: 1.2

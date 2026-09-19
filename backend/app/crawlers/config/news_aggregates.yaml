@@ -2,8 +2,9 @@
 name: news_aggregates
 category: research
 description: 考研资讯聚合爬虫（eol/offcn 列表页，5 栏目，PENDING 审核队列）
-enabled: true
-schedule: "0 4 * * *"  # 每天凌晨 04:00，错峰在 eol 02:00 与 rsshub 02:30 之后
+# 009 T1 拍板⑨：kaoyan_news 停喂入——管道代码休眠保留，未来自建管道复用（spec 009 T1）
+enabled: false
+schedule: "0 4 * * *"  # 每天凌晨 04:00，错峰在 eol 02:00 与 rsshub 02:30 之后（已停调度）
 sla_hours: 24
 entry: "https://kaoyan.eol.cn/"  # 栏目清单在代码 DEFAULT_SECTIONS_OVERRIDE
 rate_limit: 1.0
