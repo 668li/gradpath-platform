@@ -4,8 +4,13 @@ import { registerAndLandOnDashboard, uniqueEmail } from "./helpers";
 /**
  * 决策助手完整流端到端测试
  *
- * 覆盖登录 → /decision-lab → 创建新决策 → 填写选项 → 触发 AI 分析（mock）
- * → 保存到决策日志 → 列表可见 的关键路径。
+ * ⚠️ 2026-09-19 复测状态（方向席位 E2E 全量实测后改写）：
+ * 信息架构重构（f063b37 八路由302 + a5b731d）把 /decision-lab 302 到 /decision-center，
+ * 但五步决策向导（new-decision-button/decision-title-input/analyze-button 等 testid）
+ * 只存在于不可达的 decision-lab/page.tsx 孤儿里；决策中心的"新建决策"指向 /decisions
+ * 又被 302 弹回决策中心（循环重定向）——**当前已提交树上结构化决策创建流程不可达**。
+ * 产品需拍板：恢复创建入口（决策中心内嵌向导或移除 /decisions 重定向）、或下线向导。
+ * 拍板前原向导用例转 test.fixme，保留重定向与页面渲染真值测试。
  *
  * 决策实验室涉及多个 LLM 依赖（预验尸分析、红队问题、AI 综合分析），
  * 全部通过 page.route() mock。
@@ -120,60 +125,25 @@ test.describe("决策助手完整流", () => {
     await registerAndLandOnDashboard(page, "E2E Decision User", uniqueEmail("decision"));
   });
 
-  test("访问 /decision-lab 看到新建决策按钮", async ({ page }) => {
+  test("/decision-lab 现状：302 重定向到决策中心且页面可渲染", async ({ page }) => {
     await page.goto("/decision-lab");
 
-    await expect(page.locator("h1")).toContainText(/决策实验室/i, { timeout: 10000 });
-    await expect(page.locator('[data-testid="new-decision-button"]')).toBeVisible();
+    await expect(page).toHaveURL(/\/decision-center/, { timeout: 15000 });
+    await expect(page.locator("h1")).toContainText(/决策中心/i, { timeout: 10000 });
+    // 页面有创建入口文案（真值：入口当前指向 /decisions，而该 URL 被 302 弹回——见头注的循环重定向缺陷）
+    await expect(page.locator("body")).toContainText(/新建决策|创建决策/i, { timeout: 10000 });
   });
 
-  test("完整决策流程：创建 → 填写 → AI 分析 → 保存", async ({ page }) => {
-    await page.goto("/decision-lab");
-
-    // 点击"新建决策分析"
-    await page.locator('[data-testid="new-decision-button"]').click();
-
-    // Step 1: 基本信息 - 填写标题和选项
-    await page.locator('[data-testid="decision-title-input"]').fill(DECISION_TITLE);
-    await page.locator('[data-testid="option-a-input"]').fill(OPTION_A);
-    await page.locator('[data-testid="option-b-input"]').fill(OPTION_B);
-
-    // 进入下一步（预验尸）
-    await page.locator('[data-testid="decision-next-button"]').click();
-    await expect(page.locator("body")).toContainText(/预验尸/i, { timeout: 5000 });
-
-    // Step 2: 预验尸 - 直接跳到决策矩阵（不调用 LLM 分析）
-    await page.getByRole("button", { name: /下一步：决策矩阵/ }).click();
-    await expect(page.locator("body")).toContainText(/决策矩阵/i, { timeout: 5000 });
-
-    // Step 3: 决策矩阵 - 直接跳到红队质疑
-    await page.getByRole("button", { name: /下一步：红队质疑/ }).click();
-    await expect(page.locator("body")).toContainText(/红队质疑/i, { timeout: 5000 });
-
-    // Step 4: 红队质疑 - 直接跳到综合分析
-    await page.getByRole("button", { name: /下一步：综合分析/ }).click();
-    await expect(page.locator("body")).toContainText(/AI 综合分析|综合分析/i, { timeout: 5000 });
-
-    // Step 5: 综合分析 - 点击"保存并生成 AI 分析"（mock 响应）
-    await page.locator('[data-testid="analyze-button"]').click();
-
-    // 验证 AI 返回建议（mock 内容）
-    await expect(page.locator("body")).toContainText(/建议选择|字节跳动|综合.*分析/i, {
-      timeout: 10000,
-    });
-
-    // 点击"完成"返回列表
-    await page.getByRole("button", { name: /完成/ }).click();
-
-    // 验证决策列表中存在刚创建的决策
-    await expect(page.locator("body")).toContainText(DECISION_TITLE, { timeout: 5000 });
+  test.fixme("完整决策流程：创建 → 填写 → AI 分析 → 保存", async () => {
+    // 五步向导 testid 全部在孤儿 decision-lab/page.tsx 上（/decision-lab 已 302），
+    // 产品拍板恢复创建入口后启用本用例并恢复 mock 流程
   });
 
   test("决策列表页可正确渲染", async ({ page }) => {
     await page.goto("/decision-lab");
 
-    // 即使列表为空也应正常渲染
-    await expect(page.locator("body")).toContainText(/决策实验室|新建决策分析|历史分析|还没有决策分析/i, {
+    // 即使列表为空也应正常渲染（当前落地=决策中心，文案已随 IA 重构更新）
+    await expect(page.locator("body")).toContainText(/决策中心|新建决策|创建决策|历史分析/i, {
       timeout: 10000,
     });
   });

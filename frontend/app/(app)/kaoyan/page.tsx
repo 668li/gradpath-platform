@@ -1,22 +1,14 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useRouter } from "next/navigation";
 import { Suspense } from "react";
-import {
-  Network,
-  BookOpen,
-  Search,
-  GraduationCap,
-  Users,
-} from "lucide-react";
+import { Newspaper, GraduationCap, Users } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { LoadingState } from "@/components/ui/empty";
 
 const tabs = [
-  { id: "compare", label: "院校对比", href: "/kaoyan/compare", icon: Network },
-  { id: "strategy", label: "备考策略", href: "/kaoyan/strategy", icon: BookOpen },
+  { id: "news", label: "资讯中心", href: "/kaoyan/news", icon: Newspaper },
   { id: "community", label: "社区交流", href: "/kaoyan/community", icon: Users },
 ];
 
@@ -29,7 +21,6 @@ export default function KaoyanHomePage() {
 }
 
 function KaoyanHomePageContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const activeTab = searchParams.get("tab") || "";
 
@@ -37,7 +28,7 @@ function KaoyanHomePageContent() {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-ink-800 mb-2">考研工具箱</h1>
-        <p className="text-ink-500">选择功能，高效备考</p>
+        <p className="text-ink-500">资讯中心与社区交流，两样真资产</p>
       </div>
 
       {/* Tab 切换 */}
@@ -66,7 +57,7 @@ function KaoyanHomePageContent() {
       {/* 欢迎内容 */}
       <div className="space-y-6">
         <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-8 border border-blue-100">
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center gap-3">
             <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 text-white">
               <GraduationCap className="w-8 h-8" />
             </div>
@@ -75,23 +66,10 @@ function KaoyanHomePageContent() {
               <p className="text-ink-500">打破信息差，让考研更简单</p>
             </div>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-            {[
-              { value: "206", label: "院校数据", color: "text-brand-600" },
-              { value: "588", label: "经验帖", color: "text-ink-600" },
-            ].map((stat) => (
-              <div key={stat.label} className="text-center">
-                <div className={cn("text-3xl font-bold", stat.color)}>
-                  {stat.value}
-                </div>
-                <div className="text-sm text-ink-500">{stat.label}</div>
-              </div>
-            ))}
-          </div>
         </div>
 
         {/* 功能入口卡片 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
@@ -120,8 +98,7 @@ function KaoyanHomePageContent() {
 
 function getTabDescription(tabId: string): string {
   const descriptions: Record<string, string> = {
-    compare: "多维度对比院校，选出最适合你的学校",
-    strategy: "个性化推荐，高效备考策略",
+    news: "考研资讯聚合，标注来源平台与质量等级，可跳转原文核对",
     community: "考研经验帖、问答、学长学姐交流",
   };
   return descriptions[tabId] || "";

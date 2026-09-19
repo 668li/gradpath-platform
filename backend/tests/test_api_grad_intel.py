@@ -2,25 +2,16 @@
 
 覆盖：
 - 院校情报 CRUD（保存、列表、删除）
-- AI 院校情报查询（mock LLM）
-- 自我定位（创建、最新、历史、清除缓存）
 - 暗知识（列表、阶段；预填充端点已随功能下架删除）
-- 公开浏览接口（院校情报、研招网数据、分数线、调剂、院校汇总）
+- 公开浏览接口（院校情报、研招网数据、院校公告归口）
 """
 
-from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
 
 from app.core.cache import cache
-from app.models.grad_intel import (
-    DarkKnowledge,
-    GradAdjustmentInfo,
-    GradSchoolIntel,
-    GradScorelineRecord,
-    GradYanzhaoProgram,
-)
+from app.models.grad_intel import DarkKnowledge, GradSchoolIntel, GradYanzhaoProgram
 
 
 # ======================================================================
@@ -104,141 +95,6 @@ class TestIntelCRUD:
         fake_id = str(uuid4())
         resp = client.delete(f"/api/grad-intel/intel/{fake_id}", headers=auth_headers)
         assert resp.status_code == 404
-
-
-# ======================================================================
-# AI 院校情报查询
-# ======================================================================
-class TestIntelQuery:
-    def test_query_intel_with_mock_llm(self, client: TestClient, auth_headers):
-        mock_result = {
-            "school_name": "清华大学",
-            "major_name": "计算机科学与技术",
-            "school_tier": "985",
-            "background_discrimination": "light",
-            "first_choice_protection": "yes",
-            "admission_ratio": "15:1",
-            "push_ratio": "60%",
-            "actual_quota": 20,
-            "score_line": 360,
-            "retest_weight": "50%",
-            "retest_format": "笔试+面试",
-            "score_suppression": "none",
-            "transfer_friendly": "yes",
-            "insider_notes": "保护一志愿",
-            "data_sources": ["研招网"],
-            "tags": ["985"],
-            "ai_summary": "顶级院校",
-        }
-        # 修复: grad_intel_service 使用 AIOrchestrator 而非 AIService
-        with patch("app.services.grad_intel_service.AIOrchestrator") as MockOrch:
-            mock_orch = MagicMock()
-            mock_orch.chat = AsyncMock(return_value=__import__("json").dumps(mock_result))
-            MockOrch.return_value = mock_orch
-
-            resp = client.post(
-                "/api/grad-intel/intel/query",
-                json={"school_name": "清华大学", "major_name": "计算机科学与技术"},
-                headers=auth_headers,
-            )
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["school_name"] == "清华大学"
-
-    def test_query_intel_llm_failure_returns_503(self, client: TestClient, auth_headers):
-        with patch("app.services.grad_intel_service.AIOrchestrator") as MockOrch:
-            mock_orch = MagicMock()
-            mock_orch.chat = AsyncMock(side_effect=Exception("LLM 连接失败"))
-            MockOrch.return_value = mock_orch
-
-            resp = client.post(
-                "/api/grad-intel/intel/query",
-                json={"school_name": "test", "major_name": "test"},
-                headers=auth_headers,
-            )
-        assert resp.status_code == 503
-
-    def test_query_intel_requires_auth(self, client: TestClient):
-        resp = client.post(
-            "/api/grad-intel/intel/query",
-            json={"school_name": "test", "major_name": "test"},
-        )
-        assert resp.status_code == 401
-
-
-# ======================================================================
-# 自我定位
-# ======================================================================
-class TestPositioning:
-    def _create_positioning(self, client, auth_headers, **overrides):
-        body = {
-            "undergrad_tier": "985",
-            "undergrad_major": "计算机科学与技术",
-            "gpa": 3.6,
-            "gpa_rank": "前20%",
-            "english_level": "CET-6",
-            "english_score": 520,
-            "research_experience": "发表1篇SCI",
-            "competitions": ["ACM银牌"],
-            "target_major": "计算机科学与技术",
-            "target_region": "北京",
-        }
-        body.update(overrides)
-        return client.post(
-            "/api/grad-intel/positioning/create",
-            json=body,
-            headers=auth_headers,
-        )
-
-    def test_create_positioning(self, client: TestClient, auth_headers):
-        resp = self._create_positioning(client, auth_headers)
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["undergrad_tier"] == "985"
-        assert data["gpa"] == 3.6
-        assert "reach_schools" in data
-        assert "target_schools" in data
-        assert "safety_schools" in data
-        assert "success_probability" in data
-
-    def test_create_positioning_with_bypass_cache(self, client: TestClient, auth_headers):
-        resp1 = self._create_positioning(client, auth_headers, bypass_cache="true")
-        assert resp1.status_code == 200
-        resp2 = self._create_positioning(client, auth_headers, bypass_cache="true")
-        assert resp2.status_code == 200
-
-    def test_get_latest_positioning(self, client: TestClient, auth_headers):
-        self._create_positioning(client, auth_headers)
-        resp = client.get("/api/grad-intel/positioning/latest", headers=auth_headers)
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data is not None
-        assert data["undergrad_tier"] == "985"
-
-    def test_get_latest_positioning_empty(self, client: TestClient, auth_headers):
-        resp = client.get("/api/grad-intel/positioning/latest", headers=auth_headers)
-        assert resp.status_code == 200
-        assert resp.json() is None
-
-    def test_get_positioning_history(self, client: TestClient, auth_headers):
-        self._create_positioning(client, auth_headers)
-        resp = client.get("/api/grad-intel/positioning/history", headers=auth_headers)
-        assert resp.status_code == 200
-        data = resp.json()
-        assert isinstance(data, list)
-        assert len(data) >= 1
-
-    def test_clear_positioning_cache(self, client: TestClient, auth_headers):
-        resp = client.post("/api/grad-intel/positioning/clear-cache", headers=auth_headers)
-        assert resp.status_code == 200
-        assert "缓存已清除" in resp.json()["message"]
-
-    def test_positioning_requires_auth(self, client: TestClient):
-        resp = client.post(
-            "/api/grad-intel/positioning/create",
-            json={"undergrad_tier": "985"},
-        )
-        assert resp.status_code == 401
 
 
 # ======================================================================
@@ -417,169 +273,6 @@ class TestYanzhaoPrograms:
         assert resp2.status_code == 200
 
 
-class TestScorelines:
-    def _seed_scoreline(self, db_session):
-        record = GradScorelineRecord(
-            university_name="北京大学",
-            major_name="软件工程",
-            degree_type="学术学位",
-            year=2025,
-            data_sources=["scorelines_real_data.json:2026-07-12"],
-            total_score_line=350,
-            politics_score=55,
-            foreign_language_score=55,
-            business_1_score=90,
-            business_2_score=90,
-            enrollment_count=15,
-            application_count=200,
-        )
-        db_session.add(record)
-        db_session.commit()
-        return record
-
-    def test_list_scorelines(self, client: TestClient, db_session):
-        self._seed_scoreline(db_session)
-        cache.clear()
-        resp = client.get("/api/grad-intel/scorelines")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert isinstance(data, list)
-        assert len(data) >= 1
-        assert data[0]["total_score_line"] == 350
-
-    def test_list_scorelines_filter(self, client: TestClient, db_session):
-        self._seed_scoreline(db_session)
-        cache.clear()
-        resp = client.get(
-            "/api/grad-intel/scorelines",
-            params={"university_name": "北京", "year": 2025},
-        )
-        assert resp.status_code == 200
-        assert len(resp.json()) >= 1
-
-    def test_scoreline_trend(self, client: TestClient, db_session):
-        for year in [2023, 2024, 2025]:
-            record = GradScorelineRecord(
-                university_name="复旦大学",
-                major_name="计算机科学",
-                degree_type="学术学位",
-                year=year,
-                data_sources=["scorelines_real_data.json:2026-07-12"],
-                total_score_line=340 + (year - 2023) * 5,
-            )
-            db_session.add(record)
-        db_session.commit()
-        cache.clear()
-        resp = client.get(
-            "/api/grad-intel/scorelines/trend",
-            params={
-                "university_name": "复旦大学",
-                "major_name": "计算机科学",
-                "degree_type": "学术学位",
-            },
-        )
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["university_name"] == "复旦大学"
-        assert len(data["years"]) == 3
-        assert data["years"] == [2023, 2024, 2025]
-
-    def test_scoreline_trend_empty(self, client: TestClient):
-        cache.clear()
-        resp = client.get(
-            "/api/grad-intel/scorelines/trend",
-            params={"university_name": "不存在的大学", "major_name": "不存在的专业"},
-        )
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["years"] == []
-
-
-class TestAdjustments:
-    def _seed_adjustment(self, db_session):
-        adj = GradAdjustmentInfo(
-            university_name="浙江大学",
-            department="信息与电子工程学院",
-            major_name="电子科学与技术",
-            degree_type="学术学位",
-            adjustment_quota=5,
-            contact_email="yzb@zju.edu.cn",
-            deadline="2025-04-10",
-            year=2025,
-            status="open",
-        )
-        db_session.add(adj)
-        db_session.commit()
-        return adj
-
-    def test_list_adjustments(self, client: TestClient, db_session):
-        self._seed_adjustment(db_session)
-        cache.clear()
-        resp = client.get("/api/grad-intel/adjustments")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert isinstance(data, list)
-        assert len(data) >= 1
-
-    def test_list_adjustments_filter(self, client: TestClient, db_session):
-        self._seed_adjustment(db_session)
-        cache.clear()
-        resp = client.get(
-            "/api/grad-intel/adjustments",
-            params={"university_name": "浙江大学", "status": "open"},
-        )
-        assert resp.status_code == 200
-        assert len(resp.json()) >= 1
-
-
-class TestSchoolSummary:
-    def _seed_school_data(self, db_session):
-        prog = GradYanzhaoProgram(
-            university_name="中国科学技术大学",
-            department="计算机科学与技术学院",
-            major_name="计算机科学与技术",
-            degree_type="学术学位",
-            year=2026,
-        )
-        record = GradScorelineRecord(
-            university_name="中国科学技术大学",
-            major_name="计算机科学与技术",
-            degree_type="学术学位",
-            year=2025,
-            data_sources=["scorelines_real_data.json:2026-07-12"],
-            total_score_line=345,
-        )
-        adj = GradAdjustmentInfo(
-            university_name="中国科学技术大学",
-            department="计算机学院",
-            major_name="计算机科学与技术",
-            year=2025,
-            status="open",
-        )
-        db_session.add_all([prog, record, adj])
-        db_session.commit()
-
-    def test_school_summary(self, client: TestClient, db_session):
-        self._seed_school_data(db_session)
-        cache.clear()
-        resp = client.get("/api/grad-intel/schools/中国科学技术大学/summary")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["university_name"] == "中国科学技术大学"
-        assert data["program_count"] >= 1
-        assert data["latest_scoreline"] == 345
-        assert data["has_adjustment"] is True
-        assert data["adjustment_count"] >= 1
-
-    def test_school_summary_empty(self, client: TestClient):
-        cache.clear()
-        resp = client.get("/api/grad-intel/schools/不存在的大学/summary")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["program_count"] == 0
-        assert data["has_adjustment"] is False
-
-
 # ======================================================================
 # 边界情况与错误处理
 # ======================================================================
@@ -595,17 +288,6 @@ class TestEdgeCases:
         assert data["school_tier"] == ""
         assert data["background_discrimination"] == "unknown"
 
-    def test_positioning_minimal_fields(self, client: TestClient, auth_headers):
-        resp = client.post(
-            "/api/grad-intel/positioning/create",
-            json={"undergrad_tier": "二本"},
-            headers=auth_headers,
-        )
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["undergrad_tier"] == "二本"
-        assert "reach_schools" in data
-
     def test_dark_knowledge_no_auth_required(self, client: TestClient):
         resp = client.get("/api/grad-intel/dark-knowledge/list")
         assert resp.status_code == 200
@@ -616,25 +298,6 @@ class TestEdgeCases:
 
     def test_yanzhao_programs_no_auth_required(self, client: TestClient):
         resp = client.get("/api/grad-intel/yanzhao-programs")
-        assert resp.status_code == 200
-
-    def test_scorelines_no_auth_required(self, client: TestClient):
-        resp = client.get("/api/grad-intel/scorelines")
-        assert resp.status_code == 200
-
-    def test_adjustments_no_auth_required(self, client: TestClient):
-        resp = client.get("/api/grad-intel/adjustments")
-        assert resp.status_code == 200
-
-    def test_scoreline_trend_no_auth_required(self, client: TestClient):
-        resp = client.get(
-            "/api/grad-intel/scorelines/trend",
-            params={"university_name": "test", "major_name": "test"},
-        )
-        assert resp.status_code == 200
-
-    def test_school_summary_no_auth_required(self, client: TestClient):
-        resp = client.get("/api/grad-intel/schools/test/summary")
         assert resp.status_code == 200
 
 

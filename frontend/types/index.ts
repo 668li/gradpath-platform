@@ -1204,31 +1204,6 @@ export type ProtectionLevel = "yes" | "no" | "partial" | "unknown";
 export type SuppressionLevel = "none" | "mild" | "moderate" | "severe" | "unknown";
 export type TransferLevel = "friendly" | "neutral" | "unfriendly" | "unknown";
 
-export interface IntelQueryRequest {
-  school_name: string;
-  major_name: string;
-}
-
-export interface AIIntelResult {
-  school_name: string;
-  major_name: string;
-  school_tier: string;
-  background_discrimination: DiscriminationLevel;
-  first_choice_protection: ProtectionLevel;
-  admission_ratio: string | null;
-  push_ratio: string | null;
-  actual_quota: number | null;
-  score_line: number | null;
-  retest_weight: string | null;
-  retest_format: string | null;
-  score_suppression: SuppressionLevel;
-  transfer_friendly: TransferLevel;
-  insider_notes: string | null;
-  data_sources: string[];
-  tags: string[];
-  ai_summary: string;
-}
-
 export interface IntelSaveRequest {
   school_name: string;
   major_name: string;
@@ -1275,57 +1250,6 @@ export interface IntelResponse {
   created_at: string;
 }
 
-// ===== 考研作战室：自我定位 =====
-export interface PositioningCreateRequest {
-  undergrad_tier: string;
-  undergrad_major?: string | null;
-  gpa?: number | null;
-  gpa_rank?: string | null;
-  english_level?: string | null;
-  english_score?: number | null;
-  research_experience?: string | null;
-  competitions?: string[];
-  awards?: string | null;
-  internships?: string | null;
-  target_school?: string | null;
-  target_major?: string | null;
-  target_region?: string | null;
-  other_info?: string | null;
-}
-
-export interface SchoolRecommendation {
-  name: string;
-  major: string;
-  tier: string;
-  reason: string;
-  probability: number;
-}
-
-export interface PositioningResponse {
-  id: string;
-  undergrad_tier: string;
-  undergrad_major: string | null;
-  gpa: number | null;
-  gpa_rank: string | null;
-  english_level: string | null;
-  english_score: number | null;
-  research_experience: string | null;
-  competitions: string[];
-  awards: string | null;
-  internships: string | null;
-  target_school: string | null;
-  target_major: string | null;
-  target_region: string | null;
-  other_info: string | null;
-  ai_assessment: string | null;
-  reach_schools: SchoolRecommendation[];
-  target_schools: SchoolRecommendation[];
-  safety_schools: SchoolRecommendation[];
-  success_probability: number | null;
-  risk_warnings: string[];
-  created_at: string;
-}
-
 // ===== 考研作战室：研招网真实数据 =====
 export interface GradYanzhaoProgram {
   id: string;
@@ -1345,79 +1269,6 @@ export interface GradYanzhaoProgram {
   data_sources: string[];
   created_at: string;
   updated_at: string;
-}
-
-export interface GradScorelineRecord {
-  id: string;
-  university_name: string;
-  major_name: string;
-  degree_type: string | null;
-  year: number;
-  total_score_line: number | null;
-  politics_score: number | null;
-  foreign_language_score: number | null;
-  business_1_score: number | null;
-  business_2_score: number | null;
-  enrollment_count: number | null;
-  application_count: number | null;
-  adjustment_count: number | null;
-  data_sources: string[];
-  created_at: string;
-  updated_at: string;
-}
-
-export interface GradScorelineTrend {
-  university_name: string;
-  major_name: string;
-  degree_type: string | null;
-  years: number[];
-  total_score_lines: (number | null)[];
-  politics_scores: (number | null)[];
-  foreign_language_scores: (number | null)[];
-  business_1_scores: (number | null)[];
-  business_2_scores: (number | null)[];
-  application_counts: (number | null)[];
-  enrollment_counts: (number | null)[];
-}
-
-export interface GradAdjustmentInfo {
-  id: string;
-  university_name: string;
-  department: string;
-  major_name: string;
-  degree_type: string | null;
-  original_major_range: string | null;
-  adjustment_quota: number | null;
-  contact_email: string | null;
-  contact_phone: string | null;
-  deadline: string | null;
-  source_url: string | null;
-  year: number;
-  status: string;
-  data_sources: string[];
-  created_at: string;
-  updated_at: string;
-}
-
-export interface GradSchoolDataSummary {
-  university_name: string;
-  program_count: number;
-  latest_year: number | null;
-  latest_scoreline: number | null;
-  scoreline_trend: "up" | "down" | "stable";
-  has_adjustment: boolean;
-  adjustment_count: number;
-}
-
-export interface SchoolAnnouncement {
-  id: string;
-  title: string;
-  summary: string | null;
-  source_url: string;
-  source_platform: string;
-  published_at: string | null;
-  category: string;
-  quality_grade: string | null;
 }
 
 // ===== AI 推荐系统 =====

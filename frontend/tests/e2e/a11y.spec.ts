@@ -55,8 +55,8 @@ test.describe('无障碍扫描 - 需登录页面', () => {
     await expectNoViolations(page, '/war-room');
   });
 
-  test('Kaoyan schools 无障碍', async ({ page }) => {
-    await expectNoViolations(page, '/kaoyan/schools');
+  test('Kaoyan 资讯中心无障碍', async ({ page }) => {
+    await expectNoViolations(page, '/kaoyan/news');
   });
 
   test('Profile 无障碍', async ({ page }) => {

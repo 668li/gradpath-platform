@@ -41,9 +41,9 @@ function getDirectionNextStep(direction: string): {
   switch (direction) {
     case "postgrad":
       return {
-        href: "/kaoyan/schools?from=onboarding",
-        title: "去院校库选目标学校",
-        desc: "基于你的考研方向，浏览院校与专业，建立候选清单。",
+        href: "/kaoyan/news?from=onboarding",
+        title: "去考研资讯中心",
+        desc: "查看最新考研资讯与社区经验帖，先建立信息面。",
         icon: GraduationCap,
       };
     case "civil_service":

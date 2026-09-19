@@ -59,14 +59,6 @@ with sync_playwright() as p:
     print(f'Kaoyan community: loaded, has posts: {has_posts}')
     print(f'Body (first 300): {body[:300]}')
 
-    # Go to kaoyan schools
-    page.goto('http://localhost:3000/kaoyan/schools', wait_until='networkidle', timeout=30000)
-    page.wait_for_timeout(2000)
-    page.screenshot(path=r'D:\职业规划\职业规划\tests\screenshots\kaoyan-schools.png', full_page=True)
-    body = page.inner_text('body')
-    has_schools = '清华' in body or '大学' in body
-    print(f'Kaoyan schools: loaded, has schools: {has_schools}')
-
     # Go to dashboard
     page.goto('http://localhost:3000/dashboard', wait_until='networkidle', timeout=30000)
     page.wait_for_timeout(2000)

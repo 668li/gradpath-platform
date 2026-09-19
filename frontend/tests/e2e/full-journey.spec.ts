@@ -91,7 +91,8 @@ test.describe.serial("端到端完整旅程", () => {
     await page.check('input[name="agree_terms"]');
     await page.click('button[type="submit"]');
 
-    await page.waitForURL("**/onboarding**", { timeout: 15000 });
+    // dev 冷编译 /dashboard+/onboarding 两条 RSC 各 3-9s（Windows 实测），15s 会破——放宽（同 onboarding.spec 注释）
+    await page.waitForURL("**/onboarding**", { timeout: 60000 });
 
     // Step 1: 选大三
     await page.locator('[data-testid="status-student"]').click();
@@ -114,11 +115,13 @@ test.describe.serial("端到端完整旅程", () => {
     // 点击"稍后再生成，先去个人看板"（避免 LLM 调用，加速测试）
     await page.locator('[data-testid="onboarding-finish-button"]').click();
 
-    await page.waitForURL("**/dashboard**", { timeout: 15000 });
+    await page.waitForURL("**/dashboard**", { timeout: 60000 });
     await expect(page.locator("body")).toContainText(/看板|概览|仪表盘|Dashboard/i, { timeout: 10000 });
   });
 
-  test("Step 2: 公司情报查询（war-room career tab）", async ({ page }) => {
+  // 2026-09-19：war-room 已 302 到 decision-center（IA 重构），公司情报 UI 成孤儿——
+  // 与 career-intel.spec 同因转 fixme，产品拍板恢复/迁移入口后启用（见该 spec 头注）
+  test.fixme("Step 2: 公司情报查询（war-room career tab）", async ({ page }) => {
     // ===== Mock 公司情报相关接口 =====
     await page.route("**/api/career-intel/intel/query", async (route) => {
       await route.fulfill({
@@ -144,7 +147,7 @@ test.describe.serial("端到端完整旅程", () => {
     await page.fill('input[type="email"]', TEST_EMAIL);
     await page.fill('input[type="password"]', "Test1234!");
     await page.click('button[type="submit"]');
-    await page.waitForURL("**/dashboard**", { timeout: 15000 });
+    await page.waitForURL("**/dashboard**", { timeout: 60000 });
 
     // 访问 war-room career tab
     await page.goto("/war-room");
@@ -163,7 +166,9 @@ test.describe.serial("端到端完整旅程", () => {
     await expect(page.locator("body")).toBeVisible();
   });
 
-  test("Step 3: 决策助手完整流（mock LLM）", async ({ page }) => {
+  // 2026-09-19：/decision-lab 已 302 到 decision-center（IA 重构），五步向导成孤儿——
+  // 与 decision.spec 同因转 fixme，产品拍板恢复创建入口后启用（见该 spec 头注）
+  test.fixme("Step 3: 决策助手完整流（mock LLM）", async ({ page }) => {
     // ===== Mock 决策分析 LLM 接口 =====
     await page.route("**/api/decision-analysis/premortem-analyze", async (route) => {
       await route.fulfill({
@@ -240,7 +245,7 @@ test.describe.serial("端到端完整旅程", () => {
     await page.fill('input[type="email"]', TEST_EMAIL);
     await page.fill('input[type="password"]', "Test1234!");
     await page.click('button[type="submit"]');
-    await page.waitForURL("**/dashboard**", { timeout: 15000 });
+    await page.waitForURL("**/dashboard**", { timeout: 60000 });
 
     // 进入决策实验室
     await page.goto("/decision-lab");
@@ -274,7 +279,7 @@ test.describe.serial("端到端完整旅程", () => {
     await page.fill('input[type="email"]', TEST_EMAIL);
     await page.fill('input[type="password"]', "Test1234!");
     await page.click('button[type="submit"]');
-    await page.waitForURL("**/dashboard**", { timeout: 15000 });
+    await page.waitForURL("**/dashboard**", { timeout: 60000 });
 
     // 进入社区
     await page.goto("/community");

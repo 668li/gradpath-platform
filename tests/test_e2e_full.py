@@ -477,17 +477,10 @@ class TestScorelines:
 
 
 # ============================================================
-# 7. Schools page: verify 200+ schools listed
+# 7. Schools API: verify schools endpoint works
 # ============================================================
 
 class TestSchools:
-    def test_schools_page(self, context: BrowserContext):
-        """Navigate to schools page."""
-        page = context.new_page()
-        page.goto(f"{BASE_URL}/kaoyan/schools", wait_until="networkidle", timeout=30000)
-        screenshot(page, "21_schools_page")
-        page.close()
-
     def test_schools_api_count(self):
         """API: verify schools endpoint works (may need seeding)."""
         resp = api_request("GET", "/api/employment/schools")
@@ -555,7 +548,7 @@ class TestPageSmoke:
         ("/register", ""),
         ("/grad-war-room", "考研作战室"),
         ("/kaoyan/community", ""),
-        ("/kaoyan/schools", ""),
+        ("/kaoyan/news", ""),
         ("/dashboard", ""),
     ])
     def test_page_loads(self, context: BrowserContext, path: str, expected_text: str):

@@ -57,8 +57,7 @@ export { knowledgeApi } from "./knowledge";
 export { careerPlansApi, careerProfileApi, planTemplatesApi } from "./career";
 export { assessmentApi, lifeWheelApi } from "./assessment";
 export { growthPatternsApi } from "./mentors";
-export { gradIntelApi, gradVisualizationApi, schoolAnalystApi, schoolCompareApi } from "./grad";
-export type { AnalystReportRequest, AnalystReportResponse, CompareRequest, CompareResponse } from "./grad";
+export { gradIntelApi, gradVisualizationApi } from "./grad";
 export { kaoyanCommunityApi, kaoyanNewsApi } from "./kaoyan";
 export { studyPlanApi } from "./study";
 export { goalDecomposeApi } from "./goal-decompose";
@@ -171,8 +170,6 @@ export type { CareerTestDrive, CareerTestDriveCreate, TimeBlock } from "../../ty
 
 export { ragSearchApi } from "./rag";
 export type { RAGSearchResponse, RAGSearchResult } from "./rag";
-export { admissionApi } from "./admission";
-export type { PredictResponse, HistoryResponse } from "./admission";
 export { ratingApi } from "./communityRating";
 export type { RatingResponse, RatingStats, TopRatedItem } from "./communityRating";
 export { learningMethodsApi } from "./learningMethods";

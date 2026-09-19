@@ -13,8 +13,13 @@ const nextConfig = {
       { source: "/war-room", destination: "/decision-center", permanent: false },
       { source: "/decisions", destination: "/decision-center", permanent: false },
       { source: "/plans", destination: "/study-plans", permanent: false },
+      // 考研工具箱瘦身（docs/考研工具箱瘦身规格-2026-09-15.md W5）：已下线页面 302 兜底到 /kaoyan
       { source: "/kaoyan/predict", destination: "/kaoyan", permanent: false },
-      { source: "/kaoyan/news", destination: "/kaoyan", permanent: false },
+      { source: "/kaoyan/compare", destination: "/kaoyan", permanent: false },
+      { source: "/kaoyan/strategy", destination: "/kaoyan", permanent: false },
+      { source: "/kaoyan/schools", destination: "/kaoyan", permanent: false },
+      { source: "/kaoyan/schools/:path*", destination: "/kaoyan", permanent: false },
+      // 注意：/kaoyan/news 是 W8 新建的资讯中心，不得重定向（否则整页被 302 吃掉）
       { source: "/learning-resources", destination: "/study-plans", permanent: false },
       { source: "/civil-service/positions", destination: "/civil-service", permanent: false },
       // 09-12 战略转向：职位检索与免费可报性预览整体下架（计划书红线 1/2），页面薄壳只是兜底，

@@ -276,23 +276,6 @@ export const commands: Command[] = [
 
   // ────────────────────────── 考研子 ──────────────────────────
   {
-    id: "kaoyan-compare",
-    title: "院校对比",
-    subtitle: "考研",
-    href: "/kaoyan/compare",
-    keywords: ["对比", "院校", "compare", "比较"],
-    icon: "GitCompare",
-  },
-  {
-    id: "kaoyan-strategy",
-    title: "考研策略",
-    subtitle: "考研",
-    href: "/kaoyan/strategy",
-    keywords: ["策略", "strategy", "考研", "资讯"],
-    icon: "Target",
-  },
-
-  {
     id: "kaoyan-community",
     title: "考研社区",
     subtitle: "考研",

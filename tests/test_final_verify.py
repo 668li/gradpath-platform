@@ -43,13 +43,13 @@ with sync_playwright() as p:
     page.screenshot(path=f'{SS}\\final-crawler-dashboard.png', full_page=True)
     print(f'Crawler dashboard: loaded')
 
-    # Test 3: Kaoyan Schools (more schools)
-    page.goto('http://localhost:3000/kaoyan/schools', wait_until='networkidle', timeout=30000)
+    # Test 3: Kaoyan news center
+    page.goto('http://localhost:3000/kaoyan/news', wait_until='networkidle', timeout=30000)
     page.wait_for_timeout(2000)
-    page.screenshot(path=f'{SS}\\final-schools.png', full_page=True)
+    page.screenshot(path=f'{SS}\\final-kaoyan-news.png', full_page=True)
     body = page.inner_text('body')
-    has_data = '大学' in body
-    print(f'Schools page: has data = {has_data}')
+    has_data = '资讯' in body
+    print(f'Kaoyan news center: has data = {has_data}')
 
     # Test 4: API data verification
     import urllib.request, json

@@ -85,8 +85,10 @@ test.describe("5 分钟诊断完整流", () => {
     await page.check('input[name="agree_terms"]');
     await page.click('button[type="submit"]');
 
-    // 注册成功后跳转到 onboarding（layout 检测到未完成会重定向）
-    await page.waitForURL("**/onboarding**", { timeout: 15000 });
+    // 注册成功后跳转到 onboarding（layout 检测到未完成会重定向）。
+    // 本地 dev 冷启动按需编译 /dashboard + /onboarding 两条 RSC 各需 3-9s（Windows 实测
+    // 单路由 7.1s），叠加后总链路会破 15s——放宽到 60s，CI 热路径不受影响。
+    await page.waitForURL("**/onboarding**", { timeout: 60000 });
   });
 
   test("完成 5 分钟诊断并进入 dashboard", async ({ page }) => {
@@ -109,8 +111,8 @@ test.describe("5 分钟诊断完整流", () => {
     // 进入生成页（step 4），点击"稍后再生成，先去个人看板"避免 LLM 调用
     await page.locator('[data-testid="onboarding-finish-button"]').click();
 
-    // 验证跳转到 dashboard
-    await page.waitForURL("**/dashboard**", { timeout: 15000 });
+    // 验证跳转到 dashboard（dev 冷编译放宽，见 beforeEach 注释）
+    await page.waitForURL("**/dashboard**", { timeout: 60000 });
     await expect(page.locator("h1")).toContainText(/欢迎|Dashboard|看板|概览|仪表/i, { timeout: 10000 });
   });
 
@@ -139,11 +141,11 @@ test.describe("5 分钟诊断完整流", () => {
 
     // 点击"进入个人看板"
     await page.getByRole("button", { name: /进入个人看板/ }).click();
-    await page.waitForURL("**/dashboard**", { timeout: 15000 });
+    await page.waitForURL("**/dashboard**", { timeout: 60000 });
   });
 
   test("跳过诊断直接进入 dashboard", async ({ page }) => {
     await page.locator('[data-testid="onboarding-skip-button"]').click();
-    await page.waitForURL("**/dashboard**", { timeout: 15000 });
+    await page.waitForURL("**/dashboard**", { timeout: 60000 });
   });
 });

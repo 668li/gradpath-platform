@@ -1,10 +1,10 @@
-"""考研情报 API — 院校情报、自我定位、暗知识。"""
+"""考研情报 API — 院校情报、暗知识、研招网数据。"""
 
 import logging
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.core.cache import cache
@@ -14,16 +14,10 @@ from app.models.grad_intel import GradSchoolIntel
 from app.models.user import User
 from app.schemas.grad_intel import (
     DarkKnowledgeResponse,
-    GradAdjustmentInfoResponse,
-    GradSchoolDataSummaryResponse,
-    GradScorelineTrendResponse,
     GradYanzhaoProgramResponse,
-    IntelQueryRequest,
     IntelResponse,
     IntelSaveRequest,
     PaginatedDarkKnowledgeResponse,
-    PositioningCreateRequest,
-    PositioningResponse,
 )
 from app.services import grad_intel_service
 
@@ -33,23 +27,6 @@ router = APIRouter(prefix="/api/grad-intel", tags=["考研情报"])
 
 
 # ===== 院校情报 =====
-
-
-@router.post("/intel/query")
-async def query_intel(
-    body: IntelQueryRequest,
-    user: User = Depends(get_current_user),
-):
-    """AI 生成院校情报。不保存，返回结构化结果供前端展示。"""
-    try:
-        result = await grad_intel_service.query_school_intel(body.school_name, body.major_name)
-        return result
-    except Exception as e:
-        logger.exception("AI 情报生成失败: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="AI 情报生成失败，请稍后重试",
-        )
 
 
 @router.post("/intel/save", response_model=IntelResponse)
@@ -100,66 +77,6 @@ def delete_intel(
     if not ok:
         raise HTTPException(status_code=404, detail="情报不存在")
     return {"ok": True}
-
-
-# ===== 自我定位 =====
-
-
-@router.post("/positioning/create", response_model=PositioningResponse)
-async def create_positioning(
-    body: PositioningCreateRequest,
-    bypass_cache: bool = False,
-    db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
-):
-    """创建自我定位并触发 AI 评估。
-
-    Args:
-        bypass_cache: 是否绕过缓存强制重新生成
-    """
-    try:
-        positioning = await grad_intel_service.create_positioning(
-            db, user.id, body.model_dump(), bypass_cache=bypass_cache
-        )
-        return PositioningResponse.model_validate(positioning)
-    except Exception as e:
-        # 修复: FASTAPI-RESP-001 — 不向客户端泄漏内部异常信息，仅记录日志
-        logger.exception("create_positioning failed: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="AI 评估服务暂时不可用，请稍后重试",
-        )
-
-
-@router.post("/positioning/clear-cache")
-def clear_positioning_cache(
-    user: User = Depends(get_current_user),
-):
-    """清除用户的 AI 结果缓存。"""
-    # 修复 bug: 原先调用 grad_intel_service._ai_cache.clear() 触发 AttributeError → 500
-    # _ai_cache 属性从未定义（旧实现已重构为 cache 模块）
-    deleted = grad_intel_service.clear_positioning_cache()
-    return {"message": "缓存已清除", "cleared_count": deleted}
-
-
-@router.get("/positioning/latest", response_model=PositioningResponse | None)
-def get_latest_positioning(
-    db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
-):
-    """获取最新的自我定位。"""
-    p = grad_intel_service.get_latest_positioning(db, user.id)
-    return PositioningResponse.model_validate(p) if p else None
-
-
-@router.get("/positioning/history", response_model=list[PositioningResponse])
-def get_positioning_history(
-    db: Session = Depends(get_db),
-    user: User = Depends(get_current_user),
-):
-    """获取自我定位历史。"""
-    items = grad_intel_service.get_positioning_history(db, user.id)
-    return [PositioningResponse.model_validate(i) for i in items]
 
 
 # ===== 暗知识 =====
@@ -282,133 +199,6 @@ def list_yanzhao_programs(
     return items
 
 
-@router.get("/scorelines")
-def list_scorelines(
-    university_name: str | None = None,
-    major_name: str | None = None,
-    degree_type: str | None = None,
-    year: int | None = None,
-    limit: int = Query(200, ge=1, le=500),
-    offset: int = Query(0, ge=0),
-    db: Session = Depends(get_db),
-):
-    """查询真实复试分数线（公开接口，5分钟缓存）。"""
-    cache_key = f"scorelines:{university_name}:{major_name}:{degree_type}:{year}:{limit}:{offset}"
-    cached_result = cache.get(cache_key)
-    if cached_result is not None:
-        return cached_result
-
-    items = grad_intel_service.list_scoreline_records(
-        db,
-        university_name=university_name,
-        major_name=major_name,
-        degree_type=degree_type,
-        year=year,
-        limit=limit,
-        offset=offset,
-    )
-    # 在session关闭前转换为字典
-    result = [
-        {
-            "id": str(item.id),
-            "university_name": item.university_name,
-            "major_name": item.major_name,
-            "degree_type": item.degree_type,
-            "year": item.year,
-            "total_score_line": item.total_score_line,
-            "politics_score": item.politics_score,
-            "foreign_language_score": item.foreign_language_score,
-            "business_1_score": item.business_1_score,
-            "business_2_score": item.business_2_score,
-            "enrollment_count": item.enrollment_count,
-            "application_count": item.application_count,
-            "adjustment_count": item.adjustment_count,
-            "data_sources": item.data_sources or [],
-        }
-        for item in items
-    ]
-    cache.set(cache_key, result, ttl=300)
-    return result
-
-
-@router.get("/scorelines/trend", response_model=GradScorelineTrendResponse)
-def get_scoreline_trend(
-    university_name: str,
-    major_name: str,
-    degree_type: str | None = None,
-    db: Session = Depends(get_db),
-):
-    """获取某院校某专业的复试分数线趋势（公开接口，5分钟缓存）。"""
-    # 生成缓存键
-    cache_key = f"scoreline_trend:{university_name}:{major_name}:{degree_type}"
-
-    # 尝试从缓存获取
-    cached_result = cache.get(cache_key)
-    if cached_result is not None:
-        return cached_result
-
-    # 查询数据库
-    result = grad_intel_service.get_scoreline_trend(
-        db, university_name=university_name, major_name=major_name, degree_type=degree_type
-    )
-
-    # 缓存结果（5分钟）
-    cache.set(cache_key, result, ttl=300)
-    return result
-
-
-@router.get("/adjustments", response_model=list[GradAdjustmentInfoResponse])
-def list_adjustments(
-    university_name: str | None = None,
-    major_name: str | None = None,
-    status: str | None = None,
-    year: int | None = None,
-    limit: int = Query(100, ge=1, le=500),
-    offset: int = Query(0, ge=0),
-    db: Session = Depends(get_db),
-):
-    """查询调剂信息（公开接口，5分钟缓存）。"""
-    cache_key = f"adjustments:{university_name}:{major_name}:{status}:{year}:{limit}:{offset}"
-    cached_result = cache.get(cache_key)
-    if isinstance(cached_result, list):
-        return cached_result
-    result = grad_intel_service.list_adjustment_info(
-        db,
-        university_name=university_name,
-        major_name=major_name,
-        status=status,
-        year=year,
-        limit=limit,
-        offset=offset,
-    )
-    # 必须缓存 dict 列表：ORM 对象经 json.dumps(default=str) 会存成垃圾字符串，
-    # Redis 命中即 500（09-05 对抗审查实证）
-    cache.set(
-        cache_key,
-        [
-            GradAdjustmentInfoResponse.model_validate(item).model_dump(mode="json")
-            for item in result
-        ],
-        ttl=300,
-    )
-    return result
-
-
-@router.get("/schools/{university_name}/summary", response_model=GradSchoolDataSummaryResponse)
-def get_school_summary(
-    university_name: str,
-    db: Session = Depends(get_db),
-):
-    """获取某院校的数据汇总（公开接口，5分钟缓存）。"""
-    cache_key = f"school_summary:{university_name}"
-    cached_result = cache.get(cache_key)
-    if cached_result is not None:
-        return cached_result
-    result = grad_intel_service.get_school_data_summary(db, university_name)
-    cache.set(cache_key, result, ttl=300)
-    return result
-
-
 class SchoolAnnouncementResponse(BaseModel):
     """院校官方公告条目（归口自已审核研招公告）。"""
 
@@ -443,36 +233,3 @@ def get_school_announcements(
     result = grad_intel_service.get_school_announcements(db, university_name, limit=limit)
     cache.set(cache_key, result, ttl=300)
     return result
-
-
-class SchoolBatchRequest(BaseModel):
-    """批量获取院校数据汇总请求体。"""
-
-    university_names: list[str] = Field(
-        ..., min_length=1, max_length=100, description="院校名称列表（最多 100 个）"
-    )
-
-
-@router.post("/schools/batch", response_model=list[GradSchoolDataSummaryResponse])
-def batch_school_summaries(
-    body: SchoolBatchRequest,
-    db: Session = Depends(get_db),
-):
-    """批量获取多所院校的数据汇总（消除前端 N+1 调用，5分钟缓存）。
-
-    前端在院校列表页一次加载 N 所院校时，原需发 N 次
-    `/schools/{name}/summary` 请求；本接口一次返回所有院校的汇总。
-    """
-    # 限制单次最多 100 所，防止滥用
-    names = body.university_names[:100]
-    results: list[GradSchoolDataSummaryResponse] = []
-    for name in names:
-        cache_key = f"school_summary:{name}"
-        cached = cache.get(cache_key)
-        if cached is not None:
-            results.append(GradSchoolDataSummaryResponse(**cached))
-            continue
-        summary = grad_intel_service.get_school_data_summary(db, name)
-        cache.set(cache_key, summary, ttl=300)
-        results.append(GradSchoolDataSummaryResponse(**summary))
-    return results
