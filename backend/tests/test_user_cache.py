@@ -8,7 +8,7 @@
 - Redis 不可用时降级到直接打 DB
 - build_user_context 缓存命中
 - build_user_context 缓存未命中写缓存
-- 事件 CRUD 失效 user_context 缓存
+- 事件 CRUD（真实端点）失效 user_context 缓存
 """
 
 from datetime import date
@@ -19,9 +19,7 @@ from sqlalchemy import event
 from app.core.cache import cache
 from app.models.career_event import EventType
 from app.models.user import User
-from app.schemas.event import EventCreate
 from app.services.chat_service import build_user_context
-from app.services.event_service import create_event
 
 # ======================================================================
 # 辅助函数
@@ -226,101 +224,89 @@ class TestBuildUserContextCache:
 
 
 class TestCacheInvalidation:
-    def test_event_create_invalidates_user_context_cache(self, db_session):
-        """创建 CareerEvent 后失效 user_context 缓存。"""
-        user = User(
-            email="evt@example.com",
-            password_hash="hash",
-            name="Evt用户",
-        )
-        db_session.add(user)
-        db_session.commit()
-        db_session.refresh(user)
+    """缓存失效测试。
+
+    事件 CRUD 的失效断言必须打在 **真实端点** 上（生产走 app/api/career_events.py）。
+    此前这三个用例调的是 services/event_service.py 的同名函数，而该 service 生产零调用，
+    于是"端点漏失效"的缺陷被测试绿灯掩盖（008 T1）。改走端点后，端点若不失效即变红。
+    """
+
+    def test_event_create_invalidates_user_context_cache(self, client, auth_headers, db_session):
+        """POST /api/events 后失效 user_context 缓存。"""
+        user = db_session.query(User).filter_by(email="test@example.com").first()
+        assert user is not None
 
         # 预填充缓存
         build_user_context(db_session, user.id)
         assert cache.get(f"user_context:{user.id}") is not None
 
-        # 创建事件
-        create_event(
-            db_session,
-            user.id,
-            EventCreate(
-                event_date=date.today(),
-                event_type=EventType.other,
-                title="新事件",
-            ),
+        resp = client.post(
+            "/api/events",
+            headers=auth_headers,
+            json={
+                "event_date": date.today().isoformat(),
+                "event_type": EventType.other.value,
+                "title": "新事件",
+            },
         )
+        assert resp.status_code == 201
 
         # 缓存应已失效
         assert cache.get(f"user_context:{user.id}") is None
 
-    def test_event_update_invalidates_user_context_cache(self, db_session):
-        """更新 CareerEvent 后失效 user_context 缓存。"""
-        from app.schemas.event import EventUpdate
-        from app.services.event_service import update_event
+    def test_event_update_invalidates_user_context_cache(self, client, auth_headers, db_session):
+        """PATCH /api/events/{id} 后失效 user_context 缓存。"""
+        user = db_session.query(User).filter_by(email="test@example.com").first()
+        assert user is not None
 
-        user = User(
-            email="evt2@example.com",
-            password_hash="hash",
-            name="Evt用户2",
+        created = client.post(
+            "/api/events",
+            headers=auth_headers,
+            json={
+                "event_date": date.today().isoformat(),
+                "event_type": EventType.other.value,
+                "title": "原标题",
+            },
         )
-        db_session.add(user)
-        db_session.commit()
-        db_session.refresh(user)
-
-        evt = create_event(
-            db_session,
-            user.id,
-            EventCreate(
-                event_date=date.today(),
-                event_type=EventType.other,
-                title="原标题",
-            ),
-        )
+        assert created.status_code == 201
+        event_id = created.json()["id"]
 
         # 预填充缓存
         build_user_context(db_session, user.id)
         assert cache.get(f"user_context:{user.id}") is not None
 
-        # 更新事件
-        update_event(
-            db_session,
-            user.id,
-            evt.id,
-            EventUpdate(title="新标题"),
+        resp = client.patch(
+            f"/api/events/{event_id}",
+            headers=auth_headers,
+            json={"title": "新标题"},
         )
+        assert resp.status_code == 200
 
         assert cache.get(f"user_context:{user.id}") is None
 
-    def test_event_delete_invalidates_user_context_cache(self, db_session):
-        """删除 CareerEvent 后失效 user_context 缓存。"""
-        from app.services.event_service import delete_event
+    def test_event_delete_invalidates_user_context_cache(self, client, auth_headers, db_session):
+        """DELETE /api/events/{id} 后失效 user_context 缓存。"""
+        user = db_session.query(User).filter_by(email="test@example.com").first()
+        assert user is not None
 
-        user = User(
-            email="evt3@example.com",
-            password_hash="hash",
-            name="Evt用户3",
+        created = client.post(
+            "/api/events",
+            headers=auth_headers,
+            json={
+                "event_date": date.today().isoformat(),
+                "event_type": EventType.other.value,
+                "title": "待删除事件",
+            },
         )
-        db_session.add(user)
-        db_session.commit()
-        db_session.refresh(user)
-
-        evt = create_event(
-            db_session,
-            user.id,
-            EventCreate(
-                event_date=date.today(),
-                event_type=EventType.other,
-                title="待删除事件",
-            ),
-        )
+        assert created.status_code == 201
+        event_id = created.json()["id"]
 
         # 预填充缓存
         build_user_context(db_session, user.id)
         assert cache.get(f"user_context:{user.id}") is not None
 
-        delete_event(db_session, user.id, evt.id)
+        resp = client.delete(f"/api/events/{event_id}", headers=auth_headers)
+        assert resp.status_code == 204
 
         assert cache.get(f"user_context:{user.id}") is None
 

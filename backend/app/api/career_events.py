@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
+from app.core.cache import invalidate_user_context
 from app.core.deps import get_current_user
 from app.database import get_db
 from app.models.career_event import CareerEvent, EventType
@@ -132,6 +133,7 @@ def create_event(
     db.add(event)
     db.commit()
     db.refresh(event)
+    invalidate_user_context(user.id)
     return event
 
 
@@ -157,6 +159,7 @@ def update_event(
 
     db.commit()
     db.refresh(event)
+    invalidate_user_context(user.id)
     return event
 
 
@@ -176,3 +179,4 @@ def delete_event(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="事件不存在")
     db.delete(event)
     db.commit()
+    invalidate_user_context(user.id)

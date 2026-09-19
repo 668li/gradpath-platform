@@ -20,7 +20,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.core.cache import cache
+from app.core.cache import cache, invalidate_user_context
 from app.models.career_event import CareerEvent
 from app.models.career_plan import CareerPlan
 from app.models.conversation import Conversation, Message
@@ -519,10 +519,7 @@ async def send_message(
         db.refresh(plan)
         saved_plan_id = str(plan.id)
         # 新规划落库后失效用户上下文缓存（build_user_context 依赖 CareerPlan）
-        try:
-            cache.delete(f"user_context:{user_id}")
-        except Exception as e:
-            logger.debug("user_context cache invalidate after plan save failed: %s", e)
+        invalidate_user_context(user_id)
 
     # 10.5 学习计划师的 7 天微行动计划落库（行为设计闭环：连击/D2 提醒）
     saved_micro_plan_id = None

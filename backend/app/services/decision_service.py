@@ -3,21 +3,13 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
-from app.core.cache import cache
+from app.core.cache import invalidate_user_context
 from app.core.exceptions import NotFoundError
 from app.models.decision_review import DecisionReviewQueue, ReviewStatus
 from app.models.destination_decision import DestinationDecision
 from app.schemas.decision import DecisionCreate, DecisionUpdate
 
 logger = logging.getLogger(__name__)
-
-
-def _invalidate_user_context_cache(user_id: UUID) -> None:
-    """决策 CRUD 后失效用户上下文缓存（build_user_context 依赖 DestinationDecision）。"""
-    try:
-        cache.delete(f"user_context:{user_id}")
-    except Exception:
-        pass
 
 
 def create_decision(db: Session, user_id: UUID, data: DecisionCreate) -> DestinationDecision:
@@ -29,7 +21,7 @@ def create_decision(db: Session, user_id: UUID, data: DecisionCreate) -> Destina
     # 决策飞轮护城河：自动创建回顾任务（基于 review_date）
     _schedule_review_task(db, user_id, decision)
 
-    _invalidate_user_context_cache(user_id)
+    invalidate_user_context(user_id)
     return decision
 
 
@@ -105,7 +97,7 @@ def update_decision(
         setattr(decision, key, value)
     db.commit()
     db.refresh(decision)
-    _invalidate_user_context_cache(user_id)
+    invalidate_user_context(user_id)
     return decision
 
 
@@ -113,7 +105,7 @@ def delete_decision(db: Session, user_id: UUID, decision_id: UUID) -> None:
     decision = get_decision(db, user_id, decision_id)
     db.delete(decision)
     db.commit()
-    _invalidate_user_context_cache(user_id)
+    invalidate_user_context(user_id)
 
 
 def get_decision_stats(db: Session, user_id: UUID) -> dict[str, int]:

@@ -2,7 +2,7 @@ import logging
 
 from sqlalchemy.orm import Session
 
-from app.core.cache import cache
+from app.core.cache import cache, invalidate_user_context
 from app.core.exceptions import AuthenticationError, ConflictError
 from app.core.security import (
     create_access_token,
@@ -22,9 +22,9 @@ def _invalidate_user_cache(user_id) -> None:
     """用户信息变更后失效 user 与 user_context 缓存。"""
     try:
         cache.delete(f"user:{user_id}")
-        cache.delete(f"user_context:{user_id}")
     except Exception:
         pass
+    invalidate_user_context(user_id)
 
 
 def register(db: Session, data: RegisterRequest) -> User:

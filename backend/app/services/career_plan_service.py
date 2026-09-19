@@ -11,17 +11,9 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 
-from app.core.cache import cache
+from app.core.cache import invalidate_user_context
 from app.models.career_plan import CareerPlan
 from app.models.milestone_log import MilestoneLog
-
-
-def _invalidate_user_context_cache(user_id: UUID) -> None:
-    """规划/里程碑 CRUD 后失效用户上下文缓存（build_user_context 依赖 CareerPlan）。"""
-    try:
-        cache.delete(f"user_context:{user_id}")
-    except Exception:
-        pass
 
 
 def list_plans(db: Session, user_id: UUID) -> list[CareerPlan]:
@@ -76,7 +68,7 @@ def update_milestone(
     flag_modified(plan, "milestones")
     db.commit()
     db.refresh(plan)
-    _invalidate_user_context_cache(user_id)
+    invalidate_user_context(user_id)
     return plan
 
 

@@ -1,6 +1,5 @@
 import type { SkillResponse, SkillCreate, SkillUpdate, SkillStats, SkillListResponse, SkillInfo } from "@/types";
-import type { SkillMap } from "@/types/skills";
-import { request, buildQuery } from "./client";
+import { request } from "./client";
 
 // ===== Skills =====
 export const skillsApi = {
@@ -25,9 +24,6 @@ export const skillsApi = {
       method: "POST",
       body: JSON.stringify({ ids }),
     }),
-  // 能力地图：当前技能 vs 目标岗位要求
-  getSkillMap: (targetRole?: string) =>
-    request<SkillMap>(`/api/skills/map${buildQuery({ target_role: targetRole })}`),
 };
 
 // ===== Skill 管理 =====

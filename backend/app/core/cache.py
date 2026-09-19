@@ -1,15 +1,13 @@
 """缓存实现 — 支持 Redis 和内存缓存自动切换。
 
 优先使用 Redis（如可用），自动降级到内存缓存。
-支持 TTL、序列化和装饰器。
+支持 TTL 与 JSON 序列化。
 """
 
 import json
 import logging
 import time
 from collections import OrderedDict
-from collections.abc import Callable
-from functools import wraps
 from typing import Any
 
 from app.config import settings
@@ -185,40 +183,15 @@ class RedisCache:
 cache = RedisCache()
 
 
-def cached(ttl: int = 300, prefix: str = ""):
-    """装饰器：为函数添加缓存支持。
+def invalidate_user_context(user_id) -> None:
+    """失效用户上下文缓存（build_user_context 的缓存键）。
 
-    Args:
-        ttl: 缓存过期时间（秒），默认 5 分钟
-        prefix: 缓存键前缀，用于分组
+    build_user_context 依赖 CareerEvent / CareerPlan / DestinationDecision /
+    Retrospective / SkillNode / Assessment 等多张表，任一写入后都该调用本函数。
+
+    ponytail: 静默失败——失效失败不该让写入请求失败，TTL（300s）是兜底。
     """
-
-    def decorator(func: Callable):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            # 生成缓存键：前缀 + 函数名 + 参数
-            key_parts = [prefix or func.__name__]
-            key_parts.extend(str(arg) for arg in args)
-            key_parts.extend(f"{k}={v}" for k, v in sorted(kwargs.items()))
-            cache_key = ":".join(key_parts)
-
-            # 尝试从缓存获取
-            cached_value = cache.get(cache_key)
-            if cached_value is not None:
-                return cached_value
-
-            # 执行函数并缓存结果
-            result = func(*args, **kwargs)
-            cache.set(cache_key, result, ttl=ttl)
-            return result
-
-        wrapper.invalidate = lambda *a, **kw: cache.delete(
-            ":".join(
-                [prefix or func.__name__]
-                + [str(x) for x in a]
-                + [f"{k}={v}" for k, v in sorted(kw.items())]
-            )
-        )
-        return wrapper
-
-    return decorator
+    try:
+        cache.delete(f"user_context:{user_id}")
+    except Exception:
+        pass

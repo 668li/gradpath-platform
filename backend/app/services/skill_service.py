@@ -3,15 +3,18 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.core.cache import cache
+from app.core.cache import cache, invalidate_user_context
 from app.models.skill_node import SkillNode
 from app.schemas.skill import SkillCreate, SkillUpdate
 
 
-def _invalidate_user_context_cache(user_id: UUID) -> None:
-    """技能 CRUD 后失效用户上下文缓存（build_user_context 依赖 SkillNode）。"""
+def _invalidate_skill_caches(user_id: UUID) -> None:
+    """技能 CRUD 后失效技能相关缓存。
+
+    user_context 部分委托共享函数；skill_tree/skill_stats 是技能域独有键。
+    """
+    invalidate_user_context(user_id)
     for key in (
-        f"user_context:{user_id}",
         f"skill_tree:{user_id}",
         f"skill_stats:{user_id}",
     ):
@@ -36,7 +39,7 @@ def create_skill(db: Session, user_id: UUID, data: SkillCreate) -> SkillNode:
     db.add(skill)
     db.commit()
     db.refresh(skill)
-    _invalidate_user_context_cache(user_id)
+    _invalidate_skill_caches(user_id)
     return skill
 
 
@@ -69,7 +72,7 @@ def update_skill(db: Session, user_id: UUID, skill_id: UUID, data: SkillUpdate) 
         setattr(skill, key, value)
     db.commit()
     db.refresh(skill)
-    _invalidate_user_context_cache(user_id)
+    _invalidate_skill_caches(user_id)
     return skill
 
 
@@ -77,7 +80,7 @@ def delete_skill(db: Session, user_id: UUID, skill_id: UUID) -> None:
     skill = get_skill(db, user_id, skill_id)
     db.delete(skill)
     db.commit()
-    _invalidate_user_context_cache(user_id)
+    _invalidate_skill_caches(user_id)
 
 
 def get_skill_stats(db: Session, user_id: UUID) -> dict[str, int]:

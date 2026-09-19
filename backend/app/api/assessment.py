@@ -15,7 +15,7 @@ from collections import Counter
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
-from app.core.cache import cache
+from app.core.cache import invalidate_user_context
 from app.core.deps import get_current_user
 from app.database import get_db
 from app.models.assessment import Assessment
@@ -187,11 +187,7 @@ def submit_assessment(
     db.add(assessment)
     db.commit()
     db.refresh(assessment)
-    # 失效用户上下文缓存（build_user_context 依赖最新 Assessment）
-    try:
-        cache.delete(f"user_context:{user.id}")
-    except Exception:
-        pass
+    invalidate_user_context(user.id)
     return _to_response(assessment)
 
 

@@ -7,7 +7,6 @@ response 校验失败即 500。dev 无 Redis（内存 fallback 存原对象）�
 已实证并修复的三处：
 - /api/kaoyan/experience-posts（模型）— 51b3e4c 修复
 - /api/grad-intel/yanzhao-programs（ORM 列表）— 本轮修复
-- /api/grad-intel/adjustments（ORM 列表）— 本轮修复
 """
 
 import json
@@ -41,10 +40,6 @@ def _double_call(client, path: str, redis_like_cache):
 
 def test_yanzhao_programs_cache_hit_ok(client, redis_like_cache):
     _double_call(client, "/api/grad-intel/yanzhao-programs", redis_like_cache)
-
-
-def test_adjustments_cache_hit_ok(client, redis_like_cache):
-    _double_call(client, "/api/grad-intel/adjustments", redis_like_cache)
 
 
 def test_experience_posts_cache_hit_ok(client, redis_like_cache):
