@@ -16,13 +16,15 @@ import { cn } from "@/lib/utils";
 import { civilServiceIntelApi } from "@/lib/api/ai";
 import { EmptyState, LoadingState } from "@/components/ui/empty";
 import { ExamTimelineTab } from "@/components/civil-service/exam-timeline";
+import { ToolLinksBlock } from "@/components/tools/ToolLinksBlock";
 import type {
   CivilServicePositioningResponse,
 } from "@/types";
 
 const tabs = [
   { id: "positioning", label: "考公定位", icon: Target, color: "text-purple-500" },
-  { id: "tools", label: "备考工具", icon: Wrench, color: "text-green-500" },
+  // 009 T4（A9 拍板）：备考工具 → 外部工具，内容=外链目录（点名制）+定位衍生备考资产
+  { id: "tools", label: "外部工具", icon: Wrench, color: "text-green-500" },
   { id: "timeline", label: "考试流程", icon: CalendarRange, color: "text-blue-500" },
 ];
 
@@ -132,6 +134,9 @@ function ToolsContent({ positioning }: { positioning: CivilServicePositioningRes
 
   return (
     <div className="space-y-6">
+      {/* 外链目录（009 T4）：两线同形态，空清单走点名制引导 */}
+      <ToolLinksBlock />
+
       {/* 备考时间线 */}
       {positioning.preparation_timeline && (
         <div className="rounded-xl border border-paper-200 bg-white p-6">
@@ -206,7 +211,7 @@ function CivilServicePageContent() {
   };
 
 
-  // 加载 Tab2 数据（备考工具 tab 复用此数据，故一并加载）
+  // 加载 Tab2 数据（外部工具 tab 复用此数据，故一并加载）
   useEffect(() => {
     if (activeTab !== "positioning" && activeTab !== "tools") {
       setPosLoading(false);
@@ -224,7 +229,7 @@ function CivilServicePageContent() {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-ink-800 mb-2">考公中心</h1>
-        <p className="text-ink-500">定位评估、备考工具与考试流程时间线 · 职位检索由公考雷达等专门工具承担</p>
+        <p className="text-ink-500">定位评估、外部工具与考试流程时间线 · 职位检索由公考雷达等专门工具承担</p>
       </div>
 
       {/* Tab 切换 */}
