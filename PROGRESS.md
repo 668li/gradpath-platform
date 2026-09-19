@@ -168,4 +168,3 @@
 - 收敛与部署：服务器线被 003 会话前移（bf8347a 三笔），gpclone cherry-pick 5 处冲突逐个融合（信任锚×地基、zhihu/tieba modify/delete 保删除、goal_decompose 系 09-06 工作区遗留删除不入收敛线），克隆全量 1941 绿后 bundle 发射；迁移 f1a3b5c7d9e2→b8e4f2a6c9d3 上产，八容器 healthy，HTTPS 冒烟+生产 registry==白名单==10 True。
 - 当日新坑入记忆：pre-commit 尾随空白/EOF 钩子改写 sha256 封印夹具字节（tests/fixtures 已字节冻结：pre-commit 排除+.gitattributes -text）；`git add -u` 卷入他人工作区删除（goal_decompose，003 本地恢复）；update_from_bundle 的 bundle 须 /tmp 绝对路径；Mimosa 五拦模式（mv/cp/sed -i 源码、脚本名+重定向、printf 写 .sh）绕道=Write→scp→nohup。
 - 遗留见 BLOCKED.md 002 追加节（本地线分叉再收敛/dataset_info drop/Mimosa 审计补跑/判据 1 实弹验证）。
-

@@ -60,6 +60,7 @@ app = FirecrawlApp(api_key=FIRECRAWL_API_KEY)
 | 后端修改 | `docker exec gradpath-backend-1 python -m pytest tests/ -q` | 运行后端测试 |
 | 前端修改 | Playwright E2E测试 | `tests/test_e2e_full.py` |
 | API测试 | curl测试端点 | 验证响应 |
+| 后端回归（项目惯例） | `cd backend && py -3.13 -m pytest`（本地实测口径，行数级证据报 passed/failed） | 全绿才交付 |
 
 ## 📋 代码修改标准流程
 
@@ -119,18 +120,14 @@ D:\职业规划\职业规划\
 
 ## 📊 数据库表
 
-| 表名 | 说明 | 当前数据量 |
-|------|------|-----------|
-| experience_posts | 经验帖 | 588 |
-| knowledge_articles | 知识文章 | 82 |
-| schools | 院校 | 206 |
-| qas | 问答 | 290 |
-| qa_answers | 回答 | 646 |
-| dark_knowledge | 暗知识 | 1020 |
-| grad_school_intel | 院校情报 | 498 |
-| grad_scoreline_records | 分数线 | 408 |
-| companies | 公司 | 466 |
-| salary_benchmarks | 薪资基准 | 2880 |
+> ⚠ 本表为**历史快照（2026-08 前）**，行数已不代表现状：本地 `gradpath.db` 与生产差异大，多数表已随"信息差伴随层"转向清空或下线（如 dark_knowledge 已全链拆除、模型仅作只读底座 0 行；mentors 表 0 行挂 drop 台账）。**权威现役数据以生产库实测为准**，不引用本表数字。
+
+| 表名 | 说明 | 状态 |
+|------|------|------|
+| experience_posts / knowledge_articles / schools / qas | 社区与院校基础内容 | 部分保留（以生产实测为准） |
+| dark_knowledge | 暗知识 | **已退役**（功能全链删除，模型留只读底座 0 行） |
+| grad_school_intel / grad_scoreline_records | 院校情报/分数线 | 保留（溯源纪律） |
+| company_reviews / mentors | 公司评价/导师评价 | **已退役**（mentors 0 行挂 drop 台账） |
 
 ## 🔑 关键配置
 
@@ -141,7 +138,7 @@ D:\职业规划\职业规划\
 | Docker项目名 | gradpath |
 | 测试账号 | 测试账号凭据请参考 .env.example 或联系管理员 |
 | Firecrawl API Key | 通过环境变量 FIRECRAWL_API_KEY 配置 |
-| Python版本 | 3.11 |
+| Python版本 | 3.13（`py -3.13`；实测口径，勿按 3.11 执行） |
 | Node版本 | v24.15.0 |
 
 ## ⚠️ 已知问题
