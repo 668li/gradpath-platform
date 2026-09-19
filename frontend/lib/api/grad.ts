@@ -1,4 +1,4 @@
-import type { GradYanzhaoProgram } from "@/types";
+import type { GradYanzhaoProgram, IntelResponse } from "@/types";
 import { request, buildQuery } from "./client";
 
 // ===== 考研作战室 =====
@@ -15,6 +15,17 @@ export const gradIntelApi = {
   }) =>
     request<GradYanzhaoProgram[]>(
       `/api/grad-intel/yanzhao-programs${buildQuery((params as Record<string, string | number | undefined | null>) || {})}`,
+    ),
+
+  // 公开院校情报（009 T3 信任锚橱窗消费：只上架带源数据）
+  listPublicIntel: (params?: {
+    school_name?: string;
+    major_name?: string;
+    school_tier?: string;
+    limit?: number;
+  }) =>
+    request<IntelResponse[]>(
+      `/api/grad-intel/intel/public${buildQuery((params as Record<string, string | number | undefined | null>) || {})}`,
     ),
 };
 
