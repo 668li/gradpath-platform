@@ -1,8 +1,8 @@
 """地基③线契约测试（spec 002 FR2）。
 
 - 白名单 10 源人人有线 yaml（缺一即红）；
-- 生成的 DEFAULT_DAILY_SCHEDULES 与冻结的 2 条 cron 逐字一致（调度兼容）；
-- 009 T1 拍板⑨：kaoyan_news 四条喂入线 enabled=false（停喂入，管道代码休眠保留）；
+- 生成的 DEFAULT_DAILY_SCHEDULES 与冻结的 1 条 cron 逐字一致（调度兼容）；
+- 009 T1 拍板⑨：kaoyan_news 五条喂入线 enabled=false（停喂入，管道代码休眠保留）；
 - 名字越界/非法 cron/非法窗口 = 加载即炸（合规硬闸负例）；
 - 季节窗口判定含跨年窗口。
 """
@@ -16,19 +16,20 @@ from app.crawlers.line_registry import CrawlerLine, default_schedules, load_line
 
 CONFIG_DIR = Path(__file__).resolve().parents[1] / "app" / "crawlers" / "config"
 
-# 009 T1 拍板⑨后冻结的 2 条默认 cron：kaoyan_news 四线已停喂入，
-# 考公公告（official_announce 每时）与外部调研（bilibili 每周一）不受影响。
+# 009 T1 拍板⑨后冻结的 1 条默认 cron：kaoyan_news 五线已停喂入，
+# 仅外部调研（bilibili 每周一）保留自动调度。
 EXPECTED_SCHEDULES = {
-    "official_announce": "0 * * * *",
     "bilibili_research": "0 3 * * 1",
 }
 
-# 009 T1 停喂入的四条 kaoyan_news 线（重启后不得自动回流调度）
+# 009 T1 停喂入的五条 kaoyan_news 线（重启后不得自动回流调度；
+# official_announce 为第五条——产研招公告，曾漏判为考公线，09-19 回流 14 行后补停）
 KAOKAO_NEWS_FROZEN_LINES = (
     "eol_kaoyan",
     "rsshub_research",
     "news_aggregates",
     "rss_news_research",
+    "official_announce",
 )
 
 
@@ -71,7 +72,6 @@ def test_sla_hours_present_for_scheduled_lines():
     lines = load_lines()
     for name in EXPECTED_SCHEDULES:
         assert lines[name].sla_hours > 0, f"{name} 缺 sla_hours（地基⑥新鲜度判据）"
-    assert lines["official_announce"].sla_hours == 6
 
 
 def test_rogue_yaml_name_rejected(tmp_path):

@@ -175,15 +175,11 @@ def test_load_known_urls_degrades_to_empty_on_db_failure(monkeypatch):
 # ===== 提频与 seed 迁移 =====
 
 
-def test_default_schedule_official_hourly():
+def test_default_schedule_bilibili_only():
+    """009 T1 拍板⑨后：仅 bilibili 外部调研线保留自动调度，kaoyan_news 五线全停。"""
     from app.api.crawlers import DEFAULT_DAILY_SCHEDULES
 
-    assert DEFAULT_DAILY_SCHEDULES["official_announce"] == "0 * * * *"
-    # 009 T1 拍板⑨：kaoyan_news 喂入线全部停调度，默认调度表不再出现
-    assert "eol_kaoyan" not in DEFAULT_DAILY_SCHEDULES, "eol_kaoyan 已停喂入，不得回流调度"
-    assert (
-        "news_aggregates" not in DEFAULT_DAILY_SCHEDULES
-    ), "news_aggregates 已停喂入，不得回流调度"
+    assert DEFAULT_DAILY_SCHEDULES == {"bilibili_research": "0 3 * * 1"}
 
 
 def test_news_aggregate_crawler_registered():
@@ -200,7 +196,7 @@ def test_news_aggregate_crawler_registered():
 
 
 def test_seed_replaces_stale_cron(monkeypatch):
-    """存量 02:00 job（seed 体系旧默认）应被一次性迁移到每小时。"""
+    """存量错频 job 应被 seed 一次性迁移到线契约 cron；停喂线不得补齐。"""
     from apscheduler.jobstores.memory import MemoryJobStore
     from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -212,11 +208,11 @@ def test_seed_replaces_stale_cron(monkeypatch):
         sched.add_job(
             api_crawlers._run_scheduled_crawler,
             "cron",
-            id="crawler_official_announce",
-            kwargs={"source_name": "official_announce"},
+            id="crawler_bilibili_research",
+            kwargs={"source_name": "bilibili_research"},
             replace_existing=True,
-            minute="2",
-            hour="2",
+            minute="7",
+            hour="5",
             day="*",
             month="*",
             day_of_week="*",
@@ -224,13 +220,14 @@ def test_seed_replaces_stale_cron(monkeypatch):
         monkeypatch.setattr(api_crawlers, "get_scheduler", lambda: sched)
         api_crawlers.seed_default_schedules()
 
-        job = sched.get_job("crawler_official_announce")
+        job = sched.get_job("crawler_bilibili_research")
         assert job is not None
-        assert api_crawlers._job_cron_str(job) == "0 * * * *", "旧 cron 存量 job 应被替换为每小时"
-        eol = sched.get_job("crawler_eol_kaoyan")
-        assert eol is None, "eol_kaoyan 已停喂入（009 T1），seed 不得补齐其 job"
-        bili = sched.get_job("crawler_bilibili_research")
-        assert api_crawlers._job_cron_str(bili) == "0 3 * * 1", "仍启用的线照常补齐"
+        assert (
+            api_crawlers._job_cron_str(job) == "0 3 * * 1"
+        ), "存量错频 job 应被替换为线契约 cron"
+        assert sched.get_job(
+            "crawler_official_announce"
+        ) is None, "official_announce 已停喂入（009 T1），seed 不得补齐其 job"
     finally:
         sched.shutdown(wait=False)
 
