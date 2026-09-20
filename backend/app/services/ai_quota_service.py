@@ -81,66 +81,45 @@ class AIQuotaService:
         d = today or beijing_today()
         return f"{self.KEY_PREFIX}:{user_id}:{d.isoformat()}"
 
-    async def check_llm_quota(self, user_id) -> int | None:
-        """检查用户当日 LLM 配额。
+    _CONSUME_SCRIPT = """
+local current = tonumber(redis.call("GET", KEYS[1]) or "0")
+local quota = tonumber(ARGV[1])
+if current >= quota then
+    return -1
+end
+local next_count = redis.call("INCR", KEYS[1])
+if next_count == 1 then
+    redis.call("EXPIRE", KEYS[1], ARGV[2])
+end
+return next_count
+"""
 
-        Args:
-            user_id: 用户 ID
+    async def consume_llm_quota(self, user_id) -> int | None:
+        """Atomically reserve one LLM call from the user's daily budget.
 
-        Returns:
-            当前已用次数（Redis 不可用时返回 None）
-
-        Raises:
-            AILLMQuotaExceeded: 已用次数 >= 配额
+        The old check-then-increment sequence allowed concurrent requests to
+        observe the same remaining slot and overshoot the daily quota.
         """
         if self._redis is None:
-            # 降级模式：不限制
             return None
 
         key = self._quota_key(user_id)
         try:
-            used = int(self._redis.get(key) or 0)
-        except Exception as e:
-            logger.warning("AI 配额检查失败，降级到不限制: %s", e)
-            return None
-
-        if used >= self._quota:
-            logger.info(
-                "用户 %s 当日 AI 配额超额 (used=%d, quota=%d)",
-                user_id,
-                used,
+            result = self._redis.eval(
+                self._CONSUME_SCRIPT,
+                1,
+                key,
                 self._quota,
+                self.KEY_TTL,
             )
-            raise AILLMQuotaExceeded(used=used, quota=self._quota)
-
-        return used
-
-    async def incr_llm_quota(self, user_id) -> int | None:
-        """递增用户当日 LLM 调用计数。
-
-        使用 INCR + EXPIRE 保证原子性：第一次调用时设置 TTL。
-        若 Redis 操作失败，记录日志但不抛异常（不阻塞业务）。
-
-        Args:
-            user_id: 用户 ID
-
-        Returns:
-            递增后的次数（Redis 不可用时返回 None）
-        """
-        if self._redis is None:
-            return None
-
-        key = self._quota_key(user_id)
-        try:
-            # INCR 是原子的；若 key 不存在则创建并设为 1
-            new_count = self._redis.incr(key)
-            # 仅当 new_count == 1 时设置 TTL（避免每次调用都重置 TTL）
-            if new_count == 1:
-                self._redis.expire(key, self.KEY_TTL)
-            return new_count
         except Exception as e:
-            logger.warning("AI 配额递增失败（不阻塞业务）: %s", e)
+            logger.warning("AI 配额消费失败，降级到不限制: %s", e)
             return None
+
+        if int(result) == -1:
+            raise AILLMQuotaExceeded(used=self._quota, quota=self._quota)
+
+        return int(result)
 
     async def get_llm_quota(self, user_id) -> int | None:
         """查询用户当日已用次数（主要用于测试/调试）。"""
@@ -182,8 +161,13 @@ ai_quota_service = AIQuotaService()
 
 
 # 便捷函数（供 API 层调用）
+async def consume_llm_quota(user_id):
+    """原子地预留一次 LLM 调用额度。"""
+    return await ai_quota_service.consume_llm_quota(user_id)
+
+
 async def check_llm_quota(user_id):
-    """检查用户当日 LLM 配额。超额抛 AILLMQuotaExceeded。"""
+    """检查用户当日 LLM 配额（仅查询，不预留额度）。"""
     return await ai_quota_service.check_llm_quota(user_id)
 
 
