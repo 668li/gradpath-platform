@@ -24,7 +24,7 @@ class DecisionPrediction(UUIDMixin, TimestampMixin, Base):
     )
     metric: Mapped[str] = mapped_column(String(200), nullable=False)
     target: Mapped[str] = mapped_column(Text, nullable=False)
-    probability: Mapped[float | None] = mapped_column(Float, nullable=True)
+    probability: Mapped[float | None] = mapped_column(Float, nullable=True)  # 0~1
     horizon: Mapped[date | None] = mapped_column(Date, nullable=True)
     success_condition: Mapped[str] = mapped_column(Text, nullable=False)
     rationale: Mapped[str | None] = mapped_column(Text, nullable=True)
