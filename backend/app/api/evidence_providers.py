@@ -11,7 +11,7 @@ from app.schemas.evidence_provider import (
     ProviderRouteItem, ProviderRouteRequest, ProviderRouteResponse,
     ProviderSearchRequest, ProviderSearchResponse,
 )
-from app.services.evidence_provider_service import PROVIDERS, route_hypothesis, search_provider
+from app.services.evidence_provider_service import PROVIDERS, route_hypothesis, route_hypothesis_with_ai, search_provider
 
 router = APIRouter(prefix="/api/evidence-providers", tags=["Evidence Providers"])
 
