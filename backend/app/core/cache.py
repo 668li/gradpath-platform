@@ -136,13 +136,30 @@ class RedisCache:
         """清空所有缓存。"""
         if self._redis:
             try:
-                keys = self._redis.keys(f"{self._prefix}*")
-                if keys:
-                    self._redis.delete(*keys)
+                self._delete_matching_keys(f"{self._prefix}*")
             except Exception as e:
                 logger.debug("Redis CLEAR 失败: %s", e)
 
         self._fallback.clear()
+
+    def _scan_keys(self, pattern: str) -> list[str]:
+        """Iterate Redis keys without blocking the server with KEYS."""
+        if not self._redis:
+            return []
+        return list(self._redis.scan_iter(match=pattern, count=500))
+
+    def _delete_matching_keys(self, pattern: str) -> int:
+        """Delete matching Redis keys in bounded batches."""
+        deleted = 0
+        batch: list[str] = []
+        for key in self._redis.scan_iter(match=pattern, count=500):
+            batch.append(key)
+            if len(batch) >= 500:
+                deleted += int(self._redis.delete(*batch))
+                batch.clear()
+        if batch:
+            deleted += int(self._redis.delete(*batch))
+        return deleted
 
     def delete(self, key: str) -> bool:
         """删除指定缓存项。"""
@@ -165,7 +182,7 @@ class RedisCache:
         """返回缓存项数量（近似值）。"""
         if self._redis:
             try:
-                return len(self._redis.keys(f"{self._prefix}*"))
+                return len(self._scan_keys(f"{self._prefix}*"))
             except Exception:
                 pass
         return self._fallback.size()
@@ -174,8 +191,8 @@ class RedisCache:
         """返回所有缓存键。"""
         if self._redis:
             try:
-                keys = self._redis.keys(f"{self._prefix}*")
-                return [k.replace(self._prefix, "") for k in keys]
+                keys = self._scan_keys(f"{self._prefix}*")
+                return [k[len(self._prefix):] for k in keys]
             except Exception:
                 pass
         return self._fallback.keys()
