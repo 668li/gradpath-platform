@@ -118,7 +118,7 @@ def search_provider(db: Session, provider_name: str, statement: str, limit: int 
     limit = max(1, min(limit, 20))
     rows: list[dict] = []
     # 中文 Hypothesis 往往没有空格；提取连续中文/英文数字片段及短 n-gram，避免把整句作为一个 LIKE 条件。
-    runs = re.findall(r"[\\u4e00-\\u9fffA-Za-z0-9]{2,}", statement or "")
+    runs = re.findall(r"[\u4e00-\u9fffA-Za-z0-9]{2,}", statement or "")
     terms: list[str] = []
     for run in runs:
         if run not in terms:
