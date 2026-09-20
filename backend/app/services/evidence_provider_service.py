@@ -116,7 +116,7 @@ def search_provider(db: Session, provider_name: str, statement: str, limit: int 
         raise ValueError(f"未知 Evidence Provider: {provider_name}")
     limit = max(1, min(limit, 20))
     rows: list[dict] = []
-    terms = [t for t in statement.replace("，", " ").replace("。", " ").split() if len(t) >= 2][:4]
+    # 中文 Hypothesis 往往没有空格；提取连续中文/英文数字片段及短 n-gram，避免把整句作为一个 LIKE 条件。\n    runs = re.findall(r"[\\u4e00-\\u9fffA-Za-z0-9]{2,}", statement or "")\n    terms: list[str] = []\n    for run in runs:\n        if run not in terms:\n            terms.append(run)\n        if len(run) > 6:\n            for n in (2, 3, 4, 5, 6):\n                for i in range(len(run) - n + 1):\n                    piece = run[i : i + n]\n                    if piece not in terms:\n                        terms.append(piece)\n                    if len(terms) >= 20:\n                        break\n                if len(terms) >= 20:\n                    break\n        if len(terms) >= 20:\n            break\n    terms = terms[:20]
 
     if provider_name == "university":
         query = db.query(School)
