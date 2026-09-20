@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.models.destination_decision import DestinationDecision
 from app.services.ai_orchestrator import AIOrchestrator
+from app.services.ai_quota_service import AILLMQuotaExceeded, consume_llm_quota
 from app.utils.business_time import beijing_today
 
 logger = logging.getLogger(__name__)
@@ -55,6 +56,7 @@ async def complete_review(
     decision = (
         db.query(DestinationDecision)
         .filter(DestinationDecision.id == decision_id, DestinationDecision.user_id == user_id)
+        .with_for_update()
         .first()
     )
     if not decision:
@@ -63,6 +65,10 @@ async def complete_review(
     # Prevent an already-completed review from silently burning another LLM call.
     if decision.review_completed:
         raise ValueError("该决策已经完成回溯")
+
+    # Consume quota only after ownership/state validation. The row lock above
+    # serializes concurrent review submissions on PostgreSQL.
+    await consume_llm_quota(user_id)
 
     decision.actual_outcome = actual_outcome
     decision.review_notes = review_notes
