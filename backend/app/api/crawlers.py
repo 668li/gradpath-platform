@@ -1,5 +1,6 @@
 """爬虫管理 API — 管理员专用。支持异步执行、APScheduler定时任务和WebSocket通知。"""
 
+import asyncio
 import logging
 from datetime import datetime
 from uuid import uuid4
@@ -515,17 +516,24 @@ async def _run_scheduled_crawler(source_name: str):
         except Exception as e:
             logger.warning("Celery 投递失败，降级同步执行: %s", e)
 
-    # Celery 不可用兜底：原同步执行逻辑（保留以维持向后兼容）
+    # Celery 不可用兜底：同步爬虫放到线程池，不能阻塞 AsyncIO event loop。
+    result = await asyncio.to_thread(_run_crawler_sync, source_name)
+
+    if result and result.get("stored", 0) > 0:
+        await _notify_data_update(source_name, result.get("stored", 0))
+
+
+def _run_crawler_sync(source_name: str) -> dict | None:
+    """Run the legacy synchronous crawler path outside the async event loop."""
     db = SessionLocal()
     try:
         cls = get_crawler(source_name)
         if not cls:
-            logger.error(f"定时爬虫 '{source_name}' 未注册")
-            return
+            logger.error("定时爬虫 '%s' 未注册", source_name)
+            return None
 
         config = load_config(source_name)
         crawler = cls(config=config)
-
         result = crawler.run(db=db)
 
         # 单行记账：行由爬虫 store() 创建（溯源链在爬虫手上），包装层只更新；
@@ -533,7 +541,6 @@ async def _run_scheduled_crawler(source_name: str):
         from app.tasks.crawler_tasks import _resolve_run_record
 
         run_record = _resolve_run_record(db, source_name, crawler.category, result, crawler)
-
         run_record.status = result.get("status", "unknown")
         run_record.items_fetched = result.get("fetched", 0)
         run_record.items_stored = result.get("stored", 0)
@@ -542,11 +549,8 @@ async def _run_scheduled_crawler(source_name: str):
         run_record.error_message = result.get("error")
         db.commit()
 
-        # 发送数据更新回调通知（供n8n webhook接收）
+        # 三闸门自动放行（与 Celery 路径一致）；失败不影响采集
         if result.get("stored", 0) > 0:
-            await _notify_data_update(source_name, result.get("stored", 0))
-
-            # 三闸门自动放行（与 Celery 路径一致）；失败不影响采集
             try:
                 from app.services.research_auto_review import auto_review_pending
 
@@ -556,9 +560,11 @@ async def _run_scheduled_crawler(source_name: str):
             except Exception as e:  # noqa: BLE001
                 logger.warning("自动放行失败（不影响采集）: %s", e)
 
-        logger.info(f"定时爬虫 {source_name} 完成: {result}")
-    except Exception as e:
-        logger.error(f"定时爬虫 {source_name} 失败: {e}")
+        logger.info("定时爬虫 %s 完成: %s", source_name, result)
+        return result
+    except Exception:
+        logger.exception("定时爬虫 %s 失败", source_name)
+        return None
     finally:
         db.close()
 
