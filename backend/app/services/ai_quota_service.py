@@ -167,9 +167,14 @@ return next_count
                 # 清空所有用户的当日配额
                 d = today or beijing_today()
                 pattern = f"{self.KEY_PREFIX}:*:{d.isoformat()}"
-                keys = self._redis.keys(pattern)
-                if keys:
-                    self._redis.delete(*keys)
+                batch: list[str] = []
+                for key in self._redis.scan_iter(match=pattern, count=500):
+                    batch.append(key)
+                    if len(batch) >= 500:
+                        self._redis.delete(*batch)
+                        batch.clear()
+                if batch:
+                    self._redis.delete(*batch)
         except Exception as e:
             logger.warning("AI 配额重置失败: %s", e)
 
