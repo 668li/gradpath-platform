@@ -32,6 +32,12 @@ export const microActionApi = {
     }),
 
   /** 跳过任务：仅标记状态 */
+  linkTaskHypothesis: (taskId: string, hypothesisId: string | null) =>
+    request<MicroActionTaskResponse>(`${BASE}/tasks/${taskId}/hypothesis`, {
+      method: "PATCH",
+      body: JSON.stringify({ hypothesis_id: hypothesisId }),
+    }),
+
   skipTask: (taskId: string) =>
     request<MicroActionTaskResponse>(`${BASE}/tasks/${taskId}/skip`, {
       method: "POST",
