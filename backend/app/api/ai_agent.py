@@ -10,7 +10,7 @@ from typing import Literal
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -51,9 +51,9 @@ _web_search = WebSearchService()
 
 
 class AgentRequest(BaseModel):
-    question: str
+    question: str = Field(..., min_length=2, max_length=2000)
     search_web: bool = True
-    context: str | None = None
+    context: str | None = Field(None, max_length=6000)
 
 
 class SourceItem(BaseModel):
@@ -199,7 +199,7 @@ class ScanResponse(BaseModel):
 
 
 class PersonalAgentRequest(BaseModel):
-    message: str
+    message: str = Field(..., min_length=1, max_length=2000)
     web_search: bool = True
 
 
