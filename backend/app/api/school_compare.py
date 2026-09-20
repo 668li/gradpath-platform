@@ -2,7 +2,7 @@
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -14,8 +14,10 @@ from app.api.school_analyst import (
     _classify_recommendation,
 )
 from app.core.deps import get_current_user
+from app.core.rate_limit import rate_limits
 from app.database import get_db
 from app.models.grad_intel import GradSchoolIntel, GradScorelineRecord
+from app.main import limiter
 from app.models.user import User
 from app.services.ai_orchestrator import AIOrchestrator
 from app.services.ai_service import AIServiceNotConfigured
@@ -164,7 +166,10 @@ async def _generate_comparison_summary(analyses: list[dict], user_score: int) ->
 
 # ── Endpoint ─────────────────────────────────────────────────────────
 @router.post("/compare", response_model=CompareResponse, summary="多校对比分析")
+@limiter.limit(rate_limits.AI_SCHOOL_COMPARE)
 async def compare_schools(
+    request: Request,
+    response: Response,
     req: CompareRequest,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
@@ -185,6 +190,11 @@ async def compare_schools(
 
         # AI 总结
         ai_summary = await _generate_comparison_summary(analyses, req.user_score)
+    except AILLMQuotaExceeded:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="今日 AI 调用次数已达上限，请明日再试",
+        )
     except Exception as e:
         # 修复: FASTAPI-RESP-001 — 不向客户端泄漏内部异常信息，仅记录日志
         logger.exception("School comparison error: %s", e)
