@@ -242,7 +242,7 @@ async def generate_report(
         # 决策副驾驶护城河：注入用户上下文实现个性化
         system_prompt = _inject_user_context(db, user.id, system_prompt)
         result = await ai_service.chat(system_prompt, user_content, timeout=60)
-            
+
 
         # 5. 解析响应
         import json
@@ -390,7 +390,7 @@ async def rag_ask(
         # 决策副驾驶护城河：注入用户上下文实现个性化
         system_prompt = _inject_user_context(db, user.id, system_prompt)
         answer = await ai_service.chat(system_prompt, user_content, timeout=30)
-            
+
 
         # 4. 计算置信度
         avg_similarity = (
@@ -661,7 +661,7 @@ async def generate_study_plan(
         # 决策副驾驶护城河：注入用户上下文实现个性化
         system_prompt = _inject_user_context(db, user.id, system_prompt)
         result = await ai_service.chat(system_prompt, user_content, timeout=60)
-            
+
 
         # 5. 解析响应
         import json
