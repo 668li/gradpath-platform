@@ -182,3 +182,70 @@ def test_legacy_assumptions_are_bridged_into_hypotheses(auth_headers, client):
         "学历是目标岗位的主要门槛",
         "我能承担一年备考机会成本",
     }
+
+
+def test_path_engine_evidence_provider_imports_and_deduplicates(auth_headers, client, monkeypatch):
+    decision_id = _create_decision(client, auth_headers)
+    hypotheses = client.get(
+        f"/api/decisions/{decision_id}/hypotheses",
+        headers=auth_headers,
+    ).json()
+    hypothesis_id = hypotheses[0]["id"]
+
+    def fake_generate_decision(**kwargs):
+        assert kwargs["major"] == "计算机"
+        return {
+            "metrics": [
+                {
+                    "path_type": "employment",
+                    "target_role": "直接就业",
+                    "evidence": [
+                        {
+                            "label": "招聘学历样本",
+                            "value": "20 个样本中 12 个岗位明确要求硕士",
+                            "source_url": "https://example.com/source",
+                            "note": "测试溯源",
+                        },
+                    ],
+                }
+            ]
+        }
+
+    monkeypatch.setattr(
+        "app.services.path_decision_engine.generate_decision",
+        fake_generate_decision,
+    )
+
+    payload = {
+        "major": "计算机",
+        "region": "山东",
+        "school_tier": "普通",
+        "hypothesis_id": hypothesis_id,
+    }
+    first = client.post(
+        f"/api/decisions/{decision_id}/evidence/import-path-engine",
+        headers=auth_headers,
+        json=payload,
+    )
+    assert first.status_code == 200
+    assert first.json()["imported"] == 1
+    assert first.json()["skipped_duplicates"] == 0
+
+    second = client.post(
+        f"/api/decisions/{decision_id}/evidence/import-path-engine",
+        headers=auth_headers,
+        json=payload,
+    )
+    assert second.status_code == 200
+    assert second.json()["imported"] == 0
+    assert second.json()["skipped_duplicates"] == 1
+
+    evidence = client.get(
+        f"/api/decisions/{decision_id}/evidence",
+        headers=auth_headers,
+    )
+    rows = evidence.json()
+    assert len(rows) == 1
+    assert rows[0]["source_type"] == "dataset"
+    assert rows[0]["reliability"] == 5
+    assert rows[0]["hypothesis_id"] == hypothesis_id
