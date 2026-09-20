@@ -129,8 +129,10 @@ def resolve_user_llm_override(db: Session, user_id: UUID) -> LLMOverride | None:
         return None
     api_key = decrypt_secret(cfg.api_key_encrypted)
     if not api_key:
-        # SECRET_KEY 轮换/密钥损坏后，必须明确标记配置失效，避免静默回退到平台 Key。
-        logger.error("用户 %s 的 LLM Key 解密失败；BYOK 配置已失效", user_id)
+        # SECRET_KEY 轮换/密钥损坏后，明确禁用失效配置，避免长期静默回退。
+        logger.error("用户 %s 的 LLM Key 解密失败；BYOK 配置已禁用", user_id)
+        cfg.is_enabled = False
+        db.commit()
         return None
     return LLMOverride(api_key=api_key, model=cfg.model, base_url=cfg.base_url)
 
