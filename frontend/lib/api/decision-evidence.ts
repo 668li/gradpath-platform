@@ -2,6 +2,7 @@ import type {
   DecisionEvidence,
   DecisionHypothesis,
   EvidenceReadiness,
+  EvidenceImportResult,
   EvidenceSourceType,
   EvidenceStance,
   HypothesisStatus,
@@ -71,6 +72,32 @@ export const decisionEvidenceApi = {
     request<void>(`/api/decisions/${decisionId}/evidence/${evidenceId}`, {
       method: "DELETE",
     }),
+
+
+  importPathEngineEvidence: (
+    decisionId: string,
+    body: HypothesisCreatePayload & {
+      major: string;
+      region?: string | null;
+      school_tier?: string | null;
+      graduation_year?: number | null;
+      fresh_status?: string | null;
+      party_status?: string | null;
+      education?: string | null;
+      has_grassroots?: boolean | null;
+      gender?: string | null;
+      estimated_score?: number | null;
+      kaoyan_estimated_score?: number | null;
+      hypothesis_id?: string | null;
+    },
+  ) =>
+    request<EvidenceImportResult>(
+      `/api/decisions/${decisionId}/evidence/import-path-engine`,
+      {
+        method: "POST",
+        body: JSON.stringify(body),
+      },
+    ),
 
   readiness: (decisionId: string) =>
     request<EvidenceReadiness>(`/api/decisions/${decisionId}/evidence-readiness`),
