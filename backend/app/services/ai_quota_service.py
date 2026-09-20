@@ -121,6 +121,24 @@ return next_count
 
         return int(result)
 
+    async def incr_llm_quota(self, user_id) -> int | None:
+        """Legacy counter increment kept for compatibility.
+
+        New request paths must use consume_llm_quota(); this method is not a
+        quota admission check and should not be used to authorize an AI call.
+        """
+        if self._redis is None:
+            return None
+        key = self._quota_key(user_id)
+        try:
+            new_count = self._redis.incr(key)
+            if new_count == 1:
+                self._redis.expire(key, self.KEY_TTL)
+            return new_count
+        except Exception as e:
+            logger.warning("AI 配额递增失败: %s", e)
+            return None
+
     async def get_llm_quota(self, user_id) -> int | None:
         """查询用户当日已用次数（主要用于测试/调试）。"""
         if self._redis is None:
