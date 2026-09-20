@@ -22,6 +22,55 @@ from app.schemas.decision_evidence import EvidenceCreate, EvidenceUpdate, Hypoth
 VALID_HYPOTHESIS_STATUSES = {"open", "validated", "invalidated", "superseded"}
 
 
+
+def sync_assumptions_to_hypotheses(
+    db: Session, user_id: UUID, decision: DestinationDecision
+) -> int:
+    """把旧的 assumptions 字符串增量转换成结构化 Hypothesis。
+
+    兼容已有 Decision 数据，不删除/覆盖旧 assumptions。重复执行是幂等的。
+    """
+    assumptions = [
+        item.strip()
+        for item in (decision.assumptions or [])
+        if isinstance(item, str) and item.strip()
+    ]
+    if not assumptions:
+        return 0
+
+    existing_statements = {
+        row[0]
+        for row in db.query(DecisionHypothesis.statement)
+        .filter(
+            DecisionHypothesis.user_id == user_id,
+            DecisionHypothesis.decision_id == decision.id,
+        )
+        .all()
+    }
+    confidence = round(max(0.0, min(1.0, (decision.confidence - 1) / 4)), 4)
+    created = 0
+    for statement in assumptions:
+        if statement in existing_statements:
+            continue
+        db.add(
+            DecisionHypothesis(
+                user_id=user_id,
+                decision_id=decision.id,
+                statement=statement,
+                importance=3,
+                confidence=confidence,
+                status="open",
+                metadata_json={"source": "decision.assumptions"},
+            )
+        )
+        existing_statements.add(statement)
+        created += 1
+
+    if created:
+        db.commit()
+    return created
+
+
 def _get_decision(db: Session, user_id: UUID, decision_id: UUID) -> DestinationDecision:
     obj = (
         db.query(DestinationDecision)
