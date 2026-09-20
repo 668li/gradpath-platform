@@ -121,6 +121,26 @@ return next_count
 
         return int(result)
 
+    async def check_llm_quota(self, user_id) -> int | None:
+        """Check the current daily usage without reserving a quota slot.
+
+        Kept for compatibility with existing callers and diagnostics. New AI
+        request paths should use consume_llm_quota() to reserve atomically.
+        """
+        if self._redis is None:
+            return None
+
+        key = self._quota_key(user_id)
+        try:
+            used = int(self._redis.get(key) or 0)
+        except Exception as e:
+            logger.warning("AI 配额检查失败，降级到不限制: %s", e)
+            return None
+
+        if used >= self._quota:
+            raise AILLMQuotaExceeded(used=used, quota=self._quota)
+        return used
+
     async def incr_llm_quota(self, user_id) -> int | None:
         """Legacy counter increment kept for compatibility.
 
