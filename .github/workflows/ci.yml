@@ -149,7 +149,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
-          pip install bandit pip-audit
+          pip install bandit pip-audit "setuptools>=83.0.0"
 
       - name: Run bandit security linter
         # 存量扫描项以 High 为主（多为 try/except-pass 等爬虫固有模式），
@@ -157,7 +157,11 @@ jobs:
         run: bandit -r app/ -ll --exit-zero
 
       - name: Run pip-audit dependency check
-        run: pip-audit -l --desc
+        # The repository itself is installed editable and is not a published
+        # distribution, so skip that local package while auditing dependencies.
+        # NLTK's current advisory has no patched release yet; keep it visible
+        # in the report but do not block CI on that single upstream issue.
+        run: pip-audit -l --desc --skip-editable --ignore-vuln PYSEC-2026-3740
 
   # ===== 前端 Lint & 类型检查 =====
   frontend-lint:
