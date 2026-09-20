@@ -21,7 +21,7 @@ from app.models.user import User
 from app.services.ai_butler_service import route_agent, scan_user
 from app.services.ai_circuit_breaker import AICircuitBreakerOpenError
 from app.services.ai_orchestrator import AIOrchestrator
-from app.services.ai_quota_service import AILLMQuotaExceeded, check_llm_quota, incr_llm_quota
+from app.services.ai_quota_service import AILLMQuotaExceeded, check_llm_quota
 from app.services.ai_service import AIServiceRetryExhausted
 from app.services.text_safety import sanitize_prompt_input as _sanitize_prompt_input
 from app.services.user_context_service import build_context_prompt
@@ -432,8 +432,6 @@ async def agent_endpoint(
 
     try:
         answer = await AIOrchestrator().chat(system_prompt, user_prompt, timeout=30)
-        # B8: LLM 调用成功后递增当日配额计数
-        await incr_llm_quota(user.id)
     except AICircuitBreakerOpenError as e:
         logger.warning("AI 熔断器打开，降级返回 sources: %s", e)
         # Graceful fallback — return what we have without LLM
