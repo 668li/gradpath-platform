@@ -9,6 +9,8 @@ B8: 集成熔断器（``AICircuitBreaker``）— 连续 5 次失败打开熔断�
 不发送实际 LLM 请求，避免雪崩。
 """
 
+import hashlib
+import json
 import logging
 
 from app.core.cache import cache
@@ -70,8 +72,31 @@ class AIOrchestrator:
             return None
 
     @staticmethod
-    def _cache_key(system_prompt: str, user_prompt: str, timeout: int) -> str:
-        return f"orch:{timeout}:{system_prompt}:{user_prompt}"
+    def _cache_key(
+        system_prompt: str,
+        user_prompt: str,
+        timeout: int,
+        user_id: str | None,
+        model: str | None,
+        base_url: str | None,
+    ) -> str:
+        """Build a bounded, non-sensitive cache key.
+
+        User-scoped context is isolated by user_id. Prompts and provider URLs
+        are hashed so sensitive prompt content never becomes a Redis key.
+        """
+        payload = {
+            "v": 2,
+            "user_id": user_id,
+            "model": model,
+            "base_url": base_url,
+            "system_prompt": system_prompt,
+            "user_prompt": user_prompt,
+            "timeout": timeout,
+        }
+        raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        digest = hashlib.sha256(raw.encode("utf-8")).hexdigest()
+        return f"orch:{digest}"
 
     async def chat(
         self,
@@ -100,7 +125,16 @@ class AIOrchestrator:
             httpx.HTTPStatusError: HTTP 非 2xx
         """
         if use_cache:
-            key = self._cache_key(system_prompt, user_prompt, timeout)
+            from app.core.llm_context import current_llm_user_id
+
+            key = self._cache_key(
+                system_prompt,
+                user_prompt,
+                timeout,
+                str(current_llm_user_id.get()) if current_llm_user_id.get() is not None else None,
+                self.ai_service.model,
+                self.ai_service.base_url,
+            )
             cached_value = self.cache.get(key)
             if cached_value is not None:
                 logger.info("AIOrchestrator 命中缓存")

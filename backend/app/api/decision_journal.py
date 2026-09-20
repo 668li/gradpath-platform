@@ -2,17 +2,20 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
+from app.core.rate_limit import rate_limits
 from app.database import get_db
+from app.main import limiter
 from app.models.destination_decision import DestinationDecision
 from app.models.user import User
 from app.schemas.decision import DecisionResponse
 from app.schemas.decision_journal import DecisionReviewSubmit
 from app.services import decision_journal_service
+from app.services.ai_quota_service import AILLMQuotaExceeded
 from app.utils.business_time import beijing_today
 
 router = APIRouter(prefix="/api/decision-journal", tags=["决策日志与回溯"])
@@ -39,7 +42,10 @@ def get_reviewed_decisions(
 
 
 @router.post("/{decision_id}/review", response_model=DecisionResponse)
+@limiter.limit(rate_limits.RETROSPECTIVE_AI_DRAFT)
 async def complete_review(
+    request: Request,
+    response: Response,
     decision_id: UUID,
     body: DecisionReviewSubmit,
     db: Session = Depends(get_db),
@@ -51,8 +57,19 @@ async def complete_review(
         decision = await decision_journal_service.complete_review(
             db, user.id, decision_id, body.actual_outcome, body.review_notes
         )
+    except AILLMQuotaExceeded as e:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="今日 AI 调用次数已达上限，请明日再试",
+        ) from e
     except ValueError as e:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+        detail = str(e)
+        status_code = (
+            status.HTTP_409_CONFLICT
+            if detail == "该决策已经完成回溯"
+            else status.HTTP_404_NOT_FOUND
+        )
+        raise HTTPException(status_code=status_code, detail=detail)
     return DecisionResponse.model_validate(decision)
 
 

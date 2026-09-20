@@ -16,6 +16,7 @@ import httpx
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.outbound_security import validate_llm_base_url
 from app.core.secret_crypto import decrypt_secret, encrypt_secret, mask_secret
 from app.models.user_llm_config import UserLLMConfig
 from app.schemas.user_llm_config import (
@@ -47,6 +48,10 @@ def _validate(base_url: str, model: str, api_key: str) -> None:
         raise UserLLMConfigError("Base URL 必须是合法的 http(s) 地址")
     if len(base_url) > 500:
         raise UserLLMConfigError("Base URL 过长（最多 500 字符）")
+    try:
+        validate_llm_base_url(base_url)
+    except ValueError as e:
+        raise UserLLMConfigError(str(e)) from e
     if not (model or "").strip():
         raise UserLLMConfigError("模型名称不能为空")
     if len(model) > 100:
@@ -139,7 +144,7 @@ async def verify_user_llm(
     url = base_url.rstrip("/") + "/chat/completions"
     start = time.monotonic()
     try:
-        async with httpx.AsyncClient(timeout=timeout) as client:
+        async with httpx.AsyncClient(timeout=timeout, follow_redirects=False) as client:
             resp = await client.post(
                 url,
                 headers={"Authorization": f"Bearer {api_key}"},

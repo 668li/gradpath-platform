@@ -13,6 +13,8 @@ import asyncio
 import uuid
 from unittest.mock import patch
 
+from app.config import settings
+from app.core.outbound_security import validate_llm_base_url
 from app.core.secret_crypto import decrypt_secret
 from app.models.user_llm_config import UserLLMConfig
 
@@ -409,3 +411,13 @@ class TestPlatformLLMStatus:
         data = resp.json()
         assert data["enabled"] is True
         assert platform_key not in resp.text
+
+
+def test_production_rejects_private_llm_endpoint():
+    with patch.object(settings, "ENVIRONMENT", "production"):
+        try:
+            validate_llm_base_url("https://127.0.0.1:8000/v1")
+        except ValueError as exc:
+            assert "内网" in str(exc)
+        else:
+            raise AssertionError("private production LLM endpoint must be rejected")

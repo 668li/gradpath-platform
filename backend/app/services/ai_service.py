@@ -119,7 +119,7 @@ class AIService:
         _status_label = "success"
 
         async def _do_call() -> str:
-            async with httpx.AsyncClient(timeout=timeout) as client:
+            async with httpx.AsyncClient(timeout=timeout, follow_redirects=False) as client:
                 resp = await client.post(
                     f"{self.base_url}chat/completions",
                     headers=headers,

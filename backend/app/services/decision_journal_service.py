@@ -3,6 +3,7 @@
 护城河逻辑：纵向数据随时间累积，越用越准；迁移成本极高。
 """
 
+import logging
 from datetime import date
 from uuid import UUID
 
@@ -10,7 +11,10 @@ from sqlalchemy.orm import Session
 
 from app.models.destination_decision import DestinationDecision
 from app.services.ai_orchestrator import AIOrchestrator
+from app.services.ai_quota_service import AILLMQuotaExceeded, consume_llm_quota
 from app.utils.business_time import beijing_today
+
+logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """你是一位决策分析教练。用户在做一个决策时记录了预测和假设，现在填写了实际结果。
 
@@ -52,10 +56,19 @@ async def complete_review(
     decision = (
         db.query(DestinationDecision)
         .filter(DestinationDecision.id == decision_id, DestinationDecision.user_id == user_id)
+        .with_for_update()
         .first()
     )
     if not decision:
         raise ValueError("决策不存在或无权访问")
+
+    # Prevent an already-completed review from silently burning another LLM call.
+    if decision.review_completed:
+        raise ValueError("该决策已经完成回溯")
+
+    # Consume quota only after ownership/state validation. The row lock above
+    # serializes concurrent review submissions on PostgreSQL.
+    await consume_llm_quota(user_id)
 
     decision.actual_outcome = actual_outcome
     decision.review_notes = review_notes
@@ -86,8 +99,8 @@ async def complete_review(
             system_prompt=SYSTEM_PROMPT, user_prompt=context, timeout=30
         )
     except Exception:
-        # AI 不可用时不阻断回溯流程
-        pass
+        # AI 不可用时不阻断回溯流程，但不能静默吞掉异常。
+        logger.exception("decision review AI analysis failed: decision_id=%s", decision_id)
 
     db.commit()
     db.refresh(decision)

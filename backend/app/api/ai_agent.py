@@ -10,7 +10,7 @@ from typing import Literal
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -21,7 +21,7 @@ from app.models.user import User
 from app.services.ai_butler_service import route_agent, scan_user
 from app.services.ai_circuit_breaker import AICircuitBreakerOpenError
 from app.services.ai_orchestrator import AIOrchestrator
-from app.services.ai_quota_service import AILLMQuotaExceeded, check_llm_quota, incr_llm_quota
+from app.services.ai_quota_service import AILLMQuotaExceeded, consume_llm_quota
 from app.services.ai_service import AIServiceRetryExhausted
 from app.services.text_safety import sanitize_prompt_input as _sanitize_prompt_input
 from app.services.user_context_service import build_context_prompt
@@ -51,9 +51,9 @@ _web_search = WebSearchService()
 
 
 class AgentRequest(BaseModel):
-    question: str
+    question: str = Field(..., min_length=2, max_length=2000)
     search_web: bool = True
-    context: str | None = None
+    context: str | None = Field(None, max_length=6000)
 
 
 class SourceItem(BaseModel):
@@ -199,7 +199,7 @@ class ScanResponse(BaseModel):
 
 
 class PersonalAgentRequest(BaseModel):
-    message: str
+    message: str = Field(..., min_length=1, max_length=2000)
     web_search: bool = True
 
 
@@ -223,7 +223,7 @@ async def scan_endpoint(
     - LLM 重试耗尽 → 504
     """
     try:
-        await check_llm_quota(user.id)
+        await consume_llm_quota(user.id)
     except AILLMQuotaExceeded:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -231,7 +231,7 @@ async def scan_endpoint(
         )
     try:
         result = await scan_user(db, user.id)
-        await incr_llm_quota(user.id)
+
         return result
     except AILLMQuotaExceeded:
         raise HTTPException(
@@ -280,7 +280,7 @@ async def personal_agent_endpoint(
     if not message:
         raise HTTPException(status_code=400, detail="message 不能为空")
     try:
-        await check_llm_quota(user.id)
+        await consume_llm_quota(user.id)
     except AILLMQuotaExceeded:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -288,7 +288,7 @@ async def personal_agent_endpoint(
         )
     try:
         result = route_agent(db, user.id, message, web_search=body.web_search)
-        await incr_llm_quota(user.id)
+
         return result
     except AILLMQuotaExceeded:
         raise HTTPException(
@@ -349,7 +349,7 @@ async def agent_endpoint(
 
     # B8: 配额检查在所有重活之前（DB/web 检索也消耗资源）
     try:
-        await check_llm_quota(user.id)
+        await consume_llm_quota(user.id)
     except AILLMQuotaExceeded:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -432,8 +432,7 @@ async def agent_endpoint(
 
     try:
         answer = await AIOrchestrator().chat(system_prompt, user_prompt, timeout=30)
-        # B8: LLM 调用成功后递增当日配额计数
-        await incr_llm_quota(user.id)
+
     except AICircuitBreakerOpenError as e:
         logger.warning("AI 熔断器打开，降级返回 sources: %s", e)
         # Graceful fallback — return what we have without LLM
@@ -508,7 +507,7 @@ async def scan_user_endpoint(
     - LLM 重试耗尽 → 504
     """
     try:
-        await check_llm_quota(user.id)
+        await consume_llm_quota(user.id)
     except AILLMQuotaExceeded:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -516,7 +515,7 @@ async def scan_user_endpoint(
         )
     try:
         result = await scan_user(db, user.id)
-        await incr_llm_quota(user.id)
+
         return ScanResponse(**result)
     except AILLMQuotaExceeded:
         raise HTTPException(

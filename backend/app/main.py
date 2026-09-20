@@ -74,6 +74,10 @@ if settings.REDIS_URL:
         _storage_uri = settings.REDIS_URL
         logger.info("slowapi 限流器使用 Redis 存储后端: %s", settings.REDIS_URL)
     except Exception as _e:
+        if _is_production:
+            raise RuntimeError(
+                "Production Redis is unavailable; refusing to start with non-distributed rate limiting"
+            ) from _e
         logger.warning(
             "Redis 不可用，slowapi 限流器降级到内存存储（多 worker 限流计数可能不一致）: %s",
             _e,

@@ -118,17 +118,20 @@ def change_password(db: Session, user: User, current_password: str, new_password
     """已登录用户修改密码（需验证当前密码）。"""
     from app.core.exceptions import BusinessError
 
-    if not verify_password(current_password, user.password_hash):
+    # get_current_user may return a cached, detached User intentionally stripped
+    # of password_hash. Always reload the authoritative record before verifying
+    # the current password.
+    db_user = db.query(User).filter(User.id == user.id).first()
+    if db_user is None:
+        raise BusinessError("USER_NOT_FOUND", "用户不存在", 400)
+
+    if not verify_password(current_password, db_user.password_hash):
         raise BusinessError(
             "CURRENT_PASSWORD_INVALID",
             "当前密码不正确",
             400,
         )
 
-    # user 可能来自 get_current_user 缓存（detached），重新查询以确保附加到 session
-    db_user = db.query(User).filter(User.id == user.id).first()
-    if db_user is None:
-        raise BusinessError("USER_NOT_FOUND", "用户不存在", 400)
     db_user.password_hash = hash_password(new_password)
     db.commit()
     db.refresh(db_user)
