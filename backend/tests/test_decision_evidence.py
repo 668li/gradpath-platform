@@ -149,3 +149,36 @@ def test_evidence_cannot_cross_link_another_decision(auth_headers, client):
         },
     )
     assert bad.status_code == 404
+
+def test_legacy_assumptions_are_bridged_into_hypotheses(auth_headers, client):
+    resp = client.post(
+        "/api/decisions",
+        headers=auth_headers,
+        json={
+            "decision_date": "2026-09-20",
+            "destination_type": "postgrad",
+            "status": "planned",
+            "details": {},
+            "reasoning": "验证旧决策数据兼容性",
+            "confidence": 4,
+            "assumptions": [
+                "学历是目标岗位的主要门槛",
+                "我能承担一年备考机会成本",
+                "学历是目标岗位的主要门槛",
+            ],
+        },
+    )
+    assert resp.status_code == 201
+    decision_id = resp.json()["id"]
+
+    hypotheses = client.get(
+        f"/api/decisions/{decision_id}/hypotheses",
+        headers=auth_headers,
+    )
+    assert hypotheses.status_code == 200
+    items = hypotheses.json()
+    assert len(items) == 2
+    assert {item["statement"] for item in items} == {
+        "学历是目标岗位的主要门槛",
+        "我能承担一年备考机会成本",
+    }
