@@ -32,6 +32,21 @@ export interface EvidenceCreatePayload {
   metadata?: Record<string, unknown>;
 }
 
+
+export interface PathEngineEvidenceImportPayload {
+  major: string;
+  region?: string | null;
+  school_tier?: string | null;
+  graduation_year?: number | null;
+  fresh_status?: string | null;
+  party_status?: string | null;
+  education?: string | null;
+  has_grassroots?: boolean | null;
+  gender?: string | null;
+  estimated_score?: number | null;
+  kaoyan_estimated_score?: number | null;
+  hypothesis_id?: string | null;
+}
 export const decisionEvidenceApi = {
   hypotheses: (decisionId: string) =>
     request<DecisionHypothesis[]>(`/api/decisions/${decisionId}/hypotheses`),
@@ -76,20 +91,7 @@ export const decisionEvidenceApi = {
 
   importPathEngineEvidence: (
     decisionId: string,
-    body: HypothesisCreatePayload & {
-      major: string;
-      region?: string | null;
-      school_tier?: string | null;
-      graduation_year?: number | null;
-      fresh_status?: string | null;
-      party_status?: string | null;
-      education?: string | null;
-      has_grassroots?: boolean | null;
-      gender?: string | null;
-      estimated_score?: number | null;
-      kaoyan_estimated_score?: number | null;
-      hypothesis_id?: string | null;
-    },
+    body: PathEngineEvidenceImportPayload,
   ) =>
     request<EvidenceImportResult>(
       `/api/decisions/${decisionId}/evidence/import-path-engine`,
