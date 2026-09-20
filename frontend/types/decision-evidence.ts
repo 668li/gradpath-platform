@@ -46,3 +46,10 @@ export interface EvidenceReadiness {
   evidence_neutral: number;
   coverage: number;
 }
+export interface EvidenceImportResult {
+  decision_id: string;
+  imported: number;
+  skipped_duplicates: number;
+  provider: string;
+  notes: string[];
+}
