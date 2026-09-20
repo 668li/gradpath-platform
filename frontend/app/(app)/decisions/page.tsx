@@ -147,18 +147,11 @@ function daysOverdue(reviewDate: string | null | undefined): number | null {
   return Math.floor((today.getTime() - rd.getTime()) / 86400000);
 }
 
-/** 根据 AI 分析文本粗略判断预测与实际是否一致 */
+/** 只读取后端结构化的回溯状态，不再从自然语言 AI 文本猜测。 */
 function assessMatch(
-  aiAnalysis: string | null | undefined,
-): "match" | "mismatch" | "unknown" {
-  if (!aiAnalysis) return "unknown";
-  const positive = ["一致", "符合", "吻合", "匹配", "准确", "相符", "如预期", "契合"];
-  const negative = ["差异", "不一致", "偏离", "不符", "落差", "偏差", "未达", "未实现", "截然不同"];
-  const hasPos = positive.some((k) => aiAnalysis.includes(k));
-  const hasNeg = negative.some((k) => aiAnalysis.includes(k));
-  if (hasNeg) return "mismatch";
-  if (hasPos) return "match";
-  return "unknown";
+  status: "match" | "partial" | "mismatch" | "unknown" | null | undefined,
+): "match" | "partial" | "mismatch" | "unknown" {
+  return status ?? "unknown";
 }
 
 // ===== 内联回溯评估弹窗 =====
@@ -210,7 +203,7 @@ function ReviewModal({
     }
   };
 
-  const match = assessMatch(result?.ai_analysis);
+  const match = assessMatch(result?.review_match_status);
 
   return (
     <Modal
@@ -717,7 +710,7 @@ export default function DecisionsPage() {
         ) : (
           <div className="space-y-4">
             {reviewed.map((d) => {
-              const match = assessMatch(d.ai_analysis);
+              const match = assessMatch(d.review_match_status);
               return (
                 <div key={d.id} className="card space-y-3">
                   <div className="flex items-start justify-between gap-3">
