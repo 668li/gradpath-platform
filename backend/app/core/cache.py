@@ -136,9 +136,9 @@ class RedisCache:
         """清空所有缓存。"""
         if self._redis:
             try:
-                keys = self._redis.keys(f"{self._prefix}*")
-                if keys:
-                    self._redis.delete(*keys)
+                keys = list(self._redis.scan_iter(match=f"{self._prefix}*", count=500))
+                for start in range(0, len(keys), 500):
+                    self._redis.unlink(*keys[start : start + 500])
             except Exception as e:
                 logger.debug("Redis CLEAR 失败: %s", e)
 
@@ -165,7 +165,7 @@ class RedisCache:
         """返回缓存项数量（近似值）。"""
         if self._redis:
             try:
-                return len(self._redis.keys(f"{self._prefix}*"))
+                return sum(1 for _ in self._redis.scan_iter(match=f"{self._prefix}*", count=500))
             except Exception:
                 pass
         return self._fallback.size()
@@ -174,11 +174,38 @@ class RedisCache:
         """返回所有缓存键。"""
         if self._redis:
             try:
-                keys = self._redis.keys(f"{self._prefix}*")
-                return [k.replace(self._prefix, "") for k in keys]
+                return [
+                    k[len(self._prefix) :] if k.startswith(self._prefix) else k
+                    for k in self._redis.scan_iter(match=f"{self._prefix}*", count=500)
+                ]
             except Exception:
                 pass
         return self._fallback.keys()
+
+    def delete_prefix(self, prefix: str) -> int:
+        """删除指定前缀的全部缓存，使用 SCAN 避免阻塞 Redis。"""
+        deleted = 0
+        full_pattern = f"{self._prefix}{prefix}*"
+
+        if self._redis:
+            try:
+                keys = []
+                for key in self._redis.scan_iter(match=full_pattern, count=500):
+                    keys.append(key)
+                    if len(keys) >= 500:
+                        deleted += int(self._redis.unlink(*keys) or 0)
+                        keys.clear()
+                if keys:
+                    deleted += int(self._redis.unlink(*keys) or 0)
+            except Exception as e:
+                logger.debug("Redis DELETE PREFIX 失败: %s", e)
+
+        # 即使 Redis 不可用，也保持本地 fallback 与远端状态的一致性。
+        for key in list(self._fallback.keys()):
+            if key.startswith(prefix) and self._fallback.delete(key):
+                deleted += 1
+
+        return deleted
 
 
 # 全局缓存实例（自动选择 Redis 或内存缓存）
