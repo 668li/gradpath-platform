@@ -4,6 +4,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from app.schemas.path_comparison import DecisionEngineRequest
+
 
 HypothesisStatus = Literal["open", "validated", "invalidated", "superseded"]
 EvidenceSourceType = Literal["official", "dataset", "peer", "user", "research", "other"]
@@ -103,3 +105,18 @@ class EvidenceReadinessResponse(BaseModel):
     evidence_refuting: int
     evidence_neutral: int
     coverage: float = Field(ge=0.0, le=1.0)
+
+
+class EvidenceImportResponse(BaseModel):
+    decision_id: UUID
+    imported: int
+    skipped_duplicates: int
+    provider: str
+    notes: list[str] = Field(default_factory=list)
+
+
+class PathEngineEvidenceImportRequest(DecisionEngineRequest):
+    hypothesis_id: UUID | None = Field(
+        default=None,
+        description="可选：将所有导入证据绑定到该决策的一条假设",
+    )
