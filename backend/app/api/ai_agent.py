@@ -9,8 +9,8 @@ import logging
 from typing import Literal
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
+from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -51,9 +51,9 @@ _web_search = WebSearchService()
 
 
 class AgentRequest(BaseModel):
-    question: str
+    question: str = Field(..., min_length=2, max_length=2000)
     search_web: bool = True
-    context: str | None = None
+    context: str | None = Field(None, max_length=6000)
 
 
 class SourceItem(BaseModel):
@@ -185,6 +185,7 @@ def _classify_intent(question: str) -> str:
 
 
 @router.get("/web-search")
+@__import__("app.main", fromlist=["limiter"]).limiter.limit("30/minute")
 async def web_search_endpoint(q: str = Query(..., min_length=1, max_length=200)):
     """Test web search independently."""
     results = await _web_search.search(q, max_results=5)
@@ -199,7 +200,7 @@ class ScanResponse(BaseModel):
 
 
 class PersonalAgentRequest(BaseModel):
-    message: str
+    message: str = Field(..., min_length=1, max_length=2000)
     web_search: bool = True
 
 
