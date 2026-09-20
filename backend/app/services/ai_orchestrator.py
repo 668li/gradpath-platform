@@ -12,6 +12,7 @@ B8: 集成熔断器（``AICircuitBreaker``）— 连续 5 次失败打开熔断�
 import logging
 
 from app.core.cache import cache
+from app.services.ai_quota_service import consume_llm_quota
 from app.services.ai_circuit_breaker import AICircuitBreakerOpenError, ai_circuit_breaker
 from app.services.ai_service import AIService, AIServiceNotConfigured
 
@@ -36,9 +37,14 @@ class AIOrchestrator:
     ):
         # BYOK：显式传入的参数最优先；其次按请求上下文中的用户解析其自带配置；
         # 都没有时回退服务器默认（config.py）
+        self._quota_user_id = None
+        self._using_user_override = False
         if api_key is None:
             override = self._resolve_context_override()
+            from app.core.llm_context import current_llm_user_id
+            self._quota_user_id = current_llm_user_id.get()
             if override is not None:
+                self._using_user_override = True
                 api_key, model, base_url = override.api_key, override.model, override.base_url
         self.ai_service = AIService(api_key=api_key, model=model, base_url=base_url)
         self.cache = cache
@@ -70,8 +76,29 @@ class AIOrchestrator:
             return None
 
     @staticmethod
-    def _cache_key(system_prompt: str, user_prompt: str, timeout: int) -> str:
-        return f"orch:{timeout}:{system_prompt}:{user_prompt}"
+    def _cache_key(
+        user_id: str | None,
+        model: str,
+        base_url: str,
+        system_prompt: str,
+        user_prompt: str,
+        timeout: int,
+    ) -> str:
+        import hashlib
+        import json
+
+        payload = {
+            "v": 2,
+            "user_id": user_id,
+            "model": model,
+            "base_url": base_url.rstrip("/"),
+            "system_prompt": system_prompt,
+            "user_prompt": user_prompt,
+            "timeout": timeout,
+        }
+        raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+        digest = hashlib.sha256(raw.encode("utf-8")).hexdigest()
+        return f"orch:{digest}"
 
     async def chat(
         self,
@@ -100,11 +127,23 @@ class AIOrchestrator:
             httpx.HTTPStatusError: HTTP 非 2xx
         """
         if use_cache:
-            key = self._cache_key(system_prompt, user_prompt, timeout)
+            key = self._cache_key(
+                str(self._quota_user_id) if self._quota_user_id else None,
+                self.ai_service.model,
+                self.ai_service.base_url,
+                system_prompt,
+                user_prompt,
+                timeout,
+            )
             cached_value = self.cache.get(key)
             if cached_value is not None:
                 logger.info("AIOrchestrator 命中缓存")
                 return cached_value
+
+        # 平台 Key 的用户请求在真正命中 LLM 前统一预占日配额。
+        # BYOK 使用用户自己的供应商，不占平台日额度。
+        if self._quota_user_id is not None and not self._using_user_override:
+            await consume_llm_quota(self._quota_user_id)
 
         last_error: Exception | None = None
         attempts = max(1, retry)
