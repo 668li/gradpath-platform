@@ -3,8 +3,8 @@
 护城河逻辑：纵向数据随时间累积，越用越准；迁移成本极高。
 """
 
-from datetime import date
 import logging
+from datetime import date
 from uuid import UUID
 
 from sqlalchemy.orm import Session
