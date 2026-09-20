@@ -2,12 +2,14 @@
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
+from app.core.rate_limit import rate_limits
 from app.database import get_db
+from app.main import limiter
 from app.models.destination_decision import DestinationDecision
 from app.models.user import User
 from app.schemas.decision import DecisionResponse
@@ -39,7 +41,10 @@ def get_reviewed_decisions(
 
 
 @router.post("/{decision_id}/review", response_model=DecisionResponse)
+@limiter.limit(rate_limits.AI_DECISION_REVIEW)
 async def complete_review(
+    request: Request,
+    response: Response,
     decision_id: UUID,
     body: DecisionReviewSubmit,
     db: Session = Depends(get_db),
