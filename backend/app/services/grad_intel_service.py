@@ -80,12 +80,7 @@ def clear_positioning_cache() -> int:
     Returns:
         被清除的缓存项数量
     """
-    deleted = 0
-    # SIM118: cache 是 RedisCache(非 dict,无 __iter__),只能走 keys() 全量扫描
-    for key in cache.keys():  # noqa: SIM118
-        if key.startswith(f"{CACHE_PREFIX}:"):
-            if cache.delete(key):
-                deleted += 1
+    deleted = cache.delete_prefix(f"{CACHE_PREFIX}:")
     logger.info("已清除 %d 项自我定位 AI 缓存", deleted)
     return deleted
 
