@@ -100,6 +100,7 @@ export interface DecisionResponse {
   review_notes?: string | null;
   review_completed?: boolean;
   ai_analysis?: string | null;
+  review_match_status?: "match" | "partial" | "mismatch" | "unknown";
 }
 
 export interface DecisionCreate {
