@@ -70,7 +70,7 @@ async def decision_advice(
     try:
         await consume_llm_quota(user.id)
         result = await get_decision_advice(db, user, body)
-            
+
         return result
     except AILLMQuotaExceeded:
         raise RateLimitExceededError("今日 AI 调用次数已达上限，请明日再试")
@@ -144,7 +144,7 @@ async def growth_insight(
         result = await generate_growth_insight(db, user.id, body.period_start, body.period_end)
         # B8: 调用成功后递增配额计数（注意：growth_insight 内部可能命中缓存，
         # 此处仍然计数，避免用户通过缓存命中绕过配额）
-        
+
         return result
     except AILLMQuotaExceeded:
         raise RateLimitExceededError("今日 AI 调用次数已达上限，请明日再试")
