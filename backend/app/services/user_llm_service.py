@@ -70,12 +70,14 @@ def get_user_llm_config(db: Session, user_id: UUID) -> UserLLMConfig | None:
 
 def to_response(cfg: UserLLMConfig) -> UserLLMConfigResponse:
     """转为对外响应 — 不回传明文 Key，只回掩码。"""
+    plain_key = decrypt_secret(cfg.api_key_encrypted)
     return UserLLMConfigResponse(
         provider=cfg.provider,
         base_url=cfg.base_url,
         model=cfg.model,
-        api_key_masked=mask_secret(decrypt_secret(cfg.api_key_encrypted)),
-        is_enabled=cfg.is_enabled,
+        api_key_masked=mask_secret(plain_key),
+        # SECRET_KEY 轮换后密文无法解开时，明确展示为失效而不是继续假装可用。
+        is_enabled=bool(cfg.is_enabled and plain_key),
         updated_at=cfg.updated_at,
     )
 
