@@ -26,6 +26,14 @@ def create_decision(db: Session, user_id: UUID, data: DecisionCreate) -> Destina
     db.commit()
     db.refresh(decision)
 
+    # Decision OS：把旧 assumptions 增量同步为结构化 Hypothesis，保持旧字段兼容。
+    try:
+        from app.services.decision_evidence_service import sync_assumptions_to_hypotheses
+
+        sync_assumptions_to_hypotheses(db, user_id, decision)
+    except Exception as e:
+        logger.warning("同步决策假设失败 decision_id=%s: %s", decision.id, e)
+
     # 决策飞轮护城河：自动创建回顾任务（基于 review_date）
     _schedule_review_task(db, user_id, decision)
 
@@ -130,6 +138,15 @@ def update_decision(
         setattr(decision, key, value)
     db.commit()
     db.refresh(decision)
+
+    if "assumptions" in update_data:
+        try:
+            from app.services.decision_evidence_service import sync_assumptions_to_hypotheses
+
+            sync_assumptions_to_hypotheses(db, user_id, decision)
+        except Exception as e:
+            logger.warning("同步更新后的决策假设失败 decision_id=%s: %s", decision.id, e)
+
     _invalidate_user_context_cache(user_id)
     return decision
 

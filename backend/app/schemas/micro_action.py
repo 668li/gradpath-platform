@@ -11,12 +11,14 @@ class MicroActionPlanCreate(BaseModel):
 
     target_path: str = Field(..., description="目标路径：kaoyan/employment/civil_service")
     target_role: str | None = Field(None, max_length=100, description="可选，具体岗位/院校/职位")
+    decision_id: UUID | None = Field(None, description="可选，绑定到一条重大决策")
 
 
 class MicroActionTaskResponse(BaseModel):
     """单日任务响应。"""
 
     id: UUID
+    hypothesis_id: UUID | None
     day_number: int
     task_type: str
     title: str
@@ -34,6 +36,7 @@ class MicroActionPlanResponse(BaseModel):
     """7 天微行动计划响应。"""
 
     id: UUID
+    decision_id: UUID | None
     target_path: str
     target_role: str | None
     status: str
@@ -51,3 +54,9 @@ class TaskCompleteRequest(BaseModel):
 
     # 允许不写字完成任务（P0-3）：空串合法，service 层有兜底文案
     user_response: str = Field(default="", description="用户完成任务后的记录（可选）")
+
+
+class TaskHypothesisLinkRequest(BaseModel):
+    """把某个微行动任务绑定到所属决策的一条假设。"""
+
+    hypothesis_id: UUID | None = Field(None, description="假设 ID；传 null 表示解除绑定")

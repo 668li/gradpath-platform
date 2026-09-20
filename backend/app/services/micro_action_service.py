@@ -14,6 +14,8 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from app.models.decision_hypothesis import DecisionHypothesis
+from app.models.destination_decision import DestinationDecision
 from app.models.micro_action import MicroActionPlan, MicroActionTask
 from app.services.ai_orchestrator import AIOrchestrator
 from app.services.ai_service import AIServiceNotConfigured
@@ -280,7 +282,11 @@ def _abandon_active_plans(db: Session, user_id: UUID) -> None:
 
 
 def create_plan(
-    db: Session, user_id: UUID, target_path: str, target_role: str | None = None
+    db: Session,
+    user_id: UUID,
+    target_path: str,
+    target_role: str | None = None,
+    decision_id: UUID | None = None,
 ) -> MicroActionPlan:
     """创建 7 天微行动计划并生成 7 个任务。
 
@@ -289,9 +295,19 @@ def create_plan(
     """
     _abandon_active_plans(db, user_id)
 
+    if decision_id is not None:
+        decision = (
+            db.query(DestinationDecision)
+            .filter(DestinationDecision.id == decision_id, DestinationDecision.user_id == user_id)
+            .first()
+        )
+        if decision is None:
+            raise ValueError("决策不存在或无权访问")
+
     blueprint = _get_blueprint(target_path)
     plan = MicroActionPlan(
         user_id=user_id,
+        decision_id=decision_id,
         target_path=target_path,
         target_role=target_role,
         status="active",
@@ -323,6 +339,7 @@ def create_plan_from_tasks(
     target_path: str,
     target_role: str | None,
     tasks: list[dict],
+    decision_id: UUID | None = None,
 ) -> MicroActionPlan:
     """从 AI 生成的自定义任务列表创建微行动计划（chat 学习计划师落库通道）。
 
@@ -333,8 +350,17 @@ def create_plan_from_tasks(
     if not tasks:
         raise ValueError("tasks 不能为空")
     _abandon_active_plans(db, user_id)
+    if decision_id is not None:
+        decision = (
+            db.query(DestinationDecision)
+            .filter(DestinationDecision.id == decision_id, DestinationDecision.user_id == user_id)
+            .first()
+        )
+        if decision is None:
+            raise ValueError("决策不存在或无权访问")
     plan = MicroActionPlan(
         user_id=user_id,
+        decision_id=decision_id,
         target_path=target_path,
         target_role=target_role,
         status="active",
@@ -358,6 +384,41 @@ def create_plan_from_tasks(
     db.commit()
     db.refresh(plan)
     return plan
+
+
+def link_task_to_hypothesis(
+    db: Session,
+    user_id: UUID,
+    task_id: UUID,
+    hypothesis_id: UUID | None,
+) -> MicroActionTask:
+    """绑定任务与同一 Decision 下的假设，防止跨用户/跨决策串联。"""
+    task = get_task(db, task_id)
+    if task is None:
+        raise ValueError("任务不存在")
+    plan = get_plan(db, task.plan_id)
+    if plan is None or plan.user_id != user_id:
+        raise ValueError("任务不存在或无权访问")
+
+    if hypothesis_id is not None:
+        if plan.decision_id is None:
+            raise ValueError("该行动计划尚未绑定决策，无法绑定假设")
+        hypothesis = (
+            db.query(DecisionHypothesis)
+            .filter(
+                DecisionHypothesis.id == hypothesis_id,
+                DecisionHypothesis.user_id == user_id,
+                DecisionHypothesis.decision_id == plan.decision_id,
+            )
+            .first()
+        )
+        if hypothesis is None:
+            raise ValueError("假设不存在，或不属于该行动计划绑定的决策")
+
+    task.hypothesis_id = hypothesis_id
+    db.commit()
+    db.refresh(task)
+    return task
 
 
 def get_plan(db: Session, plan_id: UUID) -> MicroActionPlan | None:

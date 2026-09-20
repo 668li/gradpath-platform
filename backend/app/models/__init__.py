@@ -23,6 +23,10 @@ from app.models.dark_knowledge_push import DarkKnowledgePushLog, PushFeedback
 from app.models.data_source import DataSource
 from app.models.dataset_info import DatasetInfo
 from app.models.decision_analysis import DecisionAnalysis
+from app.models.decision_evidence import DecisionEvidence
+from app.models.decision_hypothesis import DecisionHypothesis
+from app.models.decision_prediction import DecisionPrediction
+from app.models.decision_outcome import DecisionOutcome, DecisionReflection
 from app.models.decision_review import DecisionReviewQueue, ReviewStatus
 from app.models.destination_decision import DecisionStatus, DestinationDecision
 from app.models.employment_data import Degree, EmploymentData
@@ -158,6 +162,11 @@ __all__ = [
     "LifeDesignSprint",
     "WeeklyReview",
     "DecisionAnalysis",
+    "DecisionHypothesis",
+    "DecisionEvidence",
+    "DecisionPrediction",
+    "DecisionOutcome",
+    "DecisionReflection",
     # 考研情报
     "GradSchoolIntel",
     "SelfPositioning",

@@ -248,3 +248,4 @@ export type {
   PathConflictActionPlan,
   PathConflictResolution,
 } from "../../types/decision-copilot";
+export { decisionEvidenceApi } from "./decision-evidence";

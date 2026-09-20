@@ -43,12 +43,11 @@ class DecisionAnalysis(UUIDMixin, TimestampMixin, Base):
     matrix_scores: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     # 加权总分 [{option, total_score}]
     weighted_results: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
-    # 矩阵赢家
+    # Deprecated: 仅保留历史兼容，不再作为 Decision Engine 的最终答案。
     winner: Mapped[str | None] = mapped_column(String(200), nullable=True)
     # === 红队质疑 ===
     red_team_questions: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     red_team_answers: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     # === AI 综合分析 ===
     ai_analysis: Mapped[str | None] = mapped_column(Text, nullable=True)
-    # 最终建议
-    recommendation: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Deprecated: 不再作为系统最终决策输出；保留历史数据兼容。\n    recommendation: Mapped[str | None] = mapped_column(Text, nullable=True)

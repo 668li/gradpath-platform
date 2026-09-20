@@ -11,6 +11,7 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.models.destination_decision import DestinationDecision
+from app.models.decision_outcome import DecisionOutcome, DecisionReflection
 from app.services.ai_orchestrator import AIOrchestrator
 from app.utils.business_time import beijing_today
 
