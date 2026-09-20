@@ -18,6 +18,7 @@ import httpx
 from tenacity import AsyncRetrying, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from app.config import settings
+from app.core.outbound_security import OutboundURLValidationError, validate_public_http_endpoint
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +77,12 @@ class AIService:
     ):
         self.api_key = api_key or settings.LLM_API_KEY
         self.model = model or settings.LLM_MODEL
+        # 只有用户显式提供的 endpoint 才执行 SSRF 校验；平台默认 endpoint 可指向内部受控代理。
+        if base_url is not None:
+            try:
+                base_url = validate_public_http_endpoint(base_url)
+            except OutboundURLValidationError as exc:
+                raise ValueError(str(exc)) from exc
         # BYOK 保存的 base_url 去掉了尾斜杠，这里统一补齐（chat 拼接假定以 / 结尾）
         self.base_url = (base_url or settings.LLM_BASE_URL).rstrip("/") + "/"
 
