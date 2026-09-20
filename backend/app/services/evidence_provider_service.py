@@ -1,5 +1,7 @@
 """Evidence Provider Registry：把现有结构化数据变成可验证证据来源。"""
 from dataclasses import dataclass
+import json
+import logging
 from typing import Any
 
 from sqlalchemy import or_
@@ -12,6 +14,7 @@ from app.models.gwy_position import GwyPosition
 from app.models.gwy_province_position import GwyProvincePosition
 from app.models.salary_benchmark import SalaryBenchmark
 from app.models.school import School
+from app.services.ai_orchestrator import AIOrchestrator
 from app.services.ai_orchestrator import AIOrchestrator
 
 
