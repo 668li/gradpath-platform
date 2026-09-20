@@ -40,7 +40,10 @@ def route_providers(body: ProviderRouteRequest):
 
 
 @router.post("/route-ai")
-async def route_providers_with_ai(\n    body: ProviderRouteRequest,\n    user: User = Depends(get_current_user),\n):
+async def route_providers_with_ai(
+    body: ProviderRouteRequest,
+    user: User = Depends(get_current_user),
+):
     """AI 只负责选择白名单 Provider；失败时由 service 安全回退到规则路由。"""
     return await route_hypothesis_with_ai(body.hypothesis)
 
