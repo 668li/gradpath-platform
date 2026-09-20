@@ -15,7 +15,6 @@ from app.models.user import User
 from app.schemas.decision import DecisionResponse
 from app.schemas.decision_journal import DecisionReviewSubmit
 from app.services import decision_journal_service
-from app.services.ai_quota_service import AILLMQuotaExceeded, consume_llm_quota
 from app.utils.business_time import beijing_today
 
 router = APIRouter(prefix="/api/decision-journal", tags=["决策日志与回溯"])
@@ -52,10 +51,6 @@ async def complete_review(
     user: User = Depends(get_current_user),
 ):
     """完成决策回溯评估，填写实际结果。"""
-    try:
-        await consume_llm_quota(user.id)
-    except AILLMQuotaExceeded as e:
-        raise HTTPException(status_code=429, detail="今日 AI 调用次数已达上限，请明日再试") from e
     # 修复 bug: service 层 raise ValueError("决策不存在或无权访问") -> 500，应转 404
     try:
         decision = await decision_journal_service.complete_review(
