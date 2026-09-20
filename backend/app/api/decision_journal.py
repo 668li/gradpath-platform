@@ -8,8 +8,8 @@ from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
 from app.core.rate_limit import rate_limits
-from app.main import limiter
 from app.database import get_db
+from app.main import limiter
 from app.models.destination_decision import DestinationDecision
 from app.models.user import User
 from app.schemas.decision import DecisionResponse
