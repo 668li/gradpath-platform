@@ -21,11 +21,13 @@ export type MicroActionPlanStatus = "active" | "completed" | "abandoned";
 export interface MicroActionPlanCreate {
   target_path: MicroActionTargetPath;
   target_role?: string | null;
+  decision_id?: string | null;
 }
 
 /** 单日任务响应 */
 export interface MicroActionTaskResponse {
   id: string;
+  hypothesis_id: string | null;
   day_number: number;
   task_type: MicroActionTaskType;
   title: string;
@@ -40,6 +42,7 @@ export interface MicroActionTaskResponse {
 /** 7 天微行动计划响应 */
 export interface MicroActionPlanResponse {
   id: string;
+  decision_id: string | null;
   target_path: MicroActionTargetPath;
   target_role: string | null;
   status: MicroActionPlanStatus;
