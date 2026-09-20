@@ -1,7 +1,8 @@
 from datetime import date, datetime
 from uuid import UUID
+from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, computed_field
 
 from app.models.destination_decision import DecisionStatus, DestinationType
 
