@@ -17,7 +17,7 @@ from app.utils.business_time import beijing_today
 logger = logging.getLogger(__name__)
 
 _MATCH_STATUS_RE = re.compile(
-    r"(?im)^\\s*MATCH_STATUS\\s*=\\s*(match|partial|mismatch|unknown)\\s*$"
+    r"(?im)^\s*MATCH_STATUS\s*=\s*(match|partial|mismatch|unknown)\s*$"
 )
 
 def _extract_match_status(raw: str) -> tuple[str, str]:
