@@ -20,6 +20,7 @@ from app.models.grad_intel import GradSchoolIntel, GradScorelineRecord
 from app.main import limiter
 from app.models.user import User
 from app.services.ai_orchestrator import AIOrchestrator
+from app.services.ai_quota_service import AILLMQuotaExceeded
 from app.services.ai_service import AIServiceNotConfigured
 from app.services.grad_intel_service import scoreline_has_traceable_source
 
