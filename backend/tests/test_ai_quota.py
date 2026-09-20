@@ -295,3 +295,32 @@ class TestReset:
         svc._quota = 100
         # 不应抛异常
         svc.reset(user_id=1)
+
+
+class TestConsumeQuotaAtomic:
+    @pytest.mark.asyncio
+    async def test_consume_reserves_one_slot_atomically(self):
+        """原子消费在配额未满时返回新计数。"""
+        redis_mock = _make_redis_mock()
+        redis_mock.eval.return_value = 11
+        svc = _make_service_with_redis(redis_mock, quota=100)
+
+        result = await svc.consume_llm_quota(user_id=1)
+
+        assert result == 11
+        redis_mock.eval.assert_called_once()
+        args = redis_mock.eval.call_args.args
+        assert args[1] == 1
+        assert args[2] == "llm_quota:1:" + svc._quota_key(1).split(":")[-1]
+        assert args[3] == 100
+        assert args[4] == 86400
+
+    @pytest.mark.asyncio
+    async def test_consume_raises_when_atomic_reservation_is_rejected(self):
+        """Lua 原子消费返回 -1 时抛出配额异常。"""
+        redis_mock = _make_redis_mock()
+        redis_mock.eval.return_value = -1
+        svc = _make_service_with_redis(redis_mock, quota=100)
+
+        with pytest.raises(AILLMQuotaExceeded):
+            await svc.consume_llm_quota(user_id=1)
