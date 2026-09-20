@@ -24,7 +24,7 @@ from app.schemas.ai import (
     SalaryBenchmarkResponse,
 )
 from app.services.ai_circuit_breaker import AICircuitBreakerOpenError
-from app.services.ai_quota_service import AILLMQuotaExceeded, check_llm_quota, incr_llm_quota
+from app.services.ai_quota_service import AILLMQuotaExceeded, check_llm_quota
 from app.services.ai_service import AIServiceNotConfigured, AIServiceRetryExhausted
 from app.services.decision_advice_service import get_decision_advice
 from app.services.external_data_service import (
