@@ -48,7 +48,10 @@ def validate_public_http_endpoint(base_url: str) -> str:
         raise OutboundURLValidationError("Base URL 不允许包含 fragment")
 
     host = parsed.hostname
-    port = parsed.port or (443 if parsed.scheme.lower() == "https" else 80)
+    try:
+        port = parsed.port or (443 if parsed.scheme.lower() == "https" else 80)
+    except ValueError as exc:
+        raise OutboundURLValidationError("Base URL 端口无效") from exc
 
     try:
         infos = socket.getaddrinfo(
