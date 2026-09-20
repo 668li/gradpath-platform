@@ -13,6 +13,8 @@ from app.schemas.decision_evidence import (
     EvidenceReadinessResponse,
     EvidenceResponse,
     EvidenceUpdate,
+    EvidenceImportResponse,
+    PathEngineEvidenceImportRequest,
     HypothesisCreate,
     HypothesisResponse,
     HypothesisUpdate,
