@@ -6,6 +6,7 @@
 """
 
 from datetime import datetime
+from uuid import UUID
 
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
@@ -21,6 +22,10 @@ class MicroActionPlan(UUIDMixin, TimestampMixin, Base):
 
     user_id: Mapped[str] = mapped_column(
         GUID(), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    # 可选：把微行动计划绑定到一条重大决策，形成 Decision -> Action 链。
+    decision_id: Mapped[UUID | None] = mapped_column(
+        GUID(), ForeignKey("destination_decisions.id", ondelete="SET NULL"), nullable=True, index=True
     )
     # 目标路径：kaoyan/employment/civil_service
     target_path: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -45,6 +50,10 @@ class MicroActionTask(UUIDMixin, TimestampMixin, Base):
 
     plan_id: Mapped[str] = mapped_column(
         GUID(), ForeignKey("micro_action_plans.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    # 可选：把某个任务绑定到需要验证的 Hypothesis。
+    hypothesis_id: Mapped[UUID | None] = mapped_column(
+        GUID(), ForeignKey("decision_hypotheses.id", ondelete="SET NULL"), nullable=True, index=True
     )
     # 1-7
     day_number: Mapped[int] = mapped_column(Integer, nullable=False)
