@@ -4,6 +4,7 @@
 """
 
 from datetime import date
+import logging
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -11,6 +12,8 @@ from sqlalchemy.orm import Session
 from app.models.destination_decision import DestinationDecision
 from app.services.ai_orchestrator import AIOrchestrator
 from app.utils.business_time import beijing_today
+
+logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """你是一位决策分析教练。用户在做一个决策时记录了预测和假设，现在填写了实际结果。
 
@@ -57,6 +60,10 @@ async def complete_review(
     if not decision:
         raise ValueError("决策不存在或无权访问")
 
+    # Prevent an already-completed review from silently burning another LLM call.
+    if decision.review_completed:
+        raise ValueError("该决策已经完成回溯")
+
     decision.actual_outcome = actual_outcome
     decision.review_notes = review_notes
     decision.review_completed = True
@@ -86,8 +93,8 @@ async def complete_review(
             system_prompt=SYSTEM_PROMPT, user_prompt=context, timeout=30
         )
     except Exception:
-        # AI 不可用时不阻断回溯流程
-        pass
+        # AI 不可用时不阻断回溯流程，但不能静默吞掉异常。
+        logger.exception("decision review AI analysis failed: decision_id=%s", decision_id)
 
     db.commit()
     db.refresh(decision)
