@@ -33,7 +33,7 @@ from app.schemas.chat import (
 )
 from app.schemas.common import PaginatedResponse
 from app.services.ai_circuit_breaker import AICircuitBreakerOpenError
-from app.services.ai_quota_service import AILLMQuotaExceeded, check_llm_quota, incr_llm_quota
+from app.services.ai_quota_service import AILLMQuotaExceeded, consume_llm_quota
 from app.services.ai_service import AIServiceNotConfigured, AIServiceRetryExhausted
 from app.services.chat_service import (
     create_conversation,
@@ -123,7 +123,7 @@ async def post_message(
     if llm_override is None:
         # B8: 配额检查（Redis 不可用时降级到不限制）
         try:
-            await check_llm_quota(user.id)
+            await consume_llm_quota(user.id)
         except AILLMQuotaExceeded:
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -138,9 +138,6 @@ async def post_message(
             body.skill_hint,
             llm_override=llm_override,
         )
-        # B8: 调用成功后递增配额计数
-        if llm_override is None:
-            await incr_llm_quota(user.id)
     except AILLMQuotaExceeded:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
