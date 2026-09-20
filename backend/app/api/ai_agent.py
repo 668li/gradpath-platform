@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.core.deps import get_current_user
 from app.database import SessionLocal, get_db
+from app.main import limiter
 from app.models.user import User
 from app.services.ai_butler_service import route_agent, scan_user
 from app.services.ai_circuit_breaker import AICircuitBreakerOpenError
@@ -185,8 +186,12 @@ def _classify_intent(question: str) -> str:
 
 
 @router.get("/web-search")
-@__import__("app.main", fromlist=["limiter"]).limiter.limit("30/minute")
-async def web_search_endpoint(q: str = Query(..., min_length=1, max_length=200)):
+@limiter.limit("30/minute")
+async def web_search_endpoint(
+    request: Request,
+    response: Response,
+    q: str = Query(..., min_length=1, max_length=200),
+):
     """Test web search independently."""
     results = await _web_search.search(q, max_results=5)
     return {"results": [{"title": r.title, "url": r.url, "snippet": r.snippet} for r in results]}
