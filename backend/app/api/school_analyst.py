@@ -14,6 +14,7 @@ from app.models.grad_intel import DarkKnowledge, GradSchoolIntel, GradScorelineR
 from app.models.user import User
 from app.main import limiter
 from app.services.ai_orchestrator import AIOrchestrator
+from app.services.ai_quota_service import AILLMQuotaExceeded
 from app.services.ai_service import AIServiceNotConfigured
 from app.services.grad_intel_service import scoreline_has_traceable_source
 
@@ -260,6 +261,8 @@ async def _generate_summary(
             f"相似院校：{', '.join(similar)}"
         )
         return await ai.chat(system_prompt, user_content, timeout=30)
+    except AILLMQuotaExceeded:
+        raise
     except (AIServiceNotConfigured, Exception) as e:
         logger.warning("AI 总结生成失败，使用降级文案: %s", e)
         return (
