@@ -47,4 +47,17 @@ class DecisionEvidence(UUIDMixin, TimestampMixin, Base):
     observed_on: Mapped[date | None] = mapped_column(Date, nullable=True)
     # 原文短摘录，保留审计线索；不要保存整篇外部内容。
     excerpt: Mapped[str | None] = mapped_column(Text, nullable=True)
-    # Evidence Provider 与验证链：内部数据默认不等于已核实事实。\n    provider_name: Mapped[str | None] = mapped_column(String(50), nullable=True, index=True)\n    verification_status: Mapped[str] = mapped_column(String(30), nullable=False, default="internal_unverified", index=True)\n    verification_source_url: Mapped[str | None] = mapped_column(String(2000), nullable=True)\n    verified_on: Mapped[date | None] = mapped_column(Date, nullable=True)\n    metadata_json: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+
+    # Evidence Provider 与验证链：内部数据默认不等于已核实事实。
+    provider_name: Mapped[str | None] = mapped_column(
+        String(50), nullable=True, index=True
+    )
+    verification_status: Mapped[str] = mapped_column(
+        String(30), nullable=False, default="internal_unverified", index=True
+    )
+    verification_source_url: Mapped[str | None] = mapped_column(
+        String(2000), nullable=True
+    )
+    verified_on: Mapped[date | None] = mapped_column(Date, nullable=True)
+
+    metadata_json: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
