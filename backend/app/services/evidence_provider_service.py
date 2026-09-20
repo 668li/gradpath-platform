@@ -9,6 +9,7 @@ from app.models.company import Company
 from app.models.employment_data import EmploymentData
 from app.models.grad_intel import GradScorelineRecord
 from app.models.gwy_position import GwyPosition
+from app.models.gwy_province_position import GwyProvincePosition
 from app.models.salary_benchmark import SalaryBenchmark
 from app.models.school import School
 
@@ -131,6 +132,19 @@ def search_provider(db: Session, provider_name: str, statement: str, limit: int 
             rows.append({
                 "title": f"{'国考' if provider_name == 'civil_service' else '招聘'}：{row.position_name or row.position_code}",
                 "claim": f"{row.year}：{row.dept_name or '未知部门'} / {row.position_name or '未命名'}，招录={row.recruit_count if row.recruit_count is not None else '未知'}，学历={row.education_req or '未知'}，专业={row.major_req or '未知'}",
+                "source_url": row.source_url,
+                "reliability": 5 if row.source_url else 4,
+                "metadata": _metadata(provider, source_url=row.source_url, observed_on=row.updated_at),
+            })
+
+        # 省考职位同属公考/招聘 Evidence Provider，避免已有省考数据留在孤岛。
+        province_query = db.query(GwyProvincePosition)
+        if terms:
+            province_query = province_query.filter(or_(*[_like(GwyProvincePosition.position_name, t) for t in terms], *[_like(GwyProvincePosition.major_req_grad, t) for t in terms], *[_like(GwyProvincePosition.major_req_undergrad, t) for t in terms], *[_like(GwyProvincePosition.dept_name, t) for t in terms]))
+        for row in province_query.order_by(GwyProvincePosition.year.desc()).limit(limit).all():
+            rows.append({
+                "title": f"省考：{row.position_name or row.position_code}",
+                "claim": f"{row.year} {row.province}：{row.dept_name or '未知部门'} / {row.position_name or '未命名'}，招录={row.recruit_count if row.recruit_count is not None else '未知'}，学历={row.education_req or '未知'}，专业={row.major_req_grad or row.major_req_undergrad or '未知'}",
                 "source_url": row.source_url,
                 "reliability": 5 if row.source_url else 4,
                 "metadata": _metadata(provider, source_url=row.source_url, observed_on=row.updated_at),
