@@ -4,6 +4,7 @@
 """
 
 from datetime import date
+import logging
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -11,6 +12,8 @@ from sqlalchemy.orm import Session
 from app.models.destination_decision import DestinationDecision
 from app.services.ai_orchestrator import AIOrchestrator
 from app.utils.business_time import beijing_today
+
+logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """你是一位决策分析教练。用户在做一个决策时记录了预测和假设，现在填写了实际结果。
 
@@ -48,22 +51,30 @@ async def complete_review(
     actual_outcome: str,
     review_notes: str | None,
 ) -> DestinationDecision:
-    """完成决策回溯评估。"""
+    """完成决策回溯评估，并保证同一决策不会被并发重复提交。"""
     decision = (
         db.query(DestinationDecision)
-        .filter(DestinationDecision.id == decision_id, DestinationDecision.user_id == user_id)
+        .filter(
+            DestinationDecision.id == decision_id,
+            DestinationDecision.user_id == user_id,
+        )
+        .with_for_update()
         .first()
     )
     if not decision:
         raise ValueError("决策不存在或无权访问")
+    if decision.review_completed:
+        raise ValueError("该决策已经完成回溯")
 
+    # 先提交用户的实际结果。这样不会在等待 LLM 时长时间持有数据库行锁，
+    # 同时第二个并发请求会看到 review_completed=True 并立即被拒绝。
     decision.actual_outcome = actual_outcome
     decision.review_notes = review_notes
     decision.review_completed = True
+    db.commit()
+    db.refresh(decision)
 
-    # 生成 AI 对比分析
-    try:
-        context = f"""【决策信息】
+    context = f"""【决策信息】
 - 决策日期: {decision.decision_date}
 - 类型: {decision.destination_type.value}
 - 置信度: {decision.confidence}/5
@@ -81,16 +92,25 @@ async def complete_review(
 【用户回溯笔记】
 {review_notes or '无'}"""
 
+    # AI 只负责增强分析，不应阻断已经成功保存的回溯数据。
+    try:
         orchestrator = AIOrchestrator()
         decision.ai_analysis = await orchestrator.chat(
-            system_prompt=SYSTEM_PROMPT, user_prompt=context, timeout=30
+            system_prompt=SYSTEM_PROMPT,
+            user_prompt=context,
+            timeout=30,
         )
     except Exception:
-        # AI 不可用时不阻断回溯流程
-        pass
+        logger.exception(
+            "decision review AI analysis failed; decision_id=%s user_id=%s",
+            decision_id,
+            user_id,
+        )
 
-    db.commit()
-    db.refresh(decision)
+    if decision.ai_analysis:
+        db.commit()
+        db.refresh(decision)
+
     return decision
 
 
