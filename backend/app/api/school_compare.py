@@ -15,13 +15,13 @@ from app.api.school_analyst import (
 )
 from app.core.deps import get_current_user
 from app.core.rate_limit import rate_limits
-from app.main import limiter
 from app.database import get_db
+from app.main import limiter
 from app.models.grad_intel import GradSchoolIntel, GradScorelineRecord
 from app.models.user import User
 from app.services.ai_orchestrator import AIOrchestrator
-from app.services.ai_service import AIServiceNotConfigured
 from app.services.ai_quota_service import AILLMQuotaExceeded, consume_llm_quota
+from app.services.ai_service import AIServiceNotConfigured
 from app.services.grad_intel_service import scoreline_has_traceable_source
 
 logger = logging.getLogger(__name__)
