@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Bot, KeyRound, Sparkles } from "lucide-react";
 import { Modal } from "@/components/ui/modal";
@@ -24,9 +25,12 @@ export function AiWelcomeModal() {
   const [platformModel, setPlatformModel] = useState("");
   const [dailyQuota, setDailyQuota] = useState(0);
   const user = useAuthStore((s) => s.user);
+  const pathname = usePathname();
 
   useEffect(() => {
-    if (!user) return;
+    // Never interrupt the onboarding flow with a global AI configuration modal.
+    // Users should finish the critical first-run setup before seeing secondary guidance.
+    if (!user || pathname === "/onboarding" || pathname.startsWith("/onboarding/")) return;
     const next = Number(localStorage.getItem(LS_KEY) || 0);
     if (Date.now() < next) return;
     // 稍作延迟，等首屏渲染稳定后再弹
