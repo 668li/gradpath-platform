@@ -19,7 +19,7 @@ def create_analysis(db: Session, user_id: UUID, data: dict) -> DecisionAnalysis:
     criteria = data.get("criteria", [])
     matrix_scores = data.get("matrix_scores", [])
 
-    # 计算加权得分
+    # 计算加权得分。矩阵只用于暴露权衡，不再产生系统级“赢家”。
     weighted_results = []
     winner = None
     if criteria and matrix_scores:
@@ -38,8 +38,7 @@ def create_analysis(db: Session, user_id: UUID, data: dict) -> DecisionAnalysis:
                     "total_score": round(total, 2),
                 }
             )
-        if weighted_results:
-            winner = max(weighted_results, key=lambda x: x["total_score"])["option"]
+        # 故意不自动选择 winner：分数只是用户定义权重下的计算结果。
 
     analysis = DecisionAnalysis(
         user_id=user_id,
@@ -52,7 +51,7 @@ def create_analysis(db: Session, user_id: UUID, data: dict) -> DecisionAnalysis:
         criteria=criteria,
         matrix_scores=matrix_scores,
         weighted_results=weighted_results,
-        winner=winner,
+        winner=None,
         red_team_questions=data.get("red_team_questions", []),
         red_team_answers=data.get("red_team_answers", []),
     )
@@ -109,8 +108,7 @@ def compute_matrix(criteria: list[dict], matrix_scores: list[dict]) -> dict:
             }
         )
     results.sort(key=lambda x: x["total_score"], reverse=True)
-    winner = results[0]["option"] if results else None
-    return {"results": results, "winner": winner}
+    return {"results": results, "winner": None, "interpretation": "矩阵仅展示权衡结果，不代表系统推荐。"}
 
 
 async def analyze_premortem(title: str, options: list[str], reasons: list[str]) -> dict:
@@ -223,11 +221,12 @@ async def generate_ai_analysis(db: Session, analysis_id: UUID, user_id: UUID | N
 
     system_prompt = """你是一位决策分析教练。用户完成了完整的决策分析（预验尸+矩阵+红队）。
 
-请给出综合分析和最终建议：
-1. 矩阵结果是否可信？有没有被忽略的因素？
-2. 预验尸揭示的最大风险是什么？保障措施够不够？
-3. 红队质疑中哪个问题最值得深思？
-4. 你的最终建议是什么？（继续/修改/暂停/换方向）
+请给出综合分析，但不要替用户选择方案。
+1. 哪些关键假设仍未验证？
+2. 矩阵结果依赖哪些主观权重？有没有被忽略的因素？
+3. 预验尸揭示的最大风险是什么？保障措施够不够？
+4. 红队质疑中哪个问题最值得先验证？
+5. 给出一个最小验证行动，并说明它要减少哪项不确定性。
 
 用中文，300-400 字，直接不客套。不使用 markdown。"""
 
@@ -238,7 +237,7 @@ async def generate_ai_analysis(db: Session, analysis_id: UUID, user_id: UUID | N
 """
     for r in analysis.weighted_results:
         context += f"  - {r.get('option', '?')}: {r.get('total_score', 0)} 分\n"
-    context += f"矩阵赢家：{analysis.winner or '未计算'}\n\n"
+    context += "矩阵不产生系统级赢家；它只展示用户权重下的权衡。\n\n"
 
     context += "预验尸风险类别：\n"
     for r in analysis.premortem_reasons[:5]:
