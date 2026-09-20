@@ -15,7 +15,8 @@ from app.models.gwy_province_position import GwyProvincePosition
 from app.models.salary_benchmark import SalaryBenchmark
 from app.models.school import School
 from app.services.ai_orchestrator import AIOrchestrator
-from app.services.ai_orchestrator import AIOrchestrator
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -59,7 +60,7 @@ async def route_hypothesis_with_ai(statement: str) -> dict[str, Any]:
     prompt = f"""你是 GradPath 的 Evidence Provider Router。
 根据用户的 Hypothesis，选择需要查询的 Provider。只能从白名单中选择，允许多选。
 不要回答假设是否正确，不要推荐人生选择，只判断需要什么证据。
-输出严格 JSON：{"providers":["provider_name"],"evidence_needs":["..."],"reason":"..."}。
+输出严格 JSON：{{"providers":["provider_name"],"evidence_needs":["..."],"reason":"..."}}。
 
 白名单：
 {specs}
