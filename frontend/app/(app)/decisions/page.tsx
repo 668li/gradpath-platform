@@ -34,6 +34,7 @@ import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/components/ui/toast";
 import { DestinationPie } from "@/components/charts";
 import { DecisionForm } from "@/components/decision-form";
+import { DecisionEvidencePanel } from "@/components/decision-evidence-panel";
 import type {
   DecisionResponse,
   DecisionStats,
@@ -632,6 +633,8 @@ export default function DecisionsPage() {
                     </span>
                     <span className="text-xs text-ink-400">{d.confidence}/5</span>
                   </div>
+
+                  <DecisionEvidencePanel decisionId={d.id} />
                 </div>
 
                 {/* 已执行决策：引导记录上岸结果与复盘 */}
