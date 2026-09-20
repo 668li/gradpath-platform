@@ -38,6 +38,13 @@ def route_providers(body: ProviderRouteRequest):
     )
 
 
+
+@router.post("/route-ai")
+async def route_providers_with_ai(body: ProviderRouteRequest):
+    """AI 只负责选择白名单 Provider；失败时由 service 安全回退到规则路由。"""
+    return await route_hypothesis_with_ai(body.hypothesis)
+
+
 @router.post("/{provider_name}/search", response_model=ProviderSearchResponse)
 def search(provider_name: str, body: ProviderSearchRequest, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     try:
