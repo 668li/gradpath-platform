@@ -21,6 +21,7 @@ from app.schemas.micro_action import (
     MicroActionPlanResponse,
     MicroActionTaskResponse,
     TaskCompleteRequest,
+    TaskHypothesisLinkRequest,
 )
 from app.services import micro_action_service as svc
 
@@ -62,7 +63,10 @@ async def create_plan(
     user: User = Depends(get_current_user),
 ) -> MicroActionPlanResponse:
     """创建 7 天微行动计划，自动生成 7 个任务。"""
-    plan = svc.create_plan(db, user.id, req.target_path, req.target_role)
+    try:
+        plan = svc.create_plan(db, user.id, req.target_path, req.target_role, req.decision_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
     return _load_plan_with_tasks(db, plan)
 
 
@@ -89,6 +93,23 @@ def get_plan(
     if plan is None or plan.user_id != user.id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="计划不存在")
     return _load_plan_with_tasks(db, plan)
+
+
+@router.patch("/tasks/{task_id}/hypothesis", response_model=MicroActionTaskResponse)
+def link_hypothesis(
+    task_id: str,
+    req: TaskHypothesisLinkRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> MicroActionTaskResponse:
+    """把验证行动绑定到一个属于同一决策的关键假设。"""
+    try:
+        updated = svc.link_task_to_hypothesis(
+            db, user.id, _parse_uuid(task_id), req.hypothesis_id
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    return MicroActionTaskResponse.model_validate(updated)
 
 
 @router.post("/tasks/{task_id}/complete", response_model=MicroActionTaskResponse)
