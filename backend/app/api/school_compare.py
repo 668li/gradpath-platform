@@ -2,7 +2,7 @@
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -14,11 +14,14 @@ from app.api.school_analyst import (
     _classify_recommendation,
 )
 from app.core.deps import get_current_user
+from app.core.rate_limit import rate_limits
+from app.main import limiter
 from app.database import get_db
 from app.models.grad_intel import GradSchoolIntel, GradScorelineRecord
 from app.models.user import User
 from app.services.ai_orchestrator import AIOrchestrator
 from app.services.ai_service import AIServiceNotConfigured
+from app.services.ai_quota_service import AILLMQuotaExceeded, consume_llm_quota
 from app.services.grad_intel_service import scoreline_has_traceable_source
 
 logger = logging.getLogger(__name__)
@@ -164,12 +167,19 @@ async def _generate_comparison_summary(analyses: list[dict], user_score: int) ->
 
 # ── Endpoint ─────────────────────────────────────────────────────────
 @router.post("/compare", response_model=CompareResponse, summary="多校对比分析")
+@limiter.limit(rate_limits.AI_SCHOOL_ANALYSIS)
 async def compare_schools(
+    request: Request,
+    response: Response,
     req: CompareRequest,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
     """对比 2-5 所院校，返回六维雷达对比矩阵 + 冲/稳/保分类 + AI 建议。"""
+    try:
+        await consume_llm_quota(user.id)
+    except AILLMQuotaExceeded as e:
+        raise HTTPException(status_code=429, detail="今日 AI 调用次数已达上限，请明日再试") from e
     try:
         analyses = []
         for item in req.schools:
