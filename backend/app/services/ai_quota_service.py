@@ -115,6 +115,39 @@ class AIQuotaService:
 
         return used
 
+    async def consume_llm_quota(self, user_id) -> int | None:
+        """原子地预占一次当日 LLM 配额，避免并发请求超额。"""
+        if self._redis is None:
+            return None
+
+        key = self._quota_key(user_id)
+        script = """
+        local current = tonumber(redis.call('GET', KEYS[1]) or '0')
+        local quota = tonumber(ARGV[1])
+        if current >= quota then
+            return -1
+        end
+        local next_count = redis.call('INCR', KEYS[1])
+        if next_count == 1 then
+            redis.call('EXPIRE', KEYS[1], ARGV[2])
+        end
+        return next_count
+        """
+        try:
+            result = self._redis.eval(script, 1, key, self._quota, self.KEY_TTL)
+        except Exception as e:
+            logger.warning("AI 配额原子预占失败，降级到不限制: %s", e)
+            return None
+
+        if int(result) == -1:
+            try:
+                used = int(self._redis.get(key) or 0)
+            except Exception:
+                used = self._quota
+            raise AILLMQuotaExceeded(used=used, quota=self._quota)
+
+        return int(result)
+
     async def incr_llm_quota(self, user_id) -> int | None:
         """递增用户当日 LLM 调用计数。
 
@@ -170,9 +203,10 @@ class AIQuotaService:
                 # 清空所有用户的当日配额
                 d = today or beijing_today()
                 pattern = f"{self.KEY_PREFIX}:*:{d.isoformat()}"
-                keys = self._redis.keys(pattern)
+                keys = list(self._redis.scan_iter(match=pattern, count=500))
                 if keys:
-                    self._redis.delete(*keys)
+                    for start in range(0, len(keys), 500):
+                        self._redis.unlink(*keys[start : start + 500])
         except Exception as e:
             logger.warning("AI 配额重置失败: %s", e)
 
@@ -183,8 +217,13 @@ ai_quota_service = AIQuotaService()
 
 # 便捷函数（供 API 层调用）
 async def check_llm_quota(user_id):
-    """检查用户当日 LLM 配额。超额抛 AILLMQuotaExceeded。"""
+    """兼容旧调用：只读检查，不预占配额。"""
     return await ai_quota_service.check_llm_quota(user_id)
+
+
+async def consume_llm_quota(user_id):
+    """原子地预占一次当日 LLM 配额。"""
+    return await ai_quota_service.consume_llm_quota(user_id)
 
 
 async def incr_llm_quota(user_id):
