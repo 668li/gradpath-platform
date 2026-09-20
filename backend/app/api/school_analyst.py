@@ -3,12 +3,16 @@
 import json
 import logging
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request, Response
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
+from app.core.deps import get_current_user
+from app.core.rate_limit import rate_limits
 from app.database import get_db
 from app.models.grad_intel import DarkKnowledge, GradSchoolIntel, GradScorelineRecord
+from app.models.user import User
+from app.main import limiter
 from app.services.ai_orchestrator import AIOrchestrator
 from app.services.ai_service import AIServiceNotConfigured
 from app.services.grad_intel_service import scoreline_has_traceable_source
@@ -295,9 +299,13 @@ def _find_similar_schools(db: Session, school: str, major: str) -> list[str]:
 
 # ── Endpoint ─────────────────────────────────────────────────────────
 @router.post("/report", response_model=AnalystReportResponse, summary="AI 院校分析报告")
+@limiter.limit(rate_limits.AI_SCHOOL_ANALYST)
 async def generate_report(
+    request: Request,
+    response: Response,
     req: AnalystReportRequest,
     db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
     """生成院校六维雷达 + 趋势 + 暗知识 + 推荐分类的一站式分析报告。"""
     school = req.school_name.strip()
