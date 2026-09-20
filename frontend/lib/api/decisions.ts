@@ -74,7 +74,7 @@ export const decisionAnalysisApi = {
     }),
   get: (id: string) => request<DecisionAnalysisResponse>(`/api/decision-analysis/${id}`),
   computeMatrix: (body: { criteria: { criterion: string; weight: number }[]; matrix_scores: { name: string; scores: Record<string, number> }[] }) =>
-    request<{ results: { name: string; total: number; details: Record<string, number> }[]; winner: string }>("/api/decision-analysis/compute-matrix", {
+    request<{ results: { option: string; total_score: number; breakdown: { criterion: string; weight: number; score: number; weighted: number }[] }[]; winner: null; interpretation: string }>("/api/decision-analysis/compute-matrix", {
       method: "POST",
       body: JSON.stringify(body),
     }),
