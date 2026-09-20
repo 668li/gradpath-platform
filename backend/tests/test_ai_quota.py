@@ -38,6 +38,7 @@ def _make_redis_mock(get_value="0", incr_value=1):
     redis_mock.expire.return_value = True
     redis_mock.delete.return_value = 1
     redis_mock.keys.return_value = []
+    redis_mock.scan_iter.return_value = []
     redis_mock.ping.return_value = True
     return redis_mock
 
@@ -280,12 +281,12 @@ class TestReset:
     async def test_reset_all_users(self):
         """reset() 清空所有用户的当日 key。"""
         redis_mock = _make_redis_mock()
-        redis_mock.keys.return_value = ["llm_quota:1:2025-07-20", "llm_quota:2:2025-07-20"]
+        redis_mock.scan_iter.return_value = ["llm_quota:1:2025-07-20", "llm_quota:2:2025-07-20"]
         svc = _make_service_with_redis(redis_mock, quota=100)
 
         svc.reset()
 
-        redis_mock.keys.assert_called_once()
+        redis_mock.scan_iter.assert_called_once()
         redis_mock.delete.assert_called_once()
 
     def test_reset_no_redis_does_nothing(self):
