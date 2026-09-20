@@ -3,7 +3,7 @@
 import json
 import logging
 
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -12,6 +12,7 @@ from app.core.rate_limit import rate_limits
 from app.database import get_db
 from app.main import limiter
 from app.models.grad_intel import DarkKnowledge, GradSchoolIntel, GradScorelineRecord
+from app.models.user import User
 from app.services.ai_orchestrator import AIOrchestrator
 from app.services.ai_quota_service import AILLMQuotaExceeded, consume_llm_quota
 from app.services.ai_service import AIServiceNotConfigured
@@ -305,13 +306,12 @@ async def generate_report(
     response: Response,
     req: AnalystReportRequest,
     db: Session = Depends(get_db),
-    user = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ):
     """生成院校六维雷达 + 趋势 + 暗知识 + 推荐分类的一站式分析报告。"""
     try:
         await consume_llm_quota(user.id)
     except AILLMQuotaExceeded as e:
-        from fastapi import HTTPException
         raise HTTPException(status_code=429, detail="今日 AI 调用次数已达上限，请明日再试") from e
     school = req.school_name.strip()
     major = req.major.strip()
