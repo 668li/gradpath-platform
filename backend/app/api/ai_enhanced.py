@@ -13,7 +13,7 @@ from app.database import get_db
 from app.models.user import User
 from app.services.ai_circuit_breaker import AICircuitBreakerOpenError
 from app.services.ai_orchestrator import AIOrchestrator
-from app.services.ai_quota_service import AILLMQuotaExceeded, check_llm_quota, incr_llm_quota
+from app.services.ai_quota_service import AILLMQuotaExceeded, consume_llm_quota
 from app.services.ai_service import AIServiceNotConfigured, AIServiceRetryExhausted
 from app.services.user_context_service import build_context_prompt
 
@@ -171,7 +171,7 @@ async def generate_report(
     """
     # B8: 配额检查（Redis 不可用时降级到不限制）
     try:
-        await check_llm_quota(user.id)
+        await consume_llm_quota(user.id)
     except AILLMQuotaExceeded:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -242,8 +242,7 @@ async def generate_report(
         # 决策副驾驶护城河：注入用户上下文实现个性化
         system_prompt = _inject_user_context(db, user.id, system_prompt)
         result = await ai_service.chat(system_prompt, user_content, timeout=60)
-        # B8: LLM 调用成功后递增当日配额计数
-        await incr_llm_quota(user.id)
+            
 
         # 5. 解析响应
         import json
@@ -347,7 +346,7 @@ async def rag_ask(
     """
     # B8: 配额检查（Redis 不可用时降级到不限制）
     try:
-        await check_llm_quota(user.id)
+        await consume_llm_quota(user.id)
     except AILLMQuotaExceeded:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -391,8 +390,7 @@ async def rag_ask(
         # 决策副驾驶护城河：注入用户上下文实现个性化
         system_prompt = _inject_user_context(db, user.id, system_prompt)
         answer = await ai_service.chat(system_prompt, user_content, timeout=30)
-        # B8: LLM 调用成功后递增当日配额计数
-        await incr_llm_quota(user.id)
+            
 
         # 4. 计算置信度
         avg_similarity = (
@@ -601,7 +599,7 @@ async def generate_study_plan(
     """
     # B8: 配额检查（Redis 不可用时降级到不限制）
     try:
-        await check_llm_quota(user.id)
+        await consume_llm_quota(user.id)
     except AILLMQuotaExceeded:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -663,8 +661,7 @@ async def generate_study_plan(
         # 决策副驾驶护城河：注入用户上下文实现个性化
         system_prompt = _inject_user_context(db, user.id, system_prompt)
         result = await ai_service.chat(system_prompt, user_content, timeout=60)
-        # B8: LLM 调用成功后递增当日配额计数
-        await incr_llm_quota(user.id)
+            
 
         # 5. 解析响应
         import json
