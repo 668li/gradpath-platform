@@ -117,6 +117,41 @@ class TestCheckQuotaExceeded:
 
 
 # ======================================================================
+# 原子预占
+# ======================================================================
+
+
+class TestConsumeQuota:
+    @pytest.mark.asyncio
+    async def test_consume_calls_atomic_eval(self):
+        redis_mock = _make_redis_mock()
+        redis_mock.eval.return_value = 1
+        svc = _make_service_with_redis(redis_mock, quota=100)
+
+        result = await svc.consume_llm_quota(user_id=42)
+
+        assert result == 1
+        redis_mock.eval.assert_called_once()
+        args = redis_mock.eval.call_args.args
+        assert args[1] == 1
+        assert args[2] == "llm_quota:42:" + date.today().isoformat()
+        assert args[3] == 100
+        assert args[4] == 86400
+
+    @pytest.mark.asyncio
+    async def test_consume_raises_when_atomic_script_rejects(self):
+        redis_mock = _make_redis_mock(get_value="100")
+        redis_mock.eval.return_value = -1
+        svc = _make_service_with_redis(redis_mock, quota=100)
+
+        with pytest.raises(AILLMQuotaExceeded) as exc_info:
+            await svc.consume_llm_quota(user_id=42)
+
+        assert exc_info.value.used == 100
+        assert exc_info.value.quota == 100
+
+
+# ======================================================================
 # 配额递增
 # ======================================================================
 
