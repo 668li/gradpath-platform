@@ -44,6 +44,7 @@ class RateLimitConfig:
     AI_DECISION_ADVICE: str = _rule("AI_DECISION_ADVICE", "10/minute")  # AI 决策建议：10次/分钟
     AI_GROWTH_INSIGHT: str = _rule("AI_GROWTH_INSIGHT", "10/minute")  # AI 成长洞察：10次/分钟
     AI_CHAT: str = _rule("AI_CHAT", "20/minute")  # AI 对话：20次/分钟
+    AI_SCHOOL_ANALYSIS: str = _rule("AI_SCHOOL_ANALYSIS", "10/minute")  # 院校 AI 分析：10次/分钟
     RETROSPECTIVE_AI_DRAFT: str = _rule("RETROSPECTIVE_AI_DRAFT", "10/minute")
 
     # ===== 写操作类（防滥用） =====
