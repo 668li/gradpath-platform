@@ -140,7 +140,7 @@ async def post_message(
         )
         # B8: 调用成功后递增配额计数
         if llm_override is None:
-            await incr_llm_quota(user.id)
+
     except AILLMQuotaExceeded:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
