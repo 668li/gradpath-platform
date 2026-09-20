@@ -66,6 +66,8 @@ class TestGetCurrentUserCache:
         assert cached is not None
         assert cached["email"] == "test@example.com"
         assert cached["name"] == "测试用户"
+        # 认证缓存不应保存密码哈希，即使 Redis/缓存被泄露也不扩大凭据暴露面
+        assert "password_hash" not in cached
 
     def test_cache_hit_skips_db(self, auth_headers, client, db_session):
         """第二次相同 token 命中缓存，不打 DB。"""
