@@ -150,6 +150,8 @@ async def _generate_comparison_summary(analyses: list[dict], user_score: int) ->
             )
         user_content = f"用户预估初试成绩：{user_score}\n" f"对比院校：\n" + "\n".join(schools_info)
         return await ai.chat(system_prompt, user_content, timeout=30)
+    except AILLMQuotaExceeded:
+        raise
     except (AIServiceNotConfigured, Exception) as e:
         logger.warning("AI 对比总结生成失败: %s", e)
         reaches = [a["school_name"] for a in analyses if a["recommendation"] == "reach"]
