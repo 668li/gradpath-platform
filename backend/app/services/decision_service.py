@@ -121,6 +121,12 @@ def update_decision(
     decision = get_decision(db, user_id, decision_id)
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
+        if key == "details" and isinstance(value, dict):
+            existing_details = dict(decision.details or {})
+            system_details = existing_details.get("_system")
+            if system_details is not None:
+                value = dict(value)
+                value["_system"] = system_details
         setattr(decision, key, value)
     db.commit()
     db.refresh(decision)
