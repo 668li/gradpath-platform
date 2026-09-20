@@ -10,6 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
+
+from app.services.ai_quota_service import AILLMQuotaExceeded
 from slowapi.util import get_remote_address
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -74,8 +76,12 @@ if settings.REDIS_URL:
         _storage_uri = settings.REDIS_URL
         logger.info("slowapi 限流器使用 Redis 存储后端: %s", settings.REDIS_URL)
     except Exception as _e:
+        if settings.ENVIRONMENT == "production":
+            raise RuntimeError(
+                "Production Redis is required for distributed rate limiting"
+            ) from _e
         logger.warning(
-            "Redis 不可用，slowapi 限流器降级到内存存储（多 worker 限流计数可能不一致）: %s",
+            "Redis 不可用，slowapi 限流器降级到内存存储（仅允许开发环境）: %s",
             _e,
         )
 
@@ -87,6 +93,22 @@ limiter = Limiter(
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+async def _ai_quota_exceeded_handler(request, exc: AILLMQuotaExceeded):
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        status_code=429,
+        content={
+            "detail": "今日 AI 调用次数已达上限，请明日再试",
+            "code": "AI_QUOTA_EXCEEDED",
+            "used": exc.used,
+            "quota": exc.quota,
+        },
+        headers={"Retry-After": "86400"},
+    )
+
+
+app.add_exception_handler(AILLMQuotaExceeded, _ai_quota_exceeded_handler)
 
 # CORS — 允许前端跨域访问（源由配置统一管理）
 # 修复: FASTAPI-CORS-001 — 拒绝 allow_origins=["*"] 与 allow_credentials=True 同时启用，
