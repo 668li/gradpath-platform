@@ -53,4 +53,13 @@ class DecisionResponse(BaseModel):
     review_completed: bool = False
     ai_analysis: str | None = None
 
+    @computed_field
+    @property
+    def review_match_status(self) -> Literal["match", "partial", "mismatch", "unknown"]:
+        system_details = self.details.get("_system") if isinstance(self.details, dict) else None
+        status = system_details.get("review_match_status") if isinstance(system_details, dict) else None
+        if status in {"match", "partial", "mismatch", "unknown"}:
+            return status
+        return "unknown"
+
     model_config = {"from_attributes": True}
