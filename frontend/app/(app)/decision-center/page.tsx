@@ -54,7 +54,7 @@ export default function DecisionCenterPage() {
           <h1 className="text-2xl font-bold text-ink-800">决策中心</h1>
           <p className="text-ink-500 mt-1">管理你的去向决策，深度分析每个选项</p>
         </div>
-        <Link href="/decisions">
+        <Link href="/decision-lab">
           <Button>
             <Plus className="h-4 w-4" /> 新建决策
           </Button>
@@ -101,7 +101,7 @@ export default function DecisionCenterPage() {
               title="记录你的第一个去向决策"
               description="「去向决策」是你对毕业方向的一次正式选择——考研、就业、考公、出国等。记录下来，系统会帮你跟踪进度、安排回顾、检测路径冲突。"
               action={
-                <Link href="/decisions">
+                <Link href="/decision-lab">
                   <Button>
                     <Plus className="h-4 w-4" /> 创建决策
                   </Button>
@@ -124,7 +124,7 @@ export default function DecisionCenterPage() {
                 </div>
               </div>
               <p className="mt-3 text-xs text-ink-400">
-                你也可以在 <Link href="/decision-lab" className="text-brand-600 hover:underline">决策实验室</Link> 中用 5 步结构化分析来做深度对比。
+                你也可以在 <Link href="/decision-lab" className="text-brand-700 underline underline-offset-2">决策实验室</Link> 中用 5 步结构化分析来做深度对比。
               </p>
             </div>
           </div>
@@ -158,7 +158,7 @@ export default function DecisionCenterPage() {
                     </span>
                     <Link
                       href={`/decision-lab?decision_id=${d.id}`}
-                      className="inline-flex items-center gap-1 text-sm font-medium text-brand-600 hover:text-brand-700"
+                      className="inline-flex items-center gap-1 text-sm font-medium text-brand-700 hover:text-brand-800"
                     >
                       继续分析
                       <ArrowRight className="h-3.5 w-3.5" />
