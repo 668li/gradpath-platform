@@ -12,6 +12,7 @@ from app.models.gwy_position import GwyPosition
 from app.models.gwy_province_position import GwyProvincePosition
 from app.models.salary_benchmark import SalaryBenchmark
 from app.models.school import School
+from app.services.ai_orchestrator import AIOrchestrator
 
 
 @dataclass(frozen=True)
@@ -42,8 +43,50 @@ def route_hypothesis(statement: str) -> list[ProviderSpec]:
         if score:
             scored.append((score, provider))
     scored.sort(key=lambda item: (-item[0], PROVIDERS.index(item[1])))
-    return [provider for _, provider in scored] or list(PROVIDERS)
+    return [provider for _, provider in scored]
 
+
+
+async def route_hypothesis_with_ai(statement: str) -> dict[str, Any]:
+    """让 LLM 在白名单 Provider 中选择；解析失败时安全回退到规则路由。"""
+    specs = "\n".join(
+        f"- {p.name}: {p.label}；{p.description}；触发需求: {', '.join(p.needs)}"
+        for p in PROVIDERS
+    )
+    prompt = f"""你是 GradPath 的 Evidence Provider Router。
+根据用户的 Hypothesis，选择需要查询的 Provider。只能从白名单中选择，允许多选。
+不要回答假设是否正确，不要推荐人生选择，只判断需要什么证据。
+输出严格 JSON：{"providers":["provider_name"],"evidence_needs":["..."],"reason":"..."}。
+
+白名单：
+{specs}
+
+Hypothesis：{statement}"""
+    try:
+        raw = await AIOrchestrator().chat(
+            system_prompt="你是一个严格的证据检索路由器。只做 Provider 选择。",
+            user_prompt=prompt,
+            timeout=20,
+        )
+        payload = json.loads(raw)
+        allowed = {x.name for x in PROVIDERS}
+        selected = [p for p in payload.get("providers", []) if p in allowed]
+        if selected:
+            return {
+                "providers": selected,
+                "evidence_needs": payload.get("evidence_needs", []),
+                "reason": payload.get("reason", "AI 根据 Hypothesis 选择了白名单 Provider。"),
+                "router": "ai",
+            }
+    except Exception:
+        logger.exception("AI Evidence Provider routing failed; falling back to deterministic routing")
+    fallback = route_hypothesis(statement)
+    return {
+        "providers": [p.name for p in fallback],
+        "evidence_needs": [],
+        "reason": "AI 路由不可用，已回退到可解释规则路由。",
+        "router": "rules_fallback",
+    }
 
 def _metadata(provider: ProviderSpec, *, source_url: str | None, observed_on: Any) -> dict:
     return {
