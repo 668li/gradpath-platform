@@ -300,3 +300,110 @@ def get_evidence_readiness(
         "evidence_neutral": neutral,
         "coverage": round((len(covered) / total), 4) if total else 0.0,
     }
+
+
+
+def import_path_engine_evidence(
+    db: Session,
+    user_id: UUID,
+    decision_id: UUID,
+    major: str,
+    region: str | None,
+    school_tier: str | None,
+    graduation_year: int | None,
+    fresh_status: str | None,
+    party_status: str | None,
+    education: str | None,
+    has_grassroots: bool | None,
+    gender: str | None,
+    estimated_score: int | None,
+    kaoyan_estimated_score: int | None,
+    hypothesis_id: UUID | None = None,
+) -> dict:
+    """把现有三路真实数据引擎的证据逐条导入 DecisionEvidence。
+
+    这是 Evidence Provider 的第一条适配器：复用现有 path_decision_engine，
+    不新增爬虫，不重复计算数据库指标。
+    """
+    _get_decision(db, user_id, decision_id)
+    if hypothesis_id is not None:
+        _get_hypothesis(db, user_id, decision_id, hypothesis_id)
+
+    from app.services import path_decision_engine
+
+    result = path_decision_engine.generate_decision(
+        db=db,
+        major=major,
+        region=region,
+        school_tier=school_tier,
+        graduation_year=graduation_year,
+        fresh_status=fresh_status,
+        party_status=party_status,
+        education=education,
+        has_grassroots=has_grassroots,
+        gender=gender,
+        estimated_score=estimated_score,
+        kaoyan_estimated_score=kaoyan_estimated_score,
+    )
+
+    imported = 0
+    skipped = 0
+    notes: list[str] = []
+
+    existing = {
+        (row.title, row.claim)
+        for row in db.query(DecisionEvidence)
+        .filter(
+            DecisionEvidence.user_id == user_id,
+            DecisionEvidence.decision_id == decision_id,
+        )
+        .all()
+    }
+
+    for metric in result.get("metrics", []):
+        for evidence in metric.get("evidence", []) or []:
+            title = str(evidence.get("label") or "").strip()
+            claim = str(evidence.get("value") or "").strip()
+            if not title or not claim:
+                continue
+            key = (title, claim)
+            if key in existing:
+                skipped += 1
+                continue
+
+            source_url = evidence.get("source_url") or None
+            note = evidence.get("note") or None
+            db.add(
+                DecisionEvidence(
+                    user_id=user_id,
+                    decision_id=decision_id,
+                    hypothesis_id=hypothesis_id,
+                    title=title,
+                    claim=claim,
+                    source_url=source_url,
+                    source_type="dataset",
+                    reliability=5 if source_url else 3,
+                    stance="neutral",
+                    observed_on=None,
+                    excerpt=note,
+                    metadata_json={
+                        "provider": "path_decision_engine",
+                        "path_type": metric.get("path_type"),
+                        "target_role": metric.get("target_role"),
+                    },
+                )
+            )
+            existing.add(key)
+            imported += 1
+
+    if not imported:
+        notes.append("当前条件下没有新的可导入证据；这不代表数据库没有数据。")
+
+    db.commit()
+    return {
+        "decision_id": decision_id,
+        "imported": imported,
+        "skipped_duplicates": skipped,
+        "provider": "path_decision_engine",
+        "notes": notes,
+    }
