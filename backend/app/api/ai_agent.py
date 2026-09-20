@@ -231,7 +231,7 @@ async def scan_endpoint(
         )
     try:
         result = await scan_user(db, user.id)
-        
+
         return result
     except AILLMQuotaExceeded:
         raise HTTPException(
@@ -288,7 +288,7 @@ async def personal_agent_endpoint(
         )
     try:
         result = route_agent(db, user.id, message, web_search=body.web_search)
-        
+
         return result
     except AILLMQuotaExceeded:
         raise HTTPException(
@@ -432,7 +432,7 @@ async def agent_endpoint(
 
     try:
         answer = await AIOrchestrator().chat(system_prompt, user_prompt, timeout=30)
-            
+
     except AICircuitBreakerOpenError as e:
         logger.warning("AI 熔断器打开，降级返回 sources: %s", e)
         # Graceful fallback — return what we have without LLM
@@ -515,7 +515,7 @@ async def scan_user_endpoint(
         )
     try:
         result = await scan_user(db, user.id)
-        
+
         return ScanResponse(**result)
     except AILLMQuotaExceeded:
         raise HTTPException(
