@@ -5,6 +5,7 @@
 
 from datetime import date
 import logging
+import re
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -15,6 +16,18 @@ from app.utils.business_time import beijing_today
 
 logger = logging.getLogger(__name__)
 
+_MATCH_STATUS_RE = re.compile(
+    r"(?im)^\\s*MATCH_STATUS\\s*=\\s*(match|partial|mismatch|unknown)\\s*$"
+)
+
+def _extract_match_status(raw: str) -> tuple[str, str]:
+    match = _MATCH_STATUS_RE.search(raw or "")
+    if not match:
+        return "unknown", raw or ""
+    status = match.group(1).lower()
+    cleaned = _MATCH_STATUS_RE.sub("", raw, count=1).lstrip("\n ")
+    return status, cleaned
+
 SYSTEM_PROMPT = """你是一位决策分析教练。用户在做一个决策时记录了预测和假设，现在填写了实际结果。
 
 请对比"预测 vs 实际"，分析：
@@ -23,7 +36,8 @@ SYSTEM_PROMPT = """你是一位决策分析教练。用户在做一个决策时�
 3. 从这次决策中学到了什么？
 4. 下次类似决策的建议
 
-请用中文回复，200-300 字，语气客观但鼓励。不要使用 markdown 格式。"""
+请先单独输出一行：MATCH_STATUS=match、partial、mismatch 或 unknown 四选一。
+之后再输出 200-300 字中文分析，语气客观但鼓励，不要使用 markdown 格式。"""
 
 
 def get_pending_reviews(
@@ -95,11 +109,18 @@ async def complete_review(
     # AI 只负责增强分析，不应阻断已经成功保存的回溯数据。
     try:
         orchestrator = AIOrchestrator()
-        decision.ai_analysis = await orchestrator.chat(
+        raw_analysis = await orchestrator.chat(
             system_prompt=SYSTEM_PROMPT,
             user_prompt=context,
             timeout=30,
         )
+        match_status, cleaned_analysis = _extract_match_status(raw_analysis)
+        decision.ai_analysis = cleaned_analysis
+        details = dict(decision.details or {})
+        system_details = dict(details.get("_system") or {})
+        system_details["review_match_status"] = match_status
+        details["_system"] = system_details
+        decision.details = details
     except Exception:
         logger.exception(
             "decision review AI analysis failed; decision_id=%s user_id=%s",
