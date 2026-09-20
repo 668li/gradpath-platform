@@ -16,6 +16,7 @@ import httpx
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.outbound_security import OutboundURLValidationError, validate_public_http_endpoint
 from app.core.secret_crypto import decrypt_secret, encrypt_secret, mask_secret
 from app.models.user_llm_config import UserLLMConfig
 from app.schemas.user_llm_config import (
@@ -45,6 +46,10 @@ class LLMOverride:
 def _validate(base_url: str, model: str, api_key: str) -> None:
     if not _URL_RE.match(base_url or ""):
         raise UserLLMConfigError("Base URL 必须是合法的 http(s) 地址")
+    try:
+        validate_public_http_endpoint(base_url)
+    except OutboundURLValidationError as exc:
+        raise UserLLMConfigError(str(exc)) from exc
     if len(base_url) > 500:
         raise UserLLMConfigError("Base URL 过长（最多 500 字符）")
     if not (model or "").strip():
@@ -122,8 +127,8 @@ def resolve_user_llm_override(db: Session, user_id: UUID) -> LLMOverride | None:
         return None
     api_key = decrypt_secret(cfg.api_key_encrypted)
     if not api_key:
-        # SECRET_KEY 轮换导致解密失败：视为配置失效，回退服务器默认
-        logger.warning("用户 %s 的 LLM Key 解密失败，回退服务器默认配置", user_id)
+        # SECRET_KEY 轮换/密钥损坏后，必须明确标记配置失效，避免静默回退到平台 Key。
+        logger.error("用户 %s 的 LLM Key 解密失败；BYOK 配置已失效", user_id)
         return None
     return LLMOverride(api_key=api_key, model=cfg.model, base_url=cfg.base_url)
 
