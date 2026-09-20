@@ -30,7 +30,6 @@ def _serialize_user(user: User) -> dict:
     return {
         "id": str(user.id),
         "email": user.email,
-        "password_hash": user.password_hash,
         "name": user.name,
         "nickname": user.nickname,
         "username": user.username,
