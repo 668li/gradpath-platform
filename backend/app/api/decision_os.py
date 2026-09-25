@@ -17,6 +17,7 @@ from app.schemas.decision_os import (
     ActionCompleteRequest,
     ConfirmDraftRequest,
     DecisionCard,
+    EvidenceCandidate,
     EvidenceCreate,
     EvidenceResponse,
     EvidenceUpdate,
@@ -26,6 +27,7 @@ from app.schemas.decision_os import (
     HypothesisUpdate,
     OutcomeCreate,
     OutcomeResponse,
+    ProviderSearchRequest,
     ReflectionCreate,
     ReflectionResponse,
     StructuredDraft,
@@ -35,6 +37,7 @@ from app.schemas.decision_os import (
     ValidationActionUpdate,
 )
 from app.services import decision_os_service as service
+from app.services import evidence_provider_service as provider_service
 
 router = APIRouter(prefix="/api/decision-os", tags=["决策OS"])
 
@@ -209,6 +212,33 @@ def delete_action(
     user: User = Depends(get_current_user),
 ):
     service.delete_action(db, user.id, action_id)
+
+
+# ---------------------------------------------------------------- provider router
+@router.get("/hypotheses/{hypothesis_id}/providers")
+def list_providers(
+    hypothesis_id: UUID,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """白名单 Provider 清单（先过所有权，他人假设看不到面板）。"""
+    service.get_hypothesis(db, user.id, hypothesis_id)
+    return provider_service.list_providers()
+
+
+@router.post(
+    "/hypotheses/{hypothesis_id}/providers/{provider_name}/search",
+    response_model=list[EvidenceCandidate],
+)
+def search_provider(
+    hypothesis_id: UUID,
+    provider_name: str,
+    data: ProviderSearchRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """白名单内部库检索候选证据。未知 provider=404，绝不随机路由。"""
+    return provider_service.search_provider(db, user.id, hypothesis_id, provider_name, data.query)
 
 
 # ---------------------------------------------------------------- outcomes / reflections

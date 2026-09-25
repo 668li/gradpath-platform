@@ -235,6 +235,23 @@ class ReflectionResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ProviderSearchRequest(BaseModel):
+    query: str = Field(min_length=1, max_length=100, description="检索词（学校/专业/岗位/指标等）")
+
+
+class EvidenceCandidate(BaseModel):
+    """Provider Router 的候选证据 —— 不是证据本体：无 verification_status，
+    入账须走既有 POST evidence（创建一律 internal_unverified）。"""
+
+    claim: str
+    source: str | None = None
+    source_url: str | None = None
+    source_type: EvidenceSourceType
+    reliability: EvidenceReliability
+    provider: str
+    observed_on: date | None = None
+
+
 class HypothesisCard(HypothesisResponse):
     """假设卡片 = 假设本体 + 证据立场计数（诚实计数，不做伪精确覆盖率）。"""
 
