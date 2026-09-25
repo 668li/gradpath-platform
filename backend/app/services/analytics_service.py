@@ -80,12 +80,10 @@ class AnalyticsService:
             return {"trend": "insufficient_data", "slope": 0}
 
         try:
-            from sklearn.linear_model import LinearRegression
-
-            X = np.array(range(len(valid_scores))).reshape(-1, 1)
-            y = np.array(valid_scores)
-            model = LinearRegression().fit(X, y)
-            slope = model.coef_[0]
+            # 一维最小二乘斜率：np.polyfit 与 LinearRegression 等价，免掉 scikit-learn 整包依赖
+            x = np.arange(len(valid_scores), dtype=float)
+            y = np.array(valid_scores, dtype=float)
+            slope = float(np.polyfit(x, y, 1)[0])
 
             if slope > 2:
                 trend = "rising"

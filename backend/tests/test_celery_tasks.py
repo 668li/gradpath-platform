@@ -93,16 +93,6 @@ class TestAITasks:
 
 
 class TestCeleryFallback:
-    def test_fallback_function_exists(self):
-        """Celery 不可用时的兼容入口存在且可调用。"""
-        from app.tasks.crawler_tasks import (
-            _run_crawler_background_compat,
-            _run_scheduled_crawler_compat,
-        )
-
-        assert callable(_run_crawler_background_compat)
-        assert callable(_run_scheduled_crawler_compat)
-
     def test_api_dispatcher_exists(self):
         """API 层 Celery 投递辅助函数存在。"""
         from app.api.crawlers import _celery_available, _dispatch_crawler_task

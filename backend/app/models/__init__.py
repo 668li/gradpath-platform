@@ -16,12 +16,10 @@ from app.models.comment import Comment
 from app.models.community_rating import CommunityRating
 from app.models.community_report import CommunityReport, DestinationType, SalaryRange
 from app.models.company import Company, CompanySize
-from app.models.company_review import CompanyReview
 from app.models.conversation import Conversation, Message
 from app.models.crawler_run import CrawlerRun
 from app.models.crawler_state import CrawlerSourceState
 from app.models.data_source import DataSource
-from app.models.dataset_info import DatasetInfo
 from app.models.decision_analysis import DecisionAnalysis
 
 # Decision OS 领域（D9 拍板 09-25：访谈驱动的 Decision OS 单管线）
@@ -150,11 +148,9 @@ __all__ = [
     "PostTopicType",
     "Company",
     "CompanySize",
-    "CompanyReview",
     "SalaryBenchmark",
     "ExperienceLevel",
     "MarketData",
-    "DatasetInfo",
     "UserBadge",
     "GrowthInsight",
     "UserSetting",

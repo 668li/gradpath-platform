@@ -13,9 +13,8 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
 
     # Environment and runtime
-    # ENV: 短别名，供 Sentry / 日志 / 第三方 SDK 使用；未显式设置时派生自 ENVIRONMENT，
-    # 避免双默认值相反导致环境判定歧义（_validate_config 中统一）。
-    ENV: str | None = None
+    # 2026-09-25 ponytail 瘦身：删除 ENV 别名字段——注释称供 Sentry/日志/第三方 SDK 用，
+    # 但全仓无 Sentry 且无任何 settings.ENV 读取点；环境判定统一走 ENVIRONMENT。
     ENVIRONMENT: str = "development"
     LOG_LEVEL: str = "INFO"
     CORS_ORIGINS: str = "http://localhost:3000,http://127.0.0.1:3000"
@@ -74,10 +73,6 @@ class Settings(BaseSettings):
         可被绕过（python-jose 默认拒绝，但显式校验可防御配置错误）。
         """
         errors = []
-
-        # ENV 派生自 ENVIRONMENT（统一环境来源，消除双默认值相反）
-        if not self.ENV:
-            self.ENV = self.ENVIRONMENT
 
         # 所有环境都必须有 SECRET_KEY，且长度 >= 32
         if not self.SECRET_KEY:

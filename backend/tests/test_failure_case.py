@@ -1,6 +1,6 @@
 """失败案例库 API 测试。"""
 
-from app.services.failure_case_seeds import seed_failure_cases
+from tests.failure_case_seeds import seed_failure_cases
 
 # ======================================================================
 # 测试辅助
@@ -470,7 +470,7 @@ class TestStats:
 class TestSeedData:
     def test_seed_cases_have_required_fields(self, db_session):
         """每条种子数据都有必填字段。"""
-        from app.services.failure_case_seeds import SEED_CASES
+        from tests.failure_case_seeds import SEED_CASES
 
         assert len(SEED_CASES) == 8
         for case in SEED_CASES:

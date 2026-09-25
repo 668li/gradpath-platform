@@ -686,17 +686,17 @@ class TestScenarioGroupedMatching:
         # 升学情景："读研" 泛化词 → grad_school_planning
         skill = registry.find_skill_instance("我想读研但不知道怎么规划", {})
         assert skill is not None
-        assert skill.code in {"grad_school_planning", "kaoyan-advisor", "career_planning"}
+        assert skill.code in {"grad_school_planning", "career_planning"}
 
     def test_scoreline_scenario_lands_on_kaoyan(self):
         skill = registry.find_skill_instance("这个学校上岸要多少分", {})
         assert skill is not None
-        assert skill.code in {"kaoyan-advisor", "grad_school_planning"}
+        assert skill.code == "grad_school_planning"
 
     def test_prep_scenario_lands_on_learning(self):
         skill = registry.find_skill_instance("我每天该学多久", {})
         assert skill is not None
-        assert skill.code in {"learning_plan_generator", "kaoyan-advisor", "grad_school_planning"}
+        assert skill.code in {"learning_plan_generator", "grad_school_planning"}
 
     def test_interview_scenario_lands_on_interview(self):
         skill = registry.find_skill_instance("复试怎么准备", {})

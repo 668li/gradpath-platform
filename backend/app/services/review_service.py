@@ -173,7 +173,6 @@ async def ai_analyze_review(
             system_prompt=SYSTEM_PROMPT,
             user_prompt=user_content,
             timeout=30,
-            retry=1,
         )
         parsed = _parse_ai_json(raw)
         result = {

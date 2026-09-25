@@ -24,107 +24,13 @@ class SkillInfo:
     category: str  # builder / advisor / generator
     icon: str = "code"
     is_active: bool = True
-    skill_path: str | None = None
 
 
 # ===== 项目专用 Skill =====
+# 2026-09-25 ponytail 瘦身：删除 4 个无实现的 is_active=False 死条目
+# （api-endpoint-builder / data-crawler-builder / frontend-page-builder / kaoyan-advisor，
+# 均不在 _SKILL_CLASSES，find_skill_instance 永远不可能命中）与无人消费的 skill_path 字段。
 _SKILLS: list[SkillInfo] = [
-    SkillInfo(
-        code="api-endpoint-builder",
-        name="api-endpoint-builder",
-        display_name="API 端点构建器",
-        description="快速生成 FastAPI CRUD 模块（Model + Schema + Router + 前端类型 + API 封装），输入实体名+字段定义即可生成完整模块。",
-        trigger_words=["新增模块", "生成CRUD", "创建接口", "快速建表"],
-        use_cases=[
-            "新增一个数据模块（如院校对比、学习计划、模考记录）",
-            "快速搭建 MVP 功能",
-            "标准化 API 结构",
-        ],
-        capabilities=[
-            "自动生成 SQLAlchemy Model",
-            "自动生成 Pydantic Schema",
-            "自动生成 FastAPI CRUD 路由",
-            "自动生成前端 TypeScript 类型",
-            "自动生成前端 API 封装函数",
-        ],
-        limitations=["复杂业务逻辑需手动设计", "不用于第三方 API 集成"],
-        category="builder",
-        icon="code",
-        is_active=False,
-        skill_path="d:\\职业规划\\skills\\api-endpoint-builder",
-    ),
-    SkillInfo(
-        code="data-crawler-builder",
-        name="data-crawler-builder",
-        display_name="数据爬虫构建器",
-        description="生成考研数据爬虫脚本，基于 BaseCrawler 模式，支持研招网、导师评价网等数据源，内置反爬策略。",
-        trigger_words=["写个爬虫", "抓取网站", "新增数据源", "爬取数据"],
-        use_cases=[
-            "需要新增数据源（如某个院校的导师信息）",
-            "现有爬虫覆盖不足，需要扩展",
-            "从特定网站批量采集数据",
-        ],
-        capabilities=[
-            "生成符合项目架构的爬虫",
-            "自动去重入库",
-            "内置反爬策略（UA轮换、请求间隔、重试）",
-            "支持研招网、导师评价网等数据源",
-        ],
-        limitations=["不用于通用爬虫", "不用于实时数据采集", "不破解反爬机制"],
-        category="builder",
-        icon="database",
-        is_active=False,
-        skill_path="d:\\职业规划\\skills\\data-crawler-builder",
-    ),
-    SkillInfo(
-        code="frontend-page-builder",
-        name="frontend-page-builder",
-        display_name="前端页面构建器",
-        description="快速生成前端页面（列表页/详情页/表单页/仪表板），内置空状态、加载骨架、错误边界、分页等通用逻辑。",
-        trigger_words=["新建页面", "生成列表页", "做个详情页", "加个表单页"],
-        use_cases=[
-            "需要新增一个功能页面",
-            "快速搭建 MVP 界面",
-            "标准化页面结构",
-        ],
-        capabilities=[
-            "生成列表页（含搜索/筛选/分页）",
-            "生成详情页",
-            "生成表单页（含验证）",
-            "生成仪表板",
-            "内置空状态、加载骨架、错误边界",
-        ],
-        limitations=["不用于复杂交互逻辑", "不用于第三方组件集成"],
-        category="builder",
-        icon="layout",
-        is_active=False,
-        skill_path="d:\\职业规划\\skills\\frontend-page-builder",
-    ),
-    SkillInfo(
-        code="kaoyan-advisor",
-        name="kaoyan-advisor",
-        display_name="考研智能顾问",
-        description="扮演资深考研规划师，根据用户背景给出个性化择校建议，解读分数线趋势、报录比、调剂信息，内置暗知识体系。",
-        trigger_words=["帮我选学校", "我能考什么", "择校建议", "考研规划"],
-        use_cases=[
-            "用户需要择校建议",
-            "解读分数线和报录比",
-            "评估竞争力等级",
-            "生成冲/稳/保三档推荐",
-        ],
-        capabilities=[
-            "收集用户背景（本科层次/GPA/目标）",
-            "评估竞争力等级（S/A/B/C/D）",
-            "生成冲/稳/保三档院校推荐",
-            "解读分数线趋势",
-            "主动提醒暗知识和常见误区",
-        ],
-        limitations=["不用于具体科目复习指导", "不用于心理疏导"],
-        category="advisor",
-        icon="graduation-cap",
-        is_active=False,
-        skill_path="d:\\职业规划\\skills\\kaoyan-advisor",
-    ),
     SkillInfo(
         code="career_planning",
         name="career_planning",
@@ -437,7 +343,6 @@ _SCENARIOS: list[dict] = [
             "我该怎么办",
         ],
         "skills": [
-            "kaoyan-advisor",
             "career_planning",
             "grad_school_planning",
             "career_transition",
@@ -457,7 +362,7 @@ _SCENARIOS: list[dict] = [
             "分数要求",
             "要考多少",
         ],
-        "skills": ["kaoyan-advisor", "grad_school_planning"],
+        "skills": ["grad_school_planning"],
     },
     {
         "id": "prep",
@@ -476,13 +381,13 @@ _SCENARIOS: list[dict] = [
             "安排学习",
             "看书",
         ],
-        "skills": ["learning_plan_generator", "kaoyan-advisor", "grad_school_planning"],
+        "skills": ["learning_plan_generator", "grad_school_planning"],
     },
     {
         "id": "volunteer",
         "label": "志愿 / 升学期望",
         "keywords": ["志愿", "填报", "预估分", "能上什么", "能报", "够得着", "稳不稳", "冲稳保"],
-        "skills": ["kaoyan-advisor", "grad_school_planning"],
+        "skills": ["grad_school_planning"],
     },
     {
         "id": "interview",
@@ -516,7 +421,7 @@ _SCENARIOS: list[dict] = [
         "id": "advancement",
         "label": "升学",
         "keywords": ["考研", "保研", "读研", "硕士", "研究生", "学硕", "专硕", "考公", "考编"],
-        "skills": ["grad_school_planning", "kaoyan-advisor", "career_planning"],
+        "skills": ["grad_school_planning", "career_planning"],
     },
 ]
 

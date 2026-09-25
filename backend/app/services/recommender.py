@@ -563,7 +563,7 @@ async def _generate_ai_reason(profile: dict[str, float], article: KnowledgeArtic
         )
 
         orchestrator = AIOrchestrator()
-        result = await orchestrator.chat(system_prompt, user_prompt, timeout=10, retry=0)
+        result = await orchestrator.chat(system_prompt, user_prompt, timeout=10)
         if result and len(result.strip()) > 5:
             return result.strip()[:100]
     except Exception as e:

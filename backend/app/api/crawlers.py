@@ -689,12 +689,12 @@ def seed_default_schedules() -> None:
 
 
 async def _notify_data_update(source_name: str, items_stored: int):
-    """发送数据更新通知（WebSocket + 外部webhook）。"""
-    import httpx
+    """发送数据更新通知（WebSocket 广播）。
 
-    from app.config import settings
-
-    # WebSocket广播
+    2026-09-25 ponytail 瘦身：外部 n8n webhook 分支删除——其读取的
+    DATA_UPDATE_WEBHOOK_URL 在 config.py 中从未定义，getattr 恒 None，
+    分支从未执行过。如日后需要外部通知，先在 config.py 落字段再接线。
+    """
     await ws_manager.broadcast(
         {
             "type": "data_update",
@@ -702,19 +702,3 @@ async def _notify_data_update(source_name: str, items_stored: int):
             "items_stored": items_stored,
         }
     )
-
-    # 外部webhook（n8n）
-    webhook_url = getattr(settings, "DATA_UPDATE_WEBHOOK_URL", None)
-    if webhook_url:
-        try:
-            async with httpx.AsyncClient() as client:
-                await client.post(
-                    webhook_url,
-                    json={
-                        "source_name": source_name,
-                        "items_stored": items_stored,
-                    },
-                    timeout=10,
-                )
-        except Exception as e:
-            logger.warning(f"Webhook通知失败: {e}")

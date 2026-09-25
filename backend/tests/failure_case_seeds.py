@@ -4,6 +4,9 @@
 - 不是"吓唬人"，而是"失败是正常的"——降低试错心理成本
 - 第一人称叙事（800-1200字），具体教训 3-5 条，后悔的事 2-3 条，"如果重来"建议
 - 覆盖考研 / 考公 / 求职 / 留学 四条路径
+
+注：2026-09-25 ponytail 瘦身自 app/services/ 降级为测试夹具——生产无喂入路径，
+仅 test_failure_case.py 用作 API 测试种子。
 """
 
 from sqlalchemy.orm import Session

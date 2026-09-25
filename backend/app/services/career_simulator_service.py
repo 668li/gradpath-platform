@@ -23,29 +23,14 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.services.path_decision_engine import _percentile
+
 logger = logging.getLogger(__name__)
 
 # 样本量阈值：低于此值不做分布统计（防"三行数据算中位数"）
 _MIN_SAMPLE = 5
 # 来源可溯闸阈值（与 path_decision_engine 同纪律）
-
-
-# ----------------------------------------------------------------------
-# 工具：分位数（与 path_decision_engine._percentile 同口径）
-# ----------------------------------------------------------------------
-
-
-def _percentile(sorted_vals: list[float], q: float) -> float:
-    """线性插值分位数。输入须已升序。"""
-    if not sorted_vals:
-        return 0.0
-    if len(sorted_vals) == 1:
-        return sorted_vals[0]
-    pos = (len(sorted_vals) - 1) * q
-    lo = int(pos)
-    hi = min(lo + 1, len(sorted_vals) - 1)
-    frac = pos - lo
-    return sorted_vals[lo] * (1 - frac) + sorted_vals[hi] * frac
+# 分位数唯一实现收敛到 path_decision_engine._percentile（09-25 ponytail 去重，口径不变）
 
 
 def _ratio_to_float(raw: str | None) -> float | None:
@@ -281,7 +266,9 @@ def _career_stats(db: Session) -> dict[str, Any]:
                     "direction": "anchor",
                 }
             )
-        stats["data_note"] = "就业薪资锚点为国家统计局官方口径；个体差异远大于地区差异，此处只作量级参照"
+        stats["data_note"] = (
+            "就业薪资锚点为国家统计局官方口径；个体差异远大于地区差异，此处只作量级参照"
+        )
 
     return stats
 

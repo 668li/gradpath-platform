@@ -30,7 +30,7 @@ dependencies = [
     "lxml>=5.0.0",
     "PyMuPDF>=1.24.0",
     "numpy>=1.24.0",
-    "scikit-learn>=1.3.0",
+    # scikit-learn 已摘除（09-25 ponytail）：唯一用点 analytics_service 一维线性回归改 np.polyfit
     "apscheduler>=3.10.0",
     "redis>=5.0.0",
     "tenacity>=8.2.0",
@@ -206,7 +206,6 @@ module = [
     "openpyxl.*",
     "fitz.*",
     "numpy.*",
-    "sklearn.*",
     "bs4.*",
     "lxml.*",
     "redis.*",
