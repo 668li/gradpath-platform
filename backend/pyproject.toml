@@ -9,6 +9,9 @@ dependencies = [
     "sqlalchemy>=2.0.30",
     "alembic>=1.13.0",
     "psycopg2-binary>=2.9.9",
+    # psycopg3 显式钉版（09-25 生产爆雷修复）：生产 DATABASE_URL 走 postgresql+psycopg
+    # 方言需 psycopg3，此前靠传递依赖硬撑，pip 层重建解析后消失致 backend 起不来
+    "psycopg[binary]>=3.1",
     "pydantic>=2.7.0",
     "pydantic-settings>=2.14.2",
     # PyJWT 替换 python-jose（2026-09-06）：jose 依赖链的 ecdsa 上游无修复版，
