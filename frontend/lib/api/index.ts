@@ -79,7 +79,7 @@ export type {
   ReportProcessRequest,
   ReportProcessResult,
 } from "./admin";
-export { recommendationApi, lifeDesignApi } from "./recommendations";
+export { lifeDesignApi } from "./recommendations";
 export { searchApi } from "./search";
 export { careerSimulatorApi } from "./career-simulator";
 export type {
@@ -91,20 +91,7 @@ export type {
   Preset,
   MetaResponse,
 } from "./career-simulator";
-export { pathComparisonApi } from "./path-comparison";
-export type { PathInput, PathMetrics, ComparisonResponse, RiskLevel, PathType } from "@/types/path-comparison";
 export { pathDecisionApi } from "./path-decision";
-export type {
-  DecisionEngineInput,
-  DecisionEngineResponse,
-  DecisionOutcomeSubmit,
-  DecisionOutcomeInfo,
-  EvidenceItem,
-  PositionAnalysis,
-  TopPosition,
-  SchoolAnalysis,
-  SchoolCompetitionItem,
-} from "@/types/path-comparison";
 
 export { microActionApi } from "./micro-action";
 export { findNextPendingTask } from "./resume";

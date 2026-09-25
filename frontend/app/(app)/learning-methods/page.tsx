@@ -7,7 +7,7 @@ import type { LearningMethod, LearningMethodTag, LearningMethodStats } from "@/l
 import { Badge } from "@/components/ui/form-controls";
 import { LoadingState, EmptyState } from "@/components/ui/empty";
 import { BarChart } from "@/components/charts";
-import { toast } from "sonner";
+import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 
 const TAG_COLORS: Record<string, "slate" | "green" | "amber" | "red" | "blue" | "purple"> = {
@@ -31,6 +31,7 @@ function formatDate(dateStr: string) {
 }
 
 export default function LearningMethodsPage() {
+  const toast = useToast();
   const [methods, setMethods] = useState<LearningMethod[]>([]);
   const [recommended, setRecommended] = useState<LearningMethod[]>([]);
   const [tags, setTags] = useState<LearningMethodTag[]>([]);

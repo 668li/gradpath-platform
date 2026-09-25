@@ -3,8 +3,6 @@ import type {
   GwyPositionResponse,
   GwyPositionStatsResponse,
   GwyProvincePositionListResponse,
-  GwyScoreLineListResponse,
-  GwyScoreLineStatsResponse,
 } from "@/types";
 import { request, buildQuery } from "./client";
 
@@ -40,34 +38,11 @@ export const gwyPositionsApi = {
 };
 
 /**
- * 国考进面分数线 API（公开只读）。
- *
- * 对应后端 /api/gwy-score-lines：2026 国考面试名单按职位聚合的进面最低分
- * （首批 / 调剂 / 补充录用）。通过 position_code 与职位表关联。
- */
-export const gwyScoreLinesApi = {
-  list: (params?: {
-    page?: number;
-    page_size?: number;
-    year?: number;
-    batch?: string;
-    position_code?: string;
-    q?: string;
-  }) =>
-    request<GwyScoreLineListResponse>(
-      `/api/gwy-score-lines${buildQuery((params as Record<string, string | number | undefined | null>) || {})}`,
-    ),
-
-  stats: (params?: { year?: number }) =>
-    request<GwyScoreLineStatsResponse>(
-      `/api/gwy-score-lines/stats${buildQuery((params as Record<string, string | number | undefined | null>) || {})}`,
-    ),
-};
-
-/**
  * 省考职位 API（公开只读）。
  *
  * 对应后端 /api/gwy-province-positions：各省考试录用公务员职位表（首例广东 2026）。
+ * 2026-09-25 ponytail 瘦身：gwyScoreLinesApi 删除——后端 API 层已下线（模型保留），
+ * 前端无任何组件调用。
  */
 export const provincePositionsApi = {
   list: (params?: {

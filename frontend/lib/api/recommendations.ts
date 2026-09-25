@@ -1,7 +1,4 @@
 import type {
-  RecommendationResponse,
-  SchoolRecommendation,
-  AdjustmentRecommendation,
   AuditQuestion,
   SprintCreate,
   SprintResponse,
@@ -11,32 +8,11 @@ import type {
   WeeklyReviewCreate,
   WeeklyReviewResponse,
 } from "@/types";
-import { request, buildQuery } from "./client";
-
-// ===== AI 推荐系统 =====
-export const recommendationApi = {
-  recommendSchools: (params?: {
-    target_score?: number;
-    target_tier?: string;
-    target_region?: string;
-    target_major?: string;
-    top_n?: number;
-  }) =>
-    request<RecommendationResponse<SchoolRecommendation>>(
-      `/api/recommend/schools${buildQuery((params as Record<string, string | number | undefined | null>) || {})}`,
-    ),
-  recommendAdjustments: (params?: {
-    target_score?: number;
-    target_major?: string;
-    target_region?: string;
-    top_n?: number;
-  }) =>
-    request<RecommendationResponse<AdjustmentRecommendation>>(
-      `/api/recommend/adjustments${buildQuery((params as Record<string, string | number | undefined | null>) || {})}`,
-    ),
-};
+import { request } from "./client";
 
 // ===== 护城河功能：人生设计引擎 =====
+// 2026-09-25 ponytail 瘦身：recommendationApi 删除——对应后端 /api/recommend/*
+// 端点已随 009 考研收敛下线，前端无任何组件调用。
 export const lifeDesignApi = {
   getAuditQuestions: (focusAreas: string[] = ["career", "finance", "health", "relationships", "growth"]) =>
     request<{ domain: string; domain_name: string; question: string; answer: string }[]>("/api/life-design/audit/questions", {

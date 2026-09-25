@@ -1278,33 +1278,8 @@ export interface GradYanzhaoProgram {
 }
 
 // ===== AI 推荐系统 =====
-export interface SchoolRecommendation {
-  name: string;
-  province: string;
-  level: string;
-  match_score: number;
-  match_reasons: string[];
-  score_line: number | null;
-  adjustment_available: boolean;
-}
-
-export interface AdjustmentRecommendation {
-  university_name: string;
-  department: string;
-  major_name: string;
-  match_score: number;
-  match_reasons: string[];
-  adjustment_quota: number | null;
-  deadline: string | null;
-  contact_email: string | null;
-  contact_phone: string | null;
-  source_url: string | null;
-}
-
-export interface RecommendationResponse<T> {
-  items: T[];
-  total: number;
-}
+// 2026-09-25 ponytail 瘦身：SchoolRecommendation/AdjustmentRecommendation/RecommendationResponse
+// 三个类型删除——对应后端 /api/recommend/* 端点已随 009 考研收敛下线，前端零引用。
 
 // ===== 求职作战室：公司情报 =====
 export type OvertimeLevel = "none" | "mild" | "moderate" | "severe" | "unknown";
@@ -1805,46 +1780,8 @@ export interface StudyPlanUpdate {
 }
 
 // ===== 学习资源 =====
-export interface LearningResource {
-  id: string;
-  user_id: string;
-  title: string;
-  url: string | null;
-  resource_type: string;
-  subject: string;
-  difficulty: string;
-  description: string | null;
-  tags: string[] | null;
-  rating: number;
-  is_free: boolean;
-  view_count: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface LearningResourceCreate {
-  title: string;
-  url?: string | null;
-  resource_type: string;
-  subject: string;
-  difficulty: string;
-  description?: string | null;
-  tags?: string[] | null;
-  rating?: number;
-  is_free?: boolean;
-}
-
-export interface LearningResourceUpdate {
-  title?: string;
-  url?: string | null;
-  resource_type?: string;
-  subject?: string;
-  difficulty?: string;
-  description?: string | null;
-  tags?: string[] | null;
-  rating?: number;
-  is_free?: boolean;
-}
+// 2026-09-25 ponytail 瘦身：LearningResource/Create/Update 三类型删除——
+// 学习资源功能已在前端瘦身批次下线，前端零引用。
 
 // ===== 考研资讯 =====
 export interface KaoyanKeyDate {
@@ -2028,49 +1965,12 @@ export interface GwyProvincePositionListResponse {
   page_size: number;
 }
 
-export interface GwyProvincePositionStatsResponse {
-  total: number;
-  total_recruit: number;
-  by_sheet: GwyPositionStatsGroup[];
-  by_education: GwyPositionStatsGroup[];
-  by_region: GwyPositionStatsGroup[];
-  by_fresh_grad_only: GwyPositionStatsGroup[];
-}
+// 2026-09-25 ponytail 瘦身：GwyProvincePositionStatsResponse 删除——
+// 后端省考职位无 stats 端点，前端零引用（GwyPositionStatsGroup 为国考 stats 保留）。
 
 // ===== 国考进面分数线 =====
-export interface GwyScoreLineResponse {
-  id: string;
-  year: number;
-  batch: string;
-  dept_name: string | null;
-  dept_code: string | null;
-  bureau: string | null;
-  position_name: string | null;
-  position_code: string;
-  min_score: number | null;
-  source_url: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface GwyScoreLineListResponse {
-  items: GwyScoreLineResponse[];
-  total: number;
-  page: number;
-  page_size: number;
-}
-
-export interface GwyScoreLineStatsGroup {
-  key: string;
-  count: number;
-}
-
-export interface GwyScoreLineStatsResponse {
-  total: number;
-  avg_score: number | null;
-  by_batch: GwyScoreLineStatsGroup[];
-  by_year: GwyScoreLineStatsGroup[];
-}
+// 2026-09-25 ponytail 瘦身：GwyScoreLine 四类型删除——后端 API 层已下线（模型保留），
+// 前端 gwyScoreLinesApi 已删，零引用。
 
 export interface CommentResponse {
   id: string;

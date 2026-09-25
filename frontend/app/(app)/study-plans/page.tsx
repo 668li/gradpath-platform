@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { studyPlanApi } from "@/lib/api";
 import { StudyPlan, StudyPlanCreate } from "@/types";
-import { toast } from "sonner";
+import { useToast } from "@/components/ui/toast";
 import { Plus, Trash2, Edit2, FileText } from "lucide-react";
 
 /** 学习计划示例模板（空态引导，点「套用」预填创建表单） */
@@ -26,6 +26,7 @@ const STUDY_PLAN_TEMPLATES: { title: string; subjects: string[]; hint: string }[
 ];
 
 export default function StudyPlansPage() {
+  const toast = useToast();
   const [plans, setPlans] = useState<StudyPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
