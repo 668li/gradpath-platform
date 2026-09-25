@@ -15,6 +15,8 @@ import {
   type ActionResultStance,
   type OutcomeKind,
   type MatchStatus,
+  type ProviderInfo,
+  type EvidenceCandidate,
 } from "@/lib/api/decisionOs";
 
 const IMPORTANCE_LABEL: Record<HypothesisImportance, string> = {
@@ -265,6 +267,59 @@ function DecisionCardBody({
     new_principle: string;
   }>({ lesson: "", wrong_assumption: "", match_status: "unknown", new_principle: "" });
 
+  // Provider Router（白名单内部库候选证据）
+  const [providers, setProviders] = useState<ProviderInfo[]>([]);
+  const [provOpen, setProvOpen] = useState<string | null>(null);
+  const [provSel, setProvSel] = useState("grad_scoreline");
+  const [provQuery, setProvQuery] = useState("");
+  const [provResults, setProvResults] = useState<EvidenceCandidate[]>([]);
+
+  // 外部验证
+  const [verifyUrl, setVerifyUrl] = useState<Record<string, string>>({});
+  const [verifyMsg, setVerifyMsg] = useState<Record<string, string>>({});
+
+  const openProv = (hypId: string) =>
+    run(async () => {
+      if (provOpen === hypId) {
+        setProvOpen(null);
+        return;
+      }
+      setProvOpen(hypId);
+      setProvResults([]);
+      setProviders(await decisionOsApi.listProviders(hypId));
+    });
+
+  const searchProv = (hypId: string) =>
+    run(async () => {
+      setProvResults(await decisionOsApi.searchProvider(hypId, provSel, provQuery));
+    });
+
+  const recordCandidate = (hypId: string, c: EvidenceCandidate) =>
+    run(async () => {
+      await decisionOsApi.addHypothesisEvidence(hypId, {
+        claim: c.claim,
+        stance: "neutral",
+        provider: c.provider,
+        source_url: c.source_url ?? undefined,
+      });
+      onChanged();
+    });
+
+  const doVerify = (evId: string) =>
+    run(async () => {
+      const r = await decisionOsApi.externalVerify(evId, verifyUrl[evId]);
+      const verdictText =
+        r.verdict === "agree"
+          ? "外部来源支持"
+          : r.verdict === "contradict"
+            ? "外部来源反对（已另立一条外部证据，原证据留痕）"
+            : r.verdict === "stale"
+              ? "外部信息已过时"
+              : "来源与此证据无关，状态未动";
+      setVerifyMsg({ ...verifyMsg, [evId]: `核查结论：${verdictText}——${r.summary}` });
+      onChanged();
+    });
+
   return (
     <section className={cardCls}>
       <div className="flex items-baseline justify-between">
@@ -336,7 +391,68 @@ function DecisionCardBody({
               >
                 记为证据（默认"内部未验证"）
               </button>
+              <button className={btnGhostCls} onClick={() => openProv(h.id)}>
+                从站内库找证据
+              </button>
             </div>
+            {provOpen === h.id && (
+              <div className="mt-2 space-y-2 rounded-md bg-gray-50 p-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <select
+                    className="rounded border border-gray-200 px-1 py-1 text-xs"
+                    value={provSel}
+                    onChange={(e) => setProvSel(e.target.value)}
+                  >
+                    {providers.map((p) => (
+                      <option key={p.name} value={p.name}>
+                        {p.label}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    className="w-56 rounded border border-gray-200 px-2 py-1 text-xs"
+                    placeholder="检索词：学校/专业/岗位/指标"
+                    value={provQuery}
+                    onChange={(e) => setProvQuery(e.target.value)}
+                  />
+                  <button
+                    className={btnGhostCls}
+                    disabled={busy || !provQuery.trim()}
+                    onClick={() => searchProv(h.id)}
+                  >
+                    搜索候选
+                  </button>
+                </div>
+                {provResults.map((c, i) => (
+                  <div key={i} className="rounded border border-gray-100 bg-white p-2 text-xs">
+                    <p className="text-gray-700">{c.claim}</p>
+                    <p className="mt-0.5 text-gray-400">
+                      {c.provider} · 可靠性 {c.reliability}
+                      {c.source_url && (
+                        <a
+                          href={c.source_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="ml-1 text-blue-500"
+                        >
+                          查看来源
+                        </a>
+                      )}
+                    </p>
+                    <button
+                      className={`${btnGhostCls} mt-1`}
+                      disabled={busy}
+                      onClick={() => recordCandidate(h.id, c)}
+                    >
+                      记为证据（入账仍标"内部未验证"）
+                    </button>
+                  </div>
+                ))}
+                {provResults.length === 0 && (
+                  <p className="text-xs text-gray-400">（无候选——换个检索词，或用下方外部核查）</p>
+                )}
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -361,6 +477,24 @@ function DecisionCardBody({
                 </span>
                 {STANCE_LABEL[ev.stance]} · {ev.claim}
                 {ev.provider && <span className="ml-1 text-gray-400">[{ev.provider}]</span>}
+                {ev.verification_status === "internal_unverified" && (
+                  <span className="mt-1 flex items-center gap-1">
+                    <input
+                      className="w-56 rounded border border-gray-200 px-1.5 py-0.5"
+                      placeholder="外部来源 URL（官方页/新闻）"
+                      value={verifyUrl[ev.id] ?? ""}
+                      onChange={(e) => setVerifyUrl({ ...verifyUrl, [ev.id]: e.target.value })}
+                    />
+                    <button
+                      className={btnGhostCls}
+                      disabled={busy || !verifyUrl[ev.id]}
+                      onClick={() => doVerify(ev.id)}
+                    >
+                      外部核查
+                    </button>
+                  </span>
+                )}
+                {verifyMsg[ev.id] && <p className="mt-1 text-gray-500">{verifyMsg[ev.id]}</p>}
               </li>
             ))}
           </ul>

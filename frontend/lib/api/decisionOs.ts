@@ -129,6 +129,29 @@ export interface DecisionCard {
   reflections: ReflectionRow[];
 }
 
+export interface ProviderInfo {
+  name: string;
+  label: string;
+}
+
+export interface EvidenceCandidate {
+  claim: string;
+  source?: string | null;
+  source_url?: string | null;
+  source_type: string;
+  reliability: string;
+  provider: string;
+  observed_on?: string | null;
+}
+
+export interface ExternalVerifyResult {
+  verdict: "agree" | "contradict" | "unrelated" | "stale";
+  summary: string;
+  changed: boolean;
+  evidence: EvidenceRow;
+  new_evidence: EvidenceRow | null;
+}
+
 const json = (body: unknown): RequestInit => ({
   method: "POST",
   body: JSON.stringify(body),
@@ -207,4 +230,20 @@ export const decisionOsApi = {
       new_principle?: string;
     },
   ) => request<ReflectionRow>(`/api/decision-os/decisions/${decisionId}/reflections`, json(body)),
+
+  // ---- Provider Router（白名单内部库候选证据）----
+  listProviders: (hypothesisId: string) =>
+    request<ProviderInfo[]>(`/api/decision-os/hypotheses/${hypothesisId}/providers`),
+
+  searchProvider: (hypothesisId: string, providerName: string, query: string) =>
+    request<EvidenceCandidate[]>(
+      `/api/decision-os/hypotheses/${hypothesisId}/providers/${providerName}/search`,
+      json({ query }),
+    ),
+
+  // ---- 外部验证（SSRF 闸 + AI 立场比对，冲突不覆盖）----
+  externalVerify: (evidenceId: string, sourceUrl: string) =>
+    request<ExternalVerifyResult>(`/api/decision-os/evidence/${evidenceId}/external-verify`, {
+      ...json({ source_url: sourceUrl }),
+    }),
 };
