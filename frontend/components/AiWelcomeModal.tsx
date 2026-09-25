@@ -11,6 +11,14 @@ import { useAuthStore } from "@/stores/auth";
 
 const LS_KEY = "ai-welcome-modal-next-show";
 const RE_SHOW_DAYS = 30;
+// 工具页豁免：直奔工具被营销弹窗拦道是诊断实锤断点（2026-09-19 路径模拟器诊断#1）。
+// 豁免不写免打扰标记——用户回其他页面仍可正常弹出。
+const TOOL_PATH_PREFIXES = [
+  "/career-simulator",
+  "/retrospectives",
+  "/career-test-drive",
+  "/path-comparison",
+];
 
 /**
  * 进站弹窗：AI 模型配置说明。
@@ -32,6 +40,8 @@ export function AiWelcomeModal() {
     // 5 分钟诊断进行中绝不弹营销弹窗（新用户注册后 1.2s 本组件就会触发，
     // 不挡 onboarding 会把首跑诊断整个盖住——2026-09-19 E2E 全量实测抓到）
     if (pathname.startsWith("/onboarding")) return;
+    // 工具页不弹（不写免打扰标记，回其他页仍可弹）
+    if (TOOL_PATH_PREFIXES.some((p) => pathname.startsWith(p))) return;
     const next = Number(localStorage.getItem(LS_KEY) || 0);
     if (Date.now() < next) return;
     // 稍作延迟，等首屏渲染稳定后再弹

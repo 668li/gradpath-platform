@@ -82,7 +82,15 @@ export type {
 export { recommendationApi, lifeDesignApi } from "./recommendations";
 export { searchApi } from "./search";
 export { careerSimulatorApi } from "./career-simulator";
-export type { PathConfig, PathResult, YearResult, SimulateResponse, Preset, CityTier, Industry } from "./career-simulator";
+export type {
+  PathConfig,
+  DistributionMetric,
+  YourPosition,
+  PathAnalysis,
+  SimulateResponse,
+  Preset,
+  MetaResponse,
+} from "./career-simulator";
 export { pathComparisonApi } from "./path-comparison";
 export type { PathInput, PathMetrics, ComparisonResponse, RiskLevel, PathType } from "@/types/path-comparison";
 export { pathDecisionApi } from "./path-decision";

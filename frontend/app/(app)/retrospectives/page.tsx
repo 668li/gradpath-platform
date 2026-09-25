@@ -8,6 +8,7 @@ import {
   ClipboardList,
   CheckCircle2,
   ArrowRight,
+  BookMarked,
 } from "lucide-react";
 import { retrospectivesApi } from "@/lib/api";
 import { formatDate, levelStars } from "@/lib/utils";
@@ -20,6 +21,9 @@ import { Pagination } from "@/components/ui/pagination";
 import { useToast } from "@/components/ui/toast";
 import { RetroForm } from "@/components/retro-form";
 import { RetroAIPanel } from "@/components/retro-ai-panel";
+import { PrincipleLibrary } from "@/components/principle-library";
+import { ActionReviewBanner } from "@/components/action-review-banner";
+import { RetroFollowup } from "@/components/retro-followup";
 import type { AIRetroDraft, RetrospectiveResponse } from "@/types";
 
 /** 阶段复盘示例模板（空态引导，点「以此为例」预填表单） */
@@ -60,6 +64,7 @@ const RETRO_TEMPLATES: { title: string; period_type: string; achievements: strin
 
 export default function RetrospectivesPage() {
   const toast = useToast();
+  const [tab, setTab] = useState<"retros" | "principles">("retros");
   const [retros, setRetros] = useState<RetrospectiveResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -71,6 +76,8 @@ export default function RetrospectivesPage() {
     periodStart: string;
     periodEnd: string;
   } | null>(null);
+  // 新建复盘保存后的跟进面板（行动卡 + AI 提炼原则——"下次怎么办"落地件）
+  const [followup, setFollowup] = useState<RetrospectiveResponse | null>(null);
 
   const PAGE_SIZE = 20;
 
@@ -126,11 +133,13 @@ export default function RetrospectivesPage() {
     setModalOpen(true);
   };
 
-  const handleSaved = () => {
+  const handleSaved = (saved: RetrospectiveResponse) => {
     setModalOpen(false);
     setEditing(null);
     setAiDraftData(null);
     load();
+    // 新建复盘 → 弹跟进面板（行动卡+提炼原则）：复盘一半的产出在"下次怎么办"
+    if (saved?.id) setFollowup(saved);
   };
 
   const handleUseDraft = (
@@ -163,15 +172,45 @@ export default function RetrospectivesPage() {
         <div>
           <h1 className="page-title">阶段复盘</h1>
           <p className="text-sm text-ink-500 mt-1">
-            定期回顾，沉淀经验，规划下一步
+            复盘 → 提炼原则 → 下次遇到同类情况做对选择
           </p>
         </div>
-        <Button onClick={openCreate}>
-          <Plus className="h-4 w-4" /> 新建复盘
-        </Button>
+        {tab === "retros" && (
+          <Button onClick={openCreate}>
+            <Plus className="h-4 w-4" /> 新建复盘
+          </Button>
+        )}
       </div>
 
-      <RetroAIPanel onUseDraft={handleUseDraft} />
+      {/* tab 切换：阶段复盘 | 原则库 */}
+      <div className="flex w-fit rounded-lg border border-line-200 bg-white p-1">
+        {(
+          [
+            { id: "retros", label: "复盘记录", icon: <ClipboardList className="h-3.5 w-3.5" /> },
+            { id: "principles", label: "原则库", icon: <BookMarked className="h-3.5 w-3.5" /> },
+          ] as const
+        ).map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={`flex items-center gap-1.5 rounded-md px-4 py-1.5 text-sm transition-colors ${
+              tab === t.id ? "bg-brand-500 text-white" : "text-ink-600 hover:bg-ink-100"
+            }`}
+          >
+            {t.icon}
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {tab === "principles" ? (
+        <PrincipleLibrary />
+      ) : (
+        <>
+          {/* 到期行动卡复审（KPT Try 复审闭环——开场先验证上次的"下次怎么办"） */}
+          <ActionReviewBanner onChanged={load} />
+
+          <RetroAIPanel onUseDraft={handleUseDraft} />
 
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -378,7 +417,9 @@ export default function RetrospectivesPage() {
           pageSize={PAGE_SIZE}
           total={total}
           onPageChange={setPage}
-        />
+          />
+      )}
+        </>
       )}
 
       <Modal
@@ -401,6 +442,31 @@ export default function RetrospectivesPage() {
             setAiDraftData(null);
           }}
         />
+      </Modal>
+
+      {/* 新建复盘后的跟进面板：行动卡 + AI 提炼原则（AAR："下次怎么办"占一半） */}
+      <Modal
+        open={!!followup}
+        onClose={() => setFollowup(null)}
+        title="复盘跟进 · 下次怎么办"
+        className="max-w-2xl"
+      >
+        {followup && (
+          <RetroFollowup
+            retroId={followup.id}
+            retroTitle={followup.title}
+            retroContent={[
+              `复盘：${followup.title}（${followup.period_start} ~ ${followup.period_end}）`,
+              `成就：${(followup.achievements ?? []).join("；")}`,
+              `挑战：${followup.challenges ?? ""}`,
+              `教训：${followup.lessons_learned ?? ""}`,
+              `下一步：${(followup.next_steps ?? []).join("；")}`,
+              `满意度：${followup.satisfaction}/5`,
+            ].join("\n")}
+            period={{ start: followup.period_start, end: followup.period_end }}
+            onClose={() => setFollowup(null)}
+          />
+        )}
       </Modal>
     </div>
   );
