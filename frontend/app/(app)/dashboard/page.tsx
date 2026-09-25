@@ -36,6 +36,7 @@ import {
   EVENT_TYPE_LABEL,
 } from "@/lib/constants";
 import { StatCard } from "@/components/stat-card";
+import { CurrentDecisionCard } from "@/components/decision-os/current-decision-card";
 import { EmptyState } from "@/components/ui/empty";
 import { Button, Badge } from "@/components/ui/form-controls";
 import {
@@ -379,6 +380,9 @@ export default function DashboardPage() {
           hint={data.latest_retrospective?.title ?? "暂无"}
         />
       </div>
+
+      {/* 当前决策 — D9 Phase 2.3：首页第一屏围绕正在进行的决策（复用既有 API 组合） */}
+      <CurrentDecisionCard />
 
       {/* 报考条件账本摘要 — 北极星「条件完成率」的看板视图 */}
       {data.condition_ledger && (

@@ -99,6 +99,7 @@ function getNavSections(): NavSection[] {
       section: "旅程",
       children: [
         { href: "/decision-center", label: "决策中心", icon: Target },
+        { href: "/decision-os", label: "决策 OS", icon: Compass },
         { href: "/career-simulator", label: "路径模拟器", icon: Route },
         { href: "/micro-actions", label: "7天微行动", icon: Footprints },
       ],

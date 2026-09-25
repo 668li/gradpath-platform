@@ -100,6 +100,12 @@ export interface DecisionResponse {
   review_notes?: string | null;
   review_completed?: boolean;
   ai_analysis?: string | null;
+  // Decision OS 结构化字段（D9）
+  question?: string | null;
+  context?: string | null;
+  constraints?: string[];
+  options?: string[];
+  desired_outcome?: string | null;
 }
 
 export interface DecisionCreate {

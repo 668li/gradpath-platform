@@ -4,7 +4,7 @@
 // 纪律：010 观察期内本页不接入导航，仅直连 URL /decision-os 可达；
 // AI 只拆解不决定（确认创建由用户点击）；证据创建即"内部未验证"。
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   decisionOsApi,
   type DecisionCard,
@@ -111,6 +111,21 @@ export default function DecisionOsPage() {
       const c = await decisionOsApi.card(openId.trim());
       setCard(c);
     });
+
+  // 深链：/decision-os?decision=<id>（dashboard 当前决策卡等入口直接带 id 进来）
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("decision");
+    if (!id) return;
+    setOpenId(id);
+    run(async () => {
+      try {
+        setCard(await decisionOsApi.card(id));
+      } catch {
+        /* 深链失效时保持空态，由用户手动输入 */
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-6">
