@@ -103,9 +103,7 @@ async def _ai_compare(claim: str, page_text: str) -> dict:
     return data
 
 
-async def verify_with_external_source(
-    db: Session, user_id, evidence_id, source_url: str
-) -> dict:
+async def verify_with_external_source(db: Session, user_id, evidence_id, source_url: str) -> dict:
     """用外部来源核查一条证据，按立场推进验证状态（证据闸唯一推进入口之一）。"""
     evidence = get_evidence(db, user_id, evidence_id)
 

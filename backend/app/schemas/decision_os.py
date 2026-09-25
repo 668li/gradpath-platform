@@ -253,7 +253,9 @@ class EvidenceCandidate(BaseModel):
 
 
 class ExternalVerifyRequest(BaseModel):
-    source_url: str = Field(min_length=8, max_length=1000, description="外部来源页面 URL（http/https）")
+    source_url: str = Field(
+        min_length=8, max_length=1000, description="外部来源页面 URL（http/https）"
+    )
 
 
 class ExternalVerifyResponse(BaseModel):

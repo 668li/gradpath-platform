@@ -109,7 +109,9 @@ def _search_grad_scoreline(db: Session, user_id: UUID, query: str) -> list[dict]
     )
     out = []
     for r in rows:
-        bits = [f"{r.university_name} {r.major_name}（{r.year}）总分线 {r.total_score_line or '无'}"]
+        bits = [
+            f"{r.university_name} {r.major_name}（{r.year}）总分线 {r.total_score_line or '无'}"
+        ]
         singles = {
             "政": r.politics_score,
             "外": r.foreign_language_score,

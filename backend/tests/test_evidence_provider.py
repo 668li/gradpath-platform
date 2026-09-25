@@ -8,11 +8,9 @@
 """
 
 import uuid
-from datetime import date
 
 from fastapi.testclient import TestClient
 
-from app.models.employment_data import Degree, EmploymentData
 from app.models.experience_post import ExperiencePost
 from app.models.grad_intel import GradSchoolIntel, GradScorelineRecord
 
@@ -28,7 +26,6 @@ def _auth(client: TestClient, email: str) -> dict:
 
 def _make_hypothesis(client: TestClient, headers: dict) -> str:
     """直连既有端点建决策+假设，返回 hypothesis_id。"""
-    from app.schemas.decision_os import StructuredDraft
 
     draft = {
         "question": "要不要跨专业考研？",
@@ -98,7 +95,9 @@ def test_unknown_or_foreign_hypothesis_404(client: TestClient, auth_headers: dic
     assert resp.status_code == 404
 
 
-def test_scoreline_search_returns_candidates_with_source(client: TestClient, auth_headers: dict, db_session):
+def test_scoreline_search_returns_candidates_with_source(
+    client: TestClient, auth_headers: dict, db_session
+):
     db_session.add(
         GradScorelineRecord(
             university_name="测试大学",

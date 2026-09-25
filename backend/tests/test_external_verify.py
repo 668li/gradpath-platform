@@ -7,9 +7,7 @@
 """
 
 import json
-import uuid
 
-import pytest
 from fastapi.testclient import TestClient
 
 from app.services import evidence_verification_service as verification_service
@@ -129,7 +127,9 @@ def test_contradict_keeps_original_and_adds_external_row(
 
 def test_unrelated_changes_nothing(client: TestClient, auth_headers: dict, monkeypatch):
     ev_id = _make_evidence(client, auth_headers)
-    _mock_world(monkeypatch, "今天天气不错。这篇博客随便写写生活流水账，与复试线毫无关系。", "unrelated")
+    _mock_world(
+        monkeypatch, "今天天气不错。这篇博客随便写写生活流水账，与复试线毫无关系。", "unrelated"
+    )
 
     resp = client.post(
         f"/api/decision-os/evidence/{ev_id}/external-verify",
