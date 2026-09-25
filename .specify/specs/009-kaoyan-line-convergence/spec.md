@@ -64,7 +64,7 @@
 2. **负例**：①旧路由/旧端点全 404；②橱窗搜索乱造校名 → 显示"无有源数据"文案 + 外链，**不出现**任何编造条目；③目录为空时显示引导文案（"待站长点名收录"类）而非假列表；④gh 全仓 grep 死引用零命中
 3. **数据面**：drop 迁移后生产 self_positionings 表不存在（备份先行）；kaoyan_news 行数=0 且 24h 后复查仍 0（清空时刻实数双份备份先行、备份行数与清空前行数可对账、可恢复）；grad_school_intel=15 / grad_yanzhao_programs=150 两数不回退（09-19 生产基线实测吻合）；ingestion 管道代码在库（休眠非删除，调度停）
 4. **测试**：pytest 基线全绿、tsc exit 0、vitest 全绿；负例测试入库
-5. **部署冒烟**：gp-preflight 四闸 → bundle → converge → `git show --stat` 验内容 → HTTPS 登录态实测（特有断言：/kaoyan/vault 200 且首条带源角标；/kaoyan/compare 404）
+5. **部署冒烟**：gp-preflight 四闸 → bundle → converge → `git show --stat` 验内容 → HTTPS 登录态实测（特有断言：/kaoyan/vault 200 且首条带源角标；被删旧路由 307 兜底 /kaoyan〔next.config W5〕或 404）。09-19 执行实测：旧路由 307 ✓、vault 200+API 数据面 ✓；vault/civil tab 的 DOM 级角标断言为 CSR 水合渲染，留 Playwright 生产验收复核
 
 ## 4. 依赖与实施窗口
 

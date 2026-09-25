@@ -1,6 +1,6 @@
 # AGENTS.md — GradPath 自动化工作流规则
 
-> **核心原则**: 所有MCP和Skills必须默认自动使用，不需要用户提醒
+> **核心原则**: 已接入的 MCP 与 Skills 默认自动使用，无需用户提醒；下表标注〔未接入 MCP〕的条目当前未接入本工作区，按其「替代」列执行即可，不视为缺失
 
 ## 🤝 协作准则 — 首席工作伙伴
 
@@ -17,34 +17,30 @@
 ## 🔧 MCP自动使用规则
 
 ### 数据爬取（最高优先级）
-| 场景 | 工具 | 说明 |
-|------|------|------|
-| 批量爬取已知URL | **Firecrawl** | `app.scrape(url, formats=["markdown"])` |
-| 爬取整个站点 | **Firecrawl** | `app.crawl(url, limit=100)` |
-| 快速单页爬取 | **webfetch** | 内置工具，无需配置 |
-| JS渲染页面 | **Playwright** | 启动浏览器爬取 |
-| B站数据 | **agent-reach bili-cli** | `bili search "考研" --type video` |
-| V2EX数据 | **V2EX API** | `curl https://www.v2ex.com/api/topics/hot.json` |
-| 数据库查询 | **SQLite MCP** | 直接查 `gradpath.db`(schema / SQL / 数据分析),无需写 Python |
-| 库API用法不确定 | **Context7 MCP** | 查 FastAPI/React/依赖库最新文档与示例,防旧 API 幻觉 |
 
-**Firecrawl配置**:
-```python
-import os
-FIRECRAWL_API_KEY = os.getenv("FIRECRAWL_API_KEY", "")
-if not FIRECRAWL_API_KEY:
-    print("[WARN] FIRECRAWL_API_KEY 环境变量未设置，Firecrawl功能不可用")
-from firecrawl import FirecrawlApp
-app = FirecrawlApp(api_key=FIRECRAWL_API_KEY)
-```
+> 约定：**〔未接入 MCP〕** = 该工具当前未作为 MCP 服务接入本工作区，直接走「替代」列（均已实测可用）；若日后接入，则优先用原始工具。
+
+| 场景 | 优先工具 → 替代（当前生效） | 说明 |
+|------|------|------|
+| 批量爬取已知URL | 〔未接入〕**Firecrawl** → **WebFetch** / **browser-use MCP** | 单页 `WebFetch(url, query)` 内置；需登录态/交互走 browser-use |
+| 爬取整个站点 | 〔未接入〕**Firecrawl** → **agent-reach** / **scrapling** skill | 整站遍历交给已接入的爬取 skill 路由 |
+| 快速单页爬取 | **WebFetch**（内置，已接入 ✓） | 无需配置 |
+| JS渲染页面 | 〔未接入〕**Playwright MCP** → **browser-use MCP（已接入 ✓）** | 用 browser-use 驱动真实浏览器渲染 |
+| B站数据 | **agent-reach bili-cli** skill ✓ | `bili search "考研" --type video` |
+| V2EX数据 | **V2EX API**（Bash `curl`，已接入 ✓） | `curl https://www.v2ex.com/api/topics/hot.json` |
+| 数据库查询 | 〔未接入〕**SQLite MCP** → **Python `sqlite3` via Bash ✓** | `py -3.13 -c "import sqlite3; ..."`（本机 SQLite 3.50.4，无 sqlite3 CLI）；本地 `gradpath.db` 为 0 字节空库，权威数据以生产库为准（见「数据库表」节） |
+| 库API用法不确定 | 〔未接入〕**Context7 MCP** → **WebSearch / WebFetch ✓** | 检索 FastAPI/React/依赖库官方文档与示例，防旧 API 幻觉 |
+
+**Firecrawl 配置（可选，仅在其作为 MCP/API 接入后使用）**:
+凭据只走环境变量 `FIRECRAWL_API_KEY`，禁止把明文 Key 写入本文件等被跟踪文件；未设置时自动改用上方替代方案。
 
 ### 代码修改（必须执行）
 | 场景 | 工具 | 说明 |
 |------|------|------|
-| 任何代码修改前 | **code-review-and-quality** | 审查现有代码 |
-| 修改后 | **test-driven-development** | 运行测试 |
-| 复杂问题 | **Sequential Thinking MCP** | 结构化推理 |
-| Git操作 | **Git MCP** | diff, commit, push |
+| 任何代码修改前 | **code-review-and-quality** skill ✓ | 审查现有代码 |
+| 修改后 | **test-driven-development** skill ✓ | 运行测试 |
+| 复杂问题 | 〔未接入〕**Sequential Thinking MCP** → **原生分步推理** / **planning-and-task-breakdown** skill | 结构化推理 |
+| Git操作 | 〔未接入〕**Git MCP** → **`git` CLI via Bash ✓**（本机 v2.53）/ **github(gh)** skill | diff, commit, push |
 
 ### 性能和安全（每次修改检查）
 | 场景 | 工具 | 说明 |
@@ -67,7 +63,7 @@ app = FirecrawlApp(api_key=FIRECRAWL_API_KEY)
 每次修改代码时，**自动执行以下流程**：
 
 ```
-1. Sequential Thinking → 分析问题（如复杂）
+1. 复杂问题 → 原生分步推理（若已接入 Sequential Thinking MCP 则优先）分析问题
 2. code-review → 审查现有代码
 3. 编写代码 → following existing patterns
 4. test-driven-development → 运行测试
@@ -79,9 +75,8 @@ app = FirecrawlApp(api_key=FIRECRAWL_API_KEY)
 ## 🎯 默认行为
 
 ### 爬取数据时
-- 自动使用Firecrawl（有API key）
-- 自动使用Playwright处理JS渲染页面
-- 自动使用webfetch作为备用
+- Firecrawl / Playwright MCP 若已接入则优先；当前未接入，改用 **browser-use MCP / WebFetch / agent-reach** 等已接入能力
+- 快速单页用 **WebFetch**（内置）
 - 自动保存到 `backend/app/crawlers/real_data/`
 - 自动导入数据库
 
@@ -93,7 +88,7 @@ app = FirecrawlApp(api_key=FIRECRAWL_API_KEY)
 - 自动检查Docker容器状态
 
 ### 调试问题时
-- 自动使用Sequential Thinking（复杂问题）
+- 复杂问题做原生分步推理（Sequential Thinking MCP 若已接入则优先）
 - 自动使用debugging-and-error-recovery
 - 自动检查日志：`docker logs gradpath-backend-1`
 
@@ -126,7 +121,7 @@ D:\职业规划\职业规划\
 |------|------|------|
 | experience_posts / knowledge_articles / schools / qas | 社区与院校基础内容 | 部分保留（以生产实测为准） |
 | dark_knowledge | 暗知识 | **已退役**（功能全链删除，模型留只读底座 0 行） |
-| grad_school_intel / grad_scoreline_records | 院校情报/分数线 | 保留（溯源纪律） |
+| grad_school_intel / grad_scoreline_records | 院校情报/分数线 | 保留（溯源纪律；scoreline dev 140 行 / prod 0 行，2026-09-21 实测） |
 | company_reviews / mentors | 公司评价/导师评价 | **已退役**（mentors 0 行挂 drop 台账） |
 
 ## 🔑 关键配置
@@ -144,15 +139,15 @@ D:\职业规划\职业规划\
 ## ⚠️ 已知问题
 
 1. 端口 8000 被 ai-goofish 占用，后端宿主端口用 8001（容器内仍监听 8000，宿主映射 `127.0.0.1:8001:8000`）；前端通过 `next.config.js` rewrites 走 `/api/*` 同源代理访问后端，客户端无需也禁止硬编码后端地址
-2. Firecrawl免费额度有限，每次约75页
+2. Firecrawl 若接入，免费额度有限（约 75 页/次）；未接入时走 browser-use / WebFetch / agent-reach
 3. seed_kaoyan_community.py需要重建（之前被损坏）
 4. web-vitals包需要在容器中安装
 
 ## 📝 用户指令
 
-1. **"碰到难题用Sequential Thinking MCP思考"** — 必须遵守
-2. **"所有skill和mcp默认接入"** — 本文件定义规则
-3. **"打破信息差，数据要真实"** — 使用Firecrawl爬取真实数据
+1. **"碰到难题做结构化分步推理"** — 必须遵守（可用则用 Sequential Thinking MCP，否则原生推理 / planning skill）
+2. **"已接入的 skill 和 mcp 默认使用"** — 本文件按上表〔未接入 MCP〕约定标注缺失项及其替代
+3. **"打破信息差，数据要真实"** — 用已接入的爬取能力（Firecrawl 若接入，否则 WebFetch/browser-use/agent-reach）获取真实数据
 
 ## 🏛️ 架构纪律(强制执行)
 
@@ -179,4 +174,4 @@ D:\职业规划\职业规划\
 
 * 只爬公开数据,尊重 `robots.txt`,控制请求频率,不绕验证码、不伪造身份、不撞登录
 * 研招网/论坛数据遵守平台条款;采集数据仅用于本项目,不对外分发
-* 优先用官方 API(Firecrawl / webfetch / V2EX API),减少对目标站点直接压力
+* 优先用官方 API 或已接入的取数能力（WebFetch / V2EX API / browser-use；Firecrawl 若已接入），减少对目标站点直接压力
