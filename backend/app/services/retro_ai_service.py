@@ -176,3 +176,134 @@ async def generate_ai_retro_draft(
     # 解析返回（不保存到 DB）
     data = _parse_llm_json(raw)
     return _coerce_draft(data)
+
+
+# ======================================================================
+# AI 引导式反思（2026-09-25 复盘深化）— 教练模式：一次只问一个维度
+# ======================================================================
+
+REFLECT_SYSTEM_PROMPT = """你是一位受过 AAR（After Action Review）训练的复盘教练，正在引导一位中国大学生做个人复盘。
+
+流程遵循业界四段式共识（美军 AAR / 联想四步法 / KPT 同构）：
+1. 还原事实：当时目标是什么、实际发生了什么（只摆差异，不评判）
+2. 分析原因：为什么会有差异（先情绪后归因；区分可控/不可控）
+3. 提炼规律：从这次经历能提炼出什么可复用的经验
+4. 下次怎么办：如果再遇到同类情况，具体做什么不同的（此段最重要，占一半精力）
+
+对话纪律（review-skill 六条规则的本土化）：
+- 每轮只问一个问题，问完就停，等用户回答
+- 能用选择题就不用开放题，但永远留"以上都不是"的自定义空间（在问题里说明可以直接打字）
+- 用户情绪强烈时，先接住情绪再进分析（"听起来这件事让你很难受"），不跳过
+- 适度魔鬼代言人：用户的归因太顺滑时，温和地质疑一次（"有没有可能还有另一个原因"）
+- 双我思维：在第 3 段之后，替用户说出"最尖锐的一条反驳"（如果我是旁观者，我会怎么挑这次复盘的毛病）
+- 全程中文，语气平等像学长学姐，不说教不端着
+
+你每轮严格输出以下 JSON（不要输出 JSON 之外的任何内容，不要 markdown 代码块包裹）：
+{
+  "stage": "fact|analysis|insight|next_action|done",
+  "question": "你的下一个问题（一个，具体，≤80字）",
+  "options": ["选项A", "选项B", "选项C"],
+  "acknowledge": "对用户上一条回答的简短回应（≤40字，接情绪或点出关键）",
+  "sharp_rebuttal": "仅在第3段完成后输出：最尖锐的一条反驳（其他阶段为空字符串）"
+}
+"""
+
+
+async def guide_reflection(
+    messages: list[dict[str, str]], context_summary: str | None
+) -> dict:
+    """AI 教练引导反思：输入历史对话，返回下一问。
+
+    messages: [{role: "user"|"coach", content: "..."}]（前端持有完整历史）
+    context_summary: replay 事实摘要（节点回传/事件/条件缺口的浓缩，可空）
+    返回 {stage, question, options, acknowledge, sharp_rebuttal}
+    """
+    convo = ""
+    for m in messages[-16:]:  # 上下文截断防 token 爆炸
+        role = "教练" if m.get("role") != "user" else "用户"
+        convo += f"{role}：{m.get('content', '')}\n"
+
+    user_content = ""
+    if context_summary:
+        user_content += f"【该用户的站内事实记录（复盘时段）】\n{context_summary}\n\n"
+    user_content += f"【对话历史】\n{convo or '（刚开始，请抛出第一个问题）'}\n\n"
+    user_content += "请按对话纪律输出下一轮 JSON。"
+
+    orchestrator = AIOrchestrator()
+    raw = await orchestrator.chat(
+        system_prompt=REFLECT_SYSTEM_PROMPT, user_prompt=user_content, timeout=30
+    )
+    data = _parse_llm_json(raw)
+    # 容错归一
+    stage = data.get("stage", "fact")
+    if stage not in {"fact", "analysis", "insight", "next_action", "done"}:
+        stage = "fact"
+    options = [str(o) for o in data.get("options", []) if o][:4]
+    return {
+        "stage": stage,
+        "question": str(data.get("question", ""))[:200],
+        "options": options,
+        "acknowledge": str(data.get("acknowledge", ""))[:100],
+        "sharp_rebuttal": str(data.get("sharp_rebuttal", ""))[:200],
+    }
+
+
+# ======================================================================
+# AI 原则提炼 — 空话闸版（006 FR3）
+# ======================================================================
+
+PRINCIPLE_DRAFT_PROMPT = """你是一位经验萃取教练。任务：从用户的复盘中提炼可复用的个人原则。
+
+原则条目铁律（NASA 经验教训库 + Ray Dalio 原则写法共识）：
+- 触发条件必须具体到情境："当____的时候"，不许写"任何时候"
+- 行动指令必须可执行：具体动作，不许写"要更努力/要坚持/要认真"这类空话
+- 每条不超过 3 条（KPT：六条 Try 意味着一条也得不到关注）
+- 优先提炼"下次再遇到同类情况怎么办"，而不是总结感受
+
+严格输出 JSON（不要输出 JSON 之外的任何内容，不要 markdown 代码块包裹）：
+{
+  "principles": [
+    {
+      "trigger_scene": "当____的时候（≤60字，具体情境）",
+      "action": "我应该____（≤80字，具体动作）",
+      "rationale": "因为____（≤60字，可选，填空字符串则省略）",
+      "scene_tags": ["标签1", "标签2"]
+    }
+  ]
+}
+scene_tags 从这些里选或自拟（≤2个）：模考崩盘/择校纠结/面试复盘/时间管理/状态中断/家庭沟通/出分落差/选岗/复试调剂/实习求职
+"""
+
+
+async def draft_principles(retro_content: str, replay_summary: str | None = None) -> list[dict]:
+    """从复盘内容提炼 if-then 原则草稿（≤3 条）。空话闸在 service 层二次拦截。"""
+    user_content = "【用户的复盘内容】\n" + retro_content[:4000]
+    if replay_summary:
+        user_content += "\n\n【站内事实记录摘要】\n" + replay_summary[:1500]
+    user_content += "\n\n请提炼原则草稿（严格按 JSON 输出）。"
+
+    orchestrator = AIOrchestrator()
+    raw = await orchestrator.chat(
+        system_prompt=PRINCIPLE_DRAFT_PROMPT, user_prompt=user_content, timeout=30
+    )
+    data = _parse_llm_json(raw)
+    items = data.get("principles", [])
+    if not isinstance(items, list):
+        return []
+    out = []
+    for it in items[:3]:
+        if not isinstance(it, dict):
+            continue
+        trigger = str(it.get("trigger_scene", "")).strip()
+        action = str(it.get("action", "")).strip()
+        if not trigger or not action:
+            continue
+        out.append(
+            {
+                "trigger_scene": trigger[:200],
+                "action": action[:400],
+                "rationale": str(it.get("rationale", "")).strip()[:500] or None,
+                "scene_tags": [str(t).strip() for t in it.get("scene_tags", []) if str(t).strip()][:3],
+            }
+        )
+    return out

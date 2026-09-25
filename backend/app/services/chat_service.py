@@ -338,6 +338,18 @@ def build_user_context(db: Session, user_id: UUID) -> str:
     else:
         lines.append("（暂无记录）")
 
+    # 个人原则（复盘沉淀库）——回答"下次再发生怎么办"：AI 在类似情境自然引用
+    try:
+        from app.services.retro_principle_service import get_principles_for_chat
+
+        principles = get_principles_for_chat(db, user_id, limit=5)
+        if principles:
+            lines.append("【个人原则（用户复盘沉淀，同类情境须自然引用至少一条，不得编造）】")
+            for p in principles:
+                lines.append(p["line"])
+    except Exception:
+        pass
+
     # 最新成长洞察（复用 growth_insight_service.get_latest_insight）
     try:
         from app.services.growth_insight_service import get_latest_insight
