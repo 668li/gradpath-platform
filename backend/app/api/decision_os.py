@@ -22,6 +22,8 @@ from app.schemas.decision_os import (
     EvidenceResponse,
     EvidenceUpdate,
     EvidenceVerifyRequest,
+    ExternalVerifyRequest,
+    ExternalVerifyResponse,
     HypothesisCreate,
     HypothesisResponse,
     HypothesisUpdate,
@@ -38,6 +40,7 @@ from app.schemas.decision_os import (
 )
 from app.services import decision_os_service as service
 from app.services import evidence_provider_service as provider_service
+from app.services import evidence_verification_service as verification_service
 
 router = APIRouter(prefix="/api/decision-os", tags=["决策OS"])
 
@@ -212,6 +215,23 @@ def delete_action(
     user: User = Depends(get_current_user),
 ):
     service.delete_action(db, user.id, action_id)
+
+
+@router.post("/evidence/{evidence_id}/external-verify", response_model=ExternalVerifyResponse)
+async def external_verify_evidence(
+    evidence_id: UUID,
+    data: ExternalVerifyRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+):
+    """claim-driven 外部验证：拉取来源页（SSRF 闸）→ AI 比对 → 推进状态。
+
+    冲突不覆盖：contradict 时原证据留痕 + 新建外部证据行；
+    AI 不可用=503 诚实失败，不静默改状态。
+    """
+    return await verification_service.verify_with_external_source(
+        db, user.id, evidence_id, data.source_url
+    )
 
 
 # ---------------------------------------------------------------- provider router

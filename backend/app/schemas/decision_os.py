@@ -252,6 +252,18 @@ class EvidenceCandidate(BaseModel):
     observed_on: date | None = None
 
 
+class ExternalVerifyRequest(BaseModel):
+    source_url: str = Field(min_length=8, max_length=1000, description="外部来源页面 URL（http/https）")
+
+
+class ExternalVerifyResponse(BaseModel):
+    verdict: str
+    summary: str
+    changed: bool
+    evidence: EvidenceResponse
+    new_evidence: EvidenceResponse | None = None
+
+
 class HypothesisCard(HypothesisResponse):
     """假设卡片 = 假设本体 + 证据立场计数（诚实计数，不做伪精确覆盖率）。"""
 

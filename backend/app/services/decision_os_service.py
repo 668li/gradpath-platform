@@ -120,7 +120,7 @@ def delete_hypothesis(db: Session, user_id: UUID, hypothesis_id: UUID) -> None:
 
 
 # ---------------------------------------------------------------- evidence
-def _get_evidence(db: Session, user_id: UUID, evidence_id: UUID) -> DecisionEvidence:
+def get_evidence(db: Session, user_id: UUID, evidence_id: UUID) -> DecisionEvidence:
     evidence = (
         db.query(DecisionEvidence)
         .filter(DecisionEvidence.id == evidence_id, DecisionEvidence.user_id == user_id)
@@ -181,7 +181,7 @@ def create_evidence(
 def update_evidence(
     db: Session, user_id: UUID, evidence_id: UUID, data: EvidenceUpdate
 ) -> DecisionEvidence:
-    evidence = _get_evidence(db, user_id, evidence_id)
+    evidence = get_evidence(db, user_id, evidence_id)
     for key, value in data.model_dump(exclude_unset=True).items():
         setattr(evidence, key, value)
     db.commit()
@@ -197,7 +197,7 @@ def verify_evidence(
     证据闸硬规则：externally_verified 必须提供 verification_source，
     否则就是"没有真实来源却标记 VERIFIED"（禁令 §十三.13）。
     """
-    evidence = _get_evidence(db, user_id, evidence_id)
+    evidence = get_evidence(db, user_id, evidence_id)
     if (
         data.verification_status == EvidenceVerificationStatus.externally_verified
         and not data.verification_source.strip()
@@ -218,7 +218,7 @@ def verify_evidence(
 
 
 def delete_evidence(db: Session, user_id: UUID, evidence_id: UUID) -> None:
-    evidence = _get_evidence(db, user_id, evidence_id)
+    evidence = get_evidence(db, user_id, evidence_id)
     db.delete(evidence)
     db.commit()
 
