@@ -41,9 +41,8 @@ _ALL_ENUMS = (_E_PRINCIPLE_STATUS, _E_ACTION_STATUS)
 
 
 def upgrade() -> None:
-    _E_PRINCIPLE_STATUS.create(op.get_bind(), checkfirst=True)
-    _E_ACTION_STATUS.create(op.get_bind(), checkfirst=True)
-
+    # 注意：枚举不在此处预创建——create_table 的内联 ENUM 会自动 CREATE TYPE，
+    # 预创建+内联=自伤型 DuplicateObject（2026-09-25 生产首炸实测）。
     op.create_table(
         "retro_principles",
         sa.Column("id", GUID(), primary_key=True, autoincrement=False),
@@ -130,5 +129,6 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_table("retro_actions")
     op.drop_table("retro_principles")
+    # drop_table 不级联删枚举类型，须显式清（checkfirst 防 PG 依赖残留误炸）
     _E_ACTION_STATUS.drop(op.get_bind(), checkfirst=True)
     _E_PRINCIPLE_STATUS.drop(op.get_bind(), checkfirst=True)
