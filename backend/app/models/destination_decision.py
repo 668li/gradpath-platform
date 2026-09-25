@@ -2,7 +2,7 @@ import enum
 from datetime import date
 from uuid import UUID
 
-from sqlalchemy import Boolean, Date, Enum, ForeignKey, Integer, Text
+from sqlalchemy import Boolean, Date, Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -47,3 +47,9 @@ class DestinationDecision(UUIDMixin, TimestampMixin, Base):
     review_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     review_completed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     ai_analysis: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # === Decision OS 结构化字段（D9，迁移 e9c2a7d4f1b3；legacy 行为 NULL/[]）===
+    question: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    context: Mapped[str | None] = mapped_column(Text, nullable=True)
+    constraints: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    options: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    desired_outcome: Mapped[str | None] = mapped_column(Text, nullable=True)

@@ -23,6 +23,25 @@ from app.models.crawler_state import CrawlerSourceState
 from app.models.data_source import DataSource
 from app.models.dataset_info import DatasetInfo
 from app.models.decision_analysis import DecisionAnalysis
+
+# Decision OS 领域（D9 拍板 09-25：访谈驱动的 Decision OS 单管线）
+from app.models.decision_os import (
+    ActionResultStance,
+    DecisionEvidence,
+    DecisionHypothesis,
+    DecisionOutcome,
+    DecisionOutcomeKind,
+    DecisionReflection,
+    DecisionValidationAction,
+    EvidenceReliability,
+    EvidenceSourceType,
+    EvidenceStance,
+    EvidenceVerificationStatus,
+    HypothesisImportance,
+    HypothesisStatus,
+    ReflectionMatchStatus,
+    ValidationActionStatus,
+)
 from app.models.decision_review import DecisionReviewQueue, ReviewStatus
 from app.models.destination_decision import DecisionStatus, DestinationDecision
 from app.models.employment_data import Degree, EmploymentData
@@ -242,6 +261,22 @@ __all__ = [
     "QualityFeedback",
     "QualityFeedbackTargetType",
     "QualityFeedbackType",
+    # Decision OS 领域（D9）
+    "DecisionHypothesis",
+    "DecisionEvidence",
+    "DecisionValidationAction",
+    "DecisionOutcome",
+    "DecisionReflection",
+    "HypothesisImportance",
+    "HypothesisStatus",
+    "EvidenceSourceType",
+    "EvidenceReliability",
+    "EvidenceStance",
+    "EvidenceVerificationStatus",
+    "ValidationActionStatus",
+    "ActionResultStance",
+    "DecisionOutcomeKind",
+    "ReflectionMatchStatus",
 ]
 
 # AI 增强功能
