@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.models.life_design import LifeDesignSprint, WeeklyReview
 from app.services.ai_orchestrator import AIOrchestrator
+from app.services.user_context_service import build_context_prompt
 
 # 领域定义
 DOMAIN_NAMES = {
@@ -75,6 +76,28 @@ def generate_audit_questions(focus_areas: list[str]) -> list[dict]:
     return questions
 
 
+# 010 T1 硬规则：有访谈沉淀原则时，AI 须自然引用，不得编造
+_MEMORY_RULE = (
+    "若上述【已知事实】中存在该用户此前访谈沉淀的原则（fact_key 以 interview_principle 开头），"
+    "你须在本次回复中自然引用其中至少一条：不得复述全文，不得编造记忆中没有的内容。"
+)
+
+
+def _memory_context(db: Session, user_id: UUID) -> str:
+    """010 T1：LLM 调用前注入此用户已知背景（含访谈沉淀的原则）。
+
+    复用 003 已上产的 build_context_prompt 序列化链；无记忆事实或链路异常时
+    返回空串——行为与现状完全一致（010 验收负例：新用户访谈不引用、不报错）。
+    """
+    try:
+        prompt = build_context_prompt(db, user_id)
+    except Exception:
+        return ""
+    if "【已知事实】" not in prompt:
+        return ""
+    return f"\n\n【此用户的已知背景】\n{prompt}\n{_MEMORY_RULE}"
+
+
 async def generate_vision_from_audit(db: Session, user_id: UUID, audit_qa: list[dict]) -> str:
     """基于审计问答，AI 生成 2-3 年愿景声明。"""
     system_prompt = """你是一位人生设计教练。基于用户的人生审计问答，帮助他们构建一个清晰的 2-3 年理想生活愿景。
@@ -95,6 +118,7 @@ async def generate_vision_from_audit(db: Session, user_id: UUID, audit_qa: list[
     if not qa_text.strip():
         return "请先完成人生审计，AI 才能为你生成个性化愿景。"
 
+    system_prompt += _memory_context(db, user_id)
     orchestrator = AIOrchestrator()
     return await orchestrator.chat(system_prompt=system_prompt, user_prompt=qa_text, timeout=30)
 
@@ -196,6 +220,7 @@ async def generate_sprint_review(db: Session, sprint_id: UUID) -> str:
     if sprint.review_notes:
         context += f"\n用户自述回顾：{sprint.review_notes}"
 
+    system_prompt += _memory_context(db, sprint.user_id)
     orchestrator = AIOrchestrator()
     analysis = await orchestrator.chat(system_prompt=system_prompt, user_prompt=context, timeout=30)
     sprint.ai_review = analysis
@@ -245,6 +270,7 @@ async def _generate_weekly_ai_analysis(db: Session, review: WeeklyReview):
 下周计划：{review.next_week_plan or '未填写'}
 能量水平：{review.energy_level or '未评'}/5"""
 
+    system_prompt += _memory_context(db, review.user_id)
     try:
         orchestrator = AIOrchestrator()
         review.ai_analysis = await orchestrator.chat(
