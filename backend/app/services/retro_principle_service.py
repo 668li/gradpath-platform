@@ -11,7 +11,6 @@
 """
 
 import logging
-import re
 from datetime import date, datetime, timedelta, timezone
 from uuid import UUID
 
@@ -39,6 +38,8 @@ _VAGUE_CHARS = set(
 
 def _is_vague_action(action: str) -> bool:
     return bool(action) and all(ch in _VAGUE_CHARS for ch in action)
+
+
 _MIN_ACTION_LEN = 6
 _MAX_ACTIONS_PER_RETRO = 3  # KPT 铁律
 _REVIEW_INTERVAL_DAYS = 14
@@ -73,7 +74,7 @@ _EXAMPLE_PRINCIPLES = [
     {
         "trigger_scene": "面试或复试前一夜紧张失眠时",
         "action": "写完三个最可能被问的问题的提纲（每题三行），然后合上材料睡觉",
-        "rationale": "未准备的焦虑比准备本身更耗睡眠，三题提纲给大脑一个\"已做完了\"的信号",
+        "rationale": '未准备的焦虑比准备本身更耗睡眠，三题提纲给大脑一个"已做完了"的信号',
         "scene_tags": ["面试复盘", "复试"],
     },
     {
@@ -129,9 +130,12 @@ def build_replay(db: Session, user_id: UUID, start: date, end: date) -> dict:
             .join(ExamSubscription, NodeFeedback.subscription_id == ExamSubscription.id)
             .filter(
                 ExamSubscription.user_id == user_id,
-                NodeFeedback.feedback_at >= datetime.combine(start, datetime.min.time(), tzinfo=timezone.utc),
                 NodeFeedback.feedback_at
-                <= datetime.combine(end + timedelta(days=1), datetime.min.time(), tzinfo=timezone.utc),
+                >= datetime.combine(start, datetime.min.time(), tzinfo=timezone.utc),
+                NodeFeedback.feedback_at
+                <= datetime.combine(
+                    end + timedelta(days=1), datetime.min.time(), tzinfo=timezone.utc
+                ),
             )
             .order_by(NodeFeedback.feedback_at.desc())
             .limit(50)
@@ -168,7 +172,11 @@ def build_replay(db: Session, user_id: UUID, start: date, end: date) -> dict:
                 {
                     "id": str(ev.id),
                     "event_date": ev.event_date.isoformat(),
-                    "event_type": ev.event_type.value if hasattr(ev.event_type, "value") else str(ev.event_type),
+                    "event_type": (
+                        ev.event_type.value
+                        if hasattr(ev.event_type, "value")
+                        else str(ev.event_type)
+                    ),
                     "title": ev.title,
                     "has_star": bool(ev.situation or ev.task or ev.action or ev.result),
                     "mood": ev.mood,
@@ -205,7 +213,10 @@ def create_actions(
     if not items:
         return [], None
     if len(items) > _MAX_ACTIONS_PER_RETRO:
-        return [], f"行动卡每次最多 {_MAX_ACTIONS_PER_RETRO} 条——六条 Try 意味着一条也得不到真正关注"
+        return (
+            [],
+            f"行动卡每次最多 {_MAX_ACTIONS_PER_RETRO} 条——六条 Try 意味着一条也得不到真正关注",
+        )
 
     retro = (
         db.query(Retrospective)
@@ -225,7 +236,9 @@ def create_actions(
         if len(trigger) < 4:
             return [], "触发场景太短——请写清'当____的时候'（越具体，下次越容易被想起来）"
         due = item.get("review_due_at")
-        review_due = date.fromisoformat(due) if due else today + timedelta(days=_REVIEW_INTERVAL_DAYS)
+        review_due = (
+            date.fromisoformat(due) if due else today + timedelta(days=_REVIEW_INTERVAL_DAYS)
+        )
         cards.append(
             RetroAction(
                 user_id=user_id,
@@ -432,7 +445,9 @@ def verify_principle(
     if verdict == "again":
         p.status = PrincipleStatus.verified
         p.verify_count += 1
-        p.next_review_at = date.today() + timedelta(days=_REVIEW_INTERVAL_DAYS * max(1, p.verify_count))
+        p.next_review_at = date.today() + timedelta(
+            days=_REVIEW_INTERVAL_DAYS * max(1, p.verify_count)
+        )
     elif verdict == "ineffective":
         p.status = PrincipleStatus.invalid
         p.next_review_at = None
@@ -497,7 +512,9 @@ def deactivate_principle(db: Session, user_id: UUID, principle_id: UUID) -> bool
 
 def ensure_example_principles(db: Session, user_id: UUID) -> None:
     """冷启动：用户原则库为空时预置示例（可删可改）。幂等。"""
-    count = db.query(func.count(RetroPrinciple.id)).filter(RetroPrinciple.user_id == user_id).scalar()
+    count = (
+        db.query(func.count(RetroPrinciple.id)).filter(RetroPrinciple.user_id == user_id).scalar()
+    )
     if count:
         return
     for ex in _EXAMPLE_PRINCIPLES:

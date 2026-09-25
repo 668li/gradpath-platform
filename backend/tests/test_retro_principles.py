@@ -176,9 +176,12 @@ def test_delete_principle_soft(auth_headers, client):
     pid = resp.json()["id"]
     resp = client.delete(f"/api/retrospectives/principles/{pid}", headers=auth_headers)
     assert resp.status_code == 204
-    names = [p["id"] for p in client.get(
-        "/api/retrospectives/principles", headers=auth_headers
-    ).json()["principles"]]
+    names = [
+        p["id"]
+        for p in client.get("/api/retrospectives/principles", headers=auth_headers).json()[
+            "principles"
+        ]
+    ]
     assert pid not in names
 
 
@@ -287,15 +290,8 @@ def test_action_vague_content_rejected(auth_headers, client):
 
 def test_static_routes_not_swallowed_by_uuid_route(auth_headers, client):
     """principles/actions/replay 必须命中静态路由而非 422 UUID 转换失败。"""
-    assert (
-        client.get("/api/retrospectives/principles", headers=auth_headers).status_code == 200
-    )
-    assert (
-        client.get(
-            "/api/retrospectives/actions/due", headers=auth_headers
-        ).status_code
-        == 200
-    )
+    assert client.get("/api/retrospectives/principles", headers=auth_headers).status_code == 200
+    assert client.get("/api/retrospectives/actions/due", headers=auth_headers).status_code == 200
 
 
 # ----------------------------------------------------------------------

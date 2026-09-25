@@ -32,14 +32,6 @@ from app.services.retro_ai_service import (
     generate_ai_retro_draft,
     guide_reflection,
 )
-from app.services.retrospective_service import (
-    create_retrospective,
-    delete_retrospective,
-    generate_draft,
-    get_retrospective,
-    list_retrospectives_paginated,
-    update_retrospective,
-)
 from app.services.retro_principle_service import (
     action_to_dict,
     build_replay,
@@ -53,6 +45,14 @@ from app.services.retro_principle_service import (
     review_action,
     update_principle,
     verify_principle,
+)
+from app.services.retrospective_service import (
+    create_retrospective,
+    delete_retrospective,
+    generate_draft,
+    get_retrospective,
+    list_retrospectives_paginated,
+    update_retrospective,
 )
 from app.services.weekly_draft_service import generate_weekly_draft
 
@@ -165,9 +165,7 @@ def replay(
 
 
 @router.get("/principles")
-def list_principles_endpoint(
-    db: Session = Depends(get_db), user: User = Depends(get_current_user)
-):
+def list_principles_endpoint(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     """原则库列表（首次访问自动预置示例破冷启动）。"""
     ensure_example_principles(db, user.id)
     return {"principles": list_principles(db, user.id)}
@@ -235,12 +233,12 @@ def delete_principle_endpoint(
 
 @router.post("/actions", status_code=status.HTTP_201_CREATED)
 def create_actions_endpoint(
-    data: ActionsCreateRequest, db: Session = Depends(get_db), user: User = Depends(get_current_user)
+    data: ActionsCreateRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ):
     """为复盘创建 Try 行动卡（≤3 条，带触发场景与复审日期）。"""
-    cards, err = create_actions(
-        db, user.id, data.retro_id, [i.model_dump() for i in data.items]
-    )
+    cards, err = create_actions(db, user.id, data.retro_id, [i.model_dump() for i in data.items])
     if err:
         raise HTTPException(status_code=422, detail=err)
     return {"actions": [action_to_dict(c) for c in cards]}
@@ -264,9 +262,7 @@ def review_action_endpoint(
     user: User = Depends(get_current_user),
 ):
     """行动卡复审裁决。effective 会自动升级为已验证原则（闭环）。"""
-    action, principle, err = review_action(
-        db, user.id, action_id, data.verdict, data.note
-    )
+    action, principle, err = review_action(db, user.id, action_id, data.verdict, data.note)
     if err:
         raise HTTPException(status_code=422, detail=err)
     if not action:

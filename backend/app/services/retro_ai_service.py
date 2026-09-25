@@ -209,9 +209,7 @@ REFLECT_SYSTEM_PROMPT = """你是一位受过 AAR（After Action Review）训练
 """
 
 
-async def guide_reflection(
-    messages: list[dict[str, str]], context_summary: str | None
-) -> dict:
+async def guide_reflection(messages: list[dict[str, str]], context_summary: str | None) -> dict:
     """AI 教练引导反思：输入历史对话，返回下一问。
 
     messages: [{role: "user"|"coach", content: "..."}]（前端持有完整历史）
@@ -303,7 +301,9 @@ async def draft_principles(retro_content: str, replay_summary: str | None = None
                 "trigger_scene": trigger[:200],
                 "action": action[:400],
                 "rationale": str(it.get("rationale", "")).strip()[:500] or None,
-                "scene_tags": [str(t).strip() for t in it.get("scene_tags", []) if str(t).strip()][:3],
+                "scene_tags": [str(t).strip() for t in it.get("scene_tags", []) if str(t).strip()][
+                    :3
+                ],
             }
         )
     return out

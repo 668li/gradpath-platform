@@ -222,12 +222,10 @@ def test_seed_replaces_stale_cron(monkeypatch):
 
         job = sched.get_job("crawler_bilibili_research")
         assert job is not None
+        assert api_crawlers._job_cron_str(job) == "0 3 * * 1", "存量错频 job 应被替换为线契约 cron"
         assert (
-            api_crawlers._job_cron_str(job) == "0 3 * * 1"
-        ), "存量错频 job 应被替换为线契约 cron"
-        assert sched.get_job(
-            "crawler_official_announce"
-        ) is None, "official_announce 已停喂入（009 T1），seed 不得补齐其 job"
+            sched.get_job("crawler_official_announce") is None
+        ), "official_announce 已停喂入（009 T1），seed 不得补齐其 job"
     finally:
         sched.shutdown(wait=False)
 
