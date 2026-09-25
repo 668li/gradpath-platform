@@ -17,6 +17,12 @@ class DecisionCreate(BaseModel):
     prediction: str | None = None
     assumptions: list[str] = Field(default_factory=list)
     review_date: date | None = None
+    # Decision OS 结构化字段（D9，可选；confirm-draft 流程之外也可直填）
+    question: str | None = Field(default=None, max_length=500)
+    context: str | None = None
+    constraints: list[str] = Field(default_factory=list)
+    options: list[str] = Field(default_factory=list)
+    desired_outcome: str | None = None
 
 
 class DecisionUpdate(BaseModel):
@@ -30,6 +36,12 @@ class DecisionUpdate(BaseModel):
     prediction: str | None = None
     assumptions: list[str] | None = None
     review_date: date | None = None
+    # Decision OS 结构化字段（D9）
+    question: str | None = Field(default=None, max_length=500)
+    context: str | None = None
+    constraints: list[str] | None = None
+    options: list[str] | None = None
+    desired_outcome: str | None = None
 
 
 class DecisionResponse(BaseModel):
@@ -51,5 +63,11 @@ class DecisionResponse(BaseModel):
     review_notes: str | None = None
     review_completed: bool = False
     ai_analysis: str | None = None
+    # Decision OS 结构化字段（D9）
+    question: str | None = None
+    context: str | None = None
+    constraints: list = Field(default_factory=list)
+    options: list = Field(default_factory=list)
+    desired_outcome: str | None = None
 
     model_config = {"from_attributes": True}
