@@ -172,10 +172,13 @@ def _search_grad_yanzhao(db: Session, user_id: UUID, query: str) -> list[dict]:
 
 
 def _search_experience_post(db: Session, user_id: UUID, query: str) -> list[dict]:
+    # B6 防线（2026-09-26）：未验证内容不得作为证据出证——106 条 bilibili 未验证帖
+    # 曾因缺此过滤进入检索面，已随删线清理；此处 is_verified 闸防再犯。
     rows = (
         db.query(ExperiencePost)
         .filter(
             ExperiencePost.status == "approved",
+            ExperiencePost.is_verified.is_(True),
             or_(
                 ExperiencePost.title.ilike(f"%{query}%"),
                 ExperiencePost.content.ilike(f"%{query}%"),

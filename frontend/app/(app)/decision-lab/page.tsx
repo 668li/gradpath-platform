@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Scale, Sparkles, AlertTriangle, Shield, Swords, Plus, Trash2, Trophy, ChevronDown, ChevronRight, Route, ClipboardList, RotateCw, ArrowRight } from "lucide-react";
 import { decisionAnalysisApi, decisionsApi } from "@/lib/api";
+import { saveThenAnalyze } from "@/components/decision-engine/save-then-analyze";
 import { cn, todayISO } from "@/lib/utils";
 import { LoadingState, EmptyState } from "@/components/ui/empty";
 import { Button, Input, Textarea, Field } from "@/components/ui/form-controls";
@@ -16,29 +17,6 @@ function formatDate(iso: string): string {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return iso;
   return `${d.getMonth() + 1}月${d.getDate()}日`;
-}
-
-/** 保存与 AI 生成两阶段执行，失败态分离（R-09）：
- * 保存失败 = { ok: false }；保存成功但 AI 上游失败 = aiFailed: true（记录已落库可回看）。 */
-export async function saveThenAnalyze(
-  api: Pick<typeof decisionAnalysisApi, "create" | "generateAiAnalysis">,
-  payload: Parameters<typeof decisionAnalysisApi.create>[0],
-): Promise<
-  | { ok: true; id: string; ai: string | null; aiFailed: boolean }
-  | { ok: false }
-> {
-  let analysis: DecisionAnalysisResponse;
-  try {
-    analysis = await api.create(payload);
-  } catch {
-    return { ok: false };
-  }
-  try {
-    const aiRes = await api.generateAiAnalysis(analysis.id);
-    return { ok: true, id: analysis.id, ai: aiRes.ai_analysis, aiFailed: false };
-  } catch {
-    return { ok: true, id: analysis.id, ai: null, aiFailed: true };
-  }
 }
 
 export default function DecisionLabPage() {
