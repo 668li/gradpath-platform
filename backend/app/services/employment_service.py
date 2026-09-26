@@ -3,8 +3,10 @@ from sqlalchemy import distinct, func
 from sqlalchemy.orm import Session
 
 from app.core.cache import cache
+from app.models.company import Company
 from app.models.employment_data import EmploymentData
 from app.models.report_record import ParseStatus, ReportRecord
+from app.models.salary_benchmark import SalaryBenchmark
 from app.models.school import School
 
 # 就业数据缓存 TTL（秒）— 5 分钟，平衡数据新鲜度与 DB 压力
@@ -245,6 +247,88 @@ def get_stats(db: Session) -> dict:
         "report_count": row.report_count or 0,
         "major_count": row.major_count or 0,
         "year_range": [row.min_year, row.max_year],
+    }
+    try:
+        cache.set(cache_key, result, ttl=EMPLOYMENT_CACHE_TTL)
+    except Exception:
+        pass
+    return result
+
+
+def market_overview(db: Session) -> dict:
+    """就业市场概览（B4，2026-09-26）：companies/salary_benchmarks 真实聚合。
+
+    独立于就业质量报告链（report_records）——就业中心瘦身后面经库是唯一 tab，
+    本端点把库内真实存量数据（公司 1693 家 / 城市岗位薪资 1400+ 行）接进读取链；
+    覆盖度如实标注（院校就业率仅个别校有值=只列有值的，绝不编数）。
+    """
+    cache_key = "employment:market_overview"
+    try:
+        cached = cache.get(cache_key)
+    except Exception:
+        cached = None
+    if cached is not None:
+        return cached
+
+    company_total = db.query(func.count(Company.id)).scalar() or 0
+    industry_rows = (
+        db.query(Company.industry, func.count(Company.id).label("n"))
+        .filter(Company.industry.isnot(None), Company.industry != "")
+        .group_by(Company.industry)
+        .order_by(func.count().desc())
+        .limit(8)
+        .all()
+    )
+    salary_total = db.query(func.count(SalaryBenchmark.id)).scalar() or 0
+    city_rows = (
+        db.query(
+            SalaryBenchmark.city,
+            func.count(SalaryBenchmark.id).label("n"),
+            func.min(SalaryBenchmark.salary_min),
+            func.max(SalaryBenchmark.salary_max),
+        )
+        .filter(SalaryBenchmark.city.isnot(None), SalaryBenchmark.city != "")
+        .group_by(SalaryBenchmark.city)
+        .order_by(func.count().desc())
+        .limit(8)
+        .all()
+    )
+    # 院校就业率：只有真实有值的院校才列（覆盖度如实），无值=空列表
+    school_rows = (
+        db.query(School)
+        .filter(School.employment_rate.isnot(None))
+        .order_by(School.name)
+        .limit(5)
+        .all()
+    )
+    result = {
+        "company_total": company_total,
+        "top_industries": [
+            {"industry": ind, "count": n} for ind, n in industry_rows
+        ],
+        "salary_total": salary_total,
+        "city_salary_bands": [
+            {
+                "city": city,
+                "sample_count": n,
+                "min_k": mn,
+                "max_k": mx,
+            }
+            for city, n, mn, mx in city_rows
+        ],
+        "school_employment_samples": [
+            {
+                "name": s.name,
+                "employment_rate": s.employment_rate,
+                "grad_school_rate": s.grad_school_rate,
+                "report_index_url": s.report_index_url,
+            }
+            for s in school_rows
+        ],
+        "school_employment_coverage": db.query(func.count(School.id)).filter(
+            School.employment_rate.isnot(None)
+        ).scalar() or 0,
+        "school_total": db.query(func.count(School.id)).scalar() or 0,
     }
     try:
         cache.set(cache_key, result, ttl=EMPLOYMENT_CACHE_TTL)

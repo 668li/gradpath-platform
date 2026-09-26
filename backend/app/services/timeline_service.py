@@ -171,6 +171,81 @@ SKELETON_12: tuple[StageSpec, ...] = (
     ),
 )
 
+# 考研骨架（B2，2026-09-26）：复用 NodeStage 词表与证据闸机制，环节语义考研化。
+# 宪法同 SKELETON_12：只允许 stage_key/标题/材料/入口提示——零日期字面量（FR-E3）。
+SKELETON_KAOYAN: tuple[StageSpec, ...] = (
+    StageSpec(
+        NodeStage.announce,
+        1,
+        "招生管理规定发布",
+        "",
+        ("无（信息准备期）",),
+        "关注教育部《全国硕士研究生招生工作管理规定》与研招网公告；规定含当年报名/初试日程与政策变化，发布后即核对自己的报考资格。",
+    ),
+    StageSpec(
+        NodeStage.registration,
+        2,
+        "网上报名",
+        "kl",
+        ("学信网可查的学籍/学历信息", "身份证", "报考点要求的材料（应届/往届不同，提前查报考点公告）"),
+        "登录研招网（yz.chsi.com.cn）填写报名信息；预报名与正式报名效力相同，正式报名截止前可修改；逾期不再补报。",
+    ),
+    StageSpec(
+        NodeStage.payment,
+        3,
+        "网上确认",
+        "kl",
+        ("身份证照片", "学历学籍材料", "报考点要求的其他证明（按报考点公告清单）"),
+        "按报考点要求在规定时间内完成网上确认（上传材料/核对报名信息）；未确认或确认未通过=报名无效。",
+    ),
+    StageSpec(
+        NodeStage.admission_ticket,
+        4,
+        "打印准考证",
+        "kl",
+        ("研招网账号",),
+        "考前约十日研招网开放下载，A4 白纸打印（黑白即可），电子版留备份；准考证信息与考点要求当日再核对一次。",
+    ),
+    StageSpec(
+        NodeStage.written,
+        5,
+        "初试",
+        "kl",
+        ("准考证", "有效身份证件", "考点允许的文具（见准考证说明）"),
+        "按准考证时间参加全国统一初试；超过 3 小时或有特殊要求的科目以招考公告为准。",
+    ),
+    StageSpec(
+        NodeStage.score,
+        6,
+        "成绩查询",
+        "kl",
+        ("准考证号", "报名时留的查询方式"),
+        "初试成绩由招生单位/省级机构公布（多为 2 月下旬），国家线另行发布；对成绩有异议按招生单位规定的成绩复核通道申请。",
+    ),
+    StageSpec(
+        NodeStage.interview,
+        7,
+        "复试",
+        "kl",
+        ("复试通知要求的全套材料", "本科成绩单", "科研成果/作品集（如有）"),
+        "达到招生单位复试线的按其复试办法参加（含专业课/综合面试等）；一志愿复试与调剂志愿复试分属不同批次，以招生单位通知为准。",
+    ),
+    StageSpec(
+        NodeStage.adjustment,
+        8,
+        "调剂",
+        "kl",
+        ("研招网调剂系统账号", "各校调剂公告要求的材料"),
+        "未过一志愿复试线或复试未过的走研招网调剂系统；每次开放持续时间与志愿锁定时间以系统规则为准。",
+    ),
+)
+
+
+def skeleton_for(exam: Exam) -> tuple[StageSpec, ...]:
+    """按考次 track 选骨架：kaoyan 用考研 8 环节，其余（guokao/shengkao）用 12 环节。"""
+    return SKELETON_KAOYAN if exam.track == "kaoyan" else SKELETON_12
+
+
 # 政府域名白名单（证据 source_url 硬约束）：*.gov.cn
 _GOV_DOMAIN_RE = re.compile(r"(^|\.)gov\.cn$", re.IGNORECASE)
 # 正文最小字节数：排除跳转壳/SPA 壳（09-12 探针：985B 跳转壳 / 4276B SPA 壳）
@@ -516,10 +591,10 @@ def derive_predicted_next_year(db: Session, exam: Exam, prev_exam: Exam) -> int:
 
 
 def upsert_skeleton(db: Session, exam: Exam) -> int:
-    """补齐 12 环节节点。只写骨架字段；已存在节点保留其诚实状态与日期。返回新建数。"""
+    """按考次 track 补齐环节节点。只写骨架字段；已存在节点保留其诚实状态与日期。返回新建数。"""
     existing = {n.stage_key: n for n in exam.nodes}
     created = 0
-    for spec in SKELETON_12:
+    for spec in skeleton_for(exam):
         entry_url = ""
         if spec.entry_hint == "kl":
             entry_url = exam.official_home_url

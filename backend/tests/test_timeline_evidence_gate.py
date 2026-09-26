@@ -321,10 +321,10 @@ def test_seed_is_idempotent_and_keeps_zero_dates_without_evidence(db_session):
     # 跑两遍计数不变
     assert db_session.query(ExamNode).count() == n_nodes
     assert summary2["official_without_evidence"] == 0
-    # 无提案时全部 UNKNOWN，OFFICIAL=0；骨架规模=3 考次×12 环节
+    # 无提案时全部 UNKNOWN，OFFICIAL=0；骨架规模=3 考次×12 环节 + kaoyan-2027×8 环节（B2）
     assert summary1["proposal"] == {"ok": [], "rejected": []}
-    assert len(summary1["exams"]) == 3
-    assert n_nodes == 36
+    assert len(summary1["exams"]) == 4
+    assert n_nodes == 44
     assert db_session.query(ExamNode).filter_by(date_status=DateStatus.OFFICIAL).count() == 0
 
 

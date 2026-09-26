@@ -7,7 +7,9 @@ import { GraduationCap, LogIn, UserPlus } from "lucide-react";
  * 根页面：公开落地页。
  *
  * 2026-09-12 战略转向：定位 = 信息差供给 + 聚合 + 流程时间线伴随。
- * 正式口号已经用户拍板（Q2=B）：「替你盯信息差，准时推你一把」。有 gradpath_token 直接进 dashboard；未登录渲染落地页。
+ * 口号 2026-09-26 更版（C1，考公线退役+推送不做拍板后）：「每条情报都带官方来源的考研决策伴随」；
+ * 旧口号「替你盯信息差，准时推你一把」的推送承诺已无支撑（提醒/推送 09-14 拍板不做）。
+ * 有 gradpath_token 直接进 dashboard；未登录渲染落地页。
  * 旧「免费可报性预览」漏斗（搜职位/院校→勾身份→出判定）已随职位数据删除下架，
  * 不虚假承诺未上线能力：时间线/公告盯梢标注"上线中"。
  */
@@ -53,18 +55,19 @@ export default function HomePage() {
         {/* Hero */}
         <section className="text-center">
           <h1 className="text-3xl font-bold text-ink-800 sm:text-4xl">
-            替你盯信息差，准时推你一把
+            每条情报都带官方来源的考研决策伴随
           </h1>
           <p className="mx-auto mt-3 max-w-2xl text-sm text-ink-500 sm:text-base">
-            官方动作在官网、刷题在粉笔、查职位在雷达——GradPath 把公告与规则变化这些你本来要自己搜的信息代为搜集，
-            按你的身份过滤"与我相关"，每条情报连上官方来源。不代你报名，不编造数据。
+            官方简章在研究生院官网、分数统计在各校招办——GradPath 把招生简章、分数线、
+            报考规则这些你本来要自己搜的信息聚到一处，按你的身份过滤"与我相关"，
+            每条情报连上官方来源。不代你报名，不编造数据。
           </p>
         </section>
 
         {/* 当前已开放的能力 */}
         <section className="mt-8 grid gap-4 text-sm sm:grid-cols-2">
           <div className="rounded-2xl border border-brand-100 bg-white/70 p-5">
-            <p className="font-semibold text-ink-800">考研 · 就业 · 在校，决策伴随全覆盖</p>
+            <p className="font-semibold text-ink-800">考研 · 就业 · 在校，决策伴随</p>
             <p className="mt-1.5 text-ink-500">
               招生简章、分数线事件、报考规则与就业信息逐条带官方来源与可信度标注；
               无源数据不下发，AI 问答只基于库内真实数据回答。
@@ -85,15 +88,15 @@ export default function HomePage() {
             流程时间线伴随 · 上线中
           </h2>
           <p className="mx-auto mt-2 max-w-xl text-sm text-ink-500">
-            从公告到录用的 12 环节流程时间线正在逐步开放：随时打开看你在哪一步、下一步该做什么、
-            要备什么材料；注册后可先行体验。
+            从招生简章到录取的流程时间线正在逐步开放：随时打开看你在哪一步、下一步该做什么、
+            要备什么材料；官方日期只认带来源的公告，未发布的节点如实标注。注册后可先行体验。
           </p>
           <div className="mt-4 flex items-center justify-center gap-3">
             <Link
               href="/register"
               className="rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-700"
             >
-              免费注册，订阅信息差
+              免费注册，开始决策伴随
             </Link>
             <Link
               href="/login"

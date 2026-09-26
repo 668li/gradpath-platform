@@ -45,7 +45,26 @@ export const employmentApi = {
       method: "POST",
       body: JSON.stringify({ ids }),
     }),
+
+  // 就业市场概览（B4，2026-09-26）：companies/salary_benchmarks 真实聚合
+  marketOverview: () =>
+    request<MarketOverview>("/api/employment/market-overview"),
 };
+
+export interface MarketOverview {
+  company_total: number;
+  top_industries: { industry: string; count: number }[];
+  salary_total: number;
+  city_salary_bands: { city: string; sample_count: number; min_k: number | null; max_k: number | null }[];
+  school_employment_samples: {
+    name: string;
+    employment_rate: number | null;
+    grad_school_rate: number | null;
+    report_index_url: string | null;
+  }[];
+  school_employment_coverage: number;
+  school_total: number;
+}
 
 // ===== 社区数据 =====
 export const communityApi = {

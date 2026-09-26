@@ -10,6 +10,8 @@ Seeding 模式照 test_api_gwy_positions.py：手动构造 ORM 实例写入内�
 
 from datetime import datetime, timezone
 
+import json
+
 import pytest
 
 from app.models.grad_intel import GradScorelineRecord, GradYanzhaoProgram
@@ -266,7 +268,7 @@ def seed_decision_data(db_session):
                 "城镇单位就业人员平均工资", "计算机、通信和其他电子设备制造业", 13.5, "万元"
             ),
             _make_market_data("规模以上工业企业利润总额", "汽车制造业", 5000, "亿元"),  # 不匹配
-            _make_salary("腾讯", "后台开发工程师", "深圳", 20),
+            _make_salary("腾讯", "后台开发工程师", "深圳市", 20),
             _make_school("中山大学", "广东", "985", 95.0, 40.0),
             _make_school("华南理工大学", "广东", "985", 93.0, 38.0),
         ]
@@ -785,4 +787,46 @@ class TestTrustAlignmentR01:
             assert w not in body["recommendation"], (
                 f"recommendation 含退役词「{w}」: {body['recommendation']}"
             )
+
+
+# ----------------------------------------------------------------------
+# B3（2026-09-26 数据底座）：专业↔行业映射接入就业路 + salary 省↔市口径打通
+# ----------------------------------------------------------------------
+class TestEmploymentB3Mapping:
+    def test_computer_guangdong_hits_market_and_salary(
+        self, client, auth_headers, db_session, seed_decision_data
+    ):
+        resp = client.post(
+            "/api/path-decision/analyze",
+            json={"major": "计算机", "region": "广东"},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200, resp.text
+        emp = next(m for m in resp.json()["metrics"] if m["path_type"] == "employment")
+        assert emp["match_score"] > 0
+        # 行业映射：映射条目精确行业名或专业名子串命中 market_data
+        assert emp["income_1y"] != "暂无数据"
+        # 省级 region 经 _PROVINCE_CITIES 落到市级样本（深圳）——salary 非零
+        text = (emp.get("match_description") or "") + json.dumps(
+            emp.get("evidence") or [], ensure_ascii=False
+        )
+        assert "岗位薪资" in text or "行业数据" in text
+
+    def test_province_city_mapping_used_for_guangdong(
+        self, client, auth_headers, db_session, seed_decision_data
+    ):
+        """广东（省名）→ 广州市/深圳市/东莞市 城市集合命中 seed 的深圳行。"""
+        from app.services import path_decision_engine as eng
+
+        assert eng._PROVINCE_CITIES["广东"] == ("广州市", "深圳市", "东莞市")
+        resp = client.post(
+            "/api/path-decision/analyze",
+            json={"major": "计算机", "region": "广东"},
+            headers=auth_headers,
+        )
+        emp = next(
+            m for m in resp.json()["metrics"] if m["path_type"] == "employment"
+        )
+        evidence_text = json.dumps(emp.get("evidence") or [], ensure_ascii=False)
+        assert "腾讯" in evidence_text  # seed 的深圳 salary 行经映射命中
 

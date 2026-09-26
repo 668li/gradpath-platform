@@ -63,6 +63,16 @@ EXAM_SPECS: tuple[dict[str, Any], ...] = (
         "official_home_url": "",
         "status": "closed",
     },
+    {
+        # B2（2026-09-26）：考研线时间节点重建——考公线退役后时间线伴随的主线
+        "code": "kaoyan-2027",
+        "name": "2027 考研",
+        "track": "kaoyan",
+        "year": 2027,
+        # 研招网稳定域名（规定原文的教育部 gov.cn URL 走证据提案，不放这里）
+        "official_home_url": "https://yz.chsi.com.cn/",
+        "status": "upcoming",
+    },
 )
 
 

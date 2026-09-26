@@ -18,7 +18,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, load_only
 
 from app.core.cache import cache
@@ -73,6 +73,16 @@ _DISCOURAGE_DIFF = 20
 _KAOYAN_DISCOURAGE_DIFF = 30
 # analyze 结果缓存：同输入（专业/地区/条件包）直接复用，TTL 10 分钟（数据每日更新）
 _DECISION_CACHE_TTL = 600
+
+# B3（2026-09-26）：省级 region → salary_benchmarks.city 的市级值映射（城市集合=表内实际有数据的市）。
+# 键为省级短名（region.rstrip("省") 后查表）；直辖市/市名本身经 city.like 子串直接命中，不进本表。
+# 表内 city 全集实况（2026-09-26 生产复核）：东莞市/广州市/杭州市/武汉市/济南市/深圳市/重庆市/长三角一体化示范区。
+_PROVINCE_CITIES: dict[str, tuple[str, ...]] = {
+    "广东": ("广州市", "深圳市", "东莞市"),
+    "浙江": ("杭州市",),
+    "湖北": ("武汉市",),
+    "山东": ("济南市",),
+}
 
 
 # ----------------------------------------------------------------------
@@ -334,16 +344,32 @@ def _build_kaoyan_path(
 def _build_employment_path(
     db: Session, major: str, region: str | None, school_tier: str | None
 ) -> dict[str, Any]:
-    """就业路 — 数据覆盖有限（employment_data 为空表），以 market_data + salary_benchmarks + schools 兜底。"""
+    """就业路 — market_data + salary_benchmarks + schools 兜底（employment_data 为空表）。
+
+    B3（2026-09-26）：专业↔行业映射接入——专业名先经 major_prospect 映射表解析出
+    对口行业精确名（market_data 的门类口径）再做行业查询；salary city 为市级口径，
+    省级 region 经 _PROVINCE_CITIES 映射到城市集合（无映射=诚实空态）。
+    """
     evidence: list[dict[str, Any]] = []
     coverage_parts: list[str] = []
 
+    # 延迟导入：major_prospect_service 反向依赖本引擎（interpret 路径），顶层 import 成环
+    from app.services.major_prospect_service import resolve_major
+
+    _, major_entry = resolve_major(major)
+    industries = list(major_entry.industries) if major_entry else []
+
     # ---- market_data：行业薪资带（宏观，带 source_url）----
     # 行业宏观数据多为全国口径：优先匹配地区，无命中则回退全国（诚实标注口径）。
-    # market_data 全表千余行，一次取回命中行在 Python 侧计数/排序（原 count+取数两查）。
-    md_base = db.query(MarketData).filter(
-        MarketData.industry.ilike(f"%{escape_like(major)}%", escape="\\")
-    )
+    # 映射行业精确名命中（门类口径）与专业名子串（制造业细分含"计算机"类）取或。
+    if industries:
+        industry_filter = or_(
+            MarketData.industry.in_(industries),
+            MarketData.industry.ilike(f"%{escape_like(major)}%", escape="\\"),
+        )
+    else:
+        industry_filter = MarketData.industry.ilike(f"%{escape_like(major)}%", escape="\\")
+    md_base = db.query(MarketData).filter(industry_filter)
     md_total = 0
     scope_label = region or "全国"
     md_salary: list[str] = []
@@ -359,7 +385,7 @@ def _build_employment_path(
             scope_label = f"{region}（全国口径）"
             md_rows = (
                 db.query(MarketData)
-                .filter(MarketData.industry.ilike(f"%{escape_like(major)}%", escape="\\"))
+                .filter(industry_filter)
                 .order_by(MarketData.year.desc())
                 .limit(MARKET_LIMIT)
                 .all()
@@ -381,8 +407,10 @@ def _build_employment_path(
         coverage_parts.append(f"{scope_label}行业薪资带：" + "、".join(md_salary[:3]))
 
     # ---- salary_benchmarks：城市岗位薪资（entry 级）----
+    sb_scope = region or ""
     if region:
-        # 未指定地区时不展示岗位薪资样本（城市粒度才有意义）
+        # 城市口径：city 列是市级值（广州市/杭州市…）。region 是市名时子串直中；
+        # 是省名时子串恒 miss → 经 _PROVINCE_CITIES 映射到该省城市集合（B3 口径打通）。
         sb_rows = (
             db.query(SalaryBenchmark)
             .filter(
@@ -392,6 +420,21 @@ def _build_employment_path(
             .order_by(SalaryBenchmark.year.desc())
             .all()
         )
+        if not sb_rows:
+            cities = _PROVINCE_CITIES.get(region.rstrip("省"), ())
+            if cities:
+                sb_rows = (
+                    db.query(SalaryBenchmark)
+                    .filter(
+                        SalaryBenchmark.experience_level == "entry",
+                        SalaryBenchmark.city.in_(cities),
+                    )
+                    .order_by(SalaryBenchmark.year.desc())
+                    .all()
+                )
+                if sb_rows:
+                    short = "、".join(c.rstrip("市") for c in cities)
+                    sb_scope = f"{region}（{short}等市样本）"
         sb_total = len(sb_rows)
         sample_rows = sb_rows[:SALARY_LIMIT]
     else:
@@ -410,7 +453,7 @@ def _build_employment_path(
         )
     if sb_parts:
         coverage_parts.append(
-            f"{region or ''}应届岗位薪资样本 {sb_total} 条：\n"
+            f"{sb_scope or region or ''}应届岗位薪资样本 {sb_total} 条：\n"
             + "\n".join(f"- {s}" for s in sb_parts[:5])
         )
 
