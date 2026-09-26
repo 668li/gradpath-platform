@@ -5,14 +5,13 @@
 import Link from "next/link";
 import { Compass, Database, Loader2, Users } from "lucide-react";
 import { PathResultCard } from "@/components/decision-engine/path-result-card";
-import { PositionAnalysisCard } from "@/components/decision-engine/position-analysis-card";
 import { SchoolAnalysisCard } from "@/components/decision-engine/school-analysis-card";
 import type { AssessmentInterpretResponse } from "@/types";
 import type { PathMetrics } from "@/types/path-comparison";
 
 const LEAN_LABELS: Record<string, string> = {
   kaoyan: "考研深造",
-  civil_service: "考公进体制",
+  civil_service: "已退役去向",
   employment: "直接就业",
 };
 
@@ -23,7 +22,6 @@ interface ProspectView {
   category?: string;
   industries?: Array<{ industry: string; salary_non_private: number }>;
   grad_paths?: Array<{ school_name: string; major_name?: string; score_line?: number }>;
-  civil_service?: { level?: string; label?: string; note?: string };
   tier_fact?: string;
 }
 
@@ -107,7 +105,7 @@ export function InterpretCard({ data, loading, error }: InterpretCardProps) {
         </div>
       )}
 
-      {/* 三路真实数据：有则渲染决策引擎同款卡，无则诚实引导补档案 */}
+      {/* 两路真实数据：有则渲染决策引擎同款卡，无则诚实引导补档案 */}
       {paths.length > 0 ? (
         <div className="space-y-3">
           {paths.map((m) => (
@@ -117,7 +115,7 @@ export function InterpretCard({ data, loading, error }: InterpretCardProps) {
             href="/decision-engine"
             className="inline-block text-xs font-medium text-brand-600 hover:underline"
           >
-            查看完整三路报告 →
+            查看完整两路报告 →
           </Link>
         </div>
       ) : (
@@ -134,7 +132,6 @@ export function InterpretCard({ data, loading, error }: InterpretCardProps) {
         )
       )}
 
-      {data.position_analysis && <PositionAnalysisCard analysis={data.position_analysis} />}
       {data.school_analysis && <SchoolAnalysisCard analysis={data.school_analysis} />}
 
       {/* 同分人群去向：无样本时诚实占位，绝不编造 */}
@@ -164,9 +161,8 @@ export function InterpretCard({ data, loading, error }: InterpretCardProps) {
         </div>
       )}
 
-      {/* 专业前景紧凑摘要（完整分析去专业前景页） */}
-      {(prospect.civil_service?.label ||
-        prospect.industries?.length ||
+      {/* 专业前景紧凑摘要（完整分析去专业前景页；考公友好度不再在此卡展示） */}
+      {(prospect.industries?.length ||
         prospect.grad_paths?.length ||
         prospect.tier_fact) && (
         <div className="rounded-xl border border-paper-200 p-3.5 space-y-2">
@@ -175,11 +171,6 @@ export function InterpretCard({ data, loading, error }: InterpretCardProps) {
             专业前景速览{prospect.matched_major ? ` · ${prospect.matched_major}` : ""}
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
-            {prospect.civil_service?.label && (
-              <span className="rounded-full border border-paper-200 bg-paper-50 px-2 py-0.5 text-ink-600">
-                {prospect.civil_service.label}
-              </span>
-            )}
             {(prospect.industries ?? []).slice(0, 3).map((i) => (
               <span
                 key={i.industry}

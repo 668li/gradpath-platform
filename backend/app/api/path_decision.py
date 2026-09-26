@@ -1,9 +1,9 @@
-"""三路对比决策引擎 API — 用真实数据对比考研/考公/就业三条路。
+"""两路对比决策引擎 API — 用真实数据对比考研/就业两条路。
 
 端点：
-- POST /api/path-decision/analyze — 输入学生档案（含个人条件），生成三路对比
+- POST /api/path-decision/analyze — 输入学生档案（含个人条件），生成两路对比
 - GET  /api/path-decision/history  — 获取历史对比记录（按时间倒序）
-- POST /api/path-decision/{decision_id}/outcome — 结果回传（决策飞轮闭环）
+- POST  /api/path-decision/{decision_id}/outcome — 结果回传（决策飞轮闭环）
 """
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -25,7 +25,7 @@ from app.schemas.path_comparison import (
 )
 from app.services import path_comparison_service, path_decision_engine
 
-router = APIRouter(prefix="/api/path-decision", tags=["三路对比决策引擎"])
+router = APIRouter(prefix="/api/path-decision", tags=["两路对比决策引擎"])
 
 
 def _response_from_record(
@@ -75,11 +75,11 @@ def analyze_paths(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> DecisionEngineResponse:
-    """输入学生档案（含个人条件包），生成考研/考公/就业三路对比并保存为历史记录。
+    """输入学生档案（含个人条件包），生成考研/就业两路对比并保存为历史记录。
 
     每个指标都来自现有数据库实时聚合，附带溯源证据；无数据时诚实降级。
-    个人条件（应届/政治面貌/学历/性别/基层经历/预估分）参与考公可报边界过滤
-    与岗位竞争力分级，见响应 position_analysis / school_analysis。
+    个人条件（应届/政治面貌/学历/性别/预估分）参与考研院校匹配与就业参考，
+    见响应 school_analysis。
     """
     decision = path_decision_engine.generate_decision(
         db=db,
@@ -133,7 +133,7 @@ def get_history(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> list[DecisionEngineResponse]:
-    """获取用户的三路对比历史记录（按时间倒序，含岗位/院校分析与结果回传状态）。"""
+    """获取用户的两路对比历史记录（按时间倒序，含院校分析与结果回传状态）。"""
     records = path_comparison_service.list_history(db, user.id)
     responses: list[DecisionEngineResponse] = []
     for r in records:

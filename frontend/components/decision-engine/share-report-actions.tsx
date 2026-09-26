@@ -11,27 +11,23 @@ import { useToast } from "@/components/ui/toast";
 import type { DecisionEngineResponse } from "@/types/path-comparison";
 
 /** 派生一段可粘贴的文字版报告摘要（不编造、只聚合已有结论） */
-function buildShareText(result: DecisionEngineResponse): string {
+export function buildShareText(result: DecisionEngineResponse): string {
   const input = result.input ?? {};
   const lines: string[] = [];
   lines.push("【我的报考决策报告 · GradPath】");
   lines.push(
-    `${String(input.major ?? "我的专业")} · ${String(input.graduation_year ?? 2026)} 届 · 三路对比`,
+    `${String(input.major ?? "我的专业")} · ${String(input.graduation_year ?? 2026)} 届 · 两路对比`,
   );
 
   const rows = result.metrics.map((m) => {
     const label: Record<string, string> = {
       kaoyan: "考研",
-      civil_service: "考公",
       employment: "就业",
     };
     return `  · ${label[m.path_type] ?? m.target_role}: 覆盖度 ${m.match_score}/100（${m.risk_level === "low" ? "低风险" : m.risk_level === "medium" ? "中风险" : "高风险"}）`;
   });
   if (rows.length) lines.push(...rows);
 
-  if (result.position_analysis?.personalized_level) {
-    lines.push(`考公个人竞争力：${result.position_analysis.personalized_level}`);
-  }
   const hardHits =
     (result.position_analysis?.avoid_positions?.length ?? 0) +
     (result.school_analysis?.avoid_schools?.length ?? 0);

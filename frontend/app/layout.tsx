@@ -27,7 +27,7 @@ const jakarta = localFont({
   variable: "--font-sans",
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://gradpath.example.com";
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://quxianglab.cn";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

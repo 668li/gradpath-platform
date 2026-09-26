@@ -55,7 +55,7 @@ PATH_LABELS = {
 _NO_DATA = "暂无相关数据"
 
 # ----------------------------------------------------------------------
-# 个人条件可报边界（决策飞轮第一圈）
+# 个人条件包（决策飞轮第一圈）
 # ----------------------------------------------------------------------
 # 学历档位（用于 education_req 匹配）
 _EDU_RANK = {"大专": 1, "本科": 2, "硕士": 3, "博士": 4}
@@ -93,25 +93,27 @@ def generate_decision(
     estimated_score: int | None = None,
     kaoyan_estimated_score: int | None = None,
 ) -> dict[str, Any]:
-    """生成三路对比结果。
+    """生成两路对比结果（考研 / 就业）。
 
     Args:
         db: 数据库会话
         major: 专业关键词（如「计算机」）
-        region: 地区（如「广东」；考公路限定省份，就业路限定城市/省份）
+        region: 地区（如「广东」；就业路限定城市/省份）
         school_tier: 学校层次（985/211/双一流/普通；用于考研难度与就业参考）
-        graduation_year: 毕业年份（默认 2026，考公按应届筛选参考）
+        graduation_year: 毕业年份（默认 2026）
         fresh_status / party_status / education / has_grassroots / gender:
-            个人条件包（keyword-only，全部默认 None → 与旧行为完全兼容）：
-            参与考公可报边界过滤与岗位分级，均为可选。
-        estimated_score: 行测+申论预估总分（200 分制），用于岗位竞争力分级。
+            个人条件包（keyword-only，全部默认 None → 与旧行为完全兼容），
+            参与考研院校匹配与就业参考，均为可选。
+        estimated_score: 已退役的考公估分字段（200 分制），仅保留请求兼容，
+            不再产生任何考公语义输出。
+        kaoyan_estimated_score: 考研初试模考估分（500 分制），参与院校冲稳保派生。
 
     Returns:
         {
-            "metrics": [3 条 PathMetrics 兼容 dict（含 evidence）, ...],
+            "metrics": [2 条 PathMetrics 兼容 dict（含 evidence）, ...],
             "recommendation": 条件式综合建议文本,
             "input": {major, region, school_tier, graduation_year, ...个人条件},
-            "position_analysis": 考公岗位级分析（可报数/进面线分布/个人分级）| None,
+            "position_analysis": None（考公路 2026-09-26 退役，恒为 None）,
             "school_analysis": 考研院校级分析（竞争档位/隐性情报）| None,
         }
     """
@@ -787,7 +789,7 @@ def _build_school_analysis(
 # 综合建议
 # ----------------------------------------------------------------------
 def _personal_condition_line(conditions: dict[str, Any]) -> str | None:
-    """个人条件摘要行（无任何个人条件时返回 None，输出与旧版逐字一致）。"""
+    """个人条件摘要行（无任何个人条件时返回 None）。"""
     parts = []
     if conditions.get("fresh_status"):
         parts.append(conditions["fresh_status"])
@@ -799,21 +801,21 @@ def _personal_condition_line(conditions: dict[str, Any]) -> str | None:
         parts.append(conditions["gender"])
     if conditions.get("has_grassroots") is True:
         parts.append("有基层经历")
-    if not parts and conditions.get("estimated_score") is None:
+    if not parts and conditions.get("kaoyan_estimated_score") is None:
         return None
     cond_text = "、".join(parts) if parts else "档案条件"
     est_text = (
-        f"，预估行测+申论 {conditions['estimated_score']} 分"
-        if conditions.get("estimated_score")
+        f"，预估考研初试 {conditions['kaoyan_estimated_score']} 分"
+        if conditions.get("kaoyan_estimated_score")
         else ""
     )
-    return f"以你的条件（{cond_text}{est_text}）为准，考公可报岗位已按可报边界过滤（详见考公卡片下「岗位分析」）。"
+    return f"以你的条件（{cond_text}{est_text}）为准，考研难度与就业匹配已按此个性化评估。"
 
 
 def _build_recommendation(
     metrics: list[dict[str, Any]], input_summary: dict, conditions: dict[str, Any] | None = None
 ) -> str:
-    """三路对比后的条件式建议 — 纯规则，不替用户决定。"""
+    """两路对比后的条件式建议 — 纯规则，不替用户决定。"""
     conditions = conditions or {}
     lines: list[str] = []
     personal_line = _personal_condition_line(conditions)
@@ -822,7 +824,7 @@ def _build_recommendation(
         lines.append("")
     lines.append(
         f"针对「{input_summary['major']} · {input_summary['region']} · "
-        f"{input_summary['school_tier']} · {input_summary['graduation_year']} 届」的三路对比："
+        f"{input_summary['school_tier']} · {input_summary['graduation_year']} 届」的两路对比："
     )
     for m in metrics:
         if m["match_score"] <= 0:
@@ -840,6 +842,6 @@ def _build_recommendation(
     lines.append("")
     lines.append(
         "每个数字都可在卡片中展开查看来源。建议结合你的财务缓冲、家庭支持与个人偏好，"
-        "从三路中选 1-2 条做深度分析，并在「决策实验室」中进一步权衡。"
+        "从两路中选 1 条做深度分析，并在「决策实验室」中进一步权衡。"
     )
     return "\n".join(lines)

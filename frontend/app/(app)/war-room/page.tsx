@@ -23,12 +23,11 @@ import { useToast } from "@/components/ui/toast";
 import { LoadingState } from "@/components/ui/empty";
 import type {
   IntelResponse,
-  PostIntelResponse,
   Company,
   SalaryBenchmark,
 } from "@/types";
 
-type WarRoomTab = "grad" | "civil" | "career" | "interview";
+type WarRoomTab = "grad" | "career" | "interview";
 
 export default function WarRoomPage() {
   return (
@@ -42,12 +41,11 @@ function WarRoomPageContent() {
   const searchParams = useSearchParams();
   const initialTab = (searchParams.get("tab") as WarRoomTab) || "grad";
   const [activeTab, setActiveTab] = useState<WarRoomTab>(
-    ["grad", "civil", "career", "interview"].includes(initialTab) ? initialTab : "grad",
+    ["grad", "career", "interview"].includes(initialTab) ? initialTab : "grad",
   );
 
   const tabs = [
     { id: "grad" as const, label: "考研作战室", icon: GraduationCap, color: "text-blue-700" },
-    { id: "civil" as const, label: "考公作战室", icon: Landmark, color: "text-red-700" },
     { id: "career" as const, label: "求职作战室", icon: Briefcase, color: "text-green-700" },
     { id: "interview" as const, label: "面经库", icon: Briefcase, color: "text-amber-700" },
   ];
@@ -85,7 +83,6 @@ function WarRoomPageContent() {
       {/* 内容区域 */}
       <div className="mt-8">
         {activeTab === "grad" && <GradWarRoom />}
-        {activeTab === "civil" && <CivilWarRoom />}
         {activeTab === "career" && <CareerWarRoom />}
         {activeTab === "interview" && <InterviewSection />}
       </div>
@@ -394,326 +391,6 @@ function IntelCard({ intel }: { intel: IntelResponse }) {
   );
 }
 const IntelCardMemo = memo(IntelCard);
-
-// ======================================================================
-// 考公作战室
-// ======================================================================
-
-function CivilWarRoom() {
-  const toast = useToast();
-  const [searchRegion, setSearchRegion] = useState("");
-  const [searchDept, setSearchDept] = useState("");
-  const [filterTier, setFilterTier] = useState("");
-
-  const postParentRef = useRef<HTMLDivElement>(null);
-
-  // SWR 替代原 useEffect+Promise.all
-  const { data: postData, error: postError, isLoading: postLoading } = useApi<PostIntelResponse[]>(
-    "/api/civil-service/post-intel/public?limit=200",
-    { fallbackData: [] },
-  );
-
-  useEffect(() => {
-    if (postError) toast.push(postError.message || "加载数据失败", "error");
-  }, [postError, toast]);
-
-  const postIntel = postData ?? [];
-  const loading = postLoading;
-
-  const filteredPosts = useMemo(() => {
-    return postIntel.filter((item) => {
-      if (searchRegion && !item.region.includes(searchRegion)) return false;
-      if (searchDept && !item.department.includes(searchDept)) return false;
-      if (filterTier && item.department_tier !== filterTier) return false;
-      return true;
-    });
-  }, [postIntel, searchRegion, searchDept, filterTier]);
-
-  const postRows = useMemo(() => {
-    const rows: PostIntelResponse[][] = [];
-    for (let i = 0; i < filteredPosts.length; i += 2) {
-      rows.push(filteredPosts.slice(i, i + 2));
-    }
-    return rows;
-  }, [filteredPosts]);
-
-  const postRowVirtualizer = useVirtualizer({
-    count: postRows.length,
-    getScrollElement: () => postParentRef.current,
-    estimateSize: () => 240,
-    overscan: 4,
-  });
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-red-500" />
-      </div>
-    );
-  }
-
-  const tierStats = postIntel.reduce(
-    (acc, item) => {
-      const tier = item.department_tier || "其他";
-      acc[tier] = (acc[tier] || 0) + 1;
-      return acc;
-    },
-    {} as Record<string, number>,
-  );
-
-  return (
-    <div className="space-y-6">
-      {/* 头部统计 */}
-      <div className="bg-gradient-to-r from-red-50 to-red-100 rounded-xl p-6 border border-red-200">
-        <h2 className="text-2xl font-bold text-red-900 mb-2">考公作战室</h2>
-        <p className="text-red-700 mb-4">覆盖 {postIntel.length} 条岗位情报</p>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="bg-white/70 rounded-lg p-3 text-center">
-            <p className="text-2xl font-bold text-red-700">{tierStats["中央部委"] || 0}</p>
-            <p className="text-xs text-red-600">中央部委</p>
-          </div>
-          <div className="bg-white/70 rounded-lg p-3 text-center">
-            <p className="text-2xl font-bold text-red-700">{tierStats["省级机关"] || 0}</p>
-            <p className="text-xs text-red-600">省级机关</p>
-          </div>
-          <div className="bg-white/70 rounded-lg p-3 text-center">
-            <p className="text-2xl font-bold text-red-700">{tierStats["市级机关"] || 0}</p>
-            <p className="text-xs text-red-600">市级机关</p>
-          </div>
-          <div className="bg-white/70 rounded-lg p-3 text-center">
-            <p className="text-2xl font-bold text-red-700">{tierStats["县区基层"] || 0}</p>
-            <p className="text-xs text-red-600">县区基层</p>
-          </div>
-        </div>
-      </div>
-
-      {/* 搜索栏 */}
-      <div className="bg-white rounded-lg p-4 border border-paper-200">
-        <div className="flex flex-col md:flex-row gap-3">
-          <div className="flex-1">
-            <label className="block text-xs font-medium text-ink-500 mb-1">地区</label>
-            <div className="relative">
-              <MapPin className="absolute left-3 top-1/2 -tranink-y-1/2 h-4 w-4 text-ink-300" />
-              <input
-                type="text"
-                value={searchRegion}
-                onChange={(e) => setSearchRegion(e.target.value)}
-                placeholder="如：北京"
-                className="w-full rounded-lg border border-paper-200 pl-9 pr-3 py-2 text-sm focus:border-red-400 focus:outline-none"
-              />
-            </div>
-          </div>
-          <div className="flex-1">
-            <label className="block text-xs font-medium text-ink-500 mb-1">部门</label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -tranink-y-1/2 h-4 w-4 text-ink-300" />
-              <input
-                type="text"
-                value={searchDept}
-                onChange={(e) => setSearchDept(e.target.value)}
-                placeholder="如：税务局"
-                className="w-full rounded-lg border border-paper-200 pl-9 pr-3 py-2 text-sm focus:border-red-400 focus:outline-none"
-              />
-            </div>
-          </div>
-          <div className="md:w-40">
-            <label htmlFor="civil-tier-select" className="block text-xs font-medium text-ink-500 mb-1">机关层级</label>
-            <select
-              id="civil-tier-select"
-              value={filterTier}
-              onChange={(e) => setFilterTier(e.target.value)}
-              className="w-full rounded-lg border border-paper-200 px-3 py-2 text-sm focus:border-red-400 focus:outline-none"
-            >
-              <option value="">全部</option>
-              <option value="中央部委">中央部委</option>
-              <option value="省级机关">省级机关</option>
-              <option value="市级机关">市级机关</option>
-              <option value="县区基层">县区基层</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* 岗位情报列表 */}
-      <div>
-        <h3 className="text-lg font-bold text-ink-800 mb-3 flex items-center gap-2">
-          <Landmark className="h-5 w-5 text-red-500" />
-          岗位情报（{filteredPosts.length} 条）
-        </h3>
-        {filteredPosts.length === 0 ? (
-          <div className="text-center py-10 text-ink-400">
-            <Landmark className="h-12 w-12 mx-auto mb-3 opacity-30" />
-            <p>没有找到匹配的岗位情报，试试调整搜索条件</p>
-          </div>
-        ) : (
-          <div
-            ref={postParentRef}
-            style={{ height: "600px", overflow: "auto" }}
-            className="rounded-lg"
-          >
-            <div
-              style={{
-                height: `${postRowVirtualizer.getTotalSize()}px`,
-                position: "relative",
-              }}
-            >
-              {postRowVirtualizer.getVirtualItems().map((virtualRow) => {
-                const rowItems = postRows[virtualRow.index];
-                return (
-                  <div
-                    key={`post-row-${virtualRow.index}`}
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      width: "100%",
-                      transform: `translateY(${virtualRow.start}px)`,
-                    }}
-                  >
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 px-0.5">
-                      {rowItems.map((post) => (
-                        <PostIntelCardMemo key={post.id} post={post} />
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-      </div>
-
-      </div>
-  );
-}
-
-function PostIntelCard({ post }: { post: PostIntelResponse }) {
-  const [expanded, setExpanded] = useState(false);
-
-  const competitionLabel: Record<string, string> = {
-    low: "竞争较小",
-    medium: "竞争适中",
-    high: "竞争激烈",
-    extreme: "竞争极端",
-    unknown: "未知",
-  };
-
-  const treatmentLabel: Record<string, string> = {
-    low: "待遇一般",
-    medium: "待遇中等",
-    high: "待遇优厚",
-    unknown: "未知",
-  };
-
-  return (
-    <div className="bg-white rounded-lg p-4 border border-paper-200 hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between mb-2">
-        <div>
-          <h4 className="font-semibold text-ink-800">{post.department}</h4>
-          <p className="text-sm text-ink-500">{post.post_name}</p>
-        </div>
-        {post.department_tier && (
-          <span className="px-2 py-0.5 rounded text-xs font-medium bg-red-50 text-red-700">
-            {post.department_tier}
-          </span>
-        )}
-      </div>
-
-      <div className="flex items-center gap-2 text-xs text-ink-500 mb-3">
-        <MapPin className="h-3 w-3" />
-        <span>{post.region}</span>
-        <span>·</span>
-        <span>{post.exam_type}</span>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2 text-xs text-ink-600">
-        <div className="flex justify-between">
-          <span>报录比</span>
-          <span className="font-medium text-ink-800">{post.admission_ratio || "—"}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>进面分</span>
-          <span className="font-medium text-ink-800">{post.cutoff_score || "—"}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>竞争程度</span>
-          <span className={cn(
-            "font-medium",
-            post.real_competition === "extreme" || post.real_competition === "high" ? "text-red-600" :
-            post.real_competition === "medium" ? "text-amber-600" :
-            "text-green-600"
-          )}>
-            {competitionLabel[post.real_competition] || post.real_competition}
-          </span>
-        </div>
-        <div className="flex justify-between">
-          <span>待遇水平</span>
-          <span className="font-medium text-green-600">
-            {treatmentLabel[post.treatment_level] || post.treatment_level}
-          </span>
-        </div>
-        {post.salary_estimate && (
-          <div className="flex justify-between">
-            <span>薪资范围</span>
-            <span className="font-medium text-ink-800">{post.salary_estimate}</span>
-          </div>
-        )}
-        <div className="flex justify-between">
-          <span>服务期</span>
-          <span className="font-medium text-ink-800">{post.service_period || "—"}</span>
-        </div>
-      </div>
-
-      {expanded && (
-        <div className="mt-3 pt-3 border-t border-paper-100 space-y-2 text-xs">
-          {post.work_content && (
-            <div>
-              <p className="font-medium text-ink-700 mb-1">工作内容</p>
-              <p className="text-ink-500">{post.work_content}</p>
-            </div>
-          )}
-          {post.insider_notes && (
-            <div className="bg-amber-50 rounded p-2 text-ink-600">
-              <p className="font-medium text-amber-700 mb-1">内部消息</p>
-              {post.insider_notes}
-            </div>
-          )}
-          {post.risk_warnings && post.risk_warnings.length > 0 && (
-            <div className="bg-red-50 rounded p-2">
-              <p className="font-medium text-red-700 mb-1 flex items-center gap-1">
-                <AlertTriangle className="h-3 w-3" />
-                风险提示
-              </p>
-              <ul className="text-red-600 space-y-0.5">
-                {post.risk_warnings.map((w, i) => (
-                  <li key={`${post.id}-warn-${i}`}>· {w}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {post.tags && post.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {post.tags.map((tag, i) => (
-                <span key={`${post.id}-tag-${i}`} className="px-1.5 py-0.5 bg-paper-100 rounded text-[10px] text-ink-500">
-                  {tag}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="mt-3 text-xs text-red-600 hover:text-red-700 flex items-center gap-1"
-      >
-        {expanded ? "收起" : "查看详情"}
-        <ChevronRight className={cn("h-3 w-3 transition-transform", expanded && "rotate-90")} />
-      </button>
-    </div>
-  );
-}
-const PostIntelCardMemo = memo(PostIntelCard);
 
 // ======================================================================
 // 求职作战室

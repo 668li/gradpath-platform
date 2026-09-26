@@ -125,7 +125,15 @@ class AIService:
                     headers=headers,
                     json=payload,
                 )
-                resp.raise_for_status()
+                if resp.status_code >= 400:
+                    # R-10：上游响应体进日志与异常消息（如 Arrearage 欠费不再伪装成参数错）
+                    body = (resp.text or "")[:500]
+                    logger.error("LLM 上游 HTTP %d: %s", resp.status_code, body)
+                    raise httpx.HTTPStatusError(
+                        f"LLM upstream HTTP {resp.status_code}: {body}",
+                        request=resp.request,
+                        response=resp,
+                    )
                 result = resp.json()["choices"][0]["message"]["content"]
                 logger.info("LLM 调用完成: %d 字符", len(result))
                 return result

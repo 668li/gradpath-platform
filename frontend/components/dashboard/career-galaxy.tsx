@@ -19,11 +19,10 @@ interface GalaxyPlanet {
   angle: number;
 }
 
-/** 预设 6 颗行星：大小=适配度，距离=实现难度 */
+/** 预设行星：大小=适配度，距离=实现难度 */
 const GALAXY_PLANETS: GalaxyPlanet[] = [
   { key: "kaoyan", label: "考研", size: 80, distance: 120, href: "/kaoyan", pathKey: "kaoyan", destinationType: "postgrad", angle: 330 },
   { key: "employment", label: "就业", size: 90, distance: 100, href: "/employment", pathKey: "employment", destinationType: "employment", angle: 270 },
-  { key: "civil-service", label: "考公", size: 70, distance: 150, href: "/civil-service", pathKey: "civil_service", destinationType: "civil_service", angle: 30 },
   { key: "abroad", label: "留学", size: 60, distance: 180, href: "/explore", pathKey: "abroad", destinationType: "abroad", angle: 90 },
   { key: "startup", label: "创业", size: 50, distance: 200, href: "/career-simulator", pathKey: "startup", destinationType: "startup", angle: 150 },
   { key: "gap-year", label: "间隔年", size: 40, distance: 220, href: "/life-design", pathKey: "gap_year", destinationType: "gap_year", angle: 210 },

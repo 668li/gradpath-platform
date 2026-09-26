@@ -10,8 +10,7 @@ import { pathDecisionApi } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
 import type { DecisionOutcomeInfo, DecisionOutcomeSubmit } from "@/types/path-comparison";
 
-const PATH_OPTIONS = [
-  { value: "civil_service", label: "考公" },
+export const PATH_OPTIONS = [
   { value: "kaoyan", label: "考研深造" },
   { value: "employment", label: "直接就业" },
 ];
@@ -93,7 +92,7 @@ export function OutcomeForm({ decisionId, outcome, onSaved }: OutcomeFormProps) 
         <History className="h-4 w-4 text-brand-600" />
         记录我的选择（结果回传）
         <span className="ml-auto text-xs font-normal text-ink-400">
-          为后来人积累真实上岸/入面样本，不做任何公开展示
+          为后来人积累真实去向样本，不做任何公开展示
         </span>
       </summary>
       <form onSubmit={handleSubmit} className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -113,7 +112,7 @@ export function OutcomeForm({ decisionId, outcome, onSaved }: OutcomeFormProps) 
             ))}
           </Select>
         </Field>
-        <Field label="实际结果描述" className="md:col-span-2" hint="如：进面未上岸 / 25 考研上岸 XX 大学 / 已入职 XX 公司">
+        <Field label="实际结果描述" className="md:col-span-2" hint="如：25 考研上岸 XX 大学 / 已入职 XX 公司">
           <Textarea
             value={actualOutcome}
             onChange={(e) => setActualOutcome(e.target.value)}
@@ -125,7 +124,7 @@ export function OutcomeForm({ decisionId, outcome, onSaved }: OutcomeFormProps) 
           <Input
             value={selectedLabel}
             onChange={(e) => setSelectedLabel(e.target.value)}
-            placeholder="如：省考行政执法岗"
+            placeholder="如：XX 大学计算机专硕 / XX 公司后端开发"
           />
         </Field>
         <Field label="综合满意度（1-5）">

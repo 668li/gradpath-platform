@@ -1,7 +1,7 @@
 "use client";
 
 // frontend/components/decision-engine/engine-form.tsx
-// 三路决策引擎输入表单 — 学生档案（专业/地区/学校层次/毕业年份）+ 个人条件包（考公可报边界）
+// 两路决策引擎输入表单 — 学生档案（专业/地区/学校层次/毕业年份）+ 个人条件包（考研估分）
 
 import { useState } from "react";
 import { Compass, Import, Play } from "lucide-react";
@@ -72,9 +72,6 @@ export function EngineForm({ loading, onSubmit, initial }: EngineFormProps) {
   const [grassroots, setGrassroots] = useState(
     initial?.has_grassroots === undefined ? "" : initial.has_grassroots ? "yes" : "no",
   );
-  const [estimatedScore, setEstimatedScore] = useState(
-    initial?.estimated_score?.toString() ?? "",
-  );
   const [kaoyanEstimate, setKaoyanEstimate] = useState(
     initial?.kaoyan_estimated_score?.toString() ?? "",
   );
@@ -94,7 +91,6 @@ export function EngineForm({ loading, onSubmit, initial }: EngineFormProps) {
       gender: gender || undefined,
       has_grassroots:
         grassroots === "" ? undefined : grassroots === "yes",
-      estimated_score: estimatedScore ? Number(estimatedScore) : undefined,
       kaoyan_estimated_score: kaoyanEstimate ? Number(kaoyanEstimate) : undefined,
     });
   };
@@ -111,7 +107,7 @@ export function EngineForm({ loading, onSubmit, initial }: EngineFormProps) {
         <div>
           <h2 className="text-base font-semibold text-ink-900">我的档案</h2>
           <p className="text-xs text-ink-500">
-            输入你的基本情况，引擎会用现有数据实时对比考研 / 考公 / 就业三条路
+            输入你的基本情况，引擎会用现有数据实时对比考研与就业两条路
           </p>
         </div>
       </div>
@@ -125,7 +121,7 @@ export function EngineForm({ loading, onSubmit, initial }: EngineFormProps) {
             disabled={loading}
           />
         </Field>
-        <Field label="地区" hint="如：广东 / 深圳（考公路按省份匹配）">
+        <Field label="地区" hint="如：广东 / 深圳（就业按城市匹配）">
           <Input
             value={region}
             onChange={(e) => setRegion(e.target.value)}
@@ -144,7 +140,7 @@ export function EngineForm({ loading, onSubmit, initial }: EngineFormProps) {
             ))}
           </Select>
         </Field>
-        <Field label="毕业年份" hint="考公按应届筛选参考">
+        <Field label="毕业年份" hint="应届身份影响考研报考与校招资格">
           <Select
             value={graduationYear}
             onChange={(e) => setGraduationYear(e.target.value)}
@@ -201,17 +197,6 @@ export function EngineForm({ loading, onSubmit, initial }: EngineFormProps) {
               ))}
             </Select>
           </Field>
-          <Field label="预估总分" hint="行测+申论 200 分制">
-            <Input
-              type="number"
-              min={0}
-              max={200}
-              value={estimatedScore}
-              onChange={(e) => setEstimatedScore(e.target.value)}
-              placeholder="如 128"
-              disabled={loading}
-            />
-          </Field>
           <Field label="考研模考估分" hint="初试 500 分制，用于院校劝退判定">
             <Input
               type="number"
@@ -232,7 +217,7 @@ export function EngineForm({ loading, onSubmit, initial }: EngineFormProps) {
         </p>
         <Button type="submit" loading={loading} disabled={!major.trim()}>
           <Play className="h-4 w-4" />
-          {loading ? "对比中…" : "生成三路对比"}
+          {loading ? "对比中…" : "生成对比报告"}
         </Button>
       </div>
     </form>

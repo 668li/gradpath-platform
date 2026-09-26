@@ -727,3 +727,62 @@ class TestPersonalAndOutcomeAPI:
         )
         assert bad.status_code == 422
 
+
+# ----------------------------------------------------------------------
+# R-01（spec 011 信任对齐第一批）：recommendation 任何输入组合下
+# 不含退役考公路文案；个人条件行保留（两路口径，考研估分语义保留）
+# ----------------------------------------------------------------------
+class TestTrustAlignmentR01:
+    RETIRED_WORDS = ["考公", "行测", "申论", "岗位分析", "可报边界", "三条路", "三路"]
+
+    def _analyze(self, client, auth_headers, payload: dict) -> dict:
+        resp = client.post(
+            "/api/path-decision/analyze", json=payload, headers=auth_headers
+        )
+        assert resp.status_code == 200, resp.text
+        return resp.json()
+
+    def test_full_conditions_recommendation_clean(
+        self, client, auth_headers, db_session, seed_decision_data
+    ):
+        body = self._analyze(
+            client,
+            auth_headers,
+            {
+                "major": "计算机",
+                "region": "广东",
+                "fresh_status": "应届",
+                "party_status": "中共党员",
+                "education": "本科",
+                "gender": "男",
+                "has_grassroots": True,
+                "estimated_score": 135,
+            },
+        )
+        rec = body["recommendation"]
+        for w in self.RETIRED_WORDS:
+            assert w not in rec, f"recommendation 含退役词「{w}」: {rec}"
+        assert rec.startswith("以你的条件")  # 个人条件行保留（两路口径）
+
+    def test_kaoyan_estimate_semantics_kept(
+        self, client, auth_headers, db_session, seed_decision_data
+    ):
+        body = self._analyze(
+            client,
+            auth_headers,
+            {"major": "计算机", "region": "广东", "kaoyan_estimated_score": 345},
+        )
+        rec = body["recommendation"]
+        for w in self.RETIRED_WORDS:
+            assert w not in rec, f"recommendation 含退役词「{w}」: {rec}"
+        assert "预估考研初试 345 分" in rec  # 考研估分语义保留
+
+    def test_minimal_input_recommendation_clean(
+        self, client, auth_headers, db_session, seed_decision_data
+    ):
+        body = self._analyze(client, auth_headers, {"major": "会计学"})
+        for w in self.RETIRED_WORDS:
+            assert w not in body["recommendation"], (
+                f"recommendation 含退役词「{w}」: {body['recommendation']}"
+            )
+

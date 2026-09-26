@@ -88,7 +88,7 @@ describe("InterpretCard", () => {
     expect(screen.getByText(/专属解读暂时没能生成/)).toBeDefined();
   });
 
-  it("完整数据渲染 lean 标签、解读理由、三路卡与溯源脚注", () => {
+  it("完整数据渲染 lean 标签、解读理由、两路卡与溯源脚注", () => {
     render(<InterpretCard data={fullData} loading={false} error={null} />);
     expect(screen.getByText("偏好：考研深造")).toBeDefined();
     expect(screen.getByText(fullData.interpretation!.reason)).toBeDefined();
@@ -96,7 +96,7 @@ describe("InterpretCard", () => {
     expect(screen.getByText(/均来自真实专有数据/)).toBeDefined();
   });
 
-  it("paths 为空时显示 recommendation 并引导补档案，不出现假三路", () => {
+  it("paths 为空时显示 recommendation 并引导补档案，不出现假路径", () => {
     const noPaths: AssessmentInterpretResponse = {
       ...fullData,
       paths: [],
@@ -108,9 +108,27 @@ describe("InterpretCard", () => {
     expect(screen.queryByText("学术深造")).toBeNull();
   });
 
-  it("paths 非空时提供通往完整三路报告的入口，空态不出现", () => {
+  it("R-05：任何数据态不出现考公标签与考公岗位分析（历史 civil_service 数据兼容中性展示）", () => {
+    const civilData = {
+      ...fullData,
+      interpretation: {
+        primary_lean: "civil_service",
+        lean_scores: { kaoyan: 3, civil_service: 4, employment: 2 },
+        reason: "历史测评偏好为已退役方向，按当前两路生成。",
+      },
+      major_prospect: {
+        civil_service: { level: "medium", label: "考公一般", note: "n" },
+      },
+      position_analysis: { personalized_level: "中上", avoid_positions: [] },
+    } as unknown as AssessmentInterpretResponse;
+    render(<InterpretCard data={civilData} loading={false} error={null} />);
+    expect(screen.queryByText(/考公/)).toBeNull();
+    expect(screen.getByText("偏好：已退役去向")).toBeDefined();
+  });
+
+  it("paths 非空时提供通往完整两路报告的入口，空态不出现", () => {
     const { unmount } = render(<InterpretCard data={fullData} loading={false} error={null} />);
-    const cta = screen.getByText("查看完整三路报告 →");
+    const cta = screen.getByText("查看完整两路报告 →");
     expect(cta.closest("a")?.getAttribute("href")).toBe("/decision-engine");
     unmount();
 
@@ -120,7 +138,7 @@ describe("InterpretCard", () => {
       recommendation: "专业未在个人档案填写，暂时无法生成具体岗位/院校/进面线分析。",
     };
     render(<InterpretCard data={noPaths} loading={false} error={null} />);
-    expect(screen.queryByText("查看完整三路报告 →")).toBeNull();
+    expect(screen.queryByText("查看完整两路报告 →")).toBeNull();
   });
 
   it("同分人群无样本时诚实占位", () => {

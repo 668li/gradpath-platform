@@ -20,7 +20,7 @@ import { useAuthStore } from "@/stores/auth";
 import { cn } from "@/lib/utils";
 import type { PostItem, UserResponse } from "@/types";
 
-type DirectionTab = "all" | "kaoyan" | "civil-service" | "employment";
+type DirectionTab = "all" | "kaoyan" | "employment";
 
 export default function CommunityPage() {
   const user = useAuthStore((s) => s.user);
@@ -30,7 +30,6 @@ export default function CommunityPage() {
   const directionTabs: { id: DirectionTab; label: string }[] = [
     { id: "all", label: "全部" },
     { id: "kaoyan", label: "考研专区" },
-    { id: "civil-service", label: "考公专区" },
     { id: "employment", label: "就业专区" },
   ];
 
@@ -73,20 +72,13 @@ export default function CommunityPage() {
             社区交流
           </h1>
           <p className="text-sm text-ink-500">
-            真实的考研 / 考公 / 就业交流广场：发帖、评论、关注作者、收到通知。
+            真实的考研 / 就业交流广场：发帖、评论、关注作者、收到通知。
           </p>
         </div>
       </header>
 
       <FeedTab currentUser={user} />
         </>
-      )}
-
-      {directionTab === "civil-service" && (
-        <EmptyState
-          title="考公专区"
-          description="考公专区即将上线，敬请期待..."
-        />
       )}
 
       {directionTab === "employment" && (

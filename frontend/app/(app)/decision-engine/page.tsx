@@ -1,8 +1,8 @@
 "use client";
 
 // frontend/app/(app)/decision-engine/page.tsx
-// 三路决策引擎 — 输入学生档案，生成「我的报考决策报告」：
-// 报告式布局（三路横评 / 分数三档 / 岗位与院校分析 / 同分人群去向 / 行动时间线 / 综合建议）
+// 两路决策引擎 — 输入学生档案，生成「我的报考决策报告」：
+// 报告式布局（两路横评 / 分数三档 / 院校分析 / 同分人群去向 / 行动时间线 / 综合建议）
 // + 结果回传闭环 + 分享（匿名链接 / 复制文案）。
 
 import { useMemo, useState } from "react";
@@ -60,9 +60,9 @@ export default function DecisionEnginePage() {
     <div className="mx-auto max-w-5xl space-y-6">
       {/* 页头 */}
       <div>
-        <h1 className="text-2xl font-bold text-ink-800">三路决策引擎</h1>
+        <h1 className="text-2xl font-bold text-ink-800">决策引擎</h1>
         <p className="mt-1 text-ink-500">
-          输入你的专业与基本情况，用现有真实数据对比考研 / 考公 / 就业三条路——生成属于你的「报考决策报告」，每个数字都可溯源。
+          输入你的专业与基本情况，用现有真实数据对比考研与就业两条路——生成属于你的「报考决策报告」，每个数字都可溯源。
         </p>
       </div>
 
@@ -93,7 +93,7 @@ export default function DecisionEnginePage() {
       {!loading && !result && (
         <EmptyState
           title="输入专业，生成你的报考决策报告"
-          description="引擎会用数据库里的真实分数线、岗位表与薪资数据生成报告，每个数字都有来源。数据覆盖有限时会如实标注。"
+          description="引擎会用数据库里的真实分数线与薪资数据生成报告，每个数字都有来源。数据覆盖有限时会如实标注。"
         />
       )}
     </div>

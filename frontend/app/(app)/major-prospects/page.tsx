@@ -349,12 +349,6 @@ function ProspectResult({ data }: { data: MajorProspect }) {
         <p className="mt-2.5 text-sm leading-relaxed text-ink-600">
           {data.civil_service.note}
         </p>
-        <Link
-          href="/civil-service"
-          className="mt-3 inline-flex items-center gap-1 text-sm text-brand-600 hover:text-brand-700"
-        >
-          查看考公情报 <ArrowRight className="h-3.5 w-3.5" />
-        </Link>
       </SectionCard>
 
       {/* 数据说明 */}

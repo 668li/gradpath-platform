@@ -18,6 +18,29 @@ function formatDate(iso: string): string {
   return `${d.getMonth() + 1}月${d.getDate()}日`;
 }
 
+/** 保存与 AI 生成两阶段执行，失败态分离（R-09）：
+ * 保存失败 = { ok: false }；保存成功但 AI 上游失败 = aiFailed: true（记录已落库可回看）。 */
+export async function saveThenAnalyze(
+  api: Pick<typeof decisionAnalysisApi, "create" | "generateAiAnalysis">,
+  payload: Parameters<typeof decisionAnalysisApi.create>[0],
+): Promise<
+  | { ok: true; id: string; ai: string | null; aiFailed: boolean }
+  | { ok: false }
+> {
+  let analysis: DecisionAnalysisResponse;
+  try {
+    analysis = await api.create(payload);
+  } catch {
+    return { ok: false };
+  }
+  try {
+    const aiRes = await api.generateAiAnalysis(analysis.id);
+    return { ok: true, id: analysis.id, ai: aiRes.ai_analysis, aiFailed: false };
+  } catch {
+    return { ok: true, id: analysis.id, ai: null, aiFailed: true };
+  }
+}
+
 export default function DecisionLabPage() {
   const toast = useToast();
   const [loading, setLoading] = useState(true);
@@ -175,7 +198,7 @@ export default function DecisionLabPage() {
       const validOptions = options.filter(o => o.trim());
       const validReasons = premortemReasons.filter(r => r.trim());
 
-      const analysis = await decisionAnalysisApi.create({
+      const result = await saveThenAnalyze(decisionAnalysisApi, {
         title,
         options: validOptions,
         premortem_reasons: validReasons.map(r => ({ reason: r, category: "" })),
@@ -189,13 +212,19 @@ export default function DecisionLabPage() {
         red_team_questions: redTeamQuestions,
         red_team_answers: Object.values(redTeamAnswers),
       });
-      setSavedAnalysisId(analysis.id);
-      const aiRes = await decisionAnalysisApi.generateAiAnalysis(analysis.id);
-      setAiAnalysis(aiRes.ai_analysis);
-      toast.push("分析已保存！", "success");
+      if (!result.ok) {
+        toast.push("保存失败，请重试", "error");
+        return;
+      }
+      setSavedAnalysisId(result.id);
+      if (result.aiFailed) {
+        // AI 上游失败不掩盖保存成功：记录已落库，可在列表回看/重试（R-09）
+        toast.push("已保存，AI 分析生成失败——记录已留存，可稍后重试生成", "error");
+      } else {
+        setAiAnalysis(result.ai);
+        toast.push("分析已保存！", "success");
+      }
       loadAnalyses();
-    } catch {
-      toast.push("保存失败，请重试", "error");
     } finally {
       setAiLoading(false);
     }

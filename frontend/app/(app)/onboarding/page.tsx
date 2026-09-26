@@ -46,13 +46,6 @@ function getDirectionNextStep(direction: string): {
         desc: "查看最新考研资讯与社区经验帖，先建立信息面。",
         icon: GraduationCap,
       };
-    case "civil_service":
-      return {
-        href: "/civil-service?from=onboarding",
-        title: "去考公情报看岗位",
-        desc: "查看岗位需求、报录比与分数线，找到对口岗位。",
-        icon: Landmark,
-      };
     case "employment":
       return {
         href: "/employment?from=onboarding",
@@ -82,7 +75,6 @@ const STAGES = [
 
 const DIRECTIONS = [
   { value: "postgrad", label: "考研", icon: GraduationCap, color: "text-blue-600 bg-blue-50 border-blue-200", testId: "goal-kaoyan" },
-  { value: "civil_service", label: "考公", icon: Landmark, color: "text-emerald-600 bg-emerald-50 border-emerald-200", testId: "goal-civil" },
   { value: "employment", label: "就业", icon: Briefcase, color: "text-orange-600 bg-orange-50 border-orange-200", testId: "goal-career" },
   { value: "abroad", label: "出国", icon: Plane, color: "text-purple-600 bg-purple-50 border-purple-200", testId: "goal-abroad" },
   { value: "phd", label: "读博", icon: Brain, color: "text-rose-600 bg-rose-50 border-rose-200", testId: "goal-phd" },

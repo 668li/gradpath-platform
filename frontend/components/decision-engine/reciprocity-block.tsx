@@ -11,7 +11,7 @@ import type { OutcomeStats } from "@/types/path-comparison";
 
 const PATH_LABELS: Record<string, string> = {
   kaoyan: "考研",
-  civil_service: "考公",
+  civil_service: "已退役去向",
   employment: "就业",
 };
 

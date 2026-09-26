@@ -111,6 +111,7 @@ async def post_message(
     - LLM 超时 / 重试耗尽 → 504
     - 熔断器打开 → 503
     - 配额超额 → 429
+    - 上游 401/402/403（鉴权/欠费）→ 502 账户或配置异常；其他上游 4xx/5xx → 502 暂不可用（R-10）
     - 其他异常 → 500
     """
     conv = get_conversation(db, user.id, conversation_id)
@@ -165,6 +166,18 @@ async def post_message(
         raise HTTPException(
             status_code=status.HTTP_504_GATEWAY_TIMEOUT,
             detail="AI 回复超时，请稍后重试",
+        )
+    except httpx.HTTPStatusError as e:
+        # R-10：上游 4xx/5xx 与普通异常分离——账户/配置问题（如 Arrearage 欠费）
+        # 与服务暂不可用分开提示；响应体已由 ai_service 写入日志
+        upstream = e.response.status_code
+        if upstream in (401, 402, 403):
+            detail = "AI 服务账户或配置异常（上游鉴权/欠费），请联系站点管理员检查 Key"
+        else:
+            detail = f"AI 服务暂不可用（上游 {upstream}），请稍后重试"
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=detail,
         )
     except ValueError as e:
         raise HTTPException(

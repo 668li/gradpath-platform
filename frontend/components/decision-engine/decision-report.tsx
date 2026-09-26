@@ -82,18 +82,16 @@ interface TimelineItem {
   desc: string;
 }
 
-function buildTimeline(graduationYear?: number): TimelineItem[] {
+export function buildTimeline(graduationYear?: number): TimelineItem[] {
   const gy = graduationYear ?? 2026;
   const py = gy - 1;
   return [
     { when: `${py} 年 9-11 月`, title: "秋招投递", desc: "直接就业线的主窗口，提前批往往更早启动" },
-    { when: `${py} 年 10 月`, title: "考研报名 · 国考报名", desc: "研招网报名 + 国考职位发布（往年 10 月中）" },
-    { when: `${py} 年 11-12 月`, title: "国考笔试", desc: "行政职业能力测验 + 申论" },
+    { when: `${py} 年 10 月`, title: "考研报名", desc: "研招网报名（往年 10 月，具体以官方公告为准）" },
     { when: `${py} 年 12 月`, title: "考研初试", desc: "政治 / 外语 / 业务课（12 月下旬）" },
-    { when: `${gy} 年 2-3 月`, title: "省考报名与笔试", desc: "多省联考往年 3 月笔试、2 月报名" },
     { when: `${gy} 年 3-4 月`, title: "考研复试 / 调剂", desc: "过线者准备复试，未过线抓紧调剂窗口" },
     { when: `${gy} 年 3-4 月`, title: "春招", desc: "就业线的第二窗口" },
-    { when: `${gy} 年 6 月`, title: "毕业", desc: "应届身份结束，考公应届岗位窗口关闭" },
+    { when: `${gy} 年 6 月`, title: "毕业", desc: "应届身份结束，校招应届资格随之收口" },
   ];
 }
 

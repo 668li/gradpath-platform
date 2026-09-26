@@ -5,7 +5,7 @@
 产出「不是只给类型，而是给专属报考路径」的解读：
 
 - 测评类型 -> 路径偏好 lean（软信号，透明规则，不编造因果）
-- 用 generate_decision 拉取真实三路数据（考研/考公/就业），每条带溯源
+- 用 generate_decision 拉取真实两路数据（考研/就业），每条带溯源
 - 用 get_prospect 拉取专业薪资前景与升学路径（真实口径，含 data_notes）
 - 用 build_peer_destinations 拉取「和你分数相近的人最后去哪」的合计去向
   （参照分 = 用户自己最近一条真实回传分；从未回传分数则诚实为空）
@@ -13,7 +13,7 @@
 
 设计边界：
 - 测评只给出「主攻方向偏好」，不越权断言「你适合哪条路」；
-  落地判断交给真实数据（可报岗位数、进面线稳不稳、薪资、院校档位）。
+  落地判断交给真实数据（分数线稳不稳、薪资、院校档位）。
 - 所有数字均来自既有专有数据服务，本文件不引入任何硬编码薪资/分数线。
 """
 
@@ -37,7 +37,7 @@ logger = logging.getLogger("gradpath.assessment_interpret")
 
 _PATH_LABELS = {
     "kaoyan": "考研",
-    "civil_service": "考公",
+    "civil_service": "已退役去向",
     "employment": "就业",
 }
 
@@ -46,13 +46,14 @@ _PATH_LABELS = {
 _EDU_ENUM_ZH = {"high_school": "高中", "bachelor": "本科", "master": "硕士", "phd": "博士"}
 
 # 霍兰德 RIASEC -> 侧重路径（数值越大越偏向；行业通识映射，透明可读）
+# 考公路 2026-09-26 退役：各类型不再给 civil_service 加权（历史 lean 兼容由 _PATH_LABELS 中性标注）
 _HOLLAND_LEAN = {
-    "R": {"civil_service": 1, "employment": 3, "kaoyan": 2},  # 实际型：技术就业 + 考研深造
-    "I": {"civil_service": 1, "employment": 3, "kaoyan": 4},  # 研究型：深造导向最强
-    "A": {"civil_service": 1, "employment": 3, "kaoyan": 2},  # 艺术型：创意就业
-    "S": {"civil_service": 4, "employment": 2, "kaoyan": 2},  # 社会型：考公/服务性机构偏好
-    "E": {"civil_service": 3, "employment": 3, "kaoyan": 1},  # 企业型：就业/管理
-    "C": {"civil_service": 3, "employment": 3, "kaoyan": 1},  # 常规型：稳定考公/标准就业
+    "R": {"employment": 3, "kaoyan": 2},  # 实际型：技术就业 + 考研深造
+    "I": {"employment": 3, "kaoyan": 4},  # 研究型：深造导向最强
+    "A": {"employment": 3, "kaoyan": 2},  # 艺术型：创意就业
+    "S": {"employment": 3, "kaoyan": 2},  # 社会型：服务性机构就业偏好
+    "E": {"employment": 3, "kaoyan": 1},  # 企业型：就业/管理
+    "C": {"employment": 3, "kaoyan": 1},  # 常规型：标准就业
 }
 
 _MBTI_LEAN = {
@@ -60,14 +61,14 @@ _MBTI_LEAN = {
     "INTP": "kaoyan",
     "ENTJ": "employment",
     "ENTP": "employment",
-    "INFJ": "civil_service",
+    "INFJ": "employment",
     "INFP": "employment",
-    "ENFJ": "civil_service",
+    "ENFJ": "employment",
     "ENFP": "employment",
-    "ISTJ": "civil_service",
-    "ISFJ": "civil_service",
-    "ESTJ": "civil_service",
-    "ESFJ": "civil_service",
+    "ISTJ": "employment",
+    "ISFJ": "employment",
+    "ESTJ": "employment",
+    "ESFJ": "employment",
     "ISTP": "employment",
     "ISFP": "employment",
     "ESTP": "employment",
@@ -122,7 +123,7 @@ def _interpret_other(assessment_type: str, code: str, major_hint: str) -> dict:
             "lean_scores": None,
             "reason": (
                 "该测评主要反映性格/行为风格（非职业兴趣），"
-                "不直接作为考研/考公/就业的主判据；建议结合下方真实报考数据自主决策。"
+                "不直接作为考研/就业的主判据；建议结合下方真实报考数据自主决策。"
             ),
         }
     reason = (
@@ -225,18 +226,18 @@ def build_interpretation(db: Session, user_id: UUID) -> dict:
         assessment_block = None
         has_assessment = False
 
-    # 2. 拉取真实三路数据（major 为空时如实标注，不生成空串聚合的假数据）
+    # 2. 拉取真实两路数据（major 为空时如实标注，不生成空串聚合的假数据）
     decision = None
     if not major_hint:
         empty_reason = (
-            "专业未在个人档案填写，暂时无法生成具体岗位/院校/进面线分析。"
+            "专业未在个人档案填写，暂时无法生成具体的院校/分数线分析。"
             "请到「个人档案」补充专业后重试。"
         )
     else:
         decision = generate_decision(
             db,
             major=major_hint,
-            region=None,  # 考公/就业按全国口径，不限定（无可靠省份线索）
+            region=None,  # 就业按全国口径，不限定（无可靠省份线索）
             school_tier=school_tier,
             graduation_year=graduation_year,
             fresh_status=_fresh_from_profile(profile),
