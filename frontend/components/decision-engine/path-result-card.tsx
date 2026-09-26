@@ -4,7 +4,7 @@
 // 单路结果卡片 — 核心数字 + 证据溯源展开（source_url 可点击）
 
 import {
-  GraduationCap, Briefcase, Landmark, ShieldAlert, TrendingUp,
+  GraduationCap, Briefcase, ShieldAlert, TrendingUp,
   Clock, ExternalLink, FileSearch,
 } from "lucide-react";
 import { Badge } from "@/components/ui/form-controls";
@@ -21,12 +21,6 @@ const PATH_META: Record<
     icon: <GraduationCap className="h-4 w-4" />,
     gradient: "from-blue-500 to-indigo-600",
     accent: "text-blue-600 bg-blue-50 border-blue-200",
-  },
-  civil_service: {
-    label: "考公",
-    icon: <Landmark className="h-4 w-4" />,
-    gradient: "from-amber-500 to-orange-600",
-    accent: "text-amber-600 bg-amber-50 border-amber-200",
   },
   employment: {
     label: "直接就业",
@@ -46,9 +40,6 @@ const RISK_META: Record<RiskLevel, { label: string; className: string }> = {
 function evidenceIcon(label: string): React.ReactNode {
   if (label.includes("分数线") || label.includes("报录") || label.includes("招生")) {
     return <GraduationCap className="h-3.5 w-3.5" />;
-  }
-  if (label.includes("岗位")) {
-    return <Landmark className="h-3.5 w-3.5" />;
   }
   if (label.includes("行业") || label.includes("薪资")) {
     return <Briefcase className="h-3.5 w-3.5" />;

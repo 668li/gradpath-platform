@@ -1,4 +1,4 @@
-"""三路对比决策引擎 — 用真实数据聚合考研/考公/就业三条路。
+"""两路对比决策引擎 — 用真实数据聚合考研/就业两条路（考公路已于 2026-09-26 随考公线退役删除）。
 
 设计目标（与「决策引擎」方向一致）：
 - 不依赖 LLM：纯规则聚合，未配置 LLM 也不会 503。
@@ -7,7 +7,6 @@
 
 数据来源：
 - 考研路：grad_scoreline_records（复试分数线/报录情况）+ grad_yanzhao_programs（招生目录）
-- 考公路：gwy_position（国考职位表）+ gwy_province_position（省考职位表）+ gwy_score_line（进面分）
 - 就业路：market_data（宏观薪资带）+ salary_benchmarks（城市岗位薪资）+ schools（就业率/考研率）
 
 输出兼容 path_comparison_service 的 PathMetrics 结构（extra 字段 evidence），
@@ -19,14 +18,11 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from sqlalchemy import func, or_
+from sqlalchemy import func
 from sqlalchemy.orm import Session, load_only
 
 from app.core.cache import cache
 from app.models.grad_intel import GradSchoolIntel, GradScorelineRecord, GradYanzhaoProgram
-from app.models.gwy_position import GwyPosition
-from app.models.gwy_province_position import GwyProvincePosition
-from app.models.gwy_score_line import GwyScoreLine
 from app.models.market_data import MarketData
 from app.models.salary_benchmark import SalaryBenchmark
 from app.models.school import School
@@ -41,19 +37,17 @@ logger = logging.getLogger(__name__)
 # 各表最多取回的样本数（用于证据展示，聚合仍用全量）
 SCORELINE_LIMIT = 8
 YANZHAO_LIMIT = 5
-GWY_POSITION_LIMIT = 10
 MARKET_LIMIT = 8
 SALARY_LIMIT = 8
 SCHOOL_LIMIT = 5
 
 # 主观评分（无法从数据溯源的部分，明确标注为行业公开认知的固定评估）
-_TIME_COST = {"kaoyan": 12, "civil_service": 9, "employment": 3}
-_GROWTH_SCORE = {"kaoyan": 7, "civil_service": 4, "employment": 6}
+_TIME_COST = {"kaoyan": 12, "employment": 3}
+_GROWTH_SCORE = {"kaoyan": 7, "employment": 6}
 
 # 路径中文标签（与前端 PATH_PRESETS 对齐）
 PATH_LABELS = {
     "kaoyan": "考研深造",
-    "civil_service": "考公",
     "employment": "直接就业",
 }
 
@@ -75,11 +69,8 @@ _STEADY_DIFF = 10  # 高于进面线 10+ 分 → 稳健；低于 10+ 分 → 冲
 _DISCOURAGE_DIFF = 20
 # 考研劝退阈值：模考估分低于复试线 30+ 分 → 建议放弃。
 # 考研初试 500 分制、复试线只是门槛（录取均分更高），30 分是"冲刺档（10 分）的三倍"，
-# 与考公劝退阈值取同一纪律：宁可少劝，不可错劝。
+# 纪律：宁可少劝，不可错劝。
 _KAOYAN_DISCOURAGE_DIFF = 30
-# 进面线数据的单年声明（当前 gwy_score_line 仅 2026 一个批次）
-_SCORE_YEAR_NOTE = "进面线数据目前仅覆盖单个批次，无历史趋势可校验，请结合自身模考波动判断"
-
 # analyze 结果缓存：同输入（专业/地区/条件包）直接复用，TTL 10 分钟（数据每日更新）
 _DECISION_CACHE_TTL = 600
 
@@ -176,17 +167,16 @@ def generate_decision(
         input_summary["kaoyan_estimated_score"] = kaoyan_estimated_score
 
     kaoyan, school_analysis = _build_kaoyan_path(db, major, school_tier, kaoyan_estimated_score)
-    civil, position_analysis = _build_civil_service_path(db, major, region, year, conditions)
     employment = _build_employment_path(db, major, region, school_tier)
 
-    metrics = [kaoyan, civil, employment]
+    metrics = [kaoyan, employment]
     recommendation = _build_recommendation(metrics, input_summary, conditions)
 
     decision = {
         "metrics": metrics,
         "recommendation": recommendation,
         "input": input_summary,
-        "position_analysis": position_analysis,
+        "position_analysis": None,
         "school_analysis": school_analysis,
     }
     cache.set(cache_key, decision, ttl=_DECISION_CACHE_TTL)
@@ -333,162 +323,6 @@ def _build_kaoyan_path(
             "evidence": evidence,
         },
         _build_school_analysis(db, line_rows_all, est=est),
-    )
-
-
-# ----------------------------------------------------------------------
-# 考公路
-# ----------------------------------------------------------------------
-def _build_civil_service_path(
-    db: Session, major: str, region: str | None, year: int, conditions: dict[str, Any]
-) -> tuple[dict[str, Any], dict[str, Any] | None]:
-    """考公路 — 返回 (路径卡 dict, 岗位级分析 dict|None)。
-
-    岗位级分析基于个人条件做可报边界过滤（政治面貌/学历/应届/性别/基层经历），
-    关联进面线给出分布与个人竞争力分级；一切以真实字段为准，无法判定的保守放行。
-    """
-    pattern = f"%{escape_like(major)}%"
-    evidence: list[dict[str, Any]] = []
-
-    # ---- 国考：专业 + 工作地点（一次取回全部命中行，count/求和/证据/岗位分析都在 Python 侧）----
-    gwy_query = db.query(GwyPosition).options(
-        load_only(
-            GwyPosition.position_code,
-            GwyPosition.dept_name,
-            GwyPosition.bureau,
-            GwyPosition.position_name,
-            GwyPosition.position_distribution,
-            GwyPosition.work_location,
-            GwyPosition.recruit_count,
-            GwyPosition.source_url,
-            GwyPosition.remarks,
-            GwyPosition.political_status,
-            GwyPosition.education_req,
-            GwyPosition.grassroots_exp_req,
-        )
-    )
-    gwy_query = gwy_query.filter(
-        GwyPosition.year == year,
-        GwyPosition.major_req.ilike(pattern, escape="\\"),
-    )
-    if region:
-        gwy_query = gwy_query.filter(
-            GwyPosition.work_location.like(f"%{escape_like(region)}%", escape="\\")
-        )
-    gwy_rows = gwy_query.all()
-    # 同一 position_code 对应多条专业/学历记录，岗位数须按 code 去重（与岗位级分析口径一致）
-    gwy_total = len({r.position_code for r in gwy_rows if r.position_code})
-    gwy_recruit = sum(r.recruit_count or 0 for r in gwy_rows)
-    gwy_recruit_text = f"招录合计 {int(gwy_recruit)} 人" if gwy_recruit else "招录人数未公布"
-
-    # 进面分：按 position_code 关联 gwy_score_line（一次取回，均值与岗位分析共用）
-    codes = [r.position_code for r in gwy_rows if r.position_code]
-    score_line_rows = _load_score_lines(db, year, codes)
-    avg_min_score = _avg_min_score(score_line_rows)
-
-    # 国考证据
-    for row in gwy_rows[:GWY_POSITION_LIMIT]:
-        ev = _evidence(
-            f"国考岗位 · {row.dept_name or row.bureau or '部门'}",
-            f"{row.position_name}（{row.position_distribution or row.work_location or '地点未公布'}），"
-            f"招 {row.recruit_count or '?'} 人",
-            url=row.source_url,
-        )
-        if ev not in evidence:
-            evidence.append(ev)
-
-    # ---- 省考：专业（本科要求）+ 省份（同样一次取回）----
-    province_scope = region  # 省考按省份限定（如「广东」）
-    p_query = db.query(GwyProvincePosition).options(
-        load_only(
-            GwyProvincePosition.position_code,
-            GwyProvincePosition.dept_name,
-            GwyProvincePosition.position_name,
-            GwyProvincePosition.exam_region,
-            GwyProvincePosition.province,
-            GwyProvincePosition.recruit_count,
-            GwyProvincePosition.source_url,
-            GwyProvincePosition.education_req,
-            GwyProvincePosition.fresh_grad_only,
-            GwyProvincePosition.grassroots_exp_req,
-        )
-    )
-    p_query = p_query.filter(
-        GwyProvincePosition.year == year,
-        or_(
-            GwyProvincePosition.major_req_undergrad.ilike(pattern, escape="\\"),
-            GwyProvincePosition.major_req_grad.ilike(pattern, escape="\\"),
-        ),
-    )
-    if province_scope:
-        p_query = p_query.filter(GwyProvincePosition.province == province_scope)
-    p_rows = p_query.all()
-    p_total = len({r.position_code for r in p_rows if r.position_code})
-    p_recruit = sum(r.recruit_count or 0 for r in p_rows)
-    p_recruit_text = f"招录合计 {int(p_recruit)} 人" if p_recruit else "招录人数未公布"
-
-    for row in p_rows[:GWY_POSITION_LIMIT]:
-        ev = _evidence(
-            f"省考岗位 · {row.dept_name or '部门'}",
-            f"{row.position_name}（{row.exam_region or row.province}），招 {row.recruit_count or '?'} 人",
-            url=row.source_url,
-        )
-        if ev not in evidence:
-            evidence.append(ev)
-
-    # ---- 汇总 ----
-    if gwy_total == 0 and p_total == 0:
-        return (
-            _empty_path(
-                "civil_service",
-                "考公",
-                "该专业暂无国考/省考可报岗位数据，可尝试更宽泛的专业关键词或清空地区。",
-            ),
-            None,
-        )
-
-    region_text = f"{region} " if region else ""
-    risk_desc = "国考整体录取率约 1-3%，省考约 3-5%；岗位分配与专业限制不确定性高。"
-    if region:
-        risk_desc += f"（仅覆盖 {region} 的省考数据）"
-
-    coverage_parts = [
-        f"{region_text}国考可报岗位 {gwy_total} 个（{gwy_recruit_text}）",
-        f"{region_text}省考可报岗位 {p_total} 个（{p_recruit_text}）",
-    ]
-    if avg_min_score:
-        coverage_parts.append(f"国考平均进面最低分约 {avg_min_score:.1f} 分")
-
-    # ---- 岗位级分析（个人可报边界 + 进面线分布 + 竞争力分级）----
-    position_analysis = _build_position_analysis(
-        gwy_rows, p_rows, year, conditions, score_line_rows
-    )
-
-    return (
-        {
-            "path_type": "civil_service",
-            "target_role": "考公",
-            "income_1y": "暂无数据",
-            "income_3y": "暂无数据",
-            "income_5y": "暂无数据",
-            "risk_level": "high",
-            "risk_description": risk_desc,
-            "growth_score": _GROWTH_SCORE["civil_service"],
-            "time_cost_months": _TIME_COST["civil_service"],
-            "match_score": _coverage_score(gwy_total + p_total, 30),
-            "match_description": f"依据现有数据覆盖度估算（命中 {gwy_total + p_total} 个岗位），"
-            f"{_NO_DATA}个人画像匹配数据。",
-            "pros": [
-                " · ".join(coverage_parts),
-                "体制内稳定，福利保障完善",
-            ],
-            "cons": [
-                "薪资增长缓慢，晋升论资排辈",
-                "岗位分配不确定，调动困难",
-            ],
-            "evidence": evidence,
-        },
-        position_analysis,
     )
 
 
@@ -710,172 +544,8 @@ def _coverage_score(hits: int, cap: int) -> int:
     return min(95, 40 + int((hits / cap) * 55))
 
 
-# ----------------------------------------------------------------------
-# 个人条件可报边界（决策飞轮第一圈）
-# ----------------------------------------------------------------------
-def _is_fresh_limited(remarks: str | None) -> bool:
-    """remarks 是否限定应届 — 规则保守：明确出现限定词才认定（含"非应届"视为不限）。"""
-    if not remarks or "非应届" in remarks:
-        return False
-    return any(m in remarks for m in _FRESH_MARKERS)
-
-
-def _is_gender_limited(remarks: str | None, only: str) -> bool:
-    """remarks 是否限定某性别（如"限男性"）；未明确出现限定词视为不限。"""
-    if not remarks:
-        return False
-    return ("限" + only) in remarks or ("仅限" + only) in remarks
-
-
-def _party_eligible(political_status: str | None, user_party: str) -> bool:
-    """政治面貌匹配：不限岗全放行；党员岗仅党员；党/团员岗放行党员与团员。"""
-    if not political_status or political_status == "不限":
-        return True
-    if "共青团员" in political_status or "团员" in political_status:
-        return user_party in ("中共党员", "党员或团员")
-    if "中共党员" in political_status or "党员" in political_status:
-        return user_party == "中共党员"
-    return True
-
-
-def _edu_eligible(education_req: str | None, user_edu: str) -> bool:
-    """学历档位匹配 — "仅限X"需精确档位；"及以上/或"等开放表述满足最低档即可。
-
-    未知学历表述视为不限（保守放行，避免误伤）；用户学历不在档位表内
-    （如档案枚举直传的 "bachelor"，或 "高中"）按 0 档处理——宁缺毋滥，
-    岗位有学历要求时不误判可报，无要求时不受影响。
-    """
-    if not education_req or not user_edu:
-        return True
-    levels = [l for l in ("博士", "硕士", "本科", "大专") if l in education_req]
-    if not levels:
-        return True
-    user_rank = _EDU_RANK.get(user_edu, 0)
-    if "仅限" in education_req:
-        return user_rank == _EDU_RANK.get(levels[0], -1)
-    return user_rank >= min(_EDU_RANK[l] for l in levels)
-
-
-def _province_fresh_limited(raw: str | None) -> bool:
-    """省考 fresh_grad_only 官方字段：'否'/空 → 不限应届；其余（'是'/应届毕业生等）→ 限应届。"""
-    if not raw or "否" in raw:
-        return False
-    return True
-
-
-def _position_eligible_blockers(row: Any, conditions: dict[str, Any]) -> list[dict]:
-    """国考岗位可报边界 — 返回不满足的资格维度 [{key,label,reason}]；空列表=可报。
-
-    与 _position_eligible 判定完全一致（同一套规则、单一实现），供免登录预览复用。
-    无个人条件的维度自动放行（不参与判定）。
-    """
-    blockers: list[dict] = []
-    if conditions.get("fresh_status") == "非应届" and _is_fresh_limited(row.remarks):
-        blockers.append(
-            {"key": "fresh_grad", "label": "应届生要求", "reason": "该职位限应届毕业生报考"}
-        )
-    if conditions.get("gender") == "男" and _is_gender_limited(row.remarks, "女"):
-        blockers.append({"key": "gender", "label": "性别要求", "reason": "该职位限女性报考"})
-    if conditions.get("gender") == "女" and _is_gender_limited(row.remarks, "男"):
-        blockers.append({"key": "gender", "label": "性别要求", "reason": "该职位限男性报考"})
-    if conditions.get("party_status") and not _party_eligible(
-        row.political_status, conditions["party_status"]
-    ):
-        blockers.append(
-            {
-                "key": "party_status",
-                "label": "政治面貌要求",
-                "reason": f"该职位要求「{row.political_status}」，与你的政治面貌"
-                f"（{conditions['party_status']}）不符",
-            }
-        )
-    if conditions.get("education") and not _edu_eligible(
-        row.education_req, conditions["education"]
-    ):
-        blockers.append(
-            {
-                "key": "education",
-                "label": "学历要求",
-                "reason": f"该职位学历要求「{row.education_req}」，与你的学历"
-                f"（{conditions['education']}）不符",
-            }
-        )
-    if conditions.get("has_grassroots") is False and (
-        row.grassroots_exp_req not in (None, "", "无限制")
-    ):
-        blockers.append(
-            {
-                "key": "grassroots",
-                "label": "基层工作经历",
-                "reason": f"该职位要求基层工作经历（{row.grassroots_exp_req}），你不满足",
-            }
-        )
-    return blockers
-
-
-def _position_eligible(row: Any, conditions: dict[str, Any]) -> bool:
-    """国考岗位可报边界判断（无个人条件的维度自动放行）。"""
-    return not _position_eligible_blockers(row, conditions)
-
-
-def _province_position_eligible_blockers(row: Any, conditions: dict[str, Any]) -> list[dict]:
-    """省考岗位可报边界 — 返回不满足维度；空列表=可报（官方结构化字段，不做文本解析）。"""
-    blockers: list[dict] = []
-    if conditions.get("fresh_status") == "非应届" and _province_fresh_limited(row.fresh_grad_only):
-        blockers.append(
-            {
-                "key": "fresh_grad",
-                "label": "应届生要求",
-                "reason": f"该职位仅限应届毕业生（{row.fresh_grad_only}）",
-            }
-        )
-    if conditions.get("education") and not _edu_eligible(
-        row.education_req, conditions["education"]
-    ):
-        blockers.append(
-            {
-                "key": "education",
-                "label": "学历要求",
-                "reason": f"该职位学历要求「{row.education_req}」，与你的学历"
-                f"（{conditions['education']}）不符",
-            }
-        )
-    if conditions.get("has_grassroots") is False and row.grassroots_exp_req == "是":
-        blockers.append(
-            {
-                "key": "grassroots",
-                "label": "基层工作经历",
-                "reason": "该职位要求基层工作经历，你不满足",
-            }
-        )
-    return blockers
-
-
-def _province_position_eligible(row: Any, conditions: dict[str, Any]) -> bool:
-    """省考岗位可报边界判断（用官方结构化字段，不做文本解析）。"""
-    return not _province_position_eligible_blockers(row, conditions)
-
-
-def _applied_conditions_text(conditions: dict[str, Any]) -> str:
-    """已应用的可报边界过滤描述（用于 analysis.notes）。"""
-    parts = []
-    if conditions.get("fresh_status"):
-        parts.append(f"应届/非应届（{conditions['fresh_status']}）")
-    if conditions.get("party_status"):
-        parts.append(f"政治面貌（{conditions['party_status']}）")
-    if conditions.get("education"):
-        parts.append(f"学历（{conditions['education']}）")
-    if conditions.get("has_grassroots") is True:
-        parts.append("基层经历（有）")
-    elif conditions.get("has_grassroots") is False:
-        parts.append("基层经历（无）")
-    if conditions.get("gender"):
-        parts.append(f"性别（{conditions['gender']}）")
-    return "、".join(parts)
-
-
 def _percentile(sorted_vals: list[float], q: float) -> float:
-    """线性插值分位数（q ∈ [0,1]，vals 已升序）。"""
+    """线性插值分位数（q ∈ [0,1]，vals 已升序）。模拟器 v2 复用（09-25 ponytail 收敛点）。"""
     n = len(sorted_vals)
     if n == 0:
         return 0.0
@@ -886,6 +556,7 @@ def _percentile(sorted_vals: list[float], q: float) -> float:
 
 
 def _classify_level(est: int, line: float) -> str:
+    """估分 vs 线档位（条件账本 preview 复用）。"""
     diff = est - line
     if diff >= _STEADY_DIFF:
         return "稳健"
@@ -895,7 +566,7 @@ def _classify_level(est: int, line: float) -> str:
 
 
 def _classify_kaoyan_band(est: int, line: float) -> str:
-    """考研冲/稳/保档位 — 与考公 `_classify_level` 同一阈值（±_STEADY_DIFF）。
+    """考研冲/稳/保档位 — 阈值 ±_STEADY_DIFF。
 
     单一真源：统一由后端按预估分 vs 复试线口径判定，前端不再用另一套 ±15 自行推导，
     避免同一份报告前后端口径打架。标签用「稳/均衡/冲」与前端展示一致。
@@ -906,259 +577,6 @@ def _classify_kaoyan_band(est: int, line: float) -> str:
     if diff <= -_STEADY_DIFF:
         return "冲"
     return "均衡"
-
-
-def _alternatives_for(
-    target_row: Any,
-    by_code: dict[str, Any],
-    score_map: dict[str, float],
-    est: int,
-    max_n: int = 2,
-) -> list[str]:
-    """为劝退岗位找替代出口：同部门（bureau/dept_name）中估分高于进面线的岗位。
-
-    按安全余量降序取前 max_n 个；同部门无合格岗位则回退到全量稳健档
-    （最多同样数量）。找不到就返回空列表——绝不编造替代。
-    """
-    scored = [
-        (row, score_map[code])
-        for code, row in by_code.items()
-        if code in score_map and row is not target_row
-    ]
-    safe = [(r, s) for r, s in scored if est - s > 0]
-    same_dept = [
-        (r, s)
-        for r, s in safe
-        if (r.bureau and r.bureau == target_row.bureau)
-        or (r.dept_name and r.dept_name == target_row.dept_name)
-    ]
-    pool = same_dept or safe
-    pool.sort(key=lambda pair: pair[1])  # 进面线低 = 余量大 = 更稳
-    alts = []
-    for r, s in pool[:max_n]:
-        alts.append(
-            f"{r.dept_name or r.bureau or '部门未公布'}·{r.position_name or '职位未公布'}"
-            f"（进面 {s:.0f} 分，你高 {est - s:.0f} 分）"
-        )
-    return alts
-
-
-def _load_score_lines(db: Session, year: int, codes: list[str]) -> list[Any]:
-    """一次取回指定职位代码的进面线（供均值聚合与岗位级分析共用，替代两次独立查询）。
-
-    不做 DB 内排序——同一 position_code 可能命中多条批次（首批/调剂/补充录用），
-    权威线的选取统一交给 Python 侧 `_authoritative_score_line`，避免依赖 DB 的
-    任意 tie-break 顺序。
-    """
-    if not codes:
-        return []
-    return (
-        db.query(GwyScoreLine)
-        .options(
-            load_only(
-                GwyScoreLine.position_code,
-                GwyScoreLine.min_score,
-                GwyScoreLine.batch,
-            )
-        )
-        .filter(GwyScoreLine.year == year, GwyScoreLine.position_code.in_(codes))
-        .all()
-    )
-
-
-def _authoritative_score_line(rows: list[Any]) -> float | None:
-    """从同一 position_code 的多批次进面线中确定性选取权威线。
-
-    规则：优先取「首批」批次；无首批则取其余批次的**最低分**（同一岗位多批次中
-    「补充录用/调剂」常低于首批，取最低分代表最宽松的进面底线）。仍无则返回 None。
-    """
-    if not rows:
-        return None
-    primary = [r.min_score for r in rows if r.batch == "首批" and r.min_score is not None]
-    if primary:
-        return primary[0]
-    rest = [r.min_score for r in rows if r.min_score is not None]
-    return min(rest) if rest else None
-
-
-def _avg_min_score(score_line_rows: list[Any]) -> float | None:
-    """进面线均值（与 SQL AVG 一致：忽略 NULL；无行返回 None）。"""
-    scores = [line.min_score for line in score_line_rows if line.min_score is not None]
-    if not scores:
-        return None
-    return sum(scores) / len(scores)
-
-
-def _build_position_analysis(
-    gwy_rows: list[Any],
-    province_rows: list[Any],
-    year: int,
-    conditions: dict[str, Any],
-    score_line_rows: list[Any],
-) -> dict[str, Any] | None:
-    """考公岗位级分析 — 个人可报清单（按 position_code 去重）+ 进面线分层。
-
-    应届/性别限定来自职位备注文本解析，无法判定的视为可报并在 notes 标注；
-    所有数字均来自职位表/进面线真实字段。
-    """
-    eligible_rows = [r for r in gwy_rows if _position_eligible(r, conditions)]
-    # 同一 position_code 对应多条专业/学历记录，去重后才是真实岗位数
-    by_code: dict[str, Any] = {}
-    for r in eligible_rows:
-        if r.position_code and r.position_code not in by_code:
-            by_code[r.position_code] = r
-    eligible_count = len(by_code)
-
-    p_eligible = [r for r in province_rows if _province_position_eligible(r, conditions)]
-    p_by_code: dict[str, Any] = {}
-    for r in p_eligible:
-        if r.position_code and r.position_code not in p_by_code:
-            p_by_code[r.position_code] = r
-    province_count = len(p_by_code)
-
-    if eligible_count == 0 and province_count == 0:
-        return {
-            "eligible_count": 0,
-            "province_count": 0,
-            "score_band": "无可报岗位数据",
-            "personalized_level": None,
-            "tier_summary": None,
-            "top_positions": [],
-            "notes": [
-                f"已按个人条件过滤：{_applied_conditions_text(conditions) or '未应用'}；"
-                "无符合全部条件的岗位。"
-            ],
-        }
-
-    # ---- 进面线：按 position_code 关联，同一 code 多批次用权威线（首批优先，其次最低分）----
-    # score_line_rows 由调用方一次取回（覆盖全部命中岗位），这里只筛可报岗位的 code
-    # 先按 position_code 分组一次，O(n) 而非对每个可报岗位重复过滤整表
-    lines_by_code: dict[str, list[Any]] = {}
-    for line in score_line_rows:
-        code = line.position_code
-        if code in by_code:
-            lines_by_code.setdefault(code, []).append(line)
-    score_map: dict[str, float] = {}
-    for code, rows in lines_by_code.items():
-        authoritative = _authoritative_score_line(rows)
-        if authoritative is not None:
-            score_map[code] = authoritative
-
-    scores = sorted(score_map.values())
-    has_score = len(scores) > 0
-
-    # ---- 分数带（P25/P50/P75）----
-    score_band = "本数据集中暂无进面线公布（面试名单未收录）"
-    scored_ratio_text = f"{len(scores)}/{eligible_count} 岗已公布" if has_score else ""
-    if has_score:
-        p25, p50, p75 = (
-            _percentile(scores, 0.25),
-            _percentile(scores, 0.5),
-            _percentile(scores, 0.75),
-        )
-        score_band = (
-            f"进面线集中 {p25:.0f}–{p75:.0f} 分（中位 {p50:.0f}，公布 {scored_ratio_text}）"
-        )
-
-    # ---- 个人竞争力分级（仅国考有进面线的岗位）----
-    personalized_level: str | None = None
-    tier_summary: str | None = None
-    avoid_positions: list[dict[str, Any]] = []
-    discouraged_count = 0
-    est = conditions.get("estimated_score")
-    if est is not None and has_score:
-        tier_counts: dict[str, int] = {"稳健": 0, "均衡": 0, "冲刺": 0}
-        for line_score in scores:
-            tier_counts[_classify_level(est, line_score)] += 1
-        personalized_level = max(tier_counts, key=tier_counts.get)
-        tier_summary = (
-            f"按预估 {est} 分对比岗位进面线：稳健 {tier_counts['稳健']} 岗 · "
-            f"均衡 {tier_counts['均衡']} 岗 · 冲刺 {tier_counts['冲刺']} 岗（仅统计已公布线岗位）"
-        )
-
-        # ---- 劝退卡：估分低于进面线 20+ 分的岗位，诚实拒绝 + 替代出口 ----
-        discouraged = sorted(
-            ((code, row, score_map[code]) for code, row in by_code.items() if code in score_map),
-            key=lambda t: est - t[2],  # 估分差越小越绝望，排最前
-        )
-        p50 = _percentile(scores, 0.5)
-        for code, row, line_score in discouraged:
-            if est - line_score > -_DISCOURAGE_DIFF:
-                break
-            discouraged_count += 1
-            if len(avoid_positions) < 5:
-                avoid_positions.append(
-                    {
-                        "dept_name": row.dept_name or row.bureau or "部门未公布",
-                        "position_name": row.position_name or "职位未公布",
-                        "verdict": "建议放弃",
-                        "basis": (
-                            f"{year} 年此岗进面最低分 {line_score:.0f} 分，你的预估 {est} 分"
-                            f"低 {line_score - est:.0f} 分；同类可报岗位进面线中位 {p50:.0f} 分"
-                        ),
-                        "confidence": f"仅 {year} 年单批数据，{_SCORE_YEAR_NOTE}",
-                        "alternatives": _alternatives_for(row, by_code, score_map, est),
-                        "source_url": row.source_url,
-                    }
-                )
-        if discouraged_count:
-            tier_summary += f"；其中 {discouraged_count} 岗进面希望渺茫（详见劝退分析）"
-    elif est is not None:
-        tier_summary = f"按预估 {est} 分：暂无已公布进面线可供分级（公布 {scored_ratio_text}）"
-
-    # ---- 示例岗位（招录人数优先，≤5 个；带进面线与分级标签）----
-    top_positions: list[dict[str, Any]] = []
-    for r in sorted(
-        by_code.values(), key=lambda x: (x.recruit_count or 0, x.position_code or ""), reverse=True
-    )[:5]:
-        line_score = score_map.get(r.position_code)
-        label = "进面线未收录"
-        if line_score:
-            if est is not None:
-                diff = est - line_score
-                if diff <= -_DISCOURAGE_DIFF:
-                    level = "建议放弃"
-                else:
-                    level = _classify_level(est, line_score)
-                label = f"进面 {line_score:.0f} 分 · 你{'高' if diff >= 0 else '低'}{abs(diff):.0f} 分（{level}）"
-            else:
-                label = f"进面 {line_score:.0f} 分"
-        top_positions.append(
-            {
-                "dept_name": r.dept_name or r.bureau or "部门未公布",
-                "position_name": r.position_name or "职位未公布",
-                "work_location": r.work_location,
-                "recruit_count": r.recruit_count,
-                "min_score": line_score,
-                "score_label": label,
-                "source_url": r.source_url,
-            }
-        )
-
-    # ---- 数据诚实标注 ----
-    notes: list[str] = []
-    applied = _applied_conditions_text(conditions)
-    if applied:
-        notes.append(f"已按个人条件过滤：{applied}")
-    is_text_parsed = bool(conditions.get("fresh_status")) or bool(conditions.get("gender"))
-    if is_text_parsed:
-        notes.append("应届/性别限定来自职位备注文本解析，个别岗位可能有偏差")
-    if province_count > 0:
-        notes.append("省考岗位无进面线数据，仅统计可报数")
-    if has_score:
-        notes.append(f"进面线口径：{_SCORE_YEAR_NOTE}")
-
-    return {
-        "eligible_count": eligible_count,
-        "province_count": province_count,
-        "score_band": score_band,
-        "personalized_level": personalized_level,
-        "tier_summary": tier_summary,
-        "top_positions": top_positions,
-        "avoid_positions": avoid_positions,
-        "discouraged_count": discouraged_count,
-        "notes": notes,
-    }
 
 
 # ----------------------------------------------------------------------
@@ -1413,11 +831,6 @@ def _build_recommendation(
         if m["path_type"] == "kaoyan":
             lines.append(
                 f"- 考研：{m['pros'][0] if m['pros'] else '数据有限'}，难度评估 {m['risk_level']}。"
-            )
-        elif m["path_type"] == "civil_service":
-            lines.append(
-                f"- 考公：{m['pros'][0] if m['pros'] else '岗位数据有限'}，"
-                f"竞争激烈，岗位明细见卡片。"
             )
         else:
             lines.append(

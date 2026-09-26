@@ -43,14 +43,6 @@ export const commands: Command[] = [
   },
 
   // ────────────────────────── 决策 ──────────────────────────
-  {
-    id: "career-simulator",
-    title: "职业路径模拟器",
-    subtitle: "决策",
-    href: "/career-simulator",
-    keywords: ["职业", "模拟", "simulator", "路径"],
-    icon: "Route",
-  },
 
   // ────────────────────────── 情报 ──────────────────────────
   {
@@ -60,14 +52,6 @@ export const commands: Command[] = [
     href: "/kaoyan",
     keywords: ["考研", "kaoyan", "研究生"],
     icon: "BookOpen",
-  },
-  {
-    id: "civil-service",
-    title: "考公中心",
-    subtitle: "情报",
-    href: "/civil-service",
-    keywords: ["考公", "公务员", "civil", "service"],
-    icon: "Building2",
   },
   {
     id: "employment",

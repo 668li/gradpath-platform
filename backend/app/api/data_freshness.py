@@ -24,7 +24,7 @@ SOURCES = {
     "real_data": "高校官网/学位网",
     "yanzhao": "招生简章（预置已冻结）",
     "yanzhao_program": "招生专业目录（预置已冻结）",
-    "bilibili_research": "B站经验视频",
+    # bilibili_research 已退役删除（09-26）
     "web_article_research": "网页文章（Jina Reader）",
     "rss_news_research": "RSS 资讯",
     "eol_kaoyan": "中国教育在线考研快讯",

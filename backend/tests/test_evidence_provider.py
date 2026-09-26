@@ -55,7 +55,6 @@ def test_provider_list_is_whitelist_only(client: TestClient, auth_headers: dict)
         "grad_school_intel",
         "grad_scoreline",
         "grad_yanzhao",
-        "civil_post",
         "experience_post",
         "employment",
         "market",

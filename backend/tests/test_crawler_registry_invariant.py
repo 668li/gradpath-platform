@@ -14,12 +14,11 @@ import app.crawlers  # noqa: F401  # 触发包级全量注册（与运行时同�
 from app.crawlers import registry
 from app.crawlers.compliance import ALLOWED_CRAWLER_SOURCES, is_allowed_crawler
 
-# 2026-09-06 第一批终态的恰 10 名（zhihu/tieba 死源下架后）
+# 2026-09-26 终态的恰 9 名（bilibili_research 删线退役，zhihu/tieba 更早下架）
 EXPECTED_LIVE = {
     "real_data",
     "yanzhao",
     "yanzhao_program",
-    "bilibili_research",
     "web_article_research",
     "rss_news_research",
     "eol_kaoyan",
@@ -35,9 +34,9 @@ def test_registry_equals_whitelist():
 
 
 def test_whitelist_membership_frozen():
-    """白名单成员冻结为 10 名；改动必须同步本测试＝强制显式评审。"""
+    """白名单成员冻结为 9 名；改动必须同步本测试＝强制显式评审。"""
     assert set(ALLOWED_CRAWLER_SOURCES) == EXPECTED_LIVE
-    assert len(ALLOWED_CRAWLER_SOURCES) == 10
+    assert len(ALLOWED_CRAWLER_SOURCES) == 9
 
 
 def test_retired_sources_gone_from_registry():
@@ -46,6 +45,7 @@ def test_retired_sources_gone_from_registry():
         "adjustment",
         "adjustment_real",
         "bilibili_kaoyan",
+        "bilibili_research",
         "dark_knowledge",
         "forum_experience",
         "github_datasets",

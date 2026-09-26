@@ -294,21 +294,6 @@ class TestGenerateDecision:
         assert any(ev["label"].startswith("分数线") for ev in kaoyan["evidence"])
         assert any("scorelines_real_data.json" in (ev["note"] or "") for ev in kaoyan["evidence"])
 
-    def test_civil_service_path_aggregates(self, db_session, seed_decision_data):
-        result = generate_decision(db_session, major="计算机", region="广东")
-        civil = next(m for m in result["metrics"] if m["path_type"] == "civil_service")
-        # 国考 2 个（排除法学）+ 省考 1 个 = 3
-        assert "国考可报岗位 2 个" in civil["pros"][0]
-        assert "省考可报岗位 1 个" in civil["pros"][0]
-        # 国考招录 2+1=3 人
-        assert "招录合计 3 人" in civil["pros"][0]
-        # 进面分均值 (118.5+121)/2=119.75
-        assert "119.8" in civil["pros"][0] or "119.75" in civil["pros"][0]
-        # 证据带 source_url
-        urls = [ev["source_url"] for ev in civil["evidence"] if ev["source_url"]]
-        assert any("scs.gov.cn" in u for u in urls)
-        assert any("rsks.gd.gov.cn" in u for u in urls)
-
     def test_employment_path_aggregates(self, db_session, seed_decision_data):
         result = generate_decision(db_session, major="计算机", region="广东")
         emp = next(m for m in result["metrics"] if m["path_type"] == "employment")
@@ -334,17 +319,11 @@ class TestGenerateDecision:
     def test_no_data_degrades_gracefully(self, db_session):
         """完全不匹配的专业 → 三路空数据占位，不抛异常、不编造数字。"""
         result = generate_decision(db_session, major="冷门考古方向", region="西藏")
-        assert len(result["metrics"]) == 3
+        assert len(result["metrics"]) == 2
         for m in result["metrics"]:
             assert m["match_score"] == 0
             assert m["income_1y"] == "暂无相关数据"
             assert m["evidence"] == []
-
-    def test_region_filter_scope(self, db_session, seed_decision_data):
-        """考公限定地区：只命中广东岗位。"""
-        result = generate_decision(db_session, major="计算机", region="广东")
-        civil = next(m for m in result["metrics"] if m["path_type"] == "civil_service")
-        assert "国考可报岗位 2 个" in civil["pros"][0]
 
     def test_input_summary(self, db_session, seed_decision_data):
         result = generate_decision(
@@ -382,9 +361,9 @@ class TestPathDecisionAPI:
         )
         assert resp.status_code == 200, resp.text
         body = resp.json()
-        assert len(body["metrics"]) == 3
+        assert len(body["metrics"]) == 2
         types = {m["path_type"] for m in body["metrics"]}
-        assert types == {"kaoyan", "civil_service", "employment"}
+        assert types == {"kaoyan", "employment"}
         # 每路都带 evidence 列表（字段存在即可）
         for m in body["metrics"]:
             assert "evidence" in m
@@ -409,7 +388,7 @@ class TestPathDecisionAPI:
         assert resp.status_code == 200
         body = resp.json()
         assert len(body) == 1
-        assert len(body[0]["metrics"]) == 3
+        assert len(body[0]["metrics"]) == 2
 
 
 # ----------------------------------------------------------------------
@@ -484,226 +463,6 @@ def seed_personal_filter_data(db_session):
         ]
     )
     db_session.commit()
-
-
-class TestPersonalConditions:
-    def test_combined_filters(self, db_session, seed_personal_filter_data):
-        """党员+硕士+应届+男+无基层 → 只过 A 与去重后的 D（B 学历排除、C 基层排除、省考 E 基层排除）。"""
-        result = generate_decision(
-            db_session,
-            major="计算机",
-            region="广东",
-            fresh_status="应届",
-            party_status="中共党员",
-            education="硕士",
-            has_grassroots=False,
-            gender="男",
-        )
-        pos = result["position_analysis"]
-        assert pos["eligible_count"] == 2
-        assert pos["province_count"] == 1
-        assert "已按个人条件过滤" in pos["notes"][0]
-
-    def test_fresh_non_fresh_filter(self, db_session, seed_personal_filter_data):
-        """非应届：A（限应届）与省考 E（限应届）被排除；C 含"非应届"不算限制保留。"""
-        result = generate_decision(db_session, major="计算机", region="广东", fresh_status="非应届")
-        pos = result["position_analysis"]
-        assert pos["eligible_count"] == 3  # B + C + D(去重后 1)
-        assert pos["province_count"] == 1  # F 保留，E 排除
-
-    def test_gender_filter(self, db_session, seed_personal_filter_data):
-        """女：B（限男性）被排除；其余保留。"""
-        result = generate_decision(db_session, major="计算机", region="广东", gender="女")
-        pos = result["position_analysis"]
-        assert pos["eligible_count"] == 3  # A + C + D(去重后 1)
-        assert pos["province_count"] == 2  # 省考无性别维度
-
-    def test_education_rank_filter(self, db_session, seed_personal_filter_data):
-        """博士全过；大专类全被学历档位排除。"""
-        phd = generate_decision(db_session, major="计算机", region="广东", education="博士")
-        assert phd["position_analysis"]["eligible_count"] == 4  # A/B/C/D
-        junior = generate_decision(db_session, major="计算机", region="广东", education="大专")
-        assert junior["position_analysis"]["eligible_count"] == 0
-        assert junior["position_analysis"]["province_count"] == 0
-        assert junior["position_analysis"]["personalized_level"] is None
-
-    def test_grassroots_missing_excludes(self, db_session, seed_personal_filter_data):
-        """无基层经历：C（需基层）与省考 E（需基层）被排除。"""
-        result = generate_decision(db_session, major="计算机", region="广东", has_grassroots=False)
-        pos = result["position_analysis"]
-        assert pos["eligible_count"] == 3  # A + B + D(去重后 1)
-        assert pos["province_count"] == 1  # F
-
-    def test_grassroots_have_includes_all(self, db_session, seed_personal_filter_data):
-        """有基层经历：不过滤任何岗位。"""
-        result = generate_decision(db_session, major="计算机", region="广东", has_grassroots=True)
-        assert result["position_analysis"]["eligible_count"] == 4
-        assert result["position_analysis"]["province_count"] == 2
-
-    def test_position_code_dedup(self, db_session, seed_personal_filter_data):
-        """同一 position_code 两行（同专业两职务）去重后只计 1 个岗位。"""
-        result = generate_decision(db_session, major="计算机", region="广东")
-        pos = result["position_analysis"]
-        counts = [p["recruit_count"] for p in pos["top_positions"]]
-        assert pos["eligible_count"] == 4  # 1302001..1302004
-        assert pos["top_positions"][0]["position_name"] in (
-            "一级行政执法员（一）",
-            "一级行政执法员（二）",
-        )
-
-
-class TestPositionAnalysisOutput:
-    def test_no_conditions_keeps_old_output(self, db_session, seed_decision_data):
-        """无个人条件时：不过滤、recommendation 不加个人行、metrics 与旧行为一致。"""
-        plain = generate_decision(db_session, major="计算机", region="广东")
-        with_cond = generate_decision(
-            db_session, major="计算机", region="广东", fresh_status="应届", education="本科"
-        )
-        assert plain["position_analysis"]["eligible_count"] == 2  # 全部放行
-        assert not any("过滤" in n for n in plain["position_analysis"]["notes"])
-        assert not plain["recommendation"].startswith("以你的条件")
-        assert with_cond["recommendation"].startswith("以你的条件")
-        # 带条件不影响三路 metrics 的旧字段（个人化只附加 position_analysis / recommendation 行）
-        for old_path, new_path in zip(plain["metrics"], with_cond["metrics"]):
-            for key in ("income_1y", "income_3y", "income_5y", "risk_level", "match_score"):
-                assert old_path[key] == new_path[key]
-
-    def test_score_band_and_top_positions(self, db_session, seed_decision_data):
-        result = generate_decision(db_session, major="计算机", region="广东")
-        pos = result["position_analysis"]
-        # 进面线 118.5 / 121 → 分位带（P25=119 / P50=120 / P75=120）与公布比例
-        assert "进面线集中" in pos["score_band"]
-        assert "2/2 岗已公布" in pos["score_band"]
-        assert pos["personalized_level"] is None  # 无预估分不给分级
-        # 招录人数优先：1301001 招 2 人排第一
-        assert pos["top_positions"][0]["recruit_count"] == 2
-        assert pos["top_positions"][0]["score_label"] == "进面 118 分"
-        assert all(p["source_url"] for p in pos["top_positions"])
-
-    def test_estimated_score_levels(self, db_session, seed_decision_data):
-        # 2 条进面线 118.5/121：140 → 稳（+21/+19）；125 → 均衡（+6/+4）；105 → 冲（-13/-16）
-        robust = generate_decision(db_session, major="计算机", region="广东", estimated_score=140)
-        assert robust["position_analysis"]["personalized_level"] == "稳健"
-        assert "稳健 2 岗" in robust["position_analysis"]["tier_summary"]
-        label = robust["position_analysis"]["top_positions"][0]["score_label"]
-        assert label.startswith("进面 118 分") and "你高" in label and "（稳健）" in label
-
-        balanced = generate_decision(db_session, major="计算机", region="广东", estimated_score=125)
-        assert balanced["position_analysis"]["personalized_level"] == "均衡"
-
-        ambitious = generate_decision(
-            db_session, major="计算机", region="广东", estimated_score=105
-        )
-        assert ambitious["position_analysis"]["personalized_level"] == "冲刺"
-        assert "冲刺 2 岗" in ambitious["position_analysis"]["tier_summary"]
-        last_label = ambitious["position_analysis"]["top_positions"][-1]["score_label"]
-        assert "你低" in last_label and "（冲刺）" in last_label
-
-    def test_input_summary_includes_personal_keys(self, db_session, seed_decision_data):
-        result = generate_decision(
-            db_session,
-            major="计算机",
-            region="广东",
-            education="硕士",
-            party_status="群众",
-            estimated_score=130,
-        )
-        assert result["input"]["education"] == "硕士"
-        assert result["input"]["party_status"] == "群众"
-        assert result["input"]["estimated_score"] == 130
-
-    def test_recommendation_personal_line(self, db_session, seed_decision_data):
-        result = generate_decision(
-            db_session, major="计算机", region="广东", fresh_status="应届", education="本科"
-        )
-        assert result["recommendation"].startswith("以你的条件（应届、本科学历）为准")
-
-
-@pytest.fixture
-def seed_discourage_data(db_session, seed_decision_data):
-    """劝退卡测试：在 seed_decision_data 基础上补一个低进面线同部门岗位作替代出口。
-
-    进面线全景：1301001=118.5、1301002=121、1301004=85（同部门「测试部门」）。
-    est=95 时 1301002 低 26 分（最绝望）、1301001 低 23.5 分 → 均劝退；1301004 高 10 分 → 稳健。
-    """
-    db_session.add_all(
-        [
-            _make_gwy_position(
-                "4",
-                position_code="1301004",
-                major_req="计算机类",
-                work_location="广东省广州市白云区",
-                recruit_count=1,
-            ),
-            _make_score_line("4", position_code="1301004", min_score=85.0),
-        ]
-    )
-    db_session.commit()
-
-
-class TestDiscourageCards:
-    """劝退卡（诚实拒绝）— 估分低于进面线 20+ 分的岗位给结论/依据/替代/置信标签。"""
-
-    def test_discourage_triggered_with_alternatives(self, db_session, seed_discourage_data):
-        result = generate_decision(db_session, major="计算机", region="广东", estimated_score=95)
-        pos = result["position_analysis"]
-        assert pos["discouraged_count"] == 2
-        assert len(pos["avoid_positions"]) == 2
-        # 最绝望的排最前：1301002（低 26 分）> 1301001（低 23.5 分）
-        first = pos["avoid_positions"][0]
-        assert first["verdict"] == "建议放弃"
-        assert "进面最低分 121" in first["basis"]
-        assert "低 26 分" in first["basis"]
-        assert "中位" in first["basis"]
-        # 置信标签如实声明单年数据
-        assert "单批数据" in first["confidence"]
-        # 替代建议指向同部门稳健岗（1301004 进面 85，高 10 分）
-        assert any("1301004" not in a and "高 10 分" in a for a in first["alternatives"])
-        assert first["source_url"]
-
-    def test_discourage_boundary(self, db_session, seed_decision_data):
-        """阈值边界：-21 劝退、-19 不劝退（阈值 20）。"""
-        # est=102 → 1301001 低 16.5、1301002 低 19 → 都不触发
-        safe = generate_decision(db_session, major="计算机", region="广东", estimated_score=102)
-        assert safe["position_analysis"]["discouraged_count"] == 0
-        assert safe["position_analysis"]["avoid_positions"] == []
-
-        # est=100 → 1301001 低 18.5（不触发）、1301002 低 21（触发）
-        edge = generate_decision(db_session, major="计算机", region="广东", estimated_score=100)
-        pos = edge["position_analysis"]
-        assert pos["discouraged_count"] == 1
-        assert len(pos["avoid_positions"]) == 1
-        assert "低 21 分" in pos["avoid_positions"][0]["basis"]
-
-    def test_discourage_no_alternatives_when_all_hopeless(self, db_session, seed_decision_data):
-        """全部可报岗都低于进面线时不出替代建议（绝不编造出口）。"""
-        result = generate_decision(db_session, major="计算机", region="广东", estimated_score=95)
-        pos = result["position_analysis"]
-        assert pos["discouraged_count"] == 2
-        assert all(card["alternatives"] == [] for card in pos["avoid_positions"])
-
-    def test_top_position_label_says_discourage(self, db_session, seed_discourage_data):
-        """示例岗位标签用「建议放弃」替代误导性的「冲刺」档。"""
-        result = generate_decision(db_session, major="计算机", region="广东", estimated_score=95)
-        labels = [p["score_label"] for p in result["position_analysis"]["top_positions"]]
-        assert any("（建议放弃）" in l for l in labels)
-        assert not any("（冲刺）" in l for l in labels)
-
-    def test_tier_summary_mentions_discourage(self, db_session, seed_discourage_data):
-        result = generate_decision(db_session, major="计算机", region="广东", estimated_score=95)
-        assert "进面希望渺茫" in result["position_analysis"]["tier_summary"]
-
-    def test_no_est_keeps_avoid_empty(self, db_session, seed_discourage_data):
-        """未填估分：不出劝退卡（向后兼容旧输出）。"""
-        result = generate_decision(db_session, major="计算机", region="广东")
-        pos = result["position_analysis"]
-        assert pos["avoid_positions"] == []
-        assert pos["discouraged_count"] == 0
-
-    def test_score_year_note_in_notes(self, db_session, seed_decision_data):
-        """有进面线数据时 notes 必须声明单年口径。"""
-        result = generate_decision(db_session, major="计算机", region="广东", estimated_score=95)
-        assert any("单个批次" in n for n in result["position_analysis"]["notes"])
 
 
 class TestKaoyanAvoidSchools:
@@ -831,9 +590,7 @@ class TestPersonalAndOutcomeAPI:
         )
         assert resp.status_code == 200, resp.text
         body = resp.json()
-        assert body["position_analysis"]["eligible_count"] == 2
-        assert body["position_analysis"]["personalized_level"] in ("稳健", "均衡", "冲刺")
-        assert body["position_analysis"]["personalized_level"] == "稳健"  # 135 vs 118.5/121
+        assert body["position_analysis"] is None  # 考公路 2026-09-26 退役，岗位级分析不再产出
         assert body["school_analysis"]["matched_school_count"] == 3
         assert body["recommendation"].startswith("以你的条件")
         assert body["input"]["estimated_score"] == 135
@@ -849,7 +606,7 @@ class TestPersonalAndOutcomeAPI:
         )
         assert resp.status_code == 200, resp.text
         body = resp.json()
-        assert len(body["metrics"]) == 3
+        assert len(body["metrics"]) == 2
         assert body["input"]["region"] == "全国"
 
     def test_analyze_rejects_out_of_range_score(self, client, auth_headers):
@@ -970,40 +727,3 @@ class TestPersonalAndOutcomeAPI:
         )
         assert bad.status_code == 422
 
-    def test_outcome_missing_decision_404(self, client, auth_headers):
-        from uuid import uuid4
-
-        resp = client.post(
-            f"/api/path-decision/{uuid4()}/outcome",
-            json={"selected_path": "employment", "outcome_status": "pending"},
-            headers=auth_headers,
-        )
-        assert resp.status_code == 404
-
-
-class TestEduEligibleGuard:
-    """学历档位护栏（2026-09-05 倒置冒烟抓出 KeyError: 'bachelor'）：
-
-    档位表外的用户学历（档案英文枚举直传/高中）按 0 档处理，
-    宁可不含糊地判不达标，也不 500、不误判可报。
-    """
-
-    def test_unknown_user_edu_does_not_crash_and_fails_requirement(self):
-        from app.services.path_decision_engine import _edu_eligible
-
-        assert _edu_eligible("本科及以上", "bachelor") is False  # 英文枚举直传：0 档
-        assert _edu_eligible("大专及以上", "高中") is False
-
-    def test_unknown_user_edu_passes_when_no_requirement(self):
-        from app.services.path_decision_engine import _edu_eligible
-
-        assert _edu_eligible(None, "bachelor") is True
-        assert _edu_eligible("不限", "bachelor") is True
-
-    def test_ranked_user_edu_still_matches(self):
-        from app.services.path_decision_engine import _edu_eligible
-
-        assert _edu_eligible("本科及以上", "本科") is True
-        assert _edu_eligible("硕士及以上", "本科") is False
-        assert _edu_eligible("仅限硕士", "硕士") is True
-        assert _edu_eligible("仅限博士", "硕士") is False

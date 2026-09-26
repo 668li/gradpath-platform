@@ -267,7 +267,7 @@ try:
 
     from app.services.mcp_service import register_mcp_tools
 
-    mcp = FastMCP("GradPath", instructions="GradPath 职业规划平台 — 考研/考公/就业一体化工具集")
+    mcp = FastMCP("GradPath", instructions="GradPath 职业规划平台 — 考研/就业决策伴随工具集")
 
     # 工具实现下沉到 services/mcp_service.py，避免 main.py 直接调用 service 层
     register_mcp_tools(mcp)

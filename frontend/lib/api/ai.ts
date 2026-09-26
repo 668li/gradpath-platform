@@ -85,36 +85,6 @@ export const careerIntelApi = {
     request<CareerPositioningResponse[]>("/api/career-intel/positioning/history"),
 };
 
-export const civilServiceIntelApi = {
-  queryPostIntel: (data: PostIntelQueryRequest) =>
-    request<{ success: boolean; data: AIPostIntelResult }>("/api/civil-service/post-intel/query", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
-  savePostIntel: (data: PostIntelSaveRequest) =>
-    request<PostIntelResponse>("/api/civil-service/post-intel", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
-  listPostIntel: () => request<PostIntelResponse[]>("/api/civil-service/post-intel"),
-  deletePostIntel: (id: string) =>
-    request<void>(`/api/civil-service/post-intel/${id}`, { method: "DELETE" }),
-
-  createPositioning: (data: CivilServicePositioningCreateRequest) =>
-    request<CivilServicePositioningResponse>("/api/civil-service/positioning", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
-  getLatestPositioning: () =>
-    request<CivilServicePositioningResponse | null>("/api/civil-service/positioning/latest"),
-  getPositioningHistory: () =>
-    request<CivilServicePositioningResponse[]>("/api/civil-service/positioning/history"),
-  // 公开接口（无需登录）
-  listPublicPostIntel: (params?: { region?: string; department?: string; exam_type?: string; department_tier?: string; limit?: number }) =>
-    request<PostIntelResponse[]>(
-      `/api/civil-service/post-intel/public${buildQuery((params as Record<string, string | number | undefined | null>) || {})}`,
-    ),
-};
 
 // ===== 护城河功能：AI 主动洞察 =====
 export const proactiveInsightsApi = {

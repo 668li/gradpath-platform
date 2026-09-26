@@ -8,96 +8,12 @@ import json
 from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
-from app.crawlers.research.bilibili_research_crawler import BilibiliResearchCrawler
 from app.crawlers.research.rss_news_crawler import RssNewsCrawler
 from app.crawlers.research.transformer import ResearchTransformer
 from app.crawlers.research.web_article_crawler import WebArticleCrawler
 
 # ======================================================================
 # BilibiliResearchCrawler
-# ======================================================================
-
-
-class TestBilibiliResearchCrawler:
-    def test_fetch_and_parse_returns_expected_fields(self):
-        """mock B站搜索 API，验证 fetch/parse 输出字段。"""
-        crawler = BilibiliResearchCrawler(config={"keywords": ["408 计算机考研"], "pages": 1})
-
-        search_response = MagicMock()
-        search_response.json.return_value = {
-            "code": 0,
-            "data": {
-                "result": [
-                    {
-                        "title": '<em class="keyword">408</em> 计算机考研经验分享',
-                        "bvid": "BV1Test1234",
-                        "arcurl": "https://www.bilibili.com/video/BV1Test1234",
-                        "description": "这是我的考研复习经验，包含数据结构和操作系统。",
-                        "author": "考研学长",
-                        "play": 12345,
-                        "like": 678,
-                        "tag": "考研,408,计算机",
-                    }
-                ]
-            },
-        }
-        homepage_response = MagicMock()
-
-        crawler._request = MagicMock(side_effect=[homepage_response, search_response])
-
-        raw = crawler.fetch()
-        assert len(raw) == 1
-        assert raw[0]["bvid"] == "BV1Test1234"
-
-        parsed = crawler.parse(raw)
-        assert len(parsed) == 1
-        item = parsed[0]
-        assert item["title"] == "408 计算机考研经验分享"
-        assert item["bvid"] == "BV1Test1234"
-        assert item["source_url"] == "https://www.bilibili.com/video/BV1Test1234"
-        assert item["author"] == "考研学长"
-        assert item["view_count"] == 12345
-        assert item["like_count"] == 678
-        assert item["tags"] == ["考研", "408", "计算机"]
-        assert item["source_platform"] == "bilibili"
-        assert item["category"] == "考研经验"
-
-    def test_parse_strips_html_tags(self):
-        """验证 HTML 标签清洗。"""
-        crawler = BilibiliResearchCrawler(config={"keyword": "考研"})
-        raw = [
-            {
-                "title": '<em class="keyword">考研</em> <b>复试</b>经验',
-                "bvid": "BVHtml",
-                "description": "<p>这是正文</p>",
-                "author": "作者",
-                "play": "1000",
-                "like": "50",
-                "tag": "",
-            }
-        ]
-        parsed = crawler.parse(raw)
-        assert parsed[0]["title"] == "考研 复试经验"
-        assert parsed[0]["content"] == "<p>这是正文</p>"
-
-    def test_fetch_handles_api_error(self):
-        """API 返回非 0 code 时统计错误并继续。"""
-        crawler = BilibiliResearchCrawler(config={"keywords": ["考研"], "pages": 1})
-        error_response = MagicMock()
-        error_response.json.return_value = {
-            "code": -500,
-            "message": "系统错误",
-        }
-        homepage_response = MagicMock()
-        crawler._request = MagicMock(side_effect=[homepage_response, error_response])
-
-        raw = crawler.fetch()
-        assert raw == []
-        assert crawler.stats["errors"] == 1
-
-
-# ======================================================================
-# WebArticleCrawler
 # ======================================================================
 
 

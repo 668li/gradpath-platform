@@ -16,7 +16,7 @@ ALLOWED_CRAWLER_SOURCES: frozenset[str] = frozenset(
         "real_data",  # grad：研招网/高校官网/学位网 → PENDING 队列
         "yanzhao",  # grad：招生简章预置数据 → PENDING 队列（B1 改造后）
         "yanzhao_program",  # grad：专业目录预置数据 → PENDING 队列（B1 改造后）
-        "bilibili_research",  # research：B站考研视频 → PENDING 队列
+        # bilibili_research 已于 2026-09-26 移出（用户拍板删线：产出无人消费=假活水）
         "web_article_research",  # research：网页文章 → PENDING 队列
         "rss_news_research",  # research：RSS 新闻 → PENDING 队列（注册名，勿写模块文件名）
         "eol_kaoyan",  # research：中国教育在线考研频道 → PENDING 队列

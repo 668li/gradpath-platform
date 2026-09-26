@@ -6,14 +6,6 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class BilibiliResearchRequest(BaseModel):
-    """触发 B站调研请求。"""
-
-    keyword: str = Field(..., min_length=1, description="搜索关键词")
-    pages: int = Field(1, ge=1, le=10, description="抓取页数")
-    auto_approve: bool = Field(False, description="是否自动审核通过")
-
-
 class RssResearchRequest(BaseModel):
     """触发 RSS 调研请求。"""
 

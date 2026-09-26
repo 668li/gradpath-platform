@@ -64,9 +64,9 @@ export default function HomePage() {
         {/* 当前已开放的能力 */}
         <section className="mt-8 grid gap-4 text-sm sm:grid-cols-2">
           <div className="rounded-2xl border border-brand-100 bg-white/70 p-5">
-            <p className="font-semibold text-ink-800">考研 · 考公 · 就业 · 在校，四条线都覆盖</p>
+            <p className="font-semibold text-ink-800">考研 · 就业 · 在校，决策伴随全覆盖</p>
             <p className="mt-1.5 text-ink-500">
-              招生简章、招考公告、报考规则与就业信息逐条带官方来源与可信度标注；
+              招生简章、分数线事件、报考规则与就业信息逐条带官方来源与可信度标注；
               无源数据不下发，AI 问答只基于库内真实数据回答。
             </p>
           </div>

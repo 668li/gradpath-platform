@@ -4,11 +4,11 @@
 - Provider 只产候选证据：不落库、不验证；用户点选后才走既有 POST evidence
   入账（创建一律 internal_unverified，闸在 evidence 服务层）。
 - 白名单硬闸：provider 名不在表内=404，绝不随机路由；未知/他人 hypothesis=404。
-- 只接有溯源的库（grad_intel/civil_service_intel/experience_post/employment_data/
+- 只接有溯源的库（grad_intel/experience_post/employment_data/
   market_data）；school/company 无 source 字段（Q8 拍板延后），DarkKnowledge 为
   0 行只读底座不接。
 - 可见性：grad 情报/分数线/招简为共享橱窗库全量可见（仅滤 AI 生成行）；
-  civil_post/experience_post 按各自语义过滤；AI 生成行不出候选（零造假红线）。
+  experience_post 按语义过滤；AI 生成行不出候选（零造假红线）。
 """
 
 import logging
@@ -19,7 +19,6 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import NotFoundError
-from app.models.civil_service_intel import PostIntel
 from app.models.employment_data import EmploymentData
 from app.models.experience_post import ExperiencePost
 from app.models.grad_intel import GradSchoolIntel, GradScorelineRecord, GradYanzhaoProgram
@@ -172,48 +171,6 @@ def _search_grad_yanzhao(db: Session, user_id: UUID, query: str) -> list[dict]:
     return out
 
 
-def _search_civil_post(db: Session, user_id: UUID, query: str) -> list[dict]:
-    rows = (
-        db.query(PostIntel)
-        .filter(
-            PostIntel.user_id == str(user_id),
-            or_(
-                PostIntel.region.ilike(f"%{query}%"),
-                PostIntel.department.ilike(f"%{query}%"),
-                PostIntel.post_name.ilike(f"%{query}%"),
-            ),
-        )
-        .limit(_MAX_CANDIDATES)
-        .all()
-    )
-    out = []
-    for r in rows:
-        bits = [f"{r.region} {r.department} {r.post_name}"]
-        bits += _unknown_bits(
-            {
-                "真实竞争度": r.real_competition,
-                "待遇": r.treatment_level,
-                "萝卜岗": r.radish_post,
-                "服务期": r.service_period,
-                "晋升": r.promotion_speed,
-            }
-        )
-        if r.admission_ratio:
-            bits.append(f"报录比 {r.admission_ratio}")
-        out.append(
-            {
-                "claim": "；".join(bits),
-                "source": "GradPath 考公情报库",
-                "source_url": _first_url(r.data_sources),
-                "source_type": "internal_db",
-                "reliability": "medium",
-                "provider": "internal:civil_post",
-                "observed_on": None,
-            }
-        )
-    return out
-
-
 def _search_experience_post(db: Session, user_id: UUID, query: str) -> list[dict]:
     rows = (
         db.query(ExperiencePost)
@@ -313,7 +270,6 @@ _PROVIDERS: dict[str, tuple[str, Callable[[Session, UUID, str], list[dict]]]] = 
     "grad_school_intel": ("院校情报", _search_grad_school_intel),
     "grad_scoreline": ("分数线", _search_grad_scoreline),
     "grad_yanzhao": ("招简", _search_grad_yanzhao),
-    "civil_post": ("考公职位情报", _search_civil_post),
     "experience_post": ("经验贴", _search_experience_post),
     "employment": ("就业数据", _search_employment),
     "market": ("市场数据", _search_market),

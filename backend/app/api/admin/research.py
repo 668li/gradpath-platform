@@ -19,7 +19,6 @@ from app.models.ingestion import ExternalResearchItem, ReviewQueueItem
 from app.models.kaoyan_news import KaoyanNews
 from app.models.user import User
 from app.schemas.research_admin import (
-    BilibiliResearchRequest,
     ResearchApproveRequest,
     ResearchPendingItem,
     ResearchPendingListResponse,
@@ -133,23 +132,6 @@ def _auto_approve_last_run(db: Session, crawler_name: str, admin: User) -> tuple
             continue
     db.commit()
     return (promoted, pending_remaining)
-
-
-@router.post("/bilibili", response_model=ResearchTriggerResponse)
-def run_bilibili_research(
-    body: BilibiliResearchRequest,
-    admin: User = Depends(get_admin_user),
-    db: Session = Depends(get_db),
-):
-    """触发 B站调研并导入数据库。
-
-    2026-09-02：B站数据源已暂停（用户拍板放弃）。该源 raw tags 是上传者自填
-    营销杂糅词，混入过"三角洲行动/原神/和平精英"等游戏词，导致纯考研帖被 S2
-    离题门禁误判（见 09-02 假阳性事故）。爬虫脚本保留不删（项目红线），但本
-    入口短路拒收，不再 ingest 新内容。恢复需显式移除本守卫。
-    """
-    logger.warning("[research_admin] bilibili 数据源已暂停，拒绝触发 ingest admin=%s", admin.id)
-    return ResearchTriggerResponse(status="suspended", fetched=0, stored=0, pending=0)
 
 
 @router.post("/rss", response_model=ResearchTriggerResponse)

@@ -42,7 +42,6 @@ const FEATURE_MAP: FeatureStage[] = [
     color: "purple",
     features: [
       { name: "考研工具箱", href: "/kaoyan", desc: "院校 / 导师 / 分数线", timing: "考虑考研时" },
-      { name: "考公中心", href: "/civil-service", desc: "岗位 / 备考 / 考试流程", timing: "考虑考公时" },
       { name: "就业中心", href: "/employment", desc: "公司 / 薪资 / 朝阳职业", timing: "考虑就业时" },
       { name: "面试经验", href: "/interview", desc: "面经 + 练习 + STAR 改写", timing: "求职准备" },
       { name: "失败案例库", href: "/failure-cases", desc: "别人的弯路是你的捷径", timing: "任何时候" },
@@ -52,7 +51,6 @@ const FEATURE_MAP: FeatureStage[] = [
     stage: "决策 · 做选择",
     color: "orange",
     features: [
-      { name: "职业路径模拟器", href: "/career-simulator", desc: "试驾 + What-If 对比 + 90 天蓝图", timing: "第 4 步" },
       { name: "决策实验室", href: "/decision-lab", desc: "5 步结构化分析", timing: "第 5 步" },
       { name: "决策中心", href: "/decision-center", desc: "决策看板 + 路径冲突调解", timing: "第 6 步" },
       { name: "7 天微行动", href: "/micro-actions", desc: "不替你决定，让你自己发现", timing: "犹豫不决时" },

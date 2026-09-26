@@ -175,11 +175,11 @@ def test_load_known_urls_degrades_to_empty_on_db_failure(monkeypatch):
 # ===== 提频与 seed 迁移 =====
 
 
-def test_default_schedule_bilibili_only():
-    """009 T1 拍板⑨后：仅 bilibili 外部调研线保留自动调度，kaoyan_news 五线全停。"""
+def test_default_schedule_empty_after_bilibili_retired():
+    """2026-09-26 bilibili 删线退役后：全站零自动调度（考研公告事件线立项前为空）。"""
     from app.api.crawlers import DEFAULT_DAILY_SCHEDULES
 
-    assert DEFAULT_DAILY_SCHEDULES == {"bilibili_research": "0 3 * * 1"}
+    assert DEFAULT_DAILY_SCHEDULES == {}
 
 
 def test_news_aggregate_crawler_registered():
@@ -196,7 +196,10 @@ def test_news_aggregate_crawler_registered():
 
 
 def test_seed_replaces_stale_cron(monkeypatch):
-    """存量错频 job 应被 seed 一次性迁移到线契约 cron；停喂线不得补齐。"""
+    """2026-09-26 bilibili 删线退役后：默认调度表为空——seed 不新建任何线 job，存量退役 job 不补齐不复活。
+
+    bilibili 孤儿 job 的根治在部署时对生产 Redis 显式删除（seed 只增不删的历史缺口另案治理）。
+    """
     from apscheduler.jobstores.memory import MemoryJobStore
     from apscheduler.schedulers.background import BackgroundScheduler
 
@@ -220,12 +223,11 @@ def test_seed_replaces_stale_cron(monkeypatch):
         monkeypatch.setattr(api_crawlers, "get_scheduler", lambda: sched)
         api_crawlers.seed_default_schedules()
 
+        # 空调度表：seed 不得补齐/替换任何退役线 job（bilibili 亦不复活）
         job = sched.get_job("crawler_bilibili_research")
-        assert job is not None
-        assert api_crawlers._job_cron_str(job) == "0 3 * * 1", "存量错频 job 应被替换为线契约 cron"
-        assert (
-            sched.get_job("crawler_official_announce") is None
-        ), "official_announce 已停喂入（009 T1），seed 不得补齐其 job"
+        assert job is not None, "存量孤儿 job 由 seed 删除治理缺口保留原样（部署时显式删）"
+        assert api_crawlers._job_cron_str(job) == "7 5 * * *", "seed 不得改写退役线 job 的 cron"
+        assert len([j for j in sched.get_jobs() if j.id.startswith("crawler_")]) == 1
     finally:
         sched.shutdown(wait=False)
 

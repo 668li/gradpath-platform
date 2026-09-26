@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-/** 职位对比随职位检索一并下架（09-12 战略转向）：302 回考公中心。 */
-export default function PositionsComparePage() {
-  redirect("/civil-service");
+// 2026-09-26 考公线退役：本页随线隐藏（见 docs/数据供给总纲-爬取跟随决策-2026-09-26.md）。
+export default function RetiredPage() {
+  redirect("/dashboard");
 }

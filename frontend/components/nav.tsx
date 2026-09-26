@@ -87,7 +87,6 @@ function getNavSections(): NavSection[] {
       section: "旅程",
       children: [
         { href: "/kaoyan", label: "考研情报", icon: BookOpen },
-        { href: "/civil-service", label: "考公情报", icon: Building2 },
         { href: "/employment", label: "就业情报", icon: Briefcase },
         { href: "/major-prospects", label: "专业前景", icon: Telescope },
       ],
@@ -100,7 +99,6 @@ function getNavSections(): NavSection[] {
       children: [
         { href: "/decision-center", label: "决策中心", icon: Target },
         { href: "/decision-os", label: "决策 OS", icon: Compass },
-        { href: "/career-simulator", label: "路径模拟器", icon: Route },
         { href: "/micro-actions", label: "7天微行动", icon: Footprints },
       ],
     },

@@ -17,10 +17,8 @@ from app.crawlers.line_registry import CrawlerLine, default_schedules, load_line
 CONFIG_DIR = Path(__file__).resolve().parents[1] / "app" / "crawlers" / "config"
 
 # 009 T1 拍板⑨后冻结的 1 条默认 cron：kaoyan_news 五线已停喂入，
-# 仅外部调研（bilibili 每周一）保留自动调度。
-EXPECTED_SCHEDULES = {
-    "bilibili_research": "0 3 * * 1",
-}
+# 2026-09-26 起全站零自动调度（bilibili 删线退役；考研公告事件线未立项前为空）。
+EXPECTED_SCHEDULES: dict[str, str] = {}
 
 # 009 T1 停喂入的五条 kaoyan_news 线（重启后不得自动回流调度；
 # official_announce 为第五条——产研招公告，曾漏判为考公线，09-19 回流 14 行后补停）
@@ -41,7 +39,7 @@ def test_every_whitelisted_source_has_a_line_yaml():
 
 def test_generated_schedules_frozen():
     schedules = default_schedules()
-    assert schedules == EXPECTED_SCHEDULES, "默认调度必须与冻结的 2 条 cron 逐字一致"
+    assert schedules == EXPECTED_SCHEDULES, "默认调度必须与冻结期望逐字一致（当前为零调度）"
 
 
 def test_kaoyan_news_lines_disabled():
