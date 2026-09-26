@@ -2,10 +2,10 @@
 name: official_announce
 category: research
 description: 高校研究生院官方公告爬虫（多校栏目，URL 级增量，PENDING 审核队列）
-# 009 T1 拍板⑨：本线产 kaoyan_news（研招公告），随四线一并停喂入——管道代码休眠
-# 保留；004 考公公告季（9/23 窗口）将按其契约复用本线架构自建考公事件归口（届时另行配置）
-enabled: false
-schedule: "0 * * * *"  # 每小时整点轮询（已停调度）；URL 级增量：已收录条目跳过详情
+# 009 T1 拍板⑨停喂；2026-09-26 B0 复喂（marathon 任务清单 B0③：官方公告面=基建
+# 营养进 ext_research 审核队列，非 kaoyan_news 资讯流），审核策略见 docs/爬取审核策略-2026-09-26.md
+enabled: true
+schedule: "0 * * * *"  # 每小时整点轮询；URL 级增量：已收录条目跳过详情
 sla_hours: 6  # 学校发布→可见时差从 ~24h 压到 ~1h
 entry: "https://gr.uestc.edu.cn/tongzhi/118"  # 栏目清单在代码 DEFAULT_SECTIONS（多校多栏目）
 rate_limit: 1.0

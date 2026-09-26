@@ -175,11 +175,19 @@ def test_load_known_urls_degrades_to_empty_on_db_failure(monkeypatch):
 # ===== 提频与 seed 迁移 =====
 
 
-def test_default_schedule_empty_after_bilibili_retired():
-    """2026-09-26 bilibili 删线退役后：全站零自动调度（考研公告事件线立项前为空）。"""
+def test_default_schedule_matches_b0_refeed_scope():
+    """bilibili 退役（09-26）后零调度；B0 复喂（09-26 拍板）后调度表=官方公告面三线。
+
+    铁律保持：bilibili 永不在默认调度表；新增调度线必须走白名单+线契约。
+    """
     from app.api.crawlers import DEFAULT_DAILY_SCHEDULES
 
-    assert DEFAULT_DAILY_SCHEDULES == {}
+    assert "bilibili_research" not in DEFAULT_DAILY_SCHEDULES
+    assert DEFAULT_DAILY_SCHEDULES == {
+        "official_announce": "0 * * * *",
+        "eol_kaoyan": "0 2 * * *",
+        "rsshub_research": "30 2 * * *",
+    }
 
 
 def test_news_aggregate_crawler_registered():
@@ -196,9 +204,9 @@ def test_news_aggregate_crawler_registered():
 
 
 def test_seed_replaces_stale_cron(monkeypatch):
-    """2026-09-26 bilibili 删线退役后：默认调度表为空——seed 不新建任何线 job，存量退役 job 不补齐不复活。
+    """B0 治理（09-26）：seed 只增不删的历史缺口已修——退役线孤儿 job 由 seed 清理。
 
-    bilibili 孤儿 job 的根治在部署时对生产 Redis 显式删除（seed 只增不删的历史缺口另案治理）。
+    （原语义"孤儿 job 保留原样、部署时显式删"已随 B0 seed 清理段上产而反转。）
     """
     from apscheduler.jobstores.memory import MemoryJobStore
     from apscheduler.schedulers.background import BackgroundScheduler
@@ -223,11 +231,13 @@ def test_seed_replaces_stale_cron(monkeypatch):
         monkeypatch.setattr(api_crawlers, "get_scheduler", lambda: sched)
         api_crawlers.seed_default_schedules()
 
-        # 空调度表：seed 不得补齐/替换任何退役线 job（bilibili 亦不复活）
-        job = sched.get_job("crawler_bilibili_research")
-        assert job is not None, "存量孤儿 job 由 seed 删除治理缺口保留原样（部署时显式删）"
-        assert api_crawlers._job_cron_str(job) == "7 5 * * *", "seed 不得改写退役线 job 的 cron"
-        assert len([j for j in sched.get_jobs() if j.id.startswith("crawler_")]) == 1
+        # B0 治理后：孤儿 job 被 seed 清理，且 bilibili 不因任何路径复活
+        assert sched.get_job("crawler_bilibili_research") is None, (
+            "退役线孤儿 job 应由 seed 清理（B0 增删平衡）"
+        )
+        assert all(
+            j.id != "crawler_bilibili_research" for j in sched.get_jobs()
+        ), "bilibili 线不得复活"
     finally:
         sched.shutdown(wait=False)
 

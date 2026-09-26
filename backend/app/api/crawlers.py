@@ -507,6 +507,19 @@ async def _run_scheduled_crawler(source_name: str):
         logger.warning("定时爬虫 '%s' 不在合规白名单内，已跳过执行", source_name)
         return
 
+    # B0 修复（09-26）：回调运行时查 enabled/注册——此前只查白名单不查 enabled，
+    # 停用线的残留 job（Redis jobstore 重启不丢）仍会照常投递（09-19 停喂须 hdel 的实锤）。
+    # 置于隔离检查之前：停用线最快跳过，不做 DB IO。
+    try:
+        from app.crawlers.line_registry import load_lines
+
+        _line = load_lines().get(source_name)
+        if _line is None or not _line.enabled:
+            logger.info("定时爬虫 '%s' 已停用或未注册，跳过投递", source_name)
+            return
+    except Exception as e:  # noqa: BLE001 — 契约加载失败不阻断采集主流程
+        logger.warning("线契约加载失败，按已注册处理: %s", e)
+
     # 地基⑥（spec 002 FR5）：隔离线跳过投递——死线不污染活库，admin 解除后自动恢复
     try:
         from app.services.crawler_state_service import is_isolated
@@ -686,6 +699,21 @@ def seed_default_schedules() -> None:
             timezone=BEIJING_TZ,
         )
         logger.info("已补齐默认按日定时任务: %s (%s)", source_name, cron)
+
+    # B0 修复（09-26）：seed 此前只增不删——线 enabled 置 false 后，Redis jobstore 里
+    # 的残留 crawler_* job 会继续触发（09-19 停喂令须手工 hdel 的实锤）。
+    # 启动时清理默认表之外的残留 job：停线 = 重启后不再注册。
+    _prefix = "crawler_"
+    _removed = 0
+    for job in scheduler.get_jobs():
+        if not job.id.startswith(_prefix):
+            continue
+        if job.id[len(_prefix):] not in DEFAULT_DAILY_SCHEDULES:
+            scheduler.remove_job(job.id)
+            _removed += 1
+            logger.info("清理停用线残留定时任务: %s", job.id)
+    if _removed:
+        logger.info("共清理 %d 条停用线残留定时任务", _removed)
 
 
 async def _notify_data_update(source_name: str, items_stored: int):

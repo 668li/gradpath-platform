@@ -65,6 +65,12 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 include = ["app*"]
 
+# 爬虫线契约 yaml 必须随 wheel 进 site-packages：line_registry.CONFIG_DIR 指向模块
+# 相对路径，缺数据文件时 load_lines 返回空注册 → default_schedules() 为空 →
+# 生产全线静默（09-26 B0 实测：生产镜像 config 目录两处皆空即此根因）。
+[tool.setuptools.package-data]
+"app.crawlers" = ["config/*.yaml", "config/position_xlsx/*.yaml"]
+
 [project.optional-dependencies]
 dev = [
     "pytest>=8.2.0",
