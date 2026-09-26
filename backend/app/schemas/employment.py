@@ -60,3 +60,33 @@ class MajorQuery(BaseModel):
     """POST /api/employment/majors 的请求体。"""
 
     school: str = Field(max_length=200)
+
+class CitySalaryBand(BaseModel):
+    """城市岗位薪资带（B4 就业市场概览，min/max 为样本极值）。"""
+
+    city: str
+    sample_count: int
+    min_k: int | None = None
+    max_k: int | None = None
+
+
+class SchoolEmploymentSample(BaseModel):
+    """院校就业率样本——只列库内真实有值的院校，覆盖度如实（B4）。"""
+
+    name: str
+    employment_rate: float | None = None
+    grad_school_rate: float | None = None
+    report_index_url: str | None = None
+
+
+class MarketOverviewResponse(BaseModel):
+    """GET /api/employment/market-overview（B4）：companies/salary 真实聚合。"""
+
+    company_total: int
+    top_industries: list[dict]
+    salary_total: int
+    city_salary_bands: list[CitySalaryBand]
+    school_employment_samples: list[SchoolEmploymentSample]
+    school_employment_coverage: int
+    school_total: int
+

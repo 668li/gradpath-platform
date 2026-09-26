@@ -12,6 +12,7 @@ from app.schemas.employment import (
     EmploymentSearchResponse,
     EmploymentStatsResponse,
     MajorQuery,
+    MarketOverviewResponse,
     SchoolResponse,
     SearchBody,
 )
@@ -26,7 +27,7 @@ from app.services.employment_service import (
 router = APIRouter(prefix="/api/employment", tags=["就业数据"])
 
 
-@router.get("/market-overview")
+@router.get("/market-overview", response_model=MarketOverviewResponse)
 def market_overview_endpoint(db: Session = Depends(get_db)):
     """就业市场概览（B4）：companies/salary_benchmarks 真实聚合+覆盖度如实标注。"""
     return market_overview(db)
