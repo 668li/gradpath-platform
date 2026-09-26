@@ -173,7 +173,7 @@ class DataHit:
 class DataIntent:
     """一个待执行的搜索意图。"""
 
-    domain: str  # announcements / salary / market
+    domain: str  # announcements / salary / market / intel_cards
     params: dict = field(default_factory=dict)
 
 
@@ -234,6 +234,88 @@ def search_market(db: Session, keyword: str | None, limit: int = 5) -> list[Data
         )
         for r in rows
     ]
+
+
+# 门道卡触发词（批次 B+ 2026-09-26）：只在出现明确门道主题词时才查库，不命中不硬塞。
+# 与 timeline/公告词表刻意不重叠（"复试流程/时间"走 timeline，"复试歧视/压分"走门道卡）。
+_INTEL_WORDS = (
+    "歧视",
+    "压分",
+    "黑幕",
+    "潜规则",
+    "门道",
+    "内幕",
+    "水区",
+    "旱区",
+    "一志愿保护",
+    "保护一志愿",
+    "刷人",
+    "联系导师",
+    "导师邮件",
+    "给导师发",
+    "扩招",
+    "缩招",
+    "换参考书",
+    "改考科目",
+    "避坑",
+    "双非",
+)
+
+_INTEL_CONF_LABEL = {
+    "official": "官方实证",
+    "multi_source": "多源交叉",
+    "single_source": "孤证",
+}
+
+
+def search_intel_cards(db: Session, content: str, limit: int = 3) -> list[DataHit]:
+    """门道卡（intel_cards，批次 B+）— 门道信息差注入（CONTEXT.md 信息差域）。
+
+    与其他 searcher 不同：输入是整条用户消息——主题词/校名命中卡的
+    问题/标题/结论才返回；查无返回空，不硬塞。卡量百级以内（策展制），
+    内存过滤足够，不上全文索引。
+    """
+    from app.models.intel_card import INTEL_STATUS_ACTIVE, IntelCard
+
+    like_parts = [w for w in _INTEL_WORDS if w in content]
+    like_parts.extend(extract_schools(content))
+    if not like_parts:
+        return []
+
+    rows = (
+        db.query(IntelCard)
+        .filter(IntelCard.track == "kaoyan", IntelCard.status == INTEL_STATUS_ACTIVE)
+        .all()
+    )
+    scored: list[tuple[int, IntelCard]] = []
+    for r in rows:
+        hay = f"{r.question_text} {r.title} {r.conclusion} {r.conditions}"
+        score = sum(1 for p in like_parts if p in hay)
+        if score > 0:
+            scored.append((score, r))
+    scored.sort(key=lambda t: (-t[0], t[1].question_id))
+
+    hits: list[DataHit] = []
+    for _score, r in scored[:limit]:
+        conf_label = _INTEL_CONF_LABEL.get(r.confidence, r.confidence)
+        sources = r.sources or []
+        src_note = "；".join(
+            f"{s.get('title', '')} {s.get('url', '')}".strip() for s in sources[:2]
+        )
+        content_text = f"[门道卡·{conf_label}] {r.conclusion}"
+        if r.conditions:
+            content_text += f"（适用条件：{r.conditions}）"
+        if src_note:
+            content_text += f" 来源：{src_note}"
+        hits.append(
+            DataHit(
+                title=f"{r.title}（{conf_label}）",
+                content=content_text,
+                source_table="intel_cards",
+                url=sources[0].get("url", "") if sources else "",
+            )
+        )
+    return hits
 
 
 def search_announcements(db: Session, keyword: str | None = None, limit: int = 3) -> list[DataHit]:
@@ -445,6 +527,9 @@ def detect_data_intents(content: str) -> list[DataIntent]:
         intents.append(DataIntent("salary", {"keyword": major}))
     if any(w in text for w in _MARKET_WORDS):
         intents.append(DataIntent("market", {"keyword": major or extract_dept(text)}))
+    if any(w in text for w in _INTEL_WORDS):
+        # 门道卡：主题词命中即查（卡内二次过滤保精准，查无不硬塞）
+        intents.append(DataIntent("intel_cards", {}))
     return intents
 
 
@@ -489,6 +574,8 @@ def run_data_search(
                 found = search_salary(db, intent.params.get("keyword"))
             elif intent.domain == "market":
                 found = search_market(db, intent.params.get("keyword"))
+            elif intent.domain == "intel_cards":
+                found = search_intel_cards(db, content)
             else:
                 found = []
             hits.extend(found)

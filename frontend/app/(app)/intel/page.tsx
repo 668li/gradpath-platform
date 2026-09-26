@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { GraduationCap, Briefcase, DollarSign, MessageSquare } from "lucide-react";
+import { GraduationCap, Briefcase, DollarSign, MessageSquare, Compass } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TABS = [
   { id: "kaoyan", label: "考研", icon: GraduationCap, href: "/kaoyan", desc: "院校情报、录取预测、招生公告解读" },
+  { id: "cards", label: "门道", icon: Compass, href: "/intel/cards", desc: "官方不会说的门道与实锤：带来源链与置信度，孤证明标" },
   { id: "career", label: "就业", icon: Briefcase, href: "/employment", desc: "公司情报、求职定位、就业数据" },
   { id: "salary", label: "薪资", icon: DollarSign, href: "/employment?tab=salary", desc: "各公司岗位薪资数据查询" },
   { id: "interview", label: "面经", icon: MessageSquare, href: "/interview", desc: "海量面试经验分享" },

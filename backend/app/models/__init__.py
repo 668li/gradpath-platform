@@ -284,3 +284,6 @@ from app.models.follow import Follow
 from app.models.growth_snapshot import GrowthSnapshot
 from app.models.learning_resource import LearningResource
 from app.models.study_plan import StudyPlan
+
+# 门道卡（intel_cards，2026-09-26 批次 B+）
+from app.models.intel_card import IntelCard
