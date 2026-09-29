@@ -212,7 +212,15 @@ function FeedTab({ currentUser }: { currentUser: UserResponse | null }) {
       {loading ? (
         <ListSkeleton count={5} />
       ) : posts.length === 0 ? (
-        <EmptyState title="还没有讨论" description="成为第一个发帖的人吧！" />
+        <EmptyState
+          title="还没有讨论"
+          description="成为第一个发帖的人吧！"
+          action={
+            <Button size="sm" onClick={() => setShowComposer(true)} data-testid="empty-state-compose-button">
+              <Plus className="h-4 w-4" /> 写第一帖
+            </Button>
+          }
+        />
       ) : (
         <div className="space-y-3">
           {posts
