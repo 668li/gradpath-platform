@@ -830,3 +830,43 @@ class TestEmploymentB3Mapping:
         evidence_text = json.dumps(emp.get("evidence") or [], ensure_ascii=False)
         assert "腾讯" in evidence_text  # seed 的深圳 salary 行经映射命中
 
+
+# ----------------------------------------------------------------------
+# DF-02b（2026-09-29）：词典兜底版——门类名输入不再恒空
+# ----------------------------------------------------------------------
+class TestMajorFallbackDictionary:
+    def test_resolve_major_with_fallback_never_none(self):
+        """哲学/军事学/交叉学科门类名与未收录专业都拿到门类级映射条目。"""
+        from app.services.major_prospect_service import resolve_major_with_fallback
+
+        for name in ("哲学", "宗教学", "军事思想", "交叉学科", "智能审计"):
+            canon, entry = resolve_major_with_fallback(name)
+            assert entry is not None, f"{name} 兜底条目缺失"
+            assert entry.industries, f"{name} 兜底 industries 为空"
+
+        _, zhexue = resolve_major_with_fallback("哲学")
+        assert zhexue.category == "哲学"
+
+    def test_employment_path_philosophy_hits_market_data(
+        self, db_session, seed_decision_data
+    ):
+        """哲学（MAJOR_MAP 未收录门类）经兜底词典命中行业薪资行。"""
+        from app.services.path_decision_engine import _build_employment_path
+
+        # seed 的 market_data 只有计算机向行业；补一条哲学兜底映射的"教育"行业行
+        db_session.add(
+            _make_market_data(
+                "城镇教育行业年平均工资",
+                "教育",
+                98000.0,
+                "元/年",
+            )
+        )
+        db_session.commit()
+        path = _build_employment_path(db_session, "哲学", None, None)
+        evidence = path.get("evidence") or []
+        assert evidence, "哲学就业路不应恒空（兜底词典门类级行业映射）"
+        assert any(
+            "行业数据" in str(e.get("label") or "") for e in evidence
+        ), "应命中 market_data 行业薪资证据"
+

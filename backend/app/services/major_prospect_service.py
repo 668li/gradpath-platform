@@ -9,6 +9,12 @@
 
 核心是一张"专业 → 对口行业/岗位/公司"映射表，把四张表按专业维度串起来。
 未收录专业按学科门类兜底，考研情报始终按专业名匹配（grad_school_intel 全量覆盖）。
+
+映射词典两源（均为官方公开目录，B3/DF-02a 来源入档）：
+- 学科门类口径：教育部《学位授予和人才培养学科目录（2022 年版）》13 门类
+  https://www.moe.gov.cn/srcsite/A22/moe_833/202303/t20230323_1055637.html
+- 行业分类口径：国家统计局《国民经济行业分类》（GB/T 4754-2017）20 门类
+  https://www.stats.gov.cn/sj/tjbz/hyflbz/
 """
 
 from dataclasses import dataclass, field
@@ -183,6 +189,15 @@ _CATEGORY_FALLBACK: dict[str, MajorEntry] = {
     ),
     "军事学": _e("军事学", [_IND_PUB], [], [], [], "medium", "以军队文职、国防单位为主"),
     "交叉学科": _e("交叉学科", [_IND_SCI], [], [], [], "medium", "交叉学科按具体方向对口"),
+    "哲学": _e(
+        "哲学",
+        [_IND_EDU, _IND_PUB, _IND_CULTURE],
+        [],
+        [],
+        [],
+        "low",
+        "哲学对口岗少：中学政治教师编、党政机关文字岗为主，升学转方向常见",
+    ),
 }
 
 # 关键词 → 门类推断（未收录专业名匹配）
@@ -293,6 +308,16 @@ _CATEGORY_RULES: list[tuple[str, str]] = [
     ("戏剧", "艺术学"),
     ("影视", "艺术学"),
     ("播音", "艺术学"),
+    # 13 门类补全（DF-02）：哲学/军事学/交叉学科门类名与代表专业关键词
+    ("哲学", "哲学"),
+    ("宗教", "哲学"),
+    ("逻辑学", "哲学"),
+    ("军事", "军事学"),
+    ("国防", "军事学"),
+    ("军队", "军事学"),
+    ("交叉", "交叉学科"),
+    ("集成电路科学与工程", "交叉学科"),
+    ("国家安全学", "交叉学科"),
 ]
 
 MAJOR_MAP: dict[str, MajorEntry] = {
@@ -1395,6 +1420,16 @@ def _fallback_entry(major: str) -> MajorEntry:
     if cat and cat in _CATEGORY_FALLBACK:
         return _CATEGORY_FALLBACK[cat]
     return _CATEGORY_FALLBACK["工学"]
+
+
+def resolve_major_with_fallback(major: str) -> tuple[str, MajorEntry]:
+    """词典兜底版（DF-02b）：未收录专业按关键词门类推断后返回门类兜底条目，永不为 None。
+
+    门类名输入（哲学/军事学/交叉学科等 MAJOR_MAP 未收录门类）也经
+    _category_of 关键词规则解析到 _CATEGORY_FALLBACK 对应条目。
+    """
+    name, entry = resolve_major(major)
+    return name, (entry or _fallback_entry(name))
 
 
 def list_majors(db: Session) -> list[dict]:

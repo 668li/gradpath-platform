@@ -354,9 +354,11 @@ def _build_employment_path(
     coverage_parts: list[str] = []
 
     # 延迟导入：major_prospect_service 反向依赖本引擎（interpret 路径），顶层 import 成环
-    from app.services.major_prospect_service import resolve_major
+    # DF-02b：用兜底版词典——未收录专业/门类名（哲学等）也拿到门类级行业映射，
+    # 不再因词典缺口退化为纯专业名子串匹配（命中面趋零→恒空态）。
+    from app.services.major_prospect_service import resolve_major_with_fallback
 
-    _, major_entry = resolve_major(major)
+    _, major_entry = resolve_major_with_fallback(major)
     industries = list(major_entry.industries) if major_entry else []
 
     # ---- market_data：行业薪资带（宏观，带 source_url）----

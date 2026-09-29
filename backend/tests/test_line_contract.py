@@ -16,18 +16,18 @@ from app.crawlers.line_registry import CrawlerLine, default_schedules, load_line
 
 CONFIG_DIR = Path(__file__).resolve().parents[1] / "app" / "crawlers" / "config"
 
-# 009 T1 拍板⑨后冻结的 1 条默认 cron：kaoyan_news 五线已停喂入，
-# 2026-09-26 起全站零自动调度（bilibili 删线退役；考研公告事件线未立项前为空）。
-EXPECTED_SCHEDULES: dict[str, str] = {}
+# 2026-09-26 门道场 B0 开闸（d5eb0e1b）：官方公告面三线复喂（用户拍板"三线复喂实弹存46"）。
+# 在此之前 009 T1 拍板⑨曾全站零调度；B0 后冻结的默认 cron 如下，逐字一致（调度兼容）。
+EXPECTED_SCHEDULES: dict[str, str] = {
+    "eol_kaoyan": "0 2 * * *",
+    "official_announce": "0 * * * *",
+    "rsshub_research": "30 2 * * *",
+}
 
-# 009 T1 停喂入的五条 kaoyan_news 线（重启后不得自动回流调度；
-# official_announce 为第五条——产研招公告，曾漏判为考公线，09-19 回流 14 行后补停）
-KAOKAO_NEWS_FROZEN_LINES = (
-    "eol_kaoyan",
-    "rsshub_research",
+# 009 T1 停喂的 kaoyan_news 线中，B0 开闸后仍处停喂态的（重启后不得自动回流调度）
+STILL_FROZEN_LINES = (
     "news_aggregates",
     "rss_news_research",
-    "official_announce",
 )
 
 
@@ -39,17 +39,18 @@ def test_every_whitelisted_source_has_a_line_yaml():
 
 def test_generated_schedules_frozen():
     schedules = default_schedules()
-    assert schedules == EXPECTED_SCHEDULES, "默认调度必须与冻结期望逐字一致（当前为零调度）"
+    assert schedules == EXPECTED_SCHEDULES, "默认调度必须与冻结期望逐字一致（B0 三线开闸）"
 
 
 def test_kaoyan_news_lines_disabled():
-    """009 T1 拍板⑨：kaoyan_news 四条喂入线 enabled=false，且不进默认调度。
+    """009 T1 拍板⑨遗留：仍停喂的线 enabled=false，且不进默认调度。
 
-    管道代码休眠保留（未来自建管道的地基），但调度必须停——防止清空后的
+    B0 开闸的三线（eol_kaoyan/official_announce/rsshub_research）已解冻；
+    其余管道代码休眠保留（未来自建管道的地基），但调度必须停——防止清空后的
     kaoyan_news 存量被定时任务回灌。
     """
     lines = load_lines()
-    for name in KAOKAO_NEWS_FROZEN_LINES:
+    for name in STILL_FROZEN_LINES:
         assert lines[name].enabled is False, f"{name} 应已停喂入（enabled: false）"
         assert name not in default_schedules(), f"{name} 不得出现在默认调度表"
 
