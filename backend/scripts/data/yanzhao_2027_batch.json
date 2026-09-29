@@ -1,0 +1,330 @@
+{
+  "meta": {
+    "task": "2027年硕士研究生招生简章/招生专业目录核录（35校）",
+    "verified_at": "2026-09-29",
+    "rules": "status=ok 仅当校级2027年硕士招生简章/招生专业目录（含推免版目录）已在官方研招网发布且成功转录专业行；统考简章未发布但已发布推免目录的学校亦标ok并在note说明；enrollment_quota 仅在页面按专业明示时填写，院系级/推免院系级计划不填",
+    "ok_count": 6,
+    "not_published_count": 29,
+    "total_program_rows": 61
+  },
+  "schools": [
+    {
+      "university_name": "北京大学",
+      "year": 2027,
+      "status": "ok",
+      "source_url": "https://admission.pku.edu.cn/zsxx/sszs/tjms/2027/yx/zsml_ss_tm.html",
+      "note": "统考简章未发布；已发布《北京大学2027年推荐免试攻读硕士学位研究生专业目录(校本部)》(2026-09-15)，按学院PDF分列，以下行转录自各学院PDF（计算机学院zsml_ss_tm_00101/法学院00029/光华00028/电子00107），目录未列拟招人数",
+      "programs": [
+        {"major_name": "计算机科学与技术(081200)", "department": "计算机学院", "degree_type": "学术学位", "enrollment_quota": null},
+        {"major_name": "电子科学与技术(080900)", "department": "电子学院", "degree_type": "学术学位", "enrollment_quota": null},
+        {"major_name": "信息与通信工程(081000)", "department": "电子学院", "degree_type": "学术学位", "enrollment_quota": null},
+        {"major_name": "金融(025100)", "department": "光华管理学院", "degree_type": "专业学位", "enrollment_quota": null},
+        {"major_name": "会计(125300)", "department": "光华管理学院", "degree_type": "专业学位", "enrollment_quota": null},
+        {"major_name": "法律（非法学）(035101)", "department": "法学院", "degree_type": "专业学位", "enrollment_quota": null},
+        {"major_name": "法律（法学）(035102)", "department": "法学院", "degree_type": "专业学位", "enrollment_quota": null}
+      ]
+    },
+    {
+      "university_name": "清华大学",
+      "year": 2027,
+      "status": "ok",
+      "source_url": "https://yzbm.tsinghua.edu.cn/publish/s01/s0103/detail/996743a2-3adb-4416-ac66-1e272055e0ae/1",
+      "note": "已发布《清华大学2027年硕士研究生招生专业目录_推荐免试》(2026-06，清华研招网招生目录栏目置顶)；统考简章/统考目录未发布；目录未列拟招人数",
+      "programs": [
+        {"major_name": "建筑(085100)", "department": "建筑学院", "degree_type": "专业学位", "enrollment_quota": null},
+        {"major_name": "城乡规划(085300)", "department": "建筑学院", "degree_type": "专业学位", "enrollment_quota": null},
+        {"major_name": "土木水利(085900)", "department": "建筑学院", "degree_type": "专业学位", "enrollment_quota": null},
+        {"major_name": "风景园林(086200)", "department": "建筑学院", "degree_type": "专业学位", "enrollment_quota": null},
+        {"major_name": "电子信息(085400)", "department": "计算机科学与技术系", "degree_type": "专业学位", "enrollment_quota": null},
+        {"major_name": "电子信息(085400)", "department": "临床医学院（医工交叉项目）", "degree_type": "专业学位", "enrollment_quota": null},
+        {"major_name": "机械(085500)", "department": "临床医学院（医工交叉项目）", "degree_type": "专业学位", "enrollment_quota": null},
+        {"major_name": "临床医学(100200)", "department": "临床医学院（医工交叉项目）", "degree_type": "学术学位", "enrollment_quota": null},
+        {"major_name": "临床医学(105100)", "department": "临床医学院", "degree_type": "专业学位", "enrollment_quota": null},
+        {"major_name": "金融(025100)", "department": "深圳国际研究生院", "degree_type": "专业学位", "enrollment_quota": null}
+      ]
+    },
+    {
+      "university_name": "中国人民大学",
+      "year": 2027,
+      "status": "not_published",
+      "attempts": ["https://pgs.ruc.edu.cn/sszs/jzml.htm"],
+      "note": "简章目录栏目最新为2026年简章(2025-09-28发布)；2027年统考简章/目录未发布，仅见2027年推免专项通知"
+    },
+    {
+      "university_name": "北京师范大学",
+      "year": 2027,
+      "status": "not_published",
+      "attempts": ["https://yz.bnu.edu.cn/", "https://yz.bnu.edu.cn/detail/be0e6268-0bfd-4a34-aa31-e72207bf2577"],
+      "note": "已发布2027年推免硕士/博士招生录取工作办法(2026-09-02)及国优计划通知；2027年统考简章/专业目录未发布"
+    },
+    {
+      "university_name": "北京航空航天大学",
+      "year": 2027,
+      "status": "not_published",
+      "attempts": ["https://yzb.buaa.edu.cn/xlss.htm", "https://yzb.buaa.edu.cn/"],
+      "note": "学历硕士栏目最新为2027年推免通知与2027年初试科目公告；2027年统考招生简章/目录未发布"
+    },
+    {
+      "university_name": "北京理工大学",
+      "year": 2027,
+      "status": "not_published",
+      "attempts": ["https://grd.bit.edu.cn/pub/swzxyjsy/zsgz/zsxx/index.htm", "https://grd.bit.edu.cn/zsgz/ssyjs/gzzd_ss/index.htm"],
+      "note": "招生信息栏最新为2027年招生学院/自命题科目调整情况(2026-07)；2027年统考章程/目录未发布"
+    },
+    {
+      "university_name": "中国农业大学",
+      "year": 2027,
+      "status": "not_published",
+      "attempts": ["https://yz.cau.edu.cn/index.html"],
+      "note": "研招网最新为2027年推免相关通知；2027年统考招生章程/专业目录未发布"
+    },
+    {
+      "university_name": "南开大学",
+      "year": 2027,
+      "status": "not_published",
+      "attempts": ["https://yzb.nankai.edu.cn/5509/list.htm"],
+      "note": "硕士招生栏最新为2027年推免招生录取通知(2026-09-22)与2027年硕士专业目录自命题科目调整说明(2026-09-18)；2027年统考简章/目录未发布"
+    },
+    {
+      "university_name": "天津大学",
+      "year": 2027,
+      "status": "not_published",
+      "attempts": ["https://yzb.tju.edu.cn/zsjz/tkss/", "https://yzb.tju.edu.cn/"],
+      "note": "统考硕士简章栏目最新为《2026硕士招生简章》；2027年推免招生录取工作办法(2026-09-08)及各学院推免办法已发布，但2027年统考简章/目录未发布"
+    },
+    {
+      "university_name": "大连理工大学",
+      "year": 2027,
+      "status": "not_published",
+      "attempts": ["https://yjszs.dlut.edu.cn/zsbm/zsml/sszsml/index/2027", "https://gs.dlut.edu.cn/yjszs/sss/zs1/zs.htm"],
+      "note": "专业目录系统显示'2027年招生目录尚未开放'；已发布2027年接收推免章程(2026-09-15)，统考简章/目录未发布"
+    },
+    {
+      "university_name": "东北大学",
+      "year": 2027,
+      "status": "not_published",
+      "attempts": ["https://yz.neu.edu.cn/sszs/listm.htm"],
+      "note": "硕士公告栏最新为2027年推免工作办法(2026-07-20)与调整2027年专业目录公告(2026-07-06)；2027年统考简章/完整目录未发布"
+    },
+    {
+      "university_name": "吉林大学",
+      "year": 2027,
+      "status": "ok",
+      "source_url": "https://yzb.jlu.edu.cn/info/1047/3637.htm",
+      "note": "已发布《吉林大学2027年接收优秀应届本科毕业生免试攻读研究生招生简章及专业目录》(2026-09-11)，目录PDF共55页按学院分列；统考简章未发布；enrollment_quota为推免计划人数",
+      "programs": [
+        {"major_name": "金融(025100)", "department": "经济学院", "degree_type": "专业学位", "enrollment_quota": 13},
+        {"major_name": "国际商务(025400)", "department": "经济学院", "degree_type": "专业学位", "enrollment_quota": 11},
+        {"major_name": "金融学(020204)", "department": "经济学院", "degree_type": "学术学位", "enrollment_quota": 5},
+        {"major_name": "法学(030100)", "department": "法学院", "degree_type": "学术学位", "enrollment_quota": 70},
+        {"major_name": "法律（非法学）(035101)", "department": "法学院", "degree_type": "专业学位", "enrollment_quota": 53},
+        {"major_name": "法律（法学）(035102)", "department": "法学院", "degree_type": "专业学位", "enrollment_quota": 60},
+        {"major_name": "计算机科学与技术(081200)", "department": "计算机科学与技术学院", "degree_type": "学术学位", "enrollment_quota": 60},
+        {"major_name": "计算机技术(085404)", "department": "计算机科学与技术学院", "degree_type": "专业学位", "enrollment_quota": 47},
+        {"major_name": "计算机科学与技术(081200)", "department": "人工智能学院", "degree_type": "学术学位", "enrollment_quota": 18},
+        {"major_name": "人工智能(085410)", "department": "人工智能学院", "degree_type": "专业学位", "enrollment_quota": 30},
+        {"major_name": "信息与通信工程(081000)", "department": "通信工程学院", "degree_type": "学术学位", "enrollment_quota": 16},
+        {"major_name": "通信工程(085402)", "department": "通信工程学院", "degree_type": "专业学位", "enrollment_quota": 28},
+        {"major_name": "控制工程(085406)", "department": "通信工程学院", "degree_type": "专业学位", "enrollment_quota": 16},
+        {"major_name": "机械工程(080200)", "department": "机械与航空航天工程学院", "degree_type": "学术学位", "enrollment_quota": 17},
+        {"major_name": "机械工程(085501)", "department": "机械与航空航天工程学院", "degree_type": "专业学位", "enrollment_quota": 42}
+      ]
+    },
+    {
+      "university_name": "哈尔滨工业大学",
+      "year": 2027,
+      "status": "ok",
+      "source_url": "https://yzb.hit.edu.cn/2026/0924/c22272a401989/page.htm",
+      "note": "已发布《2027年统考硕士研究生招生目录》(2026-09-24，同日发布初试科目参考书目与强军计划目录)；目录明细见附件《2027年统考硕士学制》(PDF)，未列拟招人数",
+      "programs": [
+        {"major_name": "工商管理学(1202)", "department": "商学院", "degree_type": "学术学位", "enrollment_quota": null},
+        {"major_name": "工商管理MBA(1251)", "department": "商学院", "degree_type": "专业学位", "enrollment_quota": null},
+        {"major_name": "会计(1253)", "department": "商学院", "degree_type": "专业学位", "enrollment_quota": null},
+        {"major_name": "工程管理(1256)", "department": "商学院", "degree_type": "专业学位", "enrollment_quota": null},
+        {"major_name": "网络空间安全", "department": "哈尔滨工业大学（威海）", "degree_type": "学术学位", "enrollment_quota": null},
+        {"major_name": "电子信息（仪器仪表工程）", "department": "哈尔滨工业大学（威海）", "degree_type": "专业学位", "enrollment_quota": null},
+        {"major_name": "电子信息（计算机技术）", "department": "哈尔滨工业大学（威海）", "degree_type": "专业学位", "enrollment_quota": null},
+        {"major_name": "应用经济学", "department": "哈尔滨工业大学（深圳）", "degree_type": "学术学位", "enrollment_quota": null},
+        {"major_name": "工商管理学", "department": "哈尔滨工业大学（深圳）", "degree_type": "学术学位", "enrollment_quota": null},
+        {"major_name": "马克思主义理论", "department": "哈尔滨工业大学（深圳）", "degree_type": "学术学位", "enrollment_quota": null}
+      ]
+    },
+    {
+      "university_name": "复旦大学",
+      "year": 2027,
+      "status": "not_published",
+      "attempts": ["https://gsao.fudan.edu.cn/main.htm", "https://ibd.fudan.edu.cn/ssyjs/list.htm"],
+      "note": "简章目录最新为2026年硕士章程/目录(2025-10-22)与2027级推免报名通知(2026-07-25)；2027年统考简章/目录未发布"
+    },
+    {
+      "university_name": "同济大学",
+      "year": 2027,
+      "status": "not_published",
+      "attempts": ["https://yz.tongji.edu.cn/zsjz/sszsjz.htm"],
+      "note": "硕士招生简章栏最新为2026年招生章程/目录(2025-09-29/30)及多条2027年科目调整通知；2027年统考简章/目录未发布"
+    },
+    {
+      "university_name": "上海交通大学",
+      "year": 2027,
+      "status": "ok",
+      "source_url": "https://yzb.sjtu.edu.cn/post/3773",
+      "note": "已发布《上海交通大学2027年硕士推免招生专业目录(校本部)》(2026-09-15)与《上海交通大学硕士研究生招生专业目录（校本部）》(2026-09-21, https://yzb.sjtu.edu.cn/post/3772)；两目录仅按院系列示招生计划（如计算机学院总计划377、推免计划186），未按专业列示人数，故enrollment_quota为null",
+      "programs": [
+        {"major_name": "计算机科学与技术(081200)", "department": "计算机学院", "degree_type": "学术学位", "enrollment_quota": null},
+        {"major_name": "电子信息(085400)", "department": "人工智能学院", "degree_type": "专业学位", "enrollment_quota": null},
+        {"major_name": "电子信息(085400)", "department": "巴黎卓越工程师学院", "degree_type": "专业学位", "enrollment_quota": null},
+        {"major_name": "电子科学与技术(080900)", "department": "集成电路学院", "degree_type": "学术学位", "enrollment_quota": null},
+        {"major_name": "信息与通信工程相关-仪器科学与技术(080400)", "department": "自动化与感知学院", "degree_type": "学术学位", "enrollment_quota": null},
+        {"major_name": "电气工程(080800)", "department": "电气工程学院", "degree_type": "学术学位", "enrollment_quota": null},
+        {"major_name": "机械工程(080200)", "department": "机械与动力工程学院", "degree_type": "学术学位", "enrollment_quota": null},
+        {"major_name": "力学(080100)", "department": "船舶海洋与建筑工程学院", "degree_type": "学术学位", "enrollment_quota": null},
+        {"major_name": "材料科学与工程(080500)", "department": "材料科学与工程学院", "degree_type": "学术学位", "enrollment_quota": null},
+        {"major_name": "金融(025100)", "department": "上海高级金融学院", "degree_type": "专业学位", "enrollment_quota": null},
+        {"major_name": "应用经济学(020200)", "department": "安泰经济与管理学院", "degree_type": "学术学位", "enrollment_quota": null},
+        {"major_name": "法学(030100)", "department": "凯原法学院", "degree_type": "学术学位", "enrollment_quota": null},
+        {"major_name": "应用统计(025200)", "department": "数学科学学院", "degree_type": "专业学位", "enrollment_quota": null},
+        {"major_name": "生物学(071000)", "department": "生命科学技术学院", "degree_type": "学术学位", "enrollment_quota": null},
+        {"major_name": "建筑学(081300)", "department": "设计学院", "degree_type": "学术学位", "enrollment_quota": null}
+      ]
+    },
+    {
+      "university_name": "南京大学",
+      "year": 2027,
+      "status": "not_published",
+      "attempts": ["https://yzb.nju.edu.cn/47862/list.htm", "https://yzb.nju.edu.cn/47863/list.htm"],
+      "note": "硕士简章目录栏最新为2026年招生目录/章程(2025-10-09)；2027年统考简章/目录未发布，仅见2027年推免各类通知"
+    },
+    {
+      "university_name": "东南大学",
+      "year": 2027,
+      "status": "not_published",
+      "attempts": ["https://yzb.seu.edu.cn/6676/list.htm"],
+      "note": "硕士招生栏最新为2027年推免工作办法(2026-09-18)与2027年初试科目调整公告；2027年统考简章/目录未发布"
+    },
+    {
+      "university_name": "浙江大学",
+      "year": 2027,
+      "status": "not_published",
+      "attempts": ["https://yzb.zju.edu.cn/", "http://www.grs.zju.edu.cn/yjszs/"],
+      "note": "硕士最新通知截至2026-09-01为国优计划推免预报名；2027年统考简章/目录未发布（学院级如软件学院2027推免简章已发布）"
+    },
+    {
+      "university_name": "中国科学技术大学",
+      "year": 2027,
+      "status": "not_published",
+      "attempts": ["https://yz.ustc.edu.cn/column/182"],
+      "note": "通知公告最新为2027年推免生接收办法(2026-09-03)与2027研考初试科目调整通告(2026-06-02)；2027年统考简章/目录未发布"
+    },
+    {
+      "university_name": "厦门大学",
+      "year": 2027,
+      "status": "not_published",
+      "attempts": ["https://zs.xmu.edu.cn/", "https://gk.xmu.edu.cn/xxgkml/zsksxx/yjszsjz_zyml.htm"],
+      "note": "硕士栏目最新为2027年推免工作办法(2026-09-16)；2027年统考简章/目录未发布（第三方'2027简章'文章实为2026简章内容）"
+    },
+    {
+      "university_name": "山东大学",
+      "year": 2027,
+      "status": "not_published",
+      "attempts": ["https://yz.sdu.edu.cn/sszs/zsjz.htm", "https://www.yz.sdu.edu.cn/"],
+      "note": "招生简章栏最新为2026年招生章程；2027年推免录取办法(2026-09-14)已发布，统考简章/目录未发布"
+    },
+    {
+      "university_name": "武汉大学",
+      "year": 2027,
+      "status": "not_published",
+      "attempts": ["https://wdyz.whu.edu.cn/", "https://gs.whu.edu.cn/info/1062/105721.htm"],
+      "note": "硕士板块最新为2026年招生章程(2025-10-13)与2027年推免公告(2026-09-17)；2027年统考简章/目录未发布"
+    },
+    {
+      "university_name": "华中科技大学",
+      "year": 2027,
+      "status": "not_published",
+      "attempts": ["https://yanzhao.hust.edu.cn/Master/Zsml_View.aspx", "https://gszs.hust.edu.cn/info/1106/4022.htm"],
+      "note": "专业目录查询系统当前仅提供2026/2025年度；2027年简章/目录未发布（往年惯例10月上旬发布）"
+    },
+    {
+      "university_name": "湖南大学",
+      "year": 2027,
+      "status": "not_published",
+      "attempts": ["https://gra.hnu.edu.cn/", "https://gra.hnu.edu.cn/info/1075/10250.htm"],
+      "note": "最新为2027年推免(含直博)预报名/接收通知(2026-09-18)；2027年统考简章/目录未发布（2026年简章为2025-10-04发布）"
+    },
+    {
+      "university_name": "中南大学",
+      "year": 2027,
+      "status": "not_published",
+      "attempts": ["https://gra.csu.edu.cn/", "https://yz.csu.edu.cn/"],
+      "note": "研究生院首页无2027年简章条目；2027年统考简章/目录未发布（第三方2027级非全/MPA简介明确以未来发布的《2027年硕士研究生招生专业目录》为准）"
+    },
+    {
+      "university_name": "中山大学",
+      "year": 2027,
+      "status": "not_published",
+      "attempts": ["https://graduate.sysu.edu.cn/zsw/"],
+      "note": "硕士招生通知栏最新为2027年推免招生录取工作办法(2026-09-10)；2027年统考简章/目录未发布（惯例9月中下旬发布）"
+    },
+    {
+      "university_name": "华南理工大学",
+      "year": 2027,
+      "status": "not_published",
+      "attempts": ["https://yanzhao.scut.edu.cn/open/Master/Zsml_view.aspx"],
+      "note": "专业目录查询系统当前显示2026年目录，年度选项仅2026/2025；2027年简章/目录未发布（推免预报名通知亦称以最终公布的2027年目录为准）"
+    },
+    {
+      "university_name": "四川大学",
+      "year": 2027,
+      "status": "not_published",
+      "attempts": ["https://yz.scu.edu.cn/sszyml", "https://yz.scu.edu.cn/zsxx/Details/0f4bc2fc-e7d8-455d-b0e3-8ad680196df1"],
+      "note": "硕士专业目录查询系统需交互查询无法核验2027数据；2027年推免章程(2026-09-08)称推免目录'将发布'；2027年统考简章/目录未发布"
+    },
+    {
+      "university_name": "重庆大学",
+      "year": 2027,
+      "status": "not_published",
+      "attempts": ["https://yz.cqu.edu.cn/", "https://yz.cqu.edu.cn/sszyml/2026/index.html", "https://yz.cqu.edu.cn/news/2026-06/2553.html"],
+      "note": "官网明确'2027年研究生招生专业目录还未正式公布'(2026-06-22)；首页仅见2027年推免预报名与强基转段章程；统考简章/目录未发布"
+    },
+    {
+      "university_name": "电子科技大学",
+      "year": 2027,
+      "status": "not_published",
+      "attempts": ["https://yz.uestc.edu.cn/", "https://yz.uestc.edu.cn/info/1081/5939.htm"],
+      "note": "研招网最新为2026年招生章程(2025-10-09)与2027年推免接收通知(2026-09-04)；2027年统考简章/目录未发布"
+    },
+    {
+      "university_name": "西安交通大学",
+      "year": 2027,
+      "status": "ok",
+      "source_url": "https://som.xjtu.edu.cn/info/1068/14668.htm",
+      "note": "学校已发布《西安交通大学2027年推荐免试研究生招生章程》(推免硕士3500人, http://yz.xjtu.edu.cn/xjtutjms_2027.pdf)及《2027年推荐免试研究生招生专业目录（硕士）》(2026-09-21, yzbm.xjtu.edu.cn系统页无法直读)；以下专业行转录自管理学院实施细则中援引的目录内容；统考简章未发布",
+      "programs": [
+        {"major_name": "管理科学与工程(120100)", "department": "管理学院", "degree_type": "学术学位", "enrollment_quota": null},
+        {"major_name": "工商管理学(120200)", "department": "管理学院", "degree_type": "学术学位", "enrollment_quota": null},
+        {"major_name": "会计学(120201)", "department": "管理学院", "degree_type": "学术学位", "enrollment_quota": null},
+        {"major_name": "会计(125300)", "department": "管理学院", "degree_type": "专业学位", "enrollment_quota": null}
+      ]
+    },
+    {
+      "university_name": "西北工业大学",
+      "year": 2027,
+      "status": "not_published",
+      "attempts": ["https://yzb.nwpu.edu.cn/new/index.htm", "https://yzb.nwpu.edu.cn/new/sszs/zsgg.htm"],
+      "note": "研招网最新为2027年初试自命题科目变更公告(陆续更新)；2027年统考简章/目录未发布"
+    },
+    {
+      "university_name": "兰州大学",
+      "year": 2027,
+      "status": "not_published",
+      "attempts": ["https://yz.lzu.edu.cn/"],
+      "note": "研招网检索未见2027年简章/目录（官网反爬412未能直读列表页；第三方'2027'页面实为2026数据）；2027年简章/目录未发布"
+    },
+    {
+      "university_name": "郑州大学",
+      "year": 2027,
+      "status": "not_published",
+      "attempts": ["https://yz.zzu.edu.cn/"],
+      "note": "硕士招生栏最新为2026年简章/目录(2025-10-01/02)；2027年推免工作办法(2026-09-15)已发布，2027年统考简章/目录未发布"
+    }
+  ]
+}
