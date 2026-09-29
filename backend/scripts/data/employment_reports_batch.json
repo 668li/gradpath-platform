@@ -1,0 +1,300 @@
+{
+  "meta": {
+    "task": "32所高校最新一期《毕业生就业质量年度报告》官方发布页/PDF直链",
+    "collected_at": "2026-09-29",
+    "rules": "source_url均为*.edu.cn官方域名并经抓取验证可达；第三方页面仅用于定位。report_year为该发布页对应报告届别/年度；部分学校信息公开网更新滞后，已用note说明。page_numbers仅收录已在官方页面核实的数字。",
+    "stats": {"ok": 29, "not_found": 3, "total": 32}
+  },
+  "schools": [
+    {
+      "university_name": "北京大学",
+      "report_year": 2021,
+      "status": "ok",
+      "source_url": "https://scc.pku.edu.cn/attached/file/2022-10-21/1666337327033_%E5%8C%97%E4%BA%AC%E5%A4%A7%E5%AD%A62021%E5%B9%B4%E6%AF%95%E4%B8%9A%E7%94%9F%E5%B0%B1%E4%B8%9A%E8%B4%A8%E9%87%8F%E6%8A%A5%E5%91%8A.pdf",
+      "pdf_hint": "",
+      "page_numbers": [],
+      "note": "scc.pku.edu.cn下载专区可公开获取的最新一期为2021年报告（PDF直链已验证206/application/pdf）。2025届报告仅见第三方转载（称校本部总体就业率98.66%），北大官方网页未见公开链接。"
+    },
+    {
+      "university_name": "清华大学",
+      "report_year": 2025,
+      "status": "ok",
+      "source_url": "https://www.tsinghua.edu.cn/info/1182/124548.htm",
+      "pdf_hint": "",
+      "page_numbers": ["国内重要领域重点单位就业率超过86%（连续16年保持80%以上）", "京外就业率56.3%", "出国（境）深造比例8.5%（本科17.3%、硕士6.6%）"],
+      "note": "2026-03-09清华官网新闻（光明日报）通报2025届毕业生就业质量报告核心数据；信息公开专栏(gxbysjyzlndbgg.htm)与career.tsinghua.edu.cn/info/1043/4556.htm均未挂2025届全文。"
+    },
+    {
+      "university_name": "中国人民大学",
+      "report_year": 2019,
+      "status": "ok",
+      "source_url": "https://xxgk.ruc.edu.cn/gksx/jxzl/gxbysjyzlndbg/ee9bd3f7468d4d879448bc02d90f0332.htm",
+      "pdf_hint": "",
+      "page_numbers": [],
+      "note": "人大信息公开网该栏目最新仅链接2017-2019年报告（rdjy.ruc.edu.cn newsDetail页）。2025届数据由'人大就业'微信公众号发布，未见edu.cn网页版。"
+    },
+    {
+      "university_name": "北京师范大学",
+      "report_year": 2024,
+      "status": "ok",
+      "source_url": "https://xxgk.bnu.edu.cn/docs/2025-10/604fb8d4d549495185121d50d447155e.pdf",
+      "pdf_hint": "https://xxgk.bnu.edu.cn/docs/2025-10/604fb8d4d549495185121d50d447155e.pdf",
+      "page_numbers": [],
+      "note": "《北京师范大学2024届毕业生就业质量报告》PDF直链（xxgk.bnu.edu.cn，2025-10-31上线，数据截至2024-10-31）。2025届报告按惯例预计2026年10月后发布。"
+    },
+    {
+      "university_name": "北京航空航天大学",
+      "status": "not_found",
+      "attempts": [
+        "https://www.buaa.edu.cn/info/1533/14971.htm",
+        "https://career.buaa.edu.cn/",
+        "https://xxgk.buaa.edu.cn/index.htm"
+      ],
+      "note": "2022届报告原官网页info/1533/14971.htm已404；career.buaa.edu.cn为JS单页应用无法定位报告；信息公开网教学质量分类无报告条目。第三方转载显示2025届报告已存在但无官方URL。"
+    },
+    {
+      "university_name": "南开大学",
+      "report_year": 2024,
+      "status": "ok",
+      "source_url": "https://xxgk.nankai.edu.cn/2025/0610/c2927a572783/page.htm",
+      "pdf_hint": "",
+      "page_numbers": [],
+      "note": "南开信息公开网'7.毕业生就业质量年度报告'栏目最新条目《2024届毕业生就业概况》（2025-06-10发布，网页版无PDF）。"
+    },
+    {
+      "university_name": "天津大学",
+      "status": "not_found",
+      "attempts": [
+        "https://xxgkw.tju.edu.cn/xwgb1/202310/P020231030586646916228.pdf",
+        "https://xxgkw.tju.edu.cn/xwgb1/202210/P020221028445708257318.pdf",
+        "https://xxgkw.tju.edu.cn/xwgb1/"
+      ],
+      "note": "校务公报《2022届/2021届毕业生就业质量年度报告专刊》PDF均已404，公报栏目现仅列预决算/教学质量报告；job.tju.edu.cn下载专区无报告。"
+    },
+    {
+      "university_name": "大连理工大学",
+      "report_year": 2020,
+      "status": "ok",
+      "source_url": "https://info.dlut.edu.cn/xxgklm/xsjiu_ye/jyzlndbg.htm",
+      "pdf_hint": "https://job.dlut.edu.cn/portals/newspage.html?id=49b2bcb5-be9d-46c1-8285-6ec7777ad5f2",
+      "page_numbers": [],
+      "note": "信息公开网'就业质量年度报告'栏目最新仅到2020届（跳转job.dlut.edu.cn新闻页，当前302跳转）；2021届报告仅见教育在线等第三方转载。"
+    },
+    {
+      "university_name": "吉林大学",
+      "report_year": 2023,
+      "status": "ok",
+      "source_url": "https://gongkai.jlu.edu.cn/info/1064/9449.htm",
+      "pdf_hint": "https://gongkai.jlu.edu.cn/__local/6/44/ED/34730C55FDF0A0EFE9D42B3C1DF_F16C1306_2276F7.vsbx?e=.vsbx",
+      "page_numbers": [],
+      "note": "吉大信息公开网该栏目最新为《吉林大学2023届毕业生就业质量年度报告》（附件为vsbx封装的PDF）。2024届报告见于第三方转载（标注来源吉林大学），信息公开网未见。"
+    },
+    {
+      "university_name": "哈尔滨工业大学",
+      "status": "not_found",
+      "attempts": [
+        "https://career.hit.edu.cn/",
+        "http://news.hit.edu.cn/",
+        "https://www.hit.edu.cn/11277/list.htm"
+      ],
+      "note": "哈工大近年未在edu.cn站点公开独立就业质量年度报告（career.hit.edu.cn 302跳转；Bing site:hit.edu.cn检索无报告页）；就业数据散见于本科教学质量报告与新闻报道（2025届毕业去向落实率99.34%来自光明网转载）。"
+    },
+    {
+      "university_name": "复旦大学",
+      "report_year": 2022,
+      "status": "ok",
+      "source_url": "https://xxgk.fudan.edu.cn/_t435/b4/8a/c8200a636042/page.htm",
+      "pdf_hint": "",
+      "page_numbers": [],
+      "note": "复旦信息公开网'毕业生就业质量年度报告'栏目最新条目《复旦大学就业工作情况（2022）》（2023-10-31发布，无附件）。"
+    },
+    {
+      "university_name": "同济大学",
+      "report_year": 2024,
+      "status": "ok",
+      "source_url": "https://xxgk.tongji.edu.cn/index.php?classid=11616&newsid=19486&t=show",
+      "pdf_hint": "",
+      "page_numbers": [],
+      "note": "同济信息公开网'就业质量报告'栏目最新为2024届（2025-02-28发布）。2025届数据（本科深造率75.05%等）由'同济招生'微信公众号2026-01发布，信息公开网暂未更新。"
+    },
+    {
+      "university_name": "上海交通大学",
+      "report_year": 2023,
+      "status": "ok",
+      "source_url": "https://gk.sjtu.edu.cn/Phone/View/3988",
+      "pdf_hint": "https://gk.sjtu.edu.cn/Assets/userfiles/sys_eb538c1c-65ff-4e82-8e6a-a1ef01127fed/files/20241125/20241125135303680.pdf",
+      "page_numbers": [],
+      "note": "上交信息公开网'高校毕业生就业质量年度报告'最新为《上海交通大学2023年就业质量报告》（2024-11-05发布，PDF直链已验证200）。2024届报告经微信公众号发布（本科深造率78.22%）。"
+    },
+    {
+      "university_name": "南京大学",
+      "report_year": 2025,
+      "status": "ok",
+      "source_url": "https://xxgk.nju.edu.cn/b3/3b/c16401a832315/page.htm",
+      "pdf_hint": "https://xxgk.nju.edu.cn/_upload/article/files/c3/3d/7db317f4492891731ca2cb93c1f6/6e650824-5b84-48eb-bc7e-a62121fefaa0.pdf",
+      "page_numbers": []
+    },
+    {
+      "university_name": "东南大学",
+      "report_year": 2022,
+      "status": "ok",
+      "source_url": "https://xxgk.seu.edu.cn/gxbysjyzlndbg/list.htm",
+      "pdf_hint": "https://seu.91job.org.cn/sub-station/detail?xwid=F11B904E9CA694EAE0530100007FD108&xxdm=10286",
+      "page_numbers": [],
+      "note": "东南信息公开网'高校毕业生就业质量年度报告'最新为2022届；正文链接跳转江苏省智慧就业平台(91job.org.cn，非edu.cn，故仅记入pdf_hint)。"
+    },
+    {
+      "university_name": "浙江大学",
+      "report_year": 2022,
+      "status": "ok",
+      "source_url": "https://www.career.zju.edu.cn/jyxt/comm/common/preview.zf?filePath=%2Ffiles%2F1674793794476%2F%E6%B5%99%E6%B1%9F%E5%A4%A7%E5%AD%A62022%E5%B9%B4%E6%AF%95%E4%B8%9A%E7%94%9F%E5%B0%B1%E4%B8%9A%E8%B4%A8%E9%87%8F%E6%8A%A5%E5%91%8A.pdf",
+      "pdf_hint": "https://www.career.zju.edu.cn/jyxt/comm/common/preview.zf?filePath=%2Ffiles%2F1674793794476%2F%E6%B5%99%E6%B1%9F%E5%A4%A7%E5%AD%A62022%E5%B9%B4%E6%AF%95%E4%B8%9A%E7%94%9F%E5%B0%B1%E4%B8%9A%E8%B4%A8%E9%87%8F%E6%8A%A5%E5%91%8A.pdf",
+      "page_numbers": [],
+      "note": "浙大信息公开网该栏目仅指向就业服务平台；平台可公开打开的最新一期为2022年报告PDF（预览直链已验证200/application/pdf）。2024届报告经微信公众号发布。"
+    },
+    {
+      "university_name": "中国科学技术大学",
+      "report_year": 2023,
+      "status": "ok",
+      "source_url": "http://xxgk.ustc.edu.cn/2024/1024/c37463a658224/page.htm",
+      "pdf_hint": "http://xxgk.ustc.edu.cn/_upload/article/files/23/21/febae82b440984ff54db2c2a2ee5/728fb44c-7a28-4723-b0ef-97c4523146c2.pdf",
+      "page_numbers": [],
+      "note": "中科大信息公开网该栏目最新为2023届报告（2024-10-24集中发布，PDF直链经https访问验证206）。"
+    },
+    {
+      "university_name": "厦门大学",
+      "report_year": 2024,
+      "status": "ok",
+      "source_url": "https://gk.xmu.edu.cn/info/1061/35852.htm",
+      "pdf_hint": "",
+      "page_numbers": [],
+      "note": "《厦门大学2024届毕业生就业质量年度报告》信息公开发布页（2025-10-21），正文附件经vsb下载接口(ch_file.vsb)动态提供，无静态PDF直链。"
+    },
+    {
+      "university_name": "山东大学",
+      "report_year": 2021,
+      "status": "ok",
+      "source_url": "https://job.sdu.edu.cn/xxgk/jyzlbg.htm",
+      "pdf_hint": "",
+      "page_numbers": [],
+      "note": "山大学生就业创业指导中心'就业质量报告'栏目最新为2021届（2022-01-31），此后未见更新。"
+    },
+    {
+      "university_name": "武汉大学",
+      "report_year": 2021,
+      "status": "ok",
+      "source_url": "https://info.whu.edu.cn/info/2046/23710.htm",
+      "pdf_hint": "",
+      "page_numbers": [],
+      "note": "《关于发布〈武汉大学2021届毕业生就业质量报告〉的通知》（2022-04-15），为武大信息公开网该栏目最新一条。"
+    },
+    {
+      "university_name": "华中科技大学",
+      "report_year": 2025,
+      "status": "ok",
+      "source_url": "http://xxgk.hust.edu.cn/info/1155/3969.htm",
+      "pdf_hint": "http://xxgk.hust.edu.cn/system/_content/download.jsp?urltype=news.DownloadAttachUrl&owner=1723432282&wbfileid=15637726",
+      "page_numbers": [],
+      "note": "华科信息公开网'2025年度高校毕业生就业质量报告'（2026-07-09发布），附件《华中科技大学2025年毕业生就业质量年度报告.pdf》经download.jsp下载接口提供。"
+    },
+    {
+      "university_name": "中南大学",
+      "report_year": 2021,
+      "status": "ok",
+      "source_url": "https://xxgk.csu.edu.cn/info/1101/4632.htm",
+      "pdf_hint": "",
+      "page_numbers": [],
+      "note": "中南信息公开网'就业数据和就业质量'栏目最新为《中南大学2021年毕业生就业质量报告》（2022-03-07）。"
+    },
+    {
+      "university_name": "中山大学",
+      "report_year": 2021,
+      "status": "ok",
+      "source_url": "https://xxgk.sysu.edu.cn/article/168",
+      "pdf_hint": "",
+      "page_numbers": [],
+      "note": "中大信息公开网最新为《中山大学2021届毕业生就业质量年度报告》；2025届核心数据见中大新闻网转载（就业毕业生72%留粤，出自广州日报报道页sysu.edu.cn/news/info/2171/1397801.htm）。"
+    },
+    {
+      "university_name": "华南理工大学",
+      "report_year": 2022,
+      "status": "ok",
+      "source_url": "https://xxgk.scut.edu.cn/2023/0301/c64a46183/page.htm",
+      "pdf_hint": "",
+      "page_numbers": [],
+      "note": "华工信息公开网'毕业生就业质量报告'栏目最新为2022届（2023-02-28，网页版）。"
+    },
+    {
+      "university_name": "四川大学",
+      "report_year": 2021,
+      "status": "ok",
+      "source_url": "https://jy.scu.edu.cn/index/index/contentdetail.html?data=NQ",
+      "pdf_hint": "https://jy.scu.edu.cn/data/mcit_editor/20220517/四川大学2021届毕业生就业质量年度报告.pdf",
+      "page_numbers": [],
+      "note": "川大就业指导中心下载页列2016-2021届报告PDF，2021届PDF直链已验证（%PDF头）。"
+    },
+    {
+      "university_name": "重庆大学",
+      "report_year": 2020,
+      "status": "ok",
+      "source_url": "https://gongkai.cqu.edu.cn/info/1236/3542.htm",
+      "pdf_hint": "http://job.cqu.edu.cn/news/view/aid/190245/tag/tzgg",
+      "page_numbers": [],
+      "note": "重大信息公开'2020年毕业生规模、结构、就业率、就业流向'页（2021-04-15）指向2020届报告下载；该站点有WAF（curl/WebFetch返回412），内容经Exa抓取验证。2021届报告仅见第三方镜像。"
+    },
+    {
+      "university_name": "电子科技大学",
+      "report_year": 2024,
+      "status": "ok",
+      "source_url": "https://xxgkw.uestc.edu.cn/info/1078/6257.htm",
+      "pdf_hint": "",
+      "page_numbers": [],
+      "note": "《电子科技大学2024届毕业生就业质量年度报告》信息公开发布页（2025-10-29）。另：就业网曾于2025-06发布《2025届毕业生就业水平年度报告》（总体就业率95.58%，第三方转载）。"
+    },
+    {
+      "university_name": "西安交通大学",
+      "report_year": 2025,
+      "status": "ok",
+      "source_url": "https://news.xjtu.edu.cn/info/1006/228810.htm",
+      "pdf_hint": "",
+      "page_numbers": ["重点单位就业比例达71.5%（2025届就业毕业生）"],
+      "note": "西交2025届就业质量报告于2026-01-08发布（全文经媒体渠道），官方新闻网该文（2026-01-12）通报2025届就业情况，为可验证的官方发布页。"
+    },
+    {
+      "university_name": "西北工业大学",
+      "report_year": 2024,
+      "status": "ok",
+      "source_url": "https://xxgk.nwpu.edu.cn/info/1501/6651.htm",
+      "pdf_hint": "https://xxgk.nwpu.edu.cn/__local/5/42/A1/3F1189701C4B2BC9A283AA95D75_90AA3786_53429.pdf",
+      "page_numbers": [],
+      "note": "西工大信息公开网'2024届毕业生就业质量年度报告'（2025-12-25发布，页面内嵌PDF已验证200/application/pdf）。2025届整体去向落实率超97%见校新闻网2026-01-22报道。"
+    },
+    {
+      "university_name": "兰州大学",
+      "report_year": 2021,
+      "status": "ok",
+      "source_url": "https://xxgk.lzu.edu.cn/jiaoxuezhiliang/jiuyegongzuo/index.html",
+      "pdf_hint": "https://xxgk.lzu.edu.cn/xxgknew/upload/files/20241127/f4bb956af4824bbfaa16ae4a605396a5.pdf",
+      "page_numbers": ["总体毕业去向落实率 84.81%（2021届，截至2021-12-15）"],
+      "note": "兰大信息公开平台'就业工作·年度报告'最新为2021届；PDF直链（2024-11-27上传）已验证206/application/pdf。"
+    },
+    {
+      "university_name": "郑州大学",
+      "report_year": 2022,
+      "status": "ok",
+      "source_url": "https://ao.zzu.edu.cn/info/2011/4245.htm",
+      "pdf_hint": "",
+      "page_numbers": [],
+      "note": "郑大招生网'就业创业'栏目最新为《郑州大学2022届毕业生就业质量年度报告》（2023-05-11）。"
+    },
+    {
+      "university_name": "苏州大学",
+      "report_year": 2022,
+      "status": "ok",
+      "source_url": "https://ygb.suda.edu.cn/b2/45/c33059a569925/page.htm",
+      "pdf_hint": "",
+      "page_numbers": [],
+      "note": "苏大研究生工作部'生源信息'栏最新报告为2022届（2023-03-09，正文含PDF下载）；招生就业处zjc.suda.edu.cn同为2022届。"
+    }
+  ]
+}
