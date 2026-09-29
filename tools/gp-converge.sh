@@ -44,5 +44,11 @@ SHORT=$(git rev-parse --short main)
 B="/tmp/gp-$SHORT.bundle"
 git bundle create "$B" "${SRV:0:40}..main" >/dev/null
 git bundle list-heads "$B" | grep -q "refs/heads/main" && echo "✓ bundle ref 名为 main"
+# 收敛头同步回主仓 main（2026-09-29 DF-10）：否则 gp-preflight.sh main 在主仓
+# 解析到旧 main，ff 闸对刚收敛好的线报 FAIL 误报（09-26/27 门道场实锤，
+# 当时靠手工把 fetch 对象回主仓才消）。同步后 preflight 与发射命令里的 main 即收敛头。
+git -C "$MAIN" fetch --quiet "$CLONE" main:main 2>/dev/null \
+  && echo "✓ 主仓 main 已同步到收敛头 ${SHORT}" \
+  || echo "⚠ 主仓 main 同步失败——发射前手工执行 git fetch $CLONE main:main"
 echo "CONVERGED: $B (base ${SRV:0:7} → ${SHORT})"
 echo "下一步: bash tools/gp-preflight.sh main && scp -q $B gradpath:~/ && ssh gradpath 'nohup sh ~/update_from_bundle.sh $(basename "$B") > /tmp/deploy-$SHORT.log 2>&1 &'"

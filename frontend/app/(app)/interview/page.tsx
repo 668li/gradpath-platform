@@ -994,6 +994,7 @@ export default function InterviewPage() {
             </label>
             <Select
               value={selectedQId}
+              aria-label="选择题目"
               onChange={(e) => {
                 setSelectedQId(e.target.value);
                 setEvalResult(null);
@@ -1197,6 +1198,7 @@ export default function InterviewPage() {
               </label>
               <Select
                 value={interviewYear}
+                aria-label="面试年份"
                 onChange={(e) => setInterviewYear(Number(e.target.value))}
               >
                 {YEARS.map((y) => (
@@ -1212,6 +1214,7 @@ export default function InterviewPage() {
               </label>
               <Select
                 value={rounds}
+                aria-label="面试轮数"
                 onChange={(e) => setRounds(Number(e.target.value))}
               >
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((r) => (

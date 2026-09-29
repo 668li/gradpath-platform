@@ -35,6 +35,7 @@ def main() -> None:
     dry = "--dry-run" in sys.argv
     payload = json.loads(DATA_FILE.read_text(encoding="utf-8"))
     inserted = skipped = not_published = 0
+    seen: set[tuple[str, str, int]] = set()
     with SessionLocal() as db:
         for s in payload.get("schools", []):
             if s.get("status") != "ok":
@@ -49,13 +50,18 @@ def main() -> None:
                 major = str(p.get("major_name") or "").strip()
                 if not major:
                     continue
+                if (uni, major, year) in seen:
+                    skipped += 1
+                    continue
+                seen.add((uni, major, year))
                 degree = str(p.get("degree_type") or "").strip() or None
+                # 唯一索引 ix_yanzhao_unique = (university_name, major_name, year)，
+                # 不含 degree_type：推免/统考目录同专业重复行会撞索引，幂等键必须对齐
                 exists = (
                     db.query(GradYanzhaoProgram)
                     .filter(
                         GradYanzhaoProgram.university_name == uni,
                         GradYanzhaoProgram.major_name == major,
-                        GradYanzhaoProgram.degree_type == degree,
                         GradYanzhaoProgram.year == year,
                     )
                     .first()
