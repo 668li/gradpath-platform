@@ -870,3 +870,43 @@ class TestMajorFallbackDictionary:
             "行业数据" in str(e.get("label") or "") for e in evidence
         ), "应命中 market_data 行业薪资证据"
 
+
+# ----------------------------------------------------------------------
+# DF-11（2026-09-29）：专业词→学科门类同义词桥
+# ----------------------------------------------------------------------
+class TestKaoyanCategoryBridge:
+    def test_expands_to_category_when_direct_hits_sparse(self, db_session):
+        """精确命中 <3 校时扩到门类行（计算机→工学），并出折算诚实标注。"""
+        from app.services.path_decision_engine import _build_kaoyan_path
+
+        # 唯一精确命中：1 校"计算机科学与技术"
+        db_session.add(
+            _make_scoreline("复旦大学", "0812计算机科学与技术", 2026, 330)
+        )
+        # 门类行：3 所校的"工学[08]"
+        for uni in ("清华大学", "上海交通大学", "浙江大学"):
+            db_session.add(_make_scoreline(uni, "工学[08]", 2026, 320))
+        db_session.commit()
+
+        path, _ = _build_kaoyan_path(db_session, "计算机", None, None)
+        text = json.dumps(path, ensure_ascii=False)
+        assert "工学[08]" in text, "应包含门类折算行"
+        assert any("按工学门类线折算" in c for c in path["cons"]), (
+            "cons 应出折算口径诚实标注"
+        )
+
+    def test_no_expansion_when_direct_hits_sufficient(self, db_session):
+        """精确命中 ≥3 校时不扩门类（会计直命中 3 校，无折算标注）。"""
+        from app.services.path_decision_engine import _build_kaoyan_path
+
+        for uni in ("北京大学", "清华大学", "中国人民大学"):
+            db_session.add(_make_scoreline(uni, "会计[1253]", 2026, 200))
+        # 干扰项：管理学门类行（若误扩会出现在结果里）
+        db_session.add(_make_scoreline("复旦大学", "管理学[12]", 2026, 355))
+        db_session.commit()
+
+        path, _ = _build_kaoyan_path(db_session, "会计", None, None)
+        text = json.dumps(path, ensure_ascii=False)
+        assert "管理学[12]" not in text, "命中充足时不应扩门类"
+        assert not any("门类线折算" in c for c in path["cons"])
+

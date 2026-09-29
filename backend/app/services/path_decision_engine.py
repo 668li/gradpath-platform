@@ -222,6 +222,41 @@ def _build_kaoyan_path(
     )
     # 溯源过滤：data_sources 只写机构泛称（无 URL/数据文件可核验）的记录不进决策依据
     rows = [r for r in rows if scoreline_has_traceable_source(r.data_sources)]
+
+    # DF-11（2026-09-29）专业词→学科门类同义词桥：自划线校公示线按学科门类命名
+    # （工学[08]/经济学[02]…），专业名精确命中院校过少时扩到对应门类行折算。
+    # 门类判定复用专业前景词典（源=教育部学科目录，见 major_prospect_service 模块头），
+    # 只动消费端匹配，不改已入库数据。
+    expanded_category: str | None = None
+    if rows and len({r.university_name for r in rows}) < 3:
+        from app.services.major_prospect_service import resolve_major_with_fallback
+
+        _, cat_entry = resolve_major_with_fallback(major)
+        if cat_entry is not None and cat_entry.category:
+            cat_pattern = f"%{escape_like(cat_entry.category)}%"
+            cat_rows = (
+                db.query(GradScorelineRecord)
+                .options(
+                    load_only(
+                        GradScorelineRecord.university_name,
+                        GradScorelineRecord.major_name,
+                        GradScorelineRecord.degree_type,
+                        GradScorelineRecord.year,
+                        GradScorelineRecord.total_score_line,
+                        GradScorelineRecord.application_count,
+                        GradScorelineRecord.enrollment_count,
+                        GradScorelineRecord.data_sources,
+                    )
+                )
+                .filter(GradScorelineRecord.major_name.ilike(cat_pattern, escape="\\"))
+                .all()
+            )
+            cat_rows = [r for r in cat_rows if scoreline_has_traceable_source(r.data_sources)]
+            if len({r.university_name for r in cat_rows}) > len({r.university_name for r in rows}):
+                seen_ids = {r.id for r in rows}
+                rows = rows + [r for r in cat_rows if r.id not in seen_ids]
+                expanded_category = cat_entry.category
+
     total = len(rows)
     evidence: list[dict[str, Any]] = []
 
@@ -331,7 +366,15 @@ def _build_kaoyan_path(
             "cons": [
                 "报录比数据覆盖有限（仅少量院校公开报考人数），难以精确估算竞争",
                 "复试线只代表门槛，不代表录取实际难度",
-            ],
+            ]
+            + (
+                [
+                    f"未命中「{major}」精确专业线，已按{expanded_category}门类线折算"
+                    "（各校院系线可能更高，以目标院校当年公示为准）"
+                ]
+                if expanded_category
+                else []
+            ),
             "evidence": evidence,
         },
         _build_school_analysis(db, line_rows_all, est=est),

@@ -337,6 +337,17 @@ async def _seed_default_crawler_schedules():
 
 
 @app.on_event("startup")
+async def _seed_maintenance_jobs():
+    """注册维护类定时任务（DF-12：分数线年度心跳，独立 maintenance_ 前缀）。"""
+    try:
+        from app.tasks.maintenance_tasks import seed_maintenance_jobs
+
+        seed_maintenance_jobs()
+    except Exception as e:
+        logger.warning("注册维护类定时任务失败（不影响启动）: %s", e)
+
+
+@app.on_event("startup")
 async def _register_d2_reminder_job():
     """注册中断次日提醒 job（P1，MICRO_ACTION_REMINDER_D2 默认关）。"""
     try:
