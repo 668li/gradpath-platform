@@ -33,6 +33,8 @@ SOURCES = {
     "news_aggregates": "考研资讯聚合",
     # DF-12（2026-09-29）：年更静态数据（非爬虫线），心跳由 app/tasks/maintenance_tasks.py 回写
     "scoreline_official": "自划线复试分数线（年度导入）",
+    # DF-21（2026-09-30）：简章年更静态数据心跳（每年 9-15 年度 job）
+    "yanzhao_official": "研招简章专业目录（年度导入）",
 }
 
 
