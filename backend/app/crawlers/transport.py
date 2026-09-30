@@ -4,8 +4,15 @@
 抓取证据（状态码+时刻+内容 sha256）在这里一次性做好，每条线白拿。
 
 护栏分工：
-- 红线域名（研招网 yz.chsi.com.cn）在本层直接拒绝外发——"不碰"先于"入库拒收"；
-  research_ingestion 的入库拒收闸复用同一份名单（单一事实源在本模块）。
+- 红线域名（研招网 yz.chsi.com.cn）**分层处置**——"不碰"先于"入库拒收"：
+  · 非白名单路径（网报/调剂/登录/专业目录查询等业务系统）在本层直接拒绝外发；
+  · 白名单公开静态路径（``REDLINE_ALLOWED_PATHS``）条件放行，但强制
+    per-domain 间隔 ≥ ``REDLINE_MIN_INTERVAL_S``、遇 WAF 即域级熔断。
+  · research_ingestion 的入库拒收闸**仍对红线域全部拒收**（复用同一份名单，
+    单一事实源在本模块）——外发放行 ≠ 入库放行，两道闸各司其职。
+  · 依据：2026-09-30 用户拍板"内部辅助"——数据仅供本项目决策引擎使用，
+    不转售、不做数据产品、不提供批量接口；自划线数据的真正源头是各高校
+    自身发布，研招网为官方转载方之一。
 - SSRF / robots 校验由调用方在入口执行（BaseCrawler 已有实现与测试），通过
   ``sender`` 注入发送函数——独立脚本（如 stats_gongbao）自带白名单校验。
 
@@ -32,15 +39,40 @@ import requests
 
 logger = logging.getLogger(__name__)
 
-# 研招网红线（2026-09-06 对抗审计 F2 定名；2026-09-12 起本层拒绝外发）。
+# 研招网红线（2026-09-06 对抗审计 F2 定名；2026-09-12 起本层拒绝外发；
+# 2026-09-30 用户拍板"内部辅助"后改为分层处置）。
 # 只此一份名单：入库咽喉（research_ingestion）与外发闸（本模块）共用。
+# 本常量一字不改——下游四处 import 依赖它（外发闸/入库咽喉/promote 纵深/审核兜底）。
 REDLINE_FETCH_HOSTS = ("yz.chsi.com.cn",)
+
+# 条件放行的公开静态路径前缀（红线域内）。当前仅自划线专题所在路径。
+# 不含网报系统、调剂系统、学信网账号体系、专业目录查询（/zsml/ 需登录态遍历）。
+REDLINE_ALLOWED_PATHS = ("/kyzx/",)
+
+# 红线域条件放行时的 per-domain 限速下限（秒）。不因调用方配置更宽松而降低。
+REDLINE_MIN_INTERVAL_S = 5.0
 
 
 def is_redline_fetch_url(url: str) -> bool:
     """URL 主机是否落在红线域名（含子域）。外发闸与入库闸共用。"""
     hostname = (urlparse(url).hostname or "").lower()
     return any(hostname == h or hostname.endswith("." + h) for h in REDLINE_FETCH_HOSTS)
+
+
+def classify_redline_url(url: str) -> str | None:
+    """红线 URL 的外发处置分类。
+
+    Returns:
+        ``None``          —— 非红线域，正常放行
+        ``"blocked"``     —— 红线域且路径不在白名单，硬拒外发
+        ``"conditional"`` —— 红线域且路径在白名单，条件放行（限速加严 + 熔断生效）
+    """
+    if not is_redline_fetch_url(url):
+        return None
+    path = urlparse(url).path or "/"
+    if any(path.startswith(p) for p in REDLINE_ALLOWED_PATHS):
+        return "conditional"
+    return "blocked"
 
 
 class TransportError(requests.RequestException):
@@ -97,7 +129,11 @@ _host_last_ts: dict[str, float] = {}
 
 
 def _host_throttle(host: str, min_interval: float) -> None:
-    """同域请求间隔 ≥ min_interval；锁只保护字典读写，绝不跨 sleep 持锁。"""
+    """同域请求间隔 ≥ min_interval；锁只保护字典读写，绝不跨 sleep 持锁。
+
+    首次访问某域（桶为空）不等待——避免所有新域的第一请求被凭空延迟；
+    该豁免仅对普通域成立，红线域走 :func:`_host_throttle_redline`。
+    """
     while True:
         with _host_lock:
             now = time.monotonic()
@@ -106,6 +142,66 @@ def _host_throttle(host: str, min_interval: float) -> None:
                 _host_last_ts[host] = now
                 return
         time.sleep(wait)
+
+
+def _host_throttle_redline(host: str, min_interval: float) -> None:
+    """红线域限速（预约制）：任意两次实际放行间隔 ≥ min_interval，冷桶首击亦然。
+
+    槽位语义 = 下一次允许放行的最早时刻：
+    · 认领时 ``send_at = max(now, slot)``（冷桶视为 ``now + min_interval``），
+      认领后槽位前移为 ``send_at + min_interval`` —— 并发调用各自拿到错开的
+      放行时刻，不会在同一瞬间扎堆；
+    · 长时间空闲后槽位早已过期：按 ``now`` 放行，不凭空追加延迟。
+
+    与 :func:`_host_throttle` 的差别：普通域冷桶豁免（首请求不等），
+    红线域不豁免——条件放行路径的首击同样受下限约束（2026-09-30 拍板口径）。
+    """
+    with _host_lock:
+        now = time.monotonic()
+        slot = _host_last_ts.get(host)
+        if slot is None:
+            send_at = now + min_interval
+        else:
+            send_at = max(now, slot)
+        _host_last_ts[host] = send_at + min_interval
+        wait = send_at - now
+    if wait > 0:
+        time.sleep(wait)
+
+
+# ===== 域级熔断（WAF 表达"不欢迎"后停止对该域的全部请求） =====
+
+# 命中即视为目标站明确拒绝：403 常规拒绝、412/488 常见于 WAF 挑战页。
+# 换 UA / 换 IP 继续撞属"强行突破反爬技术措施"，不做。
+_QUARANTINE_STATUSES = frozenset({403, 412, 488})
+_QUARANTINE_TTL_S = 3600.0  # 隔离时长；到期后允许重探（WAF 策略可能已变）
+
+_host_quarantine: dict[str, float] = {}
+
+
+def _mark_quarantine(host: str) -> None:
+    """把域记入隔离名单（到期时刻为值）。"""
+    with _host_lock:
+        _host_quarantine[host] = time.monotonic() + _QUARANTINE_TTL_S
+
+
+def _quarantined_host(host: str) -> bool:
+    """该域当前是否处于隔离期（过期自动清除）。"""
+    with _host_lock:
+        until = _host_quarantine.get(host)
+        if until is None:
+            return False
+        if time.monotonic() >= until:
+            _host_quarantine.pop(host, None)
+            return False
+        return True
+
+
+def _reset_quarantine_for_tests() -> None:
+    """清空域级隔离名单（测试隔离用，避免进程级状态跨用例污染）。"""
+    with _host_lock:
+        _host_quarantine.clear()
+        _host_last_ts.clear()
 
 
 # ===== 错误分级常量 =====
@@ -159,14 +255,28 @@ def fetch(
         FetchResult（仅 2xx/3xx 终态会返回；失败按分级抛 TransportError）。
     """
     tag = f"[{crawler_name}] " if crawler_name else ""
-    if is_redline_fetch_url(url):
-        raise HttpFetchError(f"{tag}红线域名禁止外发: {url}", 0)
-
     host = (urlparse(url).hostname or "").lower()
+    redline_verdict = classify_redline_url(url)
+
+    if redline_verdict == "blocked":
+        raise HttpFetchError(f"{tag}红线域名禁止外发: {url}", 0)
+    if _quarantined_host(host):
+        raise HttpFetchError(
+            f"{tag}目标域已隔离（WAF 拒绝，{_QUARANTINE_TTL_S:.0f}s 内不再请求）: {url}", 403
+        )
+
+    # 红线域条件放行时限速加严：调用方配置更宽松也不下调。
+    effective_rate = (
+        max(rate_limit, REDLINE_MIN_INTERVAL_S) if redline_verdict == "conditional" else rate_limit
+    )
+
     last_error: TransportError | None = None
 
     for attempt in range(max(1, max_retries)):
-        _host_throttle(host, rate_limit)
+        if redline_verdict == "conditional":
+            _host_throttle_redline(host, effective_rate)
+        else:
+            _host_throttle(host, effective_rate)
         try:
             started = time.monotonic()
             resp = (sender or _default_sender)(method, url, headers, timeout)
@@ -186,6 +296,11 @@ def fetch(
             time.sleep(FOUR29_COOLDOWN_S)
             raise HttpFetchError(f"{tag}429 限流: {url}", 429)
         if 400 <= status < 500:
+            if status in _QUARANTINE_STATUSES:
+                _mark_quarantine(host)
+                logger.warning(
+                    f"{tag}HTTP {status} 视为 WAF 拒绝，域 {host} 隔离 {_QUARANTINE_TTL_S:.0f}s: {url}"
+                )
             raise HttpFetchError(f"{tag}HTTP {status}: {url}", status)  # 4xx 不重试
         if status >= 500:
             last_error = HttpFetchError(f"{tag}HTTP {status}: {url}", status)
