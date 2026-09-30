@@ -49,13 +49,21 @@ export const employmentApi = {
   // 就业市场概览（B4，2026-09-26）：companies/salary_benchmarks 真实聚合
   marketOverview: () =>
     request<MarketOverview>("/api/employment/market-overview"),
+
+  // 院校就业报告（EMP-1c，2026-09-30）：既有端点的消费面封装
+  schoolsReports: () => request<SchoolReportItem[]>("/api/employment/schools"),
+  schoolReportDetail: (school: string) =>
+    request<EmploymentSearchData>("/api/employment/search", {
+      method: "POST",
+      body: JSON.stringify({ school, major: "" }),
+    }),
 };
 
 export interface MarketOverview {
   company_total: number;
   top_industries: { industry: string; count: number }[];
   salary_total: number;
-  city_salary_bands: { city: string; sample_count: number; min_k: number | null; max_k: number | null }[];
+  city_salary_bands: { city: string; sample_count: number; min_wan: number | null; max_wan: number | null }[];
   school_employment_samples: {
     name: string;
     employment_rate: number | null;
@@ -64,6 +72,48 @@ export interface MarketOverview {
   }[];
   school_employment_coverage: number;
   school_total: number;
+}
+
+// 院校就业报告浏览（EMP-1c）：消费既有 schools/search 端点，按校展开已发布报告
+export interface SchoolReportItem {
+  id: string;
+  name: string;
+  slug: string;
+  code: string | null;
+  report_count: number;
+  major_count: number;
+}
+
+export interface EmploymentRecord {
+  year: number;
+  degree: string;
+  total_graduates: number | null;
+  source_url: string | null;
+  rates: {
+    employment: number | null;
+    further_study: number | null;
+    civil_service: number | null;
+    abroad: number | null;
+    startup: number | null;
+    gap_year: number | null;
+  };
+  employer_ranking: { name?: string; count?: number }[];
+  industry_distribution: Record<string, number>;
+  destination_region: Record<string, number>;
+  school_for_further_study: { name?: string; count?: number }[];
+}
+
+export interface EmploymentSearchData {
+  school: { id: string; name: string; slug: string; code: string | null } | null;
+  major: string | null;
+  records: EmploymentRecord[];
+  trend: {
+    years: number[];
+    employment_rate: (number | null)[];
+    further_study_rate: (number | null)[];
+    civil_service_rate: (number | null)[];
+    abroad_rate: (number | null)[];
+  } | null;
 }
 
 // ===== 社区数据 =====

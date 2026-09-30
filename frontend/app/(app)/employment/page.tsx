@@ -9,7 +9,7 @@ import type { FailureCaseResponse } from "@/types/failure-case";
 import { AlertTriangle, MessageSquare, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { careerIntelApi } from "@/lib/api/ai";
-import { employmentApi, type MarketOverview } from "@/lib/api/employment";
+import { employmentApi, type MarketOverview, type SchoolReportItem, type EmploymentSearchData } from "@/lib/api/employment";
 import { useToast } from "@/components/ui/toast";
 import { EmptyState, LoadingState } from "@/components/ui/empty";
 import { ListSkeleton } from "@/components/ui/skeleton";
@@ -79,7 +79,14 @@ function InterviewTab() {
           </Link>
         </div>
         {cases.length === 0 ? (
-          <p className="text-sm text-ink-400">暂无已审核的失败案例。真实教训和成功经验一样值钱。</p>
+          <div className="rounded-lg bg-paper-50 p-4">
+            <p className="text-sm text-ink-500">
+              还没有已审核的失败案例——这里是全站空位。真实教训和成功经验一样值钱，你的踩坑复盘可能正是别人缺的那块拼图。
+            </p>
+            <p className="mt-1.5 text-xs text-ink-400">
+              点右上角「分享我的失败案例」，匿名提交，审核通过后公开展示。
+            </p>
+          </div>
         ) : (
           <ul className="divide-y divide-paper-100">
             {cases.map((c) => (
@@ -152,7 +159,10 @@ function MarketTab() {
       </div>
 
       <section className="rounded-xl border border-paper-200 bg-white p-5">
-        <h3 className="mb-3 font-bold text-ink-800">行业公司分布（Top {data.top_industries.length}）</h3>
+        <h3 className="mb-1 font-bold text-ink-800">行业公司分布（Top {data.top_industries.length}）</h3>
+        <p className="mb-3 text-xs text-ink-400">
+          公司库以财富 500 强及大型上市企业为主——行业分布反映头部企业结构，不代表全市场口径，如实标注。
+        </p>
         {data.top_industries.length === 0 ? (
           <p className="text-sm text-ink-400">暂无行业分布数据。</p>
         ) : (
@@ -168,9 +178,9 @@ function MarketTab() {
       </section>
 
       <section className="rounded-xl border border-paper-200 bg-white p-5">
-        <h3 className="mb-1 font-bold text-ink-800">城市应届岗位薪资带</h3>
+        <h3 className="mb-1 font-bold text-ink-800">城市岗位年薪带宽</h3>
         <p className="mb-3 text-xs text-ink-400">
-          样本来自库内岗位薪资表（entry 级，区间=样本最低 min 至最高 max），城市覆盖有限时如实留空。
+          样本来自各城市人社局《人力资源市场工资价位》（全职业年口径，区间 = P10 低位至 P90 高位），单位：万元/年；城市覆盖有限时如实留空。
         </p>
         {data.city_salary_bands.length === 0 ? (
           <p className="text-sm text-ink-400">暂无城市薪资样本。</p>
@@ -183,7 +193,7 @@ function MarketTab() {
                   <span className="ml-2 text-xs text-ink-400">{c.sample_count} 条样本</span>
                 </span>
                 <span className="tabular-nums text-ink-500">
-                  {c.min_k != null && c.max_k != null ? `${c.min_k}k – ${c.max_k}k` : "—"}
+                  {c.min_wan != null && c.max_wan != null ? `${c.min_wan} – ${c.max_wan} 万/年` : "—"}
                 </span>
               </li>
             ))}
@@ -212,7 +222,128 @@ function MarketTab() {
           </ul>
         )}
       </section>
+
+      <SchoolReportsSection />
     </div>
+  );
+}
+
+// ===== 院校就业报告浏览（EMP-1c，2026-09-30）：消费既有 schools/search 端点 =====
+const degreeLabels: Record<string, string> = {
+  bachelor: "本科",
+  master: "硕士",
+  phd: "博士",
+  all: "全校",
+};
+
+function pct(v: number | null | undefined): string {
+  if (v == null) return "—";
+  return `${Number(v).toFixed(1)}%`;
+}
+
+function SchoolReportsSection() {
+  const [schools, setSchools] = useState<SchoolReportItem[] | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [openSchool, setOpenSchool] = useState<string | null>(null);
+  const [detail, setDetail] = useState<EmploymentSearchData | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  useEffect(() => {
+    employmentApi
+      .schoolsReports()
+      .then(setSchools)
+      .catch(() => setFailed(true));
+  }, []);
+
+  const toggle = (name: string) => {
+    if (openSchool === name) {
+      setOpenSchool(null);
+      setDetail(null);
+      return;
+    }
+    setOpenSchool(name);
+    setDetail(null);
+    setDetailLoading(true);
+    employmentApi
+      .schoolReportDetail(name)
+      .then((d) => setDetail(d))
+      .catch(() => setFailed(true))
+      .finally(() => setDetailLoading(false));
+  };
+
+  if (failed) {
+    return (
+      <section className="rounded-xl border border-paper-200 bg-white p-5">
+        <h3 className="mb-2 font-bold text-ink-800">院校就业报告</h3>
+        <p className="text-sm text-ink-400">报告列表加载失败，稍后重试。</p>
+      </section>
+    );
+  }
+  if (!schools) return <ListSkeleton count={4} />;
+
+  return (
+    <section className="rounded-xl border border-paper-200 bg-white p-5">
+      <h3 className="mb-1 font-bold text-ink-800">院校就业报告（{schools.length} 所）</h3>
+      <p className="mb-3 text-xs text-ink-400">
+        各校官方就业质量年度报告的解析数据——点击院校查看毕业去向、雇主排行与报告原文；覆盖 {schools.length} 所院校，未覆盖的院校如实不列。
+      </p>
+      <ul className="divide-y divide-paper-100">
+        {schools.map((s) => {
+          const open = openSchool === s.name;
+          return (
+            <li key={s.id}>
+              <button
+                onClick={() => toggle(s.name)}
+                aria-expanded={open}
+                className="-mx-2 flex w-full items-center justify-between rounded-lg px-2 py-3 text-left hover:bg-paper-50"
+              >
+                <span className="text-sm font-medium text-ink-800">{s.name}</span>
+                <span className="text-xs text-ink-400">
+                  {s.report_count} 份报告 · {s.major_count} 个专业口径 {open ? "▲" : "▼"}
+                </span>
+              </button>
+              {open && (
+                <div className="mb-3 ml-2 space-y-2 border-l-2 border-paper-200 pl-4">
+                  {detailLoading && <ListSkeleton count={2} />}
+                  {!detailLoading && detail && detail.records.length === 0 && (
+                    <p className="text-xs text-ink-400">该院校暂无已解析的就业数据行（报告可能仅存原文）。</p>
+                  )}
+                  {!detailLoading &&
+                    detail?.records.map((r, idx) => (
+                      <div key={idx} className="rounded-lg bg-paper-50 p-3 text-xs">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                          <span className="font-semibold text-ink-700">{r.year} 年</span>
+                          <span className="text-ink-500">{degreeLabels[r.degree] ?? r.degree}</span>
+                          {r.total_graduates != null && (
+                            <span className="text-ink-500">毕业生 {r.total_graduates.toLocaleString()} 人</span>
+                          )}
+                          <span className="text-ink-500">就业率 {pct(r.rates?.employment)}</span>
+                          <span className="text-ink-500">深造率 {pct(r.rates?.further_study)}</span>
+                        </div>
+                        {r.employer_ranking?.length > 0 && (
+                          <p className="mt-1.5 text-ink-400">
+                            主要雇主：{r.employer_ranking.slice(0, 3).map((e) => e.name).filter(Boolean).join("、")}
+                          </p>
+                        )}
+                        {r.source_url && (
+                          <a
+                            href={r.source_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-1.5 inline-flex items-center gap-1 text-brand-600 hover:underline"
+                          >
+                            查看报告原文（校方官网） ↗
+                          </a>
+                        )}
+                      </div>
+                    ))}
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 
@@ -239,7 +370,7 @@ function EmploymentPageContent() {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-ink-800 mb-2">就业中心</h1>
-        <p className="text-ink-500">面经库 · 失败案例</p>
+        <p className="text-ink-500">面经库 · 失败案例 · 就业市场 · 院校就业报告</p>
       </div>
 
       <div className="flex gap-2 mb-8 border-b border-paper-200 overflow-x-auto">

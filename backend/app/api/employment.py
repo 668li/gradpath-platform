@@ -1,6 +1,7 @@
 # backend/app/api/employment.py
 
 from fastapi import APIRouter, Depends, Query
+from sqlalchemy import exists
 from sqlalchemy.orm import Session
 
 from app.core.cursor_pagination import apply_cursor_filter, encode_cursor
@@ -64,11 +65,13 @@ def schools_cursor(
 
     仅返回有已发布报告的院校，按 (created_at, id) 倒序排列。
     """
-    query = (
-        db.query(School)
-        .join(ReportRecord, ReportRecord.school_id == School.id)
-        .filter(ReportRecord.parse_status == ParseStatus.published)
-        .distinct()
+    # EXISTS 子查询而非 JOIN+DISTINCT：School 含 json 列，PG 的 json 类型无
+    # equality operator，对全行 DISTINCT 直接 500（2026-09-30 生产实测）。
+    query = db.query(School).filter(
+        exists().where(
+            ReportRecord.school_id == School.id,
+            ReportRecord.parse_status == ParseStatus.published,
+        )
     )
     query = apply_cursor_filter(query, cursor, time_col=School.created_at, id_col=School.id)
     # id 决胜键：同 created_at 行的页界必须确定（否则游标翻页重复/漏行）

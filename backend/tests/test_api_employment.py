@@ -12,7 +12,6 @@ def _seed_employment_data(db_session):
     school = School(name="清华大学", slug="tsinghua", code="10003")
     db_session.add(school)
     db_session.commit()
-
     for year in [2023, 2024]:
         report = ReportRecord(
             school_id=school.id,
@@ -74,6 +73,9 @@ class TestEmploymentSearch:
         assert "机械" in data["major"]
         assert len(data["records"]) == 2  # 2023 + 2024
         assert data["records"][0]["year"] == 2024  # 降序
+        # EMP-1c：报告原文出处随记录返回（消费面跳转+来源标注）
+        assert data["records"][0]["source_url"] == "url-2024"
+        assert data["records"][1]["source_url"] == "url-2023"
 
     def test_search_with_year_filter(self, client, db_session):
         _seed_employment_data(db_session)
@@ -328,3 +330,87 @@ class TestSearchBodyLocation:
         assert body.major == "机械"
         assert body.year is None
         assert body.degree is None
+
+
+# ----------------------------------------------------------------------
+# schools/cursor 游标分页（EMP-1a/1c，2026-09-30：修复 PG json DISTINCT 500）
+# ----------------------------------------------------------------------
+class TestSchoolsCursor:
+    def _seed_two_schools(self, db_session):
+        """两所学校：清华有已发布报告，北大仅有未发布报告。"""
+        tsinghua = School(name="清华大学", slug="tsinghua", code="10003")
+        beida = School(name="北京大学", slug="beida", code="10001")
+        db_session.add_all([tsinghua, beida])
+        db_session.commit()
+        db_session.add_all(
+            [
+                ReportRecord(
+                    school_id=tsinghua.id,
+                    year=2024,
+                    source_url="url-a",
+                    parse_status=ParseStatus.published,
+                ),
+                ReportRecord(
+                    school_id=beida.id,
+                    year=2023,
+                    source_url="url-b",
+                    parse_status=ParseStatus.parsed,
+                ),
+            ]
+        )
+        db_session.commit()
+        return tsinghua, beida
+
+    def test_cursor_only_returns_schools_with_published_reports(self, client, db_session):
+        """EXISTS 语义锁定：只有已发布报告的院校入选（未发布的北大不出现）。"""
+        self._seed_two_schools(db_session)
+        resp = client.get("/api/employment/schools/cursor")
+        assert resp.status_code == 200
+        data = resp.json()
+        names = [i["name"] for i in data["items"]]
+        assert names == ["清华大学"]
+        assert data["has_more"] is False
+
+    def test_cursor_pagination_and_no_duplicates(self, client, db_session):
+        """同校多份报告不产生重复行（DISTINCT 语义由 EXISTS 等价保证），翻页不重不漏。"""
+        tsinghua, beida = self._seed_two_schools(db_session)
+        # 北大也补一份已发布报告 → 两所学校入选，page_size=1 触发真翻页
+        db_session.add(
+            ReportRecord(
+                school_id=beida.id,
+                year=2022,
+                source_url="url-b2",
+                parse_status=ParseStatus.published,
+            )
+        )
+        # 清华再补两份已发布报告：报告数不膨胀为多行
+        db_session.add_all(
+            [
+                ReportRecord(
+                    school_id=tsinghua.id,
+                    year=2023,
+                    source_url="url-a2",
+                    parse_status=ParseStatus.published,
+                ),
+                ReportRecord(
+                    school_id=tsinghua.id,
+                    year=2022,
+                    source_url="url-a3",
+                    parse_status=ParseStatus.published,
+                ),
+            ]
+        )
+        db_session.commit()
+        resp = client.get("/api/employment/schools/cursor?page_size=1")
+        assert resp.status_code == 200
+        page1 = resp.json()
+        assert len(page1["items"]) == 1
+        assert page1["has_more"] is True
+        resp2 = client.get(
+            f"/api/employment/schools/cursor?page_size=1&cursor={page1['next_cursor']}"
+        )
+        assert resp2.status_code == 200
+        page2 = resp2.json()
+        assert len(page2["items"]) == 1
+        all_names = [page1["items"][0]["name"], page2["items"][0]["name"]]
+        assert sorted(all_names) == ["北京大学", "清华大学"]  # 不重不漏

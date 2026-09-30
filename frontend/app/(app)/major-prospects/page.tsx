@@ -10,7 +10,6 @@ import {
   Briefcase,
   Building2,
   GraduationCap,
-  Landmark,
   Info,
   ArrowRight,
 } from "lucide-react";
@@ -72,12 +71,6 @@ const OUTGOING_RISK_BADGES: Record<string, { text: string; cls: string }> = {
   acceptable: { text: "可冲", cls: "bg-blue-100 text-blue-700" },
   careful: { text: "需谨慎", cls: "bg-amber-100 text-amber-700" },
   high: { text: "风险偏高", cls: "bg-red-100 text-red-700" },
-};
-
-const CIVIL_STYLES: Record<string, string> = {
-  high: "bg-green-100 text-green-700 border-green-200",
-  medium: "bg-amber-100 text-amber-700 border-amber-200",
-  low: "bg-ink-100 text-ink-500 border-ink-200",
 };
 
 function fmtWan(v: number): string {
@@ -338,18 +331,6 @@ function ProspectResult({ data }: { data: MajorProspect }) {
           </Link>
         </SectionCard>
       )}
-
-      {/* 考公友好度 */}
-      <SectionCard icon={Landmark} title="考公适配度" desc="基于历年国考省考招录专业的经验规则">
-        <div
-          className={`inline-flex rounded-lg border px-3 py-1 text-sm font-medium ${CIVIL_STYLES[data.civil_service.level]}`}
-        >
-          {data.civil_service.label}
-        </div>
-        <p className="mt-2.5 text-sm leading-relaxed text-ink-600">
-          {data.civil_service.note}
-        </p>
-      </SectionCard>
 
       {/* 数据说明 */}
       <div className="rounded-xl bg-paper-100 p-4">

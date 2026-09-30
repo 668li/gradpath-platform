@@ -15,6 +15,7 @@ class EmploymentRecordResponse(BaseModel):
     year: int
     degree: str
     total_graduates: int | None
+    source_url: str | None = None
     rates: dict
     employer_ranking: list
     industry_distribution: dict
@@ -61,13 +62,18 @@ class MajorQuery(BaseModel):
 
     school: str = Field(max_length=200)
 
+
 class CitySalaryBand(BaseModel):
-    """城市岗位薪资带（B4 就业市场概览，min/max 为样本极值）。"""
+    """城市岗位薪资带（B4 就业市场概览，min/max 为样本极值）。
+
+    库内 salary_benchmarks 量纲为元/年（人社局工资价位 P10–P90）；此处输出
+    统一换算后的万元/年（EMP-1a 量纲契约，2026-09-30）。
+    """
 
     city: str
     sample_count: int
-    min_k: int | None = None
-    max_k: int | None = None
+    min_wan: float | None = None
+    max_wan: float | None = None
 
 
 class SchoolEmploymentSample(BaseModel):
@@ -89,4 +95,3 @@ class MarketOverviewResponse(BaseModel):
     school_employment_samples: list[SchoolEmploymentSample]
     school_employment_coverage: int
     school_total: int
-

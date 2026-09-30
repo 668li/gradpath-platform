@@ -79,6 +79,8 @@ def search_employment(
                 "year": report.year,
                 "degree": emp.degree.value,
                 "total_graduates": emp.total_graduates,
+                # 报告原文出处（EMP-1c：消费面跳转+来源标注，只加字段不改接口形态）
+                "source_url": report.source_url,
                 "rates": {
                     "employment": emp.employment_rate,
                     "further_study": emp.further_study_rate,
@@ -303,16 +305,16 @@ def market_overview(db: Session) -> dict:
     )
     result = {
         "company_total": company_total,
-        "top_industries": [
-            {"industry": ind, "count": n} for ind, n in industry_rows
-        ],
+        "top_industries": [{"industry": ind, "count": n} for ind, n in industry_rows],
         "salary_total": salary_total,
         "city_salary_bands": [
             {
                 "city": city,
                 "sample_count": n,
-                "min_k": mn,
-                "max_k": mx,
+                # 库内量纲=元/年（人社局工资价位 P10–P90，见 import_salary_position_local.py），
+                # 输出统一换算为万元/年（EMP-1a：此前误作 "k/月" 导致前端单位爆炸）
+                "min_wan": round(mn / 10000, 1) if mn is not None else None,
+                "max_wan": round(mx / 10000, 1) if mx is not None else None,
             }
             for city, n, mn, mx in city_rows
         ],
@@ -325,9 +327,10 @@ def market_overview(db: Session) -> dict:
             }
             for s in school_rows
         ],
-        "school_employment_coverage": db.query(func.count(School.id)).filter(
-            School.employment_rate.isnot(None)
-        ).scalar() or 0,
+        "school_employment_coverage": db.query(func.count(School.id))
+        .filter(School.employment_rate.isnot(None))
+        .scalar()
+        or 0,
         "school_total": db.query(func.count(School.id)).scalar() or 0,
     }
     try:

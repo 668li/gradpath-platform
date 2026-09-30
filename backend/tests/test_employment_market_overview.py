@@ -14,20 +14,42 @@ from app.services.employment_service import market_overview
 def seeded_market(db_session: Session):
     db_session.add_all(
         [
-            Company(name="测试科技A", industry="信息传输、软件和信息技术服务业", size=CompanySize.large),
-            Company(name="测试科技B", industry="信息传输、软件和信息技术服务业", size=CompanySize.medium),
+            Company(
+                name="测试科技A", industry="信息传输、软件和信息技术服务业", size=CompanySize.large
+            ),
+            Company(
+                name="测试科技B", industry="信息传输、软件和信息技术服务业", size=CompanySize.medium
+            ),
             Company(name="测试银行C", industry="金融业", size=CompanySize.large),
             SalaryBenchmark(
-                company="测试科技A", position="软件开发工程师", city="深圳市",
-                experience_level="entry", salary_min=15, salary_median=20, salary_max=30,
-                year=2025, source="测试源",
+                # 库内量纲=元/年（人社局工资价位 P10–P90，import_salary_position_local.py）
+                company="测试科技A",
+                position="软件开发工程师",
+                city="深圳市",
+                experience_level="entry",
+                salary_min=150000,
+                salary_median=200000,
+                salary_max=300000,
+                year=2025,
+                source="测试源",
             ),
             SalaryBenchmark(
-                company="测试科技B", position="前端开发工程师", city="广州市",
-                experience_level="entry", salary_min=12, salary_median=16, salary_max=24,
-                year=2025, source="测试源",
+                company="测试科技B",
+                position="前端开发工程师",
+                city="广州市",
+                experience_level="entry",
+                salary_min=120000,
+                salary_median=160000,
+                salary_max=240000,
+                year=2025,
+                source="测试源",
             ),
-            School(name="就业率样本校", slug="sample-school", employment_rate=91.5, grad_school_rate=40.0),
+            School(
+                name="就业率样本校",
+                slug="sample-school",
+                employment_rate=91.5,
+                grad_school_rate=40.0,
+            ),
         ]
     )
     db_session.commit()
@@ -43,7 +65,8 @@ def test_market_overview_aggregates_real_tables(db_session: Session, seeded_mark
     assert industries["信息传输、软件和信息技术服务业"] >= 2
     cities = {r["city"]: r for r in data["city_salary_bands"]}
     assert cities["深圳市"]["sample_count"] >= 1
-    assert cities["深圳市"]["min_k"] == 15 and cities["深圳市"]["max_k"] == 30
+    # EMP-1a 量纲契约：元/年 → 万元/年（150000 元 = 15.0 万/年）
+    assert cities["深圳市"]["min_wan"] == 15.0 and cities["深圳市"]["max_wan"] == 30.0
     # 院校就业率只列有值的行，覆盖度如实（3 所院校中 1 所有值）
     samples = {s["name"]: s for s in data["school_employment_samples"]}
     assert samples["就业率样本校"]["employment_rate"] == 91.5
