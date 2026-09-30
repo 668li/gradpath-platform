@@ -1,504 +1,624 @@
 {
-  "items": [
-    {
-      "university_name": "北京大学",
-      "report_year": 2021,
-      "employment_rate": 98.29,
-      "rate_label": "总体毕业去向落实率",
-      "further_study_rate": null,
-      "total_graduates": 11985,
-      "rate_scope": "全校（含医学部）",
-      "source": "https://scc.pku.edu.cn/attached/file/2022-10-21/1666337327033_%E5%8C%97%E4%BA%AC%E5%A4%A7%E5%AD%A62021%E5%B9%B4%E6%AF%95%E4%B8%9A%E7%94%9F%E5%B0%B1%E4%B8%9A%E8%B4%A8%E9%87%8F%E6%8A%A5%E5%91%8A.pdf"
-    },
-    {
-      "university_name": "清华大学",
-      "report_year": 2025,
-      "employment_rate": null,
-      "rate_label": null,
-      "further_study_rate": null,
-      "total_graduates": null,
-      "rate_scope": "全校",
-      "source": "https://www.tsinghua.edu.cn/info/1182/124548.htm"
-    },
-    {
-      "university_name": "中国人民大学",
-      "report_year": 2019,
-      "employment_rate": null,
-      "rate_label": null,
-      "further_study_rate": null,
-      "total_graduates": null,
-      "rate_scope": "全校",
-      "source": "https://xxgk.ruc.edu.cn/gksx/jxzl/gxbysjyzlndbg/ee9bd3f7468d4d879448bc02d90f0332.htm"
-    },
-    {
-      "university_name": "北京师范大学",
-      "report_year": 2024,
-      "employment_rate": null,
-      "rate_label": null,
-      "further_study_rate": null,
-      "total_graduates": 8407,
-      "rate_scope": "全校（报告原文：落实率超95%）",
-      "source": "https://xxgk.bnu.edu.cn/docs/2025-10/604fb8d4d549495185121d50d447155e.pdf"
-    },
-    {
-      "university_name": "南开大学",
-      "report_year": 2024,
-      "employment_rate": null,
-      "rate_label": null,
-      "further_study_rate": null,
-      "total_graduates": 8260,
-      "rate_scope": "全校",
-      "source": "https://xxgk.nankai.edu.cn/2025/0610/c2927a572783/page.htm"
-    },
-    {
-      "university_name": "大连理工大学",
-      "report_year": 2020,
-      "employment_rate": null,
-      "rate_label": null,
-      "further_study_rate": null,
-      "total_graduates": null,
-      "rate_scope": "全校",
-      "source": "https://info.dlut.edu.cn/xxgklm/xsjiu_ye/jyzlndbg.htm"
-    },
-    {
-      "university_name": "吉林大学",
-      "report_year": 2023,
-      "employment_rate": 86.62,
-      "rate_label": "总体毕业去向落实率",
-      "further_study_rate": null,
-      "total_graduates": 17154,
-      "rate_scope": "全校（截至2023-08-31）",
-      "source": "https://gongkai.jlu.edu.cn/info/1064/9449.htm"
-    },
-    {
-      "university_name": "复旦大学",
-      "report_year": 2022,
-      "employment_rate": null,
-      "rate_label": null,
-      "further_study_rate": null,
-      "total_graduates": null,
-      "rate_scope": "全校",
-      "source": "https://xxgk.fudan.edu.cn/_t435/b4/8a/c8200a636042/page.htm"
-    },
-    {
-      "university_name": "同济大学",
-      "report_year": 2024,
-      "employment_rate": 97.14,
-      "rate_label": "毕业去向落实率",
-      "further_study_rate": 70.75,
-      "total_graduates": 10803,
-      "rate_scope": "全校（深造率为本科）",
-      "source": "https://xxgk.tongji.edu.cn/index.php?classid=11616&newsid=19486&t=show"
-    },
-    {
-      "university_name": "上海交通大学",
-      "report_year": 2023,
-      "employment_rate": 97.87,
-      "rate_label": "毕业去向落实率",
-      "further_study_rate": 32.37,
-      "total_graduates": 12003,
-      "rate_scope": "全日制全校（含医学院）",
-      "source": "https://gk.sjtu.edu.cn/Phone/View/3988"
-    },
-    {
-      "university_name": "南京大学",
-      "report_year": 2025,
-      "employment_rate": null,
-      "rate_label": null,
-      "further_study_rate": 70.88,
-      "total_graduates": null,
-      "rate_scope": "本科（报告仅载本科深造率）",
-      "source": "https://xxgk.nju.edu.cn/b3/3b/c16401a832315/page.htm"
-    },
-    {
-      "university_name": "东南大学",
-      "report_year": 2022,
-      "employment_rate": null,
-      "rate_label": null,
-      "further_study_rate": null,
-      "total_graduates": null,
-      "rate_scope": "全校",
-      "source": "https://xxgk.seu.edu.cn/gxbysjyzlndbg/list.htm"
-    },
-    {
-      "university_name": "浙江大学",
-      "report_year": 2022,
-      "employment_rate": 93.68,
-      "rate_label": "总体毕业去向落实率",
-      "further_study_rate": 29.36,
-      "total_graduates": 14793,
-      "rate_scope": "全校",
-      "source": "https://www.career.zju.edu.cn/jyxt/comm/common/preview.zf?filePath=%2Ffiles%2F1674793794476%2F%E6%B5%99%E6%B1%9F%E5%A4%A7%E5%AD%A62022%E5%B9%B4%E6%AF%95%E4%B8%9A%E7%94%9F%E5%B0%B1%E4%B8%9A%E8%B4%A8%E9%87%8F%E6%8A%A5%E5%91%8A.pdf"
-    },
-    {
-      "university_name": "中国科学技术大学",
-      "report_year": 2023,
-      "employment_rate": 91.9,
-      "rate_label": "总体毕业去向落实率",
-      "further_study_rate": 75.5,
-      "total_graduates": 7083,
-      "rate_scope": "全校（深造率为本科）",
-      "source": "http://xxgk.ustc.edu.cn/2024/1024/c37463a658224/page.htm"
-    },
-    {
-      "university_name": "厦门大学",
-      "report_year": 2024,
-      "employment_rate": null,
-      "rate_label": null,
-      "further_study_rate": null,
-      "total_graduates": null,
-      "rate_scope": "全校",
-      "source": "https://gk.xmu.edu.cn/info/1061/35852.htm"
-    },
-    {
-      "university_name": "山东大学",
-      "report_year": 2021,
-      "employment_rate": 95.51,
-      "rate_label": "总体毕业去向落实率",
-      "further_study_rate": 29.15,
-      "total_graduates": 16379,
-      "rate_scope": "全校（升学率为境内口径）",
-      "source": "https://job.sdu.edu.cn/xxgk/jyzlbg.htm"
-    },
-    {
-      "university_name": "武汉大学",
-      "report_year": 2021,
-      "employment_rate": 92.13,
-      "rate_label": "总毕业去向落实率",
-      "further_study_rate": null,
-      "total_graduates": 13397,
-      "rate_scope": "全校（截至2021-12-10）",
-      "source": "https://info.whu.edu.cn/info/2046/23710.htm"
-    },
-    {
-      "university_name": "华中科技大学",
-      "report_year": 2025,
-      "employment_rate": 96.09,
-      "rate_label": "总体毕业去向落实率",
-      "further_study_rate": 34.24,
-      "total_graduates": 15398,
-      "rate_scope": "全校",
-      "source": "http://xxgk.hust.edu.cn/info/1155/3969.htm"
-    },
-    {
-      "university_name": "中南大学",
-      "report_year": 2021,
-      "employment_rate": null,
-      "rate_label": null,
-      "further_study_rate": null,
-      "total_graduates": null,
-      "rate_scope": "全校",
-      "source": "https://xxgk.csu.edu.cn/info/1101/4632.htm"
-    },
-    {
-      "university_name": "中山大学",
-      "report_year": 2021,
-      "employment_rate": 91.55,
-      "rate_label": "总体毕业去向落实率",
-      "further_study_rate": null,
-      "total_graduates": 13779,
-      "rate_scope": "全校（不含港澳台及国际学生）",
-      "source": "https://xxgk.sysu.edu.cn/article/168"
-    },
-    {
-      "university_name": "华南理工大学",
-      "report_year": 2022,
-      "employment_rate": 98.31,
-      "rate_label": "总体毕业去向落实率",
-      "further_study_rate": 43.83,
-      "total_graduates": 11394,
-      "rate_scope": "全校（深造率为本科）",
-      "source": "https://xxgk.scut.edu.cn/2023/0301/c64a46183/page.htm"
-    },
-    {
-      "university_name": "四川大学",
-      "report_year": 2021,
-      "employment_rate": 92.54,
-      "rate_label": "总体毕业去向落实率",
-      "further_study_rate": 33.35,
-      "total_graduates": 16129,
-      "rate_scope": "全校",
-      "source": "https://jy.scu.edu.cn/index/index/contentdetail.html?data=NQ"
-    },
-    {
-      "university_name": "重庆大学",
-      "report_year": 2020,
-      "employment_rate": null,
-      "rate_label": null,
-      "further_study_rate": null,
-      "total_graduates": null,
-      "rate_scope": "全校",
-      "source": "https://gongkai.cqu.edu.cn/info/1236/3542.htm"
-    },
-    {
-      "university_name": "电子科技大学",
-      "report_year": 2024,
-      "employment_rate": null,
-      "rate_label": null,
-      "further_study_rate": null,
-      "total_graduates": null,
-      "rate_scope": "全校",
-      "source": "https://xxgkw.uestc.edu.cn/info/1078/6257.htm"
-    },
-    {
-      "university_name": "西安交通大学",
-      "report_year": 2025,
-      "employment_rate": null,
-      "rate_label": null,
-      "further_study_rate": null,
-      "total_graduates": null,
-      "rate_scope": "全校",
-      "source": "https://news.xjtu.edu.cn/info/1006/228810.htm"
-    },
-    {
-      "university_name": "西北工业大学",
-      "report_year": 2024,
-      "employment_rate": null,
-      "rate_label": null,
-      "further_study_rate": null,
-      "total_graduates": 8673,
-      "rate_scope": "全校（报告原文：总体落实率超过96%）",
-      "source": "https://xxgk.nwpu.edu.cn/info/1501/6651.htm"
-    },
-    {
-      "university_name": "兰州大学",
-      "report_year": 2021,
-      "employment_rate": 84.81,
-      "rate_label": "总体毕业去向落实率",
-      "further_study_rate": 29.38,
-      "total_graduates": 8481,
-      "rate_scope": "全校（截至2021-12-15）",
-      "source": "https://xxgk.lzu.edu.cn/jiaoxuezhiliang/jiuyegongzuo/index.html"
-    },
-    {
-      "university_name": "郑州大学",
-      "report_year": 2022,
-      "employment_rate": 81.48,
-      "rate_label": "初次毕业去向落实率",
-      "further_study_rate": 44.49,
-      "total_graduates": 18365,
-      "rate_scope": "全校（截至2022-08-31；升学率为本科）",
-      "source": "https://ao.zzu.edu.cn/info/2011/4245.htm"
-    },
-    {
-      "university_name": "苏州大学",
-      "report_year": 2022,
-      "employment_rate": 94.56,
-      "rate_label": "年终总毕业去向落实率",
-      "further_study_rate": null,
-      "total_graduates": 11313,
-      "rate_scope": "全校（初次落实率80.99%）",
-      "source": "https://ygb.suda.edu.cn/b2/45/c33059a569925/page.htm"
-    },
-    {
-      "university_name": "贵州大学",
-      "report_year": 2023,
-      "employment_rate": 93.09,
-      "rate_label": "毕业去向落实率",
-      "further_study_rate": null,
-      "total_graduates": 12371,
-      "rate_scope": "全校（截至2023-11-30）",
-      "source": "https://www.gzu.edu.cn/2024/0516/c18097a218175/page.htm"
-    },
-    {
-      "university_name": "海南大学",
-      "report_year": 2023,
-      "employment_rate": 85.16,
-      "rate_label": "总体毕业去向落实率",
-      "further_study_rate": 24.3,
-      "total_graduates": 10785,
-      "rate_scope": "全校（截至2023-08-31）",
-      "source": "https://info.hainanu.edu.cn/gksx/jiaoxue/jx8.htm"
-    },
-    {
-      "university_name": "广西大学",
-      "report_year": 2025,
-      "employment_rate": 87.52,
-      "rate_label": "毕业去向落实率",
-      "further_study_rate": 19.65,
-      "total_graduates": 10564,
-      "rate_scope": "全校（截至2025-08-31；12月口径90.18%）",
-      "source": "http://jyy.gxu.edu.cn/detail/news?id=1747844&type_id=1859"
-    },
-    {
-      "university_name": "宁夏大学",
-      "report_year": 2024,
-      "employment_rate": null,
-      "rate_label": null,
-      "further_study_rate": null,
-      "total_graduates": null,
-      "rate_scope": "全校",
-      "source": "https://office.nxu.edu.cn/xxgk/dwzwgk/jxzlxx/gxbysjyzlndbg.htm"
-    },
-    {
-      "university_name": "青海大学",
-      "report_year": 2024,
-      "employment_rate": 79.9,
-      "rate_label": "毕业去向落实率",
-      "further_study_rate": 17.9,
-      "total_graduates": 4360,
-      "rate_scope": "本科（截至2024-11-24）",
-      "source": "https://xxgk.qhu.edu.cn/docs/2025-01/e12ee3bdaeff442ab8e69ad4b2b51d6f.pdf"
-    },
-    {
-      "university_name": "河北工业大学",
-      "report_year": 2019,
-      "employment_rate": 94.42,
-      "rate_label": "就业率",
-      "further_study_rate": 32.87,
-      "total_graduates": 3667,
-      "rate_scope": "本科（pdf_hint实为2018届报告；就业率不含专接本；升学率为国内）",
-      "source": "https://career.hebut.edu.cn/home/news/content/id/173.html"
-    },
-    {
-      "university_name": "辽宁大学",
-      "report_year": 2022,
-      "employment_rate": null,
-      "rate_label": null,
-      "further_study_rate": 23.85,
-      "total_graduates": 6754,
-      "rate_scope": "全校（升学率为去向构成占比；总体落实率未单列）",
-      "source": "https://www.lnu.edu.cn/info/15026/78891.htm"
-    },
-    {
-      "university_name": "黑龙江大学",
-      "report_year": 2024,
-      "employment_rate": null,
-      "rate_label": null,
-      "further_study_rate": null,
-      "total_graduates": null,
-      "rate_scope": "全校",
-      "source": "https://xxgk.hlju.edu.cn/info/2006/4931.htm"
-    },
-    {
-      "university_name": "安徽大学",
-      "report_year": 2023,
-      "employment_rate": 94.38,
-      "rate_label": "总体毕业去向落实率",
-      "further_study_rate": null,
-      "total_graduates": 8725,
-      "rate_scope": "全校（pdf_hint实为2022届报告）",
-      "source": "https://job.ahu.edu.cn/2024/0108/c18712a328323/page.htm"
-    },
-    {
-      "university_name": "福州大学",
-      "report_year": 2017,
-      "employment_rate": 96.1,
-      "rate_label": "就业率",
-      "further_study_rate": 22.49,
-      "total_graduates": 7633,
-      "rate_scope": "全校（截至2017-12-20；升学率为本科）",
-      "source": "https://xwgk.fzu.edu.cn/info/1013/2801.htm"
-    },
-    {
-      "university_name": "南昌大学",
-      "report_year": 2022,
-      "employment_rate": 80.08,
-      "rate_label": "初次毕业去向落实率",
-      "further_study_rate": null,
-      "total_graduates": 12489,
-      "rate_scope": "本科（研究生91.27%，总体未单列；截至2022-08-31）",
-      "source": "http://jy.ncu.edu.cn/detail/news?id=922014&menu_id=6502&s=&type_id=3202"
-    },
-    {
-      "university_name": "湖北大学",
-      "report_year": 2023,
-      "employment_rate": null,
-      "rate_label": null,
-      "further_study_rate": null,
-      "total_graduates": null,
-      "rate_scope": "全校",
-      "source": "https://xxgk.hubu.edu.cn/info/1051/10257.htm"
-    },
-    {
-      "university_name": "湖南师范大学",
-      "report_year": 2023,
-      "employment_rate": null,
-      "rate_label": null,
-      "further_study_rate": null,
-      "total_graduates": null,
-      "rate_scope": "全校",
-      "source": "https://xxgk.hunnu.edu.cn/column/bysbg/content/1727424907558.shtml"
-    },
-    {
-      "university_name": "暨南大学",
-      "report_year": 2022,
-      "employment_rate": 90.04,
-      "rate_label": "整体毕业去向落实率",
-      "further_study_rate": null,
-      "total_graduates": 7722,
-      "rate_scope": "全校（pdf_hint实为2021届报告；总人数取分项合计，正文误作7222）",
-      "source": "https://xxgk.jnu.edu.cn/2023/0224/c7604a736721/page.htm"
-    },
-    {
-      "university_name": "华南师范大学",
-      "report_year": 2022,
-      "employment_rate": 90.66,
-      "rate_label": "本科毕业去向落实率",
-      "further_study_rate": 26.79,
-      "total_graduates": 6405,
-      "rate_scope": "本科（截至2022-12-01）",
-      "source": "http://xxgk.scnu.edu.cn/a/20230530/1149.html"
-    },
-    {
-      "university_name": "西南大学",
-      "report_year": 2022,
-      "employment_rate": 91.49,
-      "rate_label": "毕业去向落实率",
-      "further_study_rate": null,
-      "total_graduates": 15326,
-      "rate_scope": "全校（截至2022-12-14）",
-      "source": "https://xxgk.swu.edu.cn/info/1131/3813.htm"
-    },
-    {
-      "university_name": "西安电子科技大学",
-      "report_year": 2025,
-      "employment_rate": 97.22,
-      "rate_label": "总体毕业去向落实率",
-      "further_study_rate": 54.1,
-      "total_graduates": 10076,
-      "rate_scope": "全校（升学比例为本科；截至2025-12）",
-      "source": "https://job.xidian.edu.cn/attachment/xidian/ueditor/file/20260128/3325_西安电子科技大学2025届毕业生就业质量年度报告.pdf"
-    },
-    {
-      "university_name": "北京邮电大学",
-      "report_year": 2022,
-      "employment_rate": 91.73,
-      "rate_label": "毕业去向落实率",
-      "further_study_rate": 31.5,
-      "total_graduates": 7410,
-      "rate_scope": "全校（截至2022-10-31）",
-      "source": "https://xxgk.bupt.edu.cn/xxgksxqd1/jxzlxx/gxbysjyzlndbg.htm"
-    },
-    {
-      "university_name": "华东理工大学",
-      "report_year": 2023,
-      "employment_rate": 94.48,
-      "rate_label": "总体毕业去向落实率",
-      "further_study_rate": 47.88,
-      "total_graduates": 8191,
-      "rate_scope": "全校（深造率为本科；截至2023-12-31）",
-      "source": "https://career.ecust.edu.cn/InformationDetail.aspx?XXID=1306"
-    },
-    {
-      "university_name": "南京航空航天大学",
-      "report_year": 2023,
-      "employment_rate": 95.4,
-      "rate_label": "总体毕业去向落实率",
-      "further_study_rate": 53.5,
-      "total_graduates": 8740,
-      "rate_scope": "全校（深造率为本科）",
-      "source": "https://nuaa.edu.cn/2024/0111/c295a329478/page.htm"
-    },
-    {
-      "university_name": "哈尔滨工程大学",
-      "report_year": 2022,
-      "employment_rate": 93.9,
-      "rate_label": "初次毕业去向落实率",
-      "further_study_rate": 36.4,
-      "total_graduates": 6984,
-      "rate_scope": "全校（截至2022-08-31）",
-      "source": "http://xxgk.hrbeu.edu.cn/2023/1030/c5908a318440/page.htm"
-    }
-  ]
+ "items": [
+  {
+   "university_name": "北京大学",
+   "report_year": 2021,
+   "employment_rate": 98.29,
+   "rate_label": "总体毕业去向落实率",
+   "further_study_rate": null,
+   "total_graduates": 11985,
+   "rate_scope": "全校（含医学部）",
+   "source": "https://scc.pku.edu.cn/attached/file/2022-10-21/1666337327033_%E5%8C%97%E4%BA%AC%E5%A4%A7%E5%AD%A62021%E5%B9%B4%E6%AF%95%E4%B8%9A%E7%94%9F%E5%B0%B1%E4%B8%9A%E8%B4%A8%E9%87%8F%E6%8A%A5%E5%91%8A.pdf"
+  },
+  {
+   "university_name": "清华大学",
+   "report_year": 2025,
+   "employment_rate": null,
+   "rate_label": null,
+   "further_study_rate": null,
+   "total_graduates": null,
+   "rate_scope": "全校",
+   "source": "https://www.tsinghua.edu.cn/info/1182/124548.htm"
+  },
+  {
+   "university_name": "中国人民大学",
+   "report_year": 2019,
+   "employment_rate": null,
+   "rate_label": null,
+   "further_study_rate": null,
+   "total_graduates": null,
+   "rate_scope": "全校",
+   "source": "https://xxgk.ruc.edu.cn/gksx/jxzl/gxbysjyzlndbg/ee9bd3f7468d4d879448bc02d90f0332.htm"
+  },
+  {
+   "university_name": "北京师范大学",
+   "report_year": 2024,
+   "employment_rate": null,
+   "rate_label": null,
+   "further_study_rate": null,
+   "total_graduates": 8407,
+   "rate_scope": "全校（报告原文：落实率超95%）",
+   "source": "https://xxgk.bnu.edu.cn/docs/2025-10/604fb8d4d549495185121d50d447155e.pdf"
+  },
+  {
+   "university_name": "南开大学",
+   "report_year": 2024,
+   "employment_rate": null,
+   "rate_label": null,
+   "further_study_rate": null,
+   "total_graduates": 8260,
+   "rate_scope": "全校",
+   "source": "https://xxgk.nankai.edu.cn/2025/0610/c2927a572783/page.htm"
+  },
+  {
+   "university_name": "大连理工大学",
+   "report_year": 2020,
+   "employment_rate": null,
+   "rate_label": null,
+   "further_study_rate": null,
+   "total_graduates": null,
+   "rate_scope": "全校",
+   "source": "https://info.dlut.edu.cn/xxgklm/xsjiu_ye/jyzlndbg.htm"
+  },
+  {
+   "university_name": "吉林大学",
+   "report_year": 2023,
+   "employment_rate": 86.62,
+   "rate_label": "总体毕业去向落实率",
+   "further_study_rate": null,
+   "total_graduates": 17154,
+   "rate_scope": "全校（截至2023-08-31）",
+   "source": "https://gongkai.jlu.edu.cn/info/1064/9449.htm"
+  },
+  {
+   "university_name": "复旦大学",
+   "report_year": 2022,
+   "employment_rate": null,
+   "rate_label": null,
+   "further_study_rate": null,
+   "total_graduates": null,
+   "rate_scope": "全校",
+   "source": "https://xxgk.fudan.edu.cn/_t435/b4/8a/c8200a636042/page.htm"
+  },
+  {
+   "university_name": "同济大学",
+   "report_year": 2024,
+   "employment_rate": 97.14,
+   "rate_label": "毕业去向落实率",
+   "further_study_rate": 70.75,
+   "total_graduates": 10803,
+   "rate_scope": "全校（深造率为本科）",
+   "source": "https://xxgk.tongji.edu.cn/index.php?classid=11616&newsid=19486&t=show"
+  },
+  {
+   "university_name": "上海交通大学",
+   "report_year": 2023,
+   "employment_rate": 97.87,
+   "rate_label": "毕业去向落实率",
+   "further_study_rate": 32.37,
+   "total_graduates": 12003,
+   "rate_scope": "全日制全校（含医学院）",
+   "source": "https://gk.sjtu.edu.cn/Phone/View/3988"
+  },
+  {
+   "university_name": "南京大学",
+   "report_year": 2025,
+   "employment_rate": null,
+   "rate_label": null,
+   "further_study_rate": 70.88,
+   "total_graduates": null,
+   "rate_scope": "本科（报告仅载本科深造率）",
+   "source": "https://xxgk.nju.edu.cn/b3/3b/c16401a832315/page.htm"
+  },
+  {
+   "university_name": "东南大学",
+   "report_year": 2022,
+   "employment_rate": null,
+   "rate_label": null,
+   "further_study_rate": null,
+   "total_graduates": null,
+   "rate_scope": "全校",
+   "source": "https://xxgk.seu.edu.cn/gxbysjyzlndbg/list.htm"
+  },
+  {
+   "university_name": "浙江大学",
+   "report_year": 2022,
+   "employment_rate": 93.68,
+   "rate_label": "总体毕业去向落实率",
+   "further_study_rate": 29.36,
+   "total_graduates": 14793,
+   "rate_scope": "全校",
+   "source": "https://www.career.zju.edu.cn/jyxt/comm/common/preview.zf?filePath=%2Ffiles%2F1674793794476%2F%E6%B5%99%E6%B1%9F%E5%A4%A7%E5%AD%A62022%E5%B9%B4%E6%AF%95%E4%B8%9A%E7%94%9F%E5%B0%B1%E4%B8%9A%E8%B4%A8%E9%87%8F%E6%8A%A5%E5%91%8A.pdf"
+  },
+  {
+   "university_name": "中国科学技术大学",
+   "report_year": 2023,
+   "employment_rate": 91.9,
+   "rate_label": "总体毕业去向落实率",
+   "further_study_rate": 75.5,
+   "total_graduates": 7083,
+   "rate_scope": "全校（深造率为本科）",
+   "source": "http://xxgk.ustc.edu.cn/2024/1024/c37463a658224/page.htm"
+  },
+  {
+   "university_name": "厦门大学",
+   "report_year": 2024,
+   "employment_rate": null,
+   "rate_label": null,
+   "further_study_rate": null,
+   "total_graduates": null,
+   "rate_scope": "全校",
+   "source": "https://gk.xmu.edu.cn/info/1061/35852.htm"
+  },
+  {
+   "university_name": "山东大学",
+   "report_year": 2021,
+   "employment_rate": 95.51,
+   "rate_label": "总体毕业去向落实率",
+   "further_study_rate": 29.15,
+   "total_graduates": 16379,
+   "rate_scope": "全校（升学率为境内口径）",
+   "source": "https://job.sdu.edu.cn/xxgk/jyzlbg.htm"
+  },
+  {
+   "university_name": "武汉大学",
+   "report_year": 2021,
+   "employment_rate": 92.13,
+   "rate_label": "总毕业去向落实率",
+   "further_study_rate": null,
+   "total_graduates": 13397,
+   "rate_scope": "全校（截至2021-12-10）",
+   "source": "https://info.whu.edu.cn/info/2046/23710.htm"
+  },
+  {
+   "university_name": "华中科技大学",
+   "report_year": 2025,
+   "employment_rate": 96.09,
+   "rate_label": "总体毕业去向落实率",
+   "further_study_rate": 34.24,
+   "total_graduates": 15398,
+   "rate_scope": "全校",
+   "source": "http://xxgk.hust.edu.cn/info/1155/3969.htm"
+  },
+  {
+   "university_name": "中南大学",
+   "report_year": 2021,
+   "employment_rate": null,
+   "rate_label": null,
+   "further_study_rate": null,
+   "total_graduates": null,
+   "rate_scope": "全校",
+   "source": "https://xxgk.csu.edu.cn/info/1101/4632.htm"
+  },
+  {
+   "university_name": "中山大学",
+   "report_year": 2021,
+   "employment_rate": 91.55,
+   "rate_label": "总体毕业去向落实率",
+   "further_study_rate": null,
+   "total_graduates": 13779,
+   "rate_scope": "全校（不含港澳台及国际学生）",
+   "source": "https://xxgk.sysu.edu.cn/article/168"
+  },
+  {
+   "university_name": "华南理工大学",
+   "report_year": 2022,
+   "employment_rate": 98.31,
+   "rate_label": "总体毕业去向落实率",
+   "further_study_rate": 43.83,
+   "total_graduates": 11394,
+   "rate_scope": "全校（深造率为本科）",
+   "source": "https://xxgk.scut.edu.cn/2023/0301/c64a46183/page.htm"
+  },
+  {
+   "university_name": "四川大学",
+   "report_year": 2021,
+   "employment_rate": 92.54,
+   "rate_label": "总体毕业去向落实率",
+   "further_study_rate": 33.35,
+   "total_graduates": 16129,
+   "rate_scope": "全校",
+   "source": "https://jy.scu.edu.cn/index/index/contentdetail.html?data=NQ"
+  },
+  {
+   "university_name": "重庆大学",
+   "report_year": 2020,
+   "employment_rate": null,
+   "rate_label": null,
+   "further_study_rate": null,
+   "total_graduates": null,
+   "rate_scope": "全校",
+   "source": "https://gongkai.cqu.edu.cn/info/1236/3542.htm"
+  },
+  {
+   "university_name": "电子科技大学",
+   "report_year": 2024,
+   "employment_rate": null,
+   "rate_label": null,
+   "further_study_rate": null,
+   "total_graduates": null,
+   "rate_scope": "全校",
+   "source": "https://xxgkw.uestc.edu.cn/info/1078/6257.htm"
+  },
+  {
+   "university_name": "西安交通大学",
+   "report_year": 2025,
+   "employment_rate": null,
+   "rate_label": null,
+   "further_study_rate": null,
+   "total_graduates": null,
+   "rate_scope": "全校",
+   "source": "https://news.xjtu.edu.cn/info/1006/228810.htm"
+  },
+  {
+   "university_name": "西北工业大学",
+   "report_year": 2024,
+   "employment_rate": null,
+   "rate_label": null,
+   "further_study_rate": null,
+   "total_graduates": 8673,
+   "rate_scope": "全校（报告原文：总体落实率超过96%）",
+   "source": "https://xxgk.nwpu.edu.cn/info/1501/6651.htm"
+  },
+  {
+   "university_name": "兰州大学",
+   "report_year": 2021,
+   "employment_rate": 84.81,
+   "rate_label": "总体毕业去向落实率",
+   "further_study_rate": 29.38,
+   "total_graduates": 8481,
+   "rate_scope": "全校（截至2021-12-15）",
+   "source": "https://xxgk.lzu.edu.cn/jiaoxuezhiliang/jiuyegongzuo/index.html"
+  },
+  {
+   "university_name": "郑州大学",
+   "report_year": 2022,
+   "employment_rate": 81.48,
+   "rate_label": "初次毕业去向落实率",
+   "further_study_rate": 44.49,
+   "total_graduates": 18365,
+   "rate_scope": "全校（截至2022-08-31；升学率为本科）",
+   "source": "https://ao.zzu.edu.cn/info/2011/4245.htm"
+  },
+  {
+   "university_name": "苏州大学",
+   "report_year": 2022,
+   "employment_rate": 94.56,
+   "rate_label": "年终总毕业去向落实率",
+   "further_study_rate": null,
+   "total_graduates": 11313,
+   "rate_scope": "全校（初次落实率80.99%）",
+   "source": "https://ygb.suda.edu.cn/b2/45/c33059a569925/page.htm"
+  },
+  {
+   "university_name": "贵州大学",
+   "report_year": 2023,
+   "employment_rate": 93.09,
+   "rate_label": "毕业去向落实率",
+   "further_study_rate": null,
+   "total_graduates": 12371,
+   "rate_scope": "全校（截至2023-11-30）",
+   "source": "https://www.gzu.edu.cn/2024/0516/c18097a218175/page.htm"
+  },
+  {
+   "university_name": "海南大学",
+   "report_year": 2023,
+   "employment_rate": 85.16,
+   "rate_label": "总体毕业去向落实率",
+   "further_study_rate": 24.3,
+   "total_graduates": 10785,
+   "rate_scope": "全校（截至2023-08-31）",
+   "source": "https://info.hainanu.edu.cn/gksx/jiaoxue/jx8.htm"
+  },
+  {
+   "university_name": "广西大学",
+   "report_year": 2025,
+   "employment_rate": 87.52,
+   "rate_label": "毕业去向落实率",
+   "further_study_rate": 19.65,
+   "total_graduates": 10564,
+   "rate_scope": "全校（截至2025-08-31；12月口径90.18%）",
+   "source": "http://jyy.gxu.edu.cn/detail/news?id=1747844&type_id=1859"
+  },
+  {
+   "university_name": "宁夏大学",
+   "report_year": 2024,
+   "employment_rate": null,
+   "rate_label": null,
+   "further_study_rate": null,
+   "total_graduates": null,
+   "rate_scope": "全校",
+   "source": "https://office.nxu.edu.cn/xxgk/dwzwgk/jxzlxx/gxbysjyzlndbg.htm"
+  },
+  {
+   "university_name": "青海大学",
+   "report_year": 2024,
+   "employment_rate": 79.9,
+   "rate_label": "毕业去向落实率",
+   "further_study_rate": 17.9,
+   "total_graduates": 4360,
+   "rate_scope": "本科（截至2024-11-24）",
+   "source": "https://xxgk.qhu.edu.cn/docs/2025-01/e12ee3bdaeff442ab8e69ad4b2b51d6f.pdf"
+  },
+  {
+   "university_name": "河北工业大学",
+   "report_year": 2019,
+   "employment_rate": 94.42,
+   "rate_label": "就业率",
+   "further_study_rate": 32.87,
+   "total_graduates": 3667,
+   "rate_scope": "本科（pdf_hint实为2018届报告；就业率不含专接本；升学率为国内）",
+   "source": "https://career.hebut.edu.cn/home/news/content/id/173.html"
+  },
+  {
+   "university_name": "辽宁大学",
+   "report_year": 2022,
+   "employment_rate": null,
+   "rate_label": null,
+   "further_study_rate": 23.85,
+   "total_graduates": 6754,
+   "rate_scope": "全校（升学率为去向构成占比；总体落实率未单列）",
+   "source": "https://www.lnu.edu.cn/info/15026/78891.htm"
+  },
+  {
+   "university_name": "黑龙江大学",
+   "report_year": 2024,
+   "employment_rate": null,
+   "rate_label": null,
+   "further_study_rate": null,
+   "total_graduates": null,
+   "rate_scope": "全校",
+   "source": "https://xxgk.hlju.edu.cn/info/2006/4931.htm"
+  },
+  {
+   "university_name": "安徽大学",
+   "report_year": 2023,
+   "employment_rate": 94.38,
+   "rate_label": "总体毕业去向落实率",
+   "further_study_rate": null,
+   "total_graduates": 8725,
+   "rate_scope": "全校（pdf_hint实为2022届报告）",
+   "source": "https://job.ahu.edu.cn/2024/0108/c18712a328323/page.htm"
+  },
+  {
+   "university_name": "福州大学",
+   "report_year": 2017,
+   "employment_rate": 96.1,
+   "rate_label": "就业率",
+   "further_study_rate": 22.49,
+   "total_graduates": 7633,
+   "rate_scope": "全校（截至2017-12-20；升学率为本科）",
+   "source": "https://xwgk.fzu.edu.cn/info/1013/2801.htm"
+  },
+  {
+   "university_name": "南昌大学",
+   "report_year": 2022,
+   "employment_rate": 80.08,
+   "rate_label": "初次毕业去向落实率",
+   "further_study_rate": null,
+   "total_graduates": 12489,
+   "rate_scope": "本科（研究生91.27%，总体未单列；截至2022-08-31）",
+   "source": "http://jy.ncu.edu.cn/detail/news?id=922014&menu_id=6502&s=&type_id=3202"
+  },
+  {
+   "university_name": "湖北大学",
+   "report_year": 2023,
+   "employment_rate": null,
+   "rate_label": null,
+   "further_study_rate": null,
+   "total_graduates": null,
+   "rate_scope": "全校",
+   "source": "https://xxgk.hubu.edu.cn/info/1051/10257.htm"
+  },
+  {
+   "university_name": "湖南师范大学",
+   "report_year": 2023,
+   "employment_rate": null,
+   "rate_label": null,
+   "further_study_rate": null,
+   "total_graduates": null,
+   "rate_scope": "全校",
+   "source": "https://xxgk.hunnu.edu.cn/column/bysbg/content/1727424907558.shtml"
+  },
+  {
+   "university_name": "暨南大学",
+   "report_year": 2022,
+   "employment_rate": 90.04,
+   "rate_label": "整体毕业去向落实率",
+   "further_study_rate": null,
+   "total_graduates": 7722,
+   "rate_scope": "全校（pdf_hint实为2021届报告；总人数取分项合计，正文误作7222）",
+   "source": "https://xxgk.jnu.edu.cn/2023/0224/c7604a736721/page.htm"
+  },
+  {
+   "university_name": "华南师范大学",
+   "report_year": 2022,
+   "employment_rate": 90.66,
+   "rate_label": "本科毕业去向落实率",
+   "further_study_rate": 26.79,
+   "total_graduates": 6405,
+   "rate_scope": "本科（截至2022-12-01）",
+   "source": "http://xxgk.scnu.edu.cn/a/20230530/1149.html"
+  },
+  {
+   "university_name": "西南大学",
+   "report_year": 2022,
+   "employment_rate": 91.49,
+   "rate_label": "毕业去向落实率",
+   "further_study_rate": null,
+   "total_graduates": 15326,
+   "rate_scope": "全校（截至2022-12-14）",
+   "source": "https://xxgk.swu.edu.cn/info/1131/3813.htm"
+  },
+  {
+   "university_name": "西安电子科技大学",
+   "report_year": 2025,
+   "employment_rate": 97.22,
+   "rate_label": "总体毕业去向落实率",
+   "further_study_rate": 54.1,
+   "total_graduates": 10076,
+   "rate_scope": "全校（升学比例为本科；截至2025-12）",
+   "source": "https://job.xidian.edu.cn/attachment/xidian/ueditor/file/20260128/3325_西安电子科技大学2025届毕业生就业质量年度报告.pdf"
+  },
+  {
+   "university_name": "北京邮电大学",
+   "report_year": 2022,
+   "employment_rate": 91.73,
+   "rate_label": "毕业去向落实率",
+   "further_study_rate": 31.5,
+   "total_graduates": 7410,
+   "rate_scope": "全校（截至2022-10-31）",
+   "source": "https://xxgk.bupt.edu.cn/xxgksxqd1/jxzlxx/gxbysjyzlndbg.htm"
+  },
+  {
+   "university_name": "华东理工大学",
+   "report_year": 2023,
+   "employment_rate": 94.48,
+   "rate_label": "总体毕业去向落实率",
+   "further_study_rate": 47.88,
+   "total_graduates": 8191,
+   "rate_scope": "全校（深造率为本科；截至2023-12-31）",
+   "source": "https://career.ecust.edu.cn/InformationDetail.aspx?XXID=1306"
+  },
+  {
+   "university_name": "南京航空航天大学",
+   "report_year": 2023,
+   "employment_rate": 95.4,
+   "rate_label": "总体毕业去向落实率",
+   "further_study_rate": 53.5,
+   "total_graduates": 8740,
+   "rate_scope": "全校（深造率为本科）",
+   "source": "https://nuaa.edu.cn/2024/0111/c295a329478/page.htm"
+  },
+  {
+   "university_name": "哈尔滨工程大学",
+   "report_year": 2022,
+   "employment_rate": 93.9,
+   "rate_label": "初次毕业去向落实率",
+   "further_study_rate": 36.4,
+   "total_graduates": 6984,
+   "rate_scope": "全校（截至2022-08-31）",
+   "source": "http://xxgk.hrbeu.edu.cn/2023/1030/c5908a318440/page.htm"
+  },
+  {
+   "university_name": "电子科技大学",
+   "report_year": 2024,
+   "employment_rate": 94.7,
+   "rate_label": "毕业生毕业去向落实率",
+   "further_study_rate": 72.04,
+   "total_graduates": 10953,
+   "rate_scope": "全校（2024届10953人：本科4592、研究生6361；further_study_rate 72.04% 为本科生继续深造比例，非全校口径）",
+   "source": "https://xxgkw.uestc.edu.cn/__local/E/B8/8E/D73D1759DD892DF459AD61B7D28_30462723_542AA.pdf"
+  },
+  {
+   "university_name": "黑龙江大学",
+   "report_year": 2024,
+   "employment_rate": 90.04,
+   "rate_label": "本科毕业生的毕业去向落实率",
+   "further_study_rate": null,
+   "total_graduates": null,
+   "rate_scope": "本科（截至2024-08-31；报告未单列全校合计，故取本科口径。报告另载研究生毕业去向落实率81.98%，其中硕士81.61%、博士93.67%；本科国内升学19.26%、境外升学3.69%，因口径分列未合并为 further_study_rate）",
+   "source": "https://xxgk.hlju.edu.cn/system/_content/download.jsp?urltype=news.DownloadAttachUrl&owner=1457216816&wbfileid=15986671"
+  },
+  {
+   "university_name": "上海海洋大学",
+   "report_year": 2024,
+   "employment_rate": 92.84,
+   "rate_label": "全校毕业生的毕业去向落实率",
+   "further_study_rate": null,
+   "total_graduates": 4704,
+   "rate_scope": "全校（截至2024-10-31；2024届4704人，其中本科3044人落实率91.52%、研究生1660人落实率95.24%；报告另载全校签约率86.39%）",
+   "source": "https://xxgk.shou.edu.cn/2025/0219/c8041a337932/page.htm"
+  },
+  {
+   "university_name": "上海师范大学",
+   "report_year": 2024,
+   "employment_rate": 94.58,
+   "rate_label": "毕业生毕业去向落实率",
+   "further_study_rate": 16.6,
+   "total_graduates": 8316,
+   "rate_scope": "全校（截至2024-08-31；2024届8316人，其中本科4986人、研究生3330人；升学1380人占16.60%，其中国内11.50%、出国（境）5.10%）",
+   "source": "https://xxgk.shnu.edu.cn/91/04/c18132a823556/page.htm"
+  },
+  {
+   "university_name": "湖北师范大学",
+   "report_year": 2025,
+   "employment_rate": 92.08,
+   "rate_label": "总体毕业去向落实率",
+   "further_study_rate": 13.32,
+   "total_graduates": 5465,
+   "rate_scope": "全校（截至2025年末；2025届5465人，落实毕业去向5032人；升学728人占13.32%，就业4304人占78.76%）",
+   "source": "https://xxgk.hbnu.edu.cn/2026/0106/c3441a189333/page.htm"
+  },
+  {
+   "university_name": "西北农林科技大学",
+   "report_year": 2023,
+   "employment_rate": 85.11,
+   "rate_label": "总体毕业去向落实率",
+   "further_study_rate": null,
+   "total_graduates": 8897,
+   "rate_scope": "全校（截至2023-12-01；2023届8897人，已落实毕业去向7572人；本科5103人落实率81.25%、硕士3364人90.61%、博士430人87.91%）",
+   "source": "https://xxgk.nwafu.edu.cn/docs/2023-12/89c932af419a4e3680eef5957d55560b.pdf"
+  },
+  {
+   "university_name": "南京林业大学",
+   "report_year": 2024,
+   "employment_rate": 95.0,
+   "rate_label": "应届本科毕业生初次就业率",
+   "further_study_rate": 38.98,
+   "total_graduates": 7450,
+   "rate_scope": "本科（2024届本科毕业生7450人，去向落实7077人；攻读研究生2904人占38.98%，出国592人占7.95%）",
+   "source": "https://xxgk.njfu.edu.cn/DFS//file/2025/12/23/20251223173758423ufiy67.pdf"
+  },
+  {
+   "university_name": "东南大学",
+   "report_year": 2022,
+   "employment_rate": 96.51,
+   "rate_label": "年终毕业去向落实率",
+   "further_study_rate": 60.86,
+   "total_graduates": 9408,
+   "rate_scope": "全校（further_study_rate 60.86% 为本科生深造率；本科3866人落实率94.18%、硕士4777人98.43%、博士765人96.47%）。注意：来源为东南大学官网转载的媒体报道（新华报业网）所引报告数据，非报告 PDF 原文",
+   "source": "https://www.seu.edu.cn/2023/1215/c124a474959/page.htm"
+  },
+  {
+   "university_name": "首都师范大学",
+   "report_year": 2024,
+   "employment_rate": 89.44,
+   "rate_label": "应届本科毕业生总体就业率",
+   "further_study_rate": 36.83,
+   "total_graduates": 3041,
+   "rate_scope": "本科（截至2024-08-31；2024年本科毕业生3041人）。来源形态为《首都师范大学2023-2024学年本科教学质量报告》，非毕业生就业质量报告",
+   "source": "https://xxgk.cnu.edu.cn/docs/2024-12/306a79846b854b46b53b9481ee746dd9.pdf"
+  },
+  {
+   "university_name": "南京工业大学",
+   "report_year": 2016,
+   "employment_rate": 95.32,
+   "rate_label": "年终就业率",
+   "further_study_rate": null,
+   "total_graduates": 4914,
+   "rate_scope": "本科（截至2016-12-21；2016届本科毕业生4914人；同报告载截至2016-08-31初次就业率86.55%。信息公开网可获取的最新《本科毕业生就业质量年度报告》止于2016届）",
+   "source": "https://xxgk.njtech.edu.cn/__local/9/F9/E4/5F5DFF78A8E9EED35DB44F0740F_CE2A9A67_DC1AE.pdf?e=.pdf"
+  },
+  {
+   "university_name": "浙江师范大学",
+   "report_year": 2020,
+   "employment_rate": 92.73,
+   "rate_label": "总体就业率",
+   "further_study_rate": null,
+   "total_graduates": 6410,
+   "rate_scope": "全校（截至2020-12-25；2020届6410人：研究生1723、本科4125、专科562；研究生就业率95.01%、本科91.15%）。信息公开网可获取的最新《毕业生就业质量报告》为2020年度",
+   "source": "https://xxgk.zjnu.edu.cn/_upload/article/files/e8/b1/b3eaf8bd44048a078a18e46f96c5/10320c03-9f32-453e-a33f-1821cdb179a8.pdf"
+  },
+  {
+   "university_name": "上海理工大学",
+   "report_year": 2017,
+   "employment_rate": 97.28,
+   "rate_label": "全校毕业生就业率",
+   "further_study_rate": 10.72,
+   "total_graduates": 6296,
+   "rate_scope": "全校（截至2017-08-31；2017届毕业生6296人；further_study_rate 10.72% 为国内升学率，另有出国（境）留学比例8.66%、签约率58.26%）。信息公开网可获取的《毕业生就业质量报告》最新为2017年度",
+   "source": "https://xxgk.usst.edu.cn/_upload/article/files/4e/84/17509300483d92d11fd590fc8775/bb7f5e50-1335-40f0-b4e4-2382.pdf"
+  }
+ ]
 }
