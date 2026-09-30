@@ -1,21 +1,22 @@
 "use client";
 
-// 考研信息站主页（009 T2 归口）：时间线 + 社区 + 外链目录 + 信任锚橱窗。
+// 考研信息站主页（009 T2 归口）：社区 + 外链目录 + 信任锚橱窗。
+// 「考试流程时间线」入口卡已摘（2026-10-01 夜班终验：/timeline 是个人成长线，
+// 考研流程节点页不存在——不承诺没有的功能；考研骨架 SKELETON_KAOYAN 仍服务
+// 退役的 civil-service 线，恢复入口需先建页面）。
 // 资讯中心 tab 隐藏——存量清空后空壳不上线（/kaoyan/news 页面保留诚实空态，
 // 新供给随未来另案恢复）；禁"一站式工具"等已证伪话术（spec 文案纪律）。
-import { CalendarRange, GraduationCap, ShieldCheck, Users } from "lucide-react";
+import { GraduationCap, ShieldCheck, Users } from "lucide-react";
 import Link from "next/link";
 
 import { ToolLinksBlock } from "@/components/tools/ToolLinksBlock";
 
 const tabs = [
-  { id: "timeline", label: "考试流程时间线", href: "/timeline", icon: CalendarRange },
   { id: "community", label: "社区交流", href: "/kaoyan/community", icon: Users },
 ];
 
 function getTabDescription(tabId: string): string {
   const descriptions: Record<string, string> = {
-    timeline: "考研全流程节点与官方时间锚点，替你盯信息差",
     community: "考研经验帖、问答、学长学姐交流",
     vault: "只上架带源数据：每条可溯源，查不到明说",
   };
@@ -27,7 +28,7 @@ export default function KaoyanHomePage() {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-ink-800 mb-2">考研信息站</h1>
-        <p className="text-ink-500">信息差候车室：时间线盯节点、社区问经验、橱窗查有源情报</p>
+        <p className="text-ink-500">信息差候车室：社区问经验、橱窗查有源情报</p>
       </div>
 
       {/* Tab 切换（均为站内导航，离开本页） */}

@@ -50,11 +50,17 @@ def get_config(
 
 @router.get("/platform-status", response_model=PlatformLLMStatusResponse)
 def get_platform_status(user: User = Depends(get_current_user)):
-    """平台内置 LLM 可用性（供前端自适应文案，不暴露任何密钥信息）。"""
+    """平台内置 LLM 可用性（供前端自适应文案，不暴露任何密钥信息）。
+
+    enabled = 有 key 且熔断器未打开——欠费/上游故障连续失败打开熔断后，
+    前端 AI 免费体验弹窗自动降级为配置引导，不再承诺一个用不了的服务
+    （2026-10-01 夜班终验痛点：弹窗承诺与欠费现实落差伤信任）。
+    """
     from app.config import settings
+    from app.services.ai_circuit_breaker import ai_circuit_breaker
 
     return PlatformLLMStatusResponse(
-        enabled=bool(settings.LLM_API_KEY.strip()),
+        enabled=bool(settings.LLM_API_KEY.strip()) and not ai_circuit_breaker.is_open(),
         model=settings.LLM_MODEL,
         daily_quota=settings.LLM_DAILY_QUOTA,
     )

@@ -132,7 +132,7 @@ export default function DashboardPage() {
 
     // 新用户引导动作
     if (dc === 0) {
-      actions.push({ key: "first-decision", title: "建立你的第一个去向决策", href: "/decisions", source: "决策中心", badgeColor: "blue", duration: 3 });
+      actions.push({ key: "first-decision", title: "建立你的第一个去向决策", href: "/decision-os", source: "决策中心", badgeColor: "blue", duration: 3 });
     }
     if (rc === 0) {
       actions.push({ key: "first-retro", title: "完成第一次阶段复盘", href: "/retrospectives", source: "成长档案", badgeColor: "purple", duration: 5 });
@@ -148,7 +148,7 @@ export default function DashboardPage() {
         actions.push({
           key: `review-${pendingReview.id}`,
           title: `回溯你的决策：${pendingReview.destination_type}`,
-          href: "/decisions",
+          href: "/decision-os",
           source: "决策中心",
           badgeColor: "blue",
         });
@@ -715,7 +715,7 @@ export default function DashboardPage() {
           title="欢迎来到 GradPath"
           description="开始记录你的第一条职业轨迹吧。建议从「去向决策」开始，记录你的毕业方向选择。"
           action={
-            <Link href="/decisions">
+            <Link href="/decision-os">
               <Button>
                 <Plus className="h-4 w-4" /> 创建第一条决策
               </Button>

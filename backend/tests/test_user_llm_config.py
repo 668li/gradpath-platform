@@ -395,13 +395,34 @@ class TestPlatformLLMStatus:
         assert data["daily_quota"] == settings.LLM_DAILY_QUOTA
 
     def test_platform_status_enabled_with_key(self, client, auth_headers):
-        """配置平台 Key 后 enabled=True；响应绝不回传明文 Key。"""
+        """配置平台 Key 且熔断器关闭 → enabled=True；响应绝不回传明文 Key。"""
         from app.config import settings
+        from app.services.ai_circuit_breaker import ai_circuit_breaker
 
         platform_key = "".join(("sk-platform", "-test-", "zzzz"))
         with patch.object(settings, "LLM_API_KEY", platform_key):
-            resp = client.get("/api/user-llm-config/platform-status", headers=auth_headers)
+            with patch.object(type(ai_circuit_breaker), "is_open", lambda self: False):
+                resp = client.get(
+                    "/api/user-llm-config/platform-status", headers=auth_headers
+                )
         assert resp.status_code == 200
         data = resp.json()
         assert data["enabled"] is True
         assert platform_key not in resp.text
+
+    def test_platform_status_disabled_when_breaker_open(self, client, auth_headers):
+        """有 Key 但熔断器打开（上游连续失败，如欠费）→ enabled=False：
+        前端 AI 免费体验弹窗据此降级，不再承诺用不了的服务（2026-10-01 夜班）。"""
+        from app.config import settings
+        from app.services.ai_circuit_breaker import ai_circuit_breaker
+
+        platform_key = "".join(("sk-platform", "-test-", "zzzz"))
+        with patch.object(settings, "LLM_API_KEY", platform_key):
+            with patch.object(
+                type(ai_circuit_breaker), "is_open", lambda self: True
+            ):
+                resp = client.get(
+                    "/api/user-llm-config/platform-status", headers=auth_headers
+                )
+        assert resp.status_code == 200
+        assert resp.json()["enabled"] is False
