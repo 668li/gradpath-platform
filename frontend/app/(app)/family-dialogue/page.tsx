@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import {
   MessageCircle,
   Heart,
@@ -580,12 +579,6 @@ function PracticeView({
             <Button variant="secondary" onClick={onReset} className="flex-1">
               <RotateCcw className="h-4 w-4" /> 再练一次
             </Button>
-            <Link
-              href="/career-simulator"
-              className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-brand-sm transition-all hover:bg-brand-700"
-            >
-              沟通成功后，来规划你的路径 <ArrowRight className="h-4 w-4" />
-            </Link>
           </div>
         </div>
       )}

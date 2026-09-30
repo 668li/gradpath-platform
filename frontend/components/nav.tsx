@@ -120,6 +120,7 @@ function getNavSections(): NavSection[] {
       section: "旅程",
       children: [
         { href: "/growth/archive", label: "成长档案", icon: TrendingUp },
+        { href: "/growth-patterns", label: "成长模式", icon: Brain },
         { href: "/retrospectives", label: "阶段复盘", icon: Calendar },
         { href: "/achievements", label: "成长回顾", icon: Trophy },
       ],

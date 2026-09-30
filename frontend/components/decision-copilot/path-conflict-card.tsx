@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Shield,
   GitBranch,
@@ -11,7 +11,7 @@ import {
   Sparkles,
   ArrowRight,
 } from "lucide-react";
-import { pathConflictApi, useApi, useInvalidate } from "@/lib/api";
+import { pathConflictApi } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
 import { Badge, Button, Textarea } from "@/components/ui/form-controls";
 import { Modal } from "@/components/ui/modal";
@@ -61,7 +61,6 @@ export function PathConflictCard({ detection, onClose, onResolved }: PathConflic
   const [modalOpen, setModalOpen] = useState(false);
   const [resolution, setResolution] = useState<PathConflictResolution | null>(null);
   const toast = useToast();
-  const invalidate = useInvalidate();
 
   // 已调解完成，展示行动计划
   if (resolution) {
@@ -72,7 +71,6 @@ export function PathConflictCard({ detection, onClose, onResolved }: PathConflic
           setResolution(null);
           setSelectedId(null);
           setReasoning("");
-          invalidate("/api/path-conflict/detect");
           onResolved?.(resolution);
         }}
       />
@@ -468,16 +466,34 @@ function formatSituation(s: PathConflictDetection["current_situation"]): string 
 // 集成用包装组件 — 直接拉取 detect 接口
 // ----------------------------------------------------------------------
 export function PathConflictSection() {
-  const { data, error, isLoading, mutate } = useApi<PathConflictDetection>(
-    "/api/path-conflict/detect",
-  );
+  const [detection, setDetection] = useState<PathConflictDetection | null>(null);
+  const [hasError, setHasError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [dismissed, setDismissed] = useState(false);
 
-  // 加载中或出错：不显示
-  if (isLoading || error) return null;
+  // 后端 /api/path-conflict/detect 只注册了 POST（GET 会被 /{resolution_id} 吃掉返回 422），
+  // 因此不能用走 GET 的 useApi，必须用 pathConflictApi.detect()（POST 封装）手动触发。
+  const detect = useCallback(async () => {
+    setIsLoading(true);
+    setHasError(false);
+    try {
+      setDetection(await pathConflictApi.detect());
+    } catch {
+      setHasError(true);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    detect();
+  }, [detect]);
+
+  // 加载中或接口出错：不显示（接口成功返回后才展示轻提示/卡片）
+  if (isLoading || hasError) return null;
 
   // 无数据或无冲突：显示提示
-  if (!data || !data.has_conflict) {
+  if (!detection || !detection.has_conflict) {
     return (
       <div className="rounded-xl border border-paper-200 bg-white p-4">
         <div className="flex items-center gap-2 text-sm text-ink-500">
@@ -493,11 +509,11 @@ export function PathConflictSection() {
 
   return (
     <PathConflictCard
-      detection={data}
+      detection={detection}
       onClose={() => setDismissed(true)}
       onResolved={() => {
         // 调解完成后重新检测（生成新冲突或确认无冲突）
-        mutate();
+        detect();
       }}
     />
   );

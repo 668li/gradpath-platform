@@ -2,10 +2,12 @@
 
 from uuid import UUID
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
+from app.core.exceptions import BusinessError
 from app.database import get_db
 from app.models.user import User
 from app.schemas.decision_analysis import (
@@ -16,6 +18,8 @@ from app.schemas.decision_analysis import (
     RedTeamGenerateRequest,
 )
 from app.services import decision_analysis_service
+from app.services.ai_circuit_breaker import AICircuitBreakerOpenError
+from app.services.ai_service import AIServiceNotConfigured, AIServiceRetryExhausted
 
 router = APIRouter(prefix="/api/decision-analysis", tags=["决策深度分析"])
 
@@ -108,4 +112,17 @@ async def generate_ai_analysis(
         )
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    except (
+        AIServiceNotConfigured,
+        AIServiceRetryExhausted,
+        AICircuitBreakerOpenError,
+        httpx.HTTPError,
+    ):
+        # LLM 上游不可用（未配置/超时/熔断/欠费 4xx/5xx）→ 503 语义，
+        # 不再裸 500；矩阵/红队结果已落库，用户可稍后重试。
+        raise BusinessError(
+            "AI_UNAVAILABLE",
+            "AI 服务暂不可用（可稍后重试，矩阵/红队结果已保存）",
+            503,
+        )
     return {"ai_analysis": analysis}

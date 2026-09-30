@@ -5,6 +5,7 @@
 """
 
 import json
+import logging
 import re
 from uuid import UUID
 
@@ -12,6 +13,8 @@ from sqlalchemy.orm import Session
 
 from app.models.decision_analysis import DecisionAnalysis
 from app.services.ai_orchestrator import AIOrchestrator
+
+logger = logging.getLogger(__name__)
 
 
 def create_analysis(db: Session, user_id: UUID, data: dict) -> DecisionAnalysis:
@@ -113,8 +116,105 @@ def compute_matrix(criteria: list[dict], matrix_scores: list[dict]) -> dict:
     return {"results": results, "winner": winner}
 
 
+# 风险关键词 → (类别名, 保障措施) — 零 LLM 兜底聚类的规则表
+_RISK_KEYWORDS: list[tuple[tuple[str, ...], str, str]] = [
+    (
+        ("时间", "拖延", "来不及", "进度", "备考", "复习", "工期"),
+        "时间与执行力风险",
+        "把大目标拆成周级里程碑，每周日固定复盘一次，落后两周即启动计划调整。",
+    ),
+    (
+        ("钱", "经济", "费用", "收入", "预算", "存款", "负债"),
+        "经济压力风险",
+        "预先备足 6-12 个月的生活与学习预算，写下最小可承受开支线并告知家人。",
+    ),
+    (
+        ("竞争", "报录", "名额", "内卷", "对手", "分数线", "招录"),
+        "竞争烈度风险",
+        "报名前核对近三年报录比与分数线趋势，并准备一档更稳的备选方案。",
+    ),
+    (
+        ("家人", "家庭", "父母", "对象", "感情", "婚姻"),
+        "家庭与关系风险",
+        "带着数据和折中方案与家人做一次正式沟通，明确底线与支持条件。",
+    ),
+    (
+        ("健康", "身体", "心态", "焦虑", "失眠", "情绪", "压力"),
+        "身心健康风险",
+        "每周保留固定休息与运动时间，设置心态预警信号与求助渠道。",
+    ),
+    (
+        ("信息", "不确定", "变化", "政策", "市场", "行业", "裁员", "形势"),
+        "外部不确定性风险",
+        "为关键假设设定验证时间点，每月核查一次外部信号，偏离即重估。",
+    ),
+    (
+        ("能力", "基础", "学不会", "底子", "跨考", "转行", "经验"),
+        "能力与基础风险",
+        "先做一次摸底测试定位真实差距，把补基础列入前 30 天计划。",
+    ),
+]
+_DEFAULT_RISK = (
+    "综合执行风险",
+    "把最可能失败的 1-2 个环节写成书面预案，明确触发条件与替代动作。",
+)
+
+
+def _template_premortem(reasons: list[str]) -> dict:
+    """零 LLM 的预验尸模板兜底 — 按关键词把用户原因聚类为 3-5 类风险 + 通用保障措施。
+
+    返回结构与前端契约一致：categories[].category/.reasons + safeguards[].category/.action。
+    """
+    categories: list[dict] = []
+    by_name: dict[str, dict] = {}
+    unmatched: list[str] = []
+    seen: set[str] = set()
+
+    for reason in reasons:
+        text = str(reason).strip()
+        if not text or text in seen:  # 去重
+            continue
+        seen.add(text)
+        for keywords, name, safeguard in _RISK_KEYWORDS:
+            if any(k in text for k in keywords):
+                bucket = by_name.get(name)
+                if bucket is None:
+                    bucket = {"category": name, "reasons": [], "_safeguard": safeguard}
+                    by_name[name] = bucket
+                    categories.append(bucket)
+                bucket["reasons"].append(text)
+                break
+        else:
+            unmatched.append(text)
+
+    if unmatched:
+        name, safeguard = _DEFAULT_RISK
+        bucket = by_name.get(name)
+        if bucket is None:
+            bucket = {"category": name, "reasons": [], "_safeguard": safeguard}
+            by_name[name] = bucket
+            categories.append(bucket)
+        bucket["reasons"].extend(unmatched[:20])
+
+    # 至少一类，至多五类（超出时保留最具体的靠前类别）
+    if not categories:
+        name, safeguard = _DEFAULT_RISK
+        categories.append({"category": name, "reasons": [], "_safeguard": safeguard})
+    categories = categories[:5]
+
+    safeguards = [{"category": c["category"], "action": c["_safeguard"]} for c in categories]
+    return {
+        "categories": [{"category": c["category"], "reasons": c["reasons"]} for c in categories],
+        "safeguards": safeguards,
+    }
+
+
 async def analyze_premortem(title: str, options: list[str], reasons: list[str]) -> dict:
-    """AI 分析预验尸结果：聚类风险 + 生成保障措施。"""
+    """AI 分析预验尸结果：聚类风险 + 生成保障措施。
+
+    LLM 不可用/返回不可解析时降级为模板聚类（ai_used=False），绝不裸 500。
+    返回结构对齐前端契约：{ categories: [{category, reasons}], safeguards: [{category, action}], ai_used }。
+    """
     system_prompt = """你是一位风险管理专家。用户做了一个决策预验尸：假设决策失败了，列出了可能的原因。
 
 请将原因聚类为 3-5 个风险类别，并为每个类别生成一个保障措施。
@@ -138,9 +238,16 @@ async def analyze_premortem(title: str, options: list[str], reasons: list[str]) 
     for i, r in enumerate(reasons, 1):
         context += f"{i}. {r}\n"
 
-    orchestrator = AIOrchestrator()
-    raw = await orchestrator.chat(system_prompt=system_prompt, user_prompt=context, timeout=30)
+    template_result = _template_premortem(reasons)
 
+    try:
+        orchestrator = AIOrchestrator()
+        raw = await orchestrator.chat(system_prompt=system_prompt, user_prompt=context, timeout=30)
+    except Exception as exc:
+        logger.warning("预验尸 AI 分析降级为模板聚类（ai_used=False）: %s", exc)
+        return {**template_result, "ai_used": False}
+
+    data = None
     try:
         data = json.loads(raw)
     except (json.JSONDecodeError, TypeError):
@@ -149,11 +256,30 @@ async def analyze_premortem(title: str, options: list[str], reasons: list[str]) 
             try:
                 data = json.loads(match.group(0))
             except (json.JSONDecodeError, TypeError):
-                return {"categories": []}
-        else:
-            return {"categories": []}
+                data = None
 
-    return data
+    raw_categories = data.get("categories") if isinstance(data, dict) else None
+    categories: list[dict] = []
+    safeguards: list[dict] = []
+    if isinstance(raw_categories, list):
+        for c in raw_categories:
+            if not isinstance(c, dict):
+                continue
+            name = str(c.get("name") or c.get("category") or "").strip()
+            if not name:
+                continue
+            reason_list = [str(r).strip() for r in (c.get("reasons") or []) if str(r).strip()]
+            categories.append({"category": name, "reasons": reason_list or [name]})
+            action = str(c.get("safeguard") or c.get("action") or "").strip()
+            if action:
+                safeguards.append({"category": name, "action": action})
+
+    if not categories:
+        # LLM 返回不可解析 → 诚实降级为模板聚类
+        logger.warning("预验尸 AI 返回不可解析，降级为模板聚类（ai_used=False）")
+        return {**template_result, "ai_used": False}
+
+    return {"categories": categories, "safeguards": safeguards, "ai_used": True}
 
 
 def _heuristic_red_team_questions(

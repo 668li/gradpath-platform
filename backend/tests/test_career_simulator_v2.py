@@ -2,7 +2,7 @@
 
 覆盖：
 - service 层：报录比字符串解析 / 分位数 / 百分位 / 考公量纲分簇 / 诚实降级（N<5）
-- API 层：simulate 请求校验 / 响应结构（无单点预测数）/ 引擎叠加层降级
+- API 层：/simulate 已退役（鉴权 + 410 Gone）/ presets、meta 静态枚举仍可读
 - 零造假红线：响应不含满意度/净资产/10年曲线等旧范式字段
 """
 
@@ -199,34 +199,25 @@ def test_engine_analysis_layer(db_session):
 
 
 # ----------------------------------------------------------------------
-# API 层
+# API 层（/simulate 已退役：鉴权 + 410 Gone，2026-09-26 拍板）
 # ----------------------------------------------------------------------
 
 
-def test_api_simulate_validation(client):
-    resp = client.post(
-        "/api/career-simulator/simulate",
-        json={"paths": [{"path_type": "unknown"}]},
-    )
-    assert resp.status_code == 422
-
-    resp = client.post(
-        "/api/career-simulator/simulate",
-        json={"paths": [{"path_type": "grad"}] * 4},
-    )
-    assert resp.status_code == 422  # 超 3 条拒绝
+def test_api_simulate_requires_auth(client):
+    """退役后的 /simulate 也必须带 token——先吃 401，不再匿名可达。"""
+    resp = client.post("/api/career-simulator/simulate", json={})
+    assert resp.status_code == 401
 
 
-def test_api_simulate_no_auth_required(client):
-    """模拟器保持旧版无鉴权口径（公开工具页）。"""
+def test_api_simulate_retired_410(client, auth_headers):
+    """带合法 token 调用退役端点 → 410 Gone，detail 指向决策引擎。"""
     resp = client.post(
         "/api/career-simulator/simulate",
+        headers=auth_headers,
         json={"paths": [{"path_type": "grad", "target": "985"}]},
     )
-    assert resp.status_code == 200
-    body = resp.json()
-    assert body["method_note"]
-    assert len(body["paths"]) == 1
+    assert resp.status_code == 410
+    assert "退役" in resp.json()["detail"]
 
 
 def test_api_presets_and_meta(client):

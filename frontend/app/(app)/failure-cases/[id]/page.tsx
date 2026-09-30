@@ -12,8 +12,6 @@ import {
   BookOpen,
   AlertCircle,
   Lightbulb,
-  Route,
-  ArrowRight,
 } from "lucide-react";
 import { failureCaseApi } from "@/lib/api";
 import {
@@ -218,24 +216,6 @@ export default function FailureCaseDetailPage() {
             <ThumbsUp className="h-4 w-4" />
             有帮助（{helpfulCount}）
           </Button>
-        </div>
-
-        {/* CTA: Career Simulator */}
-        <div className="rounded-xl border border-brand-300 bg-gradient-to-br from-brand-50 to-brand-100 p-6 text-center">
-          <Route className="mx-auto h-8 w-8 text-brand-500 mb-3" strokeWidth={1.5} />
-          <h3 className="font-display text-lg font-semibold text-ink-800 mb-2">
-            失败不是终点，而是看清下一条路的机会
-          </h3>
-          <p className="text-sm text-ink-500 mb-4 max-w-md mx-auto leading-relaxed">
-            用职业路径模拟器探索你的可能性，基于真实数据推演不同路径的预期收益与风险。
-          </p>
-          <Link
-            href="/career-simulator"
-            className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-700 transition-colors"
-          >
-            打开职业路径模拟器
-            <ArrowRight className="h-4 w-4" />
-          </Link>
         </div>
       </div>
     </div>
