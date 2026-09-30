@@ -104,3 +104,10 @@ git_status*.txt
 # 安全扫描产物（Mimosa 报告）不入库
 .mimosa/
 **/.mimosa/
+
+# 爬取作业暂存（PDF缓存/探猎脚本与中间产物/临时工作目录）不入库——证据URL已沉淀进任务书与DB
+.video_agent/
+backend/scripts/data/_pdf_cache/
+backend/scripts/data/_hunt_*
+backend/scripts/data/yanzhao2027_hunt_*.json
+backend/tmp_emp*/
