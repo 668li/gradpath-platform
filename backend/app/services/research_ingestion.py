@@ -90,39 +90,48 @@ def _json_safe(value: Any) -> Any:
     return value
 
 
-def _load_kaoyan_dedup_baseline(db: Session) -> tuple[list[int], set[str]]:
-    """加载库内已收录考研资讯的提纯基线（SimHash + 归一化 URL）。
+# 提纯基线启用线（EMP-3 参数化③，2026-09-30）：这些 item_type 与库内已收录条目
+# 做 simhash + 归一化 URL 比对；其他类型继续走精确 URL 幂等。
+_DEDUP_BASELINE_TYPES = frozenset({"kaoyan_news", "employment_announce"})
+
+
+def _load_research_dedup_baseline(db: Session, item_type: str) -> tuple[list[int], set[str]]:
+    """加载库内已收录条目的提纯基线（SimHash + 归一化 URL），按线隔离。
 
     纳入范围（与库内已有条目比对，杜绝相似重复，Phase A5）：
-    - KaoyanNews.status == 'approved'（已上线正文）的 title+summary
-    - ExternalResearchItem.item_type == 'kaoyan_news'（含待审队列）的 title
+    - KaoyanNews.status == 'approved'（已上线正文）的 title+summary——仅 kaoyan_news
+      线纳入（KaoyanNews 是考研资讯正文库；就业线混入会误伤彼此的增量语义）
+    - ExternalResearchItem.item_type == item_type（含待审队列）的 title
     - 两类来源的 source_url（normalize_url 归一化后）
 
-    仅 kaoyan_news 类型调用；其他类型继续走精确 URL 幂等。
+    仅 _DEDUP_BASELINE_TYPES 类型调用；其他类型继续走精确 URL 幂等。
     """
     hashes: list[int] = []
     norm_urls: set[str] = set()
 
-    for row in (
-        db.query(KaoyanNews.title, KaoyanNews.summary).filter(KaoyanNews.status == "approved").all()
-    ):
-        text = f"{row[0] or ''} {row[1] or ''}".strip()
-        if text:
-            hashes.append(compute_simhash(text))
+    if item_type == "kaoyan_news":
+        for row in (
+            db.query(KaoyanNews.title, KaoyanNews.summary)
+            .filter(KaoyanNews.status == "approved")
+            .all()
+        ):
+            text = f"{row[0] or ''} {row[1] or ''}".strip()
+            if text:
+                hashes.append(compute_simhash(text))
+        for row in db.query(KaoyanNews.source_url).all():
+            norm_urls.add(normalize_url(row[0]))
 
     for row in (
         db.query(ExternalResearchItem.title)
-        .filter(ExternalResearchItem.item_type == "kaoyan_news")
+        .filter(ExternalResearchItem.item_type == item_type)
         .all()
     ):
         if row[0]:
             hashes.append(compute_simhash(row[0]))
 
-    for row in db.query(KaoyanNews.source_url).all():
-        norm_urls.add(normalize_url(row[0]))
     for row in (
         db.query(ExternalResearchItem.source_url)
-        .filter(ExternalResearchItem.item_type == "kaoyan_news")
+        .filter(ExternalResearchItem.item_type == item_type)
         .all()
     ):
         norm_urls.add(normalize_url(row[0]))
@@ -178,11 +187,12 @@ def store_research_items(
     redline_rejected = 0
     evidence_rejected = 0
     try:
-        # 提纯基线：仅 kaoyan_news 启用（库内已收录条目的 simhash + 归一化 URL，批次内增量比对）
+        # 提纯基线：按线启用（_DEDUP_BASELINE_TYPES；库内已收录条目的 simhash +
+        # 归一化 URL，批次内增量比对）——kaoyan_news 行为不变，employment_announce 同享
         kaoyan_hashes: list[int] = []
         kaoyan_norm_urls: set[str] = set()
-        if item_type == "kaoyan_news":
-            kaoyan_hashes, kaoyan_norm_urls = _load_kaoyan_dedup_baseline(db)
+        if item_type in _DEDUP_BASELINE_TYPES:
+            kaoyan_hashes, kaoyan_norm_urls = _load_research_dedup_baseline(db, item_type)
 
         for item in items:
             source_url = (item.get("source_url") or "").strip()
@@ -247,10 +257,10 @@ def store_research_items(
             content = item.get("content") or ""
 
             # === 提纯去重（Phase A5：先提纯再入库）===
-            # kaoyan_news 信息差管线：与库内已收录条目比对——
+            # 信息差管线（_DEDUP_BASELINE_TYPES 各线）：与库内已收录条目比对——
             # 归一化 URL 命中 / simhash 相似 → 拒收（duplicated+1）；
             # quality_score < QUALITY_MIN_SCORE（D 级）→ 直接不占审核队列。
-            if item_type == "kaoyan_news":
+            if item_type in _DEDUP_BASELINE_TYPES:
                 norm_url = normalize_url(source_url)
                 if norm_url in kaoyan_norm_urls:
                     logger.info(

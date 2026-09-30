@@ -95,3 +95,20 @@ class MarketOverviewResponse(BaseModel):
     school_employment_samples: list[SchoolEmploymentSample]
     school_employment_coverage: int
     school_total: int
+
+
+class EmploymentAnnounceItem(BaseModel):
+    """公开只读就业公告条目（EMP-3：非敏感字段，PENDING 永不上前端）。"""
+
+    title: str
+    source_url: str
+    source_name: str | None = None
+    published_at: str | None = None
+    credibility: str
+
+
+class EmploymentAnnounceListResponse(BaseModel):
+    """GET /api/employment/announces（公开只读，时间倒序分页）。"""
+
+    total: int
+    items: list[EmploymentAnnounceItem]

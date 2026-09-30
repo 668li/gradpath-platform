@@ -1,0 +1,19 @@
+# 就业专项 EMP-3（2026-09-30）：高校就业网官方公告线
+# 立项出处：《就业专项任务书-2026-09-30.md》§0（用户点名翻案"就业线不建爬虫"）
+# 4 校标定证据：docs/就业爬取类型调研-2026-09-30.md（parse_list_generic 实测达标）
+name: employment_announce
+category: research
+description: 高校就业网官方公告（4 校：山大/中南/河工大/华东理工，URL 级增量，PENDING 审核队列）
+enabled: true
+schedule: "30 * * * *"  # 每小时半点错峰（考研 official_announce 整点，避免同时并发）
+sla_hours: 24  # 校级公告时效要求低于考研调剂/复试线
+entry: "https://job.sdu.edu.cn/"  # 主入口；栏目清单在 EmploymentAnnounceCrawler.EMPLOYMENT_SECTIONS
+rate_limit: 2.5  # 任务书 §EMP-3 明确值（edu.cn 礼貌限速，per-domain ≥2.5s）
+max_retries: 2
+timeout_seconds: 30
+fetch_detail: true
+notes: |
+  与考研线共用 OfficialAnnounceCrawler 管线，经参数化点分流：item_type=
+  employment_announce、增量基线/simhash 按线隔离（互不污染考研去重语义）。
+  首批走 admin 批量审核通道 + N/3 人工抽样核验（任务书 D8，就业公告事实性
+  误导代价高于考研资讯）。可见面=公开只读端点 /api/employment/announces。

@@ -48,6 +48,9 @@ _FRESHNESS_SOURCE_ALIASES = {
     "web_article_research": "kaoyan",
     "real_data": "kaoyan",
     "bilibili_research": "kaoyan",
+    # EMP-3（2026-09-30）：就业公告线爬虫名与 data_freshness SOURCES 键同名，
+    # 恒等映射让审核通过时回写该渠道 records_count（爬虫线心跳由钩子另管）
+    "employment_announce": "employment_announce",
 }
 
 # ----------------------------------------------------------------------

@@ -8,6 +8,7 @@ bilibili_kaoyan / github_kaoyan 五个退役或孤儿文件已物理删除
 """
 
 from app.crawlers.research import eol_kaoyan_crawler  # noqa: F401
+from app.crawlers.research import employment_announce_crawler  # noqa: F401
 from app.crawlers.research import official_announce_crawler  # noqa: F401
 from app.crawlers.research import rss_news_crawler  # noqa: F401
 from app.crawlers.research import rsshub_research_crawler  # noqa: F401

@@ -6,10 +6,13 @@ from sqlalchemy.orm import Session
 
 from app.core.cursor_pagination import apply_cursor_filter, encode_cursor
 from app.database import get_db
+from app.models.ingestion import ExternalResearchItem
 from app.models.report_record import ParseStatus, ReportRecord
 from app.models.school import School
 from app.schemas.common import CursorPaginatedResponse
 from app.schemas.employment import (
+    EmploymentAnnounceItem,
+    EmploymentAnnounceListResponse,
     EmploymentSearchResponse,
     EmploymentStatsResponse,
     MajorQuery,
@@ -110,6 +113,45 @@ def majors(school: str = Query(...), db: Session = Depends(get_db)):
 @router.post("/majors", response_model=list[str])
 def majors_post(body: MajorQuery, db: Session = Depends(get_db)):
     return list_majors(db, body.school)
+
+
+@router.get("/announces", response_model=EmploymentAnnounceListResponse)
+def employment_announces(
+    page: int = Query(1, ge=1, le=1000),
+    page_size: int = Query(20, ge=1, le=50),
+    db: Session = Depends(get_db),
+):
+    """公开只读：已审核通过的高校就业网官方公告（EMP-3，2026-09-30）。
+
+    - 过滤 ExternalResearchItem（item_type=employment_announce ∧ review_status=APPROVED）；
+      PENDING/REJECTED 条目永不出现（审核闸纪律）。
+    - 只出 title/source_url/source_name/published_at/credibility 非敏感字段；
+      排序=created_time 倒序（公告发布日期存 external_meta，采集时间与其单调一致）。
+    """
+    query = db.query(ExternalResearchItem).filter(
+        ExternalResearchItem.item_type == "employment_announce",
+        ExternalResearchItem.review_status == "APPROVED",
+    )
+    total = query.count()
+    rows = (
+        query.order_by(ExternalResearchItem.created_time.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
+    return EmploymentAnnounceListResponse(
+        total=total,
+        items=[
+            EmploymentAnnounceItem(
+                title=it.title,
+                source_url=it.source_url,
+                source_name=(it.external_meta or {}).get("source_name"),
+                published_at=(it.external_meta or {}).get("published_at"),
+                credibility=it.credibility,
+            )
+            for it in rows
+        ],
+    )
 
 
 @router.get("/stats", response_model=EmploymentStatsResponse)

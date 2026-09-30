@@ -43,24 +43,23 @@ from app.crawlers.registry import register_crawler
 from app.crawlers.research.dedup import normalize_url
 from app.crawlers.research.transformer import ResearchTransformer
 from app.database import SessionLocal
-from app.services.research_ingestion import _load_kaoyan_dedup_baseline, store_research_items
+from app.services.research_ingestion import _load_research_dedup_baseline, store_research_items
 
 logger = logging.getLogger(__name__)
 
 SOURCE_CHANNEL = "official_announce"
 
 
-def _load_known_urls() -> set[str]:
+def _load_known_urls(item_type: str = "kaoyan_news") -> set[str]:
     """库内已收录条目的归一化 URL 集合（URL 级增量抓取的过滤基线）。
 
-    复用 research_ingestion 的去重基线（approved KaoyanNews + 全部 kaoyan_news
-    类型 ExternalResearchItem 的 source_url）。加载失败返回空集——退化为全量
-    抓取，绝不因增量层故障丢数据。
+    按线 item_type 隔离（EMP-3 参数化②）：各线只拿自己类型的已收录 URL 集，
+    互不污染。加载失败返回空集——退化为全量抓取，绝不因增量层故障丢数据。
     """
     try:
         db = SessionLocal()
         try:
-            _, norm_urls = _load_kaoyan_dedup_baseline(db)
+            _, norm_urls = _load_research_dedup_baseline(db, item_type)
             return norm_urls
         finally:
             db.close()
@@ -420,6 +419,9 @@ class OfficialAnnounceCrawler(BaseCrawler):
     category = "research"
     description = "官方公告爬虫（高校研招网/省级考试院，edu.cn/gov.cn）"
     DEFAULT_SECTIONS_OVERRIDE = None  # 子类可覆写自有栏目表（如资讯聚合）
+    # 入库 item_type（EMP-3 参数化①）：默认考研资讯不变；就业线子类覆写
+    # employment_announce，store/_load_known_urls 全部按此分流，禁止子类绕过。
+    item_type: str = "kaoyan_news"
 
     def __init__(self, config: dict = None):
         super().__init__(config)
@@ -445,7 +447,7 @@ class OfficialAnnounceCrawler(BaseCrawler):
         并发绝不触碰 robots 护栏（_request 保留 SSRF/robots/重试/限速）。
         结果顺序不保证，调用方不依赖次序。
         """
-        known_urls = _load_known_urls()
+        known_urls = _load_known_urls(self.item_type)
         if self._concurrency <= 1 or len(self.sections) <= 1:
             raw_items: list[dict] = []
             for section in self.sections:
@@ -598,7 +600,7 @@ class OfficialAnnounceCrawler(BaseCrawler):
             result = store_research_items(
                 db,
                 crawler_name=self.name,
-                item_type="kaoyan_news",
+                item_type=self.item_type,
                 items=items,
                 source_platform="official",
                 run_id=str(run_record.id),

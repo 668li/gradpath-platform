@@ -137,7 +137,8 @@ def test_official_increment_skips_all_known(monkeypatch):
     assert len(entries) >= 5, "夹具前提：uestc 列表应有足量条目"
     monkeypatch.setattr(
         "app.crawlers.research.official_announce_crawler._load_known_urls",
-        lambda: {normalize_url(u) for u in entries},
+        # EMP-3 参数化②：_load_known_urls 按 item_type 取各线基线
+        lambda item_type="kaoyan_news": {normalize_url(u) for u in entries},
     )
     detail_calls: list = []
     crawl = _make_official(detail_calls)
@@ -151,7 +152,7 @@ def test_official_increment_fetches_only_unknown(monkeypatch):
     known = {normalize_url(entries[0])}
     monkeypatch.setattr(
         "app.crawlers.research.official_announce_crawler._load_known_urls",
-        lambda: known,
+        lambda item_type="kaoyan_news": known,
     )
     detail_calls: list = []
     crawl = _make_official(detail_calls)
@@ -163,22 +164,23 @@ def test_official_increment_fetches_only_unknown(monkeypatch):
 def test_load_known_urls_degrades_to_empty_on_db_failure(monkeypatch):
     """基线加载失败必须退化为空集（全量抓取），绝不丢数据。"""
 
-    def _boom(db):
+    def _boom(db, item_type):
         raise RuntimeError("db down")
 
     monkeypatch.setattr(
-        "app.crawlers.research.official_announce_crawler._load_kaoyan_dedup_baseline", _boom
+        "app.crawlers.research.official_announce_crawler._load_research_dedup_baseline", _boom
     )
-    assert _load_known_urls() == set()
+    assert _load_known_urls("kaoyan_news") == set()
 
 
 # ===== 提频与 seed 迁移 =====
 
 
 def test_default_schedule_matches_b0_refeed_scope():
-    """bilibili 退役（09-26）后零调度；B0 复喂（09-26 拍板）后调度表=官方公告面三线。
+    """bilibili 退役（09-26）后零调度；B0 复喂后调度表=官方公告面三线。
 
-    铁律保持：bilibili 永不在默认调度表；新增调度线必须走白名单+线契约。
+    铁律保持：bilibili 永不在默认调度表；新增调度线必须走白名单+线契约
+    （EMP-3 2026-09-30 就业公告线照此进表：30 分错峰）。
     """
     from app.api.crawlers import DEFAULT_DAILY_SCHEDULES
 
@@ -187,6 +189,7 @@ def test_default_schedule_matches_b0_refeed_scope():
         "official_announce": "0 * * * *",
         "eol_kaoyan": "0 2 * * *",
         "rsshub_research": "30 2 * * *",
+        "employment_announce": "30 * * * *",
     }
 
 

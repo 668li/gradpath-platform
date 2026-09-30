@@ -35,6 +35,9 @@ SOURCES = {
     "scoreline_official": "自划线复试分数线（年度导入）",
     # DF-21（2026-09-30）：简章年更静态数据心跳（每年 9-15 年度 job）
     "yanzhao_official": "研招简章专业目录（年度导入）",
+    # 就业专项 EMP-3（2026-09-30）：高校就业网官方公告爬虫线；心跳走 BaseCrawler
+    # 统一钩子按爬虫名回写，promote 恒等别名见 research_promote._FRESHNESS_SOURCE_ALIASES
+    "employment_announce": "高校就业网官方公告",
 }
 
 

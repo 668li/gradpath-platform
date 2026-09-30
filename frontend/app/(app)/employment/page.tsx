@@ -9,7 +9,7 @@ import type { FailureCaseResponse } from "@/types/failure-case";
 import { AlertTriangle, MessageSquare, BarChart3 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { careerIntelApi } from "@/lib/api/ai";
-import { employmentApi, type MarketOverview, type SchoolReportItem, type EmploymentSearchData } from "@/lib/api/employment";
+import { employmentApi, type MarketOverview, type SchoolReportItem, type EmploymentSearchData, type EmploymentAnnounceItem } from "@/lib/api/employment";
 import { useToast } from "@/components/ui/toast";
 import { EmptyState, LoadingState } from "@/components/ui/empty";
 import { ListSkeleton } from "@/components/ui/skeleton";
@@ -223,6 +223,8 @@ function MarketTab() {
         )}
       </section>
 
+      <AnnouncesSection />
+
       <SchoolReportsSection />
     </div>
   );
@@ -343,6 +345,66 @@ function SchoolReportsSection() {
           );
         })}
       </ul>
+    </section>
+  );
+}
+
+// ===== 官方就业公告（EMP-3，2026-09-30）：公开只读端点消费，只出已审核条目 =====
+function AnnouncesSection() {
+  const [items, setItems] = useState<EmploymentAnnounceItem[] | null>(null);
+  const [total, setTotal] = useState(0);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    employmentApi
+      .announces(1, 20)
+      .then((d) => {
+        setItems(d.items);
+        setTotal(d.total);
+      })
+      .catch(() => setFailed(true));
+  }, []);
+
+  return (
+    <section className="rounded-xl border border-paper-200 bg-white p-5">
+      <h3 className="mb-1 font-bold text-ink-800">官方就业公告</h3>
+      <p className="mb-3 text-xs text-ink-400">
+        高校就业网官方通知直采（校招公告/宣讲会/双选会/选调通知），全部经人工审核后展示——
+        每条都可溯源到校方官网原文。
+      </p>
+      {failed ? (
+        <p className="text-sm text-ink-400">公告加载失败，稍后重试。</p>
+      ) : !items ? (
+        <ListSkeleton count={3} />
+      ) : items.length === 0 ? (
+        <div className="rounded-lg bg-paper-50 p-4">
+          <p className="text-sm text-ink-500">
+            官方公告线已接入（首批覆盖山东大学/中南大学/河北工业大学/华东理工大学就业网），
+            首批条目正在审核中——审核通过后此处实时可见，不会用转载内容充数。
+          </p>
+        </div>
+      ) : (
+        <ul className="divide-y divide-paper-100">
+          {items.map((a) => (
+            <li key={a.source_url}>
+              <a
+                href={a.source_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="-mx-2 block rounded-lg px-2 py-3 hover:bg-paper-50"
+              >
+                <p className="text-sm font-medium text-ink-800">{a.title}</p>
+                <p className="mt-0.5 text-[11px] text-ink-400">
+                  {a.source_name ?? "高校就业网"} · {a.published_at ?? "日期以原文为准"}
+                </p>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )}
+      {items != null && total > items.length && (
+        <p className="mt-2 text-right text-xs text-ink-400">共 {total} 条，展示最新 {items.length} 条</p>
+      )}
     </section>
   );
 }

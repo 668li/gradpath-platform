@@ -57,6 +57,12 @@ export const employmentApi = {
       method: "POST",
       body: JSON.stringify({ school, major: "" }),
     }),
+
+  // 官方就业公告（EMP-3，2026-09-30）：公开只读端点，只出已审核条目
+  announces: (page = 1, pageSize = 20) =>
+    request<EmploymentAnnounceList>(
+      `/api/employment/announces?page=${page}&page_size=${pageSize}`
+    ),
 };
 
 export interface MarketOverview {
@@ -114,6 +120,20 @@ export interface EmploymentSearchData {
     civil_service_rate: (number | null)[];
     abroad_rate: (number | null)[];
   } | null;
+}
+
+// 官方就业公告（EMP-3）：公开只读端点响应
+export interface EmploymentAnnounceItem {
+  title: string;
+  source_url: string;
+  source_name: string | null;
+  published_at: string | null;
+  credibility: string;
+}
+
+export interface EmploymentAnnounceList {
+  total: number;
+  items: EmploymentAnnounceItem[];
 }
 
 // ===== 社区数据 =====

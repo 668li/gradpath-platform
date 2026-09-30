@@ -26,6 +26,9 @@ ALLOWED_CRAWLER_SOURCES: frozenset[str] = frozenset(
         # 知乎内容改走 RSSHub 日报桥。复活需重过合规评审。
         "rsshub_research",  # research：自建 RSSHub 研招/教育部公告聚合 → PENDING 队列（杠杆化）
         "news_aggregates",  # research：eol/offcn 资讯聚合列表 → PENDING 队列（量的来源）
+        # 就业专项 EMP-3（2026-09-30）：用户点名翻案"就业线不建爬虫"（任务书 §0），
+        # 4 校 edu.cn 就业网公告线，标定证据 docs/就业爬取类型调研-2026-09-30.md
+        "employment_announce",  # research：高校就业网官方公告 → PENDING 队列
     }
 )
 
