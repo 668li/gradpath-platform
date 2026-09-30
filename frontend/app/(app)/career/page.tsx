@@ -2,13 +2,13 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { ClipboardCheck, Compass, ClipboardList, TrendingUp, ChevronRight } from "lucide-react";
+import { ClipboardCheck, ClipboardList, TrendingUp, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { LoadingState } from "@/components/ui/empty";
 
 const tabs = [
   { id: "assessment", label: "评估测试", icon: ClipboardCheck, color: "text-purple-500", href: "/assessment", desc: "霍兰德、MBTI、大五、DISC 四大职业测评，深度了解你的兴趣、人格与行为风格" },
-  { id: "simulator", label: "路径模拟", icon: Compass, color: "text-green-500", href: "/career-simulator", desc: "模拟不同职业路径的发展轨迹，对比分析各方向的前景与风险" },
+  // 「路径模拟」tab 已删：/career-simulator 整页退役（2026-09-26 拍板），两路对比由决策实验室/决策引擎承接
   { id: "decision-lab", label: "决策实验室", icon: ClipboardList, color: "text-blue-500", href: "/decision-lab", desc: "结构化决策框架，帮助你在多个职业选项中做出理性判断" },
   { id: "growth", label: "成长模式", icon: TrendingUp, color: "text-amber-500", href: "/growth-patterns", desc: "探索个人成长模式，制定可持续的自我提升策略" },
 ];
@@ -77,7 +77,6 @@ function CareerPageContent() {
                 className={cn(
                   "inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-medium text-white transition-opacity hover:opacity-90",
                   current.id === "assessment" && "bg-purple-600",
-                  current.id === "simulator" && "bg-green-600",
                   current.id === "decision-lab" && "bg-blue-600",
                   current.id === "growth" && "bg-amber-600",
                 )}

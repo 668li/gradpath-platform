@@ -161,7 +161,16 @@ export default function OnboardingPage() {
       markCompleted(record);
       toast.success("AI 诊断完成！");
     } catch {
-      toast.error("AI 诊断暂时不可用，可稍后在个人中心重试");
+      // 夜班验收痛点2：AI 失败也必须落完成标记。否则服务端 completed=false，
+      // (app) 布局层会把 /dashboard 弹回 /onboarding（死循环）。完成标记与 AI 成功解耦，
+      // 诊断可稍后在个人中心补生成。
+      try {
+        await onboardingApi.skip();
+      } catch {
+        // skip 接口失败不阻断：本地仍标记完成，让用户本会话能离开
+      }
+      markSkipped();
+      toast.error("AI 服务暂时不可用（维护中）——引导已完成，可稍后在个人中心重新生成");
     } finally {
       setGenerating(false);
     }

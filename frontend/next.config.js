@@ -8,8 +8,10 @@ const nextConfig = {
       { source: "/career", destination: "/dashboard", permanent: false },
       { source: "/life-wheel", destination: "/self-discovery", permanent: false },
       { source: "/insights", destination: "/achievements", permanent: false },
-      { source: "/decision-lab", destination: "/decision-center", permanent: false },
-      { source: "/decision-engine", destination: "/decision-center", permanent: false },
+      // /decision-lab 不再重定向：页面 app/(app)/decision-lab 已恢复为决策对比主入口
+      // （夜班验收 2026-10-01 痛点1：307 死链导致全站「去分析」入口原路弹回）
+      // /decision-engine 同理恢复：两路决策引擎页面活跃（信任对齐批次A 重建），
+      // blueprint/interview/interpret-card 均链接它，307 会把「两路对比」整体打瞎（夜班验收痛点5）
       { source: "/war-room", destination: "/decision-center", permanent: false },
       { source: "/decisions", destination: "/decision-center", permanent: false },
       { source: "/plans", destination: "/study-plans", permanent: false },

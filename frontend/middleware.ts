@@ -28,7 +28,8 @@ const PROTECTED_PREFIXES = [
   "/settings",
   "/chat",
   "/decisions",
-  "/decision-lab",
+  // "/decision-lab" 已移出：页面已恢复（夜班验收痛点1），登录保护由 (app) 布局
+  // AuthGuard 客户端兜底，避免服务端 307 干扰该路由
   "/growth",
   "/growth-patterns",
   "/life-wheel",

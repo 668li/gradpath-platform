@@ -61,13 +61,14 @@ function recommendNextSteps(state: UserState): Recommendation[] {
     });
   }
 
-  // 3. 做了测评没做模拟 → 高优先级
+  // 3. 做了测评没做两路对比 → 高优先级
+  // （夜班验收痛点5：原「看看你的路径」指向已退役的 /career-simulator，改为决策引擎）
   if (state.hasAssessment && !state.hasSimulation) {
     recs.push({
       priority: "high",
-      title: "看看你的路径",
-      description: "基于测评结果，模拟你的职业路径",
-      href: "/career-simulator?from=recommend",
+      title: "生成两路决策报告",
+      description: "考研 vs 就业两路对比，真实数据可溯源",
+      href: "/decision-engine?from=recommend",
       icon: Route,
     });
   }

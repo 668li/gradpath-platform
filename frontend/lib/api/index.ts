@@ -80,16 +80,7 @@ export type {
 } from "./admin";
 export { lifeDesignApi } from "./recommendations";
 export { searchApi } from "./search";
-export { careerSimulatorApi } from "./career-simulator";
-export type {
-  PathConfig,
-  DistributionMetric,
-  YourPosition,
-  PathAnalysis,
-  SimulateResponse,
-  Preset,
-  MetaResponse,
-} from "./career-simulator";
+// career-simulator API 客户端已删：页面 2026-09-26 整页退役且无任何消费方（夜班验收痛点5 清理）
 export { pathDecisionApi } from "./path-decision";
 
 export { microActionApi } from "./micro-action";

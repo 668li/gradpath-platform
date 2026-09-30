@@ -339,6 +339,47 @@ function detectSocialDesirability(
 
 type View = "select" | "quiz" | "result" | "history";
 
+// ===== 答题草稿持久化（夜班验收痛点3）=====
+// 此前 answers 只存内存：48 题答到 47 退出重进全部归零。
+// localStorage 按测评类型存草稿，进入时恢复、提交成功/主动重测时清除。
+// 题目 id（q1~q48）由后端静态题库保证稳定，跨会话可对齐。
+const draftKey = (type: AssessmentType) => `gradpath.assessment.draft.${type}`;
+
+function loadDraft(type: AssessmentType, questions: Question[]): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(draftKey(type));
+    if (!raw) return {};
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return {};
+    // 只保留当前题库中存在的题目 id，防题库变更后脏数据
+    const valid = new Set(questions.map((q) => q.id));
+    const out: Record<string, string> = {};
+    for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+      if (valid.has(k) && typeof v === "string") out[k] = v;
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+function saveDraft(type: AssessmentType, answers: Record<string, string>) {
+  try {
+    window.localStorage.setItem(draftKey(type), JSON.stringify(answers));
+  } catch {
+    // 存储不可用（已满/隐私模式）：草稿是增强不是依赖，静默失败
+  }
+}
+
+function clearDraft(type: AssessmentType) {
+  try {
+    window.localStorage.removeItem(draftKey(type));
+  } catch {
+    // 同上
+  }
+}
+
 export default function AssessmentPage() {
   const toast = useToast();
   const searchParams = useSearchParams();
@@ -372,9 +413,16 @@ export default function AssessmentPage() {
       setResult(null);
       try {
         const qs = await assessmentApi.getQuestions(type);
+        // 恢复本地草稿（夜班验收痛点3）：答到一半退出可续答
+        const draft = loadDraft(type, qs);
+        const drafted = Object.keys(draft).length;
+        setAnswers(draft);
         setQuestions(qs);
         setSelectedType(type);
         setView("quiz");
+        if (drafted > 0) {
+          toast.push(`已恢复上次答题进度（${drafted}/${qs.length} 题），可继续作答`, "info");
+        }
       } catch {
         toast.push("题目加载失败，请重试", "error");
       } finally {
@@ -398,9 +446,17 @@ export default function AssessmentPage() {
     }
   }, [searchParams, view, loading, startAssessment]);
 
-  const handleAnswer = useCallback((qId: string, value: string) => {
-    setAnswers((prev) => ({ ...prev, [qId]: value }));
-  }, []);
+  const handleAnswer = useCallback(
+    (qId: string, value: string) => {
+      setAnswers((prev) => {
+        const next = { ...prev, [qId]: value };
+        // 每题即写草稿（夜班验收痛点3）：刷新/退出不丢进度
+        if (selectedType) saveDraft(selectedType, next);
+        return next;
+      });
+    },
+    [selectedType],
+  );
 
   const handleSubmit = async () => {
     if (!selectedType) return;
@@ -418,6 +474,8 @@ export default function AssessmentPage() {
       const res = await assessmentApi.submit(body);
       setResult(res);
       setView("result");
+      // 提交成功，清除该类型草稿（夜班验收痛点3）
+      clearDraft(selectedType);
       // 刷新历史记录
       assessmentApi
         .getHistory()
@@ -432,6 +490,8 @@ export default function AssessmentPage() {
   };
 
   const retake = () => {
+    // 主动重测 = 放弃旧草稿，从零开始
+    if (selectedType) clearDraft(selectedType);
     setAnswers({});
     setResult(null);
     setView("quiz");
@@ -458,6 +518,7 @@ export default function AssessmentPage() {
         onSubmit={handleSubmit}
         onBack={switchAssessment}
         submitting={submitting}
+        initialIdx={questions.findIndex((q) => !answers[q.id])}
       />
     );
   }
@@ -593,6 +654,7 @@ function QuizView({
   onSubmit,
   onBack,
   submitting,
+  initialIdx = 0,
 }: {
   type: AssessmentType;
   questions: Question[];
@@ -601,9 +663,11 @@ function QuizView({
   onSubmit: () => void;
   onBack: () => void;
   submitting: boolean;
+  /** 草稿恢复时定位到第一道未答题（夜班验收痛点3） */
+  initialIdx?: number;
 }) {
   const meta = getMeta(type);
-  const [currentIdx, setCurrentIdx] = useState(0);
+  const [currentIdx, setCurrentIdx] = useState(Math.min(Math.max(initialIdx, 0), Math.max(questions.length - 1, 0)));
   const answeredCount = questions.filter((q) => answers[q.id]).length;
   const progress = questions.length ? (answeredCount / questions.length) * 100 : 0;
   // 大五采用 Likert 5 级量表，横向排列
@@ -987,7 +1051,7 @@ function ResultView({
             <span className="text-xs text-ink-400">基于霍兰德代码 {result.result_code.slice(0, 3)}</span>
           </div>
           <p className="text-xs text-ink-500 -mt-1">
-            测评标签不是终点——下面是你的兴趣代码与真实岗位的匹配度，点击深入模拟。
+            测评标签不是终点——下面是你的兴趣代码与真实岗位的匹配度。
           </p>
           <div className="space-y-2.5">
             {roleMatches.map((r, idx) => {
@@ -1000,10 +1064,10 @@ function ResultView({
                       ? "bg-amber-500"
                       : "bg-ink-300";
               return (
-                <Link
+                // 夜班验收痛点5：原链接指向已退役的 /career-simulator，改为纯展示卡片
+                <div
                   key={r.role}
-                  href={`/career-simulator?from=assessment&role=${encodeURIComponent(r.role)}`}
-                  className="group block rounded-xl border border-paper-200 bg-white p-3.5 transition-all hover:border-brand-300 hover:shadow-sm"
+                  className="block rounded-xl border border-paper-200 bg-white p-3.5"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -1044,7 +1108,6 @@ function ResultView({
                       >
                         {r.match}%
                       </span>
-                      <ArrowRight className="h-3.5 w-3.5 text-ink-300 group-hover:text-brand-600 transition-colors" />
                     </div>
                   </div>
                   <div className="mt-2 pl-9 space-y-1">
@@ -1057,7 +1120,7 @@ function ResultView({
                       {r.challenge}
                     </p>
                   </div>
-                </Link>
+                </div>
               );
             })}
           </div>
@@ -1096,16 +1159,16 @@ function ResultView({
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Link
-            href="/career-simulator?from=assessment"
+            href="/decision-engine?from=assessment"
             className="group flex items-center gap-3 rounded-xl border border-paper-200 bg-white p-3.5 transition-all hover:border-brand-300 hover:shadow-sm"
           >
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
               <GraduationCap className="h-4 w-4" />
             </span>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-ink-800">模拟职业路径</p>
+              <p className="text-sm font-medium text-ink-800">生成两路决策报告</p>
               <p className="text-xs text-ink-400 mt-0.5 line-clamp-1">
-                把结果代入考研/就业/考公的真实发展轨迹
+                把你的情况代入考研/就业两路真实数据对比，每个数字可溯源
               </p>
             </div>
             <ArrowRight className="h-4 w-4 text-ink-300 group-hover:text-brand-600 transition-colors shrink-0" />

@@ -519,10 +519,10 @@ export default function SkillsPage() {
 
       {/* 技能画像与技能树 */}
       <>
-        {/* 基于技能画像模拟职业路径（原能力地图入口，归一此处） */}
-          {/* 基于技能画像模拟职业路径 */}
+        {/* 夜班验收痛点5：原「基于技能画像模拟职业路径」指向已退役的 /career-simulator，
+            改为决策引擎（活跃的两路对比，真实数据可溯源） */}
           <Link
-            href="/career-simulator?from=skills"
+            href="/decision-engine?from=skills"
             className="card flex items-center gap-4 border-brand-200 bg-gradient-to-r from-brand-50/60 to-paper-50 p-4 transition-all hover:shadow-md group"
           >
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-white shadow-sm">
@@ -530,14 +530,14 @@ export default function SkillsPage() {
             </span>
             <div className="flex-1 min-w-0">
               <p className="font-display font-semibold text-ink-800">
-                基于你的技能画像，模拟职业路径
+                两路决策对比：考研 vs 就业
               </p>
               <p className="text-xs text-ink-500 mt-0.5 line-clamp-1">
-                把技能画像代入考研 / 就业 / 考公的真实发展轨迹，看 10 年薪资与满意度对比。
+                输入你的专业与情况，用真实分数线与薪资数据生成报考决策报告，每个数字可溯源。
               </p>
             </div>
             <span className="shrink-0 inline-flex items-center gap-1 rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white transition-colors group-hover:bg-brand-700">
-              去模拟
+              去对比
               <ArrowRight className="h-3.5 w-3.5" />
             </span>
           </Link>

@@ -57,7 +57,7 @@ function middlewareLogic(
     "/profile",
     "/chat",
     "/decisions",
-    "/decision-lab",
+    // "/decision-lab" 已移出受保护列表：页面已恢复（夜班验收痛点1），与 middleware.ts 同步
     "/growth",
     "/growth-patterns",
     "/life-wheel",

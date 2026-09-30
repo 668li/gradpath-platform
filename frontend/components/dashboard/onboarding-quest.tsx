@@ -6,8 +6,6 @@ import {
   Compass,
   Brain,
   Route,
-  Target,
-  Network,
   ClipboardList,
   ListTodo,
   Lightbulb,
@@ -33,7 +31,10 @@ interface QuestTask {
   icon: LucideIcon;
 }
 
-/** 10 个新手任务，按用户旅程排序 */
+/** 新手任务清单，按用户旅程排序。
+ *  夜班验收 2026-10-01 痛点5：原「查看职业路径模拟」「试驾一日体验」「多路径 What-If 对比」
+ *  三条指向已退役的 /career-simulator（整页下线），属死路——
+ *  第一条改为「生成两路决策报告」→ /decision-engine（活跃的两路对比），后两条直接删除。 */
 const QUEST_TASKS: QuestTask[] = [
   {
     id: "onboarding",
@@ -52,28 +53,12 @@ const QUEST_TASKS: QuestTask[] = [
     icon: Brain,
   },
   {
-    id: "career-simulator",
-    title: "查看职业路径模拟",
-    description: "10 年路径推演，看到不同选择的长程结果",
-    href: "/career-simulator",
+    id: "decision-engine",
+    title: "生成两路决策报告",
+    description: "考研 vs 就业两路对比，每个数字可溯源",
+    href: "/decision-engine",
     score: 10,
     icon: Route,
-  },
-  {
-    id: "test-drive",
-    title: "试驾一日体验",
-    description: "在模拟器里过一天你心仪职业的真实日常",
-    href: "/career-simulator#test-drive",
-    score: 10,
-    icon: Target,
-  },
-  {
-    id: "what-if",
-    title: "多路径 What-If 对比",
-    description: "并行对比 2-3 条路径，量化差异",
-    href: "/career-simulator#what-if",
-    score: 10,
-    icon: Network,
   },
   {
     id: "decision-lab",
@@ -119,13 +104,17 @@ const QUEST_TASKS: QuestTask[] = [
 
 const QUEST_STORAGE_KEY = "gradpath_onboarding_quest";
 
-/** 读取 localStorage 中已完成的任务 id 集合 */
+/** 读取 localStorage 中已完成的任务 id 集合。
+ *  只保留当前任务清单里存在的 id：任务下线（如 career-simulator 三条）后，
+ *  旧存档的脏 id 不再虚报完成数。 */
 function getQuestProgress(): Set<string> {
   if (typeof window === "undefined") return new Set();
   try {
     const stored = localStorage.getItem(QUEST_STORAGE_KEY);
     const arr = stored ? (JSON.parse(stored) as string[]) : [];
-    return new Set(Array.isArray(arr) ? arr : []);
+    if (!Array.isArray(arr)) return new Set();
+    const valid = new Set(QUEST_TASKS.map((t) => t.id));
+    return new Set(arr.filter((id) => valid.has(id)));
   } catch {
     return new Set();
   }
@@ -141,7 +130,7 @@ function saveQuestProgress(completed: Set<string>) {
   }
 }
 
-/** 新手任务清单：10 个任务，localStorage 存储进度，可折叠 */
+/** 新手任务清单：localStorage 存储进度，可折叠 */
 export function OnboardingQuest() {
   const [completed, setCompleted] = useState<Set<string>>(new Set());
   const [hydrated, setHydrated] = useState(false);
@@ -197,7 +186,7 @@ export function OnboardingQuest() {
               )}
             </h2>
             <p className="text-xs text-ink-400">
-              10 个核心任务，带你走完一遍完整旅程
+              {QUEST_TASKS.length} 个核心任务，带你走完一遍完整旅程
             </p>
           </div>
         </div>

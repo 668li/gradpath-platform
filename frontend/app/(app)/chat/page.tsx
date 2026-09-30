@@ -131,6 +131,8 @@ function ChatPageInner() {
   const [lastPlanId, setLastPlanId] = useState<string | null>(null);
   const [lastMicroPlanId, setLastMicroPlanId] = useState<string | null>(null);
   const [showByokHint, setShowByokHint] = useState(false);
+  // 夜班验收痛点4：AI 服务不可用时的降级提示（给原因 + 非 AI 替代动作入口）
+  const [showAiDownHint, setShowAiDownHint] = useState(false);
 
   // 003 深链预填（FR5）：提醒推送带 prefill 落进来 ⇒ 填输入框 + 预选 skill；
   // 只预填不自动发送（spec A4）——用户点发送才走既有管道
@@ -337,7 +339,9 @@ function ChatPageInner() {
       } else if (err.status === 429) {
         toast.push("请求过于频繁，请稍后再试", "error");
       } else {
-        toast.push("发送失败，请重试", "error");
+        // 夜班验收痛点4：欠费/上游异常等场景下"请重试"必败，改为明确原因 + 可用替代入口
+        setShowAiDownHint(true);
+        toast.push("AI 服务暂时不可用（维护中），规则版决策对比仍可用", "error");
       }
     } finally {
       setSending(false);
@@ -585,6 +589,30 @@ function ChatPageInner() {
 
             {/* 输入区域 */}
             <div className="border-t border-ink-100 p-3 md:p-4">
+              {/* AI 服务不可用降级提示（夜班验收痛点4）：明确原因 + 非 AI 替代动作 */}
+              {showAiDownHint && (
+                <div className="mb-2 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                  <Bot className="h-4 w-4 shrink-0" />
+                  <span className="flex-1">
+                    AI 服务暂时不可用（维护中），规则版决策对比仍可用：前往
+                    <Link
+                      href="/decision-lab"
+                      className="mx-0.5 font-medium underline hover:text-amber-800"
+                      onClick={() => setShowAiDownHint(false)}
+                    >
+                      决策实验室
+                    </Link>
+                    用预验尸 + 决策矩阵做考研 vs 就业等两路对比，不依赖 AI。
+                  </span>
+                  <button
+                    onClick={() => setShowAiDownHint(false)}
+                    className="shrink-0 text-amber-500 hover:text-amber-700"
+                    aria-label="关闭提示"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
               {/* BYOK 引导：AI 服务未配置时提示用户添加自己的 Key */}
               {showByokHint && (
                 <div className="mb-2 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">

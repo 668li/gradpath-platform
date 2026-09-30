@@ -24,7 +24,9 @@ const GALAXY_PLANETS: GalaxyPlanet[] = [
   { key: "kaoyan", label: "考研", size: 80, distance: 120, href: "/kaoyan", pathKey: "kaoyan", destinationType: "postgrad", angle: 330 },
   { key: "employment", label: "就业", size: 90, distance: 100, href: "/employment", pathKey: "employment", destinationType: "employment", angle: 270 },
   { key: "abroad", label: "留学", size: 60, distance: 180, href: "/explore", pathKey: "abroad", destinationType: "abroad", angle: 90 },
-  { key: "startup", label: "创业", size: 50, distance: 200, href: "/career-simulator", pathKey: "startup", destinationType: "startup", angle: 150 },
+  // 创业行星原指向已退役的 /career-simulator（夜班验收痛点5），改为决策实验室：
+  // 实验室支持任意选项（含创业）的结构化对比分析
+  { key: "startup", label: "创业", size: 50, distance: 200, href: "/decision-lab", pathKey: "startup", destinationType: "startup", angle: 150 },
   { key: "gap-year", label: "间隔年", size: 40, distance: 220, href: "/life-design", pathKey: "gap_year", destinationType: "gap_year", angle: 210 },
 ];
 
