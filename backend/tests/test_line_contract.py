@@ -18,10 +18,12 @@ CONFIG_DIR = Path(__file__).resolve().parents[1] / "app" / "crawlers" / "config"
 
 # 2026-09-26 门道场 B0 开闸（d5eb0e1b）：官方公告面三线复喂（用户拍板"三线复喂实弹存46"）。
 # 在此之前 009 T1 拍板⑨曾全站零调度；B0 后冻结的默认 cron 如下，逐字一致（调度兼容）。
+# 2026-09-30 就业专项 EMP-3：就业公告线进表（30 分错峰，任务书 §0 翻案拍板）。
 EXPECTED_SCHEDULES: dict[str, str] = {
     "eol_kaoyan": "0 2 * * *",
     "official_announce": "0 * * * *",
     "rsshub_research": "30 2 * * *",
+    "employment_announce": "30 * * * *",
 }
 
 # 009 T1 停喂的 kaoyan_news 线中，B0 开闸后仍处停喂态的（重启后不得自动回流调度）

@@ -580,7 +580,16 @@ class OfficialAnnounceCrawler(BaseCrawler):
                     "source_platform": "official",
                 }
             )
-        return ResearchTransformer.transform_rss(raw_payloads)
+        result = ResearchTransformer.transform_rss(raw_payloads)
+        # source_name 透传回填（EMP-3）：transform_rss 只出白名单字段（category 还会被
+        # 分类器覆盖为 general/政策），栏目名会丢——按 source_url 映射挂回，供
+        # /api/employment/announces 的 source_name 字段与审核抽验定位栏目。
+        url_to_source = {r.get("url"): r.get("source_name") for r in raw_items if r.get("url")}
+        for payload in result:
+            source_name = url_to_source.get(payload.get("source_url"))
+            if source_name:
+                payload["source_name"] = source_name
+        return result
 
     # ===== store：CrawlerRun + 入库 =====
 

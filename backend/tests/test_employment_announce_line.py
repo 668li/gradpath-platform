@@ -168,6 +168,25 @@ class TestParameterization:
         # 考研线别名行为不变
         assert _FRESHNESS_SOURCE_ALIASES["web_article_research"] == "kaoyan"
 
+    def test_parse_passes_source_name_through_transformer(self):
+        # transform_rss 只出白名单字段（category 还会被分类器覆盖），
+        # 栏目名须按 source_url 映射挂回——端点 source_name 字段的供给线
+        crawler = EmploymentAnnounceCrawler(config={"rate_limit": 0})
+        raw = [
+            {
+                "title": "某高校2027届毕业生秋季双选会邀请函公告标题",
+                "url": "https://career.hebut.edu.cn/news/content/id/999.html",
+                "published_at": "2026-09-30",
+                "detail_text": "正文内容" * 40,
+                "source_name": "河北工业大学就业信息网重要通知",
+            }
+        ]
+        parsed = crawler.parse(raw)
+        assert len(parsed) >= 1
+        first = parsed[0]
+        assert first["source_url"] == raw[0]["url"]
+        assert first.get("source_name") == "河北工业大学就业信息网重要通知"
+
 
 # ----------------------------------------------------------------------
 # 4. 公开端点 /api/employment/announces（PENDING 永不上前端）
