@@ -1,14 +1,19 @@
 #!/usr/bin/env bash
 # GradPath 安全监控 watcher — cron 每分钟一次（2026-09-04 任务书）
-# 5 项检查 → Server酱微信推送；告警同时落 alerts.log 留痕。
+# 5 项检查 → 微信推送（经 send_notify.sh 适配层：WxPusher 主 + Server酱兜底）；告警同时落 alerts.log 留痕。
 # 让步顺序：站点可用 > 拦截有效 > 告警丰富。本脚本只读+推送，不改任何系统状态。
 # 推送面向非技术用户：全中文，正文三段式（发生了什么/这意味着什么/需要做什么）；
 # alerts.log 里级别 token 保持英文便于 grep。
+# 2026-09-25 降噪修订：
+#   (a) probe-bypass 判定收紧为「2xx 才算真绕过」——此前 status<400 把 port 80 的
+#       301 重定向误判为绕过，每天制造数条假 CRITICAL（证据行清一色 "GET /.env" 301）；
+#   (b) new-ban 单 IP 日常封禁只落盘不推送（≥2 才推），夜间 22:00 日报兜底。
+# 2026-09-25 晚通道切换：推送改走 send_notify.sh（WxPusher 500条/天 主通道）；
+#   每日计数器仅防风暴（INFO 30、其他 100），不再是 Server酱 5 条额度闸。
 set -u
 BASE="$(cd "$(dirname "$0")" && pwd)"
 LOG="$BASE/nginx-logs/access.log"
 F2B_LOG="/var/log/fail2ban.log"
-WEBHOOK_FILE="/home/ubuntu/.sec_webhook_url"   # 存 Server酱完整地址 https://sctapi.ftqq.com/<SENDKEY>.send（600 权限，绝不入库）
 ALERTS="$BASE/alerts.log"
 STATE="$BASE/state"
 mkdir -p "$STATE"
@@ -29,16 +34,11 @@ send() {
   fi
   date +%s > "$ts"
   printf '%s [%s] %s | %s\n' "$(date '+%F %T')" "$level" "$title" "$body" >> "$ALERTS"
-  if [ ! -f "$WEBHOOK_FILE" ]; then
-    printf '%s [PUSH-SKIPPED] webhook file missing\n' "$(date '+%F %T')" >> "$ALERTS"
-    return 0
-  fi
-  # Server酱免费版每日 5 条：提示级(INFO，最频繁的日常封禁通知)最多占 3 条，
-  # 给警告/严重留 2 个保底位，防止日常噪声把真正的告警挤成"只落盘不推送"。
+  # 每日计数器仅防推送风暴（WxPusher 免费额度 500/天，正常用量 <10/天）
   local cnt_file="$STATE/push-$(date +%Y%m%d).count"
   local cnt limit cn
   cnt=$(cat "$cnt_file" 2>/dev/null || echo 0)
-  limit=5; [ "$level" = "INFO" ] && limit=3
+  limit=100; [ "$level" = "INFO" ] && limit=30
   if [ "$cnt" -ge "$limit" ]; then
     printf '%s [PUSH-CAPPED] daily quota(%s) reached, log-only\n' "$(date '+%F %T')" "$limit" >> "$ALERTS"
     return 0
@@ -49,14 +49,10 @@ send() {
     INFO)     cn="提示" ;;
     *)        cn="$level" ;;
   esac
-  local url resp
-  url=$(cat "$WEBHOOK_FILE")
-  resp=$(curl -s -m 10 \
-    --data-urlencode "title=【${cn}】GradPath ${title}" \
-    --data-urlencode "content=$body
+  local resp
+  resp=$(bash "$BASE/send_notify.sh" "【${cn}】GradPath ${title}" "$body
 
-$(date '+%F %T') $(hostname)" \
-    "$url" 2>&1)
+$(date '+%F %T') $(hostname)")
   echo $((cnt + 1)) > "$cnt_file"
   printf '%s [PUSH] %s -> %s\n' "$(date '+%F %T')" "$title" "$(printf '%s' "$resp" | tr -d '\n' | cut -c1-200)" >> "$ALERTS"
 }
@@ -69,11 +65,13 @@ if [ "${1:-}" = "--test" ]; then
   exit 0
 fi
 
-# (a) CRITICAL：探测路径拿到了真实响应(status<400) —— 444 拦截失效
+# (a) CRITICAL：探测路径拿到了页面内容(2xx) —— 444 拦截失效。
+# 只认 2xx：301/307 重定向没有内容（跳到 HTTPS 门口就被拦），不构成绕过；
+# 401/403/444 更是拒绝。旧口径 status<400 是 2026-09-25 前假警报的根因。
 if [ -f "$LOG" ]; then
   HIT=$(tail -n 500 "$LOG" 2>/dev/null | grep -E "\[($M0|$M1):" | grep -E "$PROBE_RE" \
-        | awk '$9 ~ /^[0-9]+$/ && $9+0 < 400' | head -1 | cut -c1-160)
-  [ -n "$HIT" ] && send CRITICAL "probe-bypass" 0 "有人绕过封锁看到了真实页面" "【发生了什么】攻击者在被封锁的情况下，用异常路径（.git/.env/phpmyadmin 之类）探测网站，竟然拿到了正常响应而不是被拒绝。
+        | awk '$9 ~ /^[0-9]+$/ && ($9+0) >= 200 && ($9+0) < 300' | head -1 | cut -c1-160)
+  [ -n "$HIT" ] && send CRITICAL "probe-bypass" 0 "有人绕过封锁看到了真实页面" "【发生了什么】攻击者在被封锁的情况下，用异常路径（.git/.env/phpmyadmin 之类）探测网站，竟然拿到了页面内容（2xx 响应）而不是被拒绝。
 【这意味着什么】网站最外层的拦截规则可能失效，攻击者有机会看到不该看到的文件。这是最高级别告警。
 【证据（原始日志）】$HIT
 【需要做什么】尽快上服务器检查 nginx 配置有没有被改动（compare: git -C ~/gradpath-platform status）。"
@@ -85,17 +83,21 @@ if [ -f "$LOG" ]; then
 【需要做什么】打开网站试试是否正常。偶尔一次可忽略；连续收到这条再上服务器查日志（docker logs --tail 100 gradpath-prod-backend-1）。"
 fi
 
-# (b) INFO：fail2ban 新增封禁
+# (b) INFO：fail2ban 新增封禁 —— 单 IP 日常封禁只落盘；一分钟内封 ≥2 个才推送
 T1=$(date +%H:%M); T0=$(date -d '1 minute ago' +%H:%M); D=$(date +%Y-%m-%d)
 NEWBAN=$(sudo tail -n 200 "$F2B_LOG" 2>/dev/null | grep -E "^$D ($T0|$T1):" | grep 'NOTICE' \
          | grep -oE '\[[a-z-]+\] Ban [0-9.]+' | sort -u | tr '\n' ';')
 if [ -n "$NEWBAN" ]; then
   BAN_LIST=$(printf '%s' "$NEWBAN" | sed -e 's/;[[:space:]]*/；/g' -e 's/；$//' -e 's/\[\([a-z-]*\)\] Ban /【\1】/g')
   NB=$(printf '%s' "$NEWBAN" | grep -o 'Ban' | wc -l)
-  send INFO "new-ban" 600 "防火墙自动封禁了新的攻击 IP（${NB} 个）" "【发生了什么】过去一分钟，防火墙把 ${NB} 个正在攻击服务器的 IP 拉黑了：${BAN_LIST}
+  if [ "$NB" -ge 2 ]; then
+    send INFO "new-ban" 600 "防火墙自动封禁了新的攻击 IP（${NB} 个）" "【发生了什么】过去一分钟，防火墙把 ${NB} 个正在攻击服务器的 IP 拉黑了：${BAN_LIST}
 【这意味着什么】这些 IP 正在暴力破解密码或恶意扫描。系统已自动把他们挡在门外——这是防护在正常工作的日常通知，不是故障。
 【防线说明】sshd=SSH 远程登录防线；recidive=屡犯者加重长期封禁；其余名称多为网站访问防线。
 【需要做什么】无需任何处理。看到这条反而说明防护有效。"
+  else
+    printf '%s [LOG-ONLY] 单IP日常封禁不推送 | %s\n' "$(date '+%F %T')" "$BAN_LIST" >> "$ALERTS"
+  fi
 fi
 
 # (c) CRITICAL：容器 unhealthy / restarting

@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
-# 访客日报 — 从 nginx 访问日志统计真实访客（北京时间日窗），可选 Server酱微信推送
+# 访客日报 — 从 nginx 访问日志统计真实访客（北京时间日窗），微信推送
 # 用法:
 #   visitors.sh                     打印「昨天 + 今日至今」报告
 #   visitors.sh --push              推微信（默认早报：昨日为主）
 #   visitors.sh --push --evening    晚报（cron 每天 22:00）：今日至今为主+昨日参考
 # 口径: 日志时间为 UTC（+8 换算回北京日窗）；过滤机器人/自检 UA 与静态资源后，
 #       2xx/3xx 算有效浏览，444 算被挡攻击探测；人数=不重复 IP（NAT 出口会低估，仅供参考）。
+# 2026-09-25 晚：推送改走 send_notify.sh（WxPusher 主 + Server酱兜底）。
 set -u
 BASE="$(cd "$(dirname "$0")" && pwd)"
 EVENING=0; for a in "$@"; do [ "$a" = "--evening" ] && EVENING=1; done
 LOGDIR="$BASE/nginx-logs"
 STATE="$BASE/state"; mkdir -p "$STATE"
 CSV="$STATE/visitors.csv"
-WEBHOOK_FILE="/home/ubuntu/.sec_webhook_url"
 ALERTS="$BASE/alerts.log"
 
 # 机器人/自检特征（UA 小写匹配）；空 UA 一律按机器人
@@ -151,15 +151,11 @@ echo "$REPORT"
 if [ "${1:-}" = "--push" ]; then
   # 记历史（一行一天，供以后做趋势；后两列为真人口径）
   grep -q "^${YD}," "$CSV" 2>/dev/null || echo "${YD},${PV},${UV},${BLK},${HUV:-0},${HPV:-0}" >> "$CSV"
-  # 共享每日推送配额（与 sec_watcher 同一计数器；日报非提示级，上限 5）
-  CNT_FILE="$STATE/push-$(date +%Y%m%d).count"
-  CNT=$(cat "$CNT_FILE" 2>/dev/null || echo 0)
-  if [ "$CNT" -ge 5 ]; then
-    printf '%s [DAILY-CAPPED] quota reached, log-only\n' "$(date '+%F %T')" >> "$ALERTS"
-    exit 0
-  fi
-  if [ ! -f "$WEBHOOK_FILE" ]; then
-    printf '%s [DAILY-SKIPPED] webhook missing\n' "$(date '+%F %T')" >> "$ALERTS"
+  # 推送走统一适配层（WxPusher 500条/天 主 + Server酱兜底）。
+  # 2026-09-25 修订史：此前共享 Server酱 5 条/天额度，白天假 CRITICAL 打满后
+  # 晚报被 [DAILY-CAPPED] 连续 7 天未送达；现晚报无条件放行，额度压力已随换通道消失。
+  if [ ! -f "$BASE/send_notify.sh" ]; then
+    printf '%s [DAILY-SKIPPED] send_notify.sh missing\n' "$(date '+%F %T')" >> "$ALERTS"
     exit 0
   fi
   if [ "${EVENING:-0}" = "1" ]; then
@@ -167,11 +163,7 @@ if [ "${1:-}" = "--push" ]; then
   else
     TITLE="【日报】昨天真人约 ${HUV:-0} 人 · 挡掉 ${BLK} 次攻击"
   fi
-  RESP=$(curl -s -m 10 \
-    --data-urlencode "title=$TITLE" \
-    --data-urlencode "content=$REPORT" \
-    "$(cat "$WEBHOOK_FILE")" 2>&1)
-  echo $((CNT + 1)) > "$CNT_FILE"
+  RESP=$(bash "$BASE/send_notify.sh" "$TITLE" "$REPORT")
   printf '%s [DAILY] -> %s\n' "$(date '+%F %T')" "$(printf '%s' "$RESP" | tr -d '\n' | cut -c1-160)" >> "$ALERTS"
 fi
 # 注意：本文件会被 traffic_pipeline.sh source 复用，末尾绝不能有 exit（会把调用方 shell 一起退出）
