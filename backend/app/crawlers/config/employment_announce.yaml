@@ -3,7 +3,7 @@
 # 4 校标定证据：docs/就业爬取类型调研-2026-09-30.md（parse_list_generic 实测达标）
 name: employment_announce
 category: research
-description: 高校就业网官方公告（4 校：山大/中南/河工大/华东理工，URL 级增量，PENDING 审核队列）
+description: 高校就业网官方公告（6 校：山大/中南/河工大/华东理工/电子科大/东南，URL 级增量，PENDING 审核队列）
 enabled: true
 schedule: "30 * * * *"  # 每小时半点错峰（考研 official_announce 整点，避免同时并发）
 sla_hours: 24  # 校级公告时效要求低于考研调剂/复试线

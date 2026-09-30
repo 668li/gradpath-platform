@@ -6,8 +6,9 @@ PENDING 审核队列），通过基类参数化点（item_type / 增量基线 / 
 渠道）分流到就业语义——禁止子类绕过绑定点改 store（照 NewsAggregateCrawler 写
 4 行子类而不参数化 = 就业条目污染考研去重基线的陷阱，任务书 §EMP-3 明令禁止）。
 
-4 校栏目标定证据：docs/就业爬取类型调研-2026-09-30.md（parse_list_generic 实测
-40/15/29/10 条，detail_url_re 过滤后 40/14/24/10，全 edu.cn 自建静态页）。
+栏目标定证据：docs/就业爬取类型调研-2026-09-30.md。首批 4 校（山大/中南/河工大/
+华东理工，parse_list_generic 实测 40/15/29/10 条）；滚动轮扩 2 校（电子科大 10 条/
+东南 9 条，2026-09-30；暨大=登录墙、湖大=SaaS 承载、北航=JS 渲染、川大=502 证伪）。
 """
 
 from typing import Any
@@ -49,6 +50,20 @@ EMPLOYMENT_SECTIONS: list[dict[str, Any]] = [
             "?type=%E5%85%AC%E5%91%8A%E5%85%AC%E7%A4%BA&subinfotypedm=18"
         ),
         "detail_url_re": r"InformationDetail\.aspx\?XXID=\d+$",
+        "cms": "generic",
+    },
+    {
+        # 扩校轮 1（2026-09-30 滚动轮）：自建就业网，日期/标题/URL 齐（实测 10 条）
+        "name": "电子科技大学就业网通知公告",
+        "list_url": "https://jiuye.uestc.edu.cn/career/news/notice",
+        "detail_url_re": r"/career/news/notice/\w+$",
+        "cms": "generic",
+    },
+    {
+        # 扩校轮 1：学工处博达 CMS（更新密度月更级，弱可用；detail 形态 c65030aNNN/page.htm）
+        "name": "东南大学就业指导中心通知",
+        "list_url": "https://xsc.seu.edu.cn/65030/list.htm",
+        "detail_url_re": r"/c\d+a\d+/page\.htm$",
         "cms": "generic",
     },
 ]

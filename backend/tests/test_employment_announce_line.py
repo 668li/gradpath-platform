@@ -56,9 +56,20 @@ class TestFixtureParsing:
         kept = [e for e in entries if rx.search(e["url"])]
         assert len(kept) >= 5
 
+    def test_uestc_list_parses_at_least_5(self):
+        # 扩校轮 1（2026-09-30 滚动轮）：电子科大自建就业网
+        html = (FIXTURE_DIR / "uestc_list.html").read_text(encoding="utf-8", errors="ignore")
+        entries = parse_list_generic(
+            html, "https://jiuye.uestc.edu.cn/career/news/notice"
+        )
+        rx = re.compile(r"/career/news/notice/\w+$")
+        kept = [e for e in entries if rx.search(e["url"])]
+        assert len(kept) >= 5
+        assert all(re.fullmatch(r"\d{4}-\d{2}-\d{2}", e["date"]) for e in kept)
+
     def test_sections_reference_validated_urls(self):
-        """sections 的 4 个栏目 URL 必须来自 EMP-2 标定（edu.cn 域，非猜测）。"""
-        assert len(EMPLOYMENT_SECTIONS) == 4
+        """sections 的 6 个栏目 URL 必须来自标定实录（edu.cn 域，非猜测）。"""
+        assert len(EMPLOYMENT_SECTIONS) == 6
         for s in EMPLOYMENT_SECTIONS:
             assert s["list_url"].startswith("https://")
             assert ".edu.cn/" in s["list_url"]
