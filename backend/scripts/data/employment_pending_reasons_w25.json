@@ -1,0 +1,160 @@
+{
+  "items": [
+    {
+      "school": "厦门大学",
+      "year": 2024,
+      "source_url": "https://gk.xmu.edu.cn/info/1061/35852.htm",
+      "reason": "链接失效/附件不可取：公示页可访问且标题为《厦门大学2024届毕业生就业质量年度报告》，但页面唯一附件走 /virtual_attach_file.vsb?afc=... 的 VisualSiteBox 加密通道，带 Referer 与会话 Cookie 重试均返回 404（附件已从服务器移除或需登录态）。经站内检索亦未找到可直取的官方 PDF 直链，故未出 item。"
+    },
+    {
+      "school": "清华大学",
+      "year": 2025,
+      "source_url": "https://www.tsinghua.edu.cn/info/1182/124548.htm",
+      "reason": "报告无全校就业率口径：source_url 为光明日报报道（清华官网转载），全文只给出『国内重要领域重点单位就业率超86%』『京外就业率56.3%』『赴制造业、能源业就业人数同比增长19.1%』等结构性指标，未公布研究生/本科毕业去向落实率或就业率总分母值。清华未在公开渠道发布可直取的《毕业生就业质量报告》PDF，故不出 item。"
+    },
+    {
+      "school": "南开大学",
+      "year": 2024,
+      "source_url": "https://xxgk.nankai.edu.cn/2025/0610/c2927a572783/page.htm",
+      "reason": "报告为概况摘要、无就业率章节：页面唯一附件 PDF（2024届毕业生就业概况，5页）仅含生源规模（8260人）、性别/学历/院系分布，全文（fitz 提取 2144 字符）无『就业率/去向落实率/签约率』任何字样。南开信息公开网该栏目未公开含就业率的完整版《毕业生就业质量报告》。"
+    },
+    {
+      "school": "东南大学",
+      "year": 2022,
+      "source_url": "https://xxgk.seu.edu.cn/gxbysjyzlndbg/list.htm",
+      "reason": "列表页为 JS 单页应用、报告 PDF 不可直取：xxgk.seu.edu.cn 的目录页与条目页均由前端渲染，条目实际指向 seu.91job.org.cn 的 SPA（需 JavaScript 才能取正文，未破 JS 挑战）。改用东南大学官网转载的官方媒体报道 https://www.seu.edu.cn/2023/1215/c124a474959/page.htm 取得报告数据（2022届 9408人、毕业去向落实率96.51%），已按『来源形态=HTML 官方转载报道』入 items 并在 rate_scope 中显式标注。"
+    },
+    {
+      "school": "中国人民大学",
+      "year": 2019,
+      "source_url": "https://xxgk.ruc.edu.cn/gksx/jxzl/gxbysjyzlndbg/ee9bd3f7468d4d879448bc02d90f0332.htm",
+      "reason": "链接失效：条目页可访问但正文/附件为空，旧就业信息网 rdjy.ruc.edu.cn 的 newsDetail 接口已整体下线（返回『您访问的网站已经停止使用』404）。公开检索未找到 2019 年就业质量报告的可直取官方 PDF。"
+    },
+    {
+      "school": "北京师范大学",
+      "year": 2024,
+      "source_url": "https://xxgk.bnu.edu.cn/docs/2025-10/604fb8d4d549495185121d50d447155e.pdf",
+      "reason": "报告原文只有下限表述、无精确值：PDF 有文字层（fitz 提取 487 字符），原文为『截至2024年10月31日，2024届毕业生毕业去向落实率超95%』，未给出精确百分比或分母/分子。遵循既有 employment_rates_parsed.json 的口径约定（类似表述记为 null），本次亦不出 item，避免把『超95%』写成 95。"
+    },
+    {
+      "school": "黑龙江大学",
+      "year": 2024,
+      "source_url": "https://xxgk.hlju.edu.cn/info/2006/4931.htm",
+      "reason": "已解析，见 employment_rates_w25.json。取件要点：附件需带 Referer 请求 /system/_content/download.jsp?urltype=news.DownloadAttachUrl&owner=1457216816&wbfileid=15986671 才能取到 PDF（2.7MB，17页，文字层可提取）；报告仅分本科/研究生两档落实率、未给全校合计，故取本科 90.04% 并在 rate_scope 注明口径。"
+    },
+    {
+      "school": "宁夏大学",
+      "year": 2024,
+      "source_url": "https://office.nxu.edu.cn/xxgk/dwzwgk/jxzlxx/gxbysjyzlndbg.htm",
+      "reason": "列表页指向的正文页正文为空：条目链到就业信息网 https://nxujob.nxbys.cn/news/view/aid/297402/tag/tzgg，该页正文由 uParse 前端异步渲染（<section id=\"content8441\"> 为空壳），服务端 HTML 中无任何报告文字或 PDF/附件链接。列表页本身亦无 PDF。"
+    },
+    {
+      "school": "湖南师范大学",
+      "year": 2023,
+      "source_url": "https://xxgk.hunnu.edu.cn/column/bysbg/content/1727424907558.shtml",
+      "reason": "链接失效：xxgk.hunnu.edu.cn 多次重试均返回 502（网关错误，站点侧不可用）。改查就业网『2023届毕业生就业质量微报告』https://job.hunnu.edu.cn/detail/news?id=980689&type_id=58，该页正文同样为前端异步渲染，HTML 中无文字层数据，无法取到落实率数值。"
+    },
+    {
+      "school": "西安交通大学",
+      "year": 2025,
+      "source_url": "https://news.xjtu.edu.cn/info/1006/228810.htm",
+      "reason": "报告无全校就业率口径：source_url 为学校年度工作总结新闻稿，全文只给出『重点单位就业比例达71.5%』等结构性指标，未公布毕业去向落实率/就业率总分母值；未找到可直取的 2025 届《毕业生就业质量报告》PDF。"
+    },
+    {
+      "school": "中南大学",
+      "year": 2021,
+      "source_url": "https://xxgk.csu.edu.cn/info/1101/4632.htm",
+      "reason": "扫描件且 OCR 未能识别：页面正文为 4 张高分辨率整页扫描图（6006×4004 等，合计约 36MB），无文字层；报告 PDF 直链 /__local/D/D9/E1/843A804B0D4461ADA69D3EB0D88_68027467_217526.pdf 返回 404。已下载扫描图并用 Python312 的 rapidocr-onnxruntime 做整图与原生分辨率分块 OCR，检测框数均为 0（该环境下 OCR 不可用），因此无法取得原文就业率数值，不出 item。"
+    },
+    {
+      "school": "大连理工大学",
+      "year": 2020,
+      "source_url": "https://info.dlut.edu.cn/xxgklm/xsjiu_ye/jyzlndbg.htm",
+      "reason": "链接失效/单页应用：目录页仅 1 条『大连理工大学2020届毕业生就业质量报告』，条目链到 job.dlut.edu.cn 的 portals/newspage.html?id=... 单页应用，服务端 HTML 为空壳（正文与附件由 JS 加载，未破 JS 挑战），无 PDF 直链可取。"
+    },
+    {
+      "school": "电子科技大学",
+      "year": 2024,
+      "source_url": "https://xxgkw.uestc.edu.cn/info/1078/6257.htm",
+      "reason": "已解析，见 employment_rates_w25.json。取件要点：公示页正文为空，报告 PDF 走 /__local/E/B8/8E/... 直链（344KB，7页，文字层可提取），原文『2024届毕业生毕业去向落实率94.70%』并载 2024届毕业生10953人。"
+    },
+    {
+      "school": "重庆大学",
+      "year": 2020,
+      "source_url": "https://gongkai.cqu.edu.cn/info/1236/3542.htm",
+      "reason": "站点反爬拦截：gongkai.cqu.edu.cn 对本环境持续返回 HTTP 412（带完整浏览器头、Referer、Sec-Fetch-* 重试均无效），无法取正文与附件。检索定位到疑似正确条目页 https://gongkai.cqu.edu.cn/info/1237/4430.htm 同样 412，故无法验证报告内容，不出 item（未破 JS/WAF 挑战）。"
+    },
+    {
+      "school": "复旦大学",
+      "year": 2022,
+      "source_url": "https://xxgk.fudan.edu.cn/_t435/b4/8a/c8200a636042/page.htm",
+      "reason": "报告无就业率章节：页面唯一附件 PDF 为《2022年度复旦大学就业工作情况》（15页，文字层可提取，5584 字符），通篇为工作举措/生涯教育/活动综述，无『就业率/去向落实率/签约率』任何数值（『就业质量评价与反馈』章节只谈重点地区就业引导，无比例数字）。复旦信息公开网该栏目未发布含就业率的《毕业生就业质量报告》。"
+    },
+    {
+      "school": "西北工业大学",
+      "year": 2024,
+      "source_url": "https://xxgk.nwpu.edu.cn/info/1501/6651.htm",
+      "reason": "报告原文只有下限表述、无精确值：PDF 有文字层（5页，1947 字符），两处均为『2024届毕业生整体/总体毕业去向落实率超过96%』（数据截至2024-12-31，2024届毕业生8673人），未给出精确百分比。遵循既有口径约定（类似表述记为 null），本次亦不出 item，避免把『超过96%』写成 96。"
+    },
+    {
+      "school": "湖北大学",
+      "year": 2023,
+      "source_url": "https://xxgk.hubu.edu.cn/info/1051/10257.htm",
+      "reason": "链接失效：条目页与去掉 /info/ 的变体均返回 404（『您访问的页面未找到，5秒后自动跳转到首页』）。站内检索与公开检索均未定位到湖北大学 2023 届就业质量报告的可直取官方 PDF；检索命中的 xxgk.hbnu.edu.cn 为湖北师范大学（另一所学校），已在补采中单独处理，不顶替湖北大学。"
+    },
+    {
+      "school": "上海海洋大学",
+      "year": 2024,
+      "source_url": "https://xxgk.shou.edu.cn/2025/0219/c8041a337932/page.htm",
+      "reason": "已解析（补采），见 employment_rates_w25.json。原文『截止2024年10月31日，全校毕业生的毕业去向落实率92.84%，签约率为86.39%』，2024届毕业生4704人。"
+    },
+    {
+      "school": "上海师范大学",
+      "year": 2024,
+      "source_url": "https://xxgk.shnu.edu.cn/91/04/c18132a823556/page.htm",
+      "reason": "已解析（补采），见 employment_rates_w25.json。原文『截至2024年8月31日，学校2024届毕业生毕业去向落实率为94.58%』，2024届毕业生8316人。"
+    },
+    {
+      "school": "湖北师范大学",
+      "year": 2025,
+      "source_url": "https://xxgk.hbnu.edu.cn/2026/0106/c3441a189333/page.htm",
+      "reason": "已解析（补采），见 employment_rates_w25.json。原文『我校2025届毕业生总体去向落实率为92.08%』（5465人，落实5032人，截至2025年末）。注：该校为湖北师范大学，与 pending 中的湖北大学不是同一所学校。"
+    },
+    {
+      "school": "西北农林科技大学",
+      "year": 2023,
+      "source_url": "https://xxgk.nwafu.edu.cn/docs/2023-12/89c932af419a4e3680eef5957d55560b.pdf",
+      "reason": "已解析（补采），见 employment_rates_w25.json。原文『截至2023年12月1日，2023届毕业生总人数为8897人，已落实毕业去向7572人』，总体毕业去向落实率85.11%。信息公开网该栏目最新为 2023 届。"
+    },
+    {
+      "school": "南京林业大学",
+      "year": 2024,
+      "source_url": "https://xxgk.njfu.edu.cn/DFS//file/2025/12/23/20251223173758423ufiy67.pdf",
+      "reason": "已解析（补采），见 employment_rates_w25.json。原文『2024年，我校共有本科毕业生7450人，去向落实7077人，应届本科毕业生初次就业率为95%』（报告仅本科口径）。"
+    },
+    {
+      "school": "首都师范大学",
+      "year": 2024,
+      "source_url": "https://xxgk.cnu.edu.cn/docs/2024-12/306a79846b854b46b53b9481ee746dd9.pdf",
+      "reason": "已解析（补采），见 employment_rates_w25.json。原文『截至2024年8月31日，学校应届本科毕业生总体就业率达89.44%，其中升学深造占比36.83%』，2024年本科毕业生3041人。来源形态为《2023-2024学年本科教学质量报告》而非就业质量报告，已在 rate_scope 标注。"
+    },
+    {
+      "school": "南京工业大学",
+      "year": 2016,
+      "source_url": "https://xxgk.njtech.edu.cn/__local/9/F9/E4/5F5DFF78A8E9EED35DB44F0740F_CE2A9A67_DC1AE.pdf?e=.pdf",
+      "reason": "已解析（补采），见 employment_rates_w25.json。原文『截至2016年8月31日，初次就业率为86.55%，截至2016年12月21日，年终就业率为95.32%』，2016届本科毕业生4914人，取年终就业率。信息公开网可获取的最新本科就业质量报告止于 2016 届，故年份偏旧。"
+    },
+    {
+      "school": "浙江师范大学",
+      "year": 2020,
+      "source_url": "https://xxgk.zjnu.edu.cn/_upload/article/files/e8/b1/b3eaf8bd44048a078a18e46f96c5/10320c03-9f32-453e-a33f-1821cdb179a8.pdf",
+      "reason": "已解析（补采），见 employment_rates_w25.json。原文『截至2020年12月25日，我校2020届毕业生总体就业率为92.73%』（研究生95.01%、本科91.15%），2020届毕业生6410人。信息公开网可获取的最新就业质量报告为 2020 年度，故年份偏旧。"
+    },
+    {
+      "school": "上海理工大学",
+      "year": 2017,
+      "source_url": "https://xxgk.usst.edu.cn/_upload/article/files/4e/84/17509300483d92d11fd590fc8775/bb7f5e50-1335-40f0-b4e4-2382.pdf",
+      "reason": "已解析（补采），见 employment_rates_w25.json。原文『截止到2017年8月31日，全校毕业生就业率为97.28%』（国内升学率10.72%、出国（境）留学8.66%、签约率58.26%），2017届毕业生6296人。信息公开网可获取的最新就业质量报告为 2017 年度，故年份偏旧。"
+    }
+  ]
+}

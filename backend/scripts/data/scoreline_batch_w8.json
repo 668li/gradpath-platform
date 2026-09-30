@@ -1,0 +1,3910 @@
+{
+ "schools": [
+  {
+   "university_name": "东北大学",
+   "year": 2025,
+   "status": "ok",
+   "source_url": "https://yz.chsi.com.cn/kyzx/fsfsx34/202503/20250313/2293357871.html",
+   "note": "研招网转载页「东北大学2025年硕士研究生招生考试考生进入复试的初试成绩基本要求」，表格为图片；原表列序=总分/单科(满分=100分)/单科(满分>100分)，两列单科按列位映射到 politics_score 与 business_1_score。已下载东北大学研招网原图（yz.neu.edu.cn/2025/0311/c5932a278797/page.htm，6735×4762）逐格复核全部数字，修正了研招网缩略图 OCR 把 90 误读为 06 的 5 处。原文另列少数民族高层次骨干人才专项计划、单独考试、退役大学生士兵、对口支援西部高校等专项，未并入 lines。检索于2026-09-30。",
+   "lines": [
+    {
+     "major_name": "哲学[01]",
+     "degree_type": "学术学位",
+     "total_score_line": 335,
+     "politics_score": 50,
+     "foreign_language_score": 90,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "经济学[02]",
+     "degree_type": "学术学位",
+     "total_score_line": 345,
+     "politics_score": 50,
+     "foreign_language_score": 85,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "法学[03]",
+     "degree_type": "学术学位",
+     "total_score_line": 350,
+     "politics_score": 50,
+     "foreign_language_score": 90,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "体育学[0403]（教育学[04]）",
+     "degree_type": "学术学位",
+     "total_score_line": 315,
+     "politics_score": 40,
+     "foreign_language_score": 150,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "体育[0452]（教育学[04]）",
+     "degree_type": "专业学位",
+     "total_score_line": 315,
+     "politics_score": 40,
+     "foreign_language_score": 150,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "文学[05]",
+     "degree_type": "学术学位",
+     "total_score_line": 355,
+     "politics_score": 50,
+     "foreign_language_score": 90,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "理学[07]",
+     "degree_type": "学术学位",
+     "total_score_line": 315,
+     "politics_score": 45,
+     "foreign_language_score": 80,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "工学照顾专业*、冶金工程[085603]、矿业工程[085705]",
+     "degree_type": "学术学位",
+     "total_score_line": 280,
+     "politics_score": 40,
+     "foreign_language_score": 60,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "工学[08] 其他学科专业",
+     "degree_type": "学术学位",
+     "total_score_line": 310,
+     "politics_score": 45,
+     "foreign_language_score": 75,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "工商管理[1251]（管理学[12]）",
+     "degree_type": "专业学位",
+     "total_score_line": 151,
+     "politics_score": 35,
+     "foreign_language_score": 70,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "公共管理[1252]（管理学[12]）",
+     "degree_type": "专业学位",
+     "total_score_line": 164,
+     "politics_score": 38,
+     "foreign_language_score": 76,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "会计[1253]（管理学[12]）",
+     "degree_type": "专业学位",
+     "total_score_line": 225,
+     "politics_score": 55,
+     "foreign_language_score": 110,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "工程管理[125601]（管理学[12]）",
+     "degree_type": "专业学位",
+     "total_score_line": 162,
+     "politics_score": 38,
+     "foreign_language_score": 76,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "工业工程与管理[125603]、物流工程与管理[125604]（管理学[12]）",
+     "degree_type": "专业学位",
+     "total_score_line": 225,
+     "politics_score": 55,
+     "foreign_language_score": 110,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "管理学[12] 其他学科专业",
+     "degree_type": "学术学位",
+     "total_score_line": 345,
+     "politics_score": 50,
+     "foreign_language_score": 85,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "艺术学[13]",
+     "degree_type": "学术学位",
+     "total_score_line": 360,
+     "politics_score": 45,
+     "foreign_language_score": 90,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "设计学[1403]（交叉学科[14]）",
+     "degree_type": "学术学位",
+     "total_score_line": 350,
+     "politics_score": 45,
+     "foreign_language_score": 90,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "智能科学与技术[1405]（交叉学科[14]）",
+     "degree_type": "学术学位",
+     "total_score_line": 310,
+     "politics_score": 45,
+     "foreign_language_score": 75,
+     "business_1_score": null,
+     "business_2_score": null
+    }
+   ]
+  },
+  {
+   "university_name": "中国农业大学",
+   "year": 2025,
+   "status": "ok",
+   "source_url": "https://yz.chsi.com.cn/kyzx/fsfsx34/202503/20250313/2293357877.html",
+   "note": "研招网转载页「中国农业大学2025年硕士研究生招生考试复试基本分数线」，表格为图片；原表列序=总分要求/政治/外语/业务课一/业务课二，四列单科逐一照抄。管理类四行原表单科列为合并文字「管理类综合90，外语40」形式，politics_score 记管理类综合、foreign_language_score 记外语、业务课列记 null。原文另以文字说明退役大学生士兵计划、少数民族骨干计划的降分规则，未并入 lines。检索于2026-09-30。",
+   "lines": [
+    {
+     "major_name": "经济学[02]",
+     "degree_type": "学术学位",
+     "total_score_line": 330,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "法学[03]",
+     "degree_type": "学术学位",
+     "total_score_line": 330,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "文学[05]",
+     "degree_type": "学术学位",
+     "total_score_line": 375,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 95,
+     "business_2_score": 95
+    },
+    {
+     "major_name": "理学[07]",
+     "degree_type": "学术学位",
+     "total_score_line": 305,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 85,
+     "business_2_score": 85
+    },
+    {
+     "major_name": "工学[08]",
+     "degree_type": "学术学位",
+     "total_score_line": 300,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 80,
+     "business_2_score": 80
+    },
+    {
+     "major_name": "工学照顾学科",
+     "degree_type": "学术学位",
+     "total_score_line": 290,
+     "politics_score": 40,
+     "foreign_language_score": 40,
+     "business_1_score": 75,
+     "business_2_score": 75
+    },
+    {
+     "major_name": "农学[09]",
+     "degree_type": "学术学位",
+     "total_score_line": 310,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 80,
+     "business_2_score": 80
+    },
+    {
+     "major_name": "管理学[12]",
+     "degree_type": "学术学位",
+     "total_score_line": 335,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "艺术学[13]",
+     "degree_type": "学术学位",
+     "total_score_line": 360,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "交叉[14]",
+     "degree_type": "学术学位",
+     "total_score_line": 300,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "金融[0251]",
+     "degree_type": "专业学位",
+     "total_score_line": 345,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "数字经济[0258]",
+     "degree_type": "专业学位",
+     "total_score_line": 330,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 85,
+     "business_2_score": 85
+    },
+    {
+     "major_name": "法律[0351]",
+     "degree_type": "专业学位",
+     "total_score_line": 325,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 75,
+     "business_2_score": 75
+    },
+    {
+     "major_name": "社会工作[0352]",
+     "degree_type": "专业学位",
+     "total_score_line": 375,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 95,
+     "business_2_score": 95
+    },
+    {
+     "major_name": "气象[0751]",
+     "degree_type": "专业学位",
+     "total_score_line": 300,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 85,
+     "business_2_score": 85
+    },
+    {
+     "major_name": "电子信息[0854]",
+     "degree_type": "专业学位",
+     "total_score_line": 320,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 80,
+     "business_2_score": 80
+    },
+    {
+     "major_name": "机械[0855]",
+     "degree_type": "专业学位",
+     "total_score_line": 350,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "资源与环境[0857]",
+     "degree_type": "专业学位",
+     "total_score_line": 300,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 75,
+     "business_2_score": 75
+    },
+    {
+     "major_name": "能源动力[0858]",
+     "degree_type": "专业学位",
+     "total_score_line": 320,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 85,
+     "business_2_score": 85
+    },
+    {
+     "major_name": "土木水利[0859]",
+     "degree_type": "专业学位",
+     "total_score_line": 305,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 70,
+     "business_2_score": 70
+    },
+    {
+     "major_name": "生物与医药[0860]",
+     "degree_type": "专业学位",
+     "total_score_line": 300,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 85,
+     "business_2_score": 85
+    },
+    {
+     "major_name": "风景园林[0862]",
+     "degree_type": "专业学位",
+     "total_score_line": 330,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "农业[0951]",
+     "degree_type": "专业学位",
+     "total_score_line": 280,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 75,
+     "business_2_score": 75
+    },
+    {
+     "major_name": "兽医[0952]",
+     "degree_type": "专业学位",
+     "total_score_line": 335,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "食品与营养[0955]",
+     "degree_type": "专业学位",
+     "total_score_line": 305,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 85,
+     "business_2_score": 85
+    },
+    {
+     "major_name": "工商管理[1251]",
+     "degree_type": "专业学位",
+     "total_score_line": 151,
+     "politics_score": 90,
+     "foreign_language_score": 40,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "公共管理[1252]",
+     "degree_type": "专业学位",
+     "total_score_line": 175,
+     "politics_score": 100,
+     "foreign_language_score": 45,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "会计[1253]",
+     "degree_type": "专业学位",
+     "total_score_line": 230,
+     "politics_score": 130,
+     "foreign_language_score": 65,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "图书情报[1255]",
+     "degree_type": "专业学位",
+     "total_score_line": 225,
+     "politics_score": 130,
+     "foreign_language_score": 65,
+     "business_1_score": null,
+     "business_2_score": null
+    }
+   ]
+  },
+  {
+   "university_name": "中山大学",
+   "year": 2025,
+   "status": "ok",
+   "source_url": "https://yz.chsi.com.cn/kyzx/fsfsx34/202503/20250313/2293361170.html",
+   "note": "研招网转载页「中山大学2025年硕士研究生招生考试复试基本分数线」，表格为图片；原表列序=总分/单科(满分=100分)/单科(满分>100分)。该表单科只有两列（不区分政治/外语/业务课），沿用库内 2026 年中山大学既有口径：单科≤100分值同时写入 politics_score 与 foreign_language_score，单科>100分值写入 business_1_score。原文「单独考试」区块（法学立法学、土木水利、流行病与卫生统计学、工商管理学）及退役大学生士兵、少数民族高层次骨干人才、南疆高校教师专项、喀什地区医学硕士等专项计划未并入 lines。检索于2026-09-30。",
+   "lines": [
+    {
+     "major_name": "哲学[01]",
+     "degree_type": "学术学位",
+     "total_score_line": 345,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 90,
+     "business_2_score": null
+    },
+    {
+     "major_name": "经济学[02]",
+     "degree_type": "学术学位",
+     "total_score_line": 340,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 80,
+     "business_2_score": null
+    },
+    {
+     "major_name": "法学[03]",
+     "degree_type": "学术学位",
+     "total_score_line": 355,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 90,
+     "business_2_score": null
+    },
+    {
+     "major_name": "文学[05]",
+     "degree_type": "学术学位",
+     "total_score_line": 355,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 90,
+     "business_2_score": null
+    },
+    {
+     "major_name": "历史学[06]",
+     "degree_type": "学术学位",
+     "total_score_line": 345,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 180,
+     "business_2_score": null
+    },
+    {
+     "major_name": "理学[07]",
+     "degree_type": "学术学位",
+     "total_score_line": 290,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 60,
+     "business_2_score": null
+    },
+    {
+     "major_name": "工学[08]",
+     "degree_type": "学术学位",
+     "total_score_line": 280,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 60,
+     "business_2_score": null
+    },
+    {
+     "major_name": "农学[09]",
+     "degree_type": "学术学位",
+     "total_score_line": 260,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 60,
+     "business_2_score": null
+    },
+    {
+     "major_name": "医学[10]",
+     "degree_type": "学术学位",
+     "total_score_line": 295,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 160,
+     "business_2_score": null
+    },
+    {
+     "major_name": "管理学[12]",
+     "degree_type": "学术学位",
+     "total_score_line": 340,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 80,
+     "business_2_score": null
+    },
+    {
+     "major_name": "艺术学[13]",
+     "degree_type": "学术学位",
+     "total_score_line": 365,
+     "politics_score": 40,
+     "foreign_language_score": 40,
+     "business_1_score": 85,
+     "business_2_score": null
+    },
+    {
+     "major_name": "交叉学科[14]",
+     "degree_type": "学术学位",
+     "total_score_line": 280,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 60,
+     "business_2_score": null
+    },
+    {
+     "major_name": "金融[0251]",
+     "degree_type": "专业学位",
+     "total_score_line": 385,
+     "politics_score": 60,
+     "foreign_language_score": 60,
+     "business_1_score": 90,
+     "business_2_score": null
+    },
+    {
+     "major_name": "应用统计[0252]",
+     "degree_type": "专业学位",
+     "total_score_line": 330,
+     "politics_score": 55,
+     "foreign_language_score": 55,
+     "business_1_score": 70,
+     "business_2_score": null
+    },
+    {
+     "major_name": "数字经济[0258]",
+     "degree_type": "专业学位",
+     "total_score_line": 350,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 90,
+     "business_2_score": null
+    },
+    {
+     "major_name": "法律[0351]",
+     "degree_type": "专业学位",
+     "total_score_line": 340,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 90,
+     "business_2_score": null
+    },
+    {
+     "major_name": "社会工作[0352]、社会调查[0356S1]",
+     "degree_type": "专业学位",
+     "total_score_line": 345,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 90,
+     "business_2_score": null
+    },
+    {
+     "major_name": "体育[0452]",
+     "degree_type": "专业学位",
+     "total_score_line": 315,
+     "politics_score": 40,
+     "foreign_language_score": 40,
+     "business_1_score": 170,
+     "business_2_score": null
+    },
+    {
+     "major_name": "国际中文教育[0453]",
+     "degree_type": "专业学位",
+     "total_score_line": 345,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 90,
+     "business_2_score": null
+    },
+    {
+     "major_name": "应用心理[0454]",
+     "degree_type": "专业学位",
+     "total_score_line": 375,
+     "politics_score": 55,
+     "foreign_language_score": 55,
+     "business_1_score": 180,
+     "business_2_score": null
+    },
+    {
+     "major_name": "翻译[0551]",
+     "degree_type": "专业学位",
+     "total_score_line": 380,
+     "politics_score": 60,
+     "foreign_language_score": 60,
+     "business_1_score": 90,
+     "business_2_score": null
+    },
+    {
+     "major_name": "新闻与传播[0552]",
+     "degree_type": "专业学位",
+     "total_score_line": 355,
+     "politics_score": 55,
+     "foreign_language_score": 55,
+     "business_1_score": 90,
+     "business_2_score": null
+    },
+    {
+     "major_name": "博物馆[0651]",
+     "degree_type": "专业学位",
+     "total_score_line": 345,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 180,
+     "business_2_score": null
+    },
+    {
+     "major_name": "城乡规划[0853]、电子信息[0854]、机械[0855]、材料与化工[0856]、资源与环境[0857]、能源动力[0858]、土木水利[0859]、生物与医药[0860]、交通运输[0861]",
+     "degree_type": "专业学位",
+     "total_score_line": 300,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 60,
+     "business_2_score": null
+    },
+    {
+     "major_name": "农业[0951]",
+     "degree_type": "专业学位",
+     "total_score_line": 330,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 90,
+     "business_2_score": null
+    },
+    {
+     "major_name": "临床医学[1051]、口腔医学[1052]、护理[1054]、医学技术[1058]",
+     "degree_type": "专业学位",
+     "total_score_line": 310,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 170,
+     "business_2_score": null
+    },
+    {
+     "major_name": "公共卫生[1053]",
+     "degree_type": "专业学位",
+     "total_score_line": 305,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 170,
+     "business_2_score": null
+    },
+    {
+     "major_name": "药学[1055]",
+     "degree_type": "专业学位",
+     "total_score_line": 300,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 170,
+     "business_2_score": null
+    },
+    {
+     "major_name": "工商管理[1251]",
+     "degree_type": "专业学位",
+     "total_score_line": 151,
+     "politics_score": 35,
+     "foreign_language_score": 35,
+     "business_1_score": 70,
+     "business_2_score": null
+    },
+    {
+     "major_name": "公共管理[1252]、数字文化管理[1259S1]",
+     "degree_type": "专业学位",
+     "total_score_line": 180,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 110,
+     "business_2_score": null
+    },
+    {
+     "major_name": "会计[1253]",
+     "degree_type": "专业学位",
+     "total_score_line": 240,
+     "politics_score": 55,
+     "foreign_language_score": 55,
+     "business_1_score": 120,
+     "business_2_score": null
+    },
+    {
+     "major_name": "旅游管理[1254]",
+     "degree_type": "专业学位",
+     "total_score_line": 155,
+     "politics_score": 40,
+     "foreign_language_score": 40,
+     "business_1_score": 90,
+     "business_2_score": null
+    },
+    {
+     "major_name": "图书情报[1255]",
+     "degree_type": "专业学位",
+     "total_score_line": 200,
+     "politics_score": 55,
+     "foreign_language_score": 55,
+     "business_1_score": 120,
+     "business_2_score": null
+    },
+    {
+     "major_name": "审计[1257]",
+     "degree_type": "专业学位",
+     "total_score_line": 195,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 100,
+     "business_2_score": null
+    },
+    {
+     "major_name": "文献与文化遗产保护[1258S1]",
+     "degree_type": "专业学位",
+     "total_score_line": 215,
+     "politics_score": 55,
+     "foreign_language_score": 55,
+     "business_1_score": 120,
+     "business_2_score": null
+    },
+    {
+     "major_name": "公共政策[1260S1]",
+     "degree_type": "专业学位",
+     "total_score_line": 220,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 120,
+     "business_2_score": null
+    },
+    {
+     "major_name": "音乐[1352]、戏剧与影视[1354]",
+     "degree_type": "专业学位",
+     "total_score_line": 355,
+     "politics_score": 40,
+     "foreign_language_score": 40,
+     "business_1_score": 85,
+     "business_2_score": null
+    },
+    {
+     "major_name": "文物[1451]",
+     "degree_type": "专业学位",
+     "total_score_line": 300,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 75,
+     "business_2_score": null
+    }
+   ]
+  },
+  {
+   "university_name": "兰州大学",
+   "year": 2025,
+   "status": "ok",
+   "source_url": "https://yz.chsi.com.cn/kyzx/fsfsx34/202503/20250315/2293363154.html",
+   "note": "兰州大学研招网 yz.lzu.edu.cn 全站 WAF 拒访（412），故采用研招网转载页「兰州大学2025年硕士研究生招生复试基本分数线」（表格为图片）。原表分学术学位/专业学位两块，列序=总分/单科(满分=100分)/单科(满分>100分)，按列位映射。管理类三行原表单科≤100分列即管理类综合、>100分列即外语，故 politics_score 记管理类综合、foreign_language_score 记外语。原文「专项计划初试成绩基本分数要求」区块（单独考试、少数民族照顾政策、少数民族骨干计划、大学生士兵计划）全部为在门类线基础上的降分文字描述，无绝对分值，未并入 lines。检索于2026-09-30。",
+   "lines": [
+    {
+     "major_name": "哲学[01]",
+     "degree_type": "学术学位",
+     "total_score_line": 325,
+     "politics_score": 50,
+     "foreign_language_score": 90,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "经济学[02]",
+     "degree_type": "学术学位",
+     "total_score_line": 345,
+     "politics_score": 50,
+     "foreign_language_score": 70,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "法学[03]",
+     "degree_type": "学术学位",
+     "total_score_line": 330,
+     "politics_score": 45,
+     "foreign_language_score": 90,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "教育学[04]",
+     "degree_type": "学术学位",
+     "total_score_line": 341,
+     "politics_score": 45,
+     "foreign_language_score": 150,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "文学[05]",
+     "degree_type": "学术学位",
+     "total_score_line": 351,
+     "politics_score": 50,
+     "foreign_language_score": 90,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "历史学[06]",
+     "degree_type": "学术学位",
+     "total_score_line": 340,
+     "politics_score": 45,
+     "foreign_language_score": 160,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "理学[07]",
+     "degree_type": "学术学位",
+     "total_score_line": 295,
+     "politics_score": 40,
+     "foreign_language_score": 65,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "工学[08]",
+     "degree_type": "学术学位",
+     "total_score_line": 275,
+     "politics_score": 40,
+     "foreign_language_score": 65,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "农学[09]",
+     "degree_type": "学术学位",
+     "total_score_line": 280,
+     "politics_score": 40,
+     "foreign_language_score": 75,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "医学[10]",
+     "degree_type": "学术学位",
+     "total_score_line": 300,
+     "politics_score": 40,
+     "foreign_language_score": 150,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "管理学[12]",
+     "degree_type": "学术学位",
+     "total_score_line": 345,
+     "politics_score": 50,
+     "foreign_language_score": 85,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "艺术学[13]",
+     "degree_type": "学术学位",
+     "total_score_line": 351,
+     "politics_score": 40,
+     "foreign_language_score": 90,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "交叉学科[14]（区域国别学1407）",
+     "degree_type": "学术学位",
+     "total_score_line": 330,
+     "politics_score": 45,
+     "foreign_language_score": 90,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "金融[0251]、税务[0253]",
+     "degree_type": "专业学位",
+     "total_score_line": 318,
+     "politics_score": 40,
+     "foreign_language_score": 60,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "应用统计[0252]",
+     "degree_type": "专业学位",
+     "total_score_line": 355,
+     "politics_score": 55,
+     "foreign_language_score": 75,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "法律[0351]",
+     "degree_type": "专业学位",
+     "total_score_line": 325,
+     "politics_score": 45,
+     "foreign_language_score": 90,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "社会工作[0352]",
+     "degree_type": "专业学位",
+     "total_score_line": 320,
+     "politics_score": 50,
+     "foreign_language_score": 80,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "教育[0451]",
+     "degree_type": "专业学位",
+     "total_score_line": 336,
+     "politics_score": 45,
+     "foreign_language_score": 70,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "国际中文教育[0453]",
+     "degree_type": "专业学位",
+     "total_score_line": 341,
+     "politics_score": 45,
+     "foreign_language_score": 80,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "翻译[0551]、新闻与传播[0552]",
+     "degree_type": "专业学位",
+     "total_score_line": 351,
+     "politics_score": 50,
+     "foreign_language_score": 90,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "电子信息[0854]",
+     "degree_type": "专业学位",
+     "total_score_line": 290,
+     "politics_score": 45,
+     "foreign_language_score": 65,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "材料与化工[0856]",
+     "degree_type": "专业学位",
+     "total_score_line": 270,
+     "politics_score": 40,
+     "foreign_language_score": 60,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "资源与环境[0857]",
+     "degree_type": "专业学位",
+     "total_score_line": 270,
+     "politics_score": 40,
+     "foreign_language_score": 65,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "能源动力[0858]、土木水利[0859]",
+     "degree_type": "专业学位",
+     "total_score_line": 280,
+     "politics_score": 40,
+     "foreign_language_score": 65,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "生物与医药[0860]",
+     "degree_type": "专业学位",
+     "total_score_line": 295,
+     "politics_score": 45,
+     "foreign_language_score": 70,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "国土空间规划[0863]",
+     "degree_type": "专业学位",
+     "total_score_line": 255,
+     "politics_score": 40,
+     "foreign_language_score": 60,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "农业[0951]",
+     "degree_type": "专业学位",
+     "total_score_line": 270,
+     "politics_score": 40,
+     "foreign_language_score": 70,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "林业[0954]",
+     "degree_type": "专业学位",
+     "total_score_line": 280,
+     "politics_score": 40,
+     "foreign_language_score": 75,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "临床医学[1051]",
+     "degree_type": "专业学位",
+     "total_score_line": 315,
+     "politics_score": 50,
+     "foreign_language_score": 170,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "口腔医学[1052]",
+     "degree_type": "专业学位",
+     "total_score_line": 300,
+     "politics_score": 50,
+     "foreign_language_score": 150,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "公共卫生[1053]",
+     "degree_type": "专业学位",
+     "total_score_line": 300,
+     "politics_score": 40,
+     "foreign_language_score": 150,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "护理[1054]",
+     "degree_type": "专业学位",
+     "total_score_line": 295,
+     "politics_score": 45,
+     "foreign_language_score": 150,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "药学[1055]",
+     "degree_type": "专业学位",
+     "total_score_line": 300,
+     "politics_score": 45,
+     "foreign_language_score": 150,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "工商管理[1251]",
+     "degree_type": "专业学位",
+     "total_score_line": 146,
+     "politics_score": 70,
+     "foreign_language_score": 35,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "公共管理[1252]",
+     "degree_type": "专业学位",
+     "total_score_line": 159,
+     "politics_score": 76,
+     "foreign_language_score": 38,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "会计[1253]",
+     "degree_type": "专业学位",
+     "total_score_line": 189,
+     "politics_score": 96,
+     "foreign_language_score": 48,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "音乐[1352]、设计[1357]",
+     "degree_type": "专业学位",
+     "total_score_line": 346,
+     "politics_score": 40,
+     "foreign_language_score": 90,
+     "business_1_score": null,
+     "business_2_score": null
+    }
+   ]
+  },
+  {
+   "university_name": "北京理工大学",
+   "year": 2025,
+   "status": "ok",
+   "source_url": "https://yz.chsi.com.cn/kyzx/fsfsx34/202503/20250313/2293357804.html",
+   "note": "北京理工大学研招网 grd.bit.edu.cn 本机 TLS 握手失败，故采用研招网转载页「北京理工大学2025年硕士研究生招生考试复试基本分数线」（表格为图片）。原表列序=类别/报考学科门类（专业）/总分/政治理论（管理类综合）/外国语/业务课一/业务课二。教育学[04] 业务课二列原表为合并空值，记 null；管理类五行业务课列原表为「--」，记 null，其政治理论（管理类综合）列值写入 politics_score、外语列写入 foreign_language_score。电子信息[0854]、机械[0855]、材料与化工[0856]、资源与环境[0857]、能源动力[0858]、生物与医药[0860] 在原表为同一合并行（300/40/40/60/60），此处按原表逐专业展开。强军计划(280)、单独考试(245) 及少数民族骨干、退役大学生士兵专项的文字降分说明未并入 lines。检索于2026-09-30。",
+   "lines": [
+    {
+     "major_name": "经济学[02]",
+     "degree_type": "学术学位",
+     "total_score_line": 340,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 68,
+     "business_2_score": 68
+    },
+    {
+     "major_name": "法学[03]",
+     "degree_type": "学术学位",
+     "total_score_line": 323,
+     "politics_score": 40,
+     "foreign_language_score": 40,
+     "business_1_score": 60,
+     "business_2_score": 60
+    },
+    {
+     "major_name": "教育学[04]",
+     "degree_type": "学术学位",
+     "total_score_line": 341,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 135,
+     "business_2_score": null
+    },
+    {
+     "major_name": "文学[05]",
+     "degree_type": "学术学位",
+     "total_score_line": 360,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 75,
+     "business_2_score": 75
+    },
+    {
+     "major_name": "理学[07]",
+     "degree_type": "学术学位",
+     "total_score_line": 305,
+     "politics_score": 40,
+     "foreign_language_score": 40,
+     "business_1_score": 60,
+     "business_2_score": 60
+    },
+    {
+     "major_name": "工学（不含照顾专业)[08]",
+     "degree_type": "学术学位",
+     "total_score_line": 300,
+     "politics_score": 40,
+     "foreign_language_score": 40,
+     "business_1_score": 60,
+     "business_2_score": 60
+    },
+    {
+     "major_name": "管理学[12]",
+     "degree_type": "学术学位",
+     "total_score_line": 350,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 75,
+     "business_2_score": 75
+    },
+    {
+     "major_name": "交叉学科[140100]",
+     "degree_type": "学术学位",
+     "total_score_line": 300,
+     "politics_score": 40,
+     "foreign_language_score": 40,
+     "business_1_score": 60,
+     "business_2_score": 60
+    },
+    {
+     "major_name": "交叉学科[140300]",
+     "degree_type": "学术学位",
+     "total_score_line": 360,
+     "politics_score": 40,
+     "foreign_language_score": 40,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "工学照顾专业*[08]",
+     "degree_type": "学术学位",
+     "total_score_line": 295,
+     "politics_score": 40,
+     "foreign_language_score": 40,
+     "business_1_score": 60,
+     "business_2_score": 60
+    },
+    {
+     "major_name": "应用统计[0252]",
+     "degree_type": "专业学位",
+     "total_score_line": 350,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 75,
+     "business_2_score": 75
+    },
+    {
+     "major_name": "法律[0351]",
+     "degree_type": "专业学位",
+     "total_score_line": 323,
+     "politics_score": 40,
+     "foreign_language_score": 40,
+     "business_1_score": 60,
+     "business_2_score": 60
+    },
+    {
+     "major_name": "党务管理[0356]",
+     "degree_type": "专业学位",
+     "total_score_line": 323,
+     "politics_score": 40,
+     "foreign_language_score": 40,
+     "business_1_score": 60,
+     "business_2_score": 60
+    },
+    {
+     "major_name": "教育[0451]",
+     "degree_type": "专业学位",
+     "total_score_line": 341,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 68,
+     "business_2_score": 68
+    },
+    {
+     "major_name": "国际中文教育[0453]",
+     "degree_type": "专业学位",
+     "total_score_line": 350,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 68,
+     "business_2_score": 68
+    },
+    {
+     "major_name": "翻译[0551]",
+     "degree_type": "专业学位",
+     "total_score_line": 351,
+     "politics_score": 47,
+     "foreign_language_score": 47,
+     "business_1_score": 71,
+     "business_2_score": 71
+    },
+    {
+     "major_name": "数据科学[0752]",
+     "degree_type": "专业学位",
+     "total_score_line": 305,
+     "politics_score": 40,
+     "foreign_language_score": 40,
+     "business_1_score": 60,
+     "business_2_score": 60
+    },
+    {
+     "major_name": "电子信息[0854]",
+     "degree_type": "专业学位",
+     "total_score_line": 300,
+     "politics_score": 40,
+     "foreign_language_score": 40,
+     "business_1_score": 60,
+     "business_2_score": 60
+    },
+    {
+     "major_name": "机械[0855]",
+     "degree_type": "专业学位",
+     "total_score_line": 300,
+     "politics_score": 40,
+     "foreign_language_score": 40,
+     "business_1_score": 60,
+     "business_2_score": 60
+    },
+    {
+     "major_name": "材料与化工[0856]",
+     "degree_type": "专业学位",
+     "total_score_line": 300,
+     "politics_score": 40,
+     "foreign_language_score": 40,
+     "business_1_score": 60,
+     "business_2_score": 60
+    },
+    {
+     "major_name": "资源与环境[0857]",
+     "degree_type": "专业学位",
+     "total_score_line": 300,
+     "politics_score": 40,
+     "foreign_language_score": 40,
+     "business_1_score": 60,
+     "business_2_score": 60
+    },
+    {
+     "major_name": "能源动力[0858]",
+     "degree_type": "专业学位",
+     "total_score_line": 300,
+     "politics_score": 40,
+     "foreign_language_score": 40,
+     "business_1_score": 60,
+     "business_2_score": 60
+    },
+    {
+     "major_name": "生物与医药[0860]",
+     "degree_type": "专业学位",
+     "total_score_line": 300,
+     "politics_score": 40,
+     "foreign_language_score": 40,
+     "business_1_score": 60,
+     "business_2_score": 60
+    },
+    {
+     "major_name": "工商管理[1251]",
+     "degree_type": "专业学位",
+     "total_score_line": 151,
+     "politics_score": 70,
+     "foreign_language_score": 35,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "公共管理[1252]",
+     "degree_type": "专业学位",
+     "total_score_line": 164,
+     "politics_score": 76,
+     "foreign_language_score": 38,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "会计[1253]",
+     "degree_type": "专业学位",
+     "total_score_line": 194,
+     "politics_score": 96,
+     "foreign_language_score": 48,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "工程管理[1256]",
+     "degree_type": "专业学位",
+     "total_score_line": 162,
+     "politics_score": 76,
+     "foreign_language_score": 38,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "设计[1357]",
+     "degree_type": "专业学位",
+     "total_score_line": 370,
+     "politics_score": 40,
+     "foreign_language_score": 40,
+     "business_1_score": 75,
+     "business_2_score": 75
+    }
+   ]
+  },
+  {
+   "university_name": "北京航空航天大学",
+   "year": 2025,
+   "status": "ok",
+   "source_url": "https://yz.chsi.com.cn/kyzx/fsfsx34/202503/20250312/2293355991.html",
+   "note": "研招网转载页「北京航空航天大学2025年硕士研究生复试资格基本线」，表格为图片；北航研招网 yzb.buaa.edu.cn 本机不可达（curl HTTP 000）。原表列序=学科门类/学科专业（包括学术学位、专业学位）/总分/单科(满分=100分)/单科(满分>100分)/备注，单科两列按列位映射。原表多数门类行为「各学科专业」（学硕专硕通用），按库内既有口径记为学术学位；教育学[04] 原表明确分列学术学位与专业学位两行。管理学[12] 的专业学位（工商管理[1251]、公共管理[1252]、会计[1253]、工程管理[1256]）原表总分列写「同国家A类线」为无数值文字，故未并入 lines。强军计划(265)、退役大学生士兵、少数民族高层次骨干人才计划未并入 lines。检索于2026-09-30。",
+   "lines": [
+    {
+     "major_name": "哲学[01] 各学科专业",
+     "degree_type": "学术学位",
+     "total_score_line": 330,
+     "politics_score": 40,
+     "foreign_language_score": 80,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "经济学[02] 各学科专业",
+     "degree_type": "学术学位",
+     "total_score_line": 340,
+     "politics_score": 50,
+     "foreign_language_score": 80,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "法学[03] 各学科专业",
+     "degree_type": "学术学位",
+     "total_score_line": 325,
+     "politics_score": 45,
+     "foreign_language_score": 80,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "教育学[04] 学术学位",
+     "degree_type": "学术学位",
+     "total_score_line": 345,
+     "politics_score": 50,
+     "foreign_language_score": 165,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "教育学[04] 专业学位",
+     "degree_type": "专业学位",
+     "total_score_line": 345,
+     "politics_score": 50,
+     "foreign_language_score": 85,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "文学[05] 各学科专业",
+     "degree_type": "学术学位",
+     "total_score_line": 360,
+     "politics_score": 55,
+     "foreign_language_score": 85,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "理学[07] 各学科专业",
+     "degree_type": "学术学位",
+     "total_score_line": 295,
+     "politics_score": 35,
+     "foreign_language_score": 60,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "工学[08] 各学科专业",
+     "degree_type": "学术学位",
+     "total_score_line": 295,
+     "politics_score": 35,
+     "foreign_language_score": 60,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "医学[10] 各学科专业",
+     "degree_type": "学术学位",
+     "total_score_line": 295,
+     "politics_score": 40,
+     "foreign_language_score": 120,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "管理学[12] 学术学位",
+     "degree_type": "学术学位",
+     "total_score_line": 335,
+     "politics_score": 45,
+     "foreign_language_score": 85,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "交叉学科[14] 各学科专业",
+     "degree_type": "学术学位",
+     "total_score_line": 295,
+     "politics_score": 35,
+     "foreign_language_score": 60,
+     "business_1_score": null,
+     "business_2_score": null
+    }
+   ]
+  },
+  {
+   "university_name": "浙江大学",
+   "year": 2025,
+   "status": "ok",
+   "source_url": "https://yz.chsi.com.cn/kyzx/fsfsx34/202503/20250313/2293357790.html",
+   "note": "研招网转载页「浙江大学2025年硕士研究生招生考试复试分数线基本要求」，表格为图片。原表分学术学位/专业学位两块，列序=代码/门类(类别)名称/政治/外语/业务课1/业务课2/总分。管理类五行原表列序为 管理类综合能力/外语/总分，politics_score 记管理类综合能力、foreign_language_score 记外语、业务课列记 null。教育学、历史学、医学、应用心理、博物馆、临床医学、口腔医学、公共卫生、护理、药学各行原表业务课2列为空，记 null。原文「单独考试考生」「强军计划」「少数民族高层次骨干人才计划」「退役大学生士兵计划」区块未并入 lines。检索于2026-09-30。",
+   "lines": [
+    {
+     "major_name": "哲学[01]",
+     "degree_type": "学术学位",
+     "total_score_line": 375,
+     "politics_score": 55,
+     "foreign_language_score": 55,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "经济学[02]",
+     "degree_type": "学术学位",
+     "total_score_line": 370,
+     "politics_score": 55,
+     "foreign_language_score": 55,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "法学[03]",
+     "degree_type": "学术学位",
+     "total_score_line": 335,
+     "politics_score": 55,
+     "foreign_language_score": 55,
+     "business_1_score": 85,
+     "business_2_score": 85
+    },
+    {
+     "major_name": "教育学[04]",
+     "degree_type": "学术学位",
+     "total_score_line": 341,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 180,
+     "business_2_score": null
+    },
+    {
+     "major_name": "文学[05]",
+     "degree_type": "学术学位",
+     "total_score_line": 351,
+     "politics_score": 55,
+     "foreign_language_score": 55,
+     "business_1_score": 85,
+     "business_2_score": 85
+    },
+    {
+     "major_name": "历史学[06]",
+     "degree_type": "学术学位",
+     "total_score_line": 345,
+     "politics_score": 55,
+     "foreign_language_score": 55,
+     "business_1_score": 190,
+     "business_2_score": null
+    },
+    {
+     "major_name": "理学[07]",
+     "degree_type": "学术学位",
+     "total_score_line": 305,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 80,
+     "business_2_score": 80
+    },
+    {
+     "major_name": "工学[08]",
+     "degree_type": "学术学位",
+     "total_score_line": 300,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 75,
+     "business_2_score": 75
+    },
+    {
+     "major_name": "农学[09]",
+     "degree_type": "学术学位",
+     "total_score_line": 300,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 75,
+     "business_2_score": 75
+    },
+    {
+     "major_name": "医学[10]",
+     "degree_type": "学术学位",
+     "total_score_line": 330,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 180,
+     "business_2_score": null
+    },
+    {
+     "major_name": "管理学[12]",
+     "degree_type": "学术学位",
+     "total_score_line": 335,
+     "politics_score": 55,
+     "foreign_language_score": 55,
+     "business_1_score": 85,
+     "business_2_score": 85
+    },
+    {
+     "major_name": "艺术学[13]",
+     "degree_type": "学术学位",
+     "total_score_line": 360,
+     "politics_score": 55,
+     "foreign_language_score": 55,
+     "business_1_score": 85,
+     "business_2_score": 85
+    },
+    {
+     "major_name": "交叉学科[14] 设计学（1403)",
+     "degree_type": "学术学位",
+     "total_score_line": 365,
+     "politics_score": 55,
+     "foreign_language_score": 55,
+     "business_1_score": 85,
+     "business_2_score": 85
+    },
+    {
+     "major_name": "金融[0251]",
+     "degree_type": "专业学位",
+     "total_score_line": 330,
+     "politics_score": 55,
+     "foreign_language_score": 55,
+     "business_1_score": 80,
+     "business_2_score": 80
+    },
+    {
+     "major_name": "税务[0253]",
+     "degree_type": "专业学位",
+     "total_score_line": 365,
+     "politics_score": 60,
+     "foreign_language_score": 60,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "国际商务[0254]",
+     "degree_type": "专业学位",
+     "total_score_line": 365,
+     "politics_score": 60,
+     "foreign_language_score": 60,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "数字经济[0258]",
+     "degree_type": "专业学位",
+     "total_score_line": 335,
+     "politics_score": 55,
+     "foreign_language_score": 55,
+     "business_1_score": 80,
+     "business_2_score": 80
+    },
+    {
+     "major_name": "法律[0351]",
+     "degree_type": "专业学位",
+     "total_score_line": 355,
+     "politics_score": 55,
+     "foreign_language_score": 55,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "社会工作[0352]",
+     "degree_type": "专业学位",
+     "total_score_line": 323,
+     "politics_score": 55,
+     "foreign_language_score": 55,
+     "business_1_score": 80,
+     "business_2_score": 80
+    },
+    {
+     "major_name": "教育[0451]",
+     "degree_type": "专业学位",
+     "total_score_line": 341,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 80,
+     "business_2_score": 80
+    },
+    {
+     "major_name": "国际中文教育[0453]",
+     "degree_type": "专业学位",
+     "total_score_line": 345,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 80,
+     "business_2_score": 80
+    },
+    {
+     "major_name": "应用心理[0454]",
+     "degree_type": "专业学位",
+     "total_score_line": 370,
+     "politics_score": 55,
+     "foreign_language_score": 55,
+     "business_1_score": 210,
+     "business_2_score": null
+    },
+    {
+     "major_name": "新闻与传播[0552]",
+     "degree_type": "专业学位",
+     "total_score_line": 370,
+     "politics_score": 60,
+     "foreign_language_score": 60,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "博物馆[0651]",
+     "degree_type": "专业学位",
+     "total_score_line": 340,
+     "politics_score": 55,
+     "foreign_language_score": 55,
+     "business_1_score": 190,
+     "business_2_score": null
+    },
+    {
+     "major_name": "工程、建筑、城乡规划、风景园林[085/086]",
+     "degree_type": "专业学位",
+     "total_score_line": 300,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 75,
+     "business_2_score": 75
+    },
+    {
+     "major_name": "农业[0951]",
+     "degree_type": "专业学位",
+     "total_score_line": 300,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 75,
+     "business_2_score": 75
+    },
+    {
+     "major_name": "兽医[0952]",
+     "degree_type": "专业学位",
+     "total_score_line": 300,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 75,
+     "business_2_score": 75
+    },
+    {
+     "major_name": "临床医学[1051]",
+     "degree_type": "专业学位",
+     "total_score_line": 355,
+     "politics_score": 60,
+     "foreign_language_score": 60,
+     "business_1_score": 190,
+     "business_2_score": null
+    },
+    {
+     "major_name": "口腔医学[1052]",
+     "degree_type": "专业学位",
+     "total_score_line": 355,
+     "politics_score": 60,
+     "foreign_language_score": 60,
+     "business_1_score": 190,
+     "business_2_score": null
+    },
+    {
+     "major_name": "公共卫生[1053]",
+     "degree_type": "专业学位",
+     "total_score_line": 355,
+     "politics_score": 60,
+     "foreign_language_score": 60,
+     "business_1_score": 190,
+     "business_2_score": null
+    },
+    {
+     "major_name": "护理[1054]",
+     "degree_type": "专业学位",
+     "total_score_line": 320,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 180,
+     "business_2_score": null
+    },
+    {
+     "major_name": "药学[1055]",
+     "degree_type": "专业学位",
+     "total_score_line": 350,
+     "politics_score": 55,
+     "foreign_language_score": 55,
+     "business_1_score": 190,
+     "business_2_score": null
+    },
+    {
+     "major_name": "戏剧与影视[1354]",
+     "degree_type": "专业学位",
+     "total_score_line": 370,
+     "politics_score": 55,
+     "foreign_language_score": 55,
+     "business_1_score": 85,
+     "business_2_score": 85
+    },
+    {
+     "major_name": "美术与书法[1356]",
+     "degree_type": "专业学位",
+     "total_score_line": 365,
+     "politics_score": 55,
+     "foreign_language_score": 55,
+     "business_1_score": 85,
+     "business_2_score": 85
+    },
+    {
+     "major_name": "工商管理[1251]",
+     "degree_type": "专业学位",
+     "total_score_line": 151,
+     "politics_score": 70,
+     "foreign_language_score": 35,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "公共管理[1252]",
+     "degree_type": "专业学位",
+     "total_score_line": 190,
+     "politics_score": 110,
+     "foreign_language_score": 55,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "会计[1253]",
+     "degree_type": "专业学位",
+     "total_score_line": 245,
+     "politics_score": 160,
+     "foreign_language_score": 80,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "工程管理[125601]",
+     "degree_type": "专业学位",
+     "total_score_line": 170,
+     "politics_score": 80,
+     "foreign_language_score": 40,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "工业工程与管理[125603]",
+     "degree_type": "专业学位",
+     "total_score_line": 240,
+     "politics_score": 140,
+     "foreign_language_score": 70,
+     "business_1_score": null,
+     "business_2_score": null
+    }
+   ]
+  },
+  {
+   "university_name": "西北工业大学",
+   "year": 2025,
+   "status": "ok",
+   "source_url": "https://yz.chsi.com.cn/kyzx/fsfsx34/202503/20250314/2293362919.html",
+   "note": "研招网转载页「西北工业大学2025年硕士研究生入学考试复试基本分数线」，表格为图片。原表列序=学科门类/单科(满分=100分)/单科(满分>100分)/总分，两列单科按列位映射到 politics_score 与 business_1_score。管理类五行原表单科≤100分列为管理类综合、>100分列为外语，故 politics_score 记管理类综合、foreign_language_score 记外语。强军计划(260)、单独考试、少数民族高层次骨干人才计划、退役大学生士兵计划的降分文字说明未并入 lines。检索于2026-09-30。",
+   "lines": [
+    {
+     "major_name": "[02]经济学",
+     "degree_type": "学术学位",
+     "total_score_line": 335,
+     "politics_score": 45,
+     "foreign_language_score": 70,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "[03]法学",
+     "degree_type": "学术学位",
+     "total_score_line": 330,
+     "politics_score": 50,
+     "foreign_language_score": 85,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "[0401]教育学",
+     "degree_type": "学术学位",
+     "total_score_line": 341,
+     "politics_score": 45,
+     "foreign_language_score": 135,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "[0403]体育学",
+     "degree_type": "学术学位",
+     "total_score_line": 304,
+     "politics_score": 36,
+     "foreign_language_score": 108,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "[05]文学",
+     "degree_type": "学术学位",
+     "total_score_line": 365,
+     "politics_score": 55,
+     "foreign_language_score": 85,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "[07]理学",
+     "degree_type": "学术学位",
+     "total_score_line": 310,
+     "politics_score": 45,
+     "foreign_language_score": 70,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "[08]工学（不含照顾学科）",
+     "degree_type": "学术学位",
+     "total_score_line": 310,
+     "politics_score": 45,
+     "foreign_language_score": 70,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "[08]工学（照顾学科)",
+     "degree_type": "学术学位",
+     "total_score_line": 300,
+     "politics_score": 45,
+     "foreign_language_score": 70,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "[10] 医学",
+     "degree_type": "学术学位",
+     "total_score_line": 310,
+     "politics_score": 45,
+     "foreign_language_score": 135,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "[12]管理学",
+     "degree_type": "学术学位",
+     "total_score_line": 335,
+     "politics_score": 50,
+     "foreign_language_score": 90,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "[14]交叉学科",
+     "degree_type": "学术学位",
+     "total_score_line": 300,
+     "politics_score": 45,
+     "foreign_language_score": 70,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "[0252]应用统计",
+     "degree_type": "专业学位",
+     "total_score_line": 350,
+     "politics_score": 50,
+     "foreign_language_score": 80,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "[0451]教育",
+     "degree_type": "专业学位",
+     "total_score_line": 341,
+     "politics_score": 45,
+     "foreign_language_score": 68,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "[0551]翻译",
+     "degree_type": "专业学位",
+     "total_score_line": 365,
+     "politics_score": 55,
+     "foreign_language_score": 90,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "[0854]电子信息、［0855]机械、[0856]材料与化工、[0857]资源与环境、[0858]能源动力、[0859]土木水利、[0860]生物与医药、[0861]交通运输",
+     "degree_type": "专业学位",
+     "total_score_line": 310,
+     "politics_score": 45,
+     "foreign_language_score": 70,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "[1251]工商管理",
+     "degree_type": "专业学位",
+     "total_score_line": 151,
+     "politics_score": 35,
+     "foreign_language_score": 70,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "[1252]公共管理",
+     "degree_type": "专业学位",
+     "total_score_line": 164,
+     "politics_score": 38,
+     "foreign_language_score": 76,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "[1253]会计",
+     "degree_type": "专业学位",
+     "total_score_line": 194,
+     "politics_score": 48,
+     "foreign_language_score": 96,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "[125601]工程管理",
+     "degree_type": "专业学位",
+     "total_score_line": 162,
+     "politics_score": 38,
+     "foreign_language_score": 76,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "[125603]工业工程与管理",
+     "degree_type": "专业学位",
+     "total_score_line": 220,
+     "politics_score": 55,
+     "foreign_language_score": 135,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "[1451]文物",
+     "degree_type": "专业学位",
+     "total_score_line": 300,
+     "politics_score": 45,
+     "foreign_language_score": 70,
+     "business_1_score": null,
+     "business_2_score": null
+    }
+   ]
+  },
+  {
+   "university_name": "重庆大学",
+   "year": 2025,
+   "status": "ok",
+   "source_url": "https://yz.chsi.com.cn/kyzx/fsfsx34/202503/20250314/2293362917.html",
+   "note": "研招网转载页「重庆大学2025年硕士研究生招生考试初试合格基本分数线」，表格为图片。原表列序=学科门类/一级学科、专业学位类别/总分/单科=100分/单科>100分/备注。经表格网格线与合并单元格判定：理学【07】块含普通计划行(300/45/70)与「退役、少高专项及享受少数民族照顾政策考生」行(220/35/55)；工学【08】块含照顾学科(290/40/60)、其他学科专业(305/45/65)两条普通计划行，以及对应两条专项行(201/30/45、208/35/50)；医（药）学【10】块含普通计划行(300/45/170)与专项行(235/35/155)。lines 只收普通计划，专项行按原表备注列归类未并入。管理类四行原表单科=100分列为外语、>100分列为管理类综合，故 politics_score 记管理类综合、foreign_language_score 记外语。原文另注明工学照顾学科为力学[0801]、冶金工程[0806]、动力工程及工程热物理[0807]、矿业工程[0819]、航空宇航科学与技术[0825]。检索于2026-09-30。",
+   "lines": [
+    {
+     "major_name": "哲学【01】 各学科专业",
+     "degree_type": "学术学位",
+     "total_score_line": 340,
+     "politics_score": 50,
+     "foreign_language_score": 90,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "经济学【02】 各学科专业",
+     "degree_type": "学术学位",
+     "total_score_line": 345,
+     "politics_score": 50,
+     "foreign_language_score": 85,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "法学【03】 各学科专业",
+     "degree_type": "学术学位",
+     "total_score_line": 335,
+     "politics_score": 45,
+     "foreign_language_score": 80,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "国际中文教育【0453】（教育学【04】）",
+     "degree_type": "专业学位",
+     "total_score_line": 345,
+     "politics_score": 50,
+     "foreign_language_score": 85,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "体育【0452】（教育学【04】）",
+     "degree_type": "专业学位",
+     "total_score_line": 315,
+     "politics_score": 50,
+     "foreign_language_score": 175,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "文学【05】 各学科专业",
+     "degree_type": "学术学位",
+     "total_score_line": 360,
+     "politics_score": 50,
+     "foreign_language_score": 90,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "历史学【06】 各学科专业",
+     "degree_type": "学术学位",
+     "total_score_line": 345,
+     "politics_score": 50,
+     "foreign_language_score": 180,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "理学【07】 各学科专业",
+     "degree_type": "学术学位",
+     "total_score_line": 300,
+     "politics_score": 45,
+     "foreign_language_score": 70,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "工学【08】 照顾学科",
+     "degree_type": "学术学位",
+     "total_score_line": 290,
+     "politics_score": 40,
+     "foreign_language_score": 60,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "工学【08】 其他学科专业",
+     "degree_type": "学术学位",
+     "total_score_line": 305,
+     "politics_score": 45,
+     "foreign_language_score": 65,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "医（药）学【10】 各学科专业",
+     "degree_type": "学术学位",
+     "total_score_line": 300,
+     "politics_score": 45,
+     "foreign_language_score": 170,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "工商管理[1251]（管理学【12】）",
+     "degree_type": "专业学位",
+     "total_score_line": 151,
+     "politics_score": 70,
+     "foreign_language_score": 35,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "公共管理[1252]（管理学【12】）",
+     "degree_type": "专业学位",
+     "total_score_line": 164,
+     "politics_score": 76,
+     "foreign_language_score": 38,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "会计[1253]（管理学【12】）",
+     "degree_type": "专业学位",
+     "total_score_line": 194,
+     "politics_score": 96,
+     "foreign_language_score": 48,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "工程管理[1256]（管理学【12]）",
+     "degree_type": "专业学位",
+     "total_score_line": 162,
+     "politics_score": 76,
+     "foreign_language_score": 38,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "管理学【12】 其他学科专业",
+     "degree_type": "学术学位",
+     "total_score_line": 340,
+     "politics_score": 50,
+     "foreign_language_score": 85,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "艺术学【13】 各学科专业",
+     "degree_type": "学术学位",
+     "total_score_line": 370,
+     "politics_score": 50,
+     "foreign_language_score": 100,
+     "business_1_score": null,
+     "business_2_score": null
+    }
+   ]
+  },
+  {
+   "university_name": "武汉大学",
+   "year": 2025,
+   "status": "ok",
+   "source_url": "https://t3.chei.com.cn/news/getfile/2293449002-2293361213-fdcd7d929574bbd76774db0529ab8e13.pdf",
+   "note": "官方 PDF《武汉大学2025年硕士招生考试复试基本分数线及相关说明》（研招网 2025 自划线专题页 https://yz.chsi.com.cn/kyzx/fsfsx34/202503/20250313/2293361213.html 附件下载），PDF 有文本层，数字直接提取未使用 OCR，已存 _pdf_cache/whu2025.pdf。该校按「报考培养单位 × 学科（专业）代码」逐条公布（即逐专业线），major_name 采用库内 2026 年武汉大学既有格式「名称[代码]（培养单位）」以区分同名代码在不同学院的不同分值。原表业务课2列为「--」者记 null。原表末尾的「强军计划」「单独考试」「对口支援（国家线）」「统一招生平台」四类属专项/特殊类别，未并入 lines；原表说明注明「少数民族高层次骨干人才计划」和「退役大学生士兵计划」复试分数线另行公告。注：原 PDF 第 4 页中 080503 材料加工工程、0856 材料与化工 两行在版面上位于「护理学院」合并单元格范围内（已核对该页图片确认），此处按原表归属记录。检索于2026-09-30。",
+   "lines": [
+    {
+     "major_name": "外国语言文学[0502]（外国语言文学学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 351,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 95,
+     "business_2_score": 95
+    },
+    {
+     "major_name": "翻译[0551]（外国语言文学学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 370,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 110,
+     "business_2_score": 110
+    },
+    {
+     "major_name": "新闻传播学[0503]（新闻与传播学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 365,
+     "politics_score": 60,
+     "foreign_language_score": 55,
+     "business_1_score": 100,
+     "business_2_score": 100
+    },
+    {
+     "major_name": "新闻与传播[0552]（新闻与传播学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 365,
+     "politics_score": 60,
+     "foreign_language_score": 60,
+     "business_1_score": 100,
+     "business_2_score": 100
+    },
+    {
+     "major_name": "出版[0553]（信息管理学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 370,
+     "politics_score": 60,
+     "foreign_language_score": 60,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "管理科学与工程[120100]（信息管理学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 340,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 85,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "电子商务[1201Z1]（信息管理学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 340,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 85,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "情报学[120502]（信息管理学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 340,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 85,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "数据科学[1205J7]（信息管理学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 340,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 85,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "保密管理[1205Z3]（信息管理学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 340,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 85,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "图书馆学[120501]（信息管理学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 345,
+     "politics_score": 45,
+     "foreign_language_score": 41,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "档案学[120503]（信息管理学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 345,
+     "politics_score": 45,
+     "foreign_language_score": 41,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "出版发行学[1205Z1]（信息管理学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 345,
+     "politics_score": 45,
+     "foreign_language_score": 41,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "数据资源管理[1205Z2]（信息管理学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 345,
+     "politics_score": 45,
+     "foreign_language_score": 41,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "图书情报[125500]（信息管理学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 230,
+     "politics_score": 110,
+     "foreign_language_score": 60,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "工程管理[125601]（信息管理学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 162,
+     "politics_score": 76,
+     "foreign_language_score": 38,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "理论经济学[0201]（经济与管理学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 330,
+     "politics_score": 50,
+     "foreign_language_score": 45,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "应用经济学[0202]（经济与管理学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 340,
+     "politics_score": 45,
+     "foreign_language_score": 50,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "金融[0251]（经济与管理学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 370,
+     "politics_score": 60,
+     "foreign_language_score": 60,
+     "business_1_score": 100,
+     "business_2_score": 100
+    },
+    {
+     "major_name": "国际商务[0254]（经济与管理学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 365,
+     "politics_score": 55,
+     "foreign_language_score": 65,
+     "business_1_score": 100,
+     "business_2_score": 100
+    },
+    {
+     "major_name": "保险[0255]（经济与管理学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 350,
+     "politics_score": 55,
+     "foreign_language_score": 60,
+     "business_1_score": 95,
+     "business_2_score": 95
+    },
+    {
+     "major_name": "数字经济[0258]（经济与管理学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 355,
+     "politics_score": 60,
+     "foreign_language_score": 60,
+     "business_1_score": 100,
+     "business_2_score": 100
+    },
+    {
+     "major_name": "管理科学与工程[1201]（经济与管理学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 333,
+     "politics_score": 41,
+     "foreign_language_score": 41,
+     "business_1_score": 62,
+     "business_2_score": 62
+    },
+    {
+     "major_name": "工商管理学[1202]（经济与管理学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 335,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 100,
+     "business_2_score": 100
+    },
+    {
+     "major_name": "工商管理[1251]（经济与管理学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 151,
+     "politics_score": 70,
+     "foreign_language_score": 35,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "会计[1253]（经济与管理学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 194,
+     "politics_score": 96,
+     "foreign_language_score": 48,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "工程管理[125601]（经济与管理学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 162,
+     "politics_score": 76,
+     "foreign_language_score": 38,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "法学（除党内法规学外）[0301]（法学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 335,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "党内法规学[0301Z4]（法学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 360,
+     "politics_score": 55,
+     "foreign_language_score": 45,
+     "business_1_score": 100,
+     "business_2_score": 100
+    },
+    {
+     "major_name": "法律（非法学）[035101]（法学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 330,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "法律（法学）[035102]（法学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 323,
+     "politics_score": 55,
+     "foreign_language_score": 55,
+     "business_1_score": 85,
+     "business_2_score": 85
+    },
+    {
+     "major_name": "中国语言文学[0501]（文学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 351,
+     "politics_score": 47,
+     "foreign_language_score": 47,
+     "business_1_score": 100,
+     "business_2_score": 100
+    },
+    {
+     "major_name": "国际中文教育[0453]（文学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 341,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 95,
+     "business_2_score": 95
+    },
+    {
+     "major_name": "考古学[0601]（历史学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 340,
+     "politics_score": 55,
+     "foreign_language_score": 43,
+     "business_1_score": 210,
+     "business_2_score": null
+    },
+    {
+     "major_name": "中国史[0602]（历史学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 336,
+     "politics_score": 55,
+     "foreign_language_score": 50,
+     "business_1_score": 205,
+     "business_2_score": null
+    },
+    {
+     "major_name": "世界史[0603]（历史学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 340,
+     "politics_score": 55,
+     "foreign_language_score": 55,
+     "business_1_score": 210,
+     "business_2_score": null
+    },
+    {
+     "major_name": "博物馆[0651]（历史学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 350,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 220,
+     "business_2_score": null
+    },
+    {
+     "major_name": "文物[1451]（历史学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 350,
+     "politics_score": 50,
+     "foreign_language_score": 55,
+     "business_1_score": 110,
+     "business_2_score": 110
+    },
+    {
+     "major_name": "哲学[0101]（哲学学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 350,
+     "politics_score": 55,
+     "foreign_language_score": 50,
+     "business_1_score": 105,
+     "business_2_score": 105
+    },
+    {
+     "major_name": "艺术学[1301]（艺术学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 355,
+     "politics_score": 55,
+     "foreign_language_score": 45,
+     "business_1_score": 105,
+     "business_2_score": 130
+    },
+    {
+     "major_name": "戏剧与影视[1354]（艺术学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 355,
+     "politics_score": 50,
+     "foreign_language_score": 40,
+     "business_1_score": 105,
+     "business_2_score": 110
+    },
+    {
+     "major_name": "政治学理论[030201]（政治与公共管理学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 350,
+     "politics_score": 60,
+     "foreign_language_score": 50,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "中外政治制度[030202]（政治与公共管理学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 350,
+     "politics_score": 60,
+     "foreign_language_score": 50,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "国际政治[030206]（政治与公共管理学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 350,
+     "politics_score": 60,
+     "foreign_language_score": 50,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "国际关系[030207]（政治与公共管理学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 335,
+     "politics_score": 60,
+     "foreign_language_score": 50,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "行政管理[120401]（政治与公共管理学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 370,
+     "politics_score": 55,
+     "foreign_language_score": 50,
+     "business_1_score": 110,
+     "business_2_score": 110
+    },
+    {
+     "major_name": "土地资源管理[120405]（政治与公共管理学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 370,
+     "politics_score": 55,
+     "foreign_language_score": 50,
+     "business_1_score": 110,
+     "business_2_score": 110
+    },
+    {
+     "major_name": "应急管理[1204Z2]（政治与公共管理学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 370,
+     "politics_score": 55,
+     "foreign_language_score": 50,
+     "business_1_score": 110,
+     "business_2_score": 110
+    },
+    {
+     "major_name": "公共经济管理[1204Z1]（政治与公共管理学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 355,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 110,
+     "business_2_score": 110
+    },
+    {
+     "major_name": "社会医学与卫生事业管理[120402]（政治与公共管理学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 355,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 110,
+     "business_2_score": 110
+    },
+    {
+     "major_name": "社会保障[120404]（政治与公共管理学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 355,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 110,
+     "business_2_score": 110
+    },
+    {
+     "major_name": "教育经济与管理[120403]（政治与公共管理学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 340,
+     "politics_score": 55,
+     "foreign_language_score": 55,
+     "business_1_score": 100,
+     "business_2_score": 100
+    },
+    {
+     "major_name": "公共管理[1252]（政治与公共管理学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 170,
+     "politics_score": 100,
+     "foreign_language_score": 40,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "社会学[0303]（社会学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 340,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "科学社会主义与国际共产主义运动[030203]（马克思主义学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 325,
+     "politics_score": 55,
+     "foreign_language_score": 50,
+     "business_1_score": 100,
+     "business_2_score": 100
+    },
+    {
+     "major_name": "中共党史[030204]（马克思主义学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 325,
+     "politics_score": 55,
+     "foreign_language_score": 50,
+     "business_1_score": 100,
+     "business_2_score": 100
+    },
+    {
+     "major_name": "马克思主义理论[0305]（马克思主义学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 325,
+     "politics_score": 60,
+     "foreign_language_score": 50,
+     "business_1_score": 95,
+     "business_2_score": 95
+    },
+    {
+     "major_name": "数学[0701]（数学与统计学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 315,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 80,
+     "business_2_score": 80
+    },
+    {
+     "major_name": "统计学[0714]（数学与统计学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 315,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 80,
+     "business_2_score": 80
+    },
+    {
+     "major_name": "应用统计[0252]（数学与统计学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 380,
+     "politics_score": 55,
+     "foreign_language_score": 55,
+     "business_1_score": 100,
+     "business_2_score": 100
+    },
+    {
+     "major_name": "物理学[0702]（物理科学与技术学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 285,
+     "politics_score": 40,
+     "foreign_language_score": 45,
+     "business_1_score": 70,
+     "business_2_score": 80
+    },
+    {
+     "major_name": "天文学[0704]（物理科学与技术学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 285,
+     "politics_score": 40,
+     "foreign_language_score": 45,
+     "business_1_score": 70,
+     "business_2_score": 80
+    },
+    {
+     "major_name": "材料物理与化学[080501]（物理科学与技术学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 280,
+     "politics_score": 40,
+     "foreign_language_score": 45,
+     "business_1_score": 55,
+     "business_2_score": 80
+    },
+    {
+     "major_name": "纳米科学与技术[0805Z1]（物理科学与技术学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 280,
+     "politics_score": 40,
+     "foreign_language_score": 45,
+     "business_1_score": 55,
+     "business_2_score": 80
+    },
+    {
+     "major_name": "物理电子学[080901]（物理科学与技术学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 280,
+     "politics_score": 40,
+     "foreign_language_score": 45,
+     "business_1_score": 60,
+     "business_2_score": 80
+    },
+    {
+     "major_name": "微电子学与固体电子学[080903]（物理科学与技术学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 280,
+     "politics_score": 40,
+     "foreign_language_score": 45,
+     "business_1_score": 60,
+     "business_2_score": 80
+    },
+    {
+     "major_name": "通信工程（含宽带网络、移动通信等）[085402]（物理科学与技术学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 300,
+     "politics_score": 40,
+     "foreign_language_score": 40,
+     "business_1_score": 60,
+     "business_2_score": 80
+    },
+    {
+     "major_name": "集成电路工程[085403]（物理科学与技术学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 300,
+     "politics_score": 40,
+     "foreign_language_score": 40,
+     "business_1_score": 60,
+     "business_2_score": 80
+    },
+    {
+     "major_name": "材料工程[085601]（物理科学与技术学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 300,
+     "politics_score": 40,
+     "foreign_language_score": 40,
+     "business_1_score": 60,
+     "business_2_score": 80
+    },
+    {
+     "major_name": "化学[0703]（化学与分子科学学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 295,
+     "politics_score": 45,
+     "foreign_language_score": 40,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "材料科学与工程[0805]（化学与分子科学学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 300,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 75,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "材料与化工[0856]（化学与分子科学学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 300,
+     "politics_score": 45,
+     "foreign_language_score": 50,
+     "business_1_score": 75,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "生物学[0710]（生命科学学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 330,
+     "politics_score": 50,
+     "foreign_language_score": 45,
+     "business_1_score": 100,
+     "business_2_score": 100
+    },
+    {
+     "major_name": "生态学[0713]（生命科学学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 325,
+     "politics_score": 50,
+     "foreign_language_score": 45,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "生物与医药[0860]（生命科学学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 325,
+     "politics_score": 50,
+     "foreign_language_score": 45,
+     "business_1_score": 100,
+     "business_2_score": 100
+    },
+    {
+     "major_name": "地理学[0705]（资源与环境科学学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 355,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "地图制图学与地理信息工程[081603]（资源与环境科学学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 300,
+     "politics_score": 50,
+     "foreign_language_score": 45,
+     "business_1_score": 70,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "环境科学与工程[0830]（资源与环境科学学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 300,
+     "politics_score": 50,
+     "foreign_language_score": 45,
+     "business_1_score": 70,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "土地资源管理[120405]（资源与环境科学学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 340,
+     "politics_score": 50,
+     "foreign_language_score": 40,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "环境工程[085701]（资源与环境科学学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 300,
+     "politics_score": 50,
+     "foreign_language_score": 40,
+     "business_1_score": 75,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "测绘工程[085704]（资源与环境科学学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 335,
+     "politics_score": 50,
+     "foreign_language_score": 40,
+     "business_1_score": 75,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "流体力学[080103]（水利水电学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 265,
+     "politics_score": 33,
+     "foreign_language_score": 33,
+     "business_1_score": 50,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "水利工程[0815]（水利水电学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 265,
+     "politics_score": 33,
+     "foreign_language_score": 33,
+     "business_1_score": 50,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "环境工程[083002]（水利水电学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 265,
+     "politics_score": 34,
+     "foreign_language_score": 34,
+     "business_1_score": 51,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "水利工程[085902]（水利水电学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 325,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "工程管理[125601]（水利水电学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 162,
+     "politics_score": 76,
+     "foreign_language_score": 38,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "电气工程[0808]（电气与自动化学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 330,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "控制理论与控制工程[081101]（电气与自动化学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 330,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "控制工程[085406]（电气与自动化学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 340,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 80,
+     "business_2_score": 80
+    },
+    {
+     "major_name": "电气工程[085801]（电气与自动化学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 300,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 80,
+     "business_2_score": 80
+    },
+    {
+     "major_name": "工程管理[125601]（电气与自动化学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 162,
+     "politics_score": 76,
+     "foreign_language_score": 38,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "机械工程[0802]（动力与机械学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 290,
+     "politics_score": 40,
+     "foreign_language_score": 35,
+     "business_1_score": 65,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "材料科学与工程[0805]（动力与机械学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 290,
+     "politics_score": 40,
+     "foreign_language_score": 35,
+     "business_1_score": 65,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "动力工程及工程热物理[0807]（动力与机械学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 290,
+     "politics_score": 40,
+     "foreign_language_score": 35,
+     "business_1_score": 65,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "机械[0855]（动力与机械学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 310,
+     "politics_score": 40,
+     "foreign_language_score": 40,
+     "business_1_score": 65,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "能源动力[0858]（动力与机械学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 310,
+     "politics_score": 40,
+     "foreign_language_score": 40,
+     "business_1_score": 65,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "工程管理[125601]（动力与机械学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 162,
+     "politics_score": 76,
+     "foreign_language_score": 38,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "建筑学[0813]（城市设计学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 350,
+     "politics_score": 50,
+     "foreign_language_score": 35,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "数字化设计与仿真[0813z1]（城市设计学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 350,
+     "politics_score": 50,
+     "foreign_language_score": 35,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "城乡规划学[0833]（城市设计学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 335,
+     "politics_score": 50,
+     "foreign_language_score": 35,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "设计学[1370]（城市设计学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 351,
+     "politics_score": 50,
+     "foreign_language_score": 37,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "建筑[0851]（城市设计学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 310,
+     "politics_score": 50,
+     "foreign_language_score": 35,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "城乡规划[0853]（城市设计学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 330,
+     "politics_score": 50,
+     "foreign_language_score": 35,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "力学[0801]（土木建筑工程学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 275,
+     "politics_score": 45,
+     "foreign_language_score": 35,
+     "business_1_score": 55,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "土木工程[0814]（土木建筑工程学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 275,
+     "politics_score": 45,
+     "foreign_language_score": 35,
+     "business_1_score": 55,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "土木工程[085901]（土木建筑工程学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 330,
+     "politics_score": 50,
+     "foreign_language_score": 45,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "市政工程（含给排水等）[085905]（土木建筑工程学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 310,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 85,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "工程管理[125601]（土木建筑工程学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 162,
+     "politics_score": 76,
+     "foreign_language_score": 38,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "通信与信息系统[081001]（计算机学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 310,
+     "politics_score": 50,
+     "foreign_language_score": 45,
+     "business_1_score": 80,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "计算机科学与技术[0812]（计算机学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 325,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 100,
+     "business_2_score": 100
+    },
+    {
+     "major_name": "软件工程[0835]（计算机学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 325,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 100,
+     "business_2_score": 100
+    },
+    {
+     "major_name": "智能科学与技术[1405]（计算机学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 320,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "计算机技术[085404]（计算机学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 320,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "软件工程[085405]（计算机学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 320,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "机器人技术[0863S1]（计算机学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 280,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 60,
+     "business_2_score": 65
+    },
+    {
+     "major_name": "无线电物理[070208]（电子信息学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 300,
+     "politics_score": 50,
+     "foreign_language_score": 45,
+     "business_1_score": 80,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "空间物理学[070802]（电子信息学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 300,
+     "politics_score": 50,
+     "foreign_language_score": 45,
+     "business_1_score": 65,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "空间探测与信息处理技术[0708Z1]（电子信息学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 300,
+     "politics_score": 50,
+     "foreign_language_score": 45,
+     "business_1_score": 65,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "电子科学与技术[0809]（电子信息学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 310,
+     "politics_score": 50,
+     "foreign_language_score": 45,
+     "business_1_score": 80,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "信息与通信工程[0810]（电子信息学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 310,
+     "politics_score": 50,
+     "foreign_language_score": 45,
+     "business_1_score": 80,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "电子信息[0854]（电子信息学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 285,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 80,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "软件工程[085405]（电子信息学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 310,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 80,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "地图学与地理信息系统[070503]（遥感信息工程学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 355,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "模式识别与智能系统[081104]（遥感信息工程学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 265,
+     "politics_score": 50,
+     "foreign_language_score": 45,
+     "business_1_score": 85,
+     "business_2_score": 75
+    },
+    {
+     "major_name": "摄影测量与遥感[081602]（遥感信息工程学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 310,
+     "politics_score": 50,
+     "foreign_language_score": 40,
+     "business_1_score": 80,
+     "business_2_score": 80
+    },
+    {
+     "major_name": "遥感科学与技术[1404]（遥感信息工程学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 320,
+     "politics_score": 50,
+     "foreign_language_score": 45,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "资源与环境[0857]（遥感信息工程学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 280,
+     "politics_score": 50,
+     "foreign_language_score": 45,
+     "business_1_score": 60,
+     "business_2_score": 65
+    },
+    {
+     "major_name": "固体地球物理学[070801]（测绘学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 300,
+     "politics_score": 40,
+     "foreign_language_score": 40,
+     "business_1_score": 70,
+     "business_2_score": 70
+    },
+    {
+     "major_name": "导航、制导与控制[081105]（测绘学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 260,
+     "politics_score": 40,
+     "foreign_language_score": 40,
+     "business_1_score": 70,
+     "business_2_score": 70
+    },
+    {
+     "major_name": "测绘科学与技术[0816]（测绘学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 310,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 80,
+     "business_2_score": 80
+    },
+    {
+     "major_name": "测绘工程[085704]（测绘学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 310,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 80,
+     "business_2_score": 80
+    },
+    {
+     "major_name": "网络法学[0301J1]（国家网络安全学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 340,
+     "politics_score": 55,
+     "foreign_language_score": 55,
+     "business_1_score": 100,
+     "business_2_score": 95
+    },
+    {
+     "major_name": "网络空间安全[0839]（国家网络安全学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 295,
+     "politics_score": 50,
+     "foreign_language_score": 45,
+     "business_1_score": 85,
+     "business_2_score": 85
+    },
+    {
+     "major_name": "电子信息[0854]（国家网络安全学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 350,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 100,
+     "business_2_score": 85
+    },
+    {
+     "major_name": "基础医学[0778]（泰康医学院（基础医学院））",
+     "degree_type": "学术学位",
+     "total_score_line": 280,
+     "politics_score": 40,
+     "foreign_language_score": 40,
+     "business_1_score": 80,
+     "business_2_score": 80
+    },
+    {
+     "major_name": "基础医学[1001]（泰康医学院（基础医学院））",
+     "degree_type": "学术学位",
+     "total_score_line": 295,
+     "politics_score": 40,
+     "foreign_language_score": 40,
+     "business_1_score": 180,
+     "business_2_score": null
+    },
+    {
+     "major_name": "临床医学[1002]（第一临床学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 300,
+     "politics_score": 50,
+     "foreign_language_score": 40,
+     "business_1_score": 180,
+     "business_2_score": null
+    },
+    {
+     "major_name": "药学[1007]（第一临床学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 310,
+     "politics_score": 55,
+     "foreign_language_score": 45,
+     "business_1_score": 180,
+     "business_2_score": null
+    },
+    {
+     "major_name": "生物医学工程[1072]（第一临床学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 310,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 180,
+     "business_2_score": null
+    },
+    {
+     "major_name": "临床医学[1051]（第一临床学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 335,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 180,
+     "business_2_score": null
+    },
+    {
+     "major_name": "口腔医学[1052]（第一临床学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 315,
+     "politics_score": 55,
+     "foreign_language_score": 55,
+     "business_1_score": 185,
+     "business_2_score": null
+    },
+    {
+     "major_name": "护理[1054]（第一临床学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 305,
+     "politics_score": 45,
+     "foreign_language_score": 36,
+     "business_1_score": 195,
+     "business_2_score": null
+    },
+    {
+     "major_name": "临床医学[1002]（第二临床学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 300,
+     "politics_score": 50,
+     "foreign_language_score": 40,
+     "business_1_score": 180,
+     "business_2_score": null
+    },
+    {
+     "major_name": "口腔医学[1003]（第二临床学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 305,
+     "politics_score": 55,
+     "foreign_language_score": 55,
+     "business_1_score": 185,
+     "business_2_score": null
+    },
+    {
+     "major_name": "药学[1007]（第二临床学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 310,
+     "politics_score": 55,
+     "foreign_language_score": 45,
+     "business_1_score": 180,
+     "business_2_score": null
+    },
+    {
+     "major_name": "临床医学[1051]（第二临床学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 335,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 180,
+     "business_2_score": null
+    },
+    {
+     "major_name": "口腔医学[1052]（第二临床学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 315,
+     "politics_score": 55,
+     "foreign_language_score": 55,
+     "business_1_score": 185,
+     "business_2_score": null
+    },
+    {
+     "major_name": "药学[1055]（第二临床学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 310,
+     "politics_score": 55,
+     "foreign_language_score": 45,
+     "business_1_score": 180,
+     "business_2_score": null
+    },
+    {
+     "major_name": "口腔医学[1003]（口腔医学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 305,
+     "politics_score": 55,
+     "foreign_language_score": 55,
+     "business_1_score": 185,
+     "business_2_score": null
+    },
+    {
+     "major_name": "口腔医学[1052]（口腔医学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 315,
+     "politics_score": 55,
+     "foreign_language_score": 55,
+     "business_1_score": 185,
+     "business_2_score": null
+    },
+    {
+     "major_name": "公共卫生与预防医学[1004]（公共卫生学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 320,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 210,
+     "business_2_score": null
+    },
+    {
+     "major_name": "公共卫生[1053]（公共卫生学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 310,
+     "politics_score": 50,
+     "foreign_language_score": 45,
+     "business_1_score": 200,
+     "business_2_score": null
+    },
+    {
+     "major_name": "药学[1007]（药学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 310,
+     "politics_score": 55,
+     "foreign_language_score": 45,
+     "business_1_score": 180,
+     "business_2_score": null
+    },
+    {
+     "major_name": "药学[1055]（药学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 310,
+     "politics_score": 55,
+     "foreign_language_score": 45,
+     "business_1_score": 180,
+     "business_2_score": null
+    },
+    {
+     "major_name": "护理学[1011]（护理学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 320,
+     "politics_score": 55,
+     "foreign_language_score": 40,
+     "business_1_score": 200,
+     "business_2_score": null
+    },
+    {
+     "major_name": "护理[1054]（护理学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 305,
+     "politics_score": 45,
+     "foreign_language_score": 36,
+     "business_1_score": 195,
+     "business_2_score": null
+    },
+    {
+     "major_name": "材料加工工程[080503]（护理学院）",
+     "degree_type": "学术学位",
+     "total_score_line": 280,
+     "politics_score": 45,
+     "foreign_language_score": 50,
+     "business_1_score": 55,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "材料与化工[0856]（护理学院）",
+     "degree_type": "专业学位",
+     "total_score_line": 300,
+     "politics_score": 50,
+     "foreign_language_score": 45,
+     "business_1_score": 65,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "地图学与地理信息系统[070503]（测绘遥感信息工程国家重点实验室）",
+     "degree_type": "学术学位",
+     "total_score_line": 355,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "通信与信息系统[081001]（测绘遥感信息工程国家重点实验室）",
+     "degree_type": "学术学位",
+     "total_score_line": 310,
+     "politics_score": 50,
+     "foreign_language_score": 45,
+     "business_1_score": 80,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "计算机应用技术[081203]（测绘遥感信息工程国家重点实验室）",
+     "degree_type": "学术学位",
+     "total_score_line": 310,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 80,
+     "business_2_score": 80
+    },
+    {
+     "major_name": "大地测量学与测量工程[081601]（测绘遥感信息工程国家重点实验室）",
+     "degree_type": "学术学位",
+     "total_score_line": 310,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 80,
+     "business_2_score": 80
+    },
+    {
+     "major_name": "摄影测量与遥感[081602]（测绘遥感信息工程国家重点实验室）",
+     "degree_type": "学术学位",
+     "total_score_line": 310,
+     "politics_score": 50,
+     "foreign_language_score": 40,
+     "business_1_score": 80,
+     "business_2_score": 80
+    },
+    {
+     "major_name": "地图制图学与地理信息工程[081603]（测绘遥感信息工程国家重点实验室）",
+     "degree_type": "学术学位",
+     "total_score_line": 300,
+     "politics_score": 50,
+     "foreign_language_score": 45,
+     "business_1_score": 70,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "遥感科学与技术[1404]（测绘遥感信息工程国家重点实验室）",
+     "degree_type": "学术学位",
+     "total_score_line": 320,
+     "politics_score": 50,
+     "foreign_language_score": 45,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "电子信息（01、03方向）[0854]（测绘遥感信息工程国家重点实验室）",
+     "degree_type": "专业学位",
+     "total_score_line": 350,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 100,
+     "business_2_score": 85
+    },
+    {
+     "major_name": "电子信息（02、04方向）[0854]（测绘遥感信息工程国家重点实验室）",
+     "degree_type": "专业学位",
+     "total_score_line": 285,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 80,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "资源与环境[0857]（测绘遥感信息工程国家重点实验室）",
+     "degree_type": "专业学位",
+     "total_score_line": 280,
+     "politics_score": 50,
+     "foreign_language_score": 45,
+     "business_1_score": 60,
+     "business_2_score": 65
+    },
+    {
+     "major_name": "中国哲学[010102]（前沿交叉学科研究院）",
+     "degree_type": "学术学位",
+     "total_score_line": 350,
+     "politics_score": 55,
+     "foreign_language_score": 50,
+     "business_1_score": 105,
+     "business_2_score": 105
+    },
+    {
+     "major_name": "健康经济学[0202J6]（前沿交叉学科研究院）",
+     "degree_type": "学术学位",
+     "total_score_line": 323,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "国际法学[030109]（前沿交叉学科研究院）",
+     "degree_type": "学术学位",
+     "total_score_line": 335,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "国际关系[030207]（前沿交叉学科研究院）",
+     "degree_type": "学术学位",
+     "total_score_line": 335,
+     "politics_score": 60,
+     "foreign_language_score": 50,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "心理学[0402]（前沿交叉学科研究院）",
+     "degree_type": "学术学位",
+     "total_score_line": 341,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 150,
+     "business_2_score": null
+    },
+    {
+     "major_name": "中国古代文学[050105]（前沿交叉学科研究院）",
+     "degree_type": "学术学位",
+     "total_score_line": 351,
+     "politics_score": 47,
+     "foreign_language_score": 47,
+     "business_1_score": 100,
+     "business_2_score": 100
+    },
+    {
+     "major_name": "中国史[0602]（前沿交叉学科研究院）",
+     "degree_type": "学术学位",
+     "total_score_line": 336,
+     "politics_score": 55,
+     "foreign_language_score": 50,
+     "business_1_score": 205,
+     "business_2_score": null
+    },
+    {
+     "major_name": "物理学[0702]（前沿交叉学科研究院）",
+     "degree_type": "学术学位",
+     "total_score_line": 285,
+     "politics_score": 40,
+     "foreign_language_score": 45,
+     "business_1_score": 70,
+     "business_2_score": 80
+    },
+    {
+     "major_name": "化学[0703]（前沿交叉学科研究院）",
+     "degree_type": "学术学位",
+     "total_score_line": 295,
+     "politics_score": 45,
+     "foreign_language_score": 40,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "生物学[0710]（前沿交叉学科研究院）",
+     "degree_type": "学术学位",
+     "total_score_line": 330,
+     "politics_score": 50,
+     "foreign_language_score": 45,
+     "business_1_score": 100,
+     "business_2_score": 100
+    },
+    {
+     "major_name": "材料科学与工程[0805]（前沿交叉学科研究院）",
+     "degree_type": "学术学位",
+     "total_score_line": 300,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 75,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "电气工程[0808]（前沿交叉学科研究院）",
+     "degree_type": "学术学位",
+     "total_score_line": 330,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "电气工程[085801]（前沿交叉学科研究院）",
+     "degree_type": "专业学位",
+     "total_score_line": 300,
+     "politics_score": 45,
+     "foreign_language_score": 45,
+     "business_1_score": 80,
+     "business_2_score": 80
+    },
+    {
+     "major_name": "文化产业管理[1204J1]（前沿交叉学科研究院）",
+     "degree_type": "学术学位",
+     "total_score_line": 365,
+     "politics_score": 55,
+     "foreign_language_score": 40,
+     "business_1_score": 120,
+     "business_2_score": 120
+    },
+    {
+     "major_name": "宏观质量管理[1204J2]（前沿交叉学科研究院）",
+     "degree_type": "学术学位",
+     "total_score_line": 333,
+     "politics_score": 50,
+     "foreign_language_score": 50,
+     "business_1_score": 90,
+     "business_2_score": 90
+    },
+    {
+     "major_name": "工商管理[1251]（前沿交叉学科研究院）",
+     "degree_type": "专业学位",
+     "total_score_line": 151,
+     "politics_score": 70,
+     "foreign_language_score": 35,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "旅游管理[1254]（前沿交叉学科研究院）",
+     "degree_type": "专业学位",
+     "total_score_line": 151,
+     "politics_score": 90,
+     "foreign_language_score": 35,
+     "business_1_score": null,
+     "business_2_score": null
+    },
+    {
+     "major_name": "数据科学[1453S1]（前沿交叉学科研究院）",
+     "degree_type": "学术学位",
+     "total_score_line": 290,
+     "politics_score": 45,
+     "foreign_language_score": 40,
+     "business_1_score": 51,
+     "business_2_score": 105
+    }
+   ]
+  }
+ ]
+}
