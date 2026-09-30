@@ -552,7 +552,28 @@ docker-compose exec backup FORCE_DROP=1 /backup-scripts/restore_db.sh /var/backu
 
 ## 许可协议
 
-私有项目，未授权不得复制、分发或商用。
+本项目采用 **GNU Affero General Public License v3.0（AGPL-3.0）**，全文见 [LICENSE](./LICENSE)。
+
+选择 AGPL-3.0 的原因：本项目依赖 [PyMuPDF](https://pypi.org/project/PyMuPDF/)（AGPL-3.0 / Artifex 商业双许可），
+选用与其一致的许可证以避免许可证冲突。若需在闭源商业产品中使用本项目，
+请先阅读 AGPL-3.0 第 13 条（Remote Network Interaction）对"通过网络提供服务"时的源码开放义务。
+
+### 第三方依赖许可
+
+| 依赖 | 许可证 | 用途 |
+|---|---|---|
+| [PyMuPDF](https://pypi.org/project/PyMuPDF/) | AGPL-3.0 / Artifex 商业双许可 | PDF 文本提取（`pipeline/extractors/pdf_extractor.py`） |
+| [pdfplumber](https://pypi.org/project/pdfplumber/) | MIT | PDF 表格抽取候选主力 |
+| [pdfminer.six](https://pypi.org/project/pdfminer.six/) | MIT | pdfplumber 依赖 |
+| [OpenCV](https://pypi.org/project/opencv-python/) | Apache-2.0 | 表格线检测（camelot 等依赖） |
+| [pypdf](https://pypi.org/project/pypdf/) | BSD-3-Clause | PDF 文本层解析 |
+| [openpyxl](https://pypi.org/project/openpyxl/) | MIT | xlsx 读取 |
+| [pandas](https://pypi.org/project/pandas/) | BSD-3-Clause | 表格结构化 |
+| [httpx](https://www.python-httpx.org/) | BSD-3-Clause | 传输层默认 sender |
+| [requests](https://requests.readthedocs.io/) | Apache-2.0 | 统一传输层 |
+
+> 注：`PyMuPDF` 当前调用点仅限管理员权限接口（`/api/pipeline/ingest/*`）与内部入库脚本。
+> 后续若将 PDF 解析能力开放给普通用户，请先确认 AGPL 第 13 条的义务边界。
 
 ---
 
