@@ -21,6 +21,7 @@ from app.crawlers.research.employment_announce_crawler import (
 from app.crawlers.research.official_announce_crawler import (
     OfficialAnnounceCrawler,
     _load_known_urls,
+    _prefer_specific_title,
     parse_list_generic,
 )
 from app.models.ingestion import ExternalResearchItem
@@ -197,6 +198,18 @@ class TestParameterization:
         first = parsed[0]
         assert first["source_url"] == raw[0]["url"]
         assert first.get("source_name") == "河北工业大学就业信息网重要通知"
+
+    def test_prefer_specific_title_site_name_fallback(self):
+        # 华理实测形态：详情页 <title>=站点名（与公告无关）→ 保留列表标题
+        list_t = "中研博硕2026年秋季全国博士、硕士研究专场巡回双选会-华东理工大学"
+        assert _prefer_specific_title(list_t, "华东理工大学就业信息服务网") == list_t
+        # 正常详情标题（与列表高相似/带后缀剥离后）→ 详情优先原行为
+        assert (
+            _prefer_specific_title("关于开展XX活动的通知", "关于开展XX活动的通知-就业网")
+            == "关于开展XX活动的通知-就业网"
+        )
+        # 空详情标题 → 列表标题兜底
+        assert _prefer_specific_title("列表标题ABC", "") == "列表标题ABC"
 
 
 # ----------------------------------------------------------------------

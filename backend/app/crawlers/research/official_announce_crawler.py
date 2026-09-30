@@ -250,6 +250,24 @@ _NEWS_LIST_ITEM_RE = re.compile(
 _DATE_EVIDENCE_RE = re.compile(r"(20\d{2})[年./\-](\d{1,2})[月./\-](\d{1,2})")
 
 
+def _prefer_specific_title(list_title: str, detail_title: str) -> str:
+    """标题择优（EMP-3，2026-09-30）：详情页标题是站点名形态时保留列表标题。
+
+    实测形态：华东理工 ASPX 详情页 <title>=「华东理工大学就业信息服务网」这类
+    站点名（与公告内容无关）——与列表标题几乎无重合且过短时，列表标题更具体。
+    其余情况维持"详情页标题优先"原行为（考研线不变）。
+    """
+    d = (detail_title or "").strip()
+    if not d:
+        return list_title
+    if len(d) <= 16:
+        from difflib import SequenceMatcher
+
+        if SequenceMatcher(None, list_title, d).ratio() < 0.3:
+            return list_title
+    return d
+
+
 def parse_list_generic(html: str, base_url: str) -> list[dict]:
     """通用列表页解析（CMS 无关）：<a> 候选 + 祖先链日期证据 + 同域护栏。
 
@@ -505,7 +523,7 @@ class OfficialAnnounceCrawler(BaseCrawler):
                     )
                 collected.append(
                     {
-                        "title": detail_title or title,
+                        "title": _prefer_specific_title(title, detail_title),
                         "url": url,
                         "published_at": date,
                         "detail_text": detail_text,
