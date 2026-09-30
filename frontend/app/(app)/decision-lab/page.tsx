@@ -6,12 +6,28 @@ import { Scale, Sparkles, AlertTriangle, Shield, Swords, Plus, Trash2, Trophy, C
 import { decisionAnalysisApi, decisionsApi } from "@/lib/api";
 import { saveThenAnalyze } from "@/components/decision-engine/save-then-analyze";
 import { cn, todayISO } from "@/lib/utils";
+import {
+  normalizeMatrixResponse,
+  normalizeMatrixResults,
+  formatScore,
+  fillNeutralScores,
+  safeNumber,
+  sumWeights,
+} from "@/lib/decision-lab/matrix";
+import {
+  saveDecisionLabDraft,
+  loadDecisionLabDraft,
+  clearDecisionLabDraft,
+  draftHasContent,
+  type DecisionLabDraftStep,
+} from "@/lib/decision-lab/draft";
+import { DESTINATION_TYPE_LABEL } from "@/lib/constants";
 import { LoadingState, EmptyState } from "@/components/ui/empty";
 import { Button, Input, Textarea, Field } from "@/components/ui/form-controls";
 import { useToast } from "@/components/ui/toast";
 import type { DecisionAnalysisResponse, Criterion } from "@/types";
 
-type Step = "setup" | "premortem" | "matrix" | "redteam" | "summary";
+type Step = DecisionLabDraftStep;
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -78,6 +94,71 @@ export default function DecisionLabPage() {
     }
   }, [options, matrixScores.length]);
 
+  // ===== 草稿恢复：崩溃/误退后重进自动续做（夜班复验 TOP1：向导状态不落库致草稿丢失）=====
+  useEffect(() => {
+    const draft = loadDecisionLabDraft();
+    if (!draft || !draftHasContent(draft)) return;
+    setTitle(draft.title);
+    setOptions(draft.options);
+    setStep(draft.step);
+    setPremortemReasons(draft.premortemReasons);
+    setPremortemResult(draft.premortemResult);
+    setCriteria(draft.criteria);
+    setMatrixScores(draft.matrixScores);
+    // 恢复的矩阵结果同样过一遍规范化，防旧格式/脏数据再触发渲染异常
+    setMatrixResult(draft.matrixResult ? normalizeMatrixResponse(draft.matrixResult) : null);
+    setRedTeamQuestions(draft.redTeamQuestions);
+    setRedTeamAnswers(draft.redTeamAnswers);
+    setAiAnalysis(draft.aiAnalysis);
+    setSavedAnalysisId(draft.savedAnalysisId);
+    setShowNew(true);
+  }, []);
+
+  // ===== 草稿即时保存：向导每一步的输入都落 localStorage =====
+  useEffect(() => {
+    if (!showNew) return;
+    saveDecisionLabDraft({
+      title,
+      options,
+      step,
+      premortemReasons,
+      premortemResult,
+      criteria,
+      matrixScores,
+      matrixResult,
+      redTeamQuestions,
+      redTeamAnswers,
+      aiAnalysis,
+      savedAnalysisId,
+    });
+  }, [showNew, title, options, step, premortemReasons, premortemResult, criteria, matrixScores, matrixResult, redTeamQuestions, redTeamAnswers, aiAnalysis, savedAnalysisId]);
+
+  // ===== decision_id 交接：从决策中心「继续分析」跳来时预填标题与选项（复验痛点：参数被无视）=====
+  useEffect(() => {
+    const decisionId = new URLSearchParams(window.location.search).get("decision_id");
+    if (!decisionId) return;
+    let cancelled = false;
+    decisionsApi
+      .get(decisionId)
+      .then((d) => {
+        if (cancelled) return;
+        const fallbackTitle = `${DESTINATION_TYPE_LABEL[d.destination_type] || "去向"}去向分析`;
+        setTitle(d.question?.trim() || fallbackTitle);
+        if (Array.isArray(d.options) && d.options.length >= 2) {
+          setOptions(d.options.slice(0, 6).map((o) => String(o)));
+        }
+        setShowNew(true);
+        toast.push("已带入决策信息，可直接继续分析", "success");
+      })
+      .catch(() => {
+        if (!cancelled) toast.push("未能加载关联决策，可手动新建分析", "error");
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const resetForm = () => {
     setTitle("");
     setOptions(["", ""]);
@@ -93,6 +174,7 @@ export default function DecisionLabPage() {
     setSavedDecisionId(null);
     setSavingDecision(false);
     setStep("setup");
+    clearDecisionLabDraft();
   };
 
   // 预验尸分析
@@ -119,14 +201,15 @@ export default function DecisionLabPage() {
 
   // 计算矩阵
   const handleComputeMatrix = async () => {
-    const validCriteria = criteria.filter(c => c.criterion.trim() && c.weight > 0);
+    // 数值兜底：权重非数字按 0 处理，名称去空格；任何输入形状都不抛异常
+    const validCriteria = criteria.filter(c => c.criterion.trim() && safeNumber(c.weight, 0) > 0);
     if (validCriteria.length === 0) {
       toast.push("请至少添加一个评估标准", "error");
       return;
     }
-    const totalWeight = validCriteria.reduce((sum, c) => sum + c.weight, 0);
-    if (totalWeight !== 100) {
-      toast.push(`权重总和需要等于 100，当前为 ${totalWeight}`, "error");
+    const totalWeight = sumWeights(validCriteria);
+    if (Math.round(totalWeight) !== 100) {
+      toast.push(`权重总和需要等于 100，当前为 ${Math.round(totalWeight)}`, "error");
       return;
     }
     const validOptions = options.filter(o => o.trim());
@@ -136,14 +219,22 @@ export default function DecisionLabPage() {
     }
     setMatrixLoading(true);
     try {
+      const criteriaNames = validCriteria.map(c => c.criterion.trim());
+      // 未填写的评分按中性 5 分计入（不把空格当 0 分拉低排名）
+      const normalizedScores = fillNeutralScores(matrixScores, criteriaNames);
       const result = await decisionAnalysisApi.computeMatrix({
-        criteria: validCriteria,
+        criteria: validCriteria.map(c => ({
+          criterion: c.criterion.trim(),
+          weight: safeNumber(c.weight, 0),
+        })),
         matrix_scores: validOptions.map((name, i) => ({
           name,
-          scores: matrixScores[i] || {},
+          scores: normalizedScores[i] || {},
         })),
       });
-      setMatrixResult(result);
+      // 后端实际返回 { option, total_score, breakdown }，与页面历史契约（name/total）不一致——
+      // 复验 TOP1 崩溃根因。统一规范化后再入状态，渲染层永不接触 undefined。
+      setMatrixResult(normalizeMatrixResponse(result));
     } catch {
       toast.push("矩阵计算失败", "error");
     } finally {
@@ -172,9 +263,15 @@ export default function DecisionLabPage() {
   const handleSaveAndAnalyze = async () => {
     setAiLoading(true);
     try {
-      const validCriteria = criteria.filter(c => c.criterion.trim());
+      // 与矩阵计算同一套兜底：权重>0 才有效（后端 schema ge=1 会拒绝 0/负值），
+      // 空白评分按中性 5 分计入，任何操作顺序都不产生非法 payload
+      const validCriteria = criteria
+        .filter(c => c.criterion.trim() && safeNumber(c.weight, 0) > 0)
+        .map(c => ({ criterion: c.criterion.trim(), weight: safeNumber(c.weight, 0) }));
       const validOptions = options.filter(o => o.trim());
       const validReasons = premortemReasons.filter(r => r.trim());
+      const criteriaNames = validCriteria.map(c => c.criterion);
+      const normalizedScores = fillNeutralScores(matrixScores, criteriaNames);
 
       const result = await saveThenAnalyze(decisionAnalysisApi, {
         title,
@@ -185,7 +282,7 @@ export default function DecisionLabPage() {
         criteria: validCriteria,
         matrix_scores: validOptions.map((name, i) => ({
           name,
-          scores: matrixScores[i] || {},
+          scores: normalizedScores[i] || {},
         })),
         red_team_questions: redTeamQuestions,
         red_team_answers: Object.values(redTeamAnswers),
@@ -246,6 +343,17 @@ export default function DecisionLabPage() {
   // ====== 新建分析流程 ======
   if (showNew) {
     const validOptions = options.filter(o => o.trim());
+    // 计算按钮门槛：必填齐全才可点，缺什么就地提示（而非点击后才发现崩）
+    const validCriteria = criteria.filter(c => c.criterion.trim() && safeNumber(c.weight, 0) > 0);
+    const totalWeight = Math.round(sumWeights(validCriteria));
+    const computeBlocked =
+      validCriteria.length === 0 || validOptions.length < 2 || totalWeight !== 100;
+    const computeHint =
+      validCriteria.length === 0
+        ? "请先填写至少一个评估标准（名称 + 大于 0 的权重）"
+        : validOptions.length < 2
+          ? "请至少填写 2 个选项"
+          : `权重总和需为 100，当前 ${totalWeight}`;
 
     return (
       <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
@@ -416,6 +524,8 @@ export default function DecisionLabPage() {
             </div>
             <p className="text-sm text-ink-500">
               为每个评估标准设定权重（总和 100），然后为每个选项在每个标准上打分（1-10）。
+              <br />
+              <span className="text-xs text-ink-400">没把握的评分可以先留空，计算时按中性 5 分计入，之后随时回来改。</span>
             </p>
 
             {/* 标准与权重 */}
@@ -439,7 +549,7 @@ export default function DecisionLabPage() {
                     min={1}
                     max={100}
                     value={c.weight}
-                    onChange={e => setCriteria(prev => prev.map((item, idx) => idx === i ? { ...item, weight: Number(e.target.value) } : item))}
+                    onChange={e => setCriteria(prev => prev.map((item, idx) => idx === i ? { ...item, weight: safeNumber(Number(e.target.value), 0) } : item))}
                     className="w-20"
                   />
                   <span className="text-xs text-ink-400">%</span>
@@ -451,7 +561,7 @@ export default function DecisionLabPage() {
                 </div>
               ))}
               <p className="text-xs text-ink-400">
-                权重总和：{criteria.reduce((s, c) => s + c.weight, 0)} / 100
+                权重总和：{Math.round(sumWeights(criteria))} / 100
               </p>
             </div>
 
@@ -506,31 +616,48 @@ export default function DecisionLabPage() {
               </div>
             )}
 
-            <Button onClick={handleComputeMatrix} loading={matrixLoading} variant="secondary" className="w-full">
+            <Button
+              onClick={handleComputeMatrix}
+              loading={matrixLoading}
+              disabled={computeBlocked}
+              variant="secondary"
+              className="w-full"
+              data-testid="compute-matrix-button"
+            >
               <Sparkles className="h-4 w-4" /> 计算加权得分
             </Button>
+            {computeBlocked && !matrixLoading && (
+              <p className="text-xs text-ink-400 text-center">{computeHint}</p>
+            )}
 
-            {matrixResult && (
+            {matrixResult && matrixResult.results.length > 0 && (
               <div className="space-y-3 rounded-lg border border-paper-200 bg-paper-50 p-4">
-                {matrixResult.results.map((r, i) => (
-                  <div key={r.name} className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-ink-700 flex items-center gap-1.5">
-                        {r.name === matrixResult.winner && <Trophy className="h-4 w-4 text-amber-500" />}
-                        {r.name}
-                      </span>
-                      <span className={cn("text-sm font-bold", r.name === matrixResult.winner ? "text-brand-600" : "text-ink-500")}>
-                        {r.total.toFixed(1)}
-                      </span>
+                {matrixResult.results.map((r, i) => {
+                  // 分母取全结果最大绝对值（后端降序排列，首位即最高分）；空/非法兜底为 1，防除零
+                  const maxTotal = Math.max(
+                    ...matrixResult.results.map(x => Math.abs(safeNumber(x.total, 0))),
+                    1,
+                  );
+                  return (
+                    <div key={`${r.name}-${i}`} className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-ink-700 flex items-center gap-1.5">
+                          {r.name === matrixResult.winner && <Trophy className="h-4 w-4 text-amber-500" />}
+                          {r.name}
+                        </span>
+                        <span className={cn("text-sm font-bold", r.name === matrixResult.winner ? "text-brand-600" : "text-ink-500")}>
+                          {formatScore(r.total)}
+                        </span>
+                      </div>
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-paper-200">
+                        <div
+                          className={cn("h-full rounded-full", r.name === matrixResult.winner ? "bg-brand-500" : "bg-ink-300")}
+                          style={{ width: `${Math.min(100, (Math.abs(safeNumber(r.total, 0)) / maxTotal) * 100)}%` }}
+                        />
+                      </div>
                     </div>
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-paper-200">
-                      <div
-                        className={cn("h-full rounded-full", r.name === matrixResult.winner ? "bg-brand-500" : "bg-ink-300")}
-                        style={{ width: `${Math.min(100, (r.total / (matrixResult.results[0]?.total || 1)) * 100)}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
                 {matrixResult.winner && (
                   <p className="text-center text-sm text-brand-600 font-medium pt-2">
                     <Trophy className="inline h-4 w-4" /> 推荐选项：{matrixResult.winner}
@@ -769,31 +896,35 @@ function AnalysisDetail({ analysis, onBack }: { analysis: DecisionAnalysisRespon
         )}
       </div>
 
-      {/* 加权结果 */}
-      {analysis.weighted_results && analysis.weighted_results.length > 0 && (
-        <div className="card space-y-3">
-          <h2 className="font-display font-semibold text-ink-800">决策矩阵结果</h2>
-          {analysis.weighted_results.map((r, i) => (
-            <div key={r.name} className="space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-ink-700 flex items-center gap-1.5">
-                  {r.name === analysis.winner && <Trophy className="h-4 w-4 text-amber-500" />}
-                  {r.name}
-                </span>
-                <span className={cn("text-sm font-bold", r.name === analysis.winner ? "text-brand-600" : "text-ink-500")}>
-                  {Number(r.total).toFixed(1)}
-                </span>
+      {/* 加权结果 — 存库历史形状为 { option, total_score }，统一规范化兜底后渲染 */}
+      {analysis.weighted_results && analysis.weighted_results.length > 0 && (() => {
+        const weighted = normalizeMatrixResults(analysis.weighted_results);
+        const maxTotal = Math.max(...weighted.map(x => Math.abs(safeNumber(x.total, 0))), 1);
+        return (
+          <div className="card space-y-3">
+            <h2 className="font-display font-semibold text-ink-800">决策矩阵结果</h2>
+            {weighted.map((r, i) => (
+              <div key={`${r.name}-${i}`} className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-ink-700 flex items-center gap-1.5">
+                    {r.name === analysis.winner && <Trophy className="h-4 w-4 text-amber-500" />}
+                    {r.name}
+                  </span>
+                  <span className={cn("text-sm font-bold", r.name === analysis.winner ? "text-brand-600" : "text-ink-500")}>
+                    {formatScore(r.total)}
+                  </span>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-paper-200">
+                  <div
+                    className={cn("h-full rounded-full", r.name === analysis.winner ? "bg-brand-500" : "bg-ink-300")}
+                    style={{ width: `${Math.min(100, (Math.abs(safeNumber(r.total, 0)) / maxTotal) * 100)}%` }}
+                  />
+                </div>
               </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-paper-200">
-                <div
-                  className={cn("h-full rounded-full", r.name === analysis.winner ? "bg-brand-500" : "bg-ink-300")}
-                  style={{ width: `${Math.min(100, (Number(r.total) / (Number(analysis.weighted_results[0]?.total) || 1)) * 100)}%` }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        );
+      })()}
 
       {/* 预验尸结果 */}
       {analysis.safeguards && analysis.safeguards.length > 0 && (

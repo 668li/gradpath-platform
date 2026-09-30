@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Plus, Compass, Clock, CheckCircle2, ArrowRight } from "lucide-react";
 import { decisionsApi, useApi, decisionAnalysisApi } from "@/lib/api";
@@ -31,6 +32,7 @@ const STATUS_BADGE: Record<string, "slate" | "blue" | "green" | "amber"> = {
 
 export default function DecisionCenterPage() {
   const [activeTab, setActiveTab] = useState("pending");
+  const router = useRouter();
 
   const { data: listData, error: listError, isLoading: loading } = useApi<PaginatedResponse<DecisionResponse>>(
     "/api/decisions?page=1&page_size=50",
@@ -54,11 +56,12 @@ export default function DecisionCenterPage() {
           <h1 className="text-2xl font-bold text-ink-800">决策中心</h1>
           <p className="text-ink-500 mt-1">管理你的去向决策，深度分析每个选项</p>
         </div>
-        <Link href="/decisions">
-          <Button>
-            <Plus className="h-4 w-4" /> 新建决策
-          </Button>
-        </Link>
+        {/* 夜班复验 TOP3：原 Link→/decisions 被服务端 307 原路弹回（next.config.js 把已退役的
+            /decisions 重定向回 /decision-center），表现为「点了没反应」。改跳决策 OS 新建页——
+            现成可用的创建路径，创建的决策卡会回到本页待决策列表。 */}
+        <Button onClick={() => router.push("/decision-os")} data-testid="decision-center-new-button">
+          <Plus className="h-4 w-4" /> 新建决策
+        </Button>
       </div>
 
       <div className="flex gap-2 border-b border-paper-300 pb-2">
@@ -101,11 +104,9 @@ export default function DecisionCenterPage() {
               title="记录你的第一个去向决策"
               description="「去向决策」是你对毕业方向的一次正式选择——考研、就业、考公、出国等。记录下来，系统会帮你跟踪进度、安排回顾、检测路径冲突。"
               action={
-                <Link href="/decisions">
-                  <Button>
-                    <Plus className="h-4 w-4" /> 创建决策
-                  </Button>
-                </Link>
+                <Button onClick={() => router.push("/decision-os")} data-testid="decision-center-empty-create-button">
+                  <Plus className="h-4 w-4" /> 创建决策
+                </Button>
               }
             />
             <div className="bg-white rounded-xl border border-paper-200 p-5">

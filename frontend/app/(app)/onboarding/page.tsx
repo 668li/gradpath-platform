@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -21,13 +21,13 @@ import {
   Lightbulb,
   AlertCircle,
 } from "lucide-react";
-import { onboardingApi } from "@/lib/api";
+import { onboardingApi, authApi, employmentApi } from "@/lib/api";
 import { useOnboardingStore } from "@/stores/onboarding";
 import { cn } from "@/lib/utils";
 import { LoadingState } from "@/components/ui/empty";
-import { Button, Field } from "@/components/ui/form-controls";
+import { Button, Field, Input } from "@/components/ui/form-controls";
 import { useToast } from "@/components/ui/toast";
-import type { OnboardingRecord } from "@/types";
+import type { OnboardingRecord, UpdateMeRequest } from "@/types";
 
 // ===== 基于去向的智能推荐下一步 =====
 
@@ -114,8 +114,13 @@ export default function OnboardingPage() {
 
   // 表单状态
   const [stage, setStage] = useState<string>("");
-  const [direction, setDirection] = useState<string>("");
+  // 方向可多选：第一个为主方向（写入 target_direction），其余记入 self_assessment.extra_directions
+  const [directions, setDirections] = useState<string[]>([]);
   const [industry, setIndustry] = useState<string>("");
+  // 身份包字段（选填）：提交时写入既有 User.school / User.major（不加新迁移）
+  const [school, setSchool] = useState<string>("");
+  const [major, setMajor] = useState<string>("");
+  const [schoolOptions, setSchoolOptions] = useState<string[]>([]);
   const [skills, setSkills] = useState<Record<string, number>>({
     technical: 3,
     communication: 3,
@@ -123,13 +128,30 @@ export default function OnboardingPage() {
     creativity: 3,
   });
 
+  // 校名字典（/api/employment/schools，公开端点）：用于 datalist 自动补全；失败不阻断
+  useEffect(() => {
+    let cancelled = false;
+    employmentApi
+      .schools()
+      .then((list) => {
+        if (cancelled) return;
+        setSchoolOptions(list.map((s) => s.name).filter(Boolean));
+      })
+      .catch(() => {
+        // 字典加载失败时输入框仍可自由填写
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const canProceed = useCallback((): boolean => {
     if (step === 0) return !!stage;
-    if (step === 1) return !!direction;
+    if (step === 1) return directions.length > 0;
     if (step === 2) return true; // industry 可选
     if (step === 3) return true; // skills 已有默认值
     return false;
-  }, [step, stage, direction]);
+  }, [step, stage, directions]);
 
   const handleNext = async () => {
     if (step < 3) {
@@ -139,12 +161,31 @@ export default function OnboardingPage() {
     // step === 3：提交保存
     setSubmitting(true);
     try {
+      const primaryDirection = directions[0] ?? "";
+      const extraDirections = directions.slice(1);
       await onboardingApi.save({
         current_stage: stage,
-        target_direction: direction,
+        target_direction: primaryDirection,
         target_industry: industry || null,
-        self_assessment: { skills },
+        // 附加方向借用既有 self_assessment JSON 字段承载，不加新迁移
+        self_assessment:
+          extraDirections.length > 0
+            ? { skills, extra_directions: extraDirections }
+            : { skills },
       });
+      // 身份包字段（学校/专业）写入既有 User 字段（PUT /api/auth/me，选填）。
+      // 只在填了才提交——后端 exclude_unset 语义下不传即不动原值，避免清空用户既有资料；
+      // 失败不阻断 onboarding 主流程（可稍后在个人中心补填）。
+      const identity: UpdateMeRequest = {};
+      if (school.trim()) identity.school = school.trim();
+      if (major.trim()) identity.major = major.trim();
+      if (identity.school || identity.major) {
+        try {
+          await authApi.updateMe(identity);
+        } catch {
+          toast.push("学校/专业暂存失败，可稍后在个人中心补填", "error");
+        }
+      }
       setStep(4);
     } catch {
       toast.error("保存失败，请重试");
@@ -228,8 +269,26 @@ export default function OnboardingPage() {
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-ink-500">目标方向</span>
-              <span className="font-medium text-ink-800">{DIRECTIONS.find((d) => d.value === direction)?.label}</span>
+              <span className="font-medium text-ink-800">
+                {directions.length > 0
+                  ? directions
+                      .map((v) => DIRECTIONS.find((d) => d.value === v)?.label ?? v)
+                      .join("、")
+                  : "未选择"}
+              </span>
             </div>
+            {school.trim() && (
+              <div className="flex justify-between text-sm">
+                <span className="text-ink-500">学校</span>
+                <span className="font-medium text-ink-800">{school.trim()}</span>
+              </div>
+            )}
+            {major.trim() && (
+              <div className="flex justify-between text-sm">
+                <span className="text-ink-500">专业</span>
+                <span className="font-medium text-ink-800">{major.trim()}</span>
+              </div>
+            )}
             {industry && (
               <div className="flex justify-between text-sm">
                 <span className="text-ink-500">目标行业</span>
@@ -301,10 +360,18 @@ export default function OnboardingPage() {
 
       {/* 步骤内容 */}
       {step === 0 && (
-        <StepStage value={stage} onChange={setStage} />
+        <StepStage
+          value={stage}
+          onChange={setStage}
+          school={school}
+          onSchoolChange={setSchool}
+          major={major}
+          onMajorChange={setMajor}
+          schoolOptions={schoolOptions}
+        />
       )}
       {step === 1 && (
-        <StepDirection value={direction} onChange={setDirection} />
+        <StepDirection value={directions} onChange={setDirections} />
       )}
       {step === 2 && (
         <StepIndustry value={industry} onChange={setIndustry} />
@@ -355,12 +422,55 @@ export default function OnboardingPage() {
 // Step 1: 当前阶段
 // ======================================================================
 
-function StepStage({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function StepStage({
+  value,
+  onChange,
+  school,
+  onSchoolChange,
+  major,
+  onMajorChange,
+  schoolOptions,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  school: string;
+  onSchoolChange: (v: string) => void;
+  major: string;
+  onMajorChange: (v: string) => void;
+  schoolOptions: string[];
+}) {
   return (
     <div className="space-y-4">
       <div>
         <h2 className="font-display text-lg font-semibold text-ink-800">你目前在哪个阶段？</h2>
         <p className="text-sm text-ink-500 mt-1">这有助于 AI 给出符合你时间线的建议</p>
+      </div>
+      {/* 身份包字段（选填）：写入既有账号资料，AI 管家/同路人镜像/就业报告都靠它对上你的学校与专业 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <Field label="学校（选填）" hint="可从已发布就业报告的院校中选择，也可直接输入">
+          <Input
+            list="onboarding-school-options"
+            value={school}
+            onChange={(e) => onSchoolChange(e.target.value)}
+            placeholder="例如：四川大学"
+            maxLength={255}
+            data-testid="onboarding-school-input"
+          />
+          <datalist id="onboarding-school-options">
+            {schoolOptions.map((name) => (
+              <option key={name} value={name} />
+            ))}
+          </datalist>
+        </Field>
+        <Field label="专业（选填）" hint="填写后薪资基准与专业前景会按你的专业对齐">
+          <Input
+            value={major}
+            onChange={(e) => onMajorChange(e.target.value)}
+            placeholder="例如：会计学"
+            maxLength={255}
+            data-testid="onboarding-major-input"
+          />
+        </Field>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {STAGES.map((s) => {
@@ -403,29 +513,40 @@ function StepStage({ value, onChange }: { value: string; onChange: (v: string) =
 // Step 2: 目标方向
 // ======================================================================
 
-function StepDirection({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+function StepDirection({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+  const toggle = (v: string) =>
+    onChange(value.includes(v) ? value.filter((x) => x !== v) : [...value, v]);
+  const labelOf = (v: string) => DIRECTIONS.find((d) => d.value === v)?.label ?? v;
   return (
     <div className="space-y-4">
       <div>
         <h2 className="font-display text-lg font-semibold text-ink-800">你的目标方向是？</h2>
-        <p className="text-sm text-ink-500 mt-1">选择最接近你当前规划的方向</p>
+        <p className="text-sm text-ink-500 mt-1">
+          可多选：第一个选中的是你的主方向；还在纠结时，把两路都选上一起看。
+        </p>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         {DIRECTIONS.map((d) => {
-          const active = value === d.value;
+          const active = value.includes(d.value);
+          const order = active ? value.indexOf(d.value) + 1 : 0;
           const Icon = d.icon;
           return (
             <button
               key={d.value}
               data-testid={d.testId}
-              onClick={() => onChange(d.value)}
+              onClick={() => toggle(d.value)}
               className={cn(
-                "flex flex-col items-center gap-2 rounded-xl border p-4 transition-all",
+                "flex flex-col items-center gap-2 rounded-xl border p-4 transition-all relative",
                 active
                   ? "border-brand-500 bg-brand-50 shadow-sm"
                   : "border-paper-300 bg-white hover:bg-paper-50 hover:border-paper-400",
               )}
             >
+              {active && (
+                <span className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full bg-brand-500 text-[10px] font-bold text-white">
+                  {order}
+                </span>
+              )}
               <span
                 className={cn(
                   "flex h-11 w-11 items-center justify-center rounded-xl transition-colors",
@@ -446,6 +567,16 @@ function StepDirection({ value, onChange }: { value: string; onChange: (v: strin
           );
         })}
       </div>
+      {value.length > 0 && (
+        <div className="rounded-lg bg-brand-50 border border-brand-200 p-3 text-sm text-brand-700">
+          主方向：<span className="font-semibold">{labelOf(value[0])}</span>
+          {value.length > 1 && (
+            <span className="text-brand-600">
+              （同时关注：{value.slice(1).map(labelOf).join("、")}）
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
