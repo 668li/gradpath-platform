@@ -247,3 +247,90 @@ def test_dry_run_makes_no_changes(seeded):
         seeded.query(ReviewQueueItem).filter(ReviewQueueItem.review_status == "PENDING").count()
     )
     assert pending >= 1  # dry-run 未改动
+
+
+# --- explain / limit：只读观测能力（2026-10-01 CLI 入口配套）---
+
+
+def _mk_long_title(tag: str) -> str:
+    """造一个正文足够长（≥1000 字）能过质量分闸的标题。"""
+    return f"{tag} " + "研究生招生公告正文内容" * 60
+
+
+def test_explain_details_align_with_counters(seeded):
+    """逐条明细与四类计数必须闭合：每条 PENDING 恰好落一个 verdict。"""
+    _mk_pending(
+        seeded, GOOD_CRAWLER, _mk_long_title("官方复试线"), "https://yjs.hzau.edu.cn/info/9/a.htm"
+    )
+    _mk_pending(
+        seeded, GOOD_CRAWLER, "通知", "https://yjs.hzau.edu.cn/info/9/b.htm", content="短内容"
+    )
+    _mk_pending(seeded, BAD_CRAWLER, "某考研机构经验分享", "https://blog.example.com/post/9")
+    _mk_pending(
+        seeded, GOOD_CRAWLER, "研招网调剂信息", "https://yz.chsi.com.cn/kyzx/tjxx/2026/9.htm"
+    )
+
+    stats = auto_review_pending(seeded, dry_run=True, explain=True)
+    details = stats["details"]
+
+    assert len(details) == stats["pending"] == 4
+    counted = (
+        stats["auto_approved"]
+        + stats["gate_reputation"]
+        + stats["gate_score"]
+        + stats["chsi_rejected"]
+    )
+    assert counted == len(details) == 4
+    assert {d["verdict"] for d in details} == {
+        "pass_standard",
+        "block_score",
+        "block_reputation",
+        "reject_redline",
+    }
+    assert all(d["reason"] for d in details)
+    assert any(d["host"] == "yjs.hzau.edu.cn" for d in details)
+    blocked = next(d for d in details if d["verdict"] == "block_score")
+    assert blocked["score"] is not None and "门槛" in blocked["reason"]
+
+
+def test_explain_off_by_default_keeps_legacy_shape(seeded):
+    """默认 explain=False：既有调用方（爬虫任务）拿到的 dict 不带明细。"""
+    _mk_pending(
+        seeded, GOOD_CRAWLER, _mk_long_title("官方公告"), "https://yjs.hzau.edu.cn/info/11/a.htm"
+    )
+    stats = auto_review_pending(seeded, dry_run=True)
+    assert stats["details"] == []
+    assert stats["auto_approved"] == 1
+
+
+def test_limit_caps_processing(seeded):
+    """--limit 灰度：只处理队列最靠前的 N 条，其余保持 PENDING。"""
+    for i in range(3):
+        _mk_pending(
+            seeded,
+            GOOD_CRAWLER,
+            _mk_long_title(f"官方公告{i}"),
+            f"https://yjs.hzau.edu.cn/info/2{i}/2026.htm",
+        )
+    stats = auto_review_pending(seeded, dry_run=True, explain=True, limit=2)
+    assert stats["pending"] == 2
+    assert stats["auto_approved"] == 2
+    assert len(stats["details"]) == 2
+
+
+def test_dry_run_order_is_deterministic(seeded):
+    """同一批 PENDING 两次 dry-run 必须给出同一顺序（逐条 diff 的前提）。"""
+    for i in range(3):
+        _mk_pending(
+            seeded,
+            GOOD_CRAWLER,
+            _mk_long_title(f"排序用例{i}"),
+            f"https://yjs.hzau.edu.cn/info/3{i}/2026.htm",
+        )
+    first = [
+        d["ref_item_id"] for d in auto_review_pending(seeded, dry_run=True, explain=True)["details"]
+    ]
+    second = [
+        d["ref_item_id"] for d in auto_review_pending(seeded, dry_run=True, explain=True)["details"]
+    ]
+    assert first == second == sorted(first)

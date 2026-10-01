@@ -11,11 +11,14 @@
   闸门 3 红线：研招网 yz.chsi.com.cn 防御性驳回（入库层已挡，此处兜底可审计）
 
 零 LLM、纯规则，冻结期可用；LLM judge 解冻后可在闸门 2 处插入。
-在定时爬虫任务成功落库后调用（见 tasks/crawler_tasks.py），也可 CLI 单跑。
+在定时爬虫任务成功落库后调用（见 tasks/crawler_tasks.py），也可 CLI 单跑：
+``scripts/auto_review_queue.py``（默认 dry-run，``--commit`` 才写库，
+``--explain`` 输出逐条判定明细供人工抽验定位卡点）。
 """
 
 import logging
 from datetime import datetime, timezone
+from urllib.parse import urlparse
 
 from sqlalchemy.orm import Session
 
@@ -91,6 +94,11 @@ def source_reputation(db: Session) -> dict[str, dict[str, int]]:
     return stats
 
 
+def _host_of(source_url: str | None) -> str:
+    """取 source_url 的 hostname（小写），仅用于 explain 明细的可读性。"""
+    return (urlparse(source_url or "").hostname or "").lower()
+
+
 def auto_review_pending(
     db: Session,
     min_score: int = DEFAULT_MIN_SCORE,
@@ -98,8 +106,17 @@ def auto_review_pending(
     min_pass_rate: float = DEFAULT_MIN_PASS_RATE,
     reviewer_email: str = SYSTEM_ADMIN_EMAIL,
     dry_run: bool = False,
+    explain: bool = False,
+    limit: int | None = None,
 ) -> dict:
-    """对 PENDING 队列跑三闸门自动放行。返回统计 dict（可审计日志用）。"""
+    """对 PENDING 队列跑三闸门自动放行。返回统计 dict（可审计日志用）。
+
+    Args:
+        explain: True 时在返回 dict 里附 ``details``——逐条判定明细
+            （verdict/score/reason），供 dry-run 决策与人工抽验定位卡点。
+            默认 False，既有调用方（爬虫任务）零行为变化。
+        limit: 只处理队列中最靠前的 N 条（配合确定性排序做小批量灰度）。
+    """
     admin = db.query(User).filter(User.email == reviewer_email).first()
     if admin is None:
         admin = db.query(User).filter(User.is_admin.is_(True)).first()
@@ -108,12 +125,16 @@ def auto_review_pending(
         return {"error": "no_admin"}
 
     reputation = source_reputation(db)
-    pending = (
+    query = (
         db.query(ReviewQueueItem, ExternalResearchItem)
         .join(ExternalResearchItem, ExternalResearchItem.id == ReviewQueueItem.ref_item_id)
         .filter(ReviewQueueItem.review_status == "PENDING")
-        .all()
+        # 确定性排序：同一批 PENDING 两次 dry-run 必须给出同一份清单（逐条 diff 的前提）
+        .order_by(ReviewQueueItem.id)
     )
+    if limit:
+        query = query.limit(limit)
+    pending = query.all()
 
     stats = {
         "pending": len(pending),
@@ -122,8 +143,32 @@ def auto_review_pending(
         "gate_reputation": 0,
         "gate_score": 0,
         "chsi_rejected": 0,
+        "details": [],
     }
+    details: list[dict] = stats["details"]
     now = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    def _note(
+        ext: ExternalResearchItem | None,
+        verdict: str,
+        reason: str,
+        score: int | None = None,
+    ) -> None:
+        if not explain or ext is None:
+            return
+        details.append(
+            {
+                "ref_item_id": ext.id,
+                "item_type": ext.item_type,
+                "crawler_name": ext.crawler_name,
+                "credibility": ext.credibility,
+                "host": _host_of(ext.source_url),
+                "title": (ext.title or "")[:120],
+                "verdict": verdict,
+                "score": score,
+                "reason": reason,
+            }
+        )
 
     for queue_item, ext in pending:
         if ext is None:
@@ -137,6 +182,7 @@ def auto_review_pending(
                 queue_item.reject_reason = "研招网红线：yz.chsi.com.cn 数据不入库、不对外分发"
                 ext.review_status = "REJECTED"
             stats["chsi_rejected"] += 1
+            _note(ext, "reject_redline", "研招网红线兜底驳回")
             continue
 
         rep = reputation.get(
@@ -144,18 +190,30 @@ def auto_review_pending(
             {"total": 0, "pass_rate": 0.0, "rejected": 0, "approved": 0},
         )
         rejected = rep.get("rejected", 0)
-        if (
+        official_fast_track = (
             rejected == 0
             and (ext.credibility or "") == "official_verified"
             and rep["total"] >= OFFICIAL_MIN_HISTORY
-        ):
-            # 官方源快速通道：历史零驳回 + official_verified + 少量历史即放行
-            pass
-        elif rep["total"] < min_history or rep["pass_rate"] < min_pass_rate:
-            stats["gate_reputation"] += 1
-            continue
-        if _score(ext) < min_score:
+        )
+        if not official_fast_track:
+            if rep["total"] < min_history or rep["pass_rate"] < min_pass_rate:
+                stats["gate_reputation"] += 1
+                _note(
+                    ext,
+                    "block_reputation",
+                    f"来源信誉不足：历史 {rep['total']} 条（门槛 {min_history}）、"
+                    f"通过率 {rep['pass_rate']}（门槛 {min_pass_rate}）",
+                )
+                continue
+        score = _score(ext)
+        if score < min_score:
             stats["gate_score"] += 1
+            _note(
+                ext,
+                "block_score",
+                f"质量分 {score} < 门槛 {min_score}",
+                score=score,
+            )
             continue
 
         if not dry_run:
@@ -166,8 +224,14 @@ def auto_review_pending(
             queue_item.reviewed_time = now
             ext.review_status = "APPROVED"
         stats["auto_approved"] += 1
+        _note(
+            ext,
+            "pass_official_fast_track" if official_fast_track else "pass_standard",
+            "官方源快速通道放行" if official_fast_track else "三闸门全过",
+            score=score,
+        )
 
     if not dry_run:
         db.commit()
-    logger.info("auto_review: %s", stats)
+    logger.info("auto_review: %s", {k: v for k, v in stats.items() if k != "details"})
     return stats
