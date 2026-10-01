@@ -169,6 +169,7 @@ D:\职业规划\职业规划\
 * 禁止把数据库文件、爬取的大 JSON、运行日志 commit 进仓库
 * **提交推送前必须 `pre-commit run --all-files` 全树过一遍**(与 CI 同 hook 同版本;只修报错文件会再红)。注意它会重排并行会话的未提交 WIP 文件——只 `git add` 自己的文件,WIP 被重排就 `git checkout -- <file>` 还原
 * 并行会话期间:格式化→add→commit→push 在一条命令内原子完成,压缩工作区被覆盖的窗口
+* **部署前必跑 `bash tools/topology.sh` 核生产 HEAD 与分支,禁凭"活跃树=生产"的假设**：2026-10-01 实测生产跑在夜班 `deploy-ready` 线（服务器 HEAD `7dc92dc`），与活跃树 `deploy-rebased` 分叉（144 vs 118 个独有提交），直接 `merge --ff-only` 会失败。做法=从**服务器 HEAD** 建分支 cherry-pick 本次提交再部署（只动自己的文件，不回滚他人提交）；全程禁 force/reset
 
 ## 🌐 爬虫合规红线(不可违反)
 
