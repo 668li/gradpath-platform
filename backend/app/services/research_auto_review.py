@@ -45,6 +45,27 @@ DEFAULT_MIN_PASS_RATE = 0.9
 OFFICIAL_MIN_HISTORY = 5
 
 
+def _parse_ts(value: object) -> datetime | None:
+    """解析采集侧写进 external_meta 的 ISO 时间串；无法解析一律 None（不抛）。
+
+    naive 时间沿用 quality._freshness_score 的既有口径（按 UTC 处理），
+    不在这里另立时区语义——口径要改必须单独拍板并加测试。
+    """
+    if not isinstance(value, str) or not value.strip():
+        return None
+    try:
+        return datetime.fromisoformat(value.strip())
+    except ValueError:
+        logger.debug("auto_review: 时间串无法解析，按缺失处理: %r", value[:40])
+        return None
+
+
+def _item_times(ext: ExternalResearchItem) -> tuple[datetime | None, datetime | None]:
+    """取条目自身的发布时间/采集时间（时效分的数据源，此前漏传导致恒 0 分）。"""
+    meta = ext.external_meta or {}
+    return _parse_ts(meta.get("published_at")), _parse_ts(meta.get("crawled_at"))
+
+
 def _score(ext: ExternalResearchItem) -> int:
     """与 bulk_review_real_data 完全一致的规则评分。"""
     meta = ext.external_meta or {}
@@ -64,11 +85,14 @@ def _score(ext: ExternalResearchItem) -> int:
             promotion_reason=promo_reason,
         )
     else:
+        published_at, crawled_at = _item_times(ext)
         detail = score_item_detailed(
             title=ext.title or "",
             content=ext.content or "",
             summary=meta.get("summary") or "",
             source_url=ext.source_url or "",
+            published_at=published_at,
+            crawled_at=crawled_at,
         )
     return int(detail["score"])
 

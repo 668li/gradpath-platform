@@ -5,6 +5,7 @@
 """
 
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -62,7 +63,15 @@ def _mk_history(db, crawler: str, approved: int, rejected: int) -> None:
     db.commit()
 
 
-def _mk_pending(db, crawler: str, title: str, url: str, content: str = "") -> ExternalResearchItem:
+def _mk_pending(
+    db,
+    crawler: str,
+    title: str,
+    url: str,
+    content: str = "",
+    meta: dict | None = None,
+    credibility: str | None = None,
+) -> ExternalResearchItem:
     ext = ExternalResearchItem(
         crawler_name=crawler,
         crawler_run_id="run-1",
@@ -71,6 +80,8 @@ def _mk_pending(db, crawler: str, title: str, url: str, content: str = "") -> Ex
         content=content or (title + "。") * 40,
         source_url=url,
         source_platform="rsshub",
+        external_meta=meta,
+        credibility=credibility,
         review_status="PENDING",
     )
     db.add(ext)
@@ -334,3 +345,82 @@ def test_dry_run_order_is_deterministic(seeded):
         d["ref_item_id"] for d in auto_review_pending(seeded, dry_run=True, explain=True)["details"]
     ]
     assert first == second == sorted(first)
+
+
+# --- 时效分修复（2026-10-01：_score 此前漏传时间戳，时效分恒为 0）---
+
+
+def _iso(hours_ago: float, offset_hours: int | None = 0) -> str:
+    ts = datetime.now(timezone.utc) - timedelta(hours=hours_ago)
+    if offset_hours is None:
+        return ts.replace(tzinfo=None).isoformat()
+    return ts.astimezone(timezone(timedelta(hours=offset_hours))).isoformat()
+
+
+def test_fresh_short_official_notice_passes_after_timestamp_fix(seeded):
+    """官方域 + 24h 内发布的短通知：修前 55 分被挡，修后 +30 时效分过闸。"""
+    _mk_pending(
+        seeded,
+        GOOD_CRAWLER,
+        "某校研究生院2027年招生考试报名安排通知",
+        "https://yjs.hzau.edu.cn/info/20/a.htm",
+        content="请按时报名。",
+        meta={"published_at": _iso(1)},
+    )
+    stats = auto_review_pending(seeded, dry_run=True, explain=True)
+    assert stats["auto_approved"] == 1
+    assert stats["details"][0]["score"] >= 60
+
+
+def test_stale_short_notice_stays_blocked_by_score(seeded):
+    """半年前的同类短通知仍必须被质量分挡住（时效分归零后回到 55 分）。"""
+    _mk_pending(
+        seeded,
+        GOOD_CRAWLER,
+        "某校研究生院招生考试报名安排通知（旧）",
+        "https://yjs.hzau.edu.cn/info/21/a.htm",
+        content="请按时报名。",
+        meta={"published_at": _iso(200 * 24)},
+    )
+    stats = auto_review_pending(seeded, dry_run=True, explain=True)
+    assert stats["auto_approved"] == 0
+    assert stats["gate_score"] == 1
+    assert stats["details"][0]["score"] < 60
+
+
+def test_unparsable_timestamp_degrades_to_zero_freshness(seeded):
+    """脏时间串不得抛异常，退化为时效 0 分（等价于修复前的行为）。"""
+    _mk_pending(
+        seeded,
+        GOOD_CRAWLER,
+        "招生通知",
+        "https://yjs.hzau.edu.cn/info/22/a.htm",
+        content="请按时报名。",
+        meta={"published_at": "去年某天", "crawled_at": ""},
+    )
+    stats = auto_review_pending(seeded, dry_run=True, explain=True)
+    assert stats["gate_score"] == 1
+    assert stats["details"][0]["score"] == 55  # 40 权威 + 0 时效 + 5 完整度 + 10 可溯源
+
+
+def test_naive_and_tz_aware_timestamps_both_count(seeded):
+    """naive 按 UTC 处理（沿用 quality 既有口径，锁死该行为）；带时区的按其偏移换算。"""
+    _mk_pending(
+        seeded,
+        GOOD_CRAWLER,
+        "报名通知A",
+        "https://yjs.hzau.edu.cn/info/23/a.htm",
+        content="请按时报名。",
+        meta={"published_at": _iso(2, offset_hours=None)},
+    )
+    _mk_pending(
+        seeded,
+        GOOD_CRAWLER,
+        "报名通知B",
+        "https://yjs.hzau.edu.cn/info/23/b.htm",
+        content="请按时报名。",
+        meta={"published_at": _iso(2, offset_hours=8)},
+    )
+    stats = auto_review_pending(seeded, dry_run=True, explain=True)
+    assert stats["auto_approved"] == 2
+    assert all(d["score"] == 85 for d in stats["details"])  # 40+30+5+10
