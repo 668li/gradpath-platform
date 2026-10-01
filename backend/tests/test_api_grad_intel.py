@@ -351,6 +351,34 @@ class TestSchoolAnnouncements:
         assert resp.status_code == 200
         assert resp.json() == []
 
+    def test_fudan_grad_school_domain_attributed(self, client: TestClient, db_session):
+        """gsao.fudan.edu.cn 应归口到复旦大学（2026-10-01 补映射：复旦 2027 章程此前不可见）。"""
+        self._seed_approved_news(
+            db_session,
+            "https://gsao.fudan.edu.cn/2026/0930/c1a2b3/page.htm",
+            "研招公告·复旦大学研究生院通知公告",
+            "复旦大学2027年招收攻读硕士学位研究生章程",
+        )
+        cache.clear()
+        resp = client.get("/api/grad-intel/schools/复旦大学/announcements")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data) == 1
+        assert "2027年招收攻读硕士学位研究生章程" in data[0]["title"]
+
+    def test_nju_undergrad_admission_domain_skipped(self, client: TestClient, db_session):
+        """admission.nju.edu.cn 是南大本科招生网（抽查均为分级考试/VPN 等校内事务），不归口。"""
+        self._seed_approved_news(
+            db_session,
+            "https://admission.nju.edu.cn/2026/1.htm",
+            "研招公告·南京大学",
+            "大学英语分级考试通知",
+        )
+        cache.clear()
+        resp = client.get("/api/grad-intel/schools/南京大学/announcements")
+        assert resp.status_code == 200
+        assert resp.json() == []
+
     def test_skip_domain_still_filtered(self, client: TestClient, db_session):
         """教育部 / 公众号域名仍不归口到任何院校。"""
         self._seed_approved_news(

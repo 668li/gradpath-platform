@@ -380,6 +380,20 @@ _ANNOUNCE_DOMAIN_SCHOOL: dict[str, str] = {
     # zs.gs.upc.edu.cn 校区歧义已解歧：该域公告标题均写明"中国石油大学（华东）"
     # （如"中国石油大学（华东）2026年…成绩查询及复核通知"），归口华东校区。
     "zs.gs.upc.edu.cn": "中国石油大学（华东）",
+    # 2026-10-01 补：研招公告打标接通后实测有数据但未归口的院校（复旦/山大 2027
+    # 招生目录等此前在院校公告接口不可见的直接原因之一）。武大用研究生院域精确
+    # 映射——整域 whu.edu.cn 会把新闻网(news.whu)的校内行政内容卷进来（已入 skip）。
+    "gs.whu.edu.cn": "武汉大学",
+    "cug.edu.cn": "中国地质大学（武汉）",
+    "xjtu.edu.cn": "西安交通大学",
+    "xmu.edu.cn": "厦门大学",
+    "cpu.edu.cn": "中国药科大学",
+    "fudan.edu.cn": "复旦大学",
+    "jlu.edu.cn": "吉林大学",
+    "lzu.edu.cn": "兰州大学",
+    "uestc.edu.cn": "电子科技大学",
+    "ccnu.edu.cn": "华中师范大学",
+    "hnu.edu.cn": "湖南大学",
 }
 
 # 明确不归口：教育部 / 第三方聚合 / 公众号
@@ -387,6 +401,8 @@ _ANNOUNCE_SKIP_DOMAINS = {
     "www.moe.gov.cn",  # 教育部政策，非院校
     "yz.kaoyan.com",  # 第三方聚合
     "mp.weixin.qq.com",  # 公众号，非院校官方域
+    "admission.nju.edu.cn",  # 南大本科招生网（2026-10-01 抽查：英语分级考试/VPN 等，非研招）
+    "news.whu.edu.cn",  # 武大新闻网（校内行政/新闻为主；武大研究生院走 gs.whu.edu.cn 精确映射）
 }
 
 
