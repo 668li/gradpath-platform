@@ -424,3 +424,65 @@ def test_naive_and_tz_aware_timestamps_both_count(seeded):
     stats = auto_review_pending(seeded, dry_run=True, explain=True)
     assert stats["auto_approved"] == 2
     assert all(d["score"] == 85 for d in stats["details"])  # 40+30+5+10
+
+
+# --- 内容快速通道（2026-10-01：官方域 + 招生情报内容 → 绕过信誉闸，仍过质量分）---
+
+
+def test_official_admission_content_bypasses_reputation_gate(seeded):
+    """低信誉来源的官方招生情报：内容通道放行，verdict 独立可审计。"""
+    _mk_pending(
+        seeded,
+        BAD_CRAWLER,
+        "山东大学2027年硕士研究生招生专业目录-山东大学研究生招生信息网",
+        "https://yz.sdu.edu.cn/info/1/2027.htm",
+        credibility="official_verified",
+    )
+    stats = auto_review_pending(seeded, dry_run=True, explain=True)
+    assert stats["auto_approved"] == 1
+    assert stats["details"][0]["verdict"] == "pass_admission_content"
+    assert "招生锚点" in stats["details"][0]["reason"]
+
+
+def test_official_admin_content_still_blocked_by_reputation(seeded):
+    """同来源的校内行政通知：内容通道不放行，仍卡信誉闸（且理由带内容判定）。"""
+    _mk_pending(
+        seeded,
+        BAD_CRAWLER,
+        "主校区研究生校级公共课程“环境工程导论”考试安排",
+        "https://yjs.hzau.edu.cn/info/2/x.htm",
+        credibility="official_verified",
+    )
+    stats = auto_review_pending(seeded, dry_run=True, explain=True)
+    assert stats["auto_approved"] == 0
+    assert stats["gate_reputation"] == 1
+    assert "内容判定" in stats["details"][0]["reason"]
+
+
+def test_user_reported_admission_content_not_eligible(seeded):
+    """user_reported 不进内容通道（噪声源不受内容规则放松）。"""
+    _mk_pending(
+        seeded,
+        BAD_CRAWLER,
+        "2027年硕士研究生招生章程（社区转帖）",
+        "https://zhuanlan.zhihu.com/p/123",
+        credibility="user_reported",
+    )
+    stats = auto_review_pending(seeded, dry_run=True, explain=True)
+    assert stats["auto_approved"] == 0
+    assert stats["gate_reputation"] == 1
+
+
+def test_admission_content_still_must_pass_score_gate(seeded):
+    """内容通道不放宽质量分：正文过短的招生条目仍被质量分挡下。"""
+    _mk_pending(
+        seeded,
+        BAD_CRAWLER,
+        "2027年硕士研究生招生章程",
+        "https://yz.sdu.edu.cn/info/3/2027.htm",
+        content="见附件。",
+        credibility="official_verified",
+    )
+    stats = auto_review_pending(seeded, dry_run=True, explain=True)
+    assert stats["auto_approved"] == 0
+    assert stats["gate_score"] == 1

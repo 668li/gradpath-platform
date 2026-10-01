@@ -10,6 +10,12 @@
         高于入库门槛 35，保证自动放行的质量高于人工平均）
   闸门 3 红线：研招网 yz.chsi.com.cn 防御性驳回（入库层已挡，此处兜底可审计）
 
+另有两条快速放行路径（都仍须过闸门 2 质量分）：
+- 官方源快速通道：official_verified + 历史零驳回 + 历史 ≥5 条
+- 内容快速通道（2026-10-01）：official_verified + 内容判定属招生情报
+  （app/services/admission_content_rule.py，docs/爬取审核策略 §3.1 口径的首个
+  代码实现）。只对官方域生效——噪声源不受益，避免放松 rsshub 那类低通过率来源。
+
 零 LLM、纯规则，冻结期可用；LLM judge 解冻后可在闸门 2 处插入。
 在定时爬虫任务成功落库后调用（见 tasks/crawler_tasks.py），也可 CLI 单跑：
 ``scripts/auto_review_queue.py``（默认 dry-run，``--commit`` 才写库，
@@ -29,6 +35,7 @@ from app.crawlers.research.experience_quality import (
 from app.crawlers.research.quality import score_item_detailed
 from app.models.ingestion import ExternalResearchItem, ReviewQueueItem
 from app.models.user import User
+from app.services.admission_content_rule import classify_admission_item
 from app.services.research_promote import promote_external_item
 
 logger = logging.getLogger(__name__)
@@ -219,14 +226,21 @@ def auto_review_pending(
             and (ext.credibility or "") == "official_verified"
             and rep["total"] >= OFFICIAL_MIN_HISTORY
         )
-        if not official_fast_track:
+        # 内容快速通道（2026-10-01）：官方域 + 招生情报内容 → 绕过来源信誉闸。
+        # 只对 official_verified 生效（噪声源不受益），仍须过质量分闸。
+        content_admission = False
+        content_reason = ""
+        if (ext.credibility or "") == "official_verified":
+            content_admission, content_reason = classify_admission_item(ext.title, ext.content)
+        if not official_fast_track and not content_admission:
             if rep["total"] < min_history or rep["pass_rate"] < min_pass_rate:
                 stats["gate_reputation"] += 1
                 _note(
                     ext,
                     "block_reputation",
                     f"来源信誉不足：历史 {rep['total']} 条（门槛 {min_history}）、"
-                    f"通过率 {rep['pass_rate']}（门槛 {min_pass_rate}）",
+                    f"通过率 {rep['pass_rate']}（门槛 {min_pass_rate}）"
+                    + (f"；内容判定：{content_reason}" if content_reason else ""),
                 )
                 continue
         score = _score(ext)
@@ -248,12 +262,13 @@ def auto_review_pending(
             queue_item.reviewed_time = now
             ext.review_status = "APPROVED"
         stats["auto_approved"] += 1
-        _note(
-            ext,
-            "pass_official_fast_track" if official_fast_track else "pass_standard",
-            "官方源快速通道放行" if official_fast_track else "三闸门全过",
-            score=score,
-        )
+        if official_fast_track:
+            verdict, why = "pass_official_fast_track", "官方源快速通道放行"
+        elif content_admission:
+            verdict, why = "pass_admission_content", f"招生情报内容放行（{content_reason}）"
+        else:
+            verdict, why = "pass_standard", "三闸门全过"
+        _note(ext, verdict, why, score=score)
 
     if not dry_run:
         db.commit()

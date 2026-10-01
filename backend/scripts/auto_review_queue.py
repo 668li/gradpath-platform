@@ -39,6 +39,7 @@ from app.services.research_auto_review import auto_review_pending
 
 _VERDICT_LABELS = {
     "pass_official_fast_track": "放行·官方快通",
+    "pass_admission_content": "放行·招生内容",
     "pass_standard": "放行·三闸全过",
     "block_reputation": "卡·来源信誉",
     "block_score": "卡·质量分",
