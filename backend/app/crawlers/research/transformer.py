@@ -782,11 +782,19 @@ class ResearchTransformer:
             tags = list(dict.fromkeys(existing_tags + extracted_tags))
 
             # 分类：信息差维度规则优先；规则未命中时沿用采集器自带栏目（若为已知维度）
-            category = cls._infer_news_category(title)
-            if category == "general":
-                raw_category = raw.get("category", "")
-                if isinstance(raw_category, str) and raw_category in dict(KAOYAN_CATEGORY_RULES):
-                    category = raw_category
+            # 研招公告线的显式打标（「研招公告·{栏目}」）最优先——grad_intel 院校公告接口
+            # 按 category LIKE '研招公告%' 过滤，被推断覆盖会导致官方线与该接口断链
+            # （2026-10-01 实测：官方线 46 条已批准存量在该接口全部不可见）。
+            raw_category = raw.get("category", "")
+            if isinstance(raw_category, str) and raw_category.startswith("研招公告"):
+                category = raw_category
+            else:
+                category = cls._infer_news_category(title)
+                if category == "general":
+                    if isinstance(raw_category, str) and raw_category in dict(
+                        KAOYAN_CATEGORY_RULES
+                    ):
+                        category = raw_category
 
             published_at = raw.get("published_at")
             if isinstance(published_at, str):

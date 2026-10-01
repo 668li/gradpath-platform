@@ -272,6 +272,68 @@ class TestResearchTransformer:
         assert payload["quality_score"] >= 0
         assert payload["quality_grade"] in {"A", "B", "C", "D"}
 
+    def test_transform_rss_preserves_yanzhao_stamp(self):
+        """研招公告线的显式打标「研招公告·{栏目}」必须穿透 transform_rss。
+
+        2026-10-01 机制断修复：grad_intel 院校公告接口按 category LIKE '研招公告%'
+        过滤，此前该打标被 _infer_news_category 覆盖为 政策/general，官方线 46 条
+        已批准存量在接口全部不可见。
+        """
+        now = datetime.now(timezone.utc).isoformat()
+
+        def _one(title: str, raw_category: str) -> str:
+            payloads = ResearchTransformer.transform_rss(
+                [
+                    {
+                        "title": title,
+                        "summary": "摘要",
+                        "content": "正文内容。",
+                        "source_url": "https://yz.sdu.edu.cn/x.htm",
+                        "published_at": "2026-09-30T08:00:00+00:00",
+                        "crawled_at": now,
+                        "category": raw_category,
+                        "tags": [],
+                        "source_platform": "official",
+                    }
+                ]
+            )
+            return payloads[0]["category"]
+
+        # 标题会被推断为「政策」的招生条目：显式打标仍须胜出
+        assert (
+            _one(
+                "关于报考少数民族高层次骨干人才计划硕士有关事项的说明",
+                "研招公告·山东大学研究生招生通知公告",
+            )
+            == "研招公告·山东大学研究生招生通知公告"
+        )
+        # 标题无领域词（推断 general）：同样保留打标
+        assert (
+            _one("研究生院通知", "研招公告·武汉大学研究生院通知公告")
+            == "研招公告·武汉大学研究生院通知公告"
+        )
+
+    def test_transform_rss_does_not_preserve_other_prefixes(self):
+        """只有「研招公告」前缀享受显式保留；其他自定义前缀仍走推断（防前缀滥用扩散）。"""
+        now = datetime.now(timezone.utc).isoformat()
+        payloads = ResearchTransformer.transform_rss(
+            [
+                {
+                    "title": "高校发布复试通知",
+                    "summary": "摘要",
+                    "content": "正文。",
+                    "source_url": "https://example.com/y.htm",
+                    "published_at": "2026-09-30T08:00:00+00:00",
+                    "crawled_at": now,
+                    "category": "官方公告·某栏目",
+                    "tags": [],
+                    "source_platform": "official",
+                }
+            ]
+        )
+        # 标题命中「复试」规则 → 推断值胜出，官方公告·前缀被覆盖（与历史行为一致）
+        assert payloads[0]["category"] == "复试"
+
     def test_ad_filtering(self):
         """含广告关键词的内容应被过滤。"""
         items = [

@@ -593,7 +593,15 @@ class OfficialAnnounceCrawler(BaseCrawler):
                     "source_url": raw.get("url", ""),
                     "published_at": published_at,
                     "crawled_at": datetime.now(timezone.utc).isoformat(),
-                    "category": f"官方公告·{raw.get('source_name', '')}"[:50],
+                    # category 打标（2026-10-01）：研招公告线按栏目打「研招公告·{栏目}」——
+                    # grad_intel 院校公告接口按 category LIKE '研招公告%' 过滤，此前的
+                    # 「官方公告·」前缀不在其范围，官方线 46 条已批准存量在该接口全部
+                    # 不可见。就业线不打研招前缀（语义不适用于就业网公告）。
+                    "category": (
+                        f"研招公告·{raw.get('source_name', '')}"
+                        if self.item_type == "kaoyan_news"
+                        else f"官方公告·{raw.get('source_name', '')}"
+                    )[:50],
                     "tags": [],
                     "source_platform": "official",
                 }
