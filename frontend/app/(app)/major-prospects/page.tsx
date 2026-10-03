@@ -13,7 +13,7 @@ import {
   Info,
   ArrowRight,
 } from "lucide-react";
-import { majorProspectApi, useApi } from "@/lib/api";
+import { majorProspectApi } from "@/lib/api";
 import type {
   MajorListItem,
   MajorProspect,
@@ -431,16 +431,35 @@ export default function MajorProspectsPage() {
   const [major, setMajor] = useState("");
   const [outgoingTier, setOutgoingTier] = useState<OutgoingTier | null>(null);
 
-  // RN-5a 专业自动带入：profile 有 major 即免搜索直接出本专业情报
-  const { data: profile } = useApi<{ major: string | null } | null>("/api/career-profile");
-  const profileMajor = profile?.major?.trim() || "";
+  // RN-5a 专业自动带入：profile 有 major 即免搜索直接出本专业情报。
+  // 注意：不走全局 apiFetcher（其 401 会 location.replace 踢登录）——本页对
+  // 陌生人公开，career-profile 未登录 401 属预期，静默返回 null 不跳转。
+  const { data: profileMajor } = useSWR(
+    "major-prospects-profile-major",
+    async (): Promise<string | null> => {
+      try {
+        const { useAuthStore } = await import("@/stores/auth");
+        const token = useAuthStore.getState().token;
+        const res = await fetch("/api/career-profile", {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        if (!res.ok) return null;
+        const d = await res.json();
+        return typeof d?.major === "string" ? d.major.trim() || null : null;
+      } catch {
+        return null;
+      }
+    },
+    { revalidateOnFocus: false },
+  );
+  const major_ = profileMajor || "";
   useEffect(() => {
-    if (profileMajor && !major) {
-      setInput(profileMajor);
-      setMajor(profileMajor);
+    if (major_ && !major) {
+      setInput(major_);
+      setMajor(major_);
     }
-  }, [profileMajor, major]);
-  const majorAutoFilled = !!(profileMajor && major === profileMajor);
+  }, [major_, major]);
+  const majorAutoFilled = !!(major_ && major === major_);
 
   const { data: majors } = useSWR<MajorListItem[]>(
     "major-prospect-majors",
