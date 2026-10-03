@@ -89,7 +89,7 @@ _LINKS: list[dict] = [
         "track": "kaoyan",
         "category": RESOURCE_CATEGORY_KAOYAN,
         "note": "VitePress 形态的 408 全科知识文档站，配套开源仓库 703 star 持续维护",
-        "risk_note": "delivery 审查备注：需核内容原创性（若为王道笔记二创属灰区）——请终审时判断",
+        "risk_note": "内容原创性待核（若为教材笔记二创属灰区）——请终审时判断",
         "copyright_tier": RESOURCE_COPYRIGHT_ORIGINAL,
         "added_via": RESOURCE_ADDED_VIA_AI,
         "sources": [
@@ -256,7 +256,7 @@ _LINKS: list[dict] = [
         "url": "https://github.com/Mangolia-club/Kaoyan-Math-Doc",
         "track": "kaoyan",
         "category": RESOURCE_CATEGORY_KAOYAN,
-        "note": "MkDocs 形态数一复习文档+个人批注",
+        "note": "MkDocs 形态的考研数学一复习文档+个人批注",
         "risk_note": "仓库 2022-10 后未更新（如实标注）",
         "copyright_tier": RESOURCE_COPYRIGHT_ORIGINAL,
         "added_via": RESOURCE_ADDED_VIA_AI,
@@ -276,7 +276,7 @@ _LINKS: list[dict] = [
         "url": "https://github.com/patrick-andstar/kaoyan-math-ai",
         "track": "kaoyan",
         "category": RESOURCE_CATEGORY_KAOYAN,
-        "note": "数一 Obsidian 资料库，OCR+AI 整理流程，AI 原生类藏货（simple408 同类）",
+        "note": "考研数学一 Obsidian 资料库，OCR+AI 整理流程，AI 原生类藏货（simple408 同类）",
         "copyright_tier": RESOURCE_COPYRIGHT_ORIGINAL,
         "added_via": RESOURCE_ADDED_VIA_AI,
         "sources": [
@@ -317,7 +317,7 @@ _LINKS: list[dict] = [
         "track": "kaoyan",
         "category": RESOURCE_CATEGORY_KAOYAN,
         "note": "英语一真题 1980-2020（PDF/Word/手译版），手译版是特色",
-        "risk_note": "⚠️ 版权灰区：历年真题再排版，delivery 审查定级 caution，请终审单独拍板；仓库 2021-10 后未更新",
+        "risk_note": "⚠️ 版权灰区：历年真题再排版，需站长单独拍板；仓库 2021-10 后未更新",
         "copyright_tier": RESOURCE_COPYRIGHT_CAUTION,
         "added_via": RESOURCE_ADDED_VIA_AI,
         "sources": [
@@ -553,7 +553,7 @@ _LINKS: list[dict] = [
         "track": "kaoyan",
         "category": RESOURCE_CATEGORY_KAOYAN,
         "note": "408 历年真题 PDF 整理（MIT 协议标注），2026 年仍活跃维护",
-        "risk_note": "⚠️ 版权灰区：历年真题再排版，delivery 审查定级 caution，请终审单独拍板",
+        "risk_note": "⚠️ 版权灰区：历年真题再排版，需站长单独拍板",
         "copyright_tier": RESOURCE_COPYRIGHT_CAUTION,
         "added_via": RESOURCE_ADDED_VIA_AI,
         "sources": [
@@ -686,16 +686,32 @@ _LINKS: list[dict] = [
 
 
 def seed_resource_links(db: Session) -> tuple[int, int]:
-    """幂等导入资源导航候选：按 url 去重，已存在跳过。
+    """幂等导入资源导航候选：按 url 去重；已存在则更新策展文案（note/risk_note/
+    分类/版权档/sources 实测记录），**绝不触碰 status/user_approved**——终审状态
+    唯一归站长（文案维护权在 seed=策展协议，状态变更权在用户=点名制铁律）。
 
     Returns:
         (inserted, skipped)
     """
     inserted = 0
     skipped = 0
-    existing = {row[0] for row in db.query(ResourceLink.url).with_entities(ResourceLink.url)}
+    existing = {row.url: row for row in db.query(ResourceLink).all()}
     for spec in _LINKS:
-        if spec["url"] in existing:
+        found = existing.get(spec["url"])
+        if found is not None:
+            # 策展文案有变化→随 seed 更新（幂等：无变化不写）
+            if (
+                found.note != spec["note"]
+                or found.risk_note != spec.get("risk_note")
+                or found.category != spec["category"]
+                or found.copyright_tier != spec.get("copyright_tier", RESOURCE_COPYRIGHT_ORIGINAL)
+            ):
+                found.note = spec["note"]
+                found.risk_note = spec.get("risk_note")
+                found.category = spec["category"]
+                found.copyright_tier = spec.get("copyright_tier", RESOURCE_COPYRIGHT_ORIGINAL)
+                found.sources = spec["sources"]
+                db.add(found)
             skipped += 1
             continue
         db.add(
@@ -717,9 +733,8 @@ def seed_resource_links(db: Session) -> tuple[int, int]:
         inserted += 1
     db.commit()
     logger.info(
-        "资源导航 seed 完成：新增 %d，跳过 %d（共 %d 条定义，全部 pending 待终审）",
+        "资源导航 seed 完成：新增 %d，已存在 %d（文案随 seed 同步，状态不碰）",
         inserted,
         skipped,
-        len(_LINKS),
     )
     return inserted, skipped

@@ -84,6 +84,26 @@ class TestSeedIdempotent:
             assert l.status == RESOURCE_STATUS_PENDING, f"{l.name} 必须 pending（点名制）"
             assert l.user_approved is False, f"{l.name} user_approved 必须 false（终审唯一闸）"
 
+    def test_seed_updates_copy_but_never_status(self, seeded_db):
+        """策展维护协议：文案随 seed 更新，终审状态（active/user_approved）绝不被 seed 触碰。"""
+        from app.services.resource_link_seed import _LINKS
+
+        target = seeded_db.query(ResourceLink).filter_by(url=_LINKS[0]["url"]).one()
+        target.status = RESOURCE_STATUS_ACTIVE
+        target.user_approved = True
+        seeded_db.commit()
+
+        # 模拟 seed 文案迭代
+        _LINKS[0]["note"] = "更新后的定位文案（测试）"
+        try:
+            seed_resource_links(seeded_db)
+            seeded_db.refresh(target)
+            assert target.note == "更新后的定位文案（测试）", "文案应随 seed 更新"
+            assert target.status == RESOURCE_STATUS_ACTIVE, "seed 绝不回退终审状态"
+            assert target.user_approved is True, "seed 绝不触碰 user_approved"
+        finally:
+            _LINKS[0]["note"] = "AI 原生教材形态的 408 简纲，个人匠人站样板，用户点名首批收录"
+
 
 # ======================================================================
 # RN-1b API 行为

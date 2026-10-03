@@ -263,14 +263,24 @@ function ProspectResult({ data }: { data: MajorProspect }) {
         </SectionCard>
       )}
 
-      {/* 去向公司 */}
+      {/* 去向公司（来源链未挂接=折叠展示：三学生体验轮实测，一排 ST 退市公司
+          配"来源待核"标签对用户是倒扣分——弱化为可展开的参考信息） */}
       {data.companies.length > 0 && (
-        <SectionCard
-          icon={Building2}
-          title="典型去向公司"
-          desc="按行业匹配的对口雇主"
-        >
-          <div className="flex flex-wrap gap-2">
+        <details className="group rounded-xl border border-paper-200 bg-white">
+          <summary className="flex cursor-pointer items-center gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-paper-100">
+              <Building2 className="h-5 w-5 text-ink-400" />
+            </div>
+            <div>
+              <h3 className="font-display font-bold text-ink-600">典型去向公司（{data.companies.length} 家，参考）</h3>
+              <p className="text-xs text-ink-400">
+                按行业匹配的对口雇主档案，逐家来源核验尚未完成——仅作方向参考，点开展开
+              </p>
+            </div>
+            <span className="ml-auto text-xs text-ink-300 group-open:hidden">展开</span>
+            <span className="ml-auto hidden text-xs text-ink-300 group-open:inline">收起</span>
+          </summary>
+          <div className="flex flex-wrap gap-2 border-t border-paper-100 px-5 py-4">
             {data.companies.map((c) => (
               <div
                 key={c.name}
@@ -285,7 +295,7 @@ function ProspectResult({ data }: { data: MajorProspect }) {
               </div>
             ))}
           </div>
-        </SectionCard>
+        </details>
       )}
 
       {/* 升学路径 */}
