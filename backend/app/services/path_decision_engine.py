@@ -313,18 +313,37 @@ def _build_kaoyan_path(
         if ev not in evidence:
             evidence.append(ev)
 
-    # 招生目录：相关专业招生名额
+    # 招生目录：相关专业招生名额（DF-11 同构桥 2026-10-03：专业词 0 命中时按门类
+    # 目录折算——目录行同自划线校公示口径按门类命名，桥只动消费端匹配）
     yz = db.query(GradYanzhaoProgram).filter(
         GradYanzhaoProgram.major_name.ilike(pattern, escape="\\")
     )
     yz_total, yz_quota = yz.with_entities(
         func.count(), func.sum(GradYanzhaoProgram.enrollment_quota)
     ).one()
+    yz_via_category: str | None = None
+    if yz_total == 0:
+        from app.services.major_prospect_service import resolve_major_with_fallback
+
+        _, yz_cat_entry = resolve_major_with_fallback(major)
+        if yz_cat_entry is not None and yz_cat_entry.category:
+            yz_cat_pattern = f"%{escape_like(yz_cat_entry.category)}%"
+            yz_cat = db.query(GradYanzhaoProgram).filter(
+                GradYanzhaoProgram.major_name.ilike(yz_cat_pattern, escape="\\")
+            )
+            yz_cat_total, yz_cat_quota = yz_cat.with_entities(
+                func.count(), func.sum(GradYanzhaoProgram.enrollment_quota)
+            ).one()
+            if yz_cat_total > 0:
+                yz, yz_total, yz_quota = yz_cat, yz_cat_total, yz_cat_quota
+                yz_via_category = yz_cat_entry.category
     quota_text = (
         f"研招目录相关专业 {yz_total} 个，公布招生名额合计约 {int(yz_quota)} 人"
         if yz_quota
         else f"研招目录相关专业 {yz_total} 个"
     )
+    if yz_via_category:
+        quota_text += f"（未命中「{major}」精确专业，已按{yz_via_category}门类目录折算）"
     for row in yz.limit(YANZHAO_LIMIT).all():
         ev = _evidence(
             f"招生 · {row.university_name}",

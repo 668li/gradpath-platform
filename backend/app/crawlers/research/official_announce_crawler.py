@@ -440,6 +440,10 @@ class OfficialAnnounceCrawler(BaseCrawler):
     # 入库 item_type（EMP-3 参数化①）：默认考研资讯不变；就业线子类覆写
     # employment_announce，store/_load_known_urls 全部按此分流，禁止子类绕过。
     item_type: str = "kaoyan_news"
+    # kaoyan_news 条目的 category 前缀（2026-10-03 前缀化）：研招公告线=「研招公告·{栏目}」
+    # （grad_intel 院校公告接口按此前缀过滤）；资讯聚合子类覆写为「考研资讯」，防
+    # eol/offcn 资讯混入研招公告口径——域名归口表虽会挡住它进院校公告接口，口径先正。
+    kaoyan_category_prefix = "研招公告"
 
     def __init__(self, config: dict = None):
         super().__init__(config)
@@ -453,6 +457,10 @@ class OfficialAnnounceCrawler(BaseCrawler):
         # 并发窗口：跨域并行（默认 4；同域仍按 per-host 节流串行，礼貌性不变）。
         # 由 BaseCrawler 提供每线程独立 Session 与 per-host 节流，网络限速不失效。
         self._concurrency = int(self.config.get("concurrency", 4))
+
+    def _kaoyan_category(self, source_name: str) -> str:
+        """kaoyan_news 条目的 category 打标（前缀走类属性，资讯聚合子类覆写防混标）。"""
+        return f"{self.kaoyan_category_prefix}·{source_name}"[:50]
 
     # ===== fetch：逐栏目抓列表 + 逐条详情（可选并发） =====
 
@@ -597,8 +605,9 @@ class OfficialAnnounceCrawler(BaseCrawler):
                     # grad_intel 院校公告接口按 category LIKE '研招公告%' 过滤，此前的
                     # 「官方公告·」前缀不在其范围，官方线 46 条已批准存量在该接口全部
                     # 不可见。就业线不打研招前缀（语义不适用于就业网公告）。
+                    # 2026-10-03：前缀经 _kaoyan_category 走类属性，资讯聚合子类覆写。
                     "category": (
-                        f"研招公告·{raw.get('source_name', '')}"
+                        self._kaoyan_category(raw.get("source_name", ""))
                         if self.item_type == "kaoyan_news"
                         else f"官方公告·{raw.get('source_name', '')}"
                     )[:50],
@@ -738,6 +747,9 @@ class NewsAggregateCrawler(OfficialAnnounceCrawler):
     category = "research"
     description = "考研资讯聚合（中国教育在线/中公考研资讯列表，PENDING 审核队列）"
     DEFAULT_SECTIONS_OVERRIDE = NEWS_AGGREGATE_SECTIONS
+    # 防混标（2026-10-03）：本线是 eol/offcn 资讯，不是院校研招公告——域名归口表
+    # 虽会挡住它进院校公告接口，category 口径也必须与研招公告线区分。
+    kaoyan_category_prefix = "考研资讯"
 
 
 if __name__ == "__main__":

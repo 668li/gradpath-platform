@@ -910,3 +910,19 @@ class TestKaoyanCategoryBridge:
         assert "管理学[12]" not in text, "命中充足时不应扩门类"
         assert not any("门类线折算" in c for c in path["cons"])
 
+    def test_yanzhao_quota_falls_back_to_category(self, db_session):
+        """研招目录同名桥（2026-10-03）：专业词 0 命中时按门类目录折算名额并诚实标注。"""
+        from app.services.path_decision_engine import _build_kaoyan_path
+
+        db_session.add(_make_scoreline("复旦大学", "0812计算机科学与技术", 2026, 330))
+        # 目录行只有门类命名（无任何含"计算机"的专业名）
+        db_session.add(_make_yz("清华大学", "工学[08]", 120))
+        db_session.add(_make_yz("浙江大学", "工学[08]", 80))
+        db_session.commit()
+
+        path, _ = _build_kaoyan_path(db_session, "计算机", None, None)
+        text = json.dumps(path, ensure_ascii=False)
+        assert "门类目录折算" in text, "招生名额文案应出按门类目录折算标注"
+        assert "工学[08]" in text, "证据应包含门类目录行"
+        assert "200" in text, "折算名额合计（120+80）应进入文案"
+
