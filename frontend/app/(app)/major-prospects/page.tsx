@@ -169,13 +169,16 @@ function ProspectResult({ data }: { data: MajorProspect }) {
         <SectionCard
           icon={TrendingUp}
           title="对口行业与薪资水平"
-          desc={`国家统计局 ${data.industries[0]?.year} 年 · 城镇单位年平均工资（行业整体口径）`}
+          desc="国家统计局城镇单位年平均工资（行业整体口径）· 各条标注自身数据年份"
         >
           <div className="space-y-3">
             {data.industries.map((ind) => (
               <div key={ind.industry}>
                 <div className="mb-1 flex items-baseline justify-between gap-2 text-sm">
-                  <span className="truncate text-ink-700">{ind.industry}</span>
+                  <span className="truncate text-ink-700">
+                    {ind.industry}
+                    <span className="ml-1.5 text-xs font-normal text-ink-300">{ind.year} 年</span>
+                  </span>
                   <span className="shrink-0 font-semibold text-ink-800">
                     {fmtWan(ind.salary_non_private)} 万/年
                     <span className="ml-1.5 text-xs font-normal text-ink-400">
@@ -368,7 +371,9 @@ function ProspectResult({ data }: { data: MajorProspect }) {
                         ? "bg-emerald-50 text-emerald-700"
                         : dc.confidence === "single_source"
                           ? "bg-amber-50 text-amber-700"
-                          : "bg-paper-100 text-ink-400"
+                          : dc.confidence === "unsourced"
+                            ? "bg-stone-100 text-stone-500"
+                            : "bg-paper-100 text-ink-400"
                   }`}
                 >
                   {dc.confidence === "official"
@@ -377,7 +382,9 @@ function ProspectResult({ data }: { data: MajorProspect }) {
                       ? "多源交叉"
                       : dc.confidence === "single_source"
                         ? "孤证（单一来源）"
-                        : "暂无数据"}
+                        : dc.confidence === "unsourced"
+                          ? "来源待核"
+                          : "暂无数据"}
                 </span>
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-ink-700">{dc.label}</p>
@@ -559,6 +566,11 @@ export default function MajorProspectsPage() {
             (data?.grad_personalized ? (
               <p className="mt-2 text-xs text-ink-400">
                 已按「{outgoingTier}」出身个性化升学路径（依据带可核验来源的院校出身敏感度）。
+              </p>
+            ) : outgoingTier === "985" || outgoingTier === "211" ? (
+              <p className="mt-2 text-xs text-emerald-600">
+                你的「{outgoingTier}」出身在统考中不构成劣势——升学路径按公开分数线排序即可，
+                无需出身降权参考（出身敏感度提示主要面向双非/二本考生）。
               </p>
             ) : (
               <p className="mt-2 rounded-md bg-amber-50 px-2.5 py-1.5 text-xs text-amber-700">

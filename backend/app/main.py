@@ -348,6 +348,26 @@ async def _seed_maintenance_jobs():
 
 
 @app.on_event("startup")
+async def _seed_resource_links():
+    """资源导航候选池幂等导入（RN-1c，2026-10-03）。
+
+    seed 文件是候选池唯一真相源（点名制：全 pending，用户终审唯一转正闸）；
+    启动幂等按 url 去重，32 条毫秒级，转正后由 seed 文件维护 active 状态。
+    """
+    try:
+        from app.database import SessionLocal
+        from app.services.resource_link_seed import seed_resource_links
+
+        db = SessionLocal()
+        try:
+            seed_resource_links(db)
+        finally:
+            db.close()
+    except Exception as e:
+        logger.warning("资源导航 seed 失败（不影响启动）: %s", e)
+
+
+@app.on_event("startup")
 async def _register_d2_reminder_job():
     """注册中断次日提醒 job（P1，MICRO_ACTION_REMINDER_D2 默认关）。"""
     try:

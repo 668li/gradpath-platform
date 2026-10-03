@@ -1497,8 +1497,13 @@ def _industry_salaries(db: Session, industries: list[str]) -> list[dict]:
     result = []
     for ind in industries:
         yearly = by_industry.get(ind) or {}
-        latest = yearly.get(latest_year)
-        if not latest or latest["non_private"] is None:
+        # 各行业取自身最新年（对抗审查 P1-2：全局 latest_year 会把只有旧年份
+        # 的行业整条静默吞掉——部分更新时 B 行业直接消失）
+        own_latest = max(yearly) if yearly else None
+        if not own_latest:
+            continue
+        latest = yearly[own_latest]
+        if latest["non_private"] is None:
             continue
         # 多年趋势序列（升序，仅真实存在的年份）
         trend = [
@@ -1510,16 +1515,17 @@ def _industry_salaries(db: Session, industries: list[str]) -> list[dict]:
             for y, v in sorted(yearly.items())
             if v["non_private"] is not None
         ]
-        # 同比：最新年与上一个有数据的年份都在时才给
+        # 同比：仅当最新两年真实相邻（年份差=1）才给——跨两年累计涨幅
+        # 标成"同比"是造义，不给（对抗审查 P1-2）
         yoy_pct = None
-        if len(trend) >= 2:
+        if len(trend) >= 2 and trend[-1]["year"] - trend[-2]["year"] == 1:
             prev = trend[-2]["salary_non_private"]
             if prev:
                 yoy_pct = round((latest["non_private"] - prev) / prev * 100, 1)
         result.append(
             {
                 "industry": ind,
-                "year": latest_year,
+                "year": own_latest,
                 "salary_non_private": latest["non_private"],
                 "salary_private": latest["private"],
                 "trend": trend,
@@ -1707,9 +1713,15 @@ def get_prospect(db: Session, major: str, outgoing_tier: str | None = None) -> d
         "专科": "专科通道主要为统招专升本→本科后考研，或直接就业考公；专科学历直接考研需工作经历且受限",
     }
 
-    # 就业情报卡（RN-5d）：四块数据源置信度判定——真实判级，不虚标。
-    # official=官方公示佐证；multi_source=≥2 独立来源；single_source=孤证必标。
+    # 就业情报卡（RN-5d）：四块数据源置信度判定——按真实来源结构判级，不虚标。
+    # official=官方公示佐证；multi_source=≥2 独立来源；single_source=孤证；
+    # unsourced=数据在库但来源链未挂接（诚实降级，绝不冒充官方/多源）。
     position_sources = {p["source"] for p in positions if p.get("source")}
+    # grad_paths 判级依据=带可核验来源（data_sources 非空）的记录占比，
+    # 生产库当前 0/282 带来源（2026-10-03 实测）——占比 0 必须标 unsourced。
+    grad_rows = db.query(GradSchoolIntel.major_name, GradSchoolIntel.data_sources).all()
+    grad_sourced = sum(1 for r in grad_rows if r.data_sources)
+    grad_sourced_ratio = (grad_sourced / len(grad_rows)) if grad_rows else 0.0
     data_confidence = {
         "industries": {
             "label": "行业薪资",
@@ -1730,13 +1742,27 @@ def get_prospect(db: Session, major: str, outgoing_tier: str | None = None) -> d
         },
         "companies": {
             "label": "去向公司",
-            "confidence": "multi_source" if companies else "none",
-            "source_note": "库内真实公司库（上市公司财报/招聘公开信息）" if companies else "暂无命中",
+            # companies 表无来源字段（2026-10-03 对抗审查实锤），来源链未挂接——诚实标待核
+            "confidence": "unsourced" if companies else "none",
+            "source_note": "库内公司档案（来源链尚未挂接，仅作去向参考）" if companies else "暂无命中",
         },
         "grad_paths": {
             "label": "考研路径",
-            "confidence": "official" if grad["items"] else "none",
-            "source_note": "院校研究生院/研招网公开信息整理" if grad["items"] else "暂无命中",
+            "confidence": (
+                ("official" if grad_sourced_ratio >= 0.5 else "single_source")
+                if grad["items"]
+                else "none"
+            )
+            if grad_sourced_ratio > 0
+            else ("unsourced" if grad["items"] else "none"),
+            "source_note": (
+                f"院校公开信息（带可核验来源记录 {grad_sourced}/{len(grad_rows)}，"
+                f"覆盖 {round(grad_sourced_ratio * 100)}%"
+                + ("——来源待核" if grad_sourced_ratio == 0 else "")
+                + "）"
+                if grad["items"]
+                else "暂无命中"
+            ),
         },
     }
 

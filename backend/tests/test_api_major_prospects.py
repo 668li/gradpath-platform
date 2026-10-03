@@ -201,7 +201,7 @@ def test_get_prospect_computer_science(db_session):
 
 
 def test_industry_salaries_multiyear_trend(db_session):
-    """RN-5b：多年趋势序列外露，缺年不插值，同比只在相邻年都有时给。"""
+    """RN-5b：多年趋势序列外露，缺年不插值，同比仅相邻年才给（跨年不标同比）。"""
     _seed(db_session)
     from app.services.major_prospect_service import _industry_salaries
 
@@ -217,28 +217,57 @@ def test_industry_salaries_multiyear_trend(db_session):
             source="国家统计局",
         )
     )
+    # 电力行业只有 2022 与 2024（跨两年，不许标"同比"）
+    db_session.add(
+        MarketData(
+            indicator="城镇非私营单位就业人员年平均工资",
+            category="行业",
+            value=100000,
+            unit="元/年",
+            industry="电力、热力、燃气及水生产和供应业",
+            year=2022,
+            source="国家统计局",
+        )
+    )
+    db_session.add(
+        MarketData(
+            indicator="城镇非私营单位就业人员年平均工资",
+            category="行业",
+            value=150000,
+            unit="元/年",
+            industry="电力、热力、燃气及水生产和供应业",
+            year=2024,
+            source="国家统计局",
+        )
+    )
     db_session.commit()
 
-    result = _industry_salaries(db_session, ["信息传输、软件和信息技术服务业", "制造业"])
+    result = _industry_salaries(
+        db_session, ["信息传输、软件和信息技术服务业", "制造业", "电力、热力、燃气及水生产和供应业"]
+    )
     by_ind = {r["industry"]: r for r in result}
     it = by_ind["信息传输、软件和信息技术服务业"]
-    # 主值仍是最新年 2024
+    # 主值仍是自身最新年 2024
     assert it["year"] == 2024
     assert it["salary_non_private"] == 238966
     # trend 两年序列升序，2023→2024
     assert [t["year"] for t in it["trend"]] == [2023, 2024]
     assert it["trend"][0]["salary_non_private"] == 220000
-    # 同比 = (238966-220000)/220000*100 ≈ 8.6
+    # 同比（相邻年）= (238966-220000)/220000*100 ≈ 8.6
     assert it["yoy_pct"] is not None
     assert abs(it["yoy_pct"] - 8.6) < 0.2
     # 制造业只有 2024 单年：trend 单点，无同比
     mfg = by_ind["制造业"]
     assert [t["year"] for t in mfg["trend"]] == [2024]
     assert mfg["yoy_pct"] is None
+    # 电力行业 2022→2024 跨两年：趋势在但不得标"同比"（造义=变相造假）
+    elec = by_ind["电力、热力、燃气及水生产和供应业"]
+    assert [t["year"] for t in elec["trend"]] == [2022, 2024]
+    assert elec["yoy_pct"] is None
 
 
 def test_data_confidence_intel_card(db_session):
-    """RN-5d：四块数据源置信度判定——岗位薪资单源标孤证，行业/考研官方实证。"""
+    """RN-5d：四块数据源置信度按真实来源结构判级——0 来源覆盖不冒充官方。"""
     _seed(db_session)
     from app.services.major_prospect_service import get_prospect
 
@@ -247,11 +276,23 @@ def test_data_confidence_intel_card(db_session):
     assert set(dc.keys()) == {"industries", "positions", "companies", "grad_paths"}
     # 行业薪资=国家统计局 → official
     assert dc["industries"]["confidence"] == "official"
-    # _seed 的岗位数据来自单一来源（广州市人社局）→ 单源=孤证必标
+    # 岗位薪资按独立人社局来源数判级
     assert dc["positions"]["confidence"] in ("single_source", "multi_source")
     assert dc["positions"]["source_note"]
-    # 考研路径=院校公开信息 → official
+    # _seed 的 grad_school_intel 4 条中 2 条带 data_sources（50% 覆盖，≥50% 阈值）→ official
     assert dc["grad_paths"]["confidence"] == "official"
+    assert "50%" in dc["grad_paths"]["source_note"]
+    # companies 表无来源字段 → unsourced（不冒充多源交叉）
+    assert dc["companies"]["confidence"] == "unsourced"
+
+    # 0 来源覆盖场景（=生产库现状 2026-10-03：0/282 带来源）→ 绝不标 official
+    from app.models.grad_intel import GradSchoolIntel as GSI
+
+    db_session.query(GSI).update({GSI.data_sources: None})
+    db_session.commit()
+    p2 = get_prospect(db_session, "计算机科学与技术")
+    assert p2["data_confidence"]["grad_paths"]["confidence"] == "unsourced"
+    assert "待核" in p2["data_confidence"]["grad_paths"]["source_note"]
 
 
 def test_get_prospect_hanyu_fallback_alias(db_session):

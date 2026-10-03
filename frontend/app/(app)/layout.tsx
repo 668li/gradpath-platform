@@ -9,9 +9,11 @@ import { AuthGuard } from "@/components/auth-guard";
 import { useAuthStore } from "@/stores/auth";
 import { useOnboardingStore } from "@/stores/onboarding";
 
-// 这些路径位于 (app) 路由组下，但无需登录即可访问（公开法律文档）。
-// 中间件已放行，此处布局层也跳过 auth 检查，避免登录前点击协议链接被踢回 /login。
-const PUBLIC_PATHS_IN_APP = ["/legal"];
+// 这些路径位于 (app) 路由组下，但无需登录即可访问。
+// 中间件已放行，此处布局层也跳过 auth 检查，避免公开内容被踢回 /login。
+// /resources /major-prospects = 引流入口（2026-10-03 拍板：资源导航对陌生人开放；
+// major-prospects 未登录可看数据，登录后专业自动带入）
+const PUBLIC_PATHS_IN_APP = ["/legal", "/resources", "/major-prospects"];
 
 function isPathPublic(pathname: string): boolean {
   return PUBLIC_PATHS_IN_APP.some((p) => pathname === p || pathname.startsWith(p + "/"));

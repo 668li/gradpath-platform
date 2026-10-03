@@ -14,7 +14,6 @@ import {
 } from "@/lib/api/resources";
 import { EmptyState, LoadingState } from "@/components/ui/empty";
 import { cn } from "@/lib/utils";
-
 const TABS = [
   { id: "", label: "全部" },
   { id: "kaoyan_resources", label: "考研干货" },
@@ -58,7 +57,7 @@ function ResourceCard({ link }: { link: ResourceLink }) {
     <a
       href={link.url}
       target="_blank"
-      rel="noopener noreferrer"
+      rel="noopener noreferrer nofollow"
       aria-label={`${link.name}，${link.note}`}
       className="group flex flex-col rounded-xl border border-paper-200 bg-white p-4 transition-all hover:border-brand-200 hover:shadow-md"
     >
@@ -92,6 +91,13 @@ export default function ResourcesPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("");
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+
+  // 300ms 防抖：避免每击键一发请求（对抗审查 P1-5）
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(query), 300);
+    return () => clearTimeout(t);
+  }, [query]);
 
   useEffect(() => {
     let cancelled = false;
@@ -99,7 +105,7 @@ export default function ResourcesPage() {
     setError(null);
     const params: { category?: string; q?: string } = {};
     if (activeTab) params.category = activeTab;
-    if (query.trim()) params.q = query.trim();
+    if (debouncedQuery.trim()) params.q = debouncedQuery.trim();
     resourcesApi
       .list(params)
       .then((data) => {
@@ -114,7 +120,7 @@ export default function ResourcesPage() {
     return () => {
       cancelled = true;
     };
-  }, [activeTab, query]);
+  }, [activeTab, debouncedQuery]);
 
   const pendingCount = useMemo(() => links.filter((l) => l.pending_review).length, [links]);
 
@@ -128,7 +134,7 @@ export default function ResourcesPage() {
           <div>
             <h1 className="text-2xl font-bold text-ink-800">资源导航</h1>
             <p className="mt-0.5 text-sm text-ink-500">
-              藏货层目录：个人匠人站 / 开源笔记仓库 / AI 原生知识站——搜索引擎首页找不到的
+              考研/求职资源目录——我们替你逐条筛过、测过：个人匠人站 / 开源笔记仓库 / 常用官方入口，每条讲清为什么收
             </p>
           </div>
         </div>

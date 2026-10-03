@@ -178,8 +178,8 @@ _LINKS: list[dict] = [
         "track": "kaoyan",
         "category": RESOURCE_CATEGORY_KAOYAN,
         "note": "408 真题模考与题单练习平台，在线刷题用",
-        "risk_note": "部分功能登录墙；仅 www 域可达（apex 子域证书错配）",
-        "copyright_tier": RESOURCE_COPYRIGHT_ORIGINAL,
+        "risk_note": "⚠️ 含历年真题载体（同英语/408 真题仓口径标灰区）+ 部分功能登录墙，请终审单独拍板",
+        "copyright_tier": RESOURCE_COPYRIGHT_CAUTION,
         "added_via": RESOURCE_ADDED_VIA_AI,
         "sources": [
             {
@@ -326,26 +326,6 @@ _LINKS: list[dict] = [
                 "url": "https://github.com/m2kar/KaoYan-English",
                 "stars": 390,
                 "pushed_at": "2021-10-14",
-                "verdict": "ok",
-                "checked_at": _CHECKED,
-            }
-        ],
-    },
-    {
-        "name": "qiuxu13534/learn-english",
-        "url": "https://github.com/qiuxu13534/learn-english",
-        "track": "kaoyan",
-        "category": RESOURCE_CATEGORY_KAOYAN,
-        "note": "个人英语笔记（含陈正康阅读笔记整理）",
-        "risk_note": "⚠️ 含他人课程笔记整理（灰区标注）+ 仓库 2017 年后未更新、仅 1 star——终审大概率否决，如实入池待裁",
-        "copyright_tier": RESOURCE_COPYRIGHT_CAUTION,
-        "added_via": RESOURCE_ADDED_VIA_AI,
-        "sources": [
-            {
-                "title": "仓库活跃度（GitHub API）",
-                "url": "https://github.com/qiuxu13534/learn-english",
-                "stars": 1,
-                "pushed_at": "2017-03-27",
                 "verdict": "ok",
                 "checked_at": _CHECKED,
             }
@@ -696,6 +676,7 @@ _LINKS: list[dict] = [
 
 # 性质核对拦截记录（不收录，只留档防回踩）：
 # - daxianz.fun：2026-10-03 实测 200 但 title=「死去的她」——域名易主内容已换，性质核对不通过
+# - qiuxu13534/learn-english：1 star、2017 停滞、含他人课程笔记整理——对抗审查 P1-4 判"大概率杀"，不入池免稀释信噪比；站长点名可复活
 # - CodePanda66/CSPostgraduate-408：5675 star 但 archived=True（作者归档）+ 无 License——归档仓不收
 # - D1N910/yzchsihelper：0 star、2023-04 后停滞——价值不足
 # - itiaoji.com 考研调剂网：商业机构运营的信息聚合站（"北大博士后团队"营销话术）——通用层大站纪律
