@@ -21,11 +21,19 @@ class MajorListItem(BaseModel):
     has_grad_intel: bool
 
 
+class IndustryTrendPoint(BaseModel):
+    year: int
+    salary_non_private: float
+    salary_private: float | None
+
+
 class IndustrySalary(BaseModel):
     industry: str
     year: int
     salary_non_private: float
     salary_private: float | None
+    trend: list[IndustryTrendPoint] = []
+    yoy_pct: float | None = None
     vs_national: float
     source: str
 
@@ -67,6 +75,12 @@ class CivilServiceInfo(BaseModel):
     note: str
 
 
+class DataConfidenceItem(BaseModel):
+    label: str
+    confidence: str  # official | multi_source | single_source | none
+    source_note: str
+
+
 class ProspectResponse(BaseModel):
     major: str
     matched_major: str
@@ -77,6 +91,7 @@ class ProspectResponse(BaseModel):
     companies: list[CompanyItem]
     grad_paths: list[GradPathItem]
     grad_personalized: bool
+    data_confidence: dict[str, DataConfidenceItem] = {}
     civil_service: CivilServiceInfo
     related_majors: list[str]
     tier_fact: str = ""

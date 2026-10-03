@@ -89,6 +89,7 @@ function getNavSections(): NavSection[] {
         { href: "/kaoyan", label: "考研情报", icon: BookOpen },
         { href: "/employment", label: "就业情报", icon: Briefcase },
         { href: "/major-prospects", label: "专业前景", icon: Telescope },
+        { href: "/resources", label: "资源导航", icon: Compass },
       ],
     },
     {

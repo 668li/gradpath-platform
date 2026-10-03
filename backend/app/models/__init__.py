@@ -287,3 +287,6 @@ from app.models.study_plan import StudyPlan
 
 # 门道卡（intel_cards，2026-09-26 批次 B+）
 from app.models.intel_card import IntelCard
+
+# 资源导航（resource_links，2026-10-03 RN-1：资源导航聚合中心）
+from app.models.resource_link import ResourceLink

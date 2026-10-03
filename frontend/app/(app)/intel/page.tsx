@@ -9,7 +9,8 @@ const TABS = [
   { id: "kaoyan", label: "考研", icon: GraduationCap, href: "/kaoyan", desc: "院校情报、录取预测、招生公告解读" },
   { id: "cards", label: "门道", icon: Compass, href: "/intel/cards", desc: "官方不会说的门道与实锤：带来源链与置信度，孤证明标" },
   { id: "career", label: "就业", icon: Briefcase, href: "/employment", desc: "公司情报、求职定位、就业数据" },
-  { id: "salary", label: "薪资", icon: DollarSign, href: "/employment?tab=salary", desc: "各公司岗位薪资数据查询" },
+  { id: "salary", label: "薪资", icon: DollarSign, href: "/employment?tab=market", desc: "各公司岗位薪资数据查询" },
+  { id: "resources", label: "资源", icon: Compass, href: "/resources", desc: "实测可达的考研/就业资源导航：每条带一句话定位与收录理由" },
   { id: "interview", label: "面经", icon: MessageSquare, href: "/interview", desc: "海量面试经验分享" },
 ];
 

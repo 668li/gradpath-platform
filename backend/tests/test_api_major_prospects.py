@@ -200,6 +200,60 @@ def test_get_prospect_computer_science(db_session):
     assert p["civil_service"]["note"]
 
 
+def test_industry_salaries_multiyear_trend(db_session):
+    """RN-5b：多年趋势序列外露，缺年不插值，同比只在相邻年都有时给。"""
+    _seed(db_session)
+    from app.services.major_prospect_service import _industry_salaries
+
+    # 补 2023 年信息行业数据（造一个真实的两年序列）
+    db_session.add(
+        MarketData(
+            indicator="城镇非私营单位就业人员年平均工资",
+            category="行业",
+            value=220000,
+            unit="元/年",
+            industry="信息传输、软件和信息技术服务业",
+            year=2023,
+            source="国家统计局",
+        )
+    )
+    db_session.commit()
+
+    result = _industry_salaries(db_session, ["信息传输、软件和信息技术服务业", "制造业"])
+    by_ind = {r["industry"]: r for r in result}
+    it = by_ind["信息传输、软件和信息技术服务业"]
+    # 主值仍是最新年 2024
+    assert it["year"] == 2024
+    assert it["salary_non_private"] == 238966
+    # trend 两年序列升序，2023→2024
+    assert [t["year"] for t in it["trend"]] == [2023, 2024]
+    assert it["trend"][0]["salary_non_private"] == 220000
+    # 同比 = (238966-220000)/220000*100 ≈ 8.6
+    assert it["yoy_pct"] is not None
+    assert abs(it["yoy_pct"] - 8.6) < 0.2
+    # 制造业只有 2024 单年：trend 单点，无同比
+    mfg = by_ind["制造业"]
+    assert [t["year"] for t in mfg["trend"]] == [2024]
+    assert mfg["yoy_pct"] is None
+
+
+def test_data_confidence_intel_card(db_session):
+    """RN-5d：四块数据源置信度判定——岗位薪资单源标孤证，行业/考研官方实证。"""
+    _seed(db_session)
+    from app.services.major_prospect_service import get_prospect
+
+    p = get_prospect(db_session, "计算机科学与技术")
+    dc = p["data_confidence"]
+    assert set(dc.keys()) == {"industries", "positions", "companies", "grad_paths"}
+    # 行业薪资=国家统计局 → official
+    assert dc["industries"]["confidence"] == "official"
+    # _seed 的岗位数据来自单一来源（广州市人社局）→ 单源=孤证必标
+    assert dc["positions"]["confidence"] in ("single_source", "multi_source")
+    assert dc["positions"]["source_note"]
+    # 考研路径=院校公开信息 → official
+    assert dc["grad_paths"]["confidence"] == "official"
+
+
 def test_get_prospect_hanyu_fallback_alias(db_session):
     _seed(db_session)
     from app.services.major_prospect_service import get_prospect

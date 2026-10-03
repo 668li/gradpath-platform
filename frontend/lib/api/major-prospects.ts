@@ -9,11 +9,19 @@ export interface MajorListItem {
   has_grad_intel: boolean;
 }
 
+export interface IndustryTrendPoint {
+  year: number;
+  salary_non_private: number;
+  salary_private: number | null;
+}
+
 export interface IndustrySalary {
   industry: string;
   year: number;
   salary_non_private: number;
   salary_private: number | null;
+  trend: IndustryTrendPoint[];
+  yoy_pct: number | null;
   vs_national: number;
   source: string;
 }
@@ -55,6 +63,12 @@ export interface CivilServiceInfo {
   note: string;
 }
 
+export interface DataConfidenceItem {
+  label: string;
+  confidence: "official" | "multi_source" | "single_source" | "none" | string;
+  source_note: string;
+}
+
 export interface MajorProspect {
   major: string;
   matched_major: string;
@@ -65,6 +79,7 @@ export interface MajorProspect {
   companies: ProspectCompany[];
   grad_paths: GradPath[];
   grad_personalized: boolean;
+  data_confidence: Record<string, DataConfidenceItem>;
   civil_service: CivilServiceInfo;
   related_majors: string[];
   tier_fact: string;

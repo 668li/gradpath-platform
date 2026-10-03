@@ -1462,7 +1462,11 @@ def list_majors(db: Session) -> list[dict]:
 
 
 def _industry_salaries(db: Session, industries: list[str]) -> list[dict]:
-    """行业薪资：按行业取最新年份的非私营/私营年平均工资（国家统计局）。"""
+    """行业薪资：按行业聚合多年序列（RN-5b），最新年为主值 + trend 多年对比（国家统计局）。
+
+    多年口径如实：库内年份覆盖不齐（2022-2025 部分年份单一口径），
+    trend 只列真实存在的年份，缺年不插值不造数；同比只在相邻年都有数据时给出。
+    """
     if not industries:
         return []
     rows = (
@@ -1470,16 +1474,13 @@ def _industry_salaries(db: Session, industries: list[str]) -> list[dict]:
         .filter(MarketData.category == "行业", MarketData.industry.in_(industries))
         .all()
     )
-    latest_year = max((r.year for r in rows), default=None)
-    if not latest_year:
+    if not rows:
         return []
-    grouped: dict[str, dict] = {}
+    # 行业 → 年份 → {non_private, private}
+    by_industry: dict[str, dict[int, dict]] = {}
     for r in rows:
-        if r.year != latest_year:
-            continue
-        g = grouped.setdefault(
-            r.industry or "", {"non_private": None, "private": None, "prev_non_private": None}
-        )
+        yearly = by_industry.setdefault(r.industry or "", {})
+        g = yearly.setdefault(r.year, {"non_private": None, "private": None})
         # 城镇非私营单位薪资显著高于私营，用大小区分口径
         if r.indicator and "非私营" in r.indicator:
             if g["non_private"] is None or r.value > g["non_private"]:
@@ -1487,18 +1488,43 @@ def _industry_salaries(db: Session, industries: list[str]) -> list[dict]:
         elif r.indicator and "私营" in r.indicator:
             if g["private"] is None or r.value > g["private"]:
                 g["private"] = r.value
+    latest_year = max(
+        (y for yearly in by_industry.values() for y in yearly),
+        default=None,
+    )
+    if not latest_year:
+        return []
     result = []
     for ind in industries:
-        g = grouped.get(ind)
-        if not g or g["non_private"] is None:
+        yearly = by_industry.get(ind) or {}
+        latest = yearly.get(latest_year)
+        if not latest or latest["non_private"] is None:
             continue
+        # 多年趋势序列（升序，仅真实存在的年份）
+        trend = [
+            {
+                "year": y,
+                "salary_non_private": v["non_private"],
+                "salary_private": v["private"],
+            }
+            for y, v in sorted(yearly.items())
+            if v["non_private"] is not None
+        ]
+        # 同比：最新年与上一个有数据的年份都在时才给
+        yoy_pct = None
+        if len(trend) >= 2:
+            prev = trend[-2]["salary_non_private"]
+            if prev:
+                yoy_pct = round((latest["non_private"] - prev) / prev * 100, 1)
         result.append(
             {
                 "industry": ind,
                 "year": latest_year,
-                "salary_non_private": g["non_private"],
-                "salary_private": g["private"],
-                "vs_national": round(g["non_private"] / _NATIONAL_AVG_2025, 2),
+                "salary_non_private": latest["non_private"],
+                "salary_private": latest["private"],
+                "trend": trend,
+                "yoy_pct": yoy_pct,
+                "vs_national": round(latest["non_private"] / _NATIONAL_AVG_2025, 2),
                 "source": "国家统计局",
             }
         )
@@ -1681,6 +1707,39 @@ def get_prospect(db: Session, major: str, outgoing_tier: str | None = None) -> d
         "专科": "专科通道主要为统招专升本→本科后考研，或直接就业考公；专科学历直接考研需工作经历且受限",
     }
 
+    # 就业情报卡（RN-5d）：四块数据源置信度判定——真实判级，不虚标。
+    # official=官方公示佐证；multi_source=≥2 独立来源；single_source=孤证必标。
+    position_sources = {p["source"] for p in positions if p.get("source")}
+    data_confidence = {
+        "industries": {
+            "label": "行业薪资",
+            "confidence": "official" if industries else "none",
+            "source_note": "国家统计局城镇单位年平均工资（行业整体口径）",
+        },
+        "positions": {
+            "label": "岗位薪资",
+            "confidence": (
+                "multi_source" if len(position_sources) >= 2 else ("single_source" if positions else "none")
+            ),
+            "source_note": (
+                f"{'/'.join(sorted(position_sources)[:3])}"
+                if position_sources
+                else "暂无命中数据"
+            )
+            + (" 等" if len(position_sources) > 3 else ""),
+        },
+        "companies": {
+            "label": "去向公司",
+            "confidence": "multi_source" if companies else "none",
+            "source_note": "库内真实公司库（上市公司财报/招聘公开信息）" if companies else "暂无命中",
+        },
+        "grad_paths": {
+            "label": "考研路径",
+            "confidence": "official" if grad["items"] else "none",
+            "source_note": "院校研究生院/研招网公开信息整理" if grad["items"] else "暂无命中",
+        },
+    }
+
     return {
         "major": major,
         "matched_major": matched_name,
@@ -1691,6 +1750,7 @@ def get_prospect(db: Session, major: str, outgoing_tier: str | None = None) -> d
         "companies": companies,
         "grad_paths": grad["items"],
         "grad_personalized": grad["personalized"],
+        "data_confidence": data_confidence,
         "civil_service": {
             "level": entry.civil_service,
             "label": _CIVIL_LABEL.get(entry.civil_service, "考公一般"),

@@ -61,6 +61,14 @@ export const commands: Command[] = [
     keywords: ["就业", "工作", "employment", "job"],
     icon: "Briefcase",
   },
+  {
+    id: "resources",
+    title: "资源导航",
+    subtitle: "情报",
+    href: "/resources",
+    keywords: ["资源", "导航", "网站", "工具", "resources", "408", "笔记"],
+    icon: "Compass",
+  },
 
   // ────────────────────────── 成长 ──────────────────────────
   {

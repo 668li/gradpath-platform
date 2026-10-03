@@ -13,13 +13,14 @@ import {
   Info,
   ArrowRight,
 } from "lucide-react";
-import { majorProspectApi } from "@/lib/api";
+import { majorProspectApi, useApi } from "@/lib/api";
 import type {
   MajorListItem,
   MajorProspect,
   OutgoingTier,
 } from "@/lib/api/major-prospects";
 import { LoadingState, EmptyState } from "@/components/ui/empty";
+import { RecruitCalendar } from "@/components/prospects/recruit-calendar";
 
 // 常用专业快捷入口（覆盖考研/考公/就业/在校各身份人群的高频专业）
 const POPULAR_MAJORS = [
@@ -192,11 +193,25 @@ function ProspectResult({ data }: { data: MajorProspect }) {
                     }}
                   />
                 </div>
-                <p className="mt-0.5 text-xs text-ink-400">
-                  {ind.vs_national >= 1
-                    ? `是全国平均工资的 ${ind.vs_national} 倍`
-                    : `为全国平均工资的 ${Math.round(ind.vs_national * 100)}%`}
-                </p>
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-ink-400">
+                  <span>
+                    {ind.vs_national >= 1
+                      ? `是全国平均工资的 ${ind.vs_national} 倍`
+                      : `为全国平均工资的 ${Math.round(ind.vs_national * 100)}%`}
+                  </span>
+                  {ind.yoy_pct !== null && (
+                    <span className={ind.yoy_pct >= 0 ? "text-emerald-600" : "text-red-500"}>
+                      同比 {ind.yoy_pct >= 0 ? "+" : ""}
+                      {ind.yoy_pct}%
+                    </span>
+                  )}
+                  {/* 多年趋势（RN-5b）：仅真实存在的年份，缺年不插值 */}
+                  {ind.trend?.length > 1 && (
+                    <span className="text-ink-300">
+                      历年：{ind.trend.map((t) => `${t.year} ${fmtWan(t.salary_non_private)}万`).join(" → ")}
+                    </span>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -332,6 +347,50 @@ function ProspectResult({ data }: { data: MajorProspect }) {
         </SectionCard>
       )}
 
+      {/* 就业情报卡（RN-5d）：四块数据源置信度，孤证必标 */}
+      {Object.keys(data.data_confidence ?? {}).length > 0 && (
+        <SectionCard
+          icon={Info}
+          title="数据来源与置信度"
+          desc="每块数据的来源结构——孤证（单一来源）单独警示，官方源优先采信"
+        >
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {Object.values(data.data_confidence).map((dc) => (
+              <div
+                key={dc.label}
+                className="flex items-start gap-2 rounded-lg border border-paper-200 px-3 py-2"
+              >
+                <span
+                  className={`mt-0.5 inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                    dc.confidence === "official"
+                      ? "bg-blue-50 text-blue-700"
+                      : dc.confidence === "multi_source"
+                        ? "bg-emerald-50 text-emerald-700"
+                        : dc.confidence === "single_source"
+                          ? "bg-amber-50 text-amber-700"
+                          : "bg-paper-100 text-ink-400"
+                  }`}
+                >
+                  {dc.confidence === "official"
+                    ? "官方实证"
+                    : dc.confidence === "multi_source"
+                      ? "多源交叉"
+                      : dc.confidence === "single_source"
+                        ? "孤证（单一来源）"
+                        : "暂无数据"}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-ink-700">{dc.label}</p>
+                  <p className="truncate text-xs text-ink-400" title={dc.source_note}>
+                    {dc.source_note}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </SectionCard>
+      )}
+
       {/* 数据说明 */}
       <div className="rounded-xl bg-paper-100 p-4">
         <div className="flex items-start gap-2 text-xs text-ink-400">
@@ -354,6 +413,17 @@ export default function MajorProspectsPage() {
   const [input, setInput] = useState("");
   const [major, setMajor] = useState("");
   const [outgoingTier, setOutgoingTier] = useState<OutgoingTier | null>(null);
+
+  // RN-5a 专业自动带入：profile 有 major 即免搜索直接出本专业情报
+  const { data: profile } = useApi<{ major: string | null } | null>("/api/career-profile");
+  const profileMajor = profile?.major?.trim() || "";
+  useEffect(() => {
+    if (profileMajor && !major) {
+      setInput(profileMajor);
+      setMajor(profileMajor);
+    }
+  }, [profileMajor, major]);
+  const majorAutoFilled = !!(profileMajor && major === profileMajor);
 
   const { data: majors } = useSWR<MajorListItem[]>(
     "major-prospect-majors",
@@ -412,7 +482,7 @@ export default function MajorProspectsPage() {
         </div>
 
         {/* 搜索 */}
-        <form onSubmit={handleSubmit} className="mb-5 flex gap-2">
+        <form onSubmit={handleSubmit} className="mb-3 flex gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-400" />
             <input
@@ -430,6 +500,26 @@ export default function MajorProspectsPage() {
             查前景
           </button>
         </form>
+
+        {/* RN-5a 自动带入提示 / 无专业引导 */}
+        {majorAutoFilled ? (
+          <p className="mb-3 text-xs text-emerald-600">
+            已按你档案中的专业「{profileMajor}」自动查询——换专业直接搜索即可。
+          </p>
+        ) : !profileMajor && !major ? (
+          <p className="mb-3 text-xs text-ink-400">
+            在
+            <Link href="/profile" className="mx-0.5 text-brand-600 underline underline-offset-2">
+              个人档案
+            </Link>
+            填写专业后，下次打开将自动展示你的专业情报，无需搜索。
+          </p>
+        ) : null}
+
+        {/* 秋招春招日历（RN-5c）：纯静态节点，当前窗口高亮 */}
+        <div className="mb-6">
+          <RecruitCalendar />
+        </div>
 
         {/* 出身层次选档（升学路径个性化） */}
         <div className="mb-6 rounded-xl border border-paper-200 bg-white p-3.5">
