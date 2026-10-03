@@ -13,11 +13,14 @@
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel
-from sqlalchemy import or_
+from sqlalchemy import case as sqlalchemy_case, or_
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.resource_link import (
+    RESOURCE_CATEGORY_EMPLOYMENT,
+    RESOURCE_CATEGORY_KAOYAN,
+    RESOURCE_CATEGORY_OPEN_SOURCE,
     RESOURCE_COPYRIGHT_FORBIDDEN,
     RESOURCE_STATUS_ACTIVE,
     RESOURCE_STATUS_PENDING,
@@ -85,7 +88,12 @@ def list_resources(
     q: str | None = Query(None, description="关键词（名称/定位模糊匹配）"),
     db: Session = Depends(get_db),
 ):
-    """资源导航列表（active 在前 pending 在后，同组按 recently_added/创建时间降序）。"""
+    """资源导航列表。
+
+    排序：active 优先于 pending；同类内按分类权重（官方入口→考研干货→求职→
+    开源→工具）+ 创建时间正序（seed 定义顺序=策展优先级，先定义的排前面——
+    30 秒测试视角：第一张卡应是策展最用心的，不是最后插入的）。
+    """
     query = _visible_query(db)
     if track:
         query = query.filter(ResourceLink.track.in_([track, "common"]))
@@ -100,12 +108,19 @@ def list_resources(
                 ResourceLink.url.ilike(like),
             )
         )
+    category_weight = sqlalchemy_case(
+        (ResourceLink.category == "official", 0),
+        (ResourceLink.category == RESOURCE_CATEGORY_KAOYAN, 1),
+        (ResourceLink.category == RESOURCE_CATEGORY_EMPLOYMENT, 2),
+        (ResourceLink.category == RESOURCE_CATEGORY_OPEN_SOURCE, 3),
+        else_=4,
+    )
     links = (
         query.order_by(
             # active 优先于 pending（0=active, 1=pending）
             (ResourceLink.status != RESOURCE_STATUS_ACTIVE),
-            ResourceLink.recently_added.desc(),
-            ResourceLink.created_at.desc(),
+            category_weight,
+            ResourceLink.created_at.asc(),
         )
         .all()
     )
